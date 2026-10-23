@@ -516,3 +516,9 @@ class ConcurrentCrossCheck(Base):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class PatientIdTerms(unittest.TestCase):
+    def test_patient_id_pieces_are_not_probe_terms(self):
+        from clinical_core.agere.clinical import answer_guard as G
+        self.assertEqual(G.terms('is SYN-67436663-A0F on a statin?'), ['statin'])

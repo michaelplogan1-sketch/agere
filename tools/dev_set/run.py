@@ -175,7 +175,7 @@ def score(q, resp):
         elif a.get('count') is not None and isinstance(a.get('count'), int):
             got = a['count'] > 0
         else:
-            got = _lead_yes_no(low)
+            got = _lead_yes_no(str((a or {}).get('headline') or '').lower())
             if got == UNDECIDED: got = None
             elif got is None:
                 yes = re.search(r'\b(yes|true|is on|has had|were)\b', low)
@@ -212,7 +212,7 @@ def score_note(q, resp, text, low, a):
     key, kind = q['key'], q['key']['kind']
     ok = False
     if kind == 'yes_no':
-        lead = _lead_yes_no(low)
+        lead = _lead_yes_no(str((a or {}).get('headline') or '').lower())
         if lead == UNDECIDED:
             got = None
         elif lead is not None:

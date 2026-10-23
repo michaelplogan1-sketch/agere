@@ -85,6 +85,9 @@ def _code_forms(text):
 def terms(text):
     """Stemmed content words plus normalised code literals ('PHQ-9' -> 'phq9', 'G0438' -> 'g0438')."""
     text = str(text or '')
+    # A warehouse patient id names the patient; its pieces ('SYN', '67436663') are not terms to look for in other sources.
+    from .requirement_ledger import PATIENT_ID
+    text = PATIENT_ID.sub(' ', text)
     out = []
     for w in re.findall(r'[a-z0-9]+', text.lower().replace('_', ' ')):
         if len(w) <= 2 or w in _STOP or w.isdigit(): continue
