@@ -606,7 +606,7 @@ def zero_result_probe(stack, question, graph, answer, *, catalog=None, target=No
     from .answer_guard import _ABSENCE_Q, period_of
     out = {'version': PROBE_VERSION, 'trigger': trigger, 'period': None, 'tables_read': [], 'predicates': [], 'flagged': [],
            'complete': True}
-    if _ABSENCE_Q.search(question or ''):
+    if _ABSENCE_Q.search(re.split(r'\bDefinition:', question or '', maxsplit=1, flags=re.I)[0]):  # the question, not its definition text
         out['reason'] = 'the question asks about absence; a zero is a plausible answer'; return out
     sqls = _queries(graph, answer)
     read = _tables_read(sqls)
@@ -839,6 +839,11 @@ def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hoste
         if s1['verdict'] == 'refuted':
             verdict['accept'] = False
             verdict['reasons'].append(f'cross-check: both System One families judged it a different question ({X.describe(s1)})'); return 'disagree'
+        no = [f for f, v in (s1.get('votes') or {}).items() if isinstance(v, dict) and v.get('label') == X.NO]
+        if len(no) == len(X.FAMILIES):  # both families lean 'different question', each below its own reject threshold
+            verdict['accept'] = False
+            verdict['reasons'].append(f'cross-check: both System One families lean toward a different question ({X.describe(s1)}); the next proposer tries')
+            return 'disagree'
         if s1['verdict'] != 'split':
             verdict['annotations'].append(f'Cross-check: System One could not decide ({X.describe(s1)}).'); return 'unavailable'
         if not claude_ok:

@@ -194,6 +194,16 @@ class CrossCheck(Base):
         self.assertFalse(v['accept'])
         self.assertIn('only part of the question', ' '.join(v['reasons']))
 
+    def test_both_families_leaning_different_reject_below_threshold(self):  # ACC-06: 0.46 and 0.60, each under 0.7
+        self.stack.allow_live = True
+        from clinical_core.agere.clinical import system_one_cross_check as X
+        s1 = {'verdict': 'undecided', 'votes': {'jev': {'label': X.NO, 'p': 0.46}, 'perplexity': {'label': X.NO, 'p': 0.6}},
+              'calls': 2, 'cost_usd': 0.0003, 'version': X.VERSION}
+        with patch.object(X, 'cross_check', return_value=s1), patch.object(A._s1_gate, 'ready', return_value=True), \
+                patch.object(AG, '_asserted', return_value=True):
+            v = self.check('How many annual wellness visits did we do in 2028?', 'SELECT 1', count(0), ledger=object())
+        self.assertFalse(v['accept'])
+
     def test_certified_answers_are_not_cross_checked(self):
         self.stack.allow_live = True
         P = self.fake(None)
