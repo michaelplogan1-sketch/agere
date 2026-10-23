@@ -585,7 +585,6 @@ class Cascade:
     def tier_legacy_cost_ladder(self):
         from .legacy_proposers import legacy_ladder_tier
         live = getattr(self.stack, 'allow_live', False)
-        live = live and not self.claude_down  # Claude already out for this question: only the ladder's free rungs
         return self.graph('legacy_cost_ladder', legacy_ladder_tier(self.stack, self.question, self.ledger if live else None,
                                                                    self.ladder.frontier))
 
