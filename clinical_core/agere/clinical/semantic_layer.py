@@ -93,10 +93,112 @@ SOURCE_COVERAGE = {
         'meaning': 'Orders, list entries, reports, administrations and pickups are different observations. Neither presence nor absence of '
                    'a pickup establishes actual current use. Latest received record is not automatically current clinical state. '
                    'Use direct dated evidence with explicit polarity, preserve conflicts/unknowns, and separate target dose from tolerance.'},
+    'diagnoses': {
+        'relations': ['diagnosis_any', 'concept_patient', 'condition'],  'default_relation': 'diagnosis_any',
+        'meaning': 'A documented diagnosis is an ICD-10 code on a paid payer claim, an EHR problem-list entry, an EHR condition record or an '
+                   'EHR/ADT encounter diagnosis. Count patients with a code (or code range) from diagnosis_any (every source, one row per source '
+                   'record; count DISTINCT patient_id); count patients with a library concept from concept_patient. condition alone is the '
+                   'EHR condition records, not payer claim diagnoses, encounter diagnoses or the problem list, and undercounts documented diagnoses.'},
     'screening': {
         'relations': ['social_need'],
         'meaning': 'An explicit screened negative is distinct from never screened. No row is unknown need, never a negative response.'},
 }
+
+DIAGNOSIS_ANY_VERSION = 1
+DIAGNOSIS_ANY_DOC = ('Every documented ICD-10 diagnosis of every source, one row per source record: patient_id, icd10 (upper case, as received, '
+                     'dotted), source = condition (EHR condition records with is_diagnosis = 1, incl. EHR problem-list conditions; assessment '
+                     'topics, rule-outs and laboratory-evidence rows are not diagnoses) | payer_claim (payer_claim_diagnosis of PAID payer claims, '
+                     'current non-duplicate versions: payer_claim.final_status = paid AND counts_in_metrics = 1) | encounter (encounter_diagnosis: '
+                     'EHR encounter dx and HL7 ADT DG1; the dx of payer ED claims are payer_claim rows) | problem_list (problem_list_entry), '
+                     'source_detail = the source table / feed, event_date (YYYY-MM-DD; claim service_from, encounter date, problem first_recorded), '
+                     'record_ref = source record / claim id. Use it to count or list patients with a diagnosis code: SELECT count(DISTINCT patient_id) '
+                     "FROM diagnosis_any WHERE icd10 LIKE 'F11%'. The same patient appears once per source record, so always count DISTINCT patient_id. "
+                     'condition alone holds only EHR condition records and undercounts documented diagnoses (payer claims, encounters and the problem list '
+                     'add patients). By library concept (no codes) use concept_patient.')
+
+
+def _diagnosis_any_sql(cols):
+    """The diagnosis_any SELECT for the tables present (cols = {table: set of columns}); None when no diagnosis source exists."""
+    parts = []
+    c = cols.get('condition', set())
+    if {'patient_id', 'icd10'} <= c:
+        keep = ' AND (is_diagnosis = 1' + (" OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')" if 'diagnosis_basis' in c else '') + ')' \
+            if 'is_diagnosis' in c else ''
+        day = ' coalesce(event_date, recorded_date)' if {'event_date', 'recorded_date'} <= c else (' event_date' if 'event_date' in c else ' NULL')
+        parts.append(f"SELECT patient_id, upper(trim(icd10)) AS icd10, 'condition' AS source, {'source_table' if 'source_table' in c else 'NULL'} AS source_detail, "
+                     f"substr({day.strip()}, 1, 10) AS event_date, {'record_id' if 'record_id' in c else 'NULL'} AS record_ref "
+                     f"FROM condition WHERE icd10 IS NOT NULL AND trim(icd10) <> ''{keep}")
+    d, pc = cols.get('payer_claim_diagnosis', set()), cols.get('payer_claim', set())
+    if {'patient_id', 'icd10', 'payer_claim_id'} <= d:
+        paid = ' JOIN payer_claim c ON c.payer_claim_id = d.payer_claim_id' if {'payer_claim_id', 'final_status'} <= pc else ''
+        where = " AND c.final_status = 'paid'" if paid else ''
+        counted = " AND coalesce(d.counts_in_metrics, 1) = 1" if 'counts_in_metrics' in d else ''
+        day = 'coalesce(d.service_from, c.service_from)' if paid and 'service_from' in pc and 'service_from' in d else \
+            ('d.service_from' if 'service_from' in d else 'NULL')
+        parts.append(f"SELECT d.patient_id, upper(trim(d.icd10)), 'payer_claim', {'c.final_status' if paid else 'NULL'}, substr({day}, 1, 10), d.payer_claim_id "
+                     f"FROM payer_claim_diagnosis d{paid} WHERE d.icd10 IS NOT NULL AND trim(d.icd10) <> ''{where}{counted}")
+    e = cols.get('encounter_diagnosis', set())
+    if {'patient_id', 'icd10'} <= e:
+        own = " AND coalesce(source, 'ehr') <> 'payer_claim'" if 'source' in e else ''
+        parts.append(f"SELECT patient_id, upper(trim(icd10)), 'encounter', {'source' if 'source' in e else 'NULL'}, "
+                     f"substr({'event_date' if 'event_date' in e else 'NULL'}, 1, 10), {'record_id' if 'record_id' in e else 'NULL'} "
+                     f"FROM encounter_diagnosis WHERE icd10 IS NOT NULL AND trim(icd10) <> ''{own}")
+    p = cols.get('problem_list_entry', set())
+    if {'patient_id', 'icd10'} <= p:
+        parts.append(f"SELECT patient_id, upper(trim(icd10)), 'problem_list', 'problem_list_entry', "
+                     f"substr({'first_recorded' if 'first_recorded' in p else 'NULL'}, 1, 10), {'record_id' if 'record_id' in p else 'NULL'} "
+                     f"FROM problem_list_entry WHERE icd10 IS NOT NULL AND trim(icd10) <> ''")
+    return ' UNION ALL '.join(parts) or None
+
+
+def build_diagnosis_any(out):
+    """(Re)create diagnosis_any inside an open semantic connection: the all-source diagnosis relation (DIAGNOSIS_ANY_DOC). Idempotent;
+    the caller commits. -> rows written (0 when no diagnosis source exists)."""
+    tables = [r[0] for r in out.execute("SELECT name FROM sqlite_master WHERE type = 'table'")]
+    sql = _diagnosis_any_sql({t: _columns(out, t) for t in tables})
+    out.execute('DROP TABLE IF EXISTS diagnosis_any')
+    out.execute('CREATE TABLE diagnosis_any(patient_id TEXT, icd10 TEXT COLLATE NOCASE, source TEXT, source_detail TEXT, event_date TEXT, record_ref TEXT)')
+    if sql: out.execute(f'INSERT INTO diagnosis_any {sql}')
+    out.execute('CREATE INDEX diagnosis_any_code ON diagnosis_any(icd10, patient_id)')
+    out.execute('CREATE INDEX diagnosis_any_patient ON diagnosis_any(patient_id)')
+    out.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', ('diagnosis_any', str(DIAGNOSIS_ANY_VERSION)))
+    return out.execute('SELECT count(*) FROM diagnosis_any').fetchone()[0]
+
+
+def ensure_diagnosis_view(db):
+    """Make diagnosis_any readable on a connection to a semantic database that does not hold the table yet (built before the table
+    existed, not upgraded): a TEMP VIEW over the same SELECT, in the connection's own temp store, so the stack file stays untouched
+    and a read-only connection works. -> 'table' | 'view' | None (no diagnosis source / failed: the query then fails as before)."""
+    try:
+        names = {r[0]: r[1] for r in db.execute("SELECT name, type FROM sqlite_master WHERE type IN ('table', 'view')")}
+        if 'diagnosis_any' in names: return 'table'
+        sql = _diagnosis_any_sql({t: _columns(db, t) for t, k in names.items() if k == 'table'})
+        if not sql: return None
+        db.execute('CREATE TEMP VIEW IF NOT EXISTS diagnosis_any AS SELECT patient_id, icd10 COLLATE NOCASE AS icd10, source, source_detail, '
+                   f'event_date, record_ref FROM ({sql})')
+        return 'view'
+    except sqlite3.Error:
+        return None
+
+
+def upgrade_diagnosis_any(path, *, force=False):
+    """Add diagnosis_any to an existing semantic.sqlite3 (a stack dir or the file). Idempotent: a database already at
+    DIAGNOSIS_ANY_VERSION is left alone unless force. Writes the database: never run it while a benchmark reads the stack.
+    The beside DuckDB copy (if any) is stale for the new table until duckdb_engine.build(sqlite_path). -> {'upgraded', 'rows'}"""
+    path = Path(path)
+    target = path / 'semantic.sqlite3' if path.is_dir() else path
+    db = sqlite3.connect(target)
+    try:
+        have = db.execute("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'diagnosis_any'").fetchone()
+        ver = db.execute("SELECT value FROM meta WHERE key = 'diagnosis_any'").fetchone()
+        if have and ver and ver[0] == str(DIAGNOSIS_ANY_VERSION) and not force:
+            return {'upgraded': False, 'rows': db.execute('SELECT count(*) FROM diagnosis_any').fetchone()[0]}
+        with db:
+            rows = build_diagnosis_any(db)
+        return {'upgraded': True, 'rows': rows}
+    finally:
+        db.close()
+
 
 SCHEMA_DOC = {
     'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, '
@@ -108,6 +210,8 @@ SCHEMA_DOC = {
                'Use the governed care_team relation for dated documentary assignment.',
     'condition': 'One row per (condition record, matching library concept); concept NULL when no library concept matches. '
                  'Sources: conditions, condition_assessments, problem_lists. label = received description. '
+                 'condition holds EHR condition records ONLY (no payer claim diagnoses, no encounter diagnoses): to count documented '
+                 'diagnoses by ICD-10 code use diagnosis_any (all sources), by concept use concept_patient. '
                  'is_diagnosis=1 distinguishes actual diagnosis labels from assessment topics; use it for patients with a condition. '
                  'Concepts normalize mapped codes and subtypes; diabetes is the diabetes concept, CKD is chronic_kidney_disease.',
     'measurement': 'Labs and vitals, one row per (record, concept); concept NULL when unmapped. value/unit as received; '
@@ -143,7 +247,9 @@ SCHEMA_DOC = {
             'discharge dates. stay_source = encounters, or adt | payer_claim for admissions found only in ADT '
             'visits or inpatient (TOB 011x) / observation (revenue 0762) payer claims, so admission rates cover claims-only members; '
             'readmission flags of a patient with such stays are recomputed over all of the patient\'s stays.',
-    'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.',
+    'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates. '
+                       'Governed per-patient concept membership: count patients with a named condition concept here (concept-level, no codes); '
+                       'count patients by ICD-10 code from diagnosis_any.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
             'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
     'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above. '
@@ -212,6 +318,7 @@ SCHEMA_DOC = {
                  'principal_diagnosis/diagnosis_codes (JSON)/billing_npi/rendering_npi/type_of_bill/cpt/hcpcs/local_charge_code, '
                  'patient.birth_date/race/ethnicity/preferred_language/interpreter_needed/marital_status/zip/county (FIPS)/state. '
                  'Source codes win over dictionary mappings; *_source records which was used. meta.standards holds coverage.',
+    'diagnosis_any': DIAGNOSIS_ANY_DOC,
     'encounter_diagnosis': 'ICD-10-CM diagnoses coded on encounters, every encounter source: one row per (encounter_id, rank, '
                            'icd10, type, source). source = ehr (EHR encounter dx: Epic PAT_ENC_DX, athena/eCW encounter dx, FHIR '
                            'Encounter.diagnosis/reasonCode; type principal/primary/secondary) | hl7_adt (HL7 ADT DG1 segments of '
@@ -1062,6 +1169,7 @@ def build(path):
         _coverage_and_fills(out, meta['snapshot']['as_of'])  # after feeds: enrollment spans, fill reversals
         from . import population_events
         feeds['population_events'] = population_events.build(out)  # last: payer evidence folded into the entity tables
+        feeds['diagnosis_any'] = {'rows': build_diagnosis_any(out)}  # after every diagnosis source (condition, claims, encounters, problem list)
         # Build log steps 8, 9, 11: adjudication history (every version, with CARC), record corrections across streams and
         # canonical picked-up fills. History needs the build's received warehouse, which keeps superseded versions.
         from . import adjudication_history, fill_events

@@ -313,6 +313,11 @@ def conventions(have, null_items=None, null_doc=None):
              'the item was written into the record (recorded_date, signed_date, first_recorded, or available_date when the '
              'table has no recorded date) - not the onset or service date; a documented diagnosis is any condition row in '
              'the record (all source_table values count) unless the question names a narrower source.']
+    if 'diagnosis_any' in have:
+        lines.append('- Diagnoses by ICD-10 code: count and list patients from diagnosis_any (every documented source: EHR condition '
+                     'records, paid payer claim diagnoses, encounter diagnoses, problem-list entries; one row per source record, so '
+                     'COUNT(DISTINCT patient_id)). condition holds EHR condition records only and undercounts documented diagnoses; '
+                     'a library concept (no codes) is counted from concept_patient.')
     if have & {'payer_claim', 'enrollment_span', 'member_month'}:
         lines.append('- Product vs line of business: product is the plan product exactly as delivered (commercial, marketplace, '
                      'medicare_advantage, medicare_ffs, medicaid, dual_ffs, dual_ma, ...); line_of_business is a rollup '

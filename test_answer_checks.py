@@ -263,7 +263,7 @@ class Isolation(Base):
         with patch.object(A, 'zero_result_probe', side_effect=RuntimeError('boom')):
             v = self.check('How many patients have heart failure?', 'SELECT 1', count(4))
         self.assertTrue(any('zero_result_probe_shared failed: RuntimeError: boom' in a for a in v['annotations']))
-        self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'filter_value_existence', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
+        self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
                                            'answer_guard_cross_check', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
                                            'source_defect_annotation', 'jev_normalization_check', 'learned_answer_verifier', 'semantic_entropy_probe',
                                            'label_choice_audit', 'cascade_certificates'])
@@ -294,6 +294,80 @@ class Gate(Base):
         self.assertIn('Certificate: uncalibrated (no calibration record).', out['answer']['limitations'])
         self.assertTrue(receipt['answer_checks']['accept'])
         self.assertEqual(out['answer_checks']['checks_run'][0], 'zero_result_probe_shared')
+
+
+class DiagnosisCoverage(Base):
+    """An F11 count that reads `condition` alone undercounts: payer claims, encounters and the problem list hold the other patients."""
+    CONDITION = "SELECT count(DISTINCT patient_id) FROM condition WHERE icd10 LIKE 'F11%'"
+    ANY = "SELECT count(DISTINCT patient_id) FROM diagnosis_any WHERE icd10 LIKE 'F11%'"
+
+    def setUp(self):
+        super().setUp()
+        db = sqlite3.connect(Path(self.tmp.name) / 'semantic.sqlite3')
+        db.executescript("""
+          CREATE TABLE payer_claim(payer_claim_id TEXT, patient_id TEXT, final_status TEXT, service_from TEXT, counts_in_metrics INTEGER);
+          CREATE TABLE payer_claim_diagnosis(payer_claim_id TEXT, patient_id TEXT, service_from TEXT, rank INTEGER, icd10 TEXT,
+            icd10_received TEXT, counts_in_metrics INTEGER);
+          CREATE TABLE problem_list_entry(patient_id TEXT, problem_key TEXT, icd10 TEXT, first_recorded TEXT, record_id TEXT);
+          CREATE TABLE patient(patient_id TEXT, sex_reported TEXT);
+        """)
+        db.executemany('INSERT INTO condition VALUES (?,?,?,?,?,?,?)', [('c9', 'p1', 'conditions', 'opioid_use_disorder', 'OUD', 'F11.20', '2029-02-01')])
+        db.executemany('INSERT INTO payer_claim VALUES (?,?,?,?,?)', [(f'k{i}', f'q{i}', 'paid', '2029-03-01', 1) for i in range(1, 7)]
+                       + [('kd', 'qd', 'denied', '2029-03-01', 1)])
+        db.executemany('INSERT INTO payer_claim_diagnosis VALUES (?,?,?,?,?,?,?)', [(f'k{i}', f'q{i}', '2029-03-01', 1, 'F11.20', 'F1120', 1) for i in range(1, 7)]
+                       + [('kd', 'qd', '2029-03-01', 1, 'F11.20', 'F1120', 1)])
+        db.executemany('INSERT INTO problem_list_entry VALUES (?,?,?,?,?)', [('p2', 'F11', 'F11.20', '2029-01-01', 'pl1')])
+        db.commit(); db.close()
+
+    def test_a_condition_only_count_is_rejected_when_claims_hold_more(self):
+        v = self.check('How many patients have a documented opioid use disorder (ICD-10 F11)?', self.CONDITION, count(1, self.CONDITION))
+        self.assertFalse(v['accept'])
+        self.assertIn('diagnosis_any holds 8 patients', ' '.join(v['reasons']))  # p1, p2, six paid-claim patients; the denied claim is not counted
+        self.assertEqual(v['diagnosis_coverage']['method'], 'plan_on_diagnosis_any')
+        self.assertIn('diagnosis_source_coverage', v['checks_run'])
+
+    def test_a_diagnosis_any_count_is_accepted(self):
+        v = self.check('How many patients have a documented opioid use disorder (ICD-10 F11)?', self.ANY, count(8, self.ANY))
+        self.assertTrue(v['accept'], v['reasons'])
+        self.assertIsNone(v['diagnosis_coverage'])
+
+    def test_a_concept_patient_or_all_four_sources_plan_is_never_rejected(self):
+        sql = "SELECT count(DISTINCT patient_id) FROM concept_patient WHERE concept = 'opioid_use_disorder' AND patient_id IN (SELECT patient_id FROM condition WHERE icd10 LIKE 'F11%')"
+        self.assertTrue(self.check('How many patients have F11?', sql, count(1, sql))['accept'])
+        sql = ("SELECT count(*) FROM (SELECT patient_id FROM condition WHERE icd10 LIKE 'F11%' UNION SELECT patient_id FROM payer_claim_diagnosis WHERE icd10 LIKE 'F11%' "
+               "UNION SELECT patient_id FROM encounter_diagnosis WHERE icd10 LIKE 'F11%' UNION SELECT patient_id FROM problem_list_entry WHERE icd10 LIKE 'F11%')")
+        self.assertTrue(self.check('How many patients have F11?', sql, count(8, sql))['accept'])
+
+    def test_other_filters_of_the_plan_are_kept_in_the_comparison(self):
+        sql = "SELECT count(DISTINCT c.patient_id) FROM condition c JOIN patient p ON p.patient_id = c.patient_id WHERE c.icd10 LIKE 'F11%' AND p.sex_reported = 'F'"
+        db = sqlite3.connect(Path(self.tmp.name) / 'semantic.sqlite3')
+        db.executemany('INSERT INTO patient VALUES (?,?)', [('p1', 'F'), ('p2', 'M'), ('q1', 'M'), ('q2', 'M')]); db.commit(); db.close()
+        v = self.check('How many female patients have F11?', sql, count(1, sql))
+        self.assertTrue(v['accept'], v['reasons'])  # only p1 is female among all F11 patients: condition-only was right
+
+    def test_a_gap_within_the_margin_and_questions_naming_one_source_are_accepted(self):
+        v = self.check('How many patients have F11?', self.CONDITION, count(7, self.CONDITION))
+        self.assertTrue(v['accept'], v['reasons'])  # 8 vs 7: not more than 7 + 2
+        v = self.check('How many patients have F11 on a paid claim?', self.CONDITION, count(1, self.CONDITION))
+        self.assertTrue(v['accept'], v['reasons'])
+
+    def test_the_period_applies(self):
+        sql = "SELECT count(DISTINCT patient_id) FROM condition WHERE icd10 LIKE 'F11%' AND event_date >= '2031-01-01'"
+        self.assertTrue(self.check('How many patients had F11 in 2031?', sql, count(0, sql))['accept'])
+        sql2 = "SELECT count(DISTINCT patient_id) FROM condition WHERE icd10 LIKE 'F11%' AND event_date >= '2029-01-01'"
+        self.assertFalse(self.check('How many patients had F11 in 2029?', sql2, count(1, sql2))['accept'])
+
+    def test_it_works_before_the_upgrade_through_a_temp_view_and_leaves_the_file_untouched(self):
+        path = Path(self.tmp.name) / 'semantic.sqlite3'
+        before = path.read_bytes()
+        self.check('How many patients have F11?', self.CONDITION, count(1, self.CONDITION))
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_icd_patterns(self):
+        self.assertEqual(A.icd_patterns("SELECT 1 FROM condition WHERE icd10 LIKE 'F11%' OR replace(icd10,'.','') IN ('F1020','f1021') AND icd10 NOT LIKE 'F13%'"),
+                         ['F11', 'F1020', 'F1021'])
+        self.assertEqual(A.icd_patterns("SELECT 1 FROM condition WHERE upper(c.icd10) = 'E11.9' AND substr(icd10, 1, 3) = 'N18'"), ['E119', 'N18'])
+        self.assertEqual(A.icd_patterns("SELECT 1 FROM condition WHERE concept = 'diabetes'"), [])
 
 
 class FilterValueExistence(unittest.TestCase):

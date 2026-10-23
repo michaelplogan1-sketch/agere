@@ -16,6 +16,7 @@ from .dose import register as register_dose
 
 def register(db):
     from .clinical_inputs import register as register_clinical_inputs
+    semantic_layer.ensure_diagnosis_view(db)  # a semantic.sqlite3 built before diagnosis_any gets it as a temp view
     return register_clinical_inputs(register_dose(register_age(db)))
 
 VERSION = 'semantic-sql/1'

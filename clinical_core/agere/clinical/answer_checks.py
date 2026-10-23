@@ -713,6 +713,115 @@ def value_existence(stack, graph, answer, *, catalog=None, target=None):
     return list(dict.fromkeys(out))
 
 
+# ---- diagnosis source coverage ----------------------------------------------------------------------------------------------
+COVERAGE_VERSION = 'diagnosis-source-coverage/1'
+DX_SOURCES = ('condition', 'payer_claim_diagnosis', 'encounter_diagnosis', 'problem_list_entry')  # the four diagnosis sources of diagnosis_any
+COVERAGE_MIN_GAIN = 2      # diagnosis_any must hold more than the answer + 2 patients ...
+COVERAGE_MIN_RATIO = 1.1   # ... and more than 1.1x the answer: a gap of a patient or two is noise, not a missing source
+# a question that names one source asks for that source alone ("on a paid claim", "problem list entries", "ED principal diagnosis")
+_ONE_SOURCE_Q = re.compile(r'\b(?:problem[- ]list|payer[- ]reported|(?:on|in|from) (?:a |the )?(?:paid |payer |medical )?claims?|claims?[- ](?:only|based)|'
+                           r'claim diagnos\w+|encounter diagnos\w+|visit diagnos\w+|(?:principal|primary|admitting|discharge|working|ed|er) diagnos\w+|'
+                           r'adt diagnos\w+|ehr (?:condition|conditions) (?:only|records)|condition records)\b', re.I)
+# icd10 / icd10_category compared to code literals (through substr/upper/replace wrappers); NOT LIKE / NOT IN are exclusions
+_ICD_FILTER = re.compile(r"\bicd10(?:_category)?\b(?:\s*,[^()=<>]*?)?\s*\)*\s*(NOT\s+)?(?:(LIKE|=)\s*'([^']*)'|IN\s*\(([^)]*)\))", re.I)
+_PATIENT_COUNT = re.compile(r'\bcount\s*\(\s*distinct\s+(?:\w+\.)?patient_id\s*\)', re.I)
+
+
+def icd_patterns(sql):
+    """ICD-10 code prefixes (dots dropped, upper case) the SQL requires via icd10 / icd10_category LIKE, =, IN; exclusions left out."""
+    code = re.sub(r'--[^\n]*', '', sql or '')
+    out = []
+    for m in _ICD_FILTER.finditer(code):
+        if m.group(1): continue
+        for lit in ([m.group(3)] if m.group(3) is not None else _SQL_LITERAL.findall(m.group(4) or '')):
+            v = lit.replace("''", "'").replace('.', '').replace('%', '').strip().upper()
+            if re.fullmatch(r'[A-TV-Z][0-9A-Z]{1,6}', v) and v not in out: out.append(v)
+    return out
+
+
+def _to_diagnosis_any(sql):
+    """The plan's SQL with every diagnosis-source table it reads replaced by diagnosis_any (alias kept), or None when it reads none."""
+    n = 0
+
+    def sub(m):
+        nonlocal n
+        n += 1
+        word = m.group(3)
+        if word and word.lower() not in _NOT_ALIAS: return f'{m.group(1)} diagnosis_any {word}'  # the plan's alias stays
+        return f'{m.group(1)} diagnosis_any AS {m.group(2)}' + (f' {word}' if word else '')  # qualified refs (condition.icd10) still resolve
+    out = re.sub(r'\b(FROM|JOIN)\s+(' + '|'.join(DX_SOURCES) + r')\b(?:\s+(?:AS\s+)?([A-Za-z_]\w*))?', sub, sql, flags=re.I)
+    return out if n else None
+
+
+def diagnosis_source_coverage(stack, question, graph, answer, *, catalog=None, target=None):
+    """Source-coverage check for diagnosis counts. A documented diagnosis is an ICD-10 code on a paid payer claim, an EHR problem-list
+    entry, an EHR condition record or an encounter diagnosis; the free SQL tiers often count `condition` alone (EHR condition
+    records) and undercount (opioid use disorder: 1 patient in condition, 27 in diagnosis_any). When an executed plan counts or lists
+    patients from diagnosis sources, filtered by ICD-10 codes, without reading diagnosis_any / concept_patient or all four sources,
+    the same plan is re-run on diagnosis_any (each diagnosis table read swapped for it, every other filter kept; else, for a plan that
+    reads no other table, the distinct patients with the same code patterns in the question's period). Materially larger
+    (> answer + COVERAGE_MIN_GAIN and > COVERAGE_MIN_RATIO x answer) -> flagged. Read-only, bounded (PROBE_BUDGET_S).
+    -> None (not applicable) or {'version', 'reads', 'patterns', 'answer', 'diagnosis_any', 'method', 'flagged'}"""
+    if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial'): return None
+    t = answer.get('answer_type')
+    if t not in ('count', 'patient_set', 'value'): return None
+    if _ONE_SOURCE_Q.search(question or ''): return None
+    sqls = _queries(graph, answer)
+    if not sqls: return None
+    plan = None
+    for sql in sqls:
+        read = _tables_read([sql])
+        if read & {'diagnosis_any', 'concept_patient'} or set(DX_SOURCES) <= read: continue
+        mine = [d for d in DX_SOURCES if d in read]
+        patterns = icd_patterns(sql)
+        if not mine or not patterns: continue
+        if not (_PATIENT_COUNT.search(sql) or t == 'patient_set' or re.search(r'select\s+distinct\s+(?:\w+\.)?patient_id', sql, re.I)): continue
+        plan = (sql, mine, patterns, read); break
+    if plan is None: return None
+    sql, mine, patterns, read = plan
+    n = (len(answer.get('patient_ids') or []) or answer.get('count')) if t == 'patient_set' else answer.get(t)
+    if not _numeric(n): return None
+    out = {'version': COVERAGE_VERSION, 'reads': mine, 'patterns': patterns, 'answer': n, 'diagnosis_any': None, 'method': None, 'flagged': False}
+    target = _Path(target) if target else _semantic_target(stack, catalog)
+    if target is None or not target.exists(): return out
+    from . import semantic_layer
+    db = _probe_db(target)
+    try:
+        if semantic_layer.ensure_diagnosis_view(db) is None: return out  # no diagnosis source to compare with
+        rewritten = _to_diagnosis_any(sql)
+        total = None
+        try:
+            rows = db.execute(rewritten).fetchmany(200001) if rewritten else []
+            if rows and t == 'patient_set': total, out['method'] = len({r[0] for r in rows}), 'plan_on_diagnosis_any'
+            elif rows and len(rows) == 1 and _numeric(rows[0][0]): total, out['method'] = rows[0][0], 'plan_on_diagnosis_any'
+        except _sqlite3.Error as exc:
+            if 'interrupt' in str(exc).lower(): return out
+        if total is None and read <= set(DX_SOURCES):  # the plan filters nothing outside the diagnosis table: count the codes themselves
+            from .answer_guard import period_of
+            period = period_of(question)
+            where = '(' + ' OR '.join("replace(icd10, '.', '') LIKE ?" for _ in patterns) + ')'
+            args = [p + '%' for p in patterns]
+            if period: where += ' AND substr(event_date, 1, 10) BETWEEN ? AND ?'; args += list(period)
+            try:
+                total, out['method'] = db.execute(f'SELECT count(DISTINCT patient_id) FROM diagnosis_any WHERE {where}', args).fetchone()[0], \
+                    'codes_in_diagnosis_any'
+            except _sqlite3.Error:
+                total = None
+        if total is None: return out
+        out['diagnosis_any'] = total
+        out['flagged'] = total > n + COVERAGE_MIN_GAIN and total > COVERAGE_MIN_RATIO * n
+    finally:
+        db.close()
+    return out
+
+
+def _coverage_reason(c):
+    return (f"diagnosis source coverage: this plan reads {', '.join(c['reads'])} (one of four diagnosis sources: EHR condition records, "
+            f"paid payer claims, encounter diagnoses, problem list) and counts {c['answer']} patients with {', '.join(c['patterns'][:6])}; "
+            f"diagnosis_any holds {c['diagnosis_any']} patients with these codes; count by ICD-10 code from diagnosis_any "
+            f"(all sources), or by library concept from concept_patient")
+
+
 def _where(rows, k=3):
     return ', '.join(f"{r['patients']} patients in {r['table']}" + (f" ({r['source']})" if r['source'] != r['table'] else '') for r in rows[:k])
 
@@ -962,6 +1071,14 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
             verdict['reasons'] += [f'value check: the plan filters on values the warehouse never holds ({m})' for m in missing]
         return missing
     run('filter_value_existence', values)
+    def coverage():
+        c = diagnosis_source_coverage(stack, question, graph, answer, catalog=catalog)
+        verdict['diagnosis_coverage'] = c
+        if c and c['flagged']:  # heal, don't block: the next proposer reads every diagnosis source
+            verdict['accept'] = False
+            verdict['reasons'].append(_coverage_reason(c))
+        return c
+    run('diagnosis_source_coverage', coverage)
     prof = _profile(stack, profile)
     run('answer_guard_suspicion', lambda: _guard(stack, question, graph, receipt, answer, prof, state, verdict))
     verdict['checks_run'].append('answer_guard_dense_catalog')  # inside the guard probe (AG.probe dense='auto')
@@ -1001,7 +1118,7 @@ def gate(cascade, name, graph, receipt, result):
     if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
     summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one',
-                                       'system_one_cross_check', 'normalization_check', 'answer_verifier', 'semantic_entropy', 'label_choice') if k in verdict}
+                                       'system_one_cross_check', 'normalization_check', 'answer_verifier', 'semantic_entropy', 'label_choice', 'diagnosis_coverage') if k in verdict}
     if isinstance(receipt, dict): receipt['answer_checks'] = summary
     if not verdict['accept']:
         cascade.reject(name, verdict['reasons'] or ['answer checks rejected the proposal']); return None
