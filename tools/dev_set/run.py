@@ -175,9 +175,12 @@ def score(q, resp):
         elif a.get('count') is not None and isinstance(a.get('count'), int):
             got = a['count'] > 0
         else:
-            yes = re.search(r'\b(yes|true|is on|has had|were)\b', low)
-            no = re.search(r'\b(no|false|not|never|none|without)\b', low)
-            got = True if yes and not no else False if no and not yes else None
+            got = _lead_yes_no(low)
+            if got == UNDECIDED: got = None
+            elif got is None:
+                yes = re.search(r'\b(yes|true|is on|has had|were)\b', low)
+                no = re.search(r'\b(no|false|not|never|none|without)\b', low)
+                got = True if yes and not no else False if no and not yes else None
         return got is exp, {'got': got, 'expected': exp}
     if t == 'label':
         exp = str(key['answer'])
@@ -195,13 +198,29 @@ def score(q, resp):
     return None, {'unscored_type': t}
 
 
+UNDECIDED = 'undecided'  # an answer that says it cannot decide is neither yes nor no
+
+
+def _lead_yes_no(low):
+    """An answer that opens with Yes / No / Undecided is judged by that opening word, not by words inside quoted evidence."""
+    m = re.match(r'\W*(yes|no|not documented|undecided)\b', low or '')
+    if not m: return None
+    return {'yes': True, 'no': False, 'not documented': False, 'undecided': UNDECIDED}[m.group(1)]
+
+
 def score_note(q, resp, text, low, a):
     key, kind = q['key'], q['key']['kind']
     ok = False
     if kind == 'yes_no':
-        yes = re.search(r'\b(yes|does|did|are|is|has|still|reports? taking)\b', low) and not re.search(r'\b(no|not|does not|did not|never|declin\w*|cannot)\b', low)
-        no = re.search(r'\b(no|not|does not|did not|never|declin\w*|cannot|unable)\b', low)
-        got = 'yes' if yes else 'no' if no else None
+        lead = _lead_yes_no(low)
+        if lead == UNDECIDED:
+            got = None
+        elif lead is not None:
+            got = 'yes' if lead else 'no'
+        else:
+            yes = re.search(r'\b(yes|does|did|are|is|has|still|reports? taking)\b', low) and not re.search(r'\b(no|not|does not|did not|never|declin\w*|cannot)\b', low)
+            no = re.search(r'\b(no|not|does not|did not|never|declin\w*|cannot|unable)\b', low)
+            got = 'yes' if yes else 'no' if no else None
         ok = got == key['answer']
     elif kind == 'not_documented':
         ok = bool(re.search(r'not documented|no mention|not mentioned|does not (document|mention|address)|no documentation|nothing (documented|recorded)|not recorded|unknown', low))

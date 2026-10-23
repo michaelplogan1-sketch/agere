@@ -123,6 +123,12 @@ SUMMARY = re.compile(r"\b(?:summar(?:y|ize|ise)|overview|briefing|brief me|what 
 HOW_MANY = re.compile(r'\b(?:how many|number of|count of|how often|how many times|count)\b', re.I)
 HOW_MUCH = re.compile(r'\bhow much\b|\btotal (?:paid|spend|cost|billed|allowed|amount)|\bspen[dt]\b|\bpaid\b|\bcosts?\b|\bamount\b', re.I)
 STATUS_LEAD = re.compile(r"^\W*(?:and\s+)?(?:is|are|was|were|does|do|did|has|have|had|can|could|will|would|any)\b", re.I)
+# A yes/no question may open with a short phrase before its verb: "At the annual wellness visit, was a memory concern raised?"
+FRONTED_STATUS_LEAD = re.compile(r"^\W*[^,?]{3,80},\s*(?:and\s+)?(?:is|are|was|were|does|do|did|has|have|had|can|could|will|would|any)\b", re.I)
+
+
+def asks_yes_no(text):
+    return bool(STATUS_LEAD.match(text or '') or FRONTED_STATUS_LEAD.match(text or ''))
 WHEN = re.compile(r'\b(?:when|what date|what day|date of|date did|how long ago)\b', re.I)
 LAST = re.compile(r'\b(?:last|most recent|latest|recent(?:ly)?|newest|previous|prior|first|earliest|oldest|final)\b', re.I)
 LISTISH = re.compile(r'\b(?:list|which|what (?:are|were)|show|name|every|each|all (?:of )?(?:the|his|her|their)?|what .{0,25}(?:medications|meds|allergies|'
