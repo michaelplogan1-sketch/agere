@@ -57,6 +57,13 @@ def validate(p):
 def execute(stack, patient_ids, params, as_of):
     from . import chart_reader, patient_ids as PI
     spec = {'subject': {'kind': 'patient', 'patient_id': params['patient_id'], 'quote': params['subject_quote']}, 'question': params['question']}
+    # Execute the typed request the plan carries (intent with any window or ordinal inherited at planning time, note predicates);
+    # re-parsing the text here would lose the conversation context, which belongs to the planning request.
+    chart = params.get('chart') or {}
+    if chart.get('note_predicates'):
+        spec['note'] = chart['note_predicates']
+    elif chart.get('intent'):
+        spec['chart'] = {k: chart.get(k) for k in ('intent', 'domain', 'concept', 'window', 'ordinal', 'attribute', 'mode', 'flags') if k in chart}
     out = chart_reader.answer(stack, spec, as_of=as_of, question=params['question'], prior=PI.current_prior())
     return {'schema': chart_reader.VERSION, 'answer_contract': out, 'patient_ids': [params['patient_id']]}
 

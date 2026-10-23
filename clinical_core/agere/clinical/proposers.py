@@ -16,6 +16,7 @@ what each proposer would have dropped; a reduced or substituted question is neve
 Honest declines naming missing data (undelivered input, missing-data claims) stand only if nothing later answers.
 """
 import json
+import re
 import os
 import sqlite3
 import sys
@@ -450,7 +451,7 @@ class Cascade:
                 contract, interpretation = budget.best()  # time ran out: the best executed candidate, marked partial
                 self.queue_background()
                 return contract, budget.partial(self.finish(interpretation, interpretation['interpreter']))
-            if self.held_decline:
+            if self.held_decline and not self.placeholder(self.held_decline[0]):
                 contract, interpretation = self.held_decline
                 self.queue_background()
                 return contract, self.finish(interpretation, interpretation['interpreter'])
@@ -708,6 +709,14 @@ class Cascade:
             if offered: self.budget.offer(offered, label=name, reasons=[misfit]); self.keep(name, offered, [misfit])
             return self.reject(name, [misfit])
         return self.executed(name, graph, receipt, result, paid_execution=result.get('new_paid_api_calls', 0))
+
+    @staticmethod
+    def placeholder(contract):
+        """A held decline whose only query selects nothing by construction (WHERE 1=0) is a request to restate the question,
+        never a '0 rows' result (2026-10-23)."""
+        from .answer_checks import _EMPTY_BY_CONSTRUCTION
+        queries = re.findall(r'"query":\s*"((?:[^"\\]|\\.)*)"', json.dumps(contract, default=str))
+        return bool(queries) and all(_EMPTY_BY_CONSTRUCTION.search(q.replace('\\n', ' ')) for q in queries)
 
     def declined(self, name, graph, receipt):
         answer = {'status': 'not_available', 'answer_type': 'unsupported', 'headline': 'Not available: ' + '; '.join(graph['unmet_requirements'])[:300],

@@ -417,13 +417,15 @@ def typed_chart(it, preds=None):
     concept = it.get('concept') or {}
     out = {'intent': it.get('intent'), 'domain': it.get('domain'), 'mode': it.get('mode'), 'ordinal': it.get('ordinal'),
            'attribute': it.get('attribute'), 'window': plain(it.get('window')),
-           'concept': plain({k: concept.get(k) for k in ('kind', 'value', 'term', 'label', 'concepts', 'classes') if concept.get(k) is not None}) if isinstance(concept, dict) else plain(concept),
+           'concept': plain({k: v for k, v in concept.items() if v is not None}) if isinstance(concept, dict) else plain(concept),
            'flags': list(it.get('flags') or [])}
     if it.get('domain') == 'readmission':  # the chart reader's readmission is stay.readmitted_30d: say so, so another window is caught
         out['measure'] = {'field': 'stay.readmitted_30d', 'within_days': 30, 'after': 'discharge_date'}
     if it.get('mode') in ('latest', 'first') or it.get('ordinal') or it.get('intent') in ('latest_value', 'last_event'):
         out['order_by'] = [{'field': 'event_date', 'direction': 'asc' if it.get('mode') == 'first' else 'desc'}]
         out['limit'] = 1 + (int(it['ordinal']) if isinstance(it.get('ordinal'), int) else 0)
+        if isinstance(it.get('ordinal'), int) and it['ordinal'] > 1:
+            out['offset'] = it['ordinal'] - 1  # "the one before that": skip the latest 1
     if preds:
         out['note_predicates'] = plain(preds)
         # what the wording restricted the reading to, stated at the top level so the literal check sees it without digging

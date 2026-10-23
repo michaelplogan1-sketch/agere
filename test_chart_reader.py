@@ -707,3 +707,14 @@ class ConversationMemory(unittest.TestCase):
         PI.rebind(_P('/nonexistent'), 'conv-mem-1', 'What is the latest A1c on SYN-67436663-A0F?')  # opens the conversation scope
         PI.remember_current(PI.make_subject('SYN-67436663-A0F'))
         self.assertEqual(PI.rebind(_P('/nonexistent'), 'conv-mem-1', 'is she on a statin?'), 'is SYN-67436663-A0F on a statin?')
+
+
+class EngineRunsTheTypedPlan(unittest.TestCase):
+    def test_execute_passes_the_typed_chart_and_note_predicates(self):
+        from unittest import mock as _mock
+        from clinical_core.agere.clinical import chart_reader_op as OP, chart_reader as CRm
+        seen = {}
+        with _mock.patch.object(CRm, 'answer', side_effect=lambda st, spec, **k: seen.update(spec) or {'status': 'answered'}):
+            OP.execute(None, [], {'patient_id': 'P-HF11', 'question': 'when was the most recent one discharged?', 'subject_quote': 'P-HF11', 'how': 'prior_turn',
+                                  'chart': {'intent': 'last_event', 'domain': 'inpatient', 'window': {'start': '2029-01-01', 'end': '2029-12-31'}}}, '2030-05-27')
+        self.assertEqual(seen['chart']['window']['start'], '2029-01-01')
