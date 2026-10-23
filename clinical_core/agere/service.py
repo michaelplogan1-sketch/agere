@@ -171,6 +171,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 held.enter_context(request_locks.for_route(path,body))  # per-resource locks (request_locks.py), never one global lock
                 from . import request_lineage
                 execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body)
+                if execution:held.enter_context(execution)  # activates the lineage scope; closed with the request, even on error
                 if path=='/api/stack/appointment-graph/work':
                     from .clinical import appointment_graph
                     result=appointment_graph.prepare_work(connected_stack,body)
