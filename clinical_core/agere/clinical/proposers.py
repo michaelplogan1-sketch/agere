@@ -113,6 +113,16 @@ TIER_SHARE = {'heavy': 0.25, 'other': 0.5}
 # Local-model tiers and atomic System One: they run only after the cheap tiers (stages A-B, local_compiler, the free families, evidence readers)
 # found nothing, in order of the learned router's value estimate for the question (static order without one); never dropped.
 COSTLY = ('local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'atomic_system_one')
+# The local Qwen planners (no trained adapter; 5-75 s each). When Claude is available they wait until the quick Claude planners
+# (Haiku/Sonnet, ~1-10 s) have had their turn: on 2026-10-23 they used 21 s of the 30 s budget proposing nothing and the Haiku
+# planner never ran. They still run after those (and in background continuation), so nothing is removed.
+LOCAL_QWEN = ('local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql')
+QUICK_CLAUDE = ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter')
+
+
+def claude_available():
+    return bool(os.environ.get('ANTHROPIC_API_KEY')) and os.environ.get('AGERE_CLAUDE', 'on') != 'off' \
+        and os.environ.get('AGERE_QWEN_BEFORE_CLAUDE', 'off') != 'on'
 # Tiers that run a local MLX model (in process or in the typed-worker subprocess). Questions run concurrently (no service-wide
 # lock), but two local models on the GPU at once exhausted Metal memory and aborted the server: these tiers take turns.
 LOCAL_MODEL_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql',
@@ -267,7 +277,18 @@ class Cascade:
         for slots in by_stage.values():
             members = sorted((order[i] for i in slots), key=lambda t: (-predicted.get(t, 0.0), order.index(t)))
             for i, t in zip(slots, members): order[i] = t
-        return tuple(order)
+        return tuple(self.qwen_after_quick_claude(order))
+
+    def qwen_after_quick_claude(self, order):
+        """A permutation: with Claude available, the local Qwen planners follow the quick Claude planners (QUICK_CLAUDE)."""
+        order = list(order)
+        quick = [i for i, t in enumerate(order) if t in QUICK_CLAUDE]
+        if not quick or not claude_available(): return order
+        local = [t for t in order if t in LOCAL_QWEN and order.index(t) < max(quick)]
+        if not local: return order
+        rest = [t for t in order if t not in local]
+        at = max(i for i, t in enumerate(rest) if t in QUICK_CLAUDE) + 1
+        return rest[:at] + local + rest[at:]
 
     def free_first(self, order):
         """local_compiler (free; arbitrated engine route) ahead of the heavy tiers when its plan already passes the literal check.
