@@ -125,5 +125,17 @@ class Hook(unittest.TestCase):
         self.assertEqual(m.calls, 1)
 
 
+
+class AttentionBudget(unittest.TestCase):
+    def test_long_prompts_get_fewer_decodes_never_a_crash(self):
+        from types import SimpleNamespace
+        from clinical_core.agere.clinical import bottled
+        m = SimpleNamespace(kv_bytes_per_token=36 * 8 * 128 * 2 * 2)  # Qwen3-4B: ~144 KiB per token
+        fit = lambda tokens, k: bottled.BottledModel.fit_k(m, tokens, k, 700)
+        self.assertEqual(fit(2000, 3), 3)
+        self.assertLess(fit(20000, 3), 3)
+        self.assertEqual(fit(10 ** 6, 3), 0)  # even one decode cannot fit: the caller declines
+
+
 if __name__ == '__main__':
     unittest.main()

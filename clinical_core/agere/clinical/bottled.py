@@ -18,6 +18,8 @@ VERSION = 'bottled-sql/1'
 ROOT = Path(__file__).resolve().parents[3]
 ADAPTER_DIR = ROOT / 'artifacts' / 'bottling' / 'adapters-v2b'  # resumed-run iter 500 = 700 iters total (~1.3 epochs)
 SAMPLE_TEMPERATURE = 0.7
+KV_BUDGET_GB = float(os.environ.get('AGERE_LOCAL_KV_GB', '4'))  # attention cache one batch may hold: GPU and CPU share the Mac's memory
+MLX_CACHE_GB = float(os.environ.get('AGERE_MLX_CACHE_GB', '1'))  # freed GPU buffers MLX may keep instead of returning them
 MAX_TOKENS = 700
 TIME_LIMIT_SECONDS = 30
 MAX_ROWS = 5000
@@ -230,6 +232,20 @@ class BottledModel:
         base = f'{self.model_dir.name}-mlx'
         self.identity = f'{base}+{self.adapter_dir.name}' if self.adapter_dir else base
         self.gen_lock = threading.Lock()
+        import mlx.core as mx
+        mx.set_cache_limit(int(MLX_CACHE_GB * 2**30))
+        try:
+            c = json.loads((self.model_dir / 'config.json').read_text())
+            self.kv_bytes_per_token = c['num_hidden_layers'] * c['num_key_value_heads'] * c.get('head_dim', c['hidden_size'] // c['num_attention_heads']) * 2 * 2
+        except (OSError, KeyError, ValueError):
+            self.kv_bytes_per_token = None
+
+    def fit_k(self, prompt_tokens, k, max_tokens):
+        """Decodes that fit the attention-cache budget (each holds its own cache over prompt + output). A long prompt gets fewer
+        sampled decodes, never a crash; 0 when even the greedy decode does not fit."""
+        if not self.kv_bytes_per_token: return k
+        one = (prompt_tokens + max_tokens) * self.kv_bytes_per_token
+        return max(0, min(k, int(KV_BUDGET_GB * 2**30 // one)))
 
     @classmethod
     def available(cls):
@@ -252,6 +268,10 @@ class BottledModel:
         from mlx_lm.sample_utils import make_sampler
         prompt = self.tokenizer.apply_chat_template(msgs, tokenize=False, add_generation_prompt=True, enable_thinking=False)
         tokens = self.tokenizer.encode(prompt, add_special_tokens=False)
+        fit = self.fit_k(len(tokens), k, max_tokens)
+        if fit == 0:
+            raise ValueError(f'local model declined: a {len(tokens)}-token prompt exceeds the {KV_BUDGET_GB:g} GB attention-cache budget')
+        k = fit
         with self.gen_lock:
             start = time.perf_counter()
             mx.random.seed(seed)
@@ -274,6 +294,8 @@ class BottledModel:
                         if r.finish_reason != 'stop': out[r.uid].append(r.token)
             finally:
                 gen.close()
+                del gen, cache
+                mx.clear_cache()  # hand the batch's buffers back: the next local model loads into the same memory
             seconds = time.perf_counter() - start
         self.last_grammar = [p[0].report() for p in procs if p] if procs else None
         return [self.tokenizer.decode(out[u]) for u in uids], seconds
