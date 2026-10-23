@@ -656,6 +656,63 @@ def zero_result_probe(stack, question, graph, answer, *, catalog=None, target=No
     return out
 
 
+_FILTER = re.compile(r"\b(?:([A-Za-z_]\w*)\.)?([A-Za-z_]\w*)\s*(?:(=)\s*'((?:[^']|'')*)'|IN\s*\(\s*('(?:[^']|'')*'(?:\s*,\s*'(?:[^']|'')*')*)\s*\))", re.I)
+_ALIAS = re.compile(r"\b(?:FROM|JOIN)\s+([A-Za-z_]\w*)(?:\s+(?:AS\s+)?([A-Za-z_]\w*))?", re.I)
+_NOT_ALIAS = {'where', 'join', 'left', 'right', 'inner', 'outer', 'cross', 'on', 'group', 'order', 'limit', 'union', 'using', 'natural'}
+
+
+def value_existence(stack, graph, answer, *, catalog=None, target=None):
+    """Text filters (col = 'x', col IN ('a', 'b')) whose values the column never holds (case-insensitive) AND whose removal makes
+    the same plan return rows: the made-up label alone emptied or narrowed the answer (BH-07: codes F20/F25/F31 find patients,
+    concept IN ('schizophrenia', 'bipolar') matched none). A label absent everywhere with nothing else filtering is a genuine
+    zero and is left to the zero-result probe. -> ['table.column never holds ... (without it the plan returns rows)']."""
+    sqls = _queries(graph, answer)
+    if not sqls: return []
+    target = _Path(target) if target else _semantic_target(stack, catalog)
+    if target is None or not target.exists(): return []
+    db = _probe_db(target)
+    out = []
+    try:
+        names = {r[0].lower(): r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
+        cols = {}
+        for sql in sqls:
+            aliases, used = {}, []
+            for t, a in _ALIAS.findall(sql):
+                table = names.get(t.lower())
+                if table is None: continue
+                used.append(table); aliases[t.lower()] = table
+                if a and a.lower() not in _NOT_ALIAS: aliases[a.lower()] = table
+            for m in _FILTER.finditer(sql):
+                alias, col, eq, val, listed = m.groups()
+                table = aliases.get(alias.lower()) if alias else (used[0] if len(set(used)) == 1 else None)
+                if table is None: continue
+                if table not in cols: cols[table] = {r[1].lower(): (r[1], (r[2] or '').upper()) for r in db.execute(f'PRAGMA table_info("{table}")')}
+                info = cols[table].get(col.lower())
+                if info is None or any(k in info[1] for k in ('INT', 'REAL', 'NUM', 'DATE', 'BOOL')): continue
+                values = [val] if eq else re.findall(r"'((?:[^']|'')*)'", listed)
+                values = [v.replace("''", "'") for v in values if v and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?|\d{4}-\d{2}-\d{2}.*', v)]
+                if not values: continue
+                try:
+                    hit = db.execute(f'SELECT 1 FROM "{table}" WHERE lower("{info[0]}") IN ({",".join("?" * len(values))}) LIMIT 1',
+                                     [v.lower() for v in values]).fetchone()
+                except _sqlite3.Error:
+                    continue  # time budget or an unreadable column: no verdict
+                if hit is not None: continue
+                relaxed = sql[:m.start()] + '1=1' + sql[m.end():]
+                where = re.split(r'\bWHERE\b', relaxed, maxsplit=1, flags=re.I)
+                if len(where) < 2 or not re.search(r"\bLIKE\b|\bIN\s*\(|\bBETWEEN\b|[<>]|(?<![<>!])=(?!\s*1\b)", where[1].replace('1=1', ''), re.I):
+                    continue  # nothing else filters: a label absent everywhere is a genuine zero (zero-result probe's call)
+                try:  # the same plan without this filter: rows there mean the label alone produced the answer
+                    rows = db.execute(relaxed).fetchmany(2)
+                except _sqlite3.Error:
+                    continue
+                if any(r and r[0] not in (None, 0, '0') for r in rows):
+                    out.append(f"{table}.{info[0]} never holds {', '.join(repr(v) for v in values[:4])} (without that filter the plan returns rows)")
+    finally:
+        db.close()
+    return list(dict.fromkeys(out))
+
+
 def _where(rows, k=3):
     return ', '.join(f"{r['patients']} patients in {r['table']}" + (f" ({r['source']})" if r['source'] != r['table'] else '') for r in rows[:k])
 
@@ -893,6 +950,13 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
             verdict['annotations'].append('Zero-result probe: ' + p['reason'] + '.')
         return p
     run('zero_result_probe_shared', probe)
+    def values():
+        missing = value_existence(stack, graph, answer, catalog=catalog)
+        if missing:  # a filter on labels the data never uses: refuse, whatever the result (BH-07 counted 0 schizophrenia patients)
+            verdict['accept'] = False
+            verdict['reasons'] += [f'value check: the plan filters on values the warehouse never holds ({m})' for m in missing]
+        return missing
+    run('filter_value_existence', values)
     prof = _profile(stack, profile)
     run('answer_guard_suspicion', lambda: _guard(stack, question, graph, receipt, answer, prof, state, verdict))
     verdict['checks_run'].append('answer_guard_dense_catalog')  # inside the guard probe (AG.probe dense='auto')

@@ -252,7 +252,7 @@ class Isolation(Base):
         with patch.object(A, 'zero_result_probe', side_effect=RuntimeError('boom')):
             v = self.check('How many patients have heart failure?', 'SELECT 1', count(4))
         self.assertTrue(any('zero_result_probe_shared failed: RuntimeError: boom' in a for a in v['annotations']))
-        self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
+        self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'filter_value_existence', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
                                            'answer_guard_cross_check', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
                                            'source_defect_annotation', 'jev_normalization_check', 'learned_answer_verifier', 'semantic_entropy_probe',
                                            'label_choice_audit', 'cascade_certificates'])
@@ -283,6 +283,21 @@ class Gate(Base):
         self.assertIn('Certificate: uncalibrated (no calibration record).', out['answer']['limitations'])
         self.assertTrue(receipt['answer_checks']['accept'])
         self.assertEqual(out['answer_checks']['checks_run'][0], 'zero_result_probe_shared')
+
+
+class FilterValueExistence(unittest.TestCase):
+    def test_a_made_up_label_beside_a_real_filter_is_refused(self):  # BH-07: codes find patients, the invented concept label none
+        import sqlite3, tempfile, os
+        from clinical_core.agere.clinical import answer_checks as A
+        d = tempfile.mkdtemp(); path = os.path.join(d, 'semantic.sqlite3')
+        db = sqlite3.connect(path)
+        db.execute('CREATE TABLE condition(patient_id TEXT, concept TEXT, icd10 TEXT)')
+        db.executemany('INSERT INTO condition VALUES (?,?,?)', [('p1', None, 'F20.9'), ('p2', 'diabetes', 'E11.9')]); db.commit(); db.close()
+        g = lambda q: {'nodes': [{'operation': 'sql', 'parameters': {'query': q}}]}
+        bad = "SELECT count(DISTINCT c.patient_id) FROM condition c WHERE c.concept IN ('schizophrenia', 'bipolar') AND c.icd10 LIKE 'F20%'"
+        self.assertTrue(A.value_existence(None, g(bad), {}, target=path))
+        self.assertEqual(A.value_existence(None, g("SELECT count(*) FROM condition WHERE concept = 'ebola'"), {}, target=path), [])  # genuine zero
+        self.assertEqual(A.value_existence(None, g("SELECT count(*) FROM condition WHERE concept = 'Diabetes' AND icd10 LIKE 'E11%'"), {}, target=path), [])
 
 
 if __name__ == '__main__':
