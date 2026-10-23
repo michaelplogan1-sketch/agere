@@ -28,6 +28,8 @@ def keys():
         key,value=line.split('=',1)
         if key.strip() in ('TYPESAFE_API_KEY','PERPLEXITY_API_KEY','ANTHROPIC_API_KEY'):
             os.environ.setdefault(key.strip(),value.strip().strip('\"\''))
+    if os.environ.get('AGERE_CLAUDE','on')=='off':  # free-tier measurement: every Claude call fails at once, whatever the balance
+        os.environ.pop('ANTHROPIC_API_KEY',None)
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--stack',type=Path,default=Path('artifacts/agere-cohort-stack-v2'))
