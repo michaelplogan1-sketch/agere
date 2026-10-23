@@ -27,7 +27,7 @@ FAMILY = {
     'paraphrase_reuse': 'saved_work', 'semantic_cache': 'saved_work', 'template_decoding': 'saved_work', 'learned_verified_sql': 'saved_work', 'bottled_sql': 'saved_work',
     'evidence_retrieval': 'evidence', 'evidence_review': 'evidence', 'atomic_system_one': 'system_one', 'typed_decider': 'system_one',
     'local_normalizer': 'local_model', 'qwen_rewrite_compiler': 'local_model', 'qwen_typed_interpreter': 'local_model', 'local_free_sql': 'local_model',
-    'local_compiler': 'compiler', 'metric_router': 'router', 'operator_router': 'router',
+    'local_compiler': 'compiler', 'metric_router': 'router', 'operator_router': 'router', 's1_metric_router': 'router', 's1_operator_router': 'router',
     'hosted_typed_interpreter': 'claude_typed', 'hosted_verified_sql': 'claude_sql', 'semantic_analyst': 'claude_sql',
     'frontier_graph_planner': 'claude_planner', 'stack_planner_propose': 'claude_planner', 'hybrid_analysts': 'claude_analysts',
     'legacy_cost_ladder': 'legacy',
@@ -51,7 +51,7 @@ def max_verifiers():
 def cost_class(name):
     from .system_one_gate import CLAUDE_TIERS
     if name in CLAUDE_TIERS: return 'claude'
-    if FAMILY.get(name) == 'system_one': return 'system_one'
+    if FAMILY.get(name) == 'system_one' or name in ('s1_metric_router', 's1_operator_router'): return 'system_one'
     return 'free'
 
 

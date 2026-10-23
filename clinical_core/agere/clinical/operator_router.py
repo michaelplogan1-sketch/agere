@@ -237,13 +237,17 @@ def literal_required(question, op):
     return None
 
 
-def route(question, as_of, ledger, out, validate, encoder=None):
+def route(question, as_of, ledger, out, validate, encoder=None, ask=None):
     """-> (graph | None, info). info['decision'] is an operator, 'literal_lookup' or 'not_answerable'.
 
     Pre-step: with the stack's local encoder, the learned router (learned_router.py) may make the choose decision at
     $0 when its calibrated probability clears its threshold; otherwise the paid choose call runs. The fill step is
-    always the paid typed call. If a locally chosen engine cannot be filled validly, the paid choose step decides."""
+    always the paid typed call. If a locally chosen engine cannot be filled validly, the paid choose step decides.
+    ask(question, as_of, op=None, feedback=None) -> (choice, receipt) replaces the paid Claude call (s1_governed: System One
+    chooses and fills; tests, offline replay); every gate after it is unchanged."""
     start = time.perf_counter()
+    asking = (lambda **kw: ask(question, as_of, **kw)) if ask is not None else \
+        (lambda **kw: _ask(question, as_of, ledger, out, **kw))
     from . import learned_router
     learned, learned_info = learned_router.decide(question, encoder) if encoder is not None else (None, None)
     info = {'router': VERSION, 'calls': []}
@@ -251,9 +255,9 @@ def route(question, as_of, ledger, out, validate, encoder=None):
     picked = {'name': learned, 'input': {}} if learned is not None else None
     while True:
         if picked is None:
-            picked, call = _ask(question, as_of, ledger, out)
+            picked, call = asking()
             info['calls'].append(call)
-            info['chosen_by'] = 'paid_router'
+            info['chosen_by'] = 'paid_router' if ask is None else 'system_one'
         else:
             info.setdefault('chosen_by', 'learned_router')
         info['decision'] = picked['name']
@@ -268,7 +272,7 @@ def route(question, as_of, ledger, out, validate, encoder=None):
             return None, info
         op, feedback = picked['name'], None
         for attempt in range(2):
-            choice, call = _ask(question, as_of, ledger, out, op=op, feedback=feedback)
+            choice, call = asking(op=op, feedback=feedback)
             info['calls'].append(call)
             try:
                 graph = validate(to_graph(question, choice), as_of)
@@ -281,7 +285,7 @@ def route(question, as_of, ledger, out, validate, encoder=None):
             break
         # the local choice could not be filled: let the paid router choose (once) unless it picks the same engine
         info['chosen_by'] = 'paid_router_after_learned_fill_failed'
-        picked, call = _ask(question, as_of, ledger, out)
+        picked, call = asking()
         info['calls'].append(call)
         if picked['name'] == op:
             info['decision'] = op
