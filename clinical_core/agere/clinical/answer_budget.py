@@ -32,6 +32,27 @@ def stop_check():
     return lambda: bool((event is not None and event.is_set()) or (deadline is not None and time.monotonic() >= deadline))
 
 
+def _past_deadline():
+    deadline = _deadline.get()
+    return 1 if deadline is not None and time.monotonic() >= deadline else 0
+
+
+def guard_sqlite():
+    """Every sqlite connection opened afterwards interrupts a running statement once the running tier has passed its time
+    share (sqlite3.OperationalError 'interrupted', which the cascade records as that tier's error and moves on). Outside a
+    tier no deadline is set and nothing changes; a connection that installs its own progress handler keeps its own."""
+    import sqlite3
+    if getattr(sqlite3.connect, '_agere_guard', False): return
+    original = sqlite3.connect
+    def connect(*args, **kwargs):
+        db = original(*args, **kwargs)
+        try: db.set_progress_handler(_past_deadline, 20000)
+        except (AttributeError, sqlite3.Error): pass
+        return db
+    connect._agere_guard = True
+    sqlite3.connect = connect
+
+
 def tier_remaining(default):
     """Seconds left in the running tier's share (capped at default); default when no share applies."""
     deadline = _deadline.get()

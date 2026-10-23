@@ -137,3 +137,19 @@ class LocalModelTurns(unittest.TestCase):
             for t in runs: t.start()
             for t in runs: t.join()
         self.assertEqual(peak[0], 1)
+
+
+class SqliteDeadline(unittest.TestCase):
+    def test_a_runaway_statement_stops_at_the_tier_deadline(self):
+        import sqlite3
+        from clinical_core.agere.clinical import answer_budget as B
+        db = sqlite3.connect(':memory:')
+        runaway = "WITH RECURSIVE c(x) AS (SELECT 1 UNION ALL SELECT x+1 FROM c) SELECT count(*) FROM (SELECT x FROM c LIMIT 1000000000)"
+        token = B._deadline.set(time.monotonic() + 0.3)
+        try:
+            started = time.monotonic()
+            with self.assertRaises(sqlite3.OperationalError): db.execute(runaway).fetchone()
+            self.assertLess(time.monotonic() - started, 3)
+        finally:
+            B._deadline.reset(token)
+        self.assertEqual(db.execute('SELECT 1').fetchone(), (1,))  # outside a tier nothing is interrupted
