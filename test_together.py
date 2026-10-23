@@ -155,7 +155,7 @@ class TogetherTests(unittest.TestCase):
 
     def run_together(self, stack, provider):
         together.TRANSPORT = provider
-        return together.compose_together(stack, 'How many patients have any HbA1c above 9 percent?')
+        return together.legacy_compose_together(stack, 'How many patients have any HbA1c above 9 percent?')
 
     def test_agree_is_verified_with_two_paths_evidence_and_accounted_cost(self):
         stack = FakeStack(self.temp.name, fast_result(answer(count=1)))
@@ -228,7 +228,7 @@ class TogetherTests(unittest.TestCase):
         stack = FakeStack(self.temp.name, fast_result(answer('table', table=table), operation='survival'))
         provider = FakeProvider(lambda body: answer('table', table=[{'group': 'a', 'median_days': 45}]), choose(None))
         together.TRANSPORT = provider
-        result = together.compose_together(stack, 'Median days to follow-up by group? Definition: follow-up = office visit within 30 days.')
+        result = together.legacy_compose_together(stack, 'Median days to follow-up by group? Definition: follow-up = office visit within 30 days.')
         self.assertEqual(result['answer']['table'], [{'group': 'a', 'median_days': 45}])
         self.assertEqual(result['together']['decision'], 'analysts_over_engine')
 
@@ -342,37 +342,41 @@ class TogetherTests(unittest.TestCase):
 
 
 class DispatchTests(unittest.TestCase):
-    """Stack.compose: AGERE_TOGETHER=off (or no live models) is exactly the previous fast path."""
+    """Stack.compose: the shared planner is the one question policy. AGERE_TOGETHER and live-model availability no longer
+    select a different path (the legacy together semantics stay reachable as legacy_compose_together, the
+    legacy_cost_ladder tier)."""
 
     class S(Stack):
         def __init__(self, allow_live):
-            self.allow_live, self.calls, self.sentinel = allow_live, [], {'answer': {'count': 1}}
+            self.allow_live = allow_live
 
-        def _compose(self, question, *, planning='auto'):
-            self.calls.append((question, planning))
-            return self.sentinel
-
-    def test_flag_off_is_identical(self):
-        with patch.dict(os.environ, {'AGERE_TOGETHER': 'off'}), patch.object(together, 'compose_together') as ct:
+    def test_flag_off_still_uses_the_shared_planner(self):
+        with patch.dict(os.environ, {'AGERE_TOGETHER': 'off'}), \
+                patch('clinical_core.agere.clinical.shared_planner.compose', return_value='sp') as sp, \
+                patch.object(together, 'compose_together') as ct, patch.object(together, 'legacy_compose_together') as legacy:
             s = self.S(True)
-            self.assertIs(s.compose('q'), s.sentinel)
-            self.assertIs(s.compose('q', planning='frontier'), s.sentinel)
-            self.assertFalse(ct.called)
-            self.assertEqual(s.calls, [('q', 'auto'), ('q', 'frontier')])
+            self.assertEqual(s.compose('q'), 'sp')
+            self.assertEqual(s.compose('q', planning='frontier'), 'sp')
+            self.assertFalse(ct.called or legacy.called)
+            self.assertEqual([c.kwargs['planning'] for c in sp.call_args_list], ['auto', 'frontier'])
 
-    def test_no_live_models_is_identical(self):
-        with patch.dict(os.environ, {'AGERE_TOGETHER': 'on'}), patch.object(together, 'compose_together') as ct:
+    def test_no_live_models_still_uses_the_shared_planner(self):
+        with patch.dict(os.environ, {'AGERE_TOGETHER': 'on'}), \
+                patch('clinical_core.agere.clinical.shared_planner.compose', return_value='sp') as sp:
             s = self.S(False)
-            self.assertIs(s.compose('q'), s.sentinel)
-            self.assertFalse(ct.called)
+            self.assertEqual(s.compose('q'), 'sp')
+            sp.assert_called_once_with(s, 'q', population=None, parent=None, planning='auto')
 
-    def test_flag_on_dispatches_auto_planning(self):
-        with patch.dict(os.environ, {}, clear=False), patch.object(together, 'compose_together', return_value='t') as ct:
-            os.environ.pop('AGERE_TOGETHER', None)  # default on
+    def test_auto_planning_dispatches_to_the_shared_planner_and_legacy_candidates_are_refused(self):
+        with patch.dict(os.environ, {}, clear=False), \
+                patch('clinical_core.agere.clinical.shared_planner.compose', return_value='sp') as sp:
+            os.environ.pop('AGERE_TOGETHER', None)
             s = self.S(True)
-            self.assertEqual(s.compose('q'), 't')
-            ct.assert_called_once_with(s, 'q', planning='auto')
-            self.assertIs(s.compose('q', planning='scoped_local_candidate'), s.sentinel)
+            self.assertEqual(s.compose('q'), 'sp')
+            sp.assert_called_once_with(s, 'q', population=None, parent=None, planning='auto')
+            with self.assertRaises(ValueError):
+                s.compose('q', planning='scoped_local_candidate')
+            self.assertEqual(sp.call_count, 1)
 
 
 class WarehouseThreadTests(unittest.TestCase):
@@ -535,7 +539,7 @@ class HybridSlotTests(unittest.TestCase):
                     patch.object(together.time, 'perf_counter', side_effect=lambda: now[0]), \
                     patch.object(together, '_compiled_engine', return_value=[]), \
                     patch.object(together, '_pool') as pool, patch.object(together, '_wait', side_effect=wait):
-                result = together.compose_together(stack, 'Count the fixture population.', answer_type='count')
+                result = together.legacy_compose_together(stack, 'Count the fixture population.', answer_type='count')
             self.assertEqual(observed, [60.0])
             self.assertEqual(result['answer']['count'], 2)
 

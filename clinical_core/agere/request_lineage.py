@@ -54,11 +54,22 @@ class Execution:
             from .clinical.question_decision import saved_followup
             try:bound.update(links(saved_followup(path,request.get('result_id'))))
             except (ValueError,TypeError):pass
-        self.token=ACTIVE.set(self);self.closed=False
-        try:self.append('started', operation=operation, request_digest=digest(request), input_links=bound,
-                        received_body_bytes=len(json.dumps(request,allow_nan=False).encode()),
-                        body_size_scope='Reserialized local API input; not outbound provider payload bytes')
-        except BaseException:ACTIVE.reset(self.token);raise
+        # ACTIVE is set only by `with` (__enter__) and always reset by __exit__ in a finally: constructing an Execution
+        # never touches it, so a failing caller cannot leave ACTIVE pointing at a finished (or deleted) execution.
+        self.token=None
+        self.append('started', operation=operation, request_digest=digest(request), input_links=bound,
+                    received_body_bytes=len(json.dumps(request,allow_nan=False).encode()),
+                    body_size_scope='Reserialized local API input; not outbound provider payload bytes')
+
+    @property
+    def closed(self):return self.token is None
+
+    def __enter__(self):
+        if self.token is None:self.token=ACTIVE.set(self)
+        return self
+
+    def __exit__(self,*exc):
+        self.close();return False
 
     def append(self,kind,**data):
         event={'schema':VERSION,'execution_id':self.id,'sequence':self.sequence,
@@ -111,7 +122,8 @@ class Execution:
         else:self.append('operation_failed', error_details='See original operation response; no inference success implied',effort=effort)
 
     def close(self):
-        if not self.closed:ACTIVE.reset(self.token);self.closed=True
+        token,self.token=self.token,None
+        if token is not None:ACTIVE.reset(token)
 
 
 def begin(path,operation,request):

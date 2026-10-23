@@ -76,39 +76,31 @@ class ReviewOutcome(ContractRoute):
    with self.assertRaises(ValueError):M.attach_review(self.retriever,req)
   self.assertFalse(any(f['schema']==M.REVIEW_VERSION for f in M.Q.reopen(self.retriever,self.row['id'])['followups']))
  def test_cached_comparison_does_not_inherit_historical_inference(self):
-  e=M.L.begin(self.retriever.path,'/api/stack/decision/statement-review',self.body)
-  try:r=M.run(self.retriever,self.body);e.finish(r)
-  finally:e.close()
+  with M.L.begin(self.retriever.path,'/api/stack/decision/statement-review',self.body) as e:r=M.run(self.retriever,self.body);e.finish(r)
   event=next(x for x in self.events(e) if x['kind']=='local_reader_returned')
   self.assertTrue(event['comparison_cache_hit']);self.assertFalse(event['inference_this_attempt'])
   self.assertIsNone(event['reading_cache_hit_this_attempt']);self.assertEqual(event['reading_id'],self.reading['id'])
  def test_current_reading_cache_inference_and_failed_states(self):
   for status,hit,want in [('completed',True,False),('completed',False,True),('failed',False,None)]:
    self.prepared['cache_hit']=False;self.comparison['variants']['kev'].update(status=status,cache_hit=hit,reason='fixture failure')
-   e=M.L.begin(self.retriever.path,'/api/stack/decision/statement-review',self.body)
-   try:r=M.run(self.retriever,self.body);e.finish(r)
-   finally:e.close()
+   with M.L.begin(self.retriever.path,'/api/stack/decision/statement-review',self.body) as e:r=M.run(self.retriever,self.body);e.finish(r)
    event=next(x for x in self.events(e) if x['kind']=='local_reader_returned')
    self.assertIs(event['inference_this_attempt'],want)
    if status=='failed':self.assertEqual(r['status'],'reader_failed')
  def test_interrupted_local_call_preserves_started_identity(self):
-  e=M.L.begin(self.retriever.path,'/api/stack/decision/statement-review',self.body)
-  try:
+  with M.L.begin(self.retriever.path,'/api/stack/decision/statement-review',self.body) as e:
    with patch.object(M.C,'prepare',side_effect=KeyboardInterrupt):
     with self.assertRaises(KeyboardInterrupt):M.run(self.retriever,self.body)
-  finally:e.close()
   events=self.events(e);self.assertEqual(events[-1]['kind'],'local_reader_started');self.assertEqual(events[-1]['source_hash'],digest(self.source_record))
  def test_review_attempts_bind_failure_to_original_question(self):
-  self.saved_review();req=self.request();e=M.L.begin(self.retriever.path,'/api/stack/decision/statement-review-attach',req)
-  try:r=M.attach_review(self.retriever,req);e.finish(r)
-  finally:e.close()
+  self.saved_review();req=self.request()
+  with M.L.begin(self.retriever.path,'/api/stack/decision/statement-review-attach',req) as e:r=M.attach_review(self.retriever,req);e.finish(r)
   self.assertEqual(self.events(e)[0]['input_links']['decision_id'],self.row['id'])
   self.assertEqual(self.events(e)[-1]['review_outcome']['review_revision'],1)
-  self.saved_review('rejected',1);e=M.L.begin(self.retriever.path,'/api/stack/decision/statement-review-attach',req)
-  try:
+  self.saved_review('rejected',1)
+  with M.L.begin(self.retriever.path,'/api/stack/decision/statement-review-attach',req) as e:
    with self.assertRaises(ValueError):M.attach_review(self.retriever,req)
    e.finish()
-  finally:e.close()
   self.assertEqual(self.events(e)[0]['input_links']['decision_id'],self.row['id']);self.assertEqual(self.events(e)[-1]['kind'],'operation_failed')
 
 for name in dir(ContractRoute):
