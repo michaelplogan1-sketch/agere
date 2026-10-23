@@ -1,0 +1,1072 @@
+{
+ "fitted_on": "tools/note_labels/labeled.jsonl (status-agreed items; two blind passes)",
+ "pipeline": {
+  "note:adverse_event:status": {
+   "accepted": 37,
+   "accuracy_all_counting_undecided_wrong": 0.9487,
+   "n": 39,
+   "precision_accepted": 1.0,
+   "undecided": 2
+  },
+  "note:care_process:status": {
+   "accepted": 30,
+   "accuracy_all_counting_undecided_wrong": 0.7436,
+   "n": 39,
+   "precision_accepted": 0.9667,
+   "undecided": 9
+  },
+  "note:condition:status": {
+   "accepted": 38,
+   "accuracy_all_counting_undecided_wrong": 0.881,
+   "n": 42,
+   "precision_accepted": 0.9737,
+   "undecided": 4
+  },
+  "note:finding_value:status": {
+   "accepted": 38,
+   "accuracy_all_counting_undecided_wrong": 0.925,
+   "n": 40,
+   "precision_accepted": 0.9737,
+   "undecided": 2
+  },
+  "note:function_cognition:status": {
+   "accepted": 33,
+   "accuracy_all_counting_undecided_wrong": 0.8205,
+   "n": 39,
+   "precision_accepted": 0.9697,
+   "undecided": 6
+  },
+  "note:medication_event:status": {
+   "accepted": 33,
+   "accuracy_all_counting_undecided_wrong": 0.775,
+   "n": 40,
+   "precision_accepted": 0.9394,
+   "undecided": 7
+  },
+  "note:plan_followup:status": {
+   "accepted": 38,
+   "accuracy_all_counting_undecided_wrong": 0.9744,
+   "n": 39,
+   "precision_accepted": 1.0,
+   "undecided": 1
+  },
+  "note:preference_refusal:status": {
+   "accepted": 41,
+   "accuracy_all_counting_undecided_wrong": 0.9762,
+   "n": 42,
+   "precision_accepted": 1.0,
+   "undecided": 1
+  },
+  "note:procedure_test:status": {
+   "accepted": 42,
+   "accuracy_all_counting_undecided_wrong": 1.0,
+   "n": 42,
+   "precision_accepted": 1.0,
+   "undecided": 0
+  },
+  "note:social_need:status": {
+   "accepted": 31,
+   "accuracy_all_counting_undecided_wrong": 1.0,
+   "n": 31,
+   "precision_accepted": 1.0,
+   "undecided": 0
+  },
+  "note:symptom:status": {
+   "accepted": 33,
+   "accuracy_all_counting_undecided_wrong": 0.8049,
+   "n": 41,
+   "precision_accepted": 1.0,
+   "undecided": 8
+  }
+ },
+ "schema": "note-frames-calibration/1",
+ "target_precision": 0.95,
+ "tasks": {
+  "note:adverse_event:kind": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.875,
+    "accuracy_raw": 0.75,
+    "coverage_at_threshold": 0.875,
+    "ece_after_loo": 0.09453490152711641,
+    "ece_before": 0.1287511999897102,
+    "n": 8,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "allergy": 1.214343,
+     "fall": -8.2e-05,
+     "hospital_acquired": -8.2e-05,
+     "intolerance": -0.440668,
+     "medication_error": -8.2e-05,
+     "other": 1.679661,
+     "procedural_complication": -8.2e-05,
+     "side_effect": -0.08551,
+     "unknown": -2.367498
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.875,
+    "accuracy_raw": 0.875,
+    "coverage_at_threshold": 0.875,
+    "ece_after_loo": 0.18402006411182686,
+    "ece_before": 0.14463091265801853,
+    "n": 8,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "allergy": 1.177063,
+     "fall": -0.093527,
+     "hospital_acquired": -0.147226,
+     "intolerance": -0.96985,
+     "medication_error": -0.214505,
+     "other": 1.41904,
+     "procedural_complication": -0.145044,
+     "side_effect": 0.612028,
+     "unknown": -1.637979
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.64,
+    "threshold_met_target": true
+   }
+  },
+  "note:adverse_event:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.9487,
+    "accuracy_raw": 0.9231,
+    "coverage_at_threshold": 0.9231,
+    "ece_after_loo": 0.06479482000902403,
+    "ece_before": 0.09385063228161729,
+    "n": 39,
+    "precision_at_threshold": 0.9722,
+    "shift": {
+     "denied": -1.121572,
+     "documented": -0.194371,
+     "historical": 1.772779,
+     "not_mentioned": 1.161545,
+     "other_person": -0.008942,
+     "planned_not_done": -0.254236,
+     "possible": -0.482859,
+     "unknown": -0.872343
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.74,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.8718,
+    "accuracy_raw": 0.8462,
+    "coverage_at_threshold": 0.6154,
+    "ece_after_loo": 0.1023250204094892,
+    "ece_before": 0.17447814911093884,
+    "n": 39,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "denied": -0.136605,
+     "documented": 0.536146,
+     "historical": 1.121329,
+     "not_mentioned": 1.381359,
+     "other_person": -0.177447,
+     "planned_not_done": -0.522633,
+     "possible": -1.055296,
+     "unknown": -1.146852
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.82,
+    "threshold_met_target": true
+   }
+  },
+  "note:care_process:kind": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.9259,
+    "accuracy_raw": 0.9259,
+    "coverage_at_threshold": 0.8889,
+    "ece_after_loo": 0.11806486417701986,
+    "ece_before": 0.1529712383744544,
+    "n": 27,
+    "precision_at_threshold": 0.9583,
+    "shift": {
+     "advance_directive": 0.41651,
+     "care_coordination": -0.793021,
+     "care_plan": -0.376412,
+     "case_management": -0.076044,
+     "code_status": -0.713966,
+     "discharge_instruction": -0.000104,
+     "education_counseling": 1.550142,
+     "follow_up_visit": -0.18162,
+     "goals_of_care_discussion": 1.210187,
+     "home_health": 1.051249,
+     "immunization_given": -0.000104,
+     "interpreter_used": -0.000104,
+     "medication_reconciliation": -0.000104,
+     "other": -0.138711,
+     "palliative_hospice": 0.126974,
+     "referral": -0.811515,
+     "rehabilitation": 0.487379,
+     "screening_performed": -0.000104,
+     "transition_of_care": -0.689738,
+     "unknown": -1.060893
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.6,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.8214,
+    "accuracy_raw": 0.6429,
+    "coverage_at_threshold": 0.5,
+    "ece_after_loo": 0.11939897699847521,
+    "ece_before": 0.20094863808449567,
+    "n": 28,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "advance_directive": 0.772671,
+     "care_coordination": -1.140625,
+     "care_plan": -0.622387,
+     "case_management": -0.570988,
+     "code_status": 1.199846,
+     "discharge_instruction": -0.219434,
+     "education_counseling": 0.801225,
+     "follow_up_visit": -0.37115,
+     "goals_of_care_discussion": 0.680617,
+     "home_health": 1.755744,
+     "immunization_given": -0.146382,
+     "interpreter_used": -0.12044,
+     "medication_reconciliation": -0.125569,
+     "other": -0.630454,
+     "palliative_hospice": 1.124564,
+     "referral": -0.696549,
+     "rehabilitation": 1.009287,
+     "screening_performed": -0.175628,
+     "transition_of_care": -1.433431,
+     "unknown": -1.090916
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.72,
+    "threshold_met_target": true
+   }
+  },
+  "note:care_process:outcome": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.875,
+    "accuracy_raw": 0.8125,
+    "coverage_at_threshold": 0.875,
+    "ece_after_loo": 0.10106390668649959,
+    "ece_before": 0.19312713249227254,
+    "n": 16,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "completed": 2.038084,
+     "declined": -4.5e-05,
+     "deferred": -0.697585,
+     "ordered_or_referred": 0.609355,
+     "unable": -0.027288,
+     "unknown": -1.922522
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.64,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 0.9375,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.0788577166714699,
+    "ece_before": 0.1646849043078119,
+    "n": 16,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "completed": 1.927253,
+     "declined": -0.213107,
+     "deferred": -0.554094,
+     "ordered_or_referred": 0.238198,
+     "unable": -0.150254,
+     "unknown": -1.247996
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:care_process:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.8462,
+    "accuracy_raw": 0.8974,
+    "coverage_at_threshold": 0.5385,
+    "ece_after_loo": 0.1013986595611265,
+    "ece_before": 0.10281816206672605,
+    "n": 39,
+    "precision_at_threshold": 0.9524,
+    "shift": {
+     "denied": -0.085216,
+     "documented": 0.722927,
+     "historical": 2.154159,
+     "not_mentioned": -0.328178,
+     "other_person": -0.075238,
+     "planned_not_done": -1.170466,
+     "possible": -9e-05,
+     "unknown": -1.217898
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.96,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.8974,
+    "accuracy_raw": 0.8974,
+    "coverage_at_threshold": 0.7436,
+    "ece_after_loo": 0.1305012170997875,
+    "ece_before": 0.17172644020327707,
+    "n": 39,
+    "precision_at_threshold": 0.9655,
+    "shift": {
+     "denied": -0.331431,
+     "documented": 0.682285,
+     "historical": 1.89173,
+     "not_mentioned": 0.284357,
+     "other_person": -0.225921,
+     "planned_not_done": -0.72926,
+     "possible": -0.560258,
+     "unknown": -1.011502
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.74,
+    "threshold_met_target": true
+   }
+  },
+  "note:condition:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.881,
+    "accuracy_raw": 0.7857,
+    "coverage_at_threshold": 0.8571,
+    "ece_after_loo": 0.08583745376164946,
+    "ece_before": 0.08071645593744524,
+    "n": 42,
+    "precision_at_threshold": 0.9722,
+    "shift": {
+     "denied": -0.14703,
+     "documented": 0.72576,
+     "historical": -1.828966,
+     "not_mentioned": 1.879128,
+     "other_person": -0.012306,
+     "planned_not_done": -0.00932,
+     "possible": -0.079749,
+     "unknown": -0.527517
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.7,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.9286,
+    "accuracy_raw": 0.9286,
+    "coverage_at_threshold": 0.881,
+    "ece_after_loo": 0.10424723201377169,
+    "ece_before": 0.22084950117780272,
+    "n": 42,
+    "precision_at_threshold": 0.973,
+    "shift": {
+     "denied": -0.778335,
+     "documented": 0.732197,
+     "historical": -0.445556,
+     "not_mentioned": 1.626734,
+     "other_person": -0.117233,
+     "planned_not_done": -0.334316,
+     "possible": -0.064096,
+     "unknown": -0.619396
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.6,
+    "threshold_met_target": true
+   }
+  },
+  "note:finding_value:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.925,
+    "accuracy_raw": 0.9,
+    "coverage_at_threshold": 0.85,
+    "ece_after_loo": 0.10213123340096986,
+    "ece_before": 0.13424829226157914,
+    "n": 40,
+    "precision_at_threshold": 0.9706,
+    "shift": {
+     "denied": -0.470909,
+     "documented": 1.115391,
+     "historical": -0.4071,
+     "not_mentioned": 1.124115,
+     "other_person": -0.026646,
+     "planned_not_done": 0.035592,
+     "possible": -0.300674,
+     "unknown": -1.069768
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.58,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.875,
+    "accuracy_raw": 0.9,
+    "coverage_at_threshold": 0.85,
+    "ece_after_loo": 0.10615537943823403,
+    "ece_before": 0.18983430683259653,
+    "n": 40,
+    "precision_at_threshold": 0.9706,
+    "shift": {
+     "denied": -0.603072,
+     "documented": 1.115254,
+     "historical": 0.655394,
+     "not_mentioned": 1.449416,
+     "other_person": -0.094414,
+     "planned_not_done": -0.606832,
+     "possible": -0.572488,
+     "unknown": -1.343258
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.62,
+    "threshold_met_target": true
+   }
+  },
+  "note:function_cognition:domain": {
+   "jev": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 1.0,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.011945019921843306,
+    "ece_before": 0.026123616505740088,
+    "n": 36,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "caregiver_support": -0.021975,
+     "continence": -8e-05,
+     "falls": 0.319192,
+     "frailty": -8e-05,
+     "hearing": -8e-05,
+     "home_safety": -8e-05,
+     "instrumental_adl": -0.063617,
+     "memory_cognition": 0.195914,
+     "mobility_gait_balance": 0.256662,
+     "mood": -8e-05,
+     "other": -0.02195,
+     "self_care_adl": -8e-05,
+     "swallowing_speech": -8e-05,
+     "unknown": -0.815332,
+     "vision": 0.151664
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 1.0,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.055897254246705524,
+    "ece_before": 0.13008643603484385,
+    "n": 36,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "caregiver_support": -0.205648,
+     "continence": -0.057443,
+     "falls": 0.909682,
+     "frailty": -0.149487,
+     "hearing": -0.080824,
+     "home_safety": -0.213152,
+     "instrumental_adl": -0.383729,
+     "memory_cognition": 1.226974,
+     "mobility_gait_balance": 0.588979,
+     "mood": -0.158613,
+     "other": -0.392459,
+     "self_care_adl": -0.469319,
+     "swallowing_speech": -0.062999,
+     "unknown": -0.867204,
+     "vision": 0.315242
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:function_cognition:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.8718,
+    "accuracy_raw": 0.8718,
+    "coverage_at_threshold": 0.7436,
+    "ece_after_loo": 0.0679933321317815,
+    "ece_before": 0.09256768331519362,
+    "n": 39,
+    "precision_at_threshold": 0.9655,
+    "shift": {
+     "denied": -0.331604,
+     "documented": 0.657721,
+     "historical": 0.088029,
+     "not_mentioned": 0.735458,
+     "other_person": -0.029449,
+     "planned_not_done": 0.367649,
+     "possible": -0.489322,
+     "unknown": -0.998481
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.72,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.8333,
+    "accuracy_raw": 0.7857,
+    "coverage_at_threshold": 0.619,
+    "ece_after_loo": 0.09873343679498324,
+    "ece_before": 0.16997105947367452,
+    "n": 42,
+    "precision_at_threshold": 0.9615,
+    "shift": {
+     "denied": -0.945151,
+     "documented": 1.335745,
+     "historical": 0.753382,
+     "not_mentioned": 0.880498,
+     "other_person": -0.16549,
+     "planned_not_done": 0.152442,
+     "possible": -0.882409,
+     "unknown": -1.129017
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.76,
+    "threshold_met_target": true
+   }
+  },
+  "note:medication_event:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.775,
+    "accuracy_raw": 0.75,
+    "coverage_at_threshold": 0.75,
+    "ece_after_loo": 0.12585312894276507,
+    "ece_before": 0.19450113649366257,
+    "n": 40,
+    "precision_at_threshold": 0.9667,
+    "shift": {
+     "denied": 1.972973,
+     "documented": 0.432338,
+     "historical": 0.574079,
+     "not_mentioned": 3.902572,
+     "other_person": -0.000459,
+     "planned_not_done": 1.097469,
+     "possible": -3.755043,
+     "unknown": -4.223929
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.54,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.7805,
+    "accuracy_raw": 0.7805,
+    "coverage_at_threshold": 0.6829,
+    "ece_after_loo": 0.19494590214560192,
+    "ece_before": 0.10875546038445194,
+    "n": 41,
+    "precision_at_threshold": 0.9643,
+    "shift": {
+     "denied": 0.783124,
+     "documented": 0.438005,
+     "historical": -0.033613,
+     "not_mentioned": 3.560403,
+     "other_person": -0.232763,
+     "planned_not_done": -0.009148,
+     "possible": -2.440629,
+     "unknown": -2.06538
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.56,
+    "threshold_met_target": true
+   }
+  },
+  "note:plan_followup:item": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.8846,
+    "accuracy_raw": 0.8462,
+    "coverage_at_threshold": 0.8462,
+    "ece_after_loo": 0.07897230932222193,
+    "ece_before": 0.11654345957293154,
+    "n": 26,
+    "precision_at_threshold": 0.9545,
+    "shift": {
+     "call_back": -0.538166,
+     "disposition": 0.536297,
+     "education": -0.226931,
+     "follow_up_visit": 1.965092,
+     "goal": -0.054479,
+     "medication_plan": -0.310638,
+     "monitoring": 0.432922,
+     "referral": 0.487219,
+     "return_precautions": -0.466297,
+     "test_order": -0.309259,
+     "unknown": -1.515759
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.58,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.9231,
+    "accuracy_raw": 0.8846,
+    "coverage_at_threshold": 0.9231,
+    "ece_after_loo": 0.23080886189211697,
+    "ece_before": 0.19187706584295633,
+    "n": 26,
+    "precision_at_threshold": 0.9583,
+    "shift": {
+     "call_back": -0.661382,
+     "disposition": 1.357699,
+     "education": -0.897951,
+     "follow_up_visit": 1.047194,
+     "goal": -0.271918,
+     "medication_plan": -0.378604,
+     "monitoring": 0.891084,
+     "referral": 0.908981,
+     "return_precautions": -0.408385,
+     "test_order": -0.289151,
+     "unknown": -1.297566
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:plan_followup:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.9487,
+    "accuracy_raw": 0.8974,
+    "coverage_at_threshold": 0.9744,
+    "ece_after_loo": 0.10300777434728609,
+    "ece_before": 0.11615699383166363,
+    "n": 39,
+    "precision_at_threshold": 0.9737,
+    "shift": {
+     "denied": -0.2733,
+     "documented": -0.123431,
+     "historical": 0.685923,
+     "not_mentioned": -0.653642,
+     "other_person": -0.03528,
+     "planned_not_done": 1.30852,
+     "possible": -0.007682,
+     "unknown": -0.901108
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.8974,
+    "accuracy_raw": 0.8462,
+    "coverage_at_threshold": 0.8205,
+    "ece_after_loo": 0.11000266310862263,
+    "ece_before": 0.2046886045748409,
+    "n": 39,
+    "precision_at_threshold": 0.9688,
+    "shift": {
+     "denied": -0.56118,
+     "documented": -0.351813,
+     "historical": 1.225532,
+     "not_mentioned": 0.10046,
+     "other_person": -0.203856,
+     "planned_not_done": 1.083136,
+     "possible": -0.368771,
+     "unknown": -0.923507
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.58,
+    "threshold_met_target": true
+   }
+  },
+  "note:preference_refusal:decision": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.9722,
+    "accuracy_raw": 0.9167,
+    "coverage_at_threshold": 0.9722,
+    "ece_after_loo": 0.034802604467133666,
+    "ece_before": 0.053058578320077446,
+    "n": 36,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "accepted": -0.396993,
+     "declined": 2.112663,
+     "deferred": -1.056073,
+     "requested": -0.300172,
+     "undecided": -5.4e-05,
+     "unknown": -0.359371
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 0.8889,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.08039752697433378,
+    "ece_before": 0.07645236119680446,
+    "n": 36,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "accepted": -0.302524,
+     "declined": 1.979916,
+     "deferred": -0.465356,
+     "requested": -0.382172,
+     "undecided": -0.556832,
+     "unknown": -0.273031
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:preference_refusal:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.9762,
+    "accuracy_raw": 0.9286,
+    "coverage_at_threshold": 0.9762,
+    "ece_after_loo": 0.039642345839802966,
+    "ece_before": 0.1585753668837961,
+    "n": 42,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "denied": -1.295397,
+     "documented": 1.558068,
+     "historical": 0.377637,
+     "not_mentioned": 0.995022,
+     "other_person": -0.009074,
+     "planned_not_done": -0.929778,
+     "possible": -0.075869,
+     "unknown": -0.620609
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.9545,
+    "accuracy_raw": 0.8182,
+    "coverage_at_threshold": 0.9773,
+    "ece_after_loo": 0.07105670646356219,
+    "ece_before": 0.22846191751290992,
+    "n": 44,
+    "precision_at_threshold": 0.9767,
+    "shift": {
+     "denied": -1.127079,
+     "documented": 2.338348,
+     "historical": 0.747946,
+     "not_mentioned": 0.479432,
+     "other_person": -0.126245,
+     "planned_not_done": -1.194591,
+     "possible": -0.336301,
+     "unknown": -0.781511
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:procedure_test:category": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.9524,
+    "accuracy_raw": 0.881,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.05734820133633063,
+    "ece_before": 0.06690998305473263,
+    "n": 42,
+    "precision_at_threshold": 0.9524,
+    "shift": {
+     "cardiac_test": 0.239079,
+     "endoscopy": -0.035922,
+     "imaging": -1.102569,
+     "laboratory": -0.000184,
+     "other": -0.015345,
+     "pathology_biopsy": -0.000184,
+     "screening": 1.591767,
+     "surgery_procedure": -0.000184,
+     "unknown": -0.676459
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.9762,
+    "accuracy_raw": 0.8333,
+    "coverage_at_threshold": 0.9762,
+    "ece_after_loo": 0.12990460100988624,
+    "ece_before": 0.11513546439792738,
+    "n": 42,
+    "precision_at_threshold": 0.9756,
+    "shift": {
+     "cardiac_test": 0.883487,
+     "endoscopy": 0.541216,
+     "imaging": -0.395032,
+     "laboratory": -0.348165,
+     "other": -0.61075,
+     "pathology_biopsy": -0.157517,
+     "screening": 1.244134,
+     "surgery_procedure": -0.195532,
+     "unknown": -0.961842
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:procedure_test:result": {
+   "jev": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 1.0,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.01729275461139942,
+    "ece_before": 0.1748179788757589,
+    "n": 27,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "abnormal": -0.015267,
+     "indeterminate": -0.240267,
+     "normal": -0.095415,
+     "not_reported": 1.630441,
+     "pending": -6.1e-05,
+     "unknown": -1.279432
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 0.9259,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.07864954524028482,
+    "ece_before": 0.24825574686028976,
+    "n": 27,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "abnormal": 0.747825,
+     "indeterminate": -0.613051,
+     "normal": -0.442539,
+     "not_reported": 2.100458,
+     "pending": -0.495235,
+     "unknown": -1.297458
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:procedure_test:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 1.0,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.04356494731061086,
+    "ece_before": 0.054528951399479574,
+    "n": 42,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "denied": -0.064712,
+     "documented": 0.172595,
+     "historical": 0.304164,
+     "not_mentioned": -0.55841,
+     "other_person": -7.1e-05,
+     "planned_not_done": 0.751238,
+     "possible": -0.0225,
+     "unknown": -0.582304
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 1.0,
+    "coverage_at_threshold": 0.9767,
+    "ece_after_loo": 0.07766599451891985,
+    "ece_before": 0.09672362511387887,
+    "n": 43,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "denied": -0.338795,
+     "documented": 0.64437,
+     "historical": 0.138046,
+     "not_mentioned": -0.254552,
+     "other_person": -0.072108,
+     "planned_not_done": 0.816999,
+     "possible": -0.315756,
+     "unknown": -0.618203
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   }
+  },
+  "note:social_need:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 1.0,
+    "accuracy_raw": 0.9355,
+    "coverage_at_threshold": 1.0,
+    "ece_after_loo": 0.09395455612123806,
+    "ece_before": 0.08258502191066602,
+    "n": 31,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "denied": -0.113295,
+     "documented": -0.591196,
+     "historical": -0.209536,
+     "not_mentioned": 1.529693,
+     "other_person": -0.905328,
+     "planned_not_done": 1.407634,
+     "possible": -0.443097,
+     "unknown": -0.674876
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.5,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.9394,
+    "accuracy_raw": 0.7273,
+    "coverage_at_threshold": 0.4545,
+    "ece_after_loo": 0.15483432883868445,
+    "ece_before": 0.23169976876589052,
+    "n": 33,
+    "precision_at_threshold": 1.0,
+    "shift": {
+     "denied": -0.642058,
+     "documented": -0.062423,
+     "historical": 0.347046,
+     "not_mentioned": 2.235664,
+     "other_person": -0.630463,
+     "planned_not_done": 1.041491,
+     "possible": -1.043061,
+     "unknown": -1.246197
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.82,
+    "threshold_met_target": true
+   }
+  },
+  "note:symptom:status": {
+   "jev": {
+    "accuracy_calibrated_loo": 0.878,
+    "accuracy_raw": 0.9024,
+    "coverage_at_threshold": 0.7805,
+    "ece_after_loo": 0.09315769470796373,
+    "ece_before": 0.10000506386844495,
+    "n": 41,
+    "precision_at_threshold": 0.9688,
+    "shift": {
+     "denied": 0.056579,
+     "documented": -0.583823,
+     "historical": 1.879893,
+     "not_mentioned": 0.135561,
+     "other_person": -0.000107,
+     "planned_not_done": -0.281567,
+     "possible": -0.916006,
+     "unknown": -0.29053
+    },
+    "source": {
+     "provider": "jev"
+    },
+    "threshold": 0.94,
+    "threshold_met_target": true
+   },
+   "perplexity": {
+    "accuracy_calibrated_loo": 0.8537,
+    "accuracy_raw": 0.9024,
+    "coverage_at_threshold": 0.8293,
+    "ece_after_loo": 0.11765616491393982,
+    "ece_before": 0.1187953202644408,
+    "n": 41,
+    "precision_at_threshold": 0.9706,
+    "shift": {
+     "denied": -0.300253,
+     "documented": 0.071439,
+     "historical": 2.053884,
+     "not_mentioned": 0.285364,
+     "other_person": -0.129946,
+     "planned_not_done": -0.358689,
+     "possible": -1.036552,
+     "unknown": -0.585248
+    },
+    "source": {
+     "provider": "perplexity"
+    },
+    "threshold": 0.64,
+    "threshold_met_target": true
+   }
+  }
+ }
+}
