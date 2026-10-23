@@ -256,10 +256,12 @@ def render_pharmacy_tier_share(p, as_of):
 
 
 def _age_sql(ref):
-    """Age in whole years on ref from patient.birth_date (else age_reported), never negative."""
-    return (f"max(0, CASE WHEN p.birth_date IS NOT NULL THEN CAST(strftime('%Y', {q(ref)}) AS INTEGER) - "
-            f"CAST(strftime('%Y', p.birth_date) AS INTEGER) - (strftime('%m-%d', {q(ref)}) < strftime('%m-%d', p.birth_date)) "
-            "ELSE coalesce(p.age_reported, 0) END)")
+    """Age in whole years on ref from patient.birth_date only (age.py policy): a missing or invalid birth date gives NULL
+    (unknown, so an age-banded condition does not match it) and a reported age is never a fallback. A valid birth date after
+    ref (a newborn in a later delivery) is age 0, as risk_adjustment.scoring_age scores it."""
+    return (f"CASE WHEN date(p.birth_date) IS NULL THEN NULL WHEN date(p.birth_date) > date({q(ref)}) THEN 0 "
+            f"ELSE CAST(strftime('%Y', {q(ref)}) AS INTEGER) - CAST(strftime('%Y', p.birth_date) AS INTEGER) - "
+            f"(strftime('%m-%d', {q(ref)}) < strftime('%m-%d', p.birth_date)) END")
 
 
 def render_hcc_persons(p, as_of):

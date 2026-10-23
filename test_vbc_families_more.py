@@ -214,6 +214,28 @@ class Families(unittest.TestCase):
         db.close()
         self.assertEqual(answer(Q_HCC, self.root)[1], n)
 
+    def test_hcc_age_is_unknown_without_a_birth_date_never_the_reported_age(self):
+        """Agere's age policy (age.py): age derives from birth_date only. A member with no birth date but a reported age of
+        70 must not satisfy the age-banded F01.50 edit (it did while _age_sql fell back to age_reported)."""
+        root = build(Path(tempfile.mkdtemp()))
+        try:
+            db = sqlite3.connect(root / 'semantic.sqlite3')
+            db.execute("INSERT INTO patient VALUES ('P6', NULL, 70, 'F')")
+            db.execute("INSERT INTO patient VALUES ('P7', 'not-a-date', 70, 'F')")
+            for cid, pid in (('d6', 'P6'), ('d7', 'P7')):
+                _claim(db, cid, pid, '2029-06-01')
+                db.execute('INSERT INTO payer_claim_diagnosis VALUES (?,?,?,?,?,1)', (cid, pid, '2029-06-01', 1, 'F01.50'))
+            db.commit()
+            unknown = db.execute(f"SELECT p.patient_id, {vb._age_sql('2030-02-01')} FROM patient p WHERE p.patient_id IN ('P6', 'P7')").fetchall()
+            db.close()
+            self.assertEqual(unknown, [('P6', None), ('P7', None)])
+            res, got = answer(Q_HCC, root)
+            age_edit = [c for c in res['spec']['parameters']['v28_codes']['cond'] if c[0] == 'F0150']
+            self.assertTrue(any(lo <= 70 <= hi for _, _, lo, hi in age_edit))  # a reported 70 would have matched
+            self.assertEqual(got, 1)  # P1 only: unknown age matches no age-banded condition
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
     def test_deaths_by_product(self):
         res, got = answer(Q_DEATH, self.root)
         self.assertEqual(res['spec']['family'], 'deaths_by_product')
