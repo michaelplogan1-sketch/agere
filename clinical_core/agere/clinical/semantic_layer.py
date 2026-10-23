@@ -305,6 +305,8 @@ SCHEMA_DOC = {
             'visits or inpatient (TOB 011x) / observation (revenue 0762) payer claims, so admission rates cover claims-only members; '
             'readmission flags of a patient with such stays are recomputed over all of the patient\'s stays.',
     'concept_patient': 'Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates. '
+                       'The condition rows are the one condition-evidence rule (EHR diagnoses incl. problem-list conditions, counted payer-claim '
+                       'diagnoses in the concept\'s code set, laboratory evidence for diabetes and CKD): claims-only members count, rule-outs do not. '
                        'Governed per-patient concept membership: count patients with a named condition concept here (concept-level, no codes); '
                        'count patients by ICD-10 code from diagnosis_any.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
