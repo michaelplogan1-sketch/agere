@@ -658,6 +658,8 @@ def zero_result_probe(stack, question, graph, answer, *, catalog=None, target=No
 
 _FILTER = re.compile(r"\b(?:([A-Za-z_]\w*)\.)?([A-Za-z_]\w*)\s*(?:(=)\s*'((?:[^']|'')*)'|IN\s*\(\s*('(?:[^']|'')*'(?:\s*,\s*'(?:[^']|'')*')*)\s*\))", re.I)
 _ALIAS = re.compile(r"\b(?:FROM|JOIN)\s+([A-Za-z_]\w*)(?:\s+(?:AS\s+)?([A-Za-z_]\w*))?", re.I)
+_LABEL_COL = re.compile(r'concept|label|category|condition_name|class', re.I)
+_CODE_COLS = r'icd10|icd_10|icd10_code|code|dx_code|snomed|loinc|rxnorm|ndc|cpt|hcpcs'
 _NOT_ALIAS = {'where', 'join', 'left', 'right', 'inner', 'outer', 'cross', 'on', 'group', 'order', 'limit', 'union', 'using', 'natural'}
 
 
@@ -697,8 +699,18 @@ def value_existence(stack, graph, answer, *, catalog=None, target=None):
                                      [v.lower() for v in values]).fetchone()
                 except _sqlite3.Error:
                     continue  # time budget or an unreadable column: no verdict
-                if hit is not None: continue
                 relaxed = sql[:m.start()] + '1=1' + sql[m.end():]
+                if hit is not None:  # the label exists; beside a code filter on the same table it must not drop coded rows
+                    if not (_LABEL_COL.fullmatch(info[0]) and re.search(r'\b(?:' + re.escape(alias or table) + r'\.)?(?:' + _CODE_COLS + r')\s+(?:LIKE|=|IN)\b', relaxed, re.I)):
+                        continue
+                    try:
+                        before, after = db.execute(sql).fetchone(), db.execute(relaxed).fetchone()
+                    except _sqlite3.Error:
+                        continue
+                    if before and after and isinstance(before[0], (int, float)) and isinstance(after[0], (int, float)) and after[0] > before[0]:
+                        out.append(f"{table}.{info[0]} = {', '.join(repr(v) for v in values[:4])} drops coded rows the plan's own code filter matches "
+                                   f"({before[0]} with the label, {after[0]} without)")
+                    continue
                 where = re.split(r'\bWHERE\b', relaxed, maxsplit=1, flags=re.I)
                 if len(where) < 2 or not re.search(r"\bLIKE\b|\bIN\s*\(|\bBETWEEN\b|[<>]|(?<![<>!])=(?!\s*1\b)", where[1].replace('1=1', ''), re.I):
                     continue  # nothing else filters: a label absent everywhere is a genuine zero (zero-result probe's call)
@@ -972,6 +984,15 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     if verdict['accept']:
         run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict,
                                                              result, claude_ok))
+    def local_sql_confirmed():  # SQL a local model wrote is the riskiest path: it ships only when System One confirms it
+        if _route(receipt) != 'local_model_sql' or state.get('certified') or not verdict['accept']: return None
+        s1 = verdict.get('system_one_cross_check') or {}
+        if s1.get('verdict') != 'confirmed':
+            verdict['accept'] = False
+            verdict['reasons'].append('local-model SQL is shipped only when System One confirms it answers the question; '
+                                      f"cross-check {s1.get('verdict') or 'did not run'}; the next proposer tries")
+        return s1.get('verdict')
+    run('local_sql_confirmation', local_sql_confirmed)
     run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
     from . import release_drift
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release

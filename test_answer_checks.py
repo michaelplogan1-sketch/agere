@@ -204,6 +204,18 @@ class CrossCheck(Base):
         self.assertEqual(v['certificate']['status'], 'certified')
 
 
+class LocalSqlConfirmation(Base):
+    def test_local_model_sql_needs_a_system_one_confirmation(self):  # DQ-08 shipped with no cross-check at all
+        with patch.object(A, 'zero_result_probe', return_value=None), patch.object(A, '_guard'):
+            v = A.check(self.stack, 'How many duplicate patient charts are there?', sql_graph('SELECT 1'), {'route': 'local_model_sql'},
+                        count(1329), profile={'streams': {}})
+        self.assertFalse(v['accept'])
+        self.assertIn('local-model SQL', ' '.join(v['reasons']))
+        with patch.object(A, 'zero_result_probe', return_value=None), patch.object(A, '_guard'):
+            v = self.check('How many duplicate patient charts are there?', 'SELECT 1', count(1329))  # the compiler route is not held to it
+        self.assertTrue(v['accept'])
+
+
 class UncheckedZero(Base):
     def test_unconfirmed_zero_is_low_confidence_not_rejected(self):
         with patch.object(A, 'zero_result_probe', return_value=None), patch.object(A, '_guard'):
@@ -264,7 +276,7 @@ class Isolation(Base):
             v = self.check('How many patients have heart failure?', 'SELECT 1', count(4))
         self.assertTrue(any('zero_result_probe_shared failed: RuntimeError: boom' in a for a in v['annotations']))
         self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'filter_value_existence', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
-                                           'answer_guard_cross_check', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
+                                           'answer_guard_cross_check', 'local_sql_confirmation', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
                                            'source_defect_annotation', 'jev_normalization_check', 'learned_answer_verifier', 'semantic_entropy_probe',
                                            'label_choice_audit', 'cascade_certificates'])
 
@@ -308,7 +320,8 @@ class FilterValueExistence(unittest.TestCase):
         bad = "SELECT count(DISTINCT c.patient_id) FROM condition c WHERE c.concept IN ('schizophrenia', 'bipolar') AND c.icd10 LIKE 'F20%'"
         self.assertTrue(A.value_existence(None, g(bad), {}, target=path))
         self.assertEqual(A.value_existence(None, g("SELECT count(*) FROM condition WHERE concept = 'ebola'"), {}, target=path), [])  # genuine zero
-        self.assertEqual(A.value_existence(None, g("SELECT count(*) FROM condition WHERE concept = 'Diabetes' AND icd10 LIKE 'E11%'"), {}, target=path), [])
+        self.assertEqual(A.value_existence(None, g("SELECT count(*) FROM condition WHERE concept = 'diabetes' AND icd10 LIKE 'E11%'"), {}, target=path), [])
+        self.assertTrue(A.value_existence(None, g("SELECT count(*) FROM condition WHERE concept = 'Diabetes' AND icd10 LIKE 'E11%'"), {}, target=path))  # case-sensitive label misses the coded row
 
 
 if __name__ == '__main__':
