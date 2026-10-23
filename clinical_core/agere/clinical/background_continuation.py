@@ -2,7 +2,7 @@
 
 When the cascade ran out of its answer budget with no accepted answer it replies early (best partial, or not-understood with
 tiers_tried + deferred_tiers). enqueue() then hands the deferred tiers to ONE worker thread per server process: a bounded FIFO
-queue, one continuation at a time (and the local-model lock, because the continuation asks tiers through Cascade.call_tier). When a
+queue, one continuation at a time (and the local-model lock, because the continuation asks tiers through Cascade.call_tier; foreground_priority.py: no job or tier starts while a foreground question is in flight, and a foreground waiter gets the lock first). When a
 deferred tier produces an accepted answer (same checks and claim verification as in the foreground) it is saved through the verified
 stores, so the next identical or reworded question is answered instantly:
   checked graph   learning_hooks.after_answer -> learning.record_verified (learned_verified_sql / semantic cache / template decoding),
@@ -51,7 +51,7 @@ def delay_seconds():
 
 
 def recent():
-    """The last finished continuations: [{'question', 'tier', 'answered', 'saved', 'seconds', 'error'}]."""
+    """The last finished continuations: [{'question', 'tier', 'answered', 'saved', 'seconds', 'foreground_wait_seconds', 'error'}]."""
     return list(_recent)
 
 
@@ -107,12 +107,15 @@ def _work():
             job = _queue.popleft()
             _state['active'] = _key(job)
         if delay_seconds(): time.sleep(delay_seconds())
+        from . import foreground_priority as fp
+        waited = fp.wait_for_foreground()  # foreground first: a job starts only while no question is being waited on
         started = time.perf_counter()
         row = {'question': job['question'], 'tier': None, 'answered': False, 'saved': False, 'error': None}
         try:
             row.update(run_job(job))
         except Exception as exc:  # noqa: BLE001 - a background failure never reaches a caller
             row['error'] = f'{type(exc).__name__}: {exc}'[:300]
+        row['foreground_wait_seconds'] = round(waited + (row.get('foreground_wait_seconds') or 0.0), 3)
         row['seconds'] = round(time.perf_counter() - started, 3)
         _recent.append(row)
         with _lock: _state['active'] = None
@@ -127,9 +130,10 @@ def run_job(job):
     c.order_used = job['order']
     try:
         got = c.continue_run(job['tiers'], budget_seconds())
-        if got is None: return {'answered': False}
+        waited = {'foreground_wait_seconds': round(getattr(c, 'foreground_wait', 0.0), 3)}
+        if got is None: return {'answered': False, **waited}
         contract, interpretation = got
-        return {'answered': True, 'tier': (interpretation.get('proposer') or {}).get('name') or interpretation.get('interpreter'),
+        return {**waited, 'answered': True, 'tier': (interpretation.get('proposer') or {}).get('name') or interpretation.get('interpreter'),
                 'saved': save(c, contract, interpretation)}
     finally:
         c.flush_timings()

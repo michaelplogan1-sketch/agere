@@ -226,7 +226,7 @@ def _typed_decider(stack,question,ledger,available,validate,meta,start):
                            {'stage':'typed_decision_router','provider':'perplexity','decision':selected,'receipt':receipt}],
                   'elapsed_seconds':time.perf_counter()-start}
 
-def _cohort_family(stack,question,ledger,meta,start,local_decline,early):
+def _cohort_family(stack,question,ledger,meta,start,local_decline,early,gate=None):
     """Cohort-family rung (cohort_families.py): a common population-health patient-list shape answered by code-rendered SQL.
     early=True (right after the local compiler) claims only questions that state their own definition, since the family
     renders the stated definition; early=False (after the governed metric / operator rungs, before the analysts and the
@@ -250,8 +250,8 @@ def _cohort_family(stack,question,ledger,meta,start,local_decline,early):
                           'steps':[],'elapsed_seconds':time.perf_counter()-start}
         live=bool(stack.allow_live) and ledger is not None
         from . import bottled_cohort_hook  # the narrow bottled slot rung ($0) before the Haiku slot filler; off = cf.plan
-        res=bottled_cohort_hook.plan(stack.path,question,as_of,ledger=ledger if live else None,receipts=stack.receipts if live else None)
-        if res is None:return None,{'reason':'no cohort family fits (or slots missing without a model)'}
+        res=bottled_cohort_hook.plan(stack.path,question,as_of,ledger=ledger if live else None,receipts=stack.receipts if live else None,gate=gate)
+        if res is None:return None,{'reason':'no cohort family fits (or slots missing without a model)',**({'slot_filler':gate.receipt()} if gate is not None else {})}
         graph=validate(res['graph'],as_of)
     except (ValueError,KeyError,TypeError,RuntimeError,OSError,sqlite3.Error) as exc:  # the rung never blocks the ladder
         return None,{'error':f'{type(exc).__name__}: {exc}'[:300]}
@@ -371,7 +371,9 @@ class Ladder:
                       'local_compiler':info,'steps':[],'elapsed_seconds':self.elapsed()}
     def cohort_family(self,early):
         if not early and 'cohort_family' in self.decline:return None
-        graph,info=_cohort_family(self.stack,self.question,self.ledger,self.meta,self.start,self.decline,early)
+        if getattr(self,'slot_gate',None) is None:
+            from .bottled_cohort_hook import SlotFillGate;self.slot_gate=SlotFillGate(getattr(self.stack,'path',None))  # one per question: the early and late tiers share it
+        graph,info=_cohort_family(self.stack,self.question,self.ledger,self.meta,self.start,self.decline,early,self.slot_gate)
         if graph is not None:return graph,info
         if info:self.decline['cohort_family']=info
     def qwen_rewrite(self,default=None):

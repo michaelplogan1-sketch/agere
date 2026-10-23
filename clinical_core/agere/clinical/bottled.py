@@ -268,6 +268,9 @@ class BottledModel:
     def __call__(self, msgs, k=1, temperature=SAMPLE_TEMPERATURE, seed=7, max_tokens=MAX_TOKENS, grammar=None):
         """k completions for one prompt in a single batch: index 0 greedy, the rest sampled. Returns (texts, seconds).
         grammar: a constrained_decoding grammar; each decode gets its own logits processor (receipts in self.last_grammar)."""
+        from .answer_budget import cannot_finish
+        why = cannot_finish()
+        if why: raise ValueError(f'local model not started: {why}')  # a decode cannot be interrupted, so one that has no time is not begun
         import mlx.core as mx
         from mlx_lm.generate import BatchGenerator
         from mlx_lm.sample_utils import make_sampler

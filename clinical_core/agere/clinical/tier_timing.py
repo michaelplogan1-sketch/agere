@@ -3,7 +3,7 @@ learning.sqlite3). The cascade starts a tier only when the answer budget still c
 
 estimate(stack_path, tier) -> seconds; record(stack_path, tier, seconds) after a tier ran. With fewer than MIN_SAMPLES
 measurements the conservative static default stands in for the missing ones (local-model tiers 20 s, atomic System One 30 s,
-evidence tiers 10 s, everything else 2 s), so a new stack is cautious and a measured one is exact. A missing or unwritable
+evidence tiers 10 s, the cohort-family local slot filler 20 s (key cohort_slot_filler, recorded by bottled_cohort_hook, not a cascade tier), everything else 2 s), so a new stack is cautious and a measured one is exact. A missing or unwritable
 store only means the defaults apply: timing is bookkeeping and never blocks an answer.
 """
 import json
@@ -18,7 +18,7 @@ FILE = 'tier-timings.json'
 WINDOW = 15       # most recent measurements kept per tier
 MIN_SAMPLES = 3
 DEFAULTS = {'local_normalizer': 20.0, 'qwen_rewrite_compiler': 20.0, 'bottled_sql': 20.0, 'qwen_typed_interpreter': 20.0,
-            'local_free_sql': 20.0, 'atomic_system_one': 20.0, 'evidence_retrieval': 10.0, 'evidence_review': 10.0}
+            'local_free_sql': 20.0, 'atomic_system_one': 20.0, 'cohort_slot_filler': 20.0, 'evidence_retrieval': 10.0, 'evidence_review': 10.0}
 DEFAULT_OTHER = 2.0
 _lock = threading.Lock()
 _cache = {}  # path -> (mtime_ns, {tier: [seconds]})
