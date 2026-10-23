@@ -1045,6 +1045,8 @@ def _certificates(receipt, state, verdict):
     return status
 
 
+# Claude tiers that only choose a governed metric or engine (its template computes): their answers need no confirmation.
+GOVERNED_CLAUDE_ROUTERS = frozenset({'metric_router', 'operator_router'})
 # Checks whose failure to run leaves the answer unverified (the rest annotate).
 MANDATORY_CHECKS = frozenset({'zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage',
                               'local_sql_confirmation', 'answer_shape_review'})
@@ -1116,9 +1118,13 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     if verdict['accept']:
         run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict,
                                                              result, claude_ok))
-    def local_sql_confirmed():  # free uncalibrated planners (cascade stage C) and local-model SQL ship only when System One confirms
+    def local_sql_confirmed():  # uncalibrated planners ship only when System One confirms: free planners (stage C), local-model
+        # SQL, and Claude planners that write their own plan (stage E, except the governed metric/engine routers). 2026-10-23: a
+        # Haiku/Sonnet verified-SQL answer with a failed certificate and a weak System One vote shipped a wrong count.
         from .proposers import STAGES, stage_of
-        planner = _route(receipt) == 'local_model_sql' or (tier is not None and STAGES[stage_of(tier)][0] == 'free_planners')
+        stage = STAGES[stage_of(tier)][0] if tier is not None else None
+        planner = (_route(receipt) == 'local_model_sql' or stage == 'free_planners'
+                   or (stage == 'claude' and tier not in GOVERNED_CLAUDE_ROUTERS))
         if not planner or state.get('certified') or not verdict['accept']: return None
         s1 = verdict.get('system_one_cross_check') or {}
         if s1.get('verdict') != 'confirmed':

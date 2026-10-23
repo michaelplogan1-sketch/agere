@@ -65,6 +65,27 @@ class Base(unittest.TestCase):
         return A.check(self.stack, question, sql_graph(sql), {'route': 'local_compiler'}, result, **kw)
 
 
+class LlmSqlConfirmation(Base):
+    """Claude planners that write their own SQL ship only when System One confirms (2026-10-23)."""
+    def run_tier(self, tier, s1_verdict):
+        def fake(stack, question, graph, receipt, answer, profile, ledger, hosted, state, verdict, result=None, claude_ok=True):
+            verdict['system_one_cross_check'] = {'verdict': s1_verdict, 'votes': {}}
+        with patch.object(A, '_cross_check', side_effect=fake):
+            return A.check(self.stack, 'How many patients have heart failure?', sql_graph('SELECT 1'), {'route': tier}, count(4),
+                           profile={'streams': {}}, tier=tier)
+
+    def test_weak_vote_rejects_claude_written_sql(self):
+        v = self.run_tier('hosted_verified_sql', 'weak')
+        self.assertFalse(v['accept'])
+        self.assertTrue(any('only when System One confirms' in r for r in v['reasons']))
+
+    def test_confirmed_claude_sql_ships(self):
+        self.assertTrue(self.run_tier('hosted_verified_sql', 'confirmed')['accept'])
+
+    def test_governed_router_needs_no_confirmation(self):
+        self.assertTrue(self.run_tier('metric_router', 'weak')['accept'])
+
+
 class ZeroResultProbe(Base):
     MED_LIST = "SELECT count(DISTINCT patient_id) FROM medication WHERE source_stream = 'medication_lists' AND drug_class = 'statin'"
 
