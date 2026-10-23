@@ -6,6 +6,7 @@ not answer authorities. Exact-source contracts may be replayed only after full
 revalidation. The existing graph, SQL governor and saved work stores are reused.
 """
 from pathlib import Path
+import atexit
 import copy
 import json
 import os
@@ -39,7 +40,66 @@ def interpretation_window(stack):
         if owned: lock._acquire_restore(state)
 
 
-def isolated_local(catalog, question, population):
+class PersistentWorker:
+    """One long-lived local-model child per server process (JSON lines over its pipes): the model loads once, not per question.
+    Still disposable: a timeout kills it (a half-finished generation never keeps the GPU) and a dead child is replaced on the next call."""
+    ARGV = [sys.executable, '-m', 'clinical_core.agere.clinical.local_request_worker', '--serve']
+
+    def __init__(self, argv=None):
+        self.argv, self.proc, self.lines, self.spawns = list(argv or self.ARGV), None, None, 0
+        self.lock = threading.Lock()
+
+    def _spawn(self):
+        import queue
+        self.proc = subprocess.Popen(self.argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True,
+                                     cwd=Path(__file__).resolve().parents[3])
+        self.lines, self.spawns = queue.Queue(), self.spawns + 1
+        def pump(proc=self.proc, out=self.lines):
+            for line in proc.stdout: out.put(line)
+            proc.stdout.close(); out.put(None)  # EOF: the child exited
+        threading.Thread(target=pump, daemon=True).start()
+
+    def stop(self):
+        proc, self.proc = self.proc, None
+        if proc is None: return
+        try: proc.kill()
+        except OSError: pass
+        try: proc.stdin.close()
+        except OSError: pass
+        try: proc.wait(timeout=10)
+        except subprocess.TimeoutExpired: pass
+
+    def call(self, payload, timeout):
+        """-> the child's reply dict. Raises QuestionNotUnderstood on timeout (child killed), a dead child or a bad reply."""
+        import queue
+        dead = QuestionNotUnderstood('Local interpretation failed in its isolated worker; no reduced question was executed.')
+        with self.lock:
+            line = json.dumps(payload) + '\n'
+            for attempt in (0, 1):
+                if self.proc is None or self.proc.poll() is not None: self.stop(); self._spawn()
+                try:
+                    self.proc.stdin.write(line); self.proc.stdin.flush(); break
+                except OSError:  # died between calls: replace it once, then give up
+                    self.stop()
+                    if attempt: raise dead
+            deadline = time.monotonic() + timeout
+            while True:
+                try: reply = self.lines.get(timeout=max(0.0, deadline - time.monotonic()))
+                except queue.Empty:
+                    self.stop()
+                    raise QuestionNotUnderstood('Local interpretation exceeded its time limit; no reduced question was executed.') from None
+                if reply is None:
+                    self.stop(); raise dead
+                try: value = json.loads(reply)
+                except ValueError: continue  # stray text is not a reply
+                if isinstance(value, dict) and 'ready' not in value: return value
+
+
+_WORKER = PersistentWorker()
+atexit.register(_WORKER.stop)
+
+
+def isolated_local(catalog, question, population, worker=None):
     if not _MODEL_LOCK.acquire(blocking=False):
         raise QuestionNotUnderstood('The local interpreter is busy. Locally compiled questions remain available; retry this unfamiliar wording later.')
     try:
@@ -47,17 +107,15 @@ def isolated_local(catalog, question, population):
         limit = tier_remaining(min(600, max(1, float(os.environ.get('AGERE_LOCAL_INTERPRET_SECONDS', '120')))))
         payload = {'catalog': {'target': str(catalog.target), 'tables': catalog.tables,
                                'identity': catalog.identity, 'stream_fields': catalog.stream_fields},
-                   'question': question, 'population': population}
-        try:
-            proc = subprocess.run([sys.executable, '-m', 'clinical_core.agere.clinical.local_request_worker'],
-                                  input=json.dumps(payload), text=True, capture_output=True, timeout=limit,
-                                  cwd=Path(__file__).resolve().parents[3])
-        except subprocess.TimeoutExpired as exc:
-            raise QuestionNotUnderstood('Local interpretation exceeded its time limit; no reduced question was executed.') from exc
-        if proc.returncode:
+                   'question': question, 'population': population,
+                   'env': {k: v for k, v in os.environ.items() if k.startswith('AGERE_')}}  # the worker keeps the server's switches
+        reply = (worker or _WORKER).call(payload, limit)
+        if 'declined' in reply: raise QuestionNotUnderstood(f"{reply['declined']}; no reduced question was executed.")
+        if 'ok' not in reply:
             raise QuestionNotUnderstood('Local interpretation failed in its isolated worker; no reduced question was executed.')
-        try: return json.loads(proc.stdout)
-        except ValueError as exc: raise QuestionNotUnderstood('Local interpreter returned an invalid contract.') from exc
+        try: contract, interpretation = reply['ok']
+        except (TypeError, ValueError) as exc: raise QuestionNotUnderstood('Local interpreter returned an invalid contract.') from exc
+        return contract, interpretation
     finally:
         _MODEL_LOCK.release()
 

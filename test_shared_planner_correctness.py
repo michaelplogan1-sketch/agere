@@ -3,7 +3,9 @@ import copy
 import json
 import shutil
 import sqlite3
+import os
 import subprocess
+import sys
 import threading
 import time
 import unittest
@@ -334,9 +336,12 @@ class Correctness(unittest.TestCase):
             with self.assertRaisesRegex(S.QuestionNotUnderstood, 'busy'):
                 S.isolated_local(self.catalog, 'unfamiliar', None)
             self.assertLess(time.perf_counter()-before, .2)
-        with patch.object(S.subprocess, 'run', side_effect=subprocess.TimeoutExpired('worker', .01)):
-            with self.assertRaisesRegex(S.QuestionNotUnderstood, 'time limit'):
-                S.isolated_local(self.catalog, 'unfamiliar', None)
+        hung = S.PersistentWorker([sys.executable, '-c', 'import sys,time\nfor _ in sys.stdin: time.sleep(60)'])  # a worker that never answers
+        try:
+            with patch.dict(os.environ, {'AGERE_LOCAL_INTERPRET_SECONDS': '1'}), self.assertRaisesRegex(S.QuestionNotUnderstood, 'time limit'):
+                S.isolated_local(self.catalog, 'unfamiliar', None, worker=hung)
+            self.assertIsNone(hung.proc)  # killed, not left generating
+        finally: hung.stop()
         self.assertFalse(S._MODEL_LOCK.locked())
 
 

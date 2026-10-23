@@ -124,7 +124,8 @@ class WiringTests(unittest.TestCase):
     def test_normalizer_passes_line_grammar(self):
         from clinical_core.agere.clinical import local_normalizer as N
         seen = {}
-        fake_tok = types.SimpleNamespace(apply_chat_template=lambda *a, **k: 'PROMPT', eos_token_ids=[0], decode=lambda ids: '')
+        fake_tok = types.SimpleNamespace(apply_chat_template=lambda *a, **k: 'PROMPT', eos_token_ids=[0], decode=lambda ids: '',
+                                        encode=lambda text, **k: [1] * 10)
         def fake_generate(model, tokenizer, prompt, max_tokens, sampler, verbose, logits_processors=None):
             seen['procs'] = logits_processors; return 'How many patients have diabetes?\nextra'
         with mock.patch.object(N, 'available', return_value=True), mock.patch.object(N, '_load', return_value=(object(), fake_tok)), \
@@ -135,13 +136,16 @@ class WiringTests(unittest.TestCase):
     def test_worker_passes_json_grammar(self):
         from clinical_core.agere.clinical import local_request_worker as W
         seen = {}
-        fake_tok = types.SimpleNamespace(apply_chat_template=lambda *a, **k: 'PROMPT', eos_token_ids=[0], decode=lambda ids: '')
+        fake_tok = types.SimpleNamespace(apply_chat_template=lambda *a, **k: 'PROMPT', eos_token_ids=[0], decode=lambda ids: '',
+                                        encode=lambda text, **k: [1] * 10)
         def fake_generate(model, tokenizer, prompt, max_tokens, sampler, verbose, logits_processors=None):
             seen['procs'] = logits_processors; return '{"select": []}'
+        W._RESIDENT.clear()
         with mock.patch('mlx_lm.load', return_value=(object(), fake_tok)), mock.patch('mlx_lm.generate', fake_generate):
             run = W.mlx_generate('adapter')
             self.assertEqual(json.loads(run([{'role': 'user', 'content': 'q'}])), {'select': []})
         self.assertEqual(seen['procs'][0].grammar.root, 'object')
+        W._RESIDENT.clear()
 
     def test_bottled_grammars(self):
         from clinical_core.agere.clinical import bottled
