@@ -284,6 +284,6 @@ def rebind(path, conversation_id, question):
     _CONVERSATION.set(conversation_id or None)
     if prior and not names_a_patient(question) and has_pronoun(question):
         return rewrite_pronouns(question, prior['patient_id'])
-    if prior and not names_a_patient(question) and is_elliptical(question):
-        return f"{question.rstrip().rstrip('?')} for {prior['patient_id']}?"  # the continuation keeps the last turn's patient
+    # An elliptical continuation ("and the one before that?") is left as asked: the chart reader reads current_prior() and
+    # inherits the last turn's patient AND its intent; naming the patient in the text would drop the inherited intent.
     return question
