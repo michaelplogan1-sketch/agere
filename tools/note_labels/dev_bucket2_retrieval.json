@@ -1,0 +1,333 @@
+{
+ "summary": {
+  "questions": 20,
+  "with_predicate": 20,
+  "mean_evidence_recall": 0.912,
+  "evidence_recall_perfect": 15,
+  "evidence_questions": 17,
+  "not_documented_keys": 3,
+  "not_documented_with_zero_passages": 3
+ },
+ "rows": [
+  {
+   "id": "b2-02",
+   "question": "What was the reason aspirin was stopped for WHP-54E6E5470E6E?",
+   "frame": "medication_event",
+   "retrieval": {
+    "passages": 1,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-f01ed73d01b77252d72623"
+    ]
+   }
+  },
+  {
+   "id": "b2-03",
+   "question": "Anything in WHP-390EB3215AC0's notes about social or financial barriers? What was done about it?",
+   "frame": "social_need",
+   "retrieval": {
+    "passages": 3,
+    "key_evidence": 2,
+    "evidence_retrieved": 1,
+    "recall": 0.5,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-073200a2c6ecf0dc18f763",
+     "WHN-R-07910b8b321bb71cddc136",
+     "WHN-R-a395271b18660b43ec9764"
+    ]
+   }
+  },
+  {
+   "id": "b2-04",
+   "question": "Did WHP-D144BB42CF53 accept statin therapy when it was discussed?",
+   "frame": "preference_refusal",
+   "retrieval": {
+    "passages": 1,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-3c1e212b2f926dc41bf59d"
+    ]
+   }
+  },
+  {
+   "id": "b2-05",
+   "question": "Has anyone documented a goals-of-care conversation for SYN-5A64C9F6-63D, and what did the patient choose?",
+   "frame": "care_process",
+   "retrieval": {
+    "passages": 1,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-PD-9b2f4b0eef138c9c329d15"
+    ]
+   }
+  },
+  {
+   "id": "b2-06",
+   "question": "Does P-5003 want chest compressions or a breathing tube if their heart stops?",
+   "frame": "care_process",
+   "retrieval": {
+    "passages": 1,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHA-R-8bf04a31d34ee103ee5279"
+    ]
+   }
+  },
+  {
+   "id": "b2-09",
+   "question": "How many falls did SYN-C747A0BF-C1E report in the past year at the annual wellness visit?",
+   "frame": "function_cognition",
+   "retrieval": {
+    "passages": 3,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHL-R-02d525890879cfff2f81b8",
+     "WHL-R-62783c65aef27b1c0f70e4",
+     "WHL-R-c1b2dc7d45b1d91b765a71"
+    ]
+   }
+  },
+  {
+   "id": "b2-10",
+   "question": "At the annual wellness visit, was a memory concern raised for SYN-C7CDD451-834?",
+   "frame": "function_cognition",
+   "retrieval": {
+    "passages": 1,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHL-R-58cb2da8441be673494a37"
+    ]
+   }
+  },
+  {
+   "id": "b2-11",
+   "question": "Do the notes say SYN-90093AA9-A6A has trouble getting to appointments?",
+   "frame": "social_need",
+   "retrieval": {
+    "passages": 2,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHL-R-44a8ab1316745b07f377ea",
+     "WHR-00e27da25f154d453b2543ac"
+    ]
+   }
+  },
+  {
+   "id": "b2-12",
+   "question": "A 2029-08-05 note stopped lisinopril for WHP-0374A32F6EE0 because of angioedema concern. Do later notes still list lisinopril?",
+   "frame": "medication_event",
+   "retrieval": {
+    "passages": 3,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-6275c0d47d08aab761a020",
+     "WHN-R-ca18802050d85fd2d40cb0",
+     "WHN-R-cb7e9dfbb8258c332e3fe7"
+    ]
+   }
+  },
+  {
+   "id": "b2-14",
+   "question": "What drug intolerance do the notes record for WHP-19AA47229A1E?",
+   "frame": "adverse_event",
+   "retrieval": {
+    "passages": 5,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-12d00b4803765e2527622e",
+     "WHN-R-345420ddcc6580d9d374fb",
+     "WHN-R-833e37e3381725d545a2c0",
+     "WHN-R-c5acb2e32f555d2761237d",
+     "WHN-R-e9560afc067b6c88c1f73e"
+    ]
+   }
+  },
+  {
+   "id": "b2-16",
+   "question": "What follow-up did the 2027-10-28 discharge summary recommend for SYN-E64B2C58-796, and where was the patient discharged to?",
+   "frame": "plan_followup",
+   "retrieval": {
+    "passages": 1,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHC-R-009d7737d281ff8386b4d2"
+    ]
+   }
+  },
+  {
+   "id": "b2-17",
+   "question": "Does P-5003 report taking oxycodone?",
+   "frame": "medication_event",
+   "retrieval": {
+    "passages": 2,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHL-R-1ca770556809fa8bf19f2c",
+     "WHL-R-2ef11b5111b94bbfb10b5e"
+    ]
+   }
+  },
+  {
+   "id": "b2-18",
+   "question": "and morphine?",
+   "frame": "medication_event",
+   "retrieval": {
+    "passages": 2,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHL-R-1ca770556809fa8bf19f2c",
+     "WHL-R-2ef11b5111b94bbfb10b5e"
+    ]
+   }
+  },
+  {
+   "id": "b2-19",
+   "question": "Is P-RH01's smoking status documented anywhere in the notes?",
+   "frame": "social_need",
+   "retrieval": {
+    "passages": 0,
+    "key_evidence": 0,
+    "evidence_retrieved": 0,
+    "recall": null,
+    "not_documented_key": true,
+    "record_ids": []
+   }
+  },
+  {
+   "id": "b2-20",
+   "question": "Is a fall mentioned anywhere in WHP-3E1C91E026FC's chart?",
+   "frame": "function_cognition",
+   "retrieval": {
+    "passages": 0,
+    "key_evidence": 0,
+    "evidence_retrieved": 0,
+    "recall": null,
+    "not_documented_key": true,
+    "record_ids": []
+   }
+  },
+  {
+   "id": "b2-21",
+   "question": "Is a DNR order or code status documented for SYN-90093AA9-A6A?",
+   "frame": "care_process",
+   "retrieval": {
+    "passages": 0,
+    "key_evidence": 0,
+    "evidence_retrieved": 0,
+    "recall": null,
+    "not_documented_key": true,
+    "record_ids": []
+   }
+  },
+  {
+   "id": "b2-22",
+   "question": "Why was losartan stopped for WHP-4607AD88022E?",
+   "frame": "medication_event",
+   "retrieval": {
+    "passages": 7,
+    "key_evidence": 1,
+    "evidence_retrieved": 1,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-2f1dd78efd4106a010ca78",
+     "WHN-R-42e9a63f61e7defa3fadc3",
+     "WHN-R-52e9a7fbf538ce352e41f6",
+     "WHN-R-8bb4b88cc02a3e321054a2",
+     "WHN-R-a53767e10c3f404139c2ec",
+     "WHN-R-af9ec222fffff52dd68ad6"
+    ]
+   }
+  },
+  {
+   "id": "b2-24",
+   "question": "SYN-5A64C9F6-63D had a goals-of-care talk choosing comfort-focused care. Do the later notes still show new disease-directed medications being started?",
+   "frame": "medication_event",
+   "retrieval": {
+    "passages": 3,
+    "key_evidence": 2,
+    "evidence_retrieved": 2,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHM-R-5c081ee0db6e3e391b577f",
+     "WHN-PP-2c058e12c28f316cdc0fae",
+     "WHN-PP-32584407bc555a4363ac93"
+    ]
+   }
+  },
+  {
+   "id": "b2-26",
+   "question": "What was the impression on the outside chest x-ray report for WHP-1D09E959D6C3?",
+   "frame": "procedure_test",
+   "retrieval": {
+    "passages": 7,
+    "key_evidence": 1,
+    "evidence_retrieved": 0,
+    "recall": 0.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-71a49b78966b66a0784fe5",
+     "WHN-R-7a3a9f7ecf68691cf6e368",
+     "WHN-R-8073d653f647a4f259348c",
+     "WHN-R-c931fd8f124e3a53a131cc",
+     "WHN-R-ebd22b6e35149f54c71c04",
+     "WHN-R-fb5f0f0d085faec2a67874",
+     "WHN-R-fd368dc33d6016f52558ae"
+    ]
+   }
+  },
+  {
+   "id": "b2-27",
+   "question": "Was acute coronary syndrome ruled out during WHP-79593D7D18BA's April 2027 admission, and what did the stress test show?",
+   "frame": "procedure_test",
+   "retrieval": {
+    "passages": 1,
+    "key_evidence": 2,
+    "evidence_retrieved": 2,
+    "recall": 1.0,
+    "not_documented_key": false,
+    "record_ids": [
+     "WHN-R-b0e80a76b71e929bd239e6"
+    ]
+   }
+  }
+ ]
+}

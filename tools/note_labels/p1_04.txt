@@ -1,0 +1,44 @@
+find-001|historical|value=6.1|A1c 6.1
+find-002|documented||single office measurement
+find-003|documented|value=105.8|Weight 105.8 kg
+find-004|documented|value=60|Left ventricular ejection fraction 60%
+find-005|not_mentioned||
+find-006|documented|interpretation=normal|potassium and renal function acceptable on recent BMP
+find-007|documented|value=0.48|Creatinine 0.48 mg/dL
+find-008|documented|value=95|Cholesterol in LDL 95 mg/dL
+find-009|not_mentioned||
+find-010|historical||2 kg weight gain
+find-011|documented|value=10|PHQ-9 total 10 on 2029-12-14
+find-012|documented||BMI 44th %ile
+find-013|not_mentioned||
+find-014|documented|value=1.47|Creatinine 1.47 mg/dL
+find-015|historical|value=6.4|A1c 6.4 from 8
+find-016|documented||single office measurement
+find-017|documented|value=95.2|LDL cholesterol 95.2 mg/dL
+find-018|planned_not_done||daily weights
+find-019|documented|value=75|Left ventricular ejection fraction 75%
+find-020|not_mentioned||
+find-021|documented|value=34|Obesity, unspecified (BMI 34)
+find-022|documented|value=1.19|Creatinine 1.19 mg/dL
+find-023|historical||A1c climbing
+find-024|documented|value=78.0|LDL cholesterol 78.0 mg/dL
+find-025|documented|value=72.2|eGFR 72.2 mL/min
+find-026|not_mentioned||
+find-027|documented|value=34|Obesity, unspecified (BMI 34)
+find-028|documented|value=3.8|Potassium 3.8 mmol/L
+find-029|documented|value=3.15|Creatinine 3.15 mg/dL
+find-030|not_mentioned||
+find-031|documented||single office measurement
+find-032|documented|value=205.4|LDL cholesterol 205.4 mg/dL
+find-033|not_mentioned||
+find-034|not_mentioned||
+find-035|historical|value=36|BMI 36 with HFpEF
+find-036|not_mentioned||
+find-037|documented||weight gain
+find-038|documented|value=38|Left ventricular ejection fraction 38%
+find-039|not_mentioned||
+find-040|not_mentioned||
+find-041|documented|value=1.17|Creatinine 1.17 mg/dL
+find-042|documented|value=77.1|LDL cholesterol: 77.1 mg/dL
+find-043|not_mentioned||
+find-044|historical|value=112.1|clinic weight 112.1 kg
