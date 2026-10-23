@@ -22,6 +22,7 @@ import os
 import sqlite3
 import time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 import numpy as np
 
@@ -219,6 +220,7 @@ def entry_threshold(path, entry_question, default, encoder_identity=None):
 
 
 def log_reuse(path, question, entry_question, similarity, plan):
+    if _evaluating(): return
     try:
         db = _db(path)
         try:
@@ -232,6 +234,7 @@ def log_reuse(path, question, entry_question, similarity, plan):
 
 
 def observe(path, entry_question, similarity, correct, source, question=None):
+    if _evaluating(): return
     db = _db(path)
     try:
         db.execute('INSERT INTO observation VALUES (?,?,?,?,?,?)', (key(entry_question), float(similarity), int(bool(correct)),

@@ -11,6 +11,7 @@ from pathlib import Path
 import re
 import sqlite3
 import time
+from .evaluation import active as _evaluating
 
 from .request_plan import compile_request, fingerprint, PlanError
 
@@ -129,6 +130,7 @@ def instantiate(shape, question):
 
 
 def save(path, catalog, contract, interpretation, policy):
+    if _evaluating(): return None
     if interpretation.get('procedural_memory'): return None  # exact cache retains lesson dependencies
     from .learning import correction_context
     if correction_context(path, contract['original_question']): return None
@@ -193,6 +195,7 @@ def _match(catalog, question, population, rows, carried=False):
 
 
 def invalidate(path, question, reason):
+    if _evaluating(): return
     from .learning import normalize_question
     with _db(path) as db:
         for ident, payload in db.execute("SELECT id,payload FROM request_shapes WHERE status='active'").fetchall():

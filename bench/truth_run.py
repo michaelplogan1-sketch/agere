@@ -14,6 +14,7 @@ import argparse
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -128,12 +129,27 @@ def _tuva(args):
     return _TUVA['w']
 
 
+def failure_row(exc):
+    """What a refused request still tells us: the structured body of an HTTP 4xx/5xx Agere reply goes to the row's
+    diagnostics (never printed) and its cost receipt to the row's cost fields, so a refusal is not an unknown cost."""
+    body = getattr(exc, 'body', None)
+    if not isinstance(body, dict) or not body:
+        return {}
+    out = {'diagnostics': getattr(exc, 'diagnostics', None) or body}
+    cost = body.get('cost_receipt')
+    if isinstance(cost, dict) and cost.get('paid_calls') is not None and cost.get('ledger_consistent'):
+        known = cost.get('usd') is not None or cost['paid_calls'] == 0
+        out.update(new_paid_api_calls=cost['paid_calls'], estimated_cost_usd=(0.0 if cost['paid_calls'] == 0 else cost.get('usd')),
+                   cost_scope='request_ledger' if known else 'incomplete_product_usage')
+    return out
+
+
 def run_one(q, args):
     item = {'id': q['id'], 'question': prompt(q, args.mode, args.as_of), 'as_of': args.as_of}
     start = time.perf_counter()
     try:
         if args.system == 'agere':
-            row = agere(item, args.url)
+            row = agere(item, args.url, frozen_learning=getattr(args, 'frozen_learning', None))
         elif args.system == 'frontier_semantic':
             semantic = SemanticWarehouse(args.semantic_database, timeout_s=args.sql_timeout)
             try:
@@ -152,7 +168,7 @@ def run_one(q, args):
             finally:
                 canonical.close()
     except Exception as exc:
-        row = {'answer': None, 'error': f'{type(exc).__name__}: {exc}'}
+        row = {'answer': None, 'error': f'{type(exc).__name__}: {exc}', **failure_row(exc)}
     together = (row.get('response') or {}).get('together') if isinstance(row.get('response'), dict) else None
     row.pop('response', None)
     extra = {}
@@ -164,7 +180,8 @@ def run_one(q, args):
             'mode': args.mode, 'latency_s': time.perf_counter() - start,
             'estimated_cost_usd': row.get('estimated_cost_usd'), 'cost_scope': row.get('cost_scope'),
             'new_paid_api_calls': row.get('new_paid_api_calls'), 'error': row.get('error'),
-            'answer': row.get('answer'), 'contract': contract(q, row.get('answer')), 'tool_calls': row.get('tool_calls')}
+            'answer': row.get('answer'), 'contract': contract(q, row.get('answer')), 'tool_calls': row.get('tool_calls'),
+            'diagnostics': row.get('diagnostics')}
 
 
 def manifest_for(args, questions_file, system=None):
@@ -173,13 +190,34 @@ def manifest_for(args, questions_file, system=None):
     settings = {k: getattr(args, k) for k in ('release', 'system', 'model', 'mode', 'as_of', 'url', 'sql_timeout', 'jobs',
                                                'budget_usd') if hasattr(args, k)}
     settings['max_tools'] = 8
+    if getattr(args, 'frozen_learning', None):
+        settings['frozen_learning'] = args.frozen_learning
     if args.system == 'agere':
         settings['model'] = None  # the service chooses; each row records the model it reports
     cache = run_manifest.hash_cache(HASH_CACHE)
     m = run_manifest.build(questions_file=questions_file, scorer_files=SCORER_FILES, data=data, docs=docs,
-                           model_settings=settings, cache_policy=args.cache_policy, system=system or args.system, cache=cache)
+                           model_settings=settings, cache_policy=args.cache_policy, system=system or args.system, cache=cache,
+                           extra=run_manifest.run_identity(getattr(args, 'stack_dir', None), args.system))
     run_manifest.save_hash_cache(HASH_CACHE, cache)
     return m
+
+
+def check_resume(out, current):
+    """None when `out` may be continued by the current run, else the refusal text. The saved answers are only comparable
+    to new ones when the code commit (and uncommitted diff), the stack digest, the mode and settings, the AGERE_* flags
+    and the measurement files are the same."""
+    saved = Path(out) / 'manifest.json'
+    if not saved.is_file():
+        return f'Refusing to resume {out}: it has no manifest.json, so its answers cannot be shown to come from this code and stack.'
+    try:
+        old = json.loads(saved.read_text())
+    except ValueError:
+        return f'Refusing to resume {out}: its manifest.json is unreadable.'
+    problems = run_manifest.resume_conflicts(old, current)
+    if not problems:
+        return None
+    return (f'Refusing to resume {out}: the saved answers were produced under a different run.\n  - ' + '\n  - '.join(problems)
+            + '\nStart a new run (same --label is fine) instead of mixing answers from two code states.')
 
 
 def score(release, path, per_question=False):
@@ -196,6 +234,8 @@ def main(argv=None):
     p.add_argument('--mode', choices=['plain', 'defined'], default='defined')
     p.add_argument('--as-of', default='2030-05-27')
     p.add_argument('--url', default='http://127.0.0.1:8885')
+    p.add_argument('--stack-dir', type=Path, help='the stack the service answers from: its content digest is pinned in the manifest (a resume refuses if it changed)')
+    p.add_argument('--frozen-learning', default=None, help='id of the frozen learning snapshot the service claims to use; sent as X-Agere-Frozen-Learning and kept in the receipt')
     p.add_argument('--semantic-database', type=Path)
     p.add_argument('--canonical-database', type=Path)
     p.add_argument('--sql-timeout', type=float, default=180)
@@ -232,6 +272,10 @@ def main(argv=None):
         questions = [q for q in questions if q['id'] in ids]
     if args.resume:
         out = args.resume.resolve()
+        refusal = check_resume(out, manifest_for(args, ECOSYSTEM / 'releases' / args.release / 'questions/questions.jsonl'))
+        if refusal:
+            print(refusal, file=sys.stderr)
+            sys.exit(2)
     else:
         stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
         name = '-'.join(x for x in [args.system, args.model.replace('claude-', '') if args.system != 'agere' else '',
@@ -289,6 +333,7 @@ def main(argv=None):
     result = score(args.release, out / 'question_answers.jsonl')
     (out / 'score.txt').write_text(result.stdout + result.stderr)
     run_manifest.pin_answer_key(out, result.stdout)
+    run_manifest.stamp_finished(out)  # the run's wall-clock window: tools/eval_quarantine.py --from-manifests reads it
     per = score(args.release, out / 'question_answers.jsonl', per_question=True)
     (out / 'per_question.txt').write_text(per.stdout + per.stderr)
     for part in ('fast', 'analyst'):

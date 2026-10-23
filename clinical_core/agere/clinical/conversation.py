@@ -20,6 +20,7 @@ import os
 import re
 import sqlite3
 import time
+from .evaluation import active as _evaluating
 import uuid
 from pathlib import Path
 
@@ -557,6 +558,7 @@ def record(path, conversation_id, question, resolution, plan_summary=None, answe
     from .question_input import validate_question
     validate_question(question)
     validate_question(resolution['standalone'])
+    if _evaluating(): return 0  # evaluation mode: no conversation turn is stored
     db = _db(path)
     try:
         with db:
@@ -696,6 +698,7 @@ def handle_compose(stack, body, hosted_factory=None):
     resolution, t0 = None, time.time()
     hosted_usd, hosted_calls = 0.0, 0
     from . import cost_telemetry  # per-question id, attempt ids, tokens, pricing version, stage timings
+    from . import evaluation  # evaluation mode: no learning write (evaluation.py)
     probe = cost_telemetry.start(question)
     try:
         question, planning, conv = compose_shape(body)
@@ -800,6 +803,8 @@ def handle_compose(stack, body, hosted_factory=None):
         after_failure(stack, logged, exc)
         probe.mark('learning')
         exc.cost_telemetry = probe.finish(logged_failure, error=f'{type(exc).__name__}: {exc}')
+        exc.cost_receipt = cost_telemetry.receipt(exc.cost_telemetry, getattr(exc, 'planner_receipt', None), failed=True)
+        exc.evaluation = evaluation.receipt()
         cost_telemetry.record(stack.path, exc.cost_telemetry)
         raise
     probe.mark('compose')
@@ -810,11 +815,12 @@ def handle_compose(stack, body, hosted_factory=None):
         result = {**result, 'planning_economics': econ, 'new_paid_api_calls': (result.get('new_paid_api_calls') or 0) + hosted_calls}
     from ..deliverables import answer_context
     try:
-        if result.get('program_results'):
+        if result.get('program_results') and not _evaluating():
             from . import request_program
             request_program.materialize(stack, result)
-        action_context = answer_context.capture(stack.path, resolution['standalone'] if resolution else question,
-                                                result, original_question=question)
+        # evaluation mode saves no cohort / action context (a store write the measured answer does not need)
+        action_context = None if _evaluating() else answer_context.capture(
+            stack.path, resolution['standalone'] if resolution else question, result, original_question=question)
         if action_context:
             result = {**result, 'action_context': action_context}
             if result.get('workflow') and result.get('program_results'):
@@ -872,7 +878,9 @@ def handle_compose(stack, body, hosted_factory=None):
     probe.mark('learning')
     telemetry = probe.finish(result)
     cost_telemetry.record(stack.path, telemetry)
-    return {**result, 'cost_telemetry': telemetry}
+    out = {**result, 'cost_telemetry': telemetry, 'cost_receipt': cost_telemetry.receipt(telemetry, result)}
+    if evaluation.active(): out['evaluation'] = evaluation.receipt()
+    return out
 
 
 def _default_hosted(stack):

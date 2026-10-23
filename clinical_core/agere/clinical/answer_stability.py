@@ -13,6 +13,7 @@ import json
 import sqlite3
 import time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 VERSION = 'answer-stability/1'
 
@@ -53,6 +54,7 @@ def internal_samples(receipt):
 
 
 def record(path, question, proposer, paid, stab):
+    if _evaluating(): return
     target = Path(path) / 'answer-stability.sqlite3'
     db = sqlite3.connect(target)
     try:

@@ -14,6 +14,7 @@ import re
 import sqlite3
 import time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 from . import sql_query
 from .sql_query import register
@@ -873,6 +874,7 @@ def valid_shape(path, ident):
 
 
 def invalidate_shapes(path, question, reason):
+    if _evaluating(): return []
     """Revoke a family across sources/policies and evict its derived exact answers."""
     from .learning import normalize_question
     family, _ = template(question)
@@ -892,6 +894,7 @@ def invalidate_shapes(path, question, reason):
 
 
 def save_shape(path, contract, policy, interpretation):
+    if _evaluating(): return None
     if interpretation.get('procedural_memory'): return None  # do not detach a plan from its lesson revision
     from .learning import correction_context
     audit = interpretation.get('semantic_review') or {}

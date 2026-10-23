@@ -11,6 +11,7 @@ from pathlib import Path
 import sqlite3
 import time
 import uuid
+from .evaluation import active as _evaluating
 
 from .request_plan import Catalog, fingerprint
 
@@ -72,6 +73,7 @@ def records(path):
 
 
 def propose(path, context_id, instruction, *, probes, required_fields=None, supersedes=None):
+    if _evaluating(): raise PermissionError('Evaluation mode never proposes a lesson')
     from ..deliverables import answer_context as A
     from . import shared_planner as S, sql_query
     context = A.load(path, context_id)  # original failed/corrected trajectory is preserved
@@ -199,6 +201,7 @@ def identity(path, question, *, catalog=None, probe=False, population=None):
 
 def begin_use(path, question, lessons):
     ident = uuid.uuid4().hex
+    if _evaluating(): return ident  # not recorded: a measured run leaves no use behind
     payload = {'question': question, 'lesson_ids': [r['id'] for r in lessons], 'created': time.time()}
     with _db(path) as db:
         db.execute('INSERT INTO procedure_uses VALUES (?,?)', (ident, json.dumps(payload)))
@@ -206,6 +209,7 @@ def begin_use(path, question, lessons):
 
 
 def outcome(path, use_id, status, *, detail=None):
+    if _evaluating(): return
     if status not in ('observed_pass', 'unverified', 'failed'):
         raise ValueError('An explicit observed outcome is required')
     with _db(path) as db:
@@ -218,6 +222,7 @@ def outcome(path, use_id, status, *, detail=None):
 
 
 def correction(path, question, reason):
+    if _evaluating(): return 0
     affected = [r for r in records(path) if r['status'] == 'active' and r['family'] == _family(question)]
     if affected:
         with _db(path) as db:

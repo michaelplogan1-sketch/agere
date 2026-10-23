@@ -12,6 +12,7 @@ import statistics
 import threading
 import time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 VERSION = 'tier-timing/1'
 FILE = 'tier-timings.json'
@@ -60,7 +61,7 @@ def estimate(stack_path, tier):
 def record(stack_path, timings):
     """Append {tier: [seconds, ...]} measurements (atomic write; failures are swallowed). -> True when stored."""
     path = _path(stack_path)
-    if path is None or not timings: return False
+    if _evaluating() or path is None or not timings: return False
     with _lock:
         try:
             data = {k: list(v) for k, v in _load(stack_path).items()}

@@ -16,6 +16,7 @@ import collections
 import os
 import threading
 import time
+from .evaluation import active as _evaluating
 
 VERSION = 'background-continuation/1'
 _lock = threading.Lock()
@@ -77,6 +78,7 @@ def _key(job):
 def enqueue(cascade):
     """Queue the cascade's deferred tiers for the background worker. -> receipt {'queued', 'reason', 'depth', 'tiers'}."""
     tiers = [d['tier'] for d in cascade.deferred]
+    if _evaluating(): return {'queued': False, 'reason': 'evaluation mode: no background continuation', 'tiers': tiers}
     if os.environ.get('AGERE_BACKGROUND_CLAUDE', 'off') != 'on':  # token economics: background work is free / System One only unless asked
         from .proposers import STAGES, stage_of
         tiers = [t for t in tiers if stage_of(t) != len(STAGES) - 1]
@@ -142,6 +144,7 @@ def run_job(job):
 
 def save(cascade, contract, interpretation):
     """Store an accepted answer where the foreground stores verified ones. -> True when something was saved."""
+    if _evaluating(): return False
     stack, question = cascade.stack, cascade.question
     if contract.get('kind') == 'checked_graph':
         from . import learning_hooks
