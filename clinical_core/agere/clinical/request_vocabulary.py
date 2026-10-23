@@ -147,7 +147,9 @@ def concept_sql(expr, compiler, scope):
     registry = concept_definitions()
     if kind not in ('condition', 'drug_fill') or not isinstance(names, list) or not names or len(names) > 30:
         raise PlanError('Unknown named concept')
-    if any(n not in registry[kind] for n in names): raise PlanError('Unknown concept name')
+    if any(n.partition('@')[0] not in registry[kind] for n in names): raise PlanError('Unknown concept name')
+    if kind == 'condition' and not all(concepts.valid_scope(n) for n in names): raise PlanError('Narrowed codes outside the concept')
+    if kind != 'condition' and any('@' in n for n in names): raise PlanError('Unknown concept name')
     # A named definition cannot consume unrelated requirements merely because a
     # model included them in its quote. Reparse this leaf using the same concept
     # vocabulary and require the names, polarity and period to agree.

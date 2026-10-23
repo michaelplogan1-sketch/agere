@@ -18,6 +18,11 @@ Order for one label (cheapest first; the first that decides wins):
   4. System One (system_one.decide: Jev first, Perplexity fallback; typed Choice among the top-k retrieved candidates plus
      'none'; never Claude). Accepted only at calibrated p >= ACCEPT_P and a label other than none/unknown; otherwise the
      term stays unmapped (abstain) and the question declines as before. Cost goes to the cascade usage.
+  5. granularity (conditions only): a term that is not the concept's own name but maps to a concept covering several ICD-10-CM
+     categories ("opioid use disorder" -> substance_use_disorder, F10-F19) is narrowed by System One to the categories it names
+     (narrow(); typed choice labelled "F11 - <title from the warehouse's own received descriptions>"). Confident (p >= NARROW_P):
+     the narrowed codes travel in the plan (scoped concept name 'substance_use_disorder@F11'); otherwise the concept is kept and
+     the mapping carries granularity 'unverified', which the answer states as a limitation. Saved with the mapping.
 Codes: conditions -> ICD-10-CM prefixes (+ SNOMED where the received data carries it), labs -> LOINC, medications -> Agere
 drug classes with RxNorm ingredient naming. Synthetic data only.
 """
@@ -36,11 +41,15 @@ NORMALIZATION = ROOT / 'config/agere/normalization'
 STORE_NAME = 'terminology-map.sqlite3'
 KINDS = ('condition', 'lab', 'medication')
 ACCEPT_P = 0.8
+NARROW_P = 0.8           # a wrong narrowing silently drops patients, so it needs the mapping's own bar; below it the broad concept stays, disclosed
+DECIDED = ('narrowed', 'whole')  # granularity values that are saved; 'unverified' / 'concept' are recomputed each time
+OWN_NAME_METHODS = ('alias', 'dictionary', 'lay_synonym')  # the term IS the concept (or a curated synonym): nothing to narrow
 DICTIONARY_CONFIDENCE = 0.8
 MAX_OPTIONS = 8
 RETRIEVAL_FLOOR = 0.25   # below this no candidate is worth a System One call
 MAX_ADJUDICATIONS = 3    # per question
 MAX_SPAN_WORDS = 5
+RECEIPT_KEYS = ('label', 'kind', 'concept', 'classes', 'codes', 'method', 'system_one', 'granularity', 'narrowing')  # the tier's terminology receipt
 MODIFIERS = re.compile(r'^(?:(?:congestive|chronic|acute|essential|primary|uncontrolled|known|diagnosed|active)\s+)+', re.I)
 STOP = set('''a an the and or of in on at to for from by with without within into is are was were be been have has had
 having do does did how many much what which who whose patients patient members member people their our any all who
@@ -245,21 +254,26 @@ def _db(path):
     db.execute('CREATE TABLE IF NOT EXISTS mapping(label TEXT, kind TEXT, concept TEXT, classes TEXT, method TEXT, provider TEXT, '
                'probability REAL, cost_usd REAL, request_hash TEXT, question TEXT, candidates TEXT, created TEXT, version TEXT, '
                'PRIMARY KEY(label, kind))')
+    if 'narrowing' not in {r[1] for r in db.execute('PRAGMA table_info(mapping)')}:
+        db.execute('ALTER TABLE mapping ADD COLUMN narrowing TEXT')  # JSON: the saved granularity decision (narrow())
     return db
 
 
 def saved(store, label=None):
-    """Saved mappings -> {label: row} (all) or the row for one normalized label (any kind)."""
+    """Saved mappings -> {label: row} (all) or the row for one normalized label (any kind). A condition row carries 'narrowing'
+    (the saved granularity decision; None when it was never assessed)."""
     path = store_path(store) if store else None
     if not path or not path.exists(): return {} if label is None else None
     try:
         db = sqlite3.connect(f'file:{path}?mode=ro', uri=True)
-        rows = db.execute('SELECT label, kind, concept, classes, method, provider, probability FROM mapping').fetchall()
+        has = 'narrowing' in {r[1] for r in db.execute('PRAGMA table_info(mapping)')}
+        rows = db.execute('SELECT label, kind, concept, classes, method, provider, probability, ' + ('narrowing' if has else 'NULL')
+                          + ' FROM mapping').fetchall()
         db.close()
     except sqlite3.Error:
         return {} if label is None else None
     out = {r[0]: {'kind': r[1], 'concept': r[2], 'classes': json.loads(r[3]) if r[3] else None, 'method': 'saved_' + r[4],
-                  'provider': r[5], 'probability': r[6]} for r in rows}
+                  'provider': r[5], 'probability': r[6], 'narrowing': json.loads(r[7]) if r[7] else None} for r in rows}
     return out if label is None else out.get(_norm(label))
 
 
@@ -268,10 +282,23 @@ def save(store, label, result, question=None):
     db = _db(path)
     try:
         s1 = result.get('system_one') or {}
-        db.execute('INSERT OR REPLACE INTO mapping VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+        n = result.get('narrowing')
+        db.execute('INSERT OR REPLACE INTO mapping(label, kind, concept, classes, method, provider, probability, cost_usd, request_hash, '
+                   'question, candidates, created, version, narrowing) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                    (_norm(label), result['kind'], result['concept'], json.dumps(result.get('classes')) if result.get('classes') else None,
                     result['method'], s1.get('decided_by'), s1.get('probability'), result.get('cost_usd') or 0.0, s1.get('request_hash'),
-                    question, json.dumps(result.get('candidates') or [])[:4000], time.strftime('%Y-%m-%dT%H:%M:%S'), VERSION))
+                    question, json.dumps(result.get('candidates') or [])[:4000], time.strftime('%Y-%m-%dT%H:%M:%S'), VERSION,
+                    json.dumps(n) if n and n.get('granularity') in DECIDED else None))
+        db.commit()
+    finally:
+        db.close()
+
+
+def save_narrowing(store, label, kind, narrowing):
+    """Record a granularity decision on an already saved mapping (one saved before narrowing existed)."""
+    db = _db(store_path(store))
+    try:
+        db.execute('UPDATE mapping SET narrowing = ? WHERE label = ? AND kind = ?', (json.dumps(narrowing), _norm(label), kind))
         db.commit()
     finally:
         db.close()
@@ -307,6 +334,198 @@ def adjudicate(label, candidates, *, question=None, as_of=None, ledger=None, all
             'calls': calls, 'request_hash': r.get('request_hash'), 'status': r.get('status', 'answered'), 'steps': r.get('steps')}
 
 
+# ------------------------------------------------------------------------------------------------ granularity (subtype terms)
+def category(code):
+    """ICD-10-CM 3-character category of a code or prefix ('F11.20' -> 'F11', 'E11.2' -> 'E11')."""
+    return re.sub(r'[^0-9A-Za-z]', '', str(code or ''))[:3].upper()
+
+
+def concept_categories(concept):
+    """{category: [the concept's own codes inside it]} for a condition concept, in code order."""
+    out = {}
+    for c in concepts.CONDITIONS.get(concept, {}).get('icd10', []): out.setdefault(category(c), []).append(c)
+    return dict(sorted(out.items()))
+
+
+def is_own_name(label, concept):
+    """The term is the concept's own name or alias (deterministic match to that concept): nothing narrower is meant."""
+    if concept not in concepts.CONDITIONS: return True
+    if _norm(label) in {_norm(concept), _norm(concepts.CONDITIONS[concept]['label'])}: return True
+    found = deterministic(label, 'condition')
+    return bool(found and found['concept'] == concept)
+
+
+def _stem(text):
+    t = re.sub(r'\([^)]*\)', ' ', str(text or ''))
+    return ' '.join(re.split(r'\s*[,;:]\s*', t, maxsplit=1)[0].split()).strip(' .-')
+
+
+def _semantic_target(where):
+    p = Path(where)
+    if p.name == STORE_NAME: p = p.parent
+    return p if p.suffix == '.sqlite3' else p / 'semantic.sqlite3'
+
+
+@functools.lru_cache(maxsize=8)
+def _titles(path, stamp):
+    out = {}
+    db = sqlite3.connect(f'file:{path}?mode=ro', uri=True)
+    try:
+        votes = {}  # category -> {description column: {stem.lower(): [count, {variant: count}]}}
+        for (table,) in db.execute("SELECT name FROM sqlite_master WHERE type = 'table'").fetchall():
+            cols = {r[1].lower(): r[1] for r in db.execute(f'PRAGMA table_info("{table}")')}
+            describe_by = [c for c in ('normalized_label', 'label', 'description') if c in cols]
+            if 'icd10' not in cols or not describe_by: continue
+            for column in describe_by:
+                try:
+                    rows = db.execute(f"SELECT substr(replace(\"{cols['icd10']}\", '.', ''), 1, 3), \"{cols[column]}\", count(*) FROM \"{table}\" "
+                                      f"WHERE \"{cols['icd10']}\" IS NOT NULL AND \"{cols[column]}\" IS NOT NULL GROUP BY 1, 2").fetchall()
+                except sqlite3.Error:
+                    continue
+                for cat, text, n in rows:
+                    stem = _stem(text)
+                    if not re.fullmatch(r'[A-Za-z][0-9A-Za-z]{2}', cat or '') or len(stem) < 3: continue
+                    slot = votes.setdefault(cat.upper(), {}).setdefault(column, {}).setdefault(stem.lower(), [0, {}])
+                    slot[0] += n
+                    slot[1][stem] = slot[1].get(stem, 0) + n
+        for cat, by_column in votes.items():
+            for column in ('normalized_label', 'label', 'description'):  # the dictionary's normalized wording first, then what was received
+                if column in by_column:
+                    _, (_, variants) = min(by_column[column].items(), key=lambda kv: (-kv[1][0], len(kv[0]), kv[0]))
+                    title = max(variants.items(), key=lambda kv: (kv[1], kv[0]))[0]
+                    out[cat] = (title[:1].upper() + title[1:])[:60]
+                    break
+    finally:
+        db.close()
+    return out
+
+
+def category_titles(where):
+    """{ICD-10-CM category: short title} derived from the warehouse's own received descriptions (no code-set download). Every
+    table with an icd10 column next to a description column (condition.normalized_label / label, problem_list_entry.label,
+    incident_diagnosis.label, ...) votes; a category's title is the most common description stem (text before the first comma,
+    parentheticals dropped), the dictionary's normalized wording ahead of the received label. Categories no table describes
+    (payer-claim-only codes) have no title. Computed read-only from the semantic layer next to the mapping store and memoized
+    per database file version."""
+    target = _semantic_target(where)
+    try:
+        st = target.stat()
+        return dict(_titles(str(target), (st.st_size, st.st_mtime_ns)))
+    except (OSError, sqlite3.Error):
+        return {}
+
+
+def _granularity_view(n):
+    return {k: n.get(k) for k in ('granularity', 'codes', 'categories', 'probability', 'decided_by', 'request_hash', 'titles', 'version',
+                                  'reason') if n.get(k) is not None}
+
+
+def narrow(label, concept, *, titles=None, question=None, as_of=None, ledger=None, allow_live=False, decider=None):
+    """Which of the concept's ICD-10-CM categories does the term name? System One typed choice, options labelled
+    'F11 — <title from the data>' plus 'all' (the whole group) and 'several' (more than one, then one yes/no per category).
+    Accepted only at calibrated p >= NARROW_P; anything else keeps the concept and says so.
+    -> {'granularity': 'narrowed' | 'whole' | 'unverified', 'codes' (narrowed only), 'categories', 'probability', 'decided_by',
+        'request_hash', 'titles', 'cost_usd', 'calls', 'reason'}"""
+    cats = concept_categories(concept)
+    titles = {c: (titles or {}).get(c) for c in cats}
+    out = {'granularity': 'unverified', 'categories': list(cats), 'titles': {c: t for c, t in titles.items() if t}, 'probability': None,
+           'decided_by': None, 'request_hash': None, 'cost_usd': 0.0, 'calls': 0, 'version': VERSION}
+    if len(cats) < 2: return {**out, 'granularity': 'whole', 'reason': 'single category'}
+    group = concepts.CONDITIONS[concept]['label']
+    label_of = lambda c: f'{c} — {titles[c]}' if titles.get(c) else c
+    asked = f"The term '{label}'" + (f" in the analyst question: {question}" if question else '')
+    evidence = [{'id': 'term', 'text': f"Term as written: '{label}'." + (f' Question: {question}' if question else '')
+                 + f" It was matched to the clinical group '{group}'."}]
+    if decider is None:
+        from .system_one import decide as decider
+    from datetime import date
+    as_of = str(as_of or date.today())[:10]
+    hashes = []
+
+    def ask(prompt, options):
+        r = decider(prompt, options, evidence, as_of=as_of, threshold=NARROW_P, task_key='terminology_narrow', ledger=ledger, allow_live=allow_live)
+        out['calls'] += sum(1 for s in r.get('steps') or [] if s.get('status') == 'answered' and not s.get('cache_hit'))
+        out['cost_usd'] += r.get('cost_usd') or 0.0
+        hashes.append(r.get('request_hash'))
+        key = r.get('label')
+        p = (r.get('calibrated_probabilities') or r.get('probabilities') or {}).get(key)
+        ok = bool(r.get('decided_by') and key and key != 'unknown' and p is not None and p >= NARROW_P)
+        if ok: out['decided_by'] = out['decided_by'] or r.get('decided_by')
+        return (key if ok else None), p, r.get('status')
+
+    options = {c: label_of(c) for c in cats}
+    options['all'] = f"All of them: the term means the whole group ({group}), not part of it"
+    options['several'] = 'More than one of these categories, but not all of them'
+    key, p, status = ask(asked + f" was matched to the clinical group '{group}', which covers these ICD-10-CM categories. Which does the term name? "
+                         "Choose the one category it names, 'all' if it names the whole group, or 'several' if it names more than one but not all of them.",
+                         options)
+    out['request_hash'] = hashes[0]
+    if key is None:
+        return {**out, 'reason': 'not asked (no live provider and no cached answer)' if status == 'prepared' else 'System One was not confident'}
+    if key == 'all':
+        return {**out, 'granularity': 'whole', 'probability': p}
+    if key in cats:
+        return {**out, 'granularity': 'narrowed', 'codes': list(cats[key]), 'categories': [key], 'probability': p}
+    if key != 'several':
+        return {**out, 'reason': 'unrecognized choice'}
+    chosen, lowest = [], p
+    for c in cats:  # more than one category: one yes/no each; any unconfident answer keeps the concept
+        yes, q, _ = ask(asked + f" was matched to the clinical group '{group}'. Does the term name ICD-10-CM category {label_of(c)}?",
+                        {'yes': f'Yes: the term names {label_of(c)}', 'no': f'No: the term does not name {label_of(c)}'})
+        if yes is None: return {**out, 'reason': f'System One was not confident about {c}'}
+        lowest = min(lowest, q)
+        if yes == 'yes': chosen.append(c)
+    if not chosen: return {**out, 'reason': 'no category chosen'}
+    if len(chosen) == len(cats): return {**out, 'granularity': 'whole', 'probability': lowest}
+    return {**out, 'granularity': 'narrowed', 'codes': [x for c in chosen for x in cats[c]], 'categories': chosen, 'probability': lowest}
+
+
+def _granularity(out, label, *, assess, store=None, question=None, as_of=None, ledger=None, allow_live=False, decider=None):
+    """Set out['granularity'] / out['narrowing'] for a mapped condition: concept (the term is the concept's name, or the concept has
+    one category), narrowed / whole (saved or just decided), unverified (kept broad; disclosed). assess=False never calls System One.
+    -> True when a new decision was made (the caller saves it)."""
+    concept = out['concept']
+    if len(concept_categories(concept)) < 2 or out.get('method') in OWN_NAME_METHODS or is_own_name(label, concept):
+        out['granularity'], out['narrowing'] = 'concept', None
+        return False
+    n = out.get('narrowing')
+    if n and n.get('granularity') in DECIDED:
+        out['granularity'] = n['granularity']
+        return False
+    if not assess:
+        out['granularity'], out['narrowing'] = 'unverified', {'granularity': 'unverified', 'reason': 'granularity not assessed'}
+        return False
+    titles = category_titles(store) if store else {}
+    n = narrow(label, concept, titles=titles, question=question, as_of=as_of, ledger=ledger, allow_live=allow_live, decider=decider)
+    out['cost_usd'] += n.pop('cost_usd'); out['calls'] += n.pop('calls')
+    out['narrowing'], out['granularity'] = _granularity_view(n), n['granularity']
+    return n['granularity'] in DECIDED
+
+
+def granularity_note(entry):
+    """The answer's limitation for a term kept at its broader concept (granularity 'unverified'), else None."""
+    if entry.get('kind') != 'condition' or entry.get('granularity') != 'unverified' or entry.get('concept') not in concepts.CONDITIONS: return None
+    name = entry.get('span') or entry.get('label')
+    return (f"'{name}' was read as {concepts.CONDITIONS[entry['concept']]['label']} (ICD-10-CM {', '.join(concept_categories(entry['concept']))}); "
+            'whether the question means only some of those categories could not be confirmed, so the count may include conditions it did not name.')
+
+
+def _codes_of(entry):
+    c = entry.get('codes')
+    return list(c.get('codes') or []) if isinstance(c, dict) else list(c or [])
+
+
+def stale(store, entries):
+    """True when a saved plan's terminology entries no longer match the saved mappings (a granularity was decided since)."""
+    for e in entries or []:
+        if e.get('kind') != 'condition': continue
+        name = e.get('span') or e.get('label')
+        now = {x['span']: x for x in grammar_terms(name or '', store)['used']}.get(name)
+        if now and now.get('granularity') != e.get('granularity') or now and _codes_of(now) != _codes_of(e):
+            return True
+    return False
+
+
 def map_label(label, kind=None, *, store=None, question=None, as_of=None, ledger=None, allow_live=False, adjudicate_with=True,
               encoder=None, decider=None, save_accepted=True):
     """One messy label -> mapping. method: saved_* | lay_synonym | dictionary | alias | brand | ingredient | class |
@@ -314,8 +533,11 @@ def map_label(label, kind=None, *, store=None, question=None, as_of=None, ledger
     out = {'label': label, 'kind': kind, 'concept': None, 'classes': None, 'codes': None, 'method': None, 'candidates': [],
            'cost_usd': 0.0, 'calls': 0, 'version': VERSION}
     hit = saved(store, label) if store else None
+    ask = dict(assess=adjudicate_with, store=store, question=question, as_of=as_of, ledger=ledger, allow_live=allow_live, decider=decider)
     if hit and (kind is None or hit['kind'] == kind):
         out.update(hit)
+        if out['kind'] == 'condition' and out['concept'] and _granularity(out, label, **ask) and save_accepted:
+            save_narrowing(store, label, 'condition', out['narrowing'])  # a mapping saved before granularity existed gets its decision
     else:
         found = deterministic(label, kind)
         if found:
@@ -337,8 +559,13 @@ def map_label(label, kind=None, *, store=None, question=None, as_of=None, ledger
             from .drug_classes import GROUPS
             classes = list(GROUPS.get(s1['concept'], [s1['concept']])) if s1['kind'] == 'medication' else None
             out.update(kind=s1['kind'], concept=s1['concept'], classes=classes, method='system_one')
+            if out['kind'] == 'condition': _granularity(out, label, **ask)
             if store and save_accepted: save(store, label, out, question)
+    if out['kind'] == 'condition' and out['concept'] and 'granularity' not in out:  # a deterministic match: the term is the concept's name
+        _granularity(out, label, **ask)
     out['codes'] = codes(out['kind'], out['concept'])
+    if out.get('granularity') == 'narrowed':
+        out['codes'] = {**out['codes'], 'codes': list(out['narrowing']['codes']), 'concept_codes': out['codes']['codes']}
     return out
 
 
@@ -363,9 +590,18 @@ def grammar_terms(question, store=None, *, known=()):
         if not found or found['kind'] not in KINDS: continue
         value = found.get('classes') or [found['concept']] if found['kind'] == 'medication' else found['concept']
         if span in out[found['kind']]: continue
+        entry = {'span': span, 'kind': found['kind'], 'concept': found['concept'], 'classes': found.get('classes'),
+                 'method': found['method'], 'codes': codes(found['kind'], found['concept'])}
+        if found['kind'] == 'condition':  # granularity: free here (saved decision or disclosure), the System One call is narrow()
+            probe = {**found, 'narrowing': found.get('narrowing')}
+            _granularity(probe, text, assess=False)
+            entry['granularity'] = probe['granularity']
+            if probe['granularity'] == 'narrowed':
+                value = concepts.scoped_name(found['concept'], probe['narrowing']['codes'])
+                entry['codes'] = {**entry['codes'], 'codes': list(probe['narrowing']['codes']), 'concept_codes': entry['codes']['codes']}
+            if probe['narrowing']: entry['narrowing'] = probe['narrowing']
         out[found['kind']][span] = value
-        out['used'].append({'span': span, 'kind': found['kind'], 'concept': found['concept'], 'classes': found.get('classes'),
-                            'method': found['method'], 'codes': codes(found['kind'], found['concept'])})
+        out['used'].append(entry)
     return out
 
 
@@ -387,23 +623,37 @@ def tier(stack, catalog, question, population=None, ledger=None, *, decider=None
     from .question_input import QuestionNotUnderstood
     if interpret is None:
         from .shared_planner import _interpret as interpret
-    try:
-        interpret(catalog, question, population=population)
-        return None  # the grammar already reads it (its exact tier answers first)
-    except QuestionNotUnderstood as exc:
-        tail = unconsumed(str(exc))
-    if not tail: return None
     store = store_path(Path(catalog.target).parent)
     live = bool(getattr(stack, 'allow_live', False))
     as_of = None
     try: as_of = stack.retriever.meta['snapshot']['as_of']
     except (AttributeError, KeyError, TypeError): pass
     receipts, spent, calls = [], 0.0, 0
+    try:
+        interpret(catalog, question, population=population)
+        tail = None  # the grammar already reads it (its exact tier answers first)
+    except QuestionNotUnderstood as exc:
+        tail = unconsumed(str(exc))
+        if not tail: return None
+    if tail is None:
+        # Read through saved mappings. The one thing left to do: a term kept at its broader concept because its granularity was never
+        # assessed (a mapping saved before narrowing existed) is narrowed now; decided -> recompile, else the grammar's reading stands.
+        for e in grammar_terms(question, store)['used']:
+            if e['kind'] != 'condition' or e.get('granularity') != 'unverified' or (e.get('narrowing') or {}).get('reason') != 'granularity not assessed':
+                continue
+            r = map_label(e['span'], 'condition', store=store, question=question, as_of=as_of, ledger=ledger, allow_live=live, decider=decider)
+            spent += r['cost_usd']; calls += r['calls']
+            receipts.append({k: r.get(k) for k in RECEIPT_KEYS})
+        if not any(r.get('granularity') in DECIDED for r in receipts): return None
+        contract, interpretation = interpret(catalog, question, population=population)
+        return contract, {**interpretation, 'interpreter': 'terminology_mapping', 'terminology': receipts,
+                          'terminology_usage': {'new_paid_api_calls': calls, 'known_api_estimate_usd': round(spent, 6)},
+                          'review': 'terminology_granularity_then_fully_consumed_grammar'}
     for span in candidate_spans(tail):
         if len([r for r in receipts if r.get('system_one')]) >= MAX_ADJUDICATIONS: break
         r = map_label(span, store=store, question=question, as_of=as_of, ledger=ledger, allow_live=live, decider=decider)
         spent += r['cost_usd']; calls += r['calls']
-        receipts.append({k: r.get(k) for k in ('label', 'kind', 'concept', 'classes', 'codes', 'method', 'system_one')})
+        receipts.append({k: r.get(k) for k in RECEIPT_KEYS})
         if r['concept']: break
     usage = {'new_paid_api_calls': calls, 'known_api_estimate_usd': round(spent, 6)}
     if not any(r['concept'] for r in receipts):
@@ -413,3 +663,40 @@ def tier(stack, catalog, question, population=None, ledger=None, *, decider=None
     contract, interpretation = interpret(catalog, question, population=population)
     return contract, {**interpretation, 'interpreter': 'terminology_mapping', 'terminology': receipts, 'terminology_usage': usage,
                       'review': 'terminology_mapping_then_fully_consumed_grammar'}
+
+
+# ------------------------------------------------------------------------------------------------ one-time pass over a store
+def renarrow_saved(stack_path, *, ledger=None, dry_run=True, decider=None, as_of=None):
+    """Run the granularity decision (narrow()) over every saved condition mapping that was never decided: its concept spans more than
+    one ICD-10-CM category, the term is not the concept's own name and no narrowed / whole decision is saved. dry_run=True lists them
+    without calling System One; dry_run=False asks and saves narrowed / whole results (unverified stays unsaved).
+    -> [{'term', 'concept', 'result', 'codes', 'p'}]"""
+    store = store_path(stack_path)
+    titles = category_titles(store)
+    summary = []
+    for term, row in sorted(saved(store).items()):
+        concept = row['concept']
+        if row['kind'] != 'condition' or len(concept_categories(concept)) < 2 or is_own_name(term, concept) \
+                or (row.get('narrowing') or {}).get('granularity') in DECIDED:
+            continue
+        item = {'term': term, 'concept': concept, 'result': 'pending', 'codes': None, 'p': None}
+        if not dry_run:
+            n = narrow(term, concept, titles=titles, question=f'How many patients have {term}?', as_of=as_of, ledger=ledger, allow_live=True,
+                       decider=decider)
+            item.update(result=n['granularity'], codes=n.get('codes'), p=n.get('probability'))
+            if n['granularity'] in DECIDED:
+                save_narrowing(store, term, 'condition', _granularity_view(n))
+        summary.append(item)
+    return summary
+
+
+if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser(description='Decide the granularity of saved condition mappings (opioid use disorder -> F11).')
+    ap.add_argument('--renarrow', required=True, metavar='STACK', help='stack directory holding terminology-map.sqlite3')
+    ap.add_argument('--write', action='store_true', help='ask System One and save narrowed / whole decisions (default: list only)')
+    args = ap.parse_args()
+    if args.write:
+        import run_integrated_stack
+        run_integrated_stack.keys()
+    for r in renarrow_saved(args.renarrow, dry_run=not args.write): print(json.dumps(r))
