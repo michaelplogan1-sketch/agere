@@ -139,24 +139,57 @@ FILL_EVIDENCE_SQL = "('dispensed','claim','payer_claim')"
 LAB_EVIDENCE_CONDITIONS = {'diabetes', 'type_1_diabetes', 'type_2_diabetes', 'chronic_kidney_disease'}
 
 
+def split_scope(name):
+    """'substance_use_disorder@F11' -> ('substance_use_disorder', ('F11',)); an unscoped name -> (name, None).
+    A scoped condition name is the concept narrowed to a subset of its own ICD-10-CM codes (terminology.narrow): the term named
+    only part of the concept's code list (opioid use disorder is F11, not every substance use disorder)."""
+    base, _, rest = str(name).partition('@')
+    codes = tuple(c for c in rest.split('+') if c)
+    return base, (codes or None)
+
+
+def scoped_name(concept, codes):
+    return concept + '@' + '+'.join(codes)
+
+
+def valid_scope(name):
+    """The base is a condition concept and every scoped code lies inside that concept's own code list."""
+    base, codes = split_scope(name)
+    if base not in CONDITIONS: return False
+    if codes is None: return '@' not in str(name)
+    listed = [c.upper() for c in CONDITIONS[base]['icd10']]
+    return all(re.fullmatch(r'[A-Z][0-9A-Z]{2}(?:\.[0-9A-Z]{1,4})?', c) and any(c == l or l.startswith(c) or c.startswith(l) for l in listed)
+               for c in codes)
+
+
 def condition_evidence_sql(names, tables):
     """Governed condition evidence: EHR diagnoses (plus unknown-flag problem-list rows) UNION counted payer-claim
     ICD-10 diagnoses matching the concepts' code prefixes. Returns a subquery of (patient_id, event_date, source).
-    Decided by Mike 2026-10-21: claims-only members are part of the condition population."""
+    Decided by Mike 2026-10-21: claims-only members are part of the condition population.
+    A scoped name (split_scope) reads only its narrowed codes: the EHR rows of the concept whose icd10 starts with one of them,
+    and the payer-claim diagnoses with those prefixes."""
     lit = lambda v: "'" + str(v).replace("'", "''") + "'"
+    parsed = [split_scope(n) for n in names]
+    whole = [b for b, c in parsed if not c]
+    narrowed = [(b, c) for b, c in parsed if c]
     parts = []
     if 'condition' in tables:
         diagnosis = 'is_diagnosis = 1'
         if 'diagnosis_basis' in tables['condition']:
             diagnosis += " OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')"
         dated = 'event_date' if 'event_date' in tables['condition'] else 'NULL AS event_date'
-        parts.append("SELECT patient_id, " + dated + ", 'ehr_diagnosis' AS source FROM condition WHERE concept IN ("
-                     + ','.join(map(lit, names)) + ') AND (' + diagnosis + ')')
-        lab = sorted(set(names) & LAB_EVIDENCE_CONDITIONS)
+        which = []
+        if whole: which.append('concept IN (' + ','.join(map(lit, whole)) + ')')
+        if narrowed and 'icd10' not in tables['condition']:
+            raise ValueError('A narrowed condition needs the condition.icd10 column')
+        which += [f'(concept = {lit(b)} AND (' + ' OR '.join(f"icd10 LIKE {lit(x + '%')}" for x in c) + '))' for b, c in narrowed]
+        where = which[0] if len(which) == 1 else '(' + ' OR '.join(which) + ')'
+        parts.append("SELECT patient_id, " + dated + ", 'ehr_diagnosis' AS source FROM condition WHERE " + where + ' AND (' + diagnosis + ')')
+        lab = sorted(set(whole) & LAB_EVIDENCE_CONDITIONS)
         if lab and 'diagnosis_basis' in tables['condition']:
             parts.append("SELECT patient_id, " + dated + ", 'laboratory_evidence' AS source FROM condition WHERE concept IN ("
                          + ','.join(map(lit, lab)) + ") AND is_diagnosis IS NULL AND diagnosis_basis = 'laboratory_evidence'")
-    prefixes = sorted({p for n in names for p in CONDITIONS.get(n, {}).get('icd10', [])})
+    prefixes = sorted({p for b, c in parsed for p in (c or CONDITIONS.get(b, {}).get('icd10', []))})
     if prefixes and {'patient_id', 'icd10', 'service_from', 'counts_in_metrics'} <= set(tables.get('payer_claim_diagnosis', [])):
         parts.append("SELECT patient_id, service_from AS event_date, 'payer_claim_diagnosis' AS source FROM payer_claim_diagnosis "
                      'WHERE counts_in_metrics = 1 AND (' + ' OR '.join(f"icd10 LIKE {lit(p + '%')}" for p in prefixes) + ')')

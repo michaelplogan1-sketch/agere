@@ -902,6 +902,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     if hit:
         saved = json.loads(hit[0])
         if not saved.get('interpretation', {}).get('execution_accepted'): hit = None
+        from .terminology import stale, store_path  # a saved plan built before a term's granularity was decided is re-read, not replayed
+        if hit and stale(store_path(Path(catalog.target).parent), saved['interpretation'].get('terminology')): hit = None
         from .request_shapes import valid
         shape_id = saved['interpretation'].get('request_shape_id')
         if shape_id and not valid(stack.path, shape_id): hit = None
@@ -1052,6 +1054,9 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
         if receipt.get('interpretation', {}).get('interpreter') == 'paraphrase_reuse':
             from .paraphrase import disclosure
             result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), disclosure(receipt['interpretation'])]
+        from .terminology import granularity_note  # a term kept at its broader concept (granularity unverified) is disclosed, never blocked
+        notes = [n for n in (granularity_note(t) for t in receipt.get('interpretation', {}).get('terminology') or []) if n]
+        if notes: result['answer']['limitations'] = list(dict.fromkeys([*(result['answer'].get('limitations') or []), *notes]))
         from . import procedural_memory as memory
         used = receipt.get('interpretation', {}).get('procedural_memory')
         if used:
