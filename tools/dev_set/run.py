@@ -1,0 +1,358 @@
+"""Send the development question set to an Agere service and score it against the independent keys.
+
+    .venv/bin/python -m tools.dev_set.run --split dev --jobs 1            # whole dev split (slow: a question can take minutes)
+    .venv/bin/python -m tools.dev_set.run --bucket insight --split heldout
+    .venv/bin/python -m tools.dev_set.run --limit 5 --out /tmp/smoke.json  # smoke
+
+Every request carries X-Agere-Evaluation: 1 (the service learns nothing from it). Follow-ups: the service links a follow-up to
+the prior turn through `conversation_id` in the /api/stack/compose body (conversation.handle_compose); in evaluation mode the
+service stores NO conversation turn (conversation.record returns 0), so a chained follow-up cannot see its parent's cohort. The
+default --follow-ups conversation therefore sends the real chain (and reports what the service did); --follow-ups standalone
+sends the key's fully-resolved question instead (measures the answer, not the context linking).
+
+Output: per-bucket accuracy, coverage (answered / asked), precision on answered, refusals, cost (cost_receipt), latency p50/p90,
+and the route (winning tier) histogram. Scoring is stated per answer type in score().
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import statistics
+import sys
+import time
+import urllib.error
+import urllib.request
+from collections import Counter, defaultdict
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+if __package__ in (None, ''):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from tools.dev_set.keys import BUCKETS, read
+
+DEFAULT_URL = 'http://localhost:8885/api/stack/compose'
+HEADERS = {'Content-Type': 'application/json', 'X-Agere-Evaluation': '1'}
+ANSWERED = {'answered', 'partial', 'low_confidence'}
+TEXT_KEYS = ('answer', 'narrative', 'summary', 'explanation', 'insight', 'insights', 'report', 'findings', 'text', 'message', 'table',
+             'rows', 'program_results', 'workflow', 'grounding', 'missing')
+NUM = re.compile(r'(?<![\w.])-?\d[\d,]*\.?\d*')
+
+
+# --- transport ----------------------------------------------------------------------------------------------------------
+def post(url, body, timeout=900):
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=HEADERS, method='POST')
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return r.status, json.load(r)
+    except urllib.error.HTTPError as exc:
+        try:
+            return exc.code, json.loads(exc.read().decode('utf-8', 'replace'))
+        except ValueError:
+            return exc.code, {'status': 'error', 'error': f'HTTP {exc.code}'}
+
+
+def ask(url, question, conversation_id=None, timeout=900):
+    body = {'question': question}
+    if conversation_id:
+        body['conversation_id'] = conversation_id
+    t0 = time.time()
+    try:
+        code, resp = post(url, body, timeout)
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return {'http': None, 'seconds': time.time() - t0, 'resp': {'status': 'error', 'error': str(exc)[:300]}}
+    return {'http': code, 'seconds': time.time() - t0, 'resp': resp}
+
+
+# --- reading a response -------------------------------------------------------------------------------------------------
+def status_of(resp):
+    a = resp.get('answer')
+    return (a.get('status') if isinstance(a, dict) else None) or resp.get('status')
+
+
+def visible_text(resp):
+    parts = [json.dumps(resp[k], ensure_ascii=False, default=str) for k in TEXT_KEYS if resp.get(k) not in (None, [], {})]
+    return '\n'.join(parts)
+
+
+def numbers_in(text):
+    out = []
+    for m in NUM.findall(text):
+        try:
+            out.append(float(m.replace(',', '')))
+        except ValueError:
+            pass
+    return out
+
+
+def scalar_of(resp):
+    """The single number an answer commits to: answer.count / answer.value, else a one-cell table."""
+    a = resp.get('answer') if isinstance(resp.get('answer'), dict) else {}
+    for k in ('count', 'value'):
+        if isinstance(a.get(k), (int, float)) and not isinstance(a.get(k), bool):
+            return float(a[k])
+    t = a.get('table')
+    if isinstance(t, list) and len(t) == 1 and len(t[0]) == 1:
+        v = next(iter(t[0].values()))
+        if isinstance(v, (int, float)):
+            return float(v)
+    return None
+
+
+def route_of(resp):
+    pr = resp.get('planner_receipt') or {}
+    interp = pr.get('interpretation') or {}
+    return (interp.get('proposer') or {}).get('name') or interp.get('interpreter') or pr.get('route') or 'none'
+
+
+def close(x, y, tol):
+    tol = tol or {}
+    if 'rel' in tol and abs(x - y) <= tol['rel'] * abs(y):
+        return True
+    return abs(x - y) <= tol.get('abs', 0)
+
+
+# --- scoring ------------------------------------------------------------------------------------------------------------
+def score(q, resp):
+    """-> (correct: bool|None, detail: dict). correct is None only for a refused / unanswered item (counted in coverage)."""
+    key, t = q['key'], q['answer_type']
+    st = status_of(resp)
+    answered = st in ANSWERED
+    a = resp.get('answer') if isinstance(resp.get('answer'), dict) else {}
+    text = visible_text(resp)
+    low = text.lower()
+    tol = key.get('tolerance')
+    if t == 'absent':
+        refused = (not answered) or st == 'unsupported' or a.get('answer_type') == 'unsupported'
+        return refused, {'expected': 'refusal: ' + key.get('reason', ''), 'status': st}
+    if not answered:
+        return None, {'status': st}
+    if t in ('count', 'value'):
+        got = scalar_of(resp)
+        exp = key['answer']
+        ok = got is not None and (close(got, exp, tol) or (key.get('unit') == 'proportion' and close(got, exp * 100, {'abs': (tol or {}).get('abs', 0) * 100})))
+        return ok, {'got': got, 'expected': exp}
+    if t == 'share':
+        got, exp = scalar_of(resp), key['answer']
+        ok = got is not None and (close(got, exp, tol) or close(got, exp * 100, {'abs': (tol or {}).get('abs', 0) * 100}))
+        if not ok and not got:  # number only in prose / table
+            ok = any(close(n, exp, tol) or close(n, exp * 100, {'abs': (tol or {}).get('abs', 0) * 100}) for n in numbers_in(text))
+        return ok, {'got': got, 'expected': exp, 'numerator': key.get('numerator'), 'denominator': key.get('denominator')}
+    if t == 'patient_set':
+        got = set(a.get('patient_ids') or [])
+        exp = set(key['answer'])
+        detail = {'got_n': len(got), 'expected_n': len(exp), 'missing': len(exp - got), 'extra': len(got - exp)}
+        if not got and scalar_of(resp) is not None and int(scalar_of(resp)) == len(exp):
+            detail['count_only_match'] = True
+        return got == exp, detail
+    if t == 'table':
+        rows = a.get('table') if isinstance(a.get('table'), list) else []
+        exp_rows = key['answer']
+        used, hits, order = set(), 0, []
+        for er in exp_rows:
+            for i, r in enumerate(rows):
+                if i in used:
+                    continue
+                vals = list(r.values())
+                if all(any((isinstance(v, (int, float)) and isinstance(ev, (int, float)) and not isinstance(v, bool) and close(float(v), float(ev), tol))
+                           or (isinstance(v, str) and isinstance(ev, str) and v.strip().lower() == ev.strip().lower()) for v in vals) for ev in er.values()):
+                    used.add(i); hits += 1; order.append(i)
+                    break
+        ok = hits == len(exp_rows) and len(rows) == len(exp_rows) and (not key.get('order_matters') or order == sorted(order))
+        return ok, {'rows_expected': len(exp_rows), 'rows_matched': hits, 'rows_returned': len(rows)}
+    if t == 'list':
+        flat = low
+        miss = [x for x in key['answer'] if str(x).lower() not in flat]
+        return not miss, {'missing': miss}
+    if t == 'date':
+        return str(key['answer']) in text, {'expected': key['answer']}
+    if t == 'yes_no':
+        exp = key['answer']
+        v = a.get('value') if isinstance(a.get('value'), (int, float)) else None
+        if v is not None:
+            got = bool(v)
+        elif a.get('count') is not None and isinstance(a.get('count'), int):
+            got = a['count'] > 0
+        else:
+            yes = re.search(r'\b(yes|true|is on|has had|were)\b', low)
+            no = re.search(r'\b(no|false|not|never|none|without)\b', low)
+            got = True if yes and not no else False if no and not yes else None
+        return got is exp, {'got': got, 'expected': exp}
+    if t == 'label':
+        exp = str(key['answer'])
+        accept = key.get('accept')
+        if accept:
+            pats = {lab: [re.compile(r'\b' + p, re.I) for p in ps] for lab, ps in accept.items()}
+            seen = {lab for lab, ps in pats.items() if any(p.search(text) for p in ps)}
+            return seen == {exp}, {'expected': exp, 'matched_labels': sorted(seen)}
+        alts = {exp.lower(), exp.lower().replace('_', ' '), str(key.get('display_name') or '').lower()} - {''}
+        return any(x in low.replace('_', ' ') or x in low for x in alts), {'expected': exp}
+    if t == 'note':
+        return score_note(q, resp, text, low, a)
+    if t == 'rubric':
+        return score_rubric(key['answer'], text, low)
+    return None, {'unscored_type': t}
+
+
+def score_note(q, resp, text, low, a):
+    key, kind = q['key'], q['key']['kind']
+    ok = False
+    if kind == 'yes_no':
+        yes = re.search(r'\b(yes|does|did|are|is|has|still|reports? taking)\b', low) and not re.search(r'\b(no|not|does not|did not|never|declin\w*|cannot)\b', low)
+        no = re.search(r'\b(no|not|does not|did not|never|declin\w*|cannot|unable)\b', low)
+        got = 'yes' if yes else 'no' if no else None
+        ok = got == key['answer']
+    elif kind == 'not_documented':
+        ok = bool(re.search(r'not documented|no mention|not mentioned|does not (document|mention|address)|no documentation|nothing (documented|recorded)|not recorded|unknown', low))
+    elif kind == 'value':
+        ok = float(key['answer']) in numbers_in(text)
+    else:
+        ok = all(re.search(g, text, re.I) for g in key.get('key_groups', []))
+    cited = [e['record_id'] for e in q['evidence']]
+    has_cite = (not cited) or any(r in text for r in cited)
+    return ok and has_cite, {'answer_match': ok, 'cited_supporting_record': has_cite}
+
+
+def _pat_in(text, pats):
+    return any(re.search(p, text, re.I) for p in pats)
+
+
+def score_rubric(rub, text, low):
+    facts, results = rub['required_facts'], {}
+    nums = numbers_in(text)
+    for f in facts:
+        ok = False
+        if f['kind'] == 'terms':
+            hits = [bool(re.search(p, text, re.I)) for p in f['patterns']]
+            ok = all(hits) if f.get('mode') == 'all' else any(hits)
+        elif f['kind'] == 'ranking':
+            pos, last = [], -1
+            ok = True
+            for it in f['items']:
+                m = re.search(it, text, re.I)
+                if not m or m.start() < last:
+                    ok = False
+                    break
+                last = m.start()
+        elif f['kind'] == 'number':
+            cands = [f['value']] + ([f['value'] * 100] if abs(f['value']) <= 1.0 and f.get('unit') == 'proportion' else [])
+            tol = f.get('tolerance') or {}
+            windows = []
+            if f.get('near'):
+                for p in f['near']:
+                    for m in re.finditer(p, text, re.I):
+                        windows.append(text[max(0, m.start() - 140): m.end() + 140])
+            hay = [text] if not f.get('near') else windows
+            for h in hay:
+                for n in numbers_in(h):
+                    for c in cands:
+                        t2 = dict(tol)
+                        if c != f['value'] and 'abs' in t2:
+                            t2['abs'] = t2['abs'] * 100
+                        if close(n, c, t2):
+                            ok = True
+        results[f['id']] = ok
+    contradictions = [x['id'] for x in rub.get('forbidden', []) if re.search(x['pattern'], text, re.I)]
+    share = sum(results.values()) / len(results) if results else 0.0
+    return (share == 1.0 and not contradictions), {'fact_share': round(share, 3), 'facts': results, 'contradicted': contradictions}
+
+
+# --- driver -------------------------------------------------------------------------------------------------------------
+def select(args):
+    qs = read()
+    if args.split != 'all':
+        qs = [q for q in qs if q['split'] == args.split]
+    if args.bucket:
+        qs = [q for q in qs if q['bucket'] == args.bucket]
+    if args.ids:
+        qs = [q for q in qs if q['id'] in args.ids]
+    return qs[: args.limit] if args.limit else qs
+
+
+def chains(qs, all_qs):
+    """Group the selected questions into chains (a follow-up with its ancestors that were selected), in order."""
+    by_id = {q['id']: q for q in all_qs}
+    out, seen = [], set()
+    for q in qs:
+        if q['id'] in seen:
+            continue
+        chain, cur = [], q
+        while cur:
+            chain.insert(0, cur)
+            cur = by_id.get(cur['follow_up_of'])
+        chain = [c for c in chain if c['id'] not in seen]
+        for c in chain:
+            seen.add(c['id'])
+        out.append(chain)
+    return out
+
+
+def run_chain(chain, args, run_id):
+    rows, conv = [], f'devset-{run_id}-{chain[0]["id"]}'
+    for q in chain:
+        is_follow = bool(q['follow_up_of'])
+        use_conv = is_follow and args.follow_ups == 'conversation'
+        text = q['key'].get('standalone') if (is_follow and args.follow_ups == 'standalone') else q['question']
+        # a chain's first question also opens the conversation, so the service can link what follows
+        r = ask(args.url, text, conv if (use_conv or (args.follow_ups == 'conversation' and len(chain) > 1)) else None)
+        resp = r['resp']
+        correct, detail = score(q, resp)
+        cr = resp.get('cost_receipt') or {}
+        rows.append({'id': q['id'], 'bucket': q['bucket'], 'split': q['split'], 'asked': text, 'status': status_of(resp),
+                     'answered': status_of(resp) in ANSWERED, 'correct': correct, 'detail': detail, 'seconds': round(r['seconds'], 2),
+                     'usd': cr.get('usd'), 'paid_calls': cr.get('paid_calls', resp.get('new_paid_api_calls')), 'route': route_of(resp),
+                     'followup_context': (resp.get('conversation') or {}).get('method') if is_follow else None,
+                     'error': (resp.get('error') or '')[:300] if status_of(resp) not in ANSWERED else None})
+        print(f"{q['id']:>6} {q['bucket'][:14]:14} {str(rows[-1]['status'])[:14]:14} correct={correct} {r['seconds']:.0f}s route={rows[-1]['route']}", flush=True)
+    return rows
+
+
+def pct(x, n):
+    return f'{100 * x / n:.1f}%' if n else 'n/a'
+
+
+def report(rows):
+    print('\n=== per bucket ===')
+    for b in BUCKETS:
+        rs = [r for r in rows if r['bucket'] == b]
+        if not rs:
+            continue
+        scored = [r for r in rs if r['correct'] is not None]
+        ans = [r for r in rs if r['answered']]
+        correct = [r for r in rs if r['correct'] is True]
+        usd = [r['usd'] for r in rs if r['usd'] is not None]
+        secs = sorted(r['seconds'] for r in rs)
+        p = lambda f: secs[min(len(secs) - 1, int(f * len(secs)))]
+        print(f"{b}\n  n={len(rs)} accuracy={pct(len(correct), len(rs))} coverage(answered)={pct(len(ans), len(rs))} "
+              f"precision_on_answered={pct(sum(1 for r in ans if r['correct'] is True), len(ans))} refusals={len(rs) - len(ans)}\n"
+              f"  cost_usd_known={sum(usd):.4f} over {len(usd)}/{len(rs)} questions; latency p50={statistics.median(secs):.1f}s p90={p(0.9):.1f}s\n"
+              f"  routes={dict(Counter(r['route'] for r in rs))}")
+    allc = [r for r in rows if r['correct'] is True]
+    print(f"\nOVERALL n={len(rows)} accuracy={pct(len(allc), len(rows))} answered={pct(sum(r['answered'] for r in rows), len(rows))}")
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
+    ap.add_argument('--url', default=DEFAULT_URL)
+    ap.add_argument('--split', choices=('dev', 'heldout', 'all'), default='dev')
+    ap.add_argument('--bucket', choices=BUCKETS)
+    ap.add_argument('--ids', nargs='*')
+    ap.add_argument('--limit', type=int, help='first N selected questions (smoke)')
+    ap.add_argument('--jobs', type=int, default=1, help='parallel chains (the live service is shared: keep 1 unless told otherwise)')
+    ap.add_argument('--follow-ups', choices=('conversation', 'standalone'), default='conversation')
+    ap.add_argument('--out', help='write per-question rows as JSON')
+    args = ap.parse_args(argv)
+    qs = select(args)
+    run_id = time.strftime('%Y%m%dT%H%M%S')
+    cs = chains(qs, read())
+    with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
+        rows = [r for part in ex.map(lambda c: run_chain(c, args, run_id), cs) for r in part]
+    report(rows)
+    if args.out:
+        Path(args.out).write_text(json.dumps(rows, indent=1))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

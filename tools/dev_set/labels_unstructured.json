@@ -1,0 +1,1465 @@
+{
+ "method": "Each item was labeled twice: pass 1 by the dev-set author reading the scope documents; pass 2 by a separate fresh model session given only the question and the documents (no labels, no database). Agreement: yes/no/not_documented/value answers must match; short-text answers must contain every key group of pass 1 and cite one of pass 1's records. Items kept: agreed ones only.",
+ "labeled": 42,
+ "agreed_strict": 41,
+ "agreed_substantive": 42,
+ "disagreement_rate_strict": 0.0238,
+ "disagreement_note": "u39 differed only in format (pass 2 answered \"yes\", pass 1 a sentence): substantively the same answer and evidence.",
+ "items": {
+  "u01": {
+   "item_id": "u01",
+   "patient_id": "WHP-0903FFDCD4A2",
+   "question": "Why was WHP-0903FFDCD4A2's metformin stopped?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-7d402e978984532e5f4cc1",
+     "date": "2027-09-22",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-bdb91ba812e6ee1ad2f7b3",
+     "date": "2028-09-11",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-6b78102fba0df6cf63c10e",
+     "date": "2029-06-06",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-ff76017987d0e4ced1c203",
+     "date": "2029-09-14",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-a9ebb996955e3fe9efe6d9",
+     "date": "2029-10-03",
+     "type": "office_followup"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Because of cost (the patient said cost made it hard to keep up with refills).",
+   "key_groups": [
+    "cost"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-7d402e978984532e5f4cc1",
+     "quote": "Stop metformin 500 mg ER due to cost; patient instructed to discontinue."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Cost.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-7d402e978984532e5f4cc1",
+      "quote": "Stop metformin 500 mg ER due to cost"
+     }
+    ]
+   }
+  },
+  "u03": {
+   "item_id": "u03",
+   "patient_id": "WHP-54E6E5470E6E",
+   "question": "What was the reason aspirin was stopped for WHP-54E6E5470E6E?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-99bf3073fdc6f9a2321bb1",
+     "date": "2027-03-12",
+     "type": "acute_visit"
+    },
+    {
+     "record_id": "WHN-R-7b213fd64792dceb5abad9",
+     "date": "2027-03-17",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-4a992ad49ba0a998ea377e",
+     "date": "2027-10-08",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-f01ed73d01b77252d72623",
+     "date": "2027-10-18",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-bbcb43952780c8237fc6d0",
+     "date": "2028-05-01",
+     "type": "acute_visit"
+    },
+    {
+     "record_id": "WHN-R-2c079e161551d9e39137ee",
+     "date": "2028-10-19",
+     "type": "acute_visit"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "\"No longer indicated\" is the documented reason.",
+   "key_groups": [
+    "no longer indicated|not indicated|no longer needed"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-f01ed73d01b77252d72623",
+     "quote": "Stop aspirin 81 mg due to no longer indicated; pt instructed to discontinue."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "No longer indicated.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-f01ed73d01b77252d72623",
+      "quote": "Stop aspirin 81 mg due to no longer indicated"
+     }
+    ]
+   }
+  },
+  "u04": {
+   "item_id": "u04",
+   "patient_id": "WHP-390EB3215AC0",
+   "question": "Anything in WHP-390EB3215AC0's notes about social or financial barriers? What was done about it?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-1528780103fb8e4dda128e",
+     "date": "2026-11-03",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-880d055e841df12331a8a8",
+     "date": "2027-11-16",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-073200a2c6ecf0dc18f763",
+     "date": "2027-12-25",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-07910b8b321bb71cddc136",
+     "date": "2028-06-06",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-ccb4c956dfa467ac0632ff",
+     "date": "2028-11-09",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-a395271b18660b43ec9764",
+     "date": "2030-01-17",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-fd8d22173820a166317e91",
+     "date": "2030-03-29",
+     "type": "acute_visit"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Trouble affording groceries (food insecurity); referred to community food resources.",
+   "key_groups": [
+    "afford|food|grocer",
+    "community food resources|referr"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-073200a2c6ecf0dc18f763",
+     "quote": "Reports trouble affording groceries at times."
+    },
+    {
+     "record_id": "WHN-R-073200a2c6ecf0dc18f763",
+     "quote": "SDOH: referred to community food resources"
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Yes: trouble affording groceries at times (food insecurity); referred to community food resources.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-073200a2c6ecf0dc18f763",
+      "quote": "Reports trouble affording groceries at times."
+     },
+     {
+      "record_id": "WHN-R-073200a2c6ecf0dc18f763",
+      "quote": "SDOH: referred to community food resources"
+     }
+    ]
+   }
+  },
+  "u05": {
+   "item_id": "u05",
+   "patient_id": "WHP-D144BB42CF53",
+   "question": "Did WHP-D144BB42CF53 accept statin therapy when it was discussed?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-735d1d11314bef8a3303ab",
+     "date": "2026-10-24",
+     "type": "telehealth_visit"
+    },
+    {
+     "record_id": "WHN-R-9812e283757516c8601a26",
+     "date": "2027-06-16",
+     "type": "telehealth_visit"
+    },
+    {
+     "record_id": "WHN-R-e5fe07a6c1c2c680ffc623",
+     "date": "2027-11-15",
+     "type": "well_child"
+    },
+    {
+     "record_id": "WHN-R-ed1e69911836e3861d27c7",
+     "date": "2027-12-16",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-3c1e212b2f926dc41bf59d",
+     "date": "2030-02-26",
+     "type": "office_followup"
+    }
+   ],
+   "kind": "yes_no",
+   "answer": "no",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHN-R-3c1e212b2f926dc41bf59d",
+     "quote": "Discussed statin therapy; patient declines at this time. Will readdress."
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "no",
+    "evidence": [
+     {
+      "record_id": "WHN-R-3c1e212b2f926dc41bf59d",
+      "quote": "Discussed statin therapy; patient declines at this time. Will readdress."
+     }
+    ]
+   }
+  },
+  "u07": {
+   "item_id": "u07",
+   "patient_id": "SYN-5A64C9F6-63D",
+   "question": "Has anyone documented a goals-of-care conversation for SYN-5A64C9F6-63D, and what did the patient choose?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-PD-9b2f4b0eef138c9c329d15",
+     "date": "2026-08-26",
+     "type": "telephone_illness_review"
+    },
+    {
+     "record_id": "WHN-PP-2c058e12c28f316cdc0fae",
+     "date": "2026-09-11",
+     "type": "medication_start"
+    },
+    {
+     "record_id": "WHR-36a40b2fce2c91242cd0be59",
+     "date": "2026-09-11",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHC-R-74d6e9b4b36d685ba5a673",
+     "date": "2026-09-21",
+     "type": "longitudinal_primary_care"
+    },
+    {
+     "record_id": "WHM-R-5c081ee0db6e3e391b577f",
+     "date": "2026-09-22",
+     "type": "medication_management_review"
+    },
+    {
+     "record_id": "WHN-PP-32584407bc555a4363ac93",
+     "date": "2026-09-22",
+     "type": "medication_start"
+    },
+    {
+     "record_id": "WHM-R-3f349cbf2986857f605ecb",
+     "date": "2026-10-05",
+     "type": "medication_response_followup"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Yes (2026-08-26): the patient elected comfort-focused care; hospice referral placed; DNR/POLST completed.",
+   "key_groups": [
+    "comfort",
+    "DNR|POLST|hospice"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-PD-9b2f4b0eef138c9c329d15",
+     "quote": "Patient elects comfort-focused care. Hospice referral placed; DNR/POLST completed."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Yes (2026-08-26): patient elected comfort-focused care; hospice referral placed; DNR/POLST completed.",
+    "evidence": [
+     {
+      "record_id": "WHN-PD-9b2f4b0eef138c9c329d15",
+      "quote": "Patient elects comfort-focused care."
+     }
+    ]
+   }
+  },
+  "u08": {
+   "item_id": "u08",
+   "patient_id": "P-5003",
+   "question": "Does P-5003 want chest compressions or a breathing tube if their heart stops?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHR-79e5be476cf2ebf8703c7aac",
+     "date": "2026-09-16",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHA-R-e27bafcfbe299a75942850",
+     "date": "2027-03-12",
+     "type": "advance_care_document_review"
+    },
+    {
+     "record_id": "WHA-R-8bf04a31d34ee103ee5279",
+     "date": "2027-03-15",
+     "type": "goals_of_care_telephone_note"
+    },
+    {
+     "record_id": "WHL-R-d3d989f0c1a6b7eec5e33c",
+     "date": "2028-08-29",
+     "type": "ordinary_preventive_health_review"
+    },
+    {
+     "record_id": "WHL-R-daefeb8e90014e4b5d3f78",
+     "date": "2028-10-06",
+     "type": "outside_dental_care_access"
+    },
+    {
+     "record_id": "WHL-R-856e7d2743cfdb92bec3f2",
+     "date": "2028-10-26",
+     "type": "outside_report_review"
+    },
+    {
+     "record_id": "WHL-R-2ef11b5111b94bbfb10b5e",
+     "date": "2029-01-16",
+     "type": "medication_history_review"
+    },
+    {
+     "record_id": "WHL-R-1ca770556809fa8bf19f2c",
+     "date": "2029-01-27",
+     "type": "medication_reconciliation_review"
+    },
+    {
+     "record_id": "WHL-R-60cc954f14df43c4ac129f",
+     "date": "2029-11-22",
+     "type": "medicare_annual_wellness"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Neither: no chest compressions and no breathing tube.",
+   "key_groups": [
+    "(not|no|declin|refus)\\w*.{0,60}(compression|CPR|resuscitat)",
+    "(not|no|declin|refus)\\w*.{0,60}(breathing tube|intubat|ventilat)"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHA-R-8bf04a31d34ee103ee5279",
+     "quote": "does not want chest compressions if the heart stops; does not want a breathing tube."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Neither: does not want chest compressions if the heart stops and does not want a breathing tube.",
+    "evidence": [
+     {
+      "record_id": "WHA-R-8bf04a31d34ee103ee5279",
+      "quote": "does not want chest compressions if the heart stops; does not want a breathing tube"
+     }
+    ]
+   }
+  },
+  "u09": {
+   "item_id": "u09",
+   "patient_id": "SYN-6340E556-E46",
+   "question": "What did SYN-6340E556-E46 say about resuscitation and intubation, and what was left undecided?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHA-R-42ae0e7ac99104510da921",
+     "date": "2027-03-01",
+     "type": "goals_of_care_telephone_note"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Wants attempted resuscitation (CPR) and accepts intubation for respiratory failure; undecided: noninvasive ventilation, nutrition and transfer limits.",
+   "key_groups": [
+    "(want|accept|yes).{0,60}(CPR|resuscitat)|(CPR|resuscitat).{0,60}(want|accept|yes)",
+    "intubat",
+    "noninvasive|non-invasive",
+    "nutrition",
+    "transfer"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHA-R-42ae0e7ac99104510da921",
+     "quote": "would want attempted resuscitation if the heart stops; accepts intubation for respiratory failure."
+    },
+    {
+     "record_id": "WHA-R-42ae0e7ac99104510da921",
+     "quote": "No decision about noninvasive ventilation, nutrition or transfer limits was made during this call."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Would want attempted resuscitation if the heart stops and accepts intubation for respiratory failure; no decision made on noninvasive ventilation, nutrition or transfer limits.",
+    "evidence": [
+     {
+      "record_id": "WHA-R-42ae0e7ac99104510da921",
+      "quote": "would want attempted resuscitation if the heart stops; accepts intubation for respiratory failure"
+     },
+     {
+      "record_id": "WHA-R-42ae0e7ac99104510da921",
+      "quote": "No decision about noninvasive ventilation, nutrition or transfer limits was made during this call."
+     }
+    ]
+   }
+  },
+  "u10": {
+   "item_id": "u10",
+   "patient_id": "SYN-90093AA9-A6A",
+   "question": "Is there a healthcare agent on file for SYN-90093AA9-A6A, and is that agent's authority active?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHR-00e27da25f154d453b2543ac",
+     "date": "2026-09-21",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHA-R-a5a9ac5fd5966163d1811e",
+     "date": "2027-03-03",
+     "type": "advance_care_document_review"
+    },
+    {
+     "record_id": "WHL-R-44a8ab1316745b07f377ea",
+     "date": "2028-08-11",
+     "type": "ordinary_preventive_health_review"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "A healthcare agent is named on the copy, but that does not show decision-making authority has been activated.",
+   "key_groups": [
+    "agent",
+    "(not|no|n.t).{0,80}(activat|authority)|activat\\w* .{0,40}(not|un)"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHA-R-a5a9ac5fd5966163d1811e",
+     "quote": "The copy names a healthcare agent. Naming an agent does not show that decision-making authority has been activated."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Yes, the document copy names a healthcare agent, but naming an agent does not show decision-making authority has been activated (no evidence authority is active).",
+    "evidence": [
+     {
+      "record_id": "WHA-R-a5a9ac5fd5966163d1811e",
+      "quote": "The copy names a healthcare agent."
+     },
+     {
+      "record_id": "WHA-R-a5a9ac5fd5966163d1811e",
+      "quote": "Naming an agent does not show that decision-making authority has been activated."
+     }
+    ]
+   }
+  },
+  "u12": {
+   "item_id": "u12",
+   "patient_id": "SYN-C747A0BF-C1E",
+   "question": "How many falls did SYN-C747A0BF-C1E report in the past year at the annual wellness visit?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHR-386ef53574c038b40cce6aa7",
+     "date": "2026-09-18",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHC-R-b4eaad68e4774a632cd644",
+     "date": "2026-09-29",
+     "type": "longitudinal_primary_care"
+    },
+    {
+     "record_id": "WHL-R-3a5abb54d3f56b177dd16e",
+     "date": "2028-08-18",
+     "type": "ordinary_preventive_health_review"
+    },
+    {
+     "record_id": "WHL-R-c1b2dc7d45b1d91b765a71",
+     "date": "2029-07-09",
+     "type": "functional_care_planning"
+    },
+    {
+     "record_id": "WHL-R-62783c65aef27b1c0f70e4",
+     "date": "2029-11-26",
+     "type": "medicare_annual_wellness"
+    }
+   ],
+   "kind": "value",
+   "answer": "2",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHL-R-62783c65aef27b1c0f70e4",
+     "quote": "Falls reported in the past year: 2."
+    }
+   ],
+   "pass2": {
+    "kind": "value",
+    "answer": "2",
+    "evidence": [
+     {
+      "record_id": "WHL-R-62783c65aef27b1c0f70e4",
+      "quote": "Falls reported in the past year: 2."
+     }
+    ]
+   }
+  },
+  "u13": {
+   "item_id": "u13",
+   "patient_id": "SYN-C7CDD451-834",
+   "question": "At the annual wellness visit, was a memory concern raised for SYN-C7CDD451-834?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHR-990871db2fd7be48ca27a110",
+     "date": "2026-09-18",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHL-R-416a8d97cf6b31e425be1e",
+     "date": "2028-08-17",
+     "type": "ordinary_preventive_health_review"
+    },
+    {
+     "record_id": "WHL-R-f0b678745b0ee6fdc45fbe",
+     "date": "2028-09-18",
+     "type": "outside_vision_assessment"
+    },
+    {
+     "record_id": "WHL-R-8f3499d6149a817b55245c",
+     "date": "2028-10-02",
+     "type": "outside_report_review"
+    },
+    {
+     "record_id": "WHL-R-58cb2da8441be673494a37",
+     "date": "2029-11-05",
+     "type": "medicare_annual_wellness"
+    }
+   ],
+   "kind": "yes_no",
+   "answer": "yes",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHL-R-58cb2da8441be673494a37",
+     "quote": "Memory concern reported; needs a dedicated assessment."
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "yes",
+    "evidence": [
+     {
+      "record_id": "WHL-R-58cb2da8441be673494a37",
+      "quote": "Memory concern reported; needs a dedicated assessment."
+     }
+    ]
+   }
+  },
+  "u16": {
+   "item_id": "u16",
+   "patient_id": "SYN-90093AA9-A6A",
+   "question": "Do the notes say SYN-90093AA9-A6A has trouble getting to appointments?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHR-00e27da25f154d453b2543ac",
+     "date": "2026-09-21",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHA-R-a5a9ac5fd5966163d1811e",
+     "date": "2027-03-03",
+     "type": "advance_care_document_review"
+    },
+    {
+     "record_id": "WHL-R-44a8ab1316745b07f377ea",
+     "date": "2028-08-11",
+     "type": "ordinary_preventive_health_review"
+    }
+   ],
+   "kind": "yes_no",
+   "answer": "yes",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHR-00e27da25f154d453b2543ac",
+     "quote": "Getting to appointments has been difficult; discussed help arranging transportation."
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "yes",
+    "evidence": [
+     {
+      "record_id": "WHR-00e27da25f154d453b2543ac",
+      "quote": "Getting to appointments has been difficult; discussed help arranging transportation."
+     }
+    ]
+   }
+  },
+  "u17": {
+   "item_id": "u17",
+   "patient_id": "WHP-0374A32F6EE0",
+   "question": "A 2029-08-05 note stopped lisinopril for WHP-0374A32F6EE0 because of angioedema concern. Do later notes still list lisinopril?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-e40898f633d69ad45020cd",
+     "date": "2029-08-05",
+     "type": "acute_visit"
+    },
+    {
+     "record_id": "WHN-R-cb7e9dfbb8258c332e3fe7",
+     "date": "2029-12-07",
+     "type": "office_followup"
+    }
+   ],
+   "kind": "yes_no",
+   "answer": "yes",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHN-R-cb7e9dfbb8258c332e3fe7",
+     "quote": "MEDICATIONS\nlisinopril 30 mg"
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "yes",
+    "evidence": [
+     {
+      "record_id": "WHN-R-cb7e9dfbb8258c332e3fe7",
+      "quote": "lisinopril 30 mg"
+     },
+     {
+      "record_id": "WHN-R-e40898f633d69ad45020cd",
+      "quote": "Stop lisinopril 30 mg due to angioedema concern"
+     }
+    ]
+   }
+  },
+  "u18": {
+   "item_id": "u18",
+   "patient_id": "WHP-6F1A5268DF31",
+   "question": "Sertraline was stopped for WHP-6F1A5268DF31 for side effects. Does a later note still list it as a current medication?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-64332ffdb256a9ebead19e",
+     "date": "2029-01-27",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-03ad4841064b7bcc0ac74f",
+     "date": "2029-04-26",
+     "type": "acute_visit"
+    }
+   ],
+   "kind": "yes_no",
+   "answer": "yes",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHN-R-03ad4841064b7bcc0ac74f",
+     "quote": "MEDICATIONS\nsertraline 100 mg tablet daily"
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "yes",
+    "evidence": [
+     {
+      "record_id": "WHN-R-64332ffdb256a9ebead19e",
+      "quote": "Stop sertraline 100 mg due to sexual side effects"
+     },
+     {
+      "record_id": "WHN-R-03ad4841064b7bcc0ac74f",
+      "quote": "sertraline 100 mg tablet daily"
+     }
+    ]
+   }
+  },
+  "u19": {
+   "item_id": "u19",
+   "patient_id": "WHP-19AA47229A1E",
+   "question": "What drug intolerance do the notes record for WHP-19AA47229A1E?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-345420ddcc6580d9d374fb",
+     "date": "2027-06-03",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-c5acb2e32f555d2761237d",
+     "date": "2027-07-01",
+     "type": "acute_visit"
+    },
+    {
+     "record_id": "WHN-R-e9560afc067b6c88c1f73e",
+     "date": "2027-12-09",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-12d00b4803765e2527622e",
+     "date": "2028-01-25",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-833e37e3381725d545a2c0",
+     "date": "2029-06-12",
+     "type": "annual_preventive"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Lisinopril (an ACE inhibitor), which causes a cough; one note mis-transcribes it as \"lysine april\".",
+   "key_groups": [
+    "lisinopril|ACE",
+    "cough"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-345420ddcc6580d9d374fb",
+     "quote": "lisinopril (cough)"
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Lisinopril (cough).",
+    "evidence": [
+     {
+      "record_id": "WHN-R-345420ddcc6580d9d374fb",
+      "quote": "lisinopril (cough)"
+     }
+    ]
+   }
+  },
+  "u20": {
+   "item_id": "u20",
+   "patient_id": "SYN-DC4A432D-FE8",
+   "question": "In the 2027-10-05 ED note for SYN-DC4A432D-FE8, did the troponin rise, and what was decided?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHC-R-034d67ec7a320f20aae314",
+     "date": "2027-10-05",
+     "type": "ed_note"
+    },
+    {
+     "record_id": "WHC-R-35f545c03a6033978c0863",
+     "date": "2027-10-05",
+     "type": "admission_history_and_physical"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "No: serial hs-troponin 11 and 10 ng/L showed no significant rise; continue observation and cardiology assessment.",
+   "key_groups": [
+    "(no|not|without).{0,40}(rise|rising|increase|elevat)|no significant rise",
+    "observation",
+    "cardiolog"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHC-R-034d67ec7a320f20aae314",
+     "quote": "Serial hs-cTnI 11 and 10 ng/L; no significant rise in this series."
+    },
+    {
+     "record_id": "WHC-R-034d67ec7a320f20aae314",
+     "quote": "Continue observation and cardiology assessment"
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "No, no significant rise (serial hs-cTnI 11 and 10 ng/L); decision was to continue observation and cardiology assessment.",
+    "evidence": [
+     {
+      "record_id": "WHC-R-034d67ec7a320f20aae314",
+      "quote": "Serial hs-cTnI 11 and 10 ng/L; no significant rise in this series."
+     },
+     {
+      "record_id": "WHC-R-034d67ec7a320f20aae314",
+      "quote": "Continue observation and cardiology assessment"
+     }
+    ]
+   }
+  },
+  "u21": {
+   "item_id": "u21",
+   "patient_id": "SYN-E64B2C58-796",
+   "question": "What follow-up did the 2027-10-28 discharge summary recommend for SYN-E64B2C58-796, and where was the patient discharged to?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHC-R-009d7737d281ff8386b4d2",
+     "date": "2027-10-28",
+     "type": "discharge_summary"
+    },
+    {
+     "record_id": "WHC-R-eefd66329f8b7242f1cece",
+     "date": "2027-10-28",
+     "type": "urgent_care_note"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Primary follow-up recommended around 2027-11-01; discharged home.",
+   "key_groups": [
+    "2027-11-01|Nov(ember)?\\.? 1(st)?\\b|11/1/2027",
+    "home"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHC-R-009d7737d281ff8386b4d2",
+     "quote": "Home today. Return for worsening symptoms. Primary follow up recommended around 2027-11-01."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Primary follow-up recommended around 2027-11-01; discharged home.",
+    "evidence": [
+     {
+      "record_id": "WHC-R-009d7737d281ff8386b4d2",
+      "quote": "Home today."
+     },
+     {
+      "record_id": "WHC-R-009d7737d281ff8386b4d2",
+      "quote": "Primary follow up recommended around 2027-11-01."
+     }
+    ]
+   }
+  },
+  "u25": {
+   "item_id": "u25",
+   "patient_id": "P-5003",
+   "question": "Does P-5003 report taking oxycodone?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHL-R-2ef11b5111b94bbfb10b5e",
+     "date": "2029-01-16",
+     "type": "medication_history_review"
+    },
+    {
+     "record_id": "WHL-R-1ca770556809fa8bf19f2c",
+     "date": "2029-01-27",
+     "type": "medication_reconciliation_review"
+    }
+   ],
+   "kind": "yes_no",
+   "answer": "no",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHL-R-2ef11b5111b94bbfb10b5e",
+     "quote": "Oxycodone: does not recognize this as a current medicine."
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "no",
+    "evidence": [
+     {
+      "record_id": "WHL-R-2ef11b5111b94bbfb10b5e",
+      "quote": "Oxycodone: does not recognize this as a current medicine."
+     }
+    ]
+   }
+  },
+  "u26": {
+   "item_id": "u26",
+   "patient_id": "P-5003",
+   "question": "and morphine?",
+   "standalone": "Does P-5003 report taking morphine?",
+   "follow_up_of": "u25",
+   "scope": [
+    {
+     "record_id": "WHL-R-2ef11b5111b94bbfb10b5e",
+     "date": "2029-01-16",
+     "type": "medication_history_review"
+    },
+    {
+     "record_id": "WHL-R-1ca770556809fa8bf19f2c",
+     "date": "2029-01-27",
+     "type": "medication_reconciliation_review"
+    }
+   ],
+   "kind": "yes_no",
+   "answer": "yes",
+   "key_groups": [],
+   "evidence": [
+    {
+     "record_id": "WHL-R-2ef11b5111b94bbfb10b5e",
+     "quote": "Morphine: reports taking this medicine. Recalls dose 2-4 mg IV, frequency q2h PRN; directions remain unverified."
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "yes",
+    "evidence": [
+     {
+      "record_id": "WHL-R-2ef11b5111b94bbfb10b5e",
+      "quote": "Morphine: reports taking this medicine."
+     },
+     {
+      "record_id": "WHL-R-1ca770556809fa8bf19f2c",
+      "quote": "Morphine: says taking."
+     }
+    ]
+   }
+  },
+  "u29": {
+   "item_id": "u29",
+   "patient_id": "P-RH01",
+   "question": "Is P-RH01's smoking status documented anywhere in the notes?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHR-1acf2835989a7cf313719e70",
+     "date": "2026-09-24",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHA-R-e0b675b8dcd53e24f5e8e9",
+     "date": "2027-03-14",
+     "type": "advance_care_document_review"
+    },
+    {
+     "record_id": "WHL-R-e058cedf5036d4c86d0b8a",
+     "date": "2028-08-07",
+     "type": "ordinary_preventive_health_review"
+    }
+   ],
+   "kind": "not_documented",
+   "answer": "not documented",
+   "key_groups": [],
+   "evidence": [],
+   "pass2": {
+    "kind": "not_documented",
+    "answer": "not documented",
+    "evidence": []
+   }
+  },
+  "u30": {
+   "item_id": "u30",
+   "patient_id": "WHP-3E1C91E026FC",
+   "question": "Is a fall mentioned anywhere in WHP-3E1C91E026FC's chart?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-850f295836f7de905f2228",
+     "date": "2027-07-03",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-5eee4034579c10e7fa1f87",
+     "date": "2027-09-08",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-d1670c9830e91849a982d8",
+     "date": "2028-11-07",
+     "type": "acute_visit"
+    }
+   ],
+   "kind": "not_documented",
+   "answer": "not documented",
+   "key_groups": [],
+   "evidence": [],
+   "pass2": {
+    "kind": "not_documented",
+    "answer": "not documented",
+    "evidence": []
+   }
+  },
+  "u31": {
+   "item_id": "u31",
+   "patient_id": "SYN-90093AA9-A6A",
+   "question": "Is a DNR order or code status documented for SYN-90093AA9-A6A?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHR-00e27da25f154d453b2543ac",
+     "date": "2026-09-21",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHA-R-a5a9ac5fd5966163d1811e",
+     "date": "2027-03-03",
+     "type": "advance_care_document_review"
+    },
+    {
+     "record_id": "WHL-R-44a8ab1316745b07f377ea",
+     "date": "2028-08-11",
+     "type": "ordinary_preventive_health_review"
+    }
+   ],
+   "kind": "not_documented",
+   "answer": "not documented",
+   "key_groups": [],
+   "evidence": [],
+   "pass2": {
+    "kind": "not_documented",
+    "answer": "not documented",
+    "evidence": []
+   }
+  },
+  "u35": {
+   "item_id": "u35",
+   "patient_id": "WHP-4607AD88022E",
+   "question": "Why was losartan stopped for WHP-4607AD88022E?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-52e9a7fbf538ce352e41f6",
+     "date": "2028-04-05",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-a53767e10c3f404139c2ec",
+     "date": "2028-06-08",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-8bb4b88cc02a3e321054a2",
+     "date": "2028-08-03",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHN-R-af9ec222fffff52dd68ad6",
+     "date": "2029-04-05",
+     "type": "annual_preventive"
+    },
+    {
+     "record_id": "WHN-R-2f1dd78efd4106a010ca78",
+     "date": "2030-01-10",
+     "type": "acute_visit"
+    },
+    {
+     "record_id": "WHN-R-42e9a63f61e7defa3fadc3",
+     "date": "2030-04-28",
+     "type": "annual_preventive"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Hyperkalemia.",
+   "key_groups": [
+    "hyperkal|high potassium|elevated potassium"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-2f1dd78efd4106a010ca78",
+     "quote": "Stop losartan 100 mg due to hyperkalemia; patient instructed to discontinue."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Hyperkalemia.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-2f1dd78efd4106a010ca78",
+      "quote": "Stop losartan 100 mg due to hyperkalemia"
+     }
+    ]
+   }
+  },
+  "u38": {
+   "item_id": "u38",
+   "patient_id": "SYN-5A64C9F6-63D",
+   "question": "Why isn't SYN-5A64C9F6-63D taking furosemide?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-PD-9b2f4b0eef138c9c329d15",
+     "date": "2026-08-26",
+     "type": "telephone_illness_review"
+    },
+    {
+     "record_id": "WHN-PP-2c058e12c28f316cdc0fae",
+     "date": "2026-09-11",
+     "type": "medication_start"
+    },
+    {
+     "record_id": "WHR-36a40b2fce2c91242cd0be59",
+     "date": "2026-09-11",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHC-R-74d6e9b4b36d685ba5a673",
+     "date": "2026-09-21",
+     "type": "longitudinal_primary_care"
+    },
+    {
+     "record_id": "WHM-R-5c081ee0db6e3e391b577f",
+     "date": "2026-09-22",
+     "type": "medication_management_review"
+    },
+    {
+     "record_id": "WHN-PP-32584407bc555a4363ac93",
+     "date": "2026-09-22",
+     "type": "medication_start"
+    },
+    {
+     "record_id": "WHM-R-3f349cbf2986857f605ecb",
+     "date": "2026-10-05",
+     "type": "medication_response_followup"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "The patient did not like how it made them feel.",
+   "key_groups": [
+    "did not like|didn.t like|dislike|how it made"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHR-36a40b2fce2c91242cd0be59",
+     "quote": "Patient reports Furosemide 40 MG Oral Tablet is not being used: did not like how it made them feel."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Patient reports they did not like how it made them feel.",
+    "evidence": [
+     {
+      "record_id": "WHR-36a40b2fce2c91242cd0be59",
+      "quote": "did not like how it made them feel"
+     }
+    ]
+   }
+  },
+  "u39": {
+   "item_id": "u39",
+   "patient_id": "SYN-5A64C9F6-63D",
+   "question": "SYN-5A64C9F6-63D had a goals-of-care talk choosing comfort-focused care. Do the later notes still show new disease-directed medications being started?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-PD-9b2f4b0eef138c9c329d15",
+     "date": "2026-08-26",
+     "type": "telephone_illness_review"
+    },
+    {
+     "record_id": "WHN-PP-2c058e12c28f316cdc0fae",
+     "date": "2026-09-11",
+     "type": "medication_start"
+    },
+    {
+     "record_id": "WHR-36a40b2fce2c91242cd0be59",
+     "date": "2026-09-11",
+     "type": "office_followup"
+    },
+    {
+     "record_id": "WHC-R-74d6e9b4b36d685ba5a673",
+     "date": "2026-09-21",
+     "type": "longitudinal_primary_care"
+    },
+    {
+     "record_id": "WHM-R-5c081ee0db6e3e391b577f",
+     "date": "2026-09-22",
+     "type": "medication_management_review"
+    },
+    {
+     "record_id": "WHN-PP-32584407bc555a4363ac93",
+     "date": "2026-09-22",
+     "type": "medication_start"
+    },
+    {
+     "record_id": "WHM-R-3f349cbf2986857f605ecb",
+     "date": "2026-10-05",
+     "type": "medication_response_followup"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Yes: empagliflozin was started 2026-09-11 and spironolactone 2026-09-22, after the 2026-08-26 comfort-focused goals-of-care discussion.",
+   "key_groups": [
+    "empagliflozin",
+    "spironolactone"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-PP-2c058e12c28f316cdc0fae",
+     "quote": "Start empagliflozin 10 mg daily"
+    },
+    {
+     "record_id": "WHN-PP-32584407bc555a4363ac93",
+     "quote": "Start spironolactone 25 mg daily"
+    }
+   ],
+   "pass2": {
+    "kind": "yes_no",
+    "answer": "yes",
+    "evidence": [
+     {
+      "record_id": "WHN-PP-2c058e12c28f316cdc0fae",
+      "quote": "Start empagliflozin 10 mg daily"
+     },
+     {
+      "record_id": "WHN-PP-32584407bc555a4363ac93",
+      "quote": "Start spironolactone 25 mg daily"
+     }
+    ]
+   }
+  },
+  "d1": {
+   "item_id": "d1",
+   "patient_id": "WHP-E8FBFA9D7697",
+   "question": "What did the endocrinologist recommend in the consult letter for WHP-E8FBFA9D7697?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-55bbadc0121cec5fd87bd9",
+     "date": "2029-02-01",
+     "type": "scanned_document:Consult Note"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Increase metformin to 1000 mg twice daily, add empagliflozin 10 mg daily, follow up in 6 months.",
+   "key_groups": [
+    "metformin.{0,60}1000",
+    "empagliflozin",
+    "6 months|six months"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-55bbadc0121cec5fd87bd9",
+     "quote": "increase metformin to 1000 mg twice daily"
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Increase metformin to 1000 mg twice daily; add empagliflozin 10 mg daily; follow up in 6 months.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-55bbadc0121cec5fd87bd9",
+      "quote": "I recommended we increase metformin to 1000 mg twice daily; add empagliflozin 10 mg\ndaily. Follow up in 6 months."
+     }
+    ]
+   }
+  },
+  "d3": {
+   "item_id": "d3",
+   "patient_id": "WHP-1D09E959D6C3",
+   "question": "What was the impression on the outside chest x-ray report for WHP-1D09E959D6C3?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-4cc2e1ad33429524aafab7",
+     "date": "2027-09-03",
+     "type": "scanned_document:Outside Records"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Possible early right lower lobe infiltrate.",
+   "key_groups": [
+    "infiltrate",
+    "right lower"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-4cc2e1ad33429524aafab7",
+     "quote": "IMPRESSION:Possible early right 1owerlobe infiltrate."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Possible early right lower lobe infiltrate (text reads 'Possible early right 1owerlobe infiltrate').",
+    "evidence": [
+     {
+      "record_id": "WHN-R-4cc2e1ad33429524aafab7",
+      "quote": "IMPRESSION:Possible early right 1owerlobe infiltrate."
+     }
+    ]
+   }
+  },
+  "h2": {
+   "item_id": "h2",
+   "patient_id": "WHP-79593D7D18BA",
+   "question": "Was acute coronary syndrome ruled out during WHP-79593D7D18BA's April 2027 admission, and what did the stress test show?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-b0e80a76b71e929bd239e6",
+     "date": "2027-04-30",
+     "type": "hie_document:Discharge summary"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Yes, ACS was ruled out; the stress test was negative for inducible ischemia.",
+   "key_groups": [
+    "rule[ds]? out|ruled out|negative|excluded",
+    "stress",
+    "negative.{0,40}ischemi|no inducible|without inducible"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-b0e80a76b71e929bd239e6",
+     "quote": "Chest pain, ACS ruled out"
+    },
+    {
+     "record_id": "WHN-R-b0e80a76b71e929bd239e6",
+     "quote": "Stress test negative for inducible ischemia."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Yes, ACS was ruled out; stress test was negative for inducible ischemia.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-b0e80a76b71e929bd239e6",
+      "quote": "Principal diagnosis: Chest pain, ACS ruled out"
+     },
+     {
+      "record_id": "WHN-R-b0e80a76b71e929bd239e6",
+      "quote": "Stress test negative for inducible ischemia."
+     }
+    ]
+   }
+  },
+  "h3": {
+   "item_id": "h3",
+   "patient_id": "WHP-B0738F37BBB5",
+   "question": "Where was WHP-B0738F37BBB5 discharged to after the knee replacement, and what clot prophylaxis was used?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [
+    {
+     "record_id": "WHN-R-7518add632b43498c1b5c2",
+     "date": "2026-10-18",
+     "type": "hie_document:Discharge summary"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "Discharged to a skilled nursing facility (SNF); DVT prophylaxis with aspirin 81 mg BID for 35 days.",
+   "key_groups": [
+    "SNF|skilled nursing",
+    "aspirin",
+    "35"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-7518add632b43498c1b5c2",
+     "quote": "Disposition: snf"
+    },
+    {
+     "record_id": "WHN-R-7518add632b43498c1b5c2",
+     "quote": "DVT prophylaxis with aspirin 81 mg BID x 35 days."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "Discharged to a skilled nursing facility (SNF); DVT prophylaxis with aspirin 81 mg BID x 35 days.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-7518add632b43498c1b5c2",
+      "quote": "Disposition: snf"
+     },
+     {
+      "record_id": "WHN-R-7518add632b43498c1b5c2",
+      "quote": "DVT prophylaxis with aspirin 81 mg BID x 35 days"
+     }
+    ]
+   }
+  },
+  "h3b": {
+   "item_id": "h3b",
+   "patient_id": "WHP-B0738F37BBB5",
+   "question": "and what follow-up was arranged?",
+   "standalone": "What follow-up was arranged after WHP-B0738F37BBB5's knee-replacement hospital discharge?",
+   "follow_up_of": "h3",
+   "scope": [
+    {
+     "record_id": "WHN-R-7518add632b43498c1b5c2",
+     "date": "2026-10-18",
+     "type": "hie_document:Discharge summary"
+    }
+   ],
+   "kind": "short_text",
+   "answer": "PCP within 7 days; surgeon in 2 weeks.",
+   "key_groups": [
+    "PCP.{0,30}7 days|7 days",
+    "surgeon.{0,30}2 weeks|two weeks|2 weeks"
+   ],
+   "evidence": [
+    {
+     "record_id": "WHN-R-7518add632b43498c1b5c2",
+     "quote": "Follow-up: PCP within 7 days; surgeon in 2 weeks."
+    }
+   ],
+   "pass2": {
+    "kind": "short_text",
+    "answer": "PCP within 7 days; surgeon in 2 weeks.",
+    "evidence": [
+     {
+      "record_id": "WHN-R-7518add632b43498c1b5c2",
+      "quote": "Follow-up: PCP within 7 days; surgeon in 2 weeks."
+     }
+    ]
+   }
+  },
+  "a1": {
+   "item_id": "a1",
+   "patient_id": "WHP-B0738F37BBB5",
+   "question": "What did WHP-B0738F37BBB5's BRCA genetic test report show?",
+   "standalone": null,
+   "follow_up_of": null,
+   "scope": [],
+   "kind": "absent",
+   "answer": null,
+   "evidence": [],
+   "pass2": null,
+   "reason": "No genetic-test, BRCA or genomic content exists in any note, HIE document or scanned document (text-searched), and no genetic table exists."
+  }
+ }
+}
