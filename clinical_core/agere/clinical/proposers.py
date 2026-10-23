@@ -55,6 +55,8 @@ TIERS = {
     'qwen_rewrite_compiler': ('free (Qwen3-4B)', 'dropped a statin constraint once; rewrite_dropped + literal check', 'graph'),
     'bottled_sql': ('free (Qwen3-4B LoRA, k-agree)', 'distilled from verified answers; lint + sanity + agreement', 'graph'),
     'qwen_typed_interpreter': ('free (Qwen3-4B, isolated worker)', 'unqualified; compiler + literal check', 'typed'),
+    's1_metric_router': ('Jev/Perplexity ~$0.0002 per typed choice (one metric choice + up to 3 slot choices)', 'uncalibrated; exact-fit, shape, number-accounting and answer checks gate it; declines to the Claude metric router', 'graph'),
+    's1_operator_router': ('Jev/Perplexity ~$0.0002 per typed choice (one engine choice + up to 3 parameter choices)', 'uncalibrated; validators and the literal check gate it; declines to the Claude operator router', 'graph'),
     'typed_decider': ('Perplexity, ~$0.000006/call', 'curated unfiltered recipes only, 0.95 threshold', 'graph'),
     'hosted_typed_interpreter': ('Opus 5.5, ~$0.27/question', '20-question dev set; compiler + quote binding + audit', 'typed'),
     'hosted_verified_sql': ('Haiku -> Sonnet -> Opus judge + Perplexity decider', 'two-model agreement + oracles; uncalibrated', 'graph'),
@@ -100,7 +102,8 @@ def staged(order):
 
 ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
-        'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one'}
+        'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one', 's1_metric_router',
+        's1_operator_router'}
 # Tiers whose cost is minutes, not seconds: the free local compiler (when its plan already passes the literal check) is tried before them, and
 # each tier may use only a share of the answer budget (a tier that runs out yields like a decline; the cascade continues).
 HEAVY = ('atomic_system_one', 'evidence_retrieval', 'evidence_review', 'qwen_rewrite_compiler', 'qwen_typed_interpreter', 'bottled_sql')
@@ -587,6 +590,17 @@ class Cascade:
     def tier_local_compiler(self): return self.graph('local_compiler', self.ladder.local_compiler())
     def tier_metric_router(self): return self.graph('metric_router', self.ladder.metric_router())
     def tier_operator_router(self): return self.graph('operator_router', self.ladder.operator_router())
+    def tier_s1_metric_router(self): return self.s1_tier('s1_metric_router', self.ladder.s1_metric_router)
+    def tier_s1_operator_router(self): return self.s1_tier('s1_operator_router', self.ladder.s1_operator_router)
+
+    def s1_tier(self, name, route):
+        """A System One router tier: a proposal is charged by graph() from its receipt; a decline still pays for the calls it made."""
+        found = route()
+        if not found:
+            rec = getattr(self.ladder, 's1_rec', None)
+            if rec is not None: self.spend(*rec.unbilled())
+            return None
+        return self.graph(name, found)
     def tier_local_free_sql(self): return self.graph('local_free_sql', self.ladder.local_sql(default='on'))
     def tier_evidence_retrieval(self):
         from .evidence_proposers import retrieval_tier

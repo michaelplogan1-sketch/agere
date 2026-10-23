@@ -295,11 +295,12 @@ def router_order(stack, question, order):
     from .economical_planner import _engine_lean
     lean = _engine_lean(stack, question)
     order = tuple(order)
-    if not (lean and lean['lean']) or not all(t in order for t in ROUTER_TIERS): return order, lean
-    i, j = order.index('metric_router'), order.index('operator_router')
-    if j < i: return order, lean
+    if not (lean and lean['lean']): return order, lean
     swapped = list(order)
-    swapped[i], swapped[j] = 'operator_router', 'metric_router'
+    for metric, operator in (('metric_router', 'operator_router'), ('s1_metric_router', 's1_operator_router')):  # Claude pair, System One pair
+        if metric in swapped and operator in swapped and swapped.index(operator) > swapped.index(metric):
+            i, j = swapped.index(metric), swapped.index(operator)
+            swapped[i], swapped[j] = operator, metric
     return tuple(swapped), lean
 
 

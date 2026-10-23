@@ -325,7 +325,7 @@ class Ladder:
         self.stack,self.question,self.ledger,self.frontier=stack,question,ledger,frontier
         self.start=time.perf_counter();self.meta=stack.retriever.meta;self.as_of=self.meta['snapshot']['as_of']
         self.available=(Path(stack.path)/'clinical-state-link.json').exists()
-        self.decline={};self.metric_steps=[];self._profile=self._compiled=None
+        self.decline={};self.metric_steps=[];self.s1_rec=None;self._profile=self._compiled=None
     def elapsed(self):return time.perf_counter()-self.start
     @property
     def profile(self):
@@ -506,6 +506,43 @@ class Ladder:
                       'new_paid_api_calls':sum(0 if c.get('cache_hit') else 1 for c in info['calls']),
                       'frontier_called':False,'local_compiler_declined':self.decline,'steps':self.metric_steps,
                       'elapsed_seconds':self.elapsed()}
+    def s1_metric_router(self):
+        # System One (Jev, then Perplexity) chooses the governed metric and its closed-set slots before the Claude router sees the
+        # question (s1_governed.py); the router's own gates (slots, numbers, exact fit, shape) decide, and any doubt declines.
+        from . import s1_governed
+        self.s1_rec=None
+        if self.profile is None or self.ledger is None or not s1_governed.ready(self.stack):return None
+        try:
+            routed,info,self.s1_rec=s1_governed.route_metric(self.stack,self.question,self.as_of,self.ledger,path=self.stack.path)
+        except (ValueError,RuntimeError,OSError,KeyError,TypeError,sqlite3.Error) as exc:
+            routed,info=None,{'router_error':str(exc)[:300],'calls':[]}
+        graph=None
+        if routed is not None:
+            try:graph=validate(routed,self.as_of)
+            except ValueError as exc:info={**info,'decision':'validation_failed','validation_error':str(exc)[:300]}
+        if graph is None:
+            self.decline['s1_metric_router']=info;return None
+        rec=self.s1_rec
+        return graph,{'route':'metric_router','chosen_by':'system_one','model':info['calls'][0].get('model') if info.get('calls') else 'system_one',
+                      'metric':info.get('metric'),'metric_router':info,'system_one':rec.receipt(),'new_paid_api_calls':rec.paid_calls,
+                      'frontier_called':False,'local_compiler_declined':self.decline,'steps':rec.steps,'elapsed_seconds':self.elapsed()}
+    def s1_operator_router(self):
+        # System One chooses the analytic engine (shortlisted by the learned router and the question's words) and its closed-set
+        # parameters before the Claude operator router; numbers and populations it cannot place decline to the Claude router.
+        from . import s1_governed
+        self.s1_rec=None
+        if self.profile is None or self.ledger is None or not s1_governed.ready(self.stack):return None
+        try:
+            routed,info,self.s1_rec=s1_governed.route_engine(self.stack,self.question,self.as_of,self.ledger,validate)
+        except (ValueError,RuntimeError,OSError) as exc:
+            routed,info=None,{'router_error':str(exc)[:300],'calls':[]}
+        if routed is None:
+            self.decline['s1_operator_router']=info;return None
+        rec=self.s1_rec
+        self.decline['operator_router']=info  # gate_policy / cascade read the engine choice from here
+        return routed,{'route':'operator_router','chosen_by':'system_one','model':info['calls'][0].get('model') if info.get('calls') else 'system_one',
+                       'operator':info['decision'],'system_one':rec.receipt(),'new_paid_api_calls':rec.paid_calls,'frontier_called':False,
+                       'local_compiler_declined':self.decline,'steps':rec.steps,'elapsed_seconds':self.elapsed()}
     def operator_router(self):
         # One small-model call picks an analytic engine and fills its typed parameters; the runtime validators decide.
         if self.profile is None or not self.stack.allow_live or os.environ.get('AGERE_ROUTER','on')=='off':return None

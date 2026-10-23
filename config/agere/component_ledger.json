@@ -25,7 +25,7 @@
    "symbol": "handle_compose",
    "role_on_question_path": "Resolves follow-ups, binds saved cohorts, calls Stack.compose, logs and captures verified pairs.",
    "current_wiring": "spine:conversation",
-   "evidence": "clinical_core/agere/clinical/conversation.py:689 (def); conversation.py:689,706,739,756,761",
+   "evidence": "clinical_core/agere/clinical/conversation.py:692 (def); conversation.py:689,706,739,756,761",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -51,7 +51,7 @@
    "symbol": "compose",
    "role_on_question_path": "data_domains gate, plan(), then executes the contract by kind (checked_graph/request_program/general_analysis/request).",
    "current_wiring": "spine:entry",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:930 (def); clinical_core/agere/clinical/shared_planner.py:889-933",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:989 (def); clinical_core/agere/clinical/shared_planner.py:889-933",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -64,7 +64,7 @@
    "symbol": "plan",
    "role_on_question_path": "Exact cache -> learned shapes -> grammar (via checked_interpret with no model) -> proposers.Cascade on decline.",
    "current_wiring": "spine:entry",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:509 (def); clinical_core/agere/clinical/shared_planner.py:737-886",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:568 (def); clinical_core/agere/clinical/shared_planner.py:737-886",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -77,7 +77,7 @@
    "symbol": "Cascade",
    "role_on_question_path": "Runs the 22 TIERS in ORDER after the deterministic decline; every proposal must pass literal + output checks.",
    "current_wiring": "spine:checked_proposer_cascade",
-   "evidence": "clinical_core/agere/clinical/proposers.py:100 (def); clinical_core/agere/clinical/proposers.py:85-160; clinical_core/agere/clinical/shared_planner.py:844-856",
+   "evidence": "clinical_core/agere/clinical/proposers.py:115 (def); clinical_core/agere/clinical/proposers.py:85-160; clinical_core/agere/clinical/shared_planner.py:844-856",
    "cost": "free",
    "calibration": null,
    "flag": "AGERE_PROPOSERS, AGERE_PROPOSER_SKIP"
@@ -90,7 +90,7 @@
    "symbol": "execute",
    "role_on_question_path": "Presents the result already executed inside the cascade with proposer calibration disclosed.",
    "current_wiring": "spine:execution",
-   "evidence": "clinical_core/agere/clinical/proposers.py:571 (def); clinical_core/agere/clinical/proposers.py:354-371; clinical_core/agere/clinical/shared_planner.py:897-899",
+   "evidence": "clinical_core/agere/clinical/proposers.py:653 (def); clinical_core/agere/clinical/proposers.py:354-371; clinical_core/agere/clinical/shared_planner.py:897-899",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -116,7 +116,7 @@
    "symbol": "execute_contract",
    "role_on_question_path": "Executes compiled typed requests (grammar / shapes / cache / typed interpreters); rejects unresolved items.",
    "current_wiring": "spine:execution",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:981 (def); clinical_core/agere/clinical/shared_planner.py:935-1092",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:1040 (def); clinical_core/agere/clinical/shared_planner.py:935-1092",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -324,7 +324,7 @@
    "symbol": "plan",
    "role_on_question_path": "Reuses a verified interpretation for the same question/source/policy (stable_key carry-forward across releases).",
    "current_wiring": "spine:exact_contract_cache",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:509 (def); clinical_core/agere/clinical/shared_planner.py:745-822 (question-plans.sqlite3 shared_requests)",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:568 (def); clinical_core/agere/clinical/shared_planner.py:745-822 (question-plans.sqlite3 shared_requests)",
    "cost": "free",
    "calibration": "verified interpretations only (execution_accepted)",
    "flag": null
@@ -597,7 +597,7 @@
    "symbol": "answer",
    "role_on_question_path": "Fine-tuned local model writes k queries; kept when greedy passes lint+sanity and decodes agree.",
    "current_wiring": "cascade_tier:bottled_sql",
-   "evidence": "clinical_core/agere/clinical/bottled.py:282 (def); clinical_core/agere/clinical/proposers.py:42 (TIERS), clinical_core/agere/clinical/proposers.py:295 (tier method)",
+   "evidence": "clinical_core/agere/clinical/bottled.py:309 (def); clinical_core/agere/clinical/proposers.py:42 (TIERS), clinical_core/agere/clinical/proposers.py:295 (tier method)",
    "cost": "free (Qwen3-4B LoRA, k-agree)",
    "calibration": "distilled from verified answers; lint + sanity + agreement",
    "flag": "AGERE_BOTTLED (cascade default on; bottled.DEFAULT_ENABLED=off elsewhere), AGERE_BOTTLED_K, AGERE_BOTTLED_AGREE, AGERE_BOTTLED_ADAPTER"
@@ -610,7 +610,7 @@
    "symbol": "isolated_local",
    "role_on_question_path": "Local Qwen interprets into a typed contract in an isolated worker; local audit + recompile + literal check. Honors saved cohorts.",
    "current_wiring": "cascade_tier:qwen_typed_interpreter",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:42 (def); clinical_core/agere/clinical/proposers.py:43 (TIERS), clinical_core/agere/clinical/proposers.py:198 (tier method)",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:102 (def); clinical_core/agere/clinical/proposers.py:43 (TIERS), clinical_core/agere/clinical/proposers.py:198 (tier method)",
    "cost": "free (Qwen3-4B, isolated worker)",
    "calibration": "unqualified; compiler + literal check",
    "flag": "AGERE_LOCAL_TYPED, AGERE_LOCAL_INTERPRET_SECONDS"
@@ -636,7 +636,7 @@
    "symbol": "checked_interpret",
    "role_on_question_path": "Opus interprets into typed request/program/analysis with discovery, audit, quote binding; partial with named gap held. Honors saved cohorts.",
    "current_wiring": "cascade_tier:hosted_typed_interpreter",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:456 (def); clinical_core/agere/clinical/proposers.py:45 (TIERS), clinical_core/agere/clinical/proposers.py:214 (tier method); PAID set proposers.py:55 (skipped unless allow_live)",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:515 (def); clinical_core/agere/clinical/proposers.py:45 (TIERS), clinical_core/agere/clinical/proposers.py:214 (tier method); PAID set proposers.py:55 (skipped unless allow_live)",
    "cost": "paid:claude-opus-5-5 (~$0.27/question)",
    "calibration": "20-question dev set; compiler + quote binding + audit",
    "flag": "AGERE_SHARED_INTERPRETER_MODEL, --allow-live-stack"
@@ -753,7 +753,7 @@
    "symbol": "plan",
    "role_on_question_path": "Claims finance, PMPM, member months, attribution, readmissions, appointments etc. rendered to SQL.",
    "current_wiring": "inside:specialist_families_early",
-   "evidence": "clinical_core/agere/clinical/vbc_families.py:663 (def); vbc_families.py:663; clinical_core/agere/clinical/economical_planner.py:261-293",
+   "evidence": "clinical_core/agere/clinical/vbc_families.py:665 (def); vbc_families.py:663; clinical_core/agere/clinical/economical_planner.py:261-293",
    "cost": "free",
    "calibration": "certified bound 2.5%",
    "flag": "AGERE_VBC_FAMILIES"
@@ -779,7 +779,7 @@
    "symbol": "cohort_slots",
    "role_on_question_path": "Free slot filler before the Haiku filler inside cohort families; k decodes must agree.",
    "current_wiring": "inside:cohort_families_module",
-   "evidence": "clinical_core/agere/clinical/bottled.py:657 (def); bottled.py:286-294,597; bottled_cohort_hook.py:18-30; clinical_core/agere/clinical/economical_planner.py:246-247",
+   "evidence": "clinical_core/agere/clinical/bottled.py:684 (def); bottled.py:286-294,597; bottled_cohort_hook.py:18-30; clinical_core/agere/clinical/economical_planner.py:246-247",
    "cost": "free",
    "calibration": "81.7% coverage, 0.927 exact-spec precision (held-out)",
    "flag": "AGERE_BOTTLED_COHORT (NARROW_DEFAULT on)"
@@ -805,7 +805,7 @@
    "symbol": "prepare",
    "role_on_question_path": "Binds cohort predicates to observed fields/values; GroundingError reports unsupported predicates.",
    "current_wiring": "inside:local_compiler",
-   "evidence": "clinical_core/agere/clinical/grounding.py:119 (def); grounding.py:119; clinical_core/agere/clinical/analysis_graph.py:1564-1574",
+   "evidence": "clinical_core/agere/clinical/grounding.py:129 (def); grounding.py:119; clinical_core/agere/clinical/analysis_graph.py:1564-1574",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1065,7 +1065,7 @@
    "symbol": "Ladder.frontier_planner",
    "role_on_question_path": "Free cache of earlier frontier/decider graphs keyed by question+policy+snapshot; only reachable via the PAID frontier tier.",
    "current_wiring": "inside:frontier_graph_planner",
-   "evidence": "clinical_core/agere/clinical/economical_planner.py:587 (def); clinical_core/agere/clinical/economical_planner.py:562-580; clinical_core/agere/clinical/proposers.py:55,299",
+   "evidence": "clinical_core/agere/clinical/economical_planner.py:624 (def); clinical_core/agere/clinical/economical_planner.py:562-580; clinical_core/agere/clinical/proposers.py:55,299",
    "cost": "free",
    "calibration": null,
    "flag": "AGERE_PLAN_CACHE"
@@ -1247,7 +1247,7 @@
    "symbol": "AUDIT_SYSTEM",
    "role_on_question_path": "Second hosted pass compares question vs compiled SQL; equivalence + issues gate acceptance.",
    "current_wiring": "inside:hosted_typed_interpreter",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:191-219; clinical_core/agere/clinical/proposers.py:228-238",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:250 (def); clinical_core/agere/clinical/shared_planner.py:191-219; clinical_core/agere/clinical/proposers.py:228-238",
    "cost": "paid:claude-opus-5-5",
    "calibration": null,
    "flag": null
@@ -1273,7 +1273,7 @@
    "symbol": "schema_slice",
    "role_on_question_path": "Lexically selected schemas, observed values, operator contracts, governed measures for the hosted prompt.",
    "current_wiring": "inside:hosted_typed_interpreter",
-   "evidence": "clinical_core/agere/clinical/shared_planner.py:289-356",
+   "evidence": "clinical_core/agere/clinical/shared_planner.py:348 (def); clinical_core/agere/clinical/shared_planner.py:289-356",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1351,7 +1351,7 @@
    "symbol": "missing",
    "role_on_question_path": "Every number, month, negation, rate, average, superlative and relative time in the question must appear in the executable plan.",
    "current_wiring": "inside:checked_proposer_cascade",
-   "evidence": "clinical_core/agere/clinical/literal_check.py:84 (def); literal_check.py:84; clinical_core/agere/clinical/proposers.py:185,257,327",
+   "evidence": "clinical_core/agere/clinical/literal_check.py:89 (def); literal_check.py:84; clinical_core/agere/clinical/proposers.py:185,257,327",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1364,7 +1364,7 @@
    "symbol": "shape_misfit",
    "role_on_question_path": "Executed answer must have the requested shape (count/value/patient_set/table).",
    "current_wiring": "inside:checked_proposer_cascade",
-   "evidence": "clinical_core/agere/clinical/literal_check.py:121 (def); literal_check.py:119; clinical_core/agere/clinical/proposers.py:268,329",
+   "evidence": "clinical_core/agere/clinical/literal_check.py:126 (def); literal_check.py:119; clinical_core/agere/clinical/proposers.py:268,329",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1481,7 +1481,7 @@
    "symbol": "legacy_compose_together",
    "role_on_question_path": "Fast path + parallel analyst + reconcile; compose_together now just calls shared_planner.compose.",
    "current_wiring": "inside:legacy_cost_ladder",
-   "evidence": "clinical_core/agere/clinical/together.py:726 (def); together.py:721-726",
+   "evidence": "clinical_core/agere/clinical/together.py:730 (def); together.py:721-726",
    "cost": "paid:claude-haiku-5-5 + paid:claude-opus-5-5",
    "calibration": null,
    "flag": "AGERE_TOGETHER, AGERE_TOGETHER_BUDGET_S, AGERE_DEFER_FAST, AGERE_SPECIALISTS_FIRST"
@@ -1507,7 +1507,7 @@
    "symbol": "legacy_plan",
    "role_on_question_path": "Former ordered ladder; superseded by the cascade (rungs reused through Ladder).",
    "current_wiring": "cascade_tier:legacy_cost_ladder",
-   "evidence": "clinical_core/agere/clinical/economical_planner.py:644 (def); clinical_core/agere/clinical/economical_planner.py:619-651",
+   "evidence": "clinical_core/agere/clinical/economical_planner.py:681 (def); clinical_core/agere/clinical/economical_planner.py:619-651",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1572,7 +1572,7 @@
    "symbol": "resolve",
    "role_on_question_path": "Rewrites a follow-up into a standalone question from the structured frame of the prior question.",
    "current_wiring": "inside:conversation_handle_compose",
-   "evidence": "clinical_core/agere/clinical/conversation.py:428 (def); conversation.py:145,232,428,756",
+   "evidence": "clinical_core/agere/clinical/conversation.py:431 (def); conversation.py:145,232,428,756",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1585,7 +1585,7 @@
    "symbol": "hosted_resolver",
    "role_on_question_path": "Cheap hosted rewrite when the deterministic frame cannot resolve the follow-up.",
    "current_wiring": "inside:followup_resolver",
-   "evidence": "clinical_core/agere/clinical/conversation.py:486 (def); conversation.py:468-490",
+   "evidence": "clinical_core/agere/clinical/conversation.py:489 (def); conversation.py:468-490",
    "cost": "paid:claude-haiku-5-5",
    "calibration": null,
    "flag": "AGERE_FOLLOWUP_MODEL"
@@ -1637,7 +1637,7 @@
    "symbol": "select",
    "role_on_question_path": "Observed cohort from a predicate specification (three-valued membership). [also emitted by the free local_compiler tier (last, failed calibration)]",
    "current_wiring": "inside:exact_local_plan",
-   "evidence": "clinical_core/agere/clinical/cohorts.py:380 (def); clinical_core/agere/clinical/analysis_graph.py:1564 (dispatch)",
+   "evidence": "clinical_core/agere/clinical/cohorts.py:386 (def); clinical_core/agere/clinical/analysis_graph.py:1564 (dispatch)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -1936,7 +1936,7 @@
    "symbol": "execute",
    "role_on_question_path": "CMS-HCC RAF, coding gaps, recapture, suspects. [also emitted by the free local_compiler tier (last, failed calibration); planner_menu = offered only to the PAID hosted typed interpreter; free reach otherwise via local_compiler / registered examples]",
    "current_wiring": "planner_menu",
-   "evidence": "clinical_core/agere/clinical/risk_adjustment.py:589 (def); clinical_core/agere/clinical/analysis_graph.py:1682 (dispatch); capability_registry.py:88 (PRODUCT); clinical_core/agere/clinical/shared_planner.py:317-318 (menu)",
+   "evidence": "clinical_core/agere/clinical/risk_adjustment.py:601 (def); clinical_core/agere/clinical/analysis_graph.py:1682 (dispatch); capability_registry.py:88 (PRODUCT); clinical_core/agere/clinical/shared_planner.py:317-318 (menu)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2144,7 +2144,7 @@
    "symbol": "Retriever.search",
    "role_on_question_path": "Hybrid passage retrieval for a membership. [planner_menu = offered only to the PAID hosted typed interpreter; free reach otherwise via local_compiler / registered examples]",
    "current_wiring": "planner_menu",
-   "evidence": "clinical_core/agere/clinical/warehouse_retrieval.py:324 (def); clinical_core/agere/clinical/analysis_graph.py:1735 (dispatch); clinical_core/agere/clinical/shared_planner.py:317-318 (menu)",
+   "evidence": "clinical_core/agere/clinical/warehouse_retrieval.py:337 (def); clinical_core/agere/clinical/analysis_graph.py:1735 (dispatch); clinical_core/agere/clinical/shared_planner.py:317-318 (menu)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2859,7 +2859,7 @@
    "symbol": "execute",
    "role_on_question_path": "V24/V28 tables, eligible CPT/HCPCS, payment parameters.",
    "current_wiring": "inside:engine_risk_adjustment",
-   "evidence": "clinical_core/agere/clinical/risk_adjustment.py:589 (def); config/agere/risk_adjustment (19 files)",
+   "evidence": "clinical_core/agere/clinical/risk_adjustment.py:601 (def); config/agere/risk_adjustment (19 files)",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -2872,7 +2872,7 @@
    "symbol": "Retriever",
    "role_on_question_path": "Passage search used by the retrieve op, Stack.review, /api/stack/search and non-live ask.",
    "current_wiring": "cascade_tier:evidence_retrieval",
-   "evidence": "clinical_core/agere/clinical/warehouse_retrieval.py:152 (def); warehouse_retrieval.py:152-295; stack_runtime.py:18,242-246,302",
+   "evidence": "clinical_core/agere/clinical/warehouse_retrieval.py:154 (def); warehouse_retrieval.py:152-295; stack_runtime.py:18,242-246,302",
    "cost": "free",
    "calibration": null,
    "flag": null
@@ -3015,7 +3015,7 @@
    "symbol": "BottledModel",
    "role_on_question_path": "LoRA adapter distilled from verified ladder answers.",
    "current_wiring": "inside:bottled_sql",
-   "evidence": "clinical_core/agere/clinical/bottled.py:216 (def); bottled.py:19,164-222",
+   "evidence": "clinical_core/agere/clinical/bottled.py:227 (def); bottled.py:19,164-222",
    "cost": "free",
    "calibration": null,
    "flag": "AGERE_BOTTLED_ADAPTER"
@@ -3028,7 +3028,7 @@
    "symbol": "candidate",
    "role_on_question_path": "Bottled query as an independent verification_v2 candidate.",
    "current_wiring": "inside:verification_v2",
-   "evidence": "clinical_core/agere/clinical/bottled.py:311 (def); bottled.py:251-280",
+   "evidence": "clinical_core/agere/clinical/bottled.py:338 (def); bottled.py:251-280",
    "cost": "free",
    "calibration": null,
    "flag": "AGERE_LOCAL_CANDIDATE"
@@ -3747,6 +3747,32 @@
    "cost": "paid:jev (~$0.0002/patient)",
    "calibration": null,
    "flag": "AGERE_ATOMIC_MAX_PATIENTS"
+  },
+  {
+   "id": "s1_metric_router",
+   "name": "System One governed-metric router",
+   "family": "proposer",
+   "module": "clinical_core.agere.clinical.s1_governed",
+   "symbol": "route_metric",
+   "role_on_question_path": "Jev (then Perplexity) chooses among a short list of governed metrics and fills the closed-set slots (period, group_by, enums); metric_router.route gates run unchanged; declines to the Claude metric router.",
+   "current_wiring": "cascade_tier:s1_metric_router",
+   "evidence": "proposers.tier_s1_metric_router; economical_planner.s1_metric_router",
+   "cost": "paid:jev (~$0.0002/choice)",
+   "calibration": null,
+   "flag": "AGERE_S1_GOVERNED, AGERE_S1_METRIC_ACCEPT, AGERE_S1_METRIC_OPTIONS"
+  },
+  {
+   "id": "s1_operator_router",
+   "name": "System One engine router",
+   "family": "proposer",
+   "module": "clinical_core.agere.clinical.s1_governed",
+   "symbol": "route_engine",
+   "role_on_question_path": "Jev (then Perplexity) chooses the analytic engine from a shortlist and fills closed-set parameters (numbers parsed from the question); operator_router.route gates run unchanged; declines to the Claude operator router.",
+   "current_wiring": "cascade_tier:s1_operator_router",
+   "evidence": "proposers.tier_s1_operator_router; economical_planner.s1_operator_router",
+   "cost": "paid:jev (~$0.0002/choice)",
+   "calibration": null,
+   "flag": "AGERE_S1_GOVERNED, AGERE_S1_ENGINE_ACCEPT, AGERE_S1_ENGINE_OPTIONS"
   },
   {
    "id": "system_one",
