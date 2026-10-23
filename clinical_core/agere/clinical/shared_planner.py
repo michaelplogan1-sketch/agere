@@ -885,6 +885,8 @@ def store_request(cache_path, key, stable_key, question, contract, interpretatio
     if not (interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer')
             and contract.get('kind') != 'checked_graph' and (contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation))):
         return False
+    from .decision_context import VERSION as DEFINITIONS
+    interpretation = {**interpretation, 'definitions_version': DEFINITIONS}  # a saved plan replays only under the same definitions
     with sqlite3.connect(cache_path) as db:
         db.execute('CREATE TABLE IF NOT EXISTS shared_requests(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
         saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
@@ -939,6 +941,9 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     if hit:
         saved = json.loads(hit[0])
         if not saved.get('interpretation', {}).get('execution_accepted'): hit = None
+        from .decision_context import VERSION as DEFINITIONS
+        if saved.get('interpretation', {}).get('definitions_version') != DEFINITIONS:
+            hit, carried = None, None  # planned under other definitions (living patients, latest labs, condition evidence): re-plan
         from .terminology import stale, store_path  # a saved plan built before a term's granularity was decided is re-read, not replayed
         if hit and stale(store_path(Path(catalog.target).parent), saved['interpretation'].get('terminology')): hit = None
         from .request_shapes import valid

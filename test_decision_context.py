@@ -387,3 +387,19 @@ class MandatoryCheck(Fixture):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class SavedPlansFollowDefinitions(unittest.TestCase):
+    """A saved plan replays only under the definitions it was planned with (2026-10-23: a pre-decision-context Haiku plan
+    replayed ahead of the chart reader)."""
+    def test_store_stamps_the_definitions_version(self):
+        import json as _json, sqlite3 as _sqlite3, tempfile as _tempfile
+        from pathlib import Path as _Path
+        from clinical_core.agere.clinical import shared_planner as SP
+        from clinical_core.agere.clinical.decision_context import VERSION
+        with _tempfile.TemporaryDirectory() as d:
+            db = _Path(d) / 'question-plans.sqlite3'
+            SP.store_request(db, 'k', 's', 'How many patients?', {'kind': 'request', 'request': {'source': {}}},
+                             {'execution_accepted': True, 'interpreter': 'compositional_grammar'})
+            payload = _json.loads(_sqlite3.connect(db).execute('SELECT payload FROM shared_requests').fetchone()[0])
+            self.assertEqual(payload['interpretation']['definitions_version'], VERSION)
