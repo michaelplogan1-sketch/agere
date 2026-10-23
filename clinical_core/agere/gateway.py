@@ -162,6 +162,9 @@ class PersistentGateway:
             date.fromisoformat(evidence['date'])
             if evidence['date']>task.as_of:raise ValueError('Evidence beyond cutoff')
         parser=ClaudeProvider(None) if provider=='claude' else JevProvider(None,model=self.MODELS[provider])
+        if provider=='claude':
+            from .model_policy import claude_model
+            parser.model=claude_model(parser.model)  # Opus only for deliverables (model_policy)
         body=parser.request(task)
         parser.name=provider  # Perplexity Decisions and Jev share this typed Choice contract.
         key=digest({'provider':provider,'body':body,'contract':2})

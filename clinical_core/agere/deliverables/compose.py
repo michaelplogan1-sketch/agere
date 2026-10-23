@@ -94,8 +94,10 @@ def ledgered_sender(receipts_dir, ledger_path=None):
     def send(body):
         ledger = BudgetLedger(ledger_path or default_ledger_path())
         try:
-            raw, receipt = ledgered(body, 'claude', ledger, receipts_dir, parse=lambda r: r, timeout=SEND_TIMEOUT_S,
-                                    transport=together.TRANSPORT, max_bytes=6_000_000)
+            from ..model_policy import deliverable
+            with deliverable():  # the deliverable composer may use Opus (model_policy)
+                raw, receipt = ledgered(body, 'claude', ledger, receipts_dir, parse=lambda r: r, timeout=SEND_TIMEOUT_S,
+                                        transport=together.TRANSPORT, max_bytes=6_000_000)
         finally:
             ledger.close()
         return raw, receipt

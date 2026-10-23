@@ -45,6 +45,9 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     # semantic model plus its tool loop) raises the default REQUEST_MAX_BYTES bound explicitly.
     # Preset-routed providers (Perplexity Agent API) choose the model server-side: the ledger
     # records 'preset:<name>' and the returned model revision is kept, not pinned.
+    if provider=='claude' and body.get('model'):
+        from ..model_policy import claude_model
+        body={**body,'model':claude_model(body['model'])}  # Opus only for deliverables (model_policy)
     expected=body.get('model');ledger_model=expected or 'preset:'+str(body.get('preset'))
     payload=json.dumps(body,allow_nan=False).encode()
     limit = REQUEST_MAX_BYTES if max_bytes is None else max_bytes

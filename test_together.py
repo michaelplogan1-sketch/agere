@@ -195,7 +195,7 @@ class TogetherTests(unittest.TestCase):
         self.assertEqual(result['together']['reconcile']['model'], 'claude-opus-5-5')
         rec = provider.calls('reconcile')
         self.assertEqual(len(rec), 1)
-        self.assertEqual(rec[0]['model'], 'claude-opus-5-5')
+        self.assertEqual(rec[0]['model'], 'claude-sonnet-5-5')  # model_policy: no Opus on the question path
         user = json.loads(rec[0]['messages'][0]['content'])
         self.assertEqual({user['candidate_1']['answer']['count'], user['candidate_2']['answer']['count']}, {1, 5})
         fast_candidate = next(user[k] for k in ('candidate_1', 'candidate_2') if user[k]['answer']['count'] == 5)
