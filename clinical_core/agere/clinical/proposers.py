@@ -114,8 +114,9 @@ COSTLY = ('local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_type
 # Tiers that run a local MLX model (in process or in the typed-worker subprocess). Questions run concurrently (no service-wide
 # lock), but two local models on the GPU at once exhausted Metal memory and aborted the server: these tiers take turns.
 LOCAL_MODEL_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql',
-                               'evidence_retrieval', 'evidence_review', 'cohort_family_early', 'cohort_family_late'})
-LOCAL_MODEL_LOCK = threading.Lock()  # fraction of the answer budget one tier may use (paid tiers count as heavy)
+                               'evidence_retrieval', 'evidence_review'})
+# cohort_family_early/late are not listed: they usually run no model, so they take LOCAL_MODEL_LOCK only around the bottled slot fill itself (bottled_cohort_hook)
+from .foreground_priority import LOCAL_MODEL_LOCK  # a priority lock: a foreground local tier is served before a queued background one
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
 TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
 
@@ -146,6 +147,7 @@ def evidence_of(contract):
 
 
 class Cascade:
+    foreground_wait = 0.0  # seconds a background continuation waited for foreground questions (foreground_priority)
     started, deferred, background, budget = None, (), None, None  # per-question state is set in __init__ / run (class defaults keep bare instances usable)
     def __init__(self, stack, catalog, question, *, population=None, ledger=None, hosted_model=None, memory_identity=None):
         self.stack, self.catalog, self.question, self.population = stack, catalog, question, population
@@ -399,6 +401,11 @@ class Cascade:
         self.measured = {}
 
     def run(self):
+        from .foreground_priority import foreground
+        with foreground():  # the background worker starts no tier while this question is in flight
+            return self._run()
+
+    def _run(self):
         from .answer_budget import start as start_budget
         budget = self.budget = start_budget()
         try:
@@ -450,12 +457,16 @@ class Cascade:
         """Background continuation: ask the deferred tiers in order, each time-limited, within its own budget (no expected-cost gate:
         nobody waits). -> the accepted (contract, interpretation) or None. Never queues another continuation."""
         from .answer_budget import start as start_budget
+        from . import foreground_priority as fp
         budget = self.budget = start_budget(seconds)
-        for name in tiers:
-            if budget.expired(): break
-            if not self.runnable(name): continue
-            found = self.attempt(name, self.tier_seconds(name, budget))
-            if found is not None: return self.accept(getattr(self, 'order_used', None) or tuple(tiers), name, found)
+        self.foreground_wait = 0.0
+        with fp.background_run():  # local-model lock acquisitions in here yield to any foreground waiter
+            for name in tiers:
+                if budget.expired(): break
+                if not self.runnable(name): continue
+                self.foreground_wait += fp.wait_for_foreground()  # foreground first: no new tier starts while a question is waited on
+                found = self.attempt(name, self.tier_seconds(name, budget))
+                if found is not None: return self.accept(getattr(self, 'order_used', None) or tuple(tiers), name, found)
         return None
 
     def queue_background(self):

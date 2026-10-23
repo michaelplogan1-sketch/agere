@@ -60,6 +60,20 @@ def tier_remaining(default):
     return default if deadline is None else max(1.0, min(default, deadline - time.monotonic()))
 
 
+def cannot_finish(estimate=0.0):
+    """Why work expected to take `estimate` seconds should not start now, or None when it may: the running tier already passed its
+    time share, the question's budget is used up, or what is left of the budget / the tier's share is shorter than the estimate.
+    Called where a local-model generation or slot fill is about to start (a started decode cannot be interrupted, so it is not started)."""
+    if stop_check()(): return 'tier time share exhausted'
+    budget = current()
+    if budget.expired(): return 'answer budget used up'
+    if estimate > 0:
+        if budget.remaining() < estimate: return f'{budget.remaining():.0f}s of the budget left, expected ~{estimate:g}s'
+        deadline = _deadline.get()
+        if deadline is not None and deadline - time.monotonic() < estimate: return f'{max(0.0, deadline - time.monotonic()):.0f}s of the tier share left, expected ~{estimate:g}s'
+    return None
+
+
 def default_seconds():
     raw = os.environ.get('AGERE_ANSWER_BUDGET_SECONDS', '').strip().lower()
     if raw in ('', 'default'): return DEFAULT_SECONDS
