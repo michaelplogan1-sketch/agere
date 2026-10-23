@@ -380,6 +380,8 @@ QUESTION SPEC (this call). Return exactly one typed request JSON object with the
 You write a SPEC, never SQL. Do not return {"analysis": ...} or {"program": ...}. If a requirement cannot be expressed, keep its exact words in unresolved with the reason.
 The decision context above is applied by the compiler: do not add a living-patient filter yourself unless the question asks for the deceased; write "last year" windows as the compiler expects (within_last_months 12 on the event date).
 Every quote is a literal substring of the original question. Preserve every predicate, negation, OR/AND, number, window, measure and grouping.
+Use op=concept only with names listed in named_concepts; the quote of a concept leaf is only the words that name it ("heart failure", "a statin"), never the verb or window words around it.
+A drug or condition that no listed name covers cannot be expressed: keep its exact words in unresolved with that reason; never invent a name.
 '''
 NOTE_ADDENDUM = '''
 NOTE PREDICATES (what the clinical notes, scanned documents and HIE documents say) -- a predicate that may stand anywhere a predicate can (inside where, and/or/not, exists):
@@ -474,6 +476,8 @@ def haiku_fill(ctx, *, previous=None, review=None, steps=None):
             if ctx.expired(): raise SpecInvalid('haiku: out of time')
             which = plan_calls[attempt]
             if review and attempt == 0 and which != 'haiku': which = 'haiku'
+            if which == 'sonnet' and ctx.deadline is not None and ctx.deadline - time.monotonic() < env_float('AGERE_SPEC_SONNET_MIN_SECONDS', 5.0):
+                raise SpecInvalid(f'haiku: {last_error}; no time left for the Sonnet attempt')
             model = models[which]
             user = spec_user(ctx, feedback, extra, operations, streams)
             started = time.perf_counter()
@@ -594,7 +598,7 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
     decide, models = decide or PROVIDERS['decide'], models or PROVIDERS['models']
     names = tuple(fillers) if fillers else enabled_fillers()
     grace = env_float('AGERE_SPEC_GRACE_SECONDS', 2.0) if grace is None else grace
-    seconds = env_float('AGERE_SPEC_SECONDS', 25.0) if seconds is None else seconds
+    seconds = env_float('AGERE_SPEC_SECONDS', 12.0) if seconds is None else seconds
     ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, decide=decide, models=models, as_of=as_of,
               deadline=time.monotonic() + seconds)
     if ctx_hook: ctx_hook(ctx)
@@ -606,7 +610,7 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
         candidates['grammar'] = run_filler('grammar', grammar_fill, ctx)
     paid = [n for n in names if n != 'grammar']
     if candidates.get('grammar', {}).get('status') != 'valid' and paid:
-        limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 12.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 20.0)}
+        limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 8.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 12.0)}
         fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
         pool = ThreadPoolExecutor(max_workers=len(paid), thread_name_prefix='spec-fill')
         futures = {pool.submit(contextvars.copy_context().run, run_filler, n, fns[n], ctx): n for n in paid}
@@ -663,7 +667,7 @@ def repair(stack, catalog, question, plan, review, *, population=None, ledger=No
     """One Haiku repair of a spec System One refused part by part (feedback: spec_verify.feedback). -> the same dict as fill, or SpecNotFilled."""
     started = time.perf_counter()
     models = models or PROVIDERS['models']
-    ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, models=models, as_of=as_of, deadline=time.monotonic() + env_float('AGERE_SPEC_HAIKU_SECONDS', 20.0))
+    ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, models=models, as_of=as_of, deadline=time.monotonic() + env_float('AGERE_SPEC_HAIKU_SECONDS', 12.0))
     cand = run_filler('haiku', lambda c: haiku_fill(c, previous=plan, review=review), ctx)
     receipt = {'version': VERSION, 'fillers': {'haiku': {k: cand.get(k) for k in ('status', 'seconds', 'calls', 'usd', 'cost_known', 'error')}},
                'seconds': round(time.perf_counter() - started, 3), 'calls': cand.get('calls', 0), 'usd': cand.get('usd', 0.0), 'cost_known': cand.get('cost_known', True),

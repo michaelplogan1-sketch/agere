@@ -88,7 +88,7 @@ STAGES = (
     ('system_one_choice', ('s1_metric_router', 's1_operator_router', 'typed_decider', 'terminology_mapping', 'hcc_suspecting')),
     ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late')),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
-    ('claude', ('metric_router', 'operator_router', 'hosted_typed_interpreter', 'hosted_verified_sql', 'local_normalizer', 'qwen_rewrite_compiler',
+    ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler',
                 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
                 'stack_planner_propose', 'legacy_cost_ladder')),
 )

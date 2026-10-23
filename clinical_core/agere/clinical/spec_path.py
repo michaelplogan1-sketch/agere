@@ -32,6 +32,8 @@ def interpretation_for(question, catalog, fill_result, verification, repaired=No
     plan, contract = fill_result['plan'], fill_result['contract']
     parts = spec_readback.read_back(plan, catalog, question)
     confirmed = verification is None or verification['confirmed']
+    contrary = [p for p in (verification or {}).get('parts', []) if p.get('status') == 'unverified' and p.get('label') in ('partly', 'no')]
+    soft = not confirmed and not contrary  # System One could not clear its bar but nothing it said contradicts the reading: answered, low confidence, parts named
     out = {'interpreter': 'spec_path', 'review': 'spec_verified' if confirmed else 'spec_partly_verified', 'execution_accepted': True,
            'literal_check': 'passed', 'qualified_interpretation': False, 'attempts': [],
            'semantic_review': {'equivalent': True, 'issues': []} if confirmed else None,
@@ -48,8 +50,10 @@ def interpretation_for(question, catalog, fill_result, verification, repaired=No
     if terms: out['terminology'] = terms
     if not confirmed:
         out.pop('semantic_review')
-        out['partial'] = True
-        out['partial_reason'] = 'spec_parts_unconfirmed'
+        out['spec_unconfirmed'] = 'soft' if soft else 'contrary'
+        if not soft:
+            out['partial'] = True
+            out['partial_reason'] = 'spec_parts_unconfirmed'
     return out
 
 
@@ -147,8 +151,9 @@ def attach(result, interpretation, contract, catalog, question):
         result['answer_checks'] = checks
         answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *(checks.get('annotations') or [])]))
     unconfirmed = [p for p in (interpretation.get('spec_verification') or {}).get('parts', []) if p.get('status') != 'pass']
-    if interpretation.get('partial_reason') == 'spec_parts_unconfirmed' and unconfirmed:
-        answer['status'] = 'partial' if answer.get('status') == 'answered' else answer.get('status')
+    if interpretation.get('spec_unconfirmed') and unconfirmed:
+        if interpretation['spec_unconfirmed'] == 'contrary' and answer.get('status') == 'answered': answer['status'] = 'partial'
+        else: answer.setdefault('confidence', 'low')
         answer['limitations'] = [*(answer.get('limitations') or []),
                                  'System One could not confirm these parts of the reading against the question: ' + '; '.join(p['text'] for p in unconfirmed)[:500]]
     if interpretation.get('free_form'):

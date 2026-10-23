@@ -154,7 +154,7 @@ class TierBehaviour(Fixture):
         self.assertEqual(len(self.haiku.calls), 2)
 
     def test_unconfirmed_parts_make_the_answer_partial_and_say_which(self):
-        self.s1.default = ('yes', 0.5)  # System One cannot decide anything
+        self.s1.default = ('partly', 0.75)  # System One leans against the reading but cannot clear its bar
         self.models(self.spec())
         with self.only_spec(), DC.scope(UNKNOWN, AS_OF):
             contract, interpretation = self.cascade(UNKNOWN).run()
@@ -164,6 +164,18 @@ class TierBehaviour(Fixture):
         result = {'answer': {'status': 'answered', 'limitations': []}}
         SP.attach(result, interpretation, contract, self.w.catalog, UNKNOWN)
         self.assertEqual(result['answer']['status'], 'partial')
+        self.assertTrue(any('could not confirm' in x for x in result['answer']['limitations']))
+
+    def test_parts_system_one_could_not_decide_but_did_not_contradict_stay_answered_with_low_confidence(self):
+        self.s1.default = ('yes', 0.5)  # nobody cleared the bar, nothing contradicts
+        self.models(self.spec())
+        with self.only_spec(), DC.scope(UNKNOWN, AS_OF):
+            contract, interpretation = self.cascade(UNKNOWN).run()
+        self.assertEqual(interpretation['spec_unconfirmed'], 'soft')
+        self.assertNotIn('partial', interpretation)
+        result = {'answer': {'status': 'answered', 'limitations': []}}
+        SP.attach(result, interpretation, contract, self.w.catalog, UNKNOWN)
+        self.assertEqual((result['answer']['status'], result['answer']['confidence']), ('answered', 'low'))
         self.assertTrue(any('could not confirm' in x for x in result['answer']['limitations']))
 
     def test_two_disagreeing_valid_readings_leave_the_tier_declined_with_both(self):

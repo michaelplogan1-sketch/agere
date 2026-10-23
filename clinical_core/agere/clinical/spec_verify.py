@@ -62,7 +62,9 @@ def decide_default(*args, **kwargs):
 
 def prompt(question, part):
     return (f'Question asked: {question}\nA system will answer it by doing the step in the evidence. {HINTS.get(part["kind"], HINTS["predicate"])} '
-            f'Answer yes if the step matches, partly if it matches only in part, no if it contradicts the question.')
+            'The system applies fixed defaults the question need not repeat: only living patients are counted, a lab means the latest result, "last year" is the 12 months '
+            'ending at the as-of date, a condition is any EHR or counted-claim diagnosis. A default is not a mismatch. '
+            'Answer yes if the step matches, partly if it matches only in part, no if it contradicts the question.')
 
 
 def check_part(question, part, *, as_of, ledger, decide):

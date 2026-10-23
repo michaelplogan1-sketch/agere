@@ -278,7 +278,9 @@ def parts(spec, catalog=None, question=None, as_of=None):
     from . import decision_context as DC
     if as_of is None and catalog is not None: as_of = (getattr(catalog, 'identity', None) or {}).get('as_of')
     as_of = str(as_of)[:10] if as_of else None
-    out = [{'id': 'population', 'kind': 'population', 'text': f'It answers for {population_text(spec, question)}.', 'quotes': _quotes(spec['source'])}]
+    who = population_text(spec, question)
+    who = f'patients, counting only living patients (the standing default)' if who == 'living patients' else who
+    out = [{'id': 'population', 'kind': 'population', 'text': f'It answers for {who}.', 'quotes': _quotes(spec['source'])}]
     if spec.get('subject'):
         out.append({'id': 'subject', 'kind': 'subject', 'text': f'It is about one patient, {spec["subject"]["patient_id"]}.', 'quotes': _quotes(spec['subject'])})
     for i, m in enumerate(spec['select']):
