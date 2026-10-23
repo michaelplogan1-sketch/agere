@@ -4410,7 +4410,8 @@ DELAY_WORDS = (r"\bmissed (?:or delayed )?diagnos\w*\b|\bdelay(?:ed|s)? (?:in )?
                r"\bhow long (?:before|until) (?:\w+ ){0,4}diagnos\w*\b|\bhow late\b|\bdiagnosed late\b|\blate diagnos\w*\b|"
                r"\bdiagnos\w* (?:of )?(?:\w+ ){0,3}(?:was |were |is |are |been |get |got )?delayed\b")
 UNDIAGNOSED_WORDS = (r"\bundiagnosed\b|\bnot (?:yet )?diagnosed\b|\b(?:signals?|signs?|evidence|criteria) (?:of|for) (?:\w+ ){0,3}(?:but|without|with no)\b|"
-                     r"\bmeets? (?:the )?(?:\w+ ){0,3}criteria\b|\bmeeting (?:the )?(?:\w+ ){0,3}criteria\b|\b(?:but|without|with no|and no) (?:a |any )?(?:\w+ ){0,3}diagnosis\b|\bnever diagnosed\b")
+                     r"\bmeets? (?:the )?(?:\w+ ){0,3}criteria\b|\bmeeting (?:the )?(?:\w+ ){0,3}criteria\b|\b(?:but|without|with no|and no) (?:a |any )?(?:\w+ ){0,3}diagnosis\b|\bnever diagnosed\b|"
+                     r"\b(?:nobody|no one|no-one) (?:has |have |had )?(?:ever )?diagnosed\b|\b(?:has|have|had|was|were) (?:never|not) (?:been )?diagnosed\b")
 
 
 def _diagnostic_delay_question(q, profile, as_of):
@@ -4425,7 +4426,8 @@ def _diagnostic_delay_question(q, profile, as_of):
     delay = re.search(DELAY_WORDS, low) or re.search(r'\b(?:new|incident|newly diagnosed|recent) (?:\w+ ){0,3}(?:diagnos\w*|cases?)\b.*\b(?:earlier|before|prior|preceding)\b', low)
     undiagnosed = re.search(UNDIAGNOSED_WORDS, low)
     if not (forward or delay or undiagnosed) or not target: return None
-    if undiagnosed and not delay and not forward and re.match(r'^how many\b', low) and not re.search(r'\bundiagnosed\b|\bmissed\b|\bdelay', low):
+    lab_signal = re.search(r'\blab(?:oratory)?s?\b|\blab results?\b|\b(?:signals?|signs?|evidence|criteria)\b', low)  # labs show it: the engine's criterion
+    if undiagnosed and not delay and not forward and re.match(r'^how many\b', low) and not lab_signal and not re.search(r'\bundiagnosed\b|\bmissed\b|\bdelay|\bnobody\b|\bno one\b', low):
         return None  # a count with a 'but no X diagnosis' clause is a literal lookup
     if undiagnosed and not delay and not forward and re.search(r'\b(?:under|below|above|over|less than|more than|greater than|at least)\s*\d|[<>]=?\s*\d|'
                                                                r'\blatest\b|\bmost recent\b|\bproblem lists?\b', low):

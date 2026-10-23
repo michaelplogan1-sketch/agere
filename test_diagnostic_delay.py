@@ -167,7 +167,9 @@ class Engine(unittest.TestCase):
         json.dumps(a)
 
 
-PHRASINGS = {'How long were CKD diagnoses delayed after eGFR fell below 60?': ('ckd', 'lookback'),
+PHRASINGS = {
+    'How many people have diabetes that their lab results show but nobody has diagnosed?': ('diabetes', 'undiagnosed'),
+    'How many patients have lab evidence of diabetes without a diabetes diagnosis?': ('diabetes', 'undiagnosed'),'How long were CKD diagnoses delayed after eGFR fell below 60?': ('ckd', 'lookback'),
              'Which patients have undiagnosed diabetes?': ('diabetes', 'undiagnosed'),
              'Missed opportunities to diagnose heart failure earlier': ('heart_failure', 'lookback'),
              'Look-back on new colon cancer diagnoses for earlier red flags': ('colorectal_cancer', 'lookback'),
