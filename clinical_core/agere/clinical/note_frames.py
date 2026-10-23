@@ -37,7 +37,8 @@ STATUSES = {
     'historical': 'The passage places the thing in the patient\'s past and not as current at the note date: "history of", '
                   '"resolved", "previously", "in 2027", "was on X until March", a closed episode.',
     'other_person': 'The passage is about someone other than the patient (family member, relative, caregiver, household member).',
-    'not_mentioned': 'The passage does not address this concept for the patient at all (a retrieval miss).',
+    'not_mentioned': 'The passage says nothing about this concept for the patient: a retrieval miss, or only a hypothetical or '
+                     'conditional mention ("return if fever", "evaluate for X", risk teaching) that does not state the patient has it.',
 }
 RESULT_STATUSES = tuple(STATUSES) + ('unknown',)  # 'unknown' is a result only: undecided, never silently "no"
 POSITIVE = ('documented', 'possible', 'planned_not_done', 'historical')  # statuses that carry detail fields
@@ -57,9 +58,10 @@ COMBINE = {
 SOURCES = ('clinical_note', 'scanned_document_text', 'hie_document', 'other_text')
 
 # Detail kinds: choice (closed list, one), multi (closed list, several), number (value picked from numbers in the passage),
-# date (picked from dates in the passage or the note date), count (integer picked from the passage), quote (the exact sentence).
+# time (HH:MM picked from clock times in the passage), date (picked from dates in the passage or the note date), count (integer picked from the passage), quote (the exact sentence).
 _SEV = ['mild', 'moderate', 'severe', 'unspecified']
-_COURSE = ['new', 'persistent', 'worsening', 'improving', 'stable', 'resolved', 'intermittent', 'unspecified']
+_COURSE = ['new', 'in_remission', 'persistent', 'worsening', 'improving', 'stable', 'resolved', 'intermittent', 'unspecified']
+_TIME = 'The clock time written for it (for example 14:35), if the passage gives one.'
 _REASON_NOT = ['patient_refusal', 'medical_contraindication', 'system_or_access_reason', 'not_indicated', 'clinician_decision', 'other_with_quote']
 
 
@@ -80,6 +82,7 @@ FRAMES = {
             'assessment': _d('multi', ['monitored', 'evaluated', 'assessed', 'treated'],
                              'Which of these does the passage show was done about the condition (MEAT: monitor, evaluate, assess, treat)?'),
             'stage_or_type': _d('quote', [], 'The words giving the type, stage or class of the condition.'),
+            'event_time': _d('time', [], _TIME),
         }},
     'symptom': {
         'label': 'Symptom or complaint',
@@ -108,6 +111,9 @@ FRAMES = {
             'adherence': _d('choice', ['taking_as_directed', 'taking_differently', 'not_taking', 'not_stated'],
                             'What does the passage say about whether the patient actually takes it?'),
             'initiated_by': _d('choice', ['clinician', 'patient', 'pharmacy_or_plan', 'unspecified'], 'Who made the change?'),
+            'reason_not_done': _d('choice', _REASON_NOT, 'If it was not given or prescribed, why not?'),
+            'amount': _d('number', [], 'Which number is the dose or amount given or ordered?'),
+            'event_time': _d('time', [], _TIME),
         }},
     'procedure_test': {
         'label': 'Procedure, test or study',
@@ -122,6 +128,7 @@ FRAMES = {
             'result_text': _d('quote', [], 'The words giving the result or impression.'),
             'performed_on': _d('date', [], 'On what date was it performed?'),
             'reason_not_done': _d('choice', _REASON_NOT, 'If it was not done, why not?'),
+            'event_time': _d('time', [], _TIME),
         }},
     'finding_value': {
         'label': 'Measured value or score',
@@ -136,6 +143,7 @@ FRAMES = {
                        'What kind of measurement is it?'),
             'interpretation': _d('choice', ['normal', 'abnormal', 'high', 'low', 'at_goal', 'not_at_goal', 'not_stated'],
                                  'How does the passage interpret the value?'),
+            'event_time': _d('time', [], _TIME),
         }},
     'adverse_event': {
         'label': 'Adverse event, allergy or intolerance',
@@ -170,6 +178,10 @@ FRAMES = {
             'outcome': _d('choice', ['completed', 'ordered_or_referred', 'declined', 'unable', 'deferred'],
                           'What happened with it?'),
             'done_on': _d('date', [], 'On what date was it done?'),
+            'topics': _d('multi', ['risk_factors', 'warning_signs', 'emergency_activation', 'follow_up', 'medications', 'diet',
+                                   'activity', 'smoking_cessation', 'self_monitoring', 'other'],
+                         'For teaching or counseling: which topics does the passage say were covered?'),
+            'event_time': _d('time', [], _TIME),
             'reason_not_done': _d('choice', _REASON_NOT, 'If it was not done, why not?'),
         }},
     'social_need': {
@@ -182,7 +194,8 @@ FRAMES = {
                                    'transportation_insecurity', 'utility_insecurity', 'financial_strain', 'medical_cost_burden',
                                    'material_hardship', 'employment', 'education_literacy', 'social_isolation', 'stress',
                                    'interpersonal_violence', 'elder_abuse', 'digital_access', 'language_barrier', 'legal',
-                                   'child_care', 'caregiver_strain', 'incarceration', 'veteran_status', 'other'],
+                                   'child_care', 'caregiver_strain', 'caregiver_role', 'incarceration', 'veteran_status',
+                                   'substance_use', 'health_insurance', 'discrimination', 'other'],
                          'Which social-need domains does the passage describe? Choose every one described.'),
             'response': _d('choice', ['referral_made', 'resources_provided', 'counseling', 'screened_only', 'patient_declined',
                                       'none_documented'], 'What was done about the need?'),
@@ -303,6 +316,12 @@ def validate_predicate(p):
         raise ValueError('detail must be an object of field -> option(s)')
     norm_detail = {}
     for field, want in detail.items():
+        if field == 'trend' and combine == 'trend':  # pseudo-field of the trend rule: which direction must the values take
+            wants = want if isinstance(want, list) else [want]
+            if any(w not in ('increased', 'decreased', 'stable') for w in wants):
+                raise ValueError('detail.trend must be increased, decreased or stable')
+            norm_detail[field] = want
+            continue
         d = spec['details'].get(field)
         if d is None:
             raise ValueError(f'frame {frame} has no detail field {field!r}; fields: {list(spec["details"])}')
@@ -322,6 +341,11 @@ def validate_predicate(p):
         elif d['kind'] == 'date':
             wants = [{k: _iso(v, f'detail.{field}.{k}') for k, v in w.items()} if isinstance(w, dict) else _iso(w, f'detail.{field}')
                      for w in wants]
+        elif d['kind'] == 'time':
+            for w in wants:
+                for t in (w.values() if isinstance(w, dict) else [w]):
+                    if not re.fullmatch(r'([01]\d|2[0-3]):[0-5]\d', str(t)):
+                        raise ValueError(f'detail.{field} times are HH:MM (24 hour), got {t!r}')
         elif d['kind'] == 'quote':
             if any(not isinstance(w, str) or not w.strip() for w in wants):
                 raise ValueError(f'detail.{field} is a phrase the passage must contain: give non-empty text')
@@ -395,6 +419,12 @@ def detail_matches(frame, want, got):
                         ok = ok or ((not w.get('min') or hs >= w['min']) and (not w.get('max') or hs <= w['max']))
                     else:
                         ok = ok or hs == str(w)[:10]
+                elif kind == 'time':
+                    hs = str(h)[:5]
+                    if isinstance(w, dict):
+                        ok = ok or ((not w.get('min') or hs >= w['min']) and (not w.get('max') or hs <= w['max']))
+                    else:
+                        ok = ok or hs == str(w)[:5]
                 elif kind == 'quote':
                     ok = ok or str(w).lower() in str(h).lower()
         if not ok:
