@@ -1150,11 +1150,18 @@ class Parser:
             if coded: return atom('patient.sex_reported', '=', coded, sex.group().strip()), text[sex.end():]
         payer = re.match(r'^(?:(?:on|with|under|covered by|enrolled in|insured by|in)\s+)?(?:an?\s+)?', text, re.I)
         coverage = self.prefix(text[payer.end():], {'medicare': 'medicare', 'medicaid': 'medicaid',
-                                                    'commercial': 'commercial', 'uninsured': 'uninsured'})
+                                                    'commercial': 'commercial', 'uninsured': 'uninsured',
+                                                    'traditional medicare': 'medicare_only', 'original medicare': 'medicare_only',
+                                                    'fee-for-service medicare': 'medicare_only', 'fee for service medicare': 'medicare_only',
+                                                    'medicare fee-for-service': 'medicare_only', 'medicare only': 'medicare_only'})
         if coverage and self.base == 'patient' or (coverage and not payer.group()):
             quote, value, tail = coverage
             quote = text[:len(text) - len(tail)].strip()
-            return atom('patient.coverage_type', '=', value, quote), re.sub(r'^\s*(?:patients|members)\b', '', tail, flags=re.I)
+            tail = re.sub(r'^\s*(?:patients|members)\b', '', tail, flags=re.I)
+            from .decision_context import coverage_values  # "Medicare" includes dual and Medigap (Mike 2026-10-23)
+            values = ('medicare',) if value == 'medicare_only' else coverage_values(value)
+            if len(values) == 1: return atom('patient.coverage_type', '=', values[0], quote), tail
+            return atom('patient.coverage_type', 'in', list(values), quote), tail
         if self.base == 'patient' and 'death' in self.catalog.tables:
             both = re.match(r'^,?\s*(?:(living)\s+or\s+(deceased)|(alive)\s+or\s+(dead))\s*,?', text, re.I)
             if both:

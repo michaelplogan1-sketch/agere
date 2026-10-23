@@ -1374,9 +1374,17 @@ def _population_question(q, r, profile, as_of, info):
     if r.take(r'\b(?:female|women|woman)\b(?: reported sex)?', 'female'): allp.append({'kind': 'patient', 'field': 'sex_reported', 'op': 'eq', 'value': 'F'})
     if r.take(r'\b(?:male|men|man)\b(?: reported sex)?', 'male'): allp.append({'kind': 'patient', 'field': 'sex_reported', 'op': 'eq', 'value': 'M'})
     r.take(r'\breported (?:sex|age)\b|\bat (?:their )?profile capture\b|\bwithout advancing (?:that|the) age(?: to today)?\b')
+    from .decision_context import coverage_values, TRADITIONAL_MEDICARE
+    coverage_groups = []  # "Medicare" = medicare, dual or Medigap coverage (Mike 2026-10-23): one OR group
+    if TRADITIONAL_MEDICARE.search(low):
+        r.take(TRADITIONAL_MEDICARE.pattern, 'payer medicare only')
+        allp.append({'kind': 'record', 'stream': 'coverage', 'conditions': [{'field': 'coverage_type', 'op': 'eq', 'value': 'medicare'}], 'window': W})
     for phrase, payer in PAYERS.items():
         if r.take(_alias_pattern(phrase) + r'(?: coverage| members?| patients?| population| plan)?', f'payer {payer}'):
-            allp.append({'kind': 'record', 'stream': 'coverage', 'conditions': [{'field': 'coverage_type', 'op': 'eq', 'value': payer}], 'window': W})
+            atoms = [{'kind': 'record', 'stream': 'coverage', 'conditions': [{'field': 'coverage_type', 'op': 'eq', 'value': v}], 'window': W}
+                     for v in coverage_values(payer)]
+            if len(atoms) == 1: allp.append(atoms[0])
+            else: coverage_groups.append(atoms)
     # literal record predicates: a received stream named with one of its observed values
     for s_name, forms in sorted(_stream_vocabulary(profile).items(), key=lambda kv: -max(map(len, kv[1]))):
         if s_name in ('conditions', 'labs', 'vitals', 'encounters', 'coverage', 'social_screens', 'financial_screens'): continue
@@ -1397,7 +1405,7 @@ def _population_question(q, r, profile, as_of, info):
                 atom = {'kind': 'record', 'stream': s_name, 'conditions': cond, 'window': W}
                 (excl if _negated(low, sm.start()) else allp).append(atom)
     # social-screen flags (true unless "as false"/"false")
-    need_groups = []  # a social need asked in plain words matches either screening instrument
+    need_groups = list(coverage_groups)  # a social need asked in plain words matches either screening instrument; coverage OR groups
 
     def need_atoms(stream, field, value, start, literal):
         atom = {'kind': 'record', 'stream': stream, 'conditions': [{'field': field, 'op': 'eq', 'value': value}], 'window': W}

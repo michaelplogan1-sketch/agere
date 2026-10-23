@@ -160,7 +160,9 @@ def prompt_block():
         "4. ED visits, inpatient stays and observation stays are utilization_event rows (kind ed_visit | inpatient | observation: EHR, ADT and claims "
         'together), never visit or encounter alone.\n'
         "5. 'last year', 'past year', 'last 12 months' = the 12 months ending at the as-of date: date > date(:as_of, '-12 months') AND date <= :as_of. "
-        "A calendar year word ('in 2029') is that calendar year (date >= '2029-01-01' AND date <= '2029-12-31').")
+        "A calendar year word ('in 2029') is that calendar year (date >= '2029-01-01' AND date <= '2029-12-31').\n"
+        "6. 'Medicare' means coverage_type IN ('medicare', 'dual', 'medigap') (dual-eligible and Medigap members have Medicare); "
+        "'traditional', 'original', 'fee-for-service' or 'Medicare only' means coverage_type = 'medicare'.")
 
 
 # --- the scope an answer runs in -------------------------------------------------------------------------------------------------
@@ -482,3 +484,16 @@ def finalize(stack_path, result, state):
     else:
         answer['decision_context'] = receipt(state.question, state)
     return result
+
+
+# -- coverage (Mike 2026-10-23) --------------------------------------------------------------------------------------------
+# "Medicare" includes dual-eligible and Medigap members by default (they all have Medicare); "traditional / fee-for-service /
+# original Medicare (only)" narrows to coverage_type medicare.
+MEDICARE_COVERAGE = ('medicare', 'dual', 'medigap')
+TRADITIONAL_MEDICARE = re.compile(r'\b(?:traditional|original|fee[- ]for[- ]service|ffs)\s+medicare\b|\bmedicare\s+(?:fee[- ]for[- ]service|ffs|only)\b', re.I)
+
+
+def coverage_values(value, question=''):
+    """The coverage_type values a named coverage means under this decision context."""
+    if value == 'medicare' and not TRADITIONAL_MEDICARE.search(question or ''): return MEDICARE_COVERAGE
+    return (value,)
