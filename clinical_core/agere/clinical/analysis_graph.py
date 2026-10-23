@@ -210,6 +210,8 @@ def _fmt(v):
 
 def headline(answer):
     """One plain-English sentence stating the answer and the definitions behind it (deterministic, no model)."""
+    if isinstance(answer.get('chart_headline'), str) and answer['chart_headline']:
+        return answer['chart_headline']  # chart_reader states its own headline with dates, units and sources
     status, kind = answer.get('status'), answer.get('answer_type')
     if status in ('unsupported', 'grounding_failed') or kind == 'unsupported':
         missing = '; '.join(m.replace('Missing input: ', '') for m in answer.get('missing', [])[:4])
