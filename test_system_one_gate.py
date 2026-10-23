@@ -229,8 +229,10 @@ class Outage(unittest.TestCase):
             def fn(self):
                 self.keep(name, candidate(name, n), reasons); return None
             return fn
-        reached, c, out = self.run_outage(fake, {'semantic_cache': keep('semantic_cache', 10, ['answer guard: x']),
-                                                 'bottled_sql': keep('bottled_sql', 20, ['shape misfit']),
+        soft = "an uncalibrated free planner's answer is shipped only when System One confirms it answers the question"
+        reached, c, out = self.run_outage(fake, {'semantic_cache': keep('semantic_cache', 10, ['certificate: not certified']),
+                                                 'bottled_sql': keep('bottled_sql', 20, [soft]),
+                                                 'local_free_sql': keep('local_free_sql', 25, ['value check: the plan filters on values the warehouse never holds (x)']),
                                                  'learned_verified_sql': keep('learned_verified_sql', 30, ['System One check: different']),
                                                  'hosted_typed_interpreter': billing})
         self.assertIsInstance(out, tuple, out)
@@ -241,11 +243,12 @@ class Outage(unittest.TestCase):
         self.assertTrue(any('Claude was unavailable (billing)' in l for l in contract['executed']['answer']['limitations']))
         self.assertEqual(interp['cascade_usage']['new_paid_api_calls'], 1)
         opts = fake.calls[-1]['options']
-        self.assertEqual(sorted(opts), ['candidate_1', 'candidate_2', 'unknown'])  # the S1-rejected candidate is not offered
+        # neither the S1-rejected candidate nor the one a correctness check refuted is offered
+        self.assertEqual(sorted(opts), ['candidate_1', 'candidate_2', 'unknown'])
         self.assertEqual(fake.calls[-1]['task_key'], 's1_fallback_pick')
 
     def test_fallback_unknown_or_unavailable_reports_the_outage(self):
-        keep = {'semantic_cache': lambda self: self.keep('semantic_cache', candidate('semantic_cache', 1), ['x']),
+        keep = {'semantic_cache': lambda self: self.keep('semantic_cache', candidate('semantic_cache', 1), ['certificate: x']),
                 'hosted_typed_interpreter': billing}
         _, c, out = self.run_outage(FakeS1('unknown', 0.9), keep)
         self.assertIsInstance(out, ProviderUnavailable)

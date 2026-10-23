@@ -215,6 +215,24 @@ class ExecuteTest(Base):
         self.assertEqual(out['answer']['answer_type'], 'value')
         self.assertIn('66.7%', out['answer']['value'])
 
+    def test_unknown_patients_make_the_count_a_range(self):
+        # Codex review 2026-10-23: one unknown patient once returned "answered, count 0"
+        rule = lambda q, ev: 'unknown' if ev and ev[0]['id'].startswith('passage:P-2') else (
+            'yes' if ev and ev[0]['id'].startswith('passage:P-1') else 'no')
+        _, _, out = self.run_plan('How many patients are intolerant to statins?', ['P-1', 'P-2', 'P-3'], rule, population=True)
+        a = out['answer']
+        self.assertEqual((a['count'], a['count_range'], a['unknown_count']), (1, [1, 2], 1))
+        self.assertEqual(a['unresolved_patient_ids'], ['P-2'])
+        self.assertEqual(a['status'], 'partial')
+        self.assertIn('between 1 and 2', a['value'])
+
+    def test_below_threshold_label_is_unknown(self):
+        def decide(question, options, evidence, **kw):
+            return {'label': 'yes', 'probabilities': {'yes': 0.6, 'no': 0.4}, 'decided_by': None, 'steps': []}
+        out = aq.ask('Is P-1 on a statin?', ['yes', 'no', 'unknown'], [], as_of='2030-05-27', task_key=None,
+                     providers=('jev',), allow_live=True, decide=decide)
+        self.assertEqual((out['label'], out['best_label'], out['below_threshold']), ('unknown', 'yes', True))
+
     def test_conflict_and_trajectory_per_document(self):
         texts = {'P-1': [('2029-01-01', 'taking atorvastatin'), ('2029-06-01', 'stopped atorvastatin for myalgia')],
                  'P-2': [('2029-01-01', 'taking atorvastatin'), ('2029-06-01', 'continues atorvastatin')]}

@@ -4,7 +4,9 @@ cross_check() asks BOTH System One families (Jev and the Perplexity decider) the
 asks ("does what the executed plan computed answer the question as asked?"), each on its own, so the answer is checked by
 two model families instead of one. The Jev request is byte-identical to system_one_gate.check's first step, so when both
 run on one proposal Jev is charged once (provider-ledger cache hit).
-  confirmed    both families say it answers the question (fully / partially) -> the answer is cross-checked; no Claude call
+  confirmed    both families say it answers the question (fully / partially), each with p >= AGERE_S1_CROSS_CONFIRM (default
+               0.8) -> the answer is cross-checked; no Claude call
+  weak         both lean yes but one is below that bar -> not a confirmation (annotated like unavailable)
   refuted      both say it answers a different question with p >= AGERE_S1_CROSS_REJECT (default 0.7) -> concrete
                contradiction: this proposal is rejected and the next proposer tries (heal, never block)
   split        the families disagree -> the existing independent Claude path (answer_guard.PendingCheck) runs, but only
@@ -25,6 +27,13 @@ def reject_threshold():
         return float(os.environ.get('AGERE_S1_CROSS_REJECT', '0.7'))
     except ValueError:
         return 0.7
+
+
+def confirm_threshold():
+    try:
+        return float(os.environ.get('AGERE_S1_CROSS_CONFIRM', '0.8'))
+    except ValueError:
+        return 0.8
 
 
 def cross_check(stack, question, graph, result, *, ledger=None, as_of_date=None, s1=None):
@@ -49,7 +58,7 @@ def cross_check(stack, question, graph, result, *, ledger=None, as_of_date=None,
         usd += float(r.get('cost_usd') or 0.0)
     labels = [v.get('label') for v in votes.values()]
     if len(labels) == len(FAMILIES) and all(l in YES for l in labels):
-        verdict = 'confirmed'
+        verdict = 'confirmed' if all(v['p'] >= confirm_threshold() for v in votes.values()) else 'weak'
     elif len(labels) == len(FAMILIES) and all(l == NO for l in labels) and all(v['p'] >= reject_threshold() for v in votes.values()):
         verdict = 'refuted'
     elif any(l in YES for l in labels) and any(l == NO for l in labels):

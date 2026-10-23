@@ -433,6 +433,9 @@ def ask(question, options, evidence, *, as_of, task_key, providers, allow_live, 
         return {**out, 'label': 'unknown', 'error': out.get('status') + ': ' + '; '.join(
             str(st.get('error') or st.get('status')) for st in out.get('steps') or [])[:300], 'memo_hit': False}
     if out.get('label') not in options: out['label'] = 'unknown'
+    if out.get('decided_by') is None and out['label'] != 'unknown':
+        # Nobody cleared the bar: decide() still returns its best guess, but a guess is not a decision.
+        out = {**out, 'best_label': out['label'], 'label': 'unknown', 'below_threshold': True}
     _memo_put(key, out)
     return {**out, 'memo_hit': False}
 
@@ -605,14 +608,18 @@ def answer(report, plan_, question):
     p = report['parameters']
     table, chosen = aggregate(report)
     n, total = len(report['evaluated_patient_ids']), report['population_patients']
-    partial = report['capped'] or plan_.get('coverage') != 'supported_observation' or bool(plan_.get('unmet_requirements'))
-    cap_note = (f"Capped: System One read the first {n} of {total} patients in scope (maximum {report['cap']} per call); "
+    keys = [s['key'] for s in p['sub_questions']]
+    # A patient not selected while one of its readings is unknown is unresolved, not a "no": the count is a range.
+    unresolved = [r['patient_id'] for r in table if r['patient_id'] not in chosen
+                  and any(r.get(k) in (None, 'unknown') for k in keys)]
+    partial = (report['capped'] or plan_.get('coverage') != 'supported_observation' or bool(plan_.get('unmet_requirements'))
+               or bool(unresolved))
+    cap_note =(f"Capped: System One read the first {n} of {total} patients in scope (maximum {report['cap']} per call); "
                 f'the remaining {total - n} were not read.') if report['capped'] else None
     sources = [s for c in report['cells'] if c['label'] != 'unknown' for s in c['sources']]
     probabilities = {}
     for c in report['cells']:
         probabilities.setdefault(c['patient_id'], {})[c['key'] + (f"@{c['document']}" if c['document'] else '')] = c['probabilities']
-    keys = [s['key'] for s in p['sub_questions']]
     returns = p['returns']
     if returns == 'verdict' and len(table) == 1 and len(keys) == 1:
         label = table[0].get(keys[0], 'unknown')
@@ -634,6 +641,12 @@ def answer(report, plan_, question):
                                                   for l in dict.fromkeys(r.get(k) for r in table) if l) for k in keys)
         out = {'answer_type': 'table', 'count': len(table), 'patient_ids': chosen,
                'value': f'{n} patients x {len(keys)} sub-questions ({summary})'}
+    if unresolved and returns in ('count', 'value', 'patient_set'):
+        out['count_range'] = [len(chosen), len(chosen) + len(unresolved)]
+        out['unknown_count'] = len(unresolved)
+        out['unresolved_patient_ids'] = unresolved
+        out['value'] = (f"{out['value']}; between {len(chosen)} and {len(chosen) + len(unresolved)}: "
+                        f"{len(unresolved)} patient(s) could not be decided")
     if cap_note: out['value'] = f"{out['value']} [{cap_note}]"
     s1 = report['system_one']
     method = (f"{VERSION}: {len(keys)} atomic typed sub-question(s) asked of each patient's "

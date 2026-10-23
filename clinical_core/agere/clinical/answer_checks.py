@@ -1045,6 +1045,11 @@ def _certificates(receipt, state, verdict):
     return status
 
 
+# Checks whose failure to run leaves the answer unverified (the rest annotate).
+MANDATORY_CHECKS = frozenset({'zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage',
+                              'local_sql_confirmation', 'answer_shape_review'})
+
+
 def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None, claude_ok=True, tier=None):
     """Every answer check on one executed proposal. result = analysis_graph execute result (result['answer']).
     ledger: BudgetLedger for the paid cross-check (live only); catalog: request_plan.Catalog (its semantic target);
@@ -1064,6 +1069,11 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
             return fn()
         except Exception as exc:  # noqa: BLE001 - one check failing never stops the others (heal, don't block)
             verdict['annotations'].append(f'{component} failed: {type(exc).__name__}: {exc}'[:300])
+            if component in MANDATORY_CHECKS:
+                # A check that guards correctness and could not run cannot pass the answer: this proposal is declined and
+                # the next proposer tries (Codex review 2026-10-23: mandatory checks failed open).
+                verdict['accept'] = False
+                verdict['reasons'].append(f'{component} could not run ({type(exc).__name__}); the answer was not verified')
             return None
 
     def probe():

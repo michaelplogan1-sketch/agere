@@ -110,6 +110,18 @@ INSTRUCTION = ("Using only the dated source evidence, classify what is documente
                "Choose unknown when evidence is absent, contradictory or insufficient. A missing claim is not proof of missing care.")
 
 
+# A typed choice with no record evidence (routing: which metric, operator or slot a question asks for) classifies the request
+# text itself. INSTRUCTION's "choose unknown when evidence is absent" made every evidence-free routing call lean unknown
+# (Codex review 2026-10-23).
+REQUEST_INSTRUCTION = ("Classify the request text given as `subject` itself; there is no record evidence for this choice. "
+                       "Choose the option whose description best matches what the request asks for. Choose unknown only when "
+                       "no option fits the request or it is genuinely ambiguous between options.")
+
+
+def instruction_for(task):
+    return INSTRUCTION if task.evidence else REQUEST_INSTRUCTION
+
+
 class JevProvider:
     name = "jev"
 
@@ -119,7 +131,7 @@ class JevProvider:
     def request(self, task):
         state = task.state()
         return {"model": self.model, "state": state, "questions": {
-            "reason": {"type": "choice", "instructions": INSTRUCTION, "criteria": task.options},
+            "reason": {"type": "choice", "instructions": instruction_for(task), "criteria": task.options},
             "support": {"type": "choice", "instructions": "Select the source passage most directly supporting the documented state of `subject`. Select unknown if none supports it.",
                         "criteria": {"unknown": "No supporting passage", **{e["id"]: e["text"] for e in task.evidence}}}}}
 
@@ -156,7 +168,7 @@ class ClaudeProvider:
             "evidence_ids": {"type": "array", "items": item_schema},
             "uncertain": {"type": "boolean"}},
             "required": ["label", "evidence_ids", "uncertain"], "additionalProperties": False}
-        return {"model": self.model, "max_tokens": 512, "system": INSTRUCTION,
+        return {"model": self.model, "max_tokens": 512, "system": instruction_for(task),
                 "messages": [{"role": "user", "content": json.dumps({"state": state, "options": task.options})}],
                 "output_config": {"format": {"type": "json_schema", "schema": schema}}}
 

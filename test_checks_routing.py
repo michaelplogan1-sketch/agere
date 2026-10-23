@@ -165,6 +165,12 @@ class CrossCheck(unittest.TestCase):
         self.assertEqual(self.run_check('answers_fully', 'answers_a_different_question')['verdict'], 'split')
         self.assertEqual(self.run_check('unknown', 'answers_fully')['verdict'], 'unavailable')
 
+    def test_low_confidence_yes_is_not_a_confirmation(self):
+        fake = FakeChoice(lambda q, ev, p: 'answers_fully', p=0.6)
+        out = X.cross_check(SimpleNamespace(allow_live=True), 'How many?', cand('a', 4)['graph'], cand('a', 4)['result'],
+                            as_of_date='2030-01-01', s1=fake)
+        self.assertEqual(out['verdict'], 'weak')
+
     def verdict(self, s1_verdict, claude_ok=True):
         v = {'accept': True, 'reasons': [], 'annotations': [], 'cost': {'new_paid_api_calls': 0, 'usd': 0.0}}
         stack = SimpleNamespace(allow_live=True, path='/nonexistent')
@@ -258,6 +264,7 @@ class ClaimVerification(unittest.TestCase):
         a = out['executed']['answer']
         self.assertEqual((a['count'], a['confidence'], len(a['readings'])), (4, 'low', 2))
         self.assertFalse(interp['answer_stability']['pass_k'])
+        self.assertEqual((interp['partial'], interp['partial_reason']), (True, 'independent_proposers_disagree'))
 
     def test_free_non_proposers_do_not_use_the_cap_and_claude_stops_after_an_outage(self):
         from clinical_core.agere.gateway import ProviderUnavailable

@@ -86,6 +86,8 @@ STAGES = (
                 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')),
 )
 STAGE_OF = {t: i for i, (_, tiers) in enumerate(STAGES) for t in tiers}
+# Rejection reasons that mean "not yet confirmed", not "shown wrong" (answer_checks): the System One fallback may pick these.
+FALLBACK_SOFT_REASONS = ("an uncalibrated free planner's answer is shipped only when", 'certificate:')
 
 
 def stage_of(tier):
@@ -514,6 +516,9 @@ class Cascade:
         for c in self.candidates:
             contract = c['pair'][0]
             if contract['id'] in seen or any('System One check:' in r for r in c['reasons']): continue
+            # Only a candidate whose sole open issue is a missing confirmation may be picked: one a correctness check refuted
+            # (values the warehouse never holds, a zero-result probe, source coverage, shape, guard, an unrun check) never ships.
+            if any(not r.startswith(FALLBACK_SOFT_REASONS) for r in c['reasons']): continue
             seen.add(contract['id']); pool.append(c)
         started = time.perf_counter()
         if not pool: return None

@@ -285,8 +285,11 @@ class Isolation(Base):
         with patch.object(A, 'zero_result_probe', side_effect=RuntimeError('boom')):
             v = self.check('How many patients have heart failure?', 'SELECT 1', count(4))
         self.assertTrue(any('zero_result_probe_shared failed: RuntimeError: boom' in a for a in v['annotations']))
+        # a mandatory check that could not run leaves the answer unverified: declined, so the next proposer tries
+        self.assertFalse(v['accept'])
+        self.assertTrue(any('zero_result_probe_shared could not run' in r for r in v['reasons']))
         self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
-                                           'answer_guard_cross_check', 'local_sql_confirmation', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
+                                           'local_sql_confirmation', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
                                            'source_defect_annotation', 'jev_normalization_check', 'learned_answer_verifier', 'semantic_entropy_probe',
                                            'label_choice_audit', 'cascade_certificates'])
 

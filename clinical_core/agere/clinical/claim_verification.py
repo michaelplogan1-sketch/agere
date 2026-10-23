@@ -168,7 +168,12 @@ def verify(cascade, order, name, found):
             answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), S.warning(stab),
                                                         f"Independent proposers disagree ({name} vs {v}); the judge was {verdict['verdict']}."]))
             answer['confidence'] = 'low'
-            out = {**contract, 'executed': {**executed, 'answer': answer}}, interpretation
+            # Two independent proposers disagree and nothing settled it: both readings ship as a partial answer, never the
+            # first one as if it were checked (Codex review 2026-10-23).
+            out = {**contract, 'executed': {**executed, 'answer': answer}}, {
+                **interpretation, 'partial': True, 'partial_reason': 'independent_proposers_disagree',
+                'limitations': [*(interpretation.get('limitations') or []),
+                                f'Independent proposers disagree ({name} vs {v}); both readings are reported.']}
     contract, interpretation = out
     receipt['seconds'] = round(time.perf_counter() - started, 3)
     return contract, {**interpretation, 'claim_verification': receipt, 'answer_stability': stab, 'verified_proposer': name}
