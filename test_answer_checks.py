@@ -183,6 +183,17 @@ class CrossCheck(Base):
             v = self.check('How many patients have diabetes?', 'SELECT 1', count(7), ledger=object())
         self.assertTrue(v['accept'])
 
+    def test_system_one_partial_rejects_an_uncertified_plan(self):  # BH-01: Jev said 'answers partially' and it shipped
+        self.stack.allow_live = True
+        from clinical_core.agere.clinical import system_one_cross_check as X
+        s1 = {'verdict': 'confirmed', 'votes': {'jev': {'label': 'answers_partially', 'p': 0.6}, 'perplexity': {'label': 'answers_fully', 'p': 0.67}},
+              'calls': 2, 'cost_usd': 0.0003, 'version': X.VERSION}
+        with patch.object(X, 'cross_check', return_value=s1), patch.object(A._s1_gate, 'ready', return_value=True), \
+                patch.object(AG, '_asserted', return_value=True):
+            v = self.check('How many patients have depression?', 'SELECT 1', count(136), ledger=object())
+        self.assertFalse(v['accept'])
+        self.assertIn('only part of the question', ' '.join(v['reasons']))
+
     def test_certified_answers_are_not_cross_checked(self):
         self.stack.allow_live = True
         P = self.fake(None)

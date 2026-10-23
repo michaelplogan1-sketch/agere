@@ -816,6 +816,11 @@ def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hoste
         s1 = X.cross_check(stack, question, graph, result or {'answer': answer}, ledger=ledger)
         verdict['cost']['new_paid_api_calls'] += s1['calls']; verdict['cost']['usd'] += s1['cost_usd']
         verdict['system_one_cross_check'] = s1
+        partial = sorted(f for f, v in (s1.get('votes') or {}).items() if isinstance(v, dict) and v.get('label') == 'answers_partially')
+        if s1['verdict'] == 'confirmed' and partial:  # an uncertified plan System One says covers only part of the question is not shipped
+            verdict['accept'] = False
+            verdict['reasons'].append(f'cross-check: {", ".join(partial)} judged this uncertified plan to answer only part of the question '
+                                      f'({X.describe(s1)}); the next proposer tries'); return 'partial'
         if s1['verdict'] == 'confirmed':
             state['zero_confirmed'] = state.get('zero_confirmed') or 'system_one_cross_check'
             verdict['annotations'].append(f'Cross-checked by System One ({X.describe(s1)}); no Claude call needed.'); return 'agree'
