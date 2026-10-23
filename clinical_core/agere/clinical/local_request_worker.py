@@ -7,7 +7,9 @@ runtime planner prompt): one generation, then the shared compiler recompiles the
 and the literal-question check reads the compiled SQL; its verdict is the local review the cascade tier requires (the
 cascade recompiles and literal-checks again, then answer_checks runs after execution). If the adapter is missing, its
 output does not parse/compile, or the check finds a dropped phrase, the worker falls back to the long-prompt local
-interpreter (shared_planner.interpret with the base model) unless AGERE_LOCAL_TYPED_FALLBACK=off.
+interpreter (shared_planner.interpret with the base model) unless AGERE_LOCAL_TYPED_FALLBACK=off. That fallback no longer sends the
+~48k-token catalog: local_prompt.Shaper trims each prompt to AGERE_LOCAL_TYPED_PROMPT_TOKENS (default 8000) and the model asks
+for any missing table/rule/concept (need_*), which adds only that fragment.
 
 The process is long-lived (`--serve`, JSON lines on stdin/stdout, see shared_planner.PersistentWorker): models load once and
 stay resident, MLX buffers go back after every generation, and a prompt whose attention cache would exceed the 4 GB budget is
@@ -176,7 +178,9 @@ class _Guarded:
 def long_prompt(catalog, question, population):
     from .shared_planner import interpret
     from .nl2sql import LocalModel
-    return interpret(catalog, question, population=population, model=_Guarded(LocalModel.get()), force_model=True)
+    from .local_prompt import budget
+    # the small model gets the shaped prompt (only this question's tables, vocabulary and rule parts), not the ~48k-token catalog
+    return interpret(catalog, question, population=population, model=_Guarded(LocalModel.get()), force_model=True, prompt_budget=budget())
 
 
 def handle(item, *, generate_factory=mlx_generate, fallback=long_prompt):
