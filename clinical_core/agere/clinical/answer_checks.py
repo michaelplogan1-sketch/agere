@@ -1048,8 +1048,23 @@ def _certificates(receipt, state, verdict):
 # Claude tiers that only choose a governed metric or engine (its template computes): their answers need no confirmation.
 GOVERNED_CLAUDE_ROUTERS = frozenset({'metric_router', 'operator_router'})
 # Checks whose failure to run leaves the answer unverified (the rest annotate).
-MANDATORY_CHECKS = frozenset({'zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage',
+MANDATORY_CHECKS = frozenset({'placeholder_plan', 'zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage',
                               'local_sql_confirmation', 'answer_shape_review', 'decision_context'})
+
+
+_EMPTY_BY_CONSTRUCTION = re.compile(r'\bwhere\s+(?:1\s*=\s*0|0\s*=\s*1|false|0)\s*(?:$|;|\)|\border\b|\bgroup\b|\blimit\b)', re.I)
+
+
+def _placeholder(graph, verdict):
+    """A plan whose query can return nothing by construction (WHERE 1=0 / FALSE) is a non-answer, not an empty result: decline it
+    with the plan's own unmet requirements as the reason (2026-10-23: a follow-up fragment shipped as "0 rows")."""
+    queries = [str((n.get('parameters') or {}).get('query') or '') for n in (graph or {}).get('nodes') or []]
+    if queries and any(_EMPTY_BY_CONSTRUCTION.search(q) for q in queries):
+        verdict['accept'] = False
+        why = '; '.join((graph or {}).get('unmet_requirements') or []) or 'the plan selects nothing by construction'
+        verdict['reasons'].append('placeholder plan: ' + why[:300])
+        return 'placeholder'
+    return None
 
 
 def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None, claude_ok=True, tier=None):
@@ -1152,6 +1167,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
                                       f"cross-check {s1.get('verdict') or 'did not run'}; the next proposer tries")
         return s1.get('verdict')
     run('local_sql_confirmation', local_sql_confirmed)
+    run('placeholder_plan', lambda: _placeholder(graph, verdict))
     run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
     from . import release_drift
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release

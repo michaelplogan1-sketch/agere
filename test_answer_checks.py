@@ -310,7 +310,7 @@ class Isolation(Base):
         self.assertFalse(v['accept'])
         self.assertTrue(any('zero_result_probe_shared could not run' in r for r in v['reasons']))
         self.assertEqual(v['checks_run'], ['zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage', 'decision_context', 'answer_guard_suspicion', 'answer_guard_dense_catalog',
-                                           'local_sql_confirmation', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
+                                           'local_sql_confirmation', 'placeholder_plan', 'unchecked_zero_guard', 'release_drift_guard', 'answer_shape_review',
                                            'source_defect_annotation', 'jev_normalization_check', 'learned_answer_verifier', 'semantic_entropy_probe',
                                            'label_choice_audit', 'cascade_certificates'])
 

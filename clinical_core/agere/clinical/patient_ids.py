@@ -193,6 +193,17 @@ def resolve(target, text, prior=None):
     return {'status': 'none', 'patient_id': None, 'quote': None, 'how': None, 'references': refs, 'message': None}
 
 
+# An elliptical follow-up names neither a patient nor a pronoun but continues the last turn: "and the one before that?",
+# "what about the LDL?", "same for last year", "then?" (short, and opening with a continuation word).
+ELLIPTICAL = re.compile(r"^\W*(?:and|also|plus|then|ok(?:ay)?,?\s+and|what about|how about|and what about|same (?:for|with)|the one|that one|"
+                        r"the (?:previous|prior|next|last|first) one|before that|after that)\b", re.I)
+
+
+def is_elliptical(text):
+    t = str(text or '').strip()
+    return bool(ELLIPTICAL.match(t)) and len(t.split()) <= 12 and not POPULATION_WORDS.search(t)
+
+
 def has_pronoun(text):
     t = str(text or '')
     if PRONOUN.search(t):
@@ -264,4 +275,6 @@ def rebind(path, conversation_id, question):
     _PRIOR.set(prior)
     if prior and not names_a_patient(question) and has_pronoun(question):
         return rewrite_pronouns(question, prior['patient_id'])
+    if prior and not names_a_patient(question) and is_elliptical(question):
+        return f"{question.rstrip().rstrip('?')} for {prior['patient_id']}?"  # the continuation keeps the last turn's patient
     return question

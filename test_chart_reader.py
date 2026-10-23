@@ -679,3 +679,22 @@ class Admission(unittest.TestCase):
         from clinical_core.agere.clinical import requirement_ledger as RL
         q = 'What is the latest LDL for SYN-69C872CB-6B9?'
         self.assertFalse(any('number' in g for g in RL.gaps(q, '"patient_id": "SYN-69C872CB-6B9" "concept": "ldl" latest order_by event_date desc limit 1')))
+
+
+class Followups(unittest.TestCase):
+    def test_elliptical_follow_up_binds_the_prior_patient(self):
+        from clinical_core.agere.clinical import patient_ids as PI
+        for q in ('and the one before that?', 'what about the LDL?', 'same for last year'):
+            self.assertTrue(PI.is_elliptical(q), q)
+        for q in ('How many patients have diabetes?', 'and how many of all patients have diabetes in the population?'):
+            self.assertFalse(PI.is_elliptical(q), q)
+
+
+class PlaceholderPlan(unittest.TestCase):
+    def test_empty_by_construction_is_declined(self):
+        from clinical_core.agere.clinical import answer_checks as A
+        v = {'accept': True, 'reasons': []}
+        g = {'unmet_requirements': ['Please restate the full question.'], 'nodes': [{'parameters': {'query': 'SELECT patient_id FROM patient WHERE 1=0'}}]}
+        self.assertEqual(A._placeholder(g, v), 'placeholder')
+        self.assertFalse(v['accept'])
+        self.assertIsNone(A._placeholder({'nodes': [{'parameters': {'query': 'SELECT 1 FROM patient WHERE age > 10'}}]}, {'accept': True, 'reasons': []}))
