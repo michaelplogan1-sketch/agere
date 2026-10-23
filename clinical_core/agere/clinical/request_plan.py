@@ -396,6 +396,21 @@ class Compiler:
             rendered = f'({literal(scale)} * {rendered})'
         return rendered
 
+    def living_filter(self, plan, where):
+        """The decision context's living-patient rule in the compiled SQL (decision_context.py): a request that counts or lists patients
+        reads living patients only, unless the question asks for the deceased or the request already reads `death`. None otherwise."""
+        from . import decision_context
+        if self.population is not None or 'death' not in self.catalog.tables: return None
+        if 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base == 'death': return None
+        if not decision_context.population(self.question)['living_only'] or decision_context.references_death(where): return None
+        ends = lambda e: str(e.get('field') or '').endswith('.patient_id') or str(e.get('field') or '') == 'patient_id'
+        kinds = [e for e in plan['select'] if isinstance(e, dict)]
+        patients = self.base == 'patient' or any(
+            (e.get('kind') in ('field', 'count_distinct') and ends(e)) or (e.get('kind') == 'ratio' and any(
+                isinstance(x, dict) and x.get('kind') == 'count_distinct' and ends(x) for x in (e.get('numerator'), e.get('denominator'))))
+            for e in kinds)
+        return f'b.patient_id {decision_context.LIVING_PREDICATE}' if patients else None
+
     def compile(self, plan):
         required = {'source', 'select', 'where', 'group_by', 'order_by', 'limit', 'unresolved'}
         if not isinstance(plan, dict) or set(plan) - {'analyses', 'joins', 'having', 'workflow'} != required: raise PlanError('Complete typed request fields required')
@@ -448,6 +463,8 @@ class Compiler:
         if aggregate and set(groups) != set(projections): raise PlanError('Every projected dimension must be grouped')
         if not aggregate and groups: raise PlanError('Row lists do not take groupings')
         where = self.predicate(plan['where'], scope) if plan['where'] else '1'
+        living = self.living_filter(plan, where)
+        if living: where = f'({where}) AND {living}'
         if stream: where = f'b.stream = {literal(stream)} AND ({where})'
         if self.population is not None:
             if 'patient_id' not in self.catalog.tables[self.base]: raise PlanError('This source cannot be scoped to the saved patient cohort')

@@ -355,11 +355,23 @@ class EvidenceMix:
                 for (g, i, a), p, r in zip(self.atoms, self.patients, self.records)]
 
 
-def evaluate_patient(spec, patient, records, as_of):
+def evaluate_patient(spec, patient, records, as_of, pid=None, canon=None):
     groups, traces = {}, []
     for group in ('all', 'any', 'exclude'):
         values = []
         for atom in spec[group]:
+            if canon and pid is not None and atom.get('kind') == 'concept' and atom.get('concept') in canon and not atom.get('evidence') \
+                    and not (atom.get('window') or {}).get('start') and not (atom.get('window') or {}).get('end') \
+                    and (atom.get('window') or {}).get('basis', 'all_observed') == 'all_observed':
+                # decision context: a condition is documented by the ONE evidence rule (EHR diagnosis or counted payer-claim diagnosis,
+                # laboratory evidence for diabetes and CKD), read from the semantic layer so claims-only members count
+                hit = pid in canon[atom['concept']]
+                state, trace = hit, {'predicate': {k: v for k, v in atom.items() if k != '_resolved'}, 'records_evaluated': 0,
+                                     'support_count': int(hit), 'unknown_record_count': 0, 'support': [], 'unknown_examples': [],
+                                     'canonical_condition_evidence': True,
+                                     'nonmatch_meaning': 'No documented diagnosis under the condition-evidence rule, not absence of disease.'}
+                values.append(state); traces.append({'group': group, 'state': state, **trace})
+                continue
             state, trace = evaluate_atom(atom, patient, records, as_of)
             values.append(state); traces.append({'group': group, 'state': state, **trace})
         groups[group] = values
@@ -372,7 +384,7 @@ def code_identity():
     from .clinical_events import code_identity as event_identity
     here = Path(__file__)
     return digest({p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in
-                   [here, here.with_name('clinical_events.py'), here.with_name('concepts.py'),
+                   [here, here.with_name('clinical_events.py'), here.with_name('concepts.py'), here.with_name('decision_context.py'),
                     here.with_name('grounding.py'), here.with_name('source_profile.py')]}|{'event_bindings':event_identity()})
 
 
@@ -398,7 +410,9 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
             if set(patient_ids)-known:raise ValueError('Unknown patient in supplied membership')
         # Grounding raises GroundingError for predicates the data cannot support.
         grounded, grounding_report = grounding.prepare(spec, source_profile.load(path))
-        key = digest([VERSION, code_identity(), meta['source_digest'], spec, patient, limit, patient_ids])
+        from . import decision_context
+        canon = decision_context.condition_membership(path, grounded)  # None outside a question scope
+        key = digest([VERSION, code_identity(), meta['source_digest'], spec, patient, limit, patient_ids, decision_context.VERSION if canon else None])
         caching = os.environ.get('AGERE_RESULT_CACHE', 'on') != 'off'
         old = db.execute('SELECT payload FROM result_cache WHERE id=?', (key,)).fetchone() if caching else None
         if old: return {**json.loads(old[0]), 'cache_hit': True}
@@ -414,7 +428,7 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
         membership = {'matched': [], 'not_matched': [], 'unknown': []}; previews = {k: [] for k in membership}
         mix = EvidenceMix(grounded)
         for pid, p in roster:
-            state, traces = evaluate_patient(grounded, p, records[pid], as_of)
+            state, traces = evaluate_patient(grounded, p, records[pid], as_of, pid, canon)
             mix.add(state, traces)
             status = 'matched' if state is True else 'not_matched' if state is False else 'unknown'
             membership[status].append(pid)

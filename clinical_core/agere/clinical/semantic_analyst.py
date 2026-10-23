@@ -170,6 +170,8 @@ available by that date, with superseded corrections replaced by their correcting
 the snapshot date, use all rows. If it is earlier, restrict to rows with available_date <= :as_of where a table has
 that column, and say in grounding that derived per-entity tables reflect the snapshot.
 '''
+from .decision_context import prompt_block as _decision_block
+SEMANTIC_RULES = SEMANTIC_RULES + '\n' + _decision_block() + '\n'
 
 RECONCILE_RULES = '''You are reconciling two independent analysts who answered the same question over this semantic layer
 and disagree. Decide which answer follows the question's own stated definitions (scope, code sets, sources to combine,

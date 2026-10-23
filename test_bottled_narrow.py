@@ -67,7 +67,7 @@ class Dataset(unittest.TestCase):
 class Slots(unittest.TestCase):
     def test_canonical_round_trip_matches_the_parser(self):
         p = bottled.spec_from_slots(ED, AS_OF)
-        self.assertEqual(p['parameters']['anchor']['dx_prefixes'], ['I50'])
+        self.assertEqual(p['parameters']['anchor']['dx_prefixes'], ['I50', 'I110', 'I130', 'I132'])  # the library's heart failure
         self.assertEqual(p['parameters']['followup'], {'kinds': ['visit'], 'days': 14})
         self.assertEqual(p, {**cf.parse(p['canonical_question'], AS_OF), 'canonical_question': p['canonical_question'], 'slots': bottled.check_slots(ED)})
 
@@ -119,7 +119,7 @@ class Hook(unittest.TestCase):
             res = hook.plan(None, self.Q, AS_OF, model=m)
             self.assertEqual(res['calls'], [])
             self.assertTrue(res['receipt']['bottled']['used'])
-            self.assertEqual(res['spec']['parameters']['anchor']['dx_prefixes'], ['I50'])
+            self.assertEqual(res['spec']['parameters']['anchor']['dx_prefixes'], ['I50', 'I110', 'I130', 'I132'])
             q = 'Which patients had 3 or more ED visits in the last 12 months?'
             self.assertEqual(hook.plan(None, q, AS_OF, model=m)['spec'], cf.plan(None, q, AS_OF)['spec'])
         self.assertEqual(m.calls, 1)

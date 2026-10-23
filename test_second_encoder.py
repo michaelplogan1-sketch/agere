@@ -322,7 +322,8 @@ class TerminologyFallback(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d, mock.patch.dict(os.environ, {'AGERE_SECOND_ENCODER_CACHE': str(Path(d) / 'v.sqlite3')}):
             L.reset_second_encoder()
             try:
-                m = concepts.match_label('Cholesterol in LDL', 'lab')
+                self.assertEqual(concepts.match_label('Cholesterol in LDL', 'lab')['method'], 'alias')  # received label, now an alias of the library concept
+                m = concepts.match_label('Low density lipoprotein cholesterol', 'lab')
                 self.assertEqual((m['concept'], m['method']), ('ldl', 'encoder'))
                 low = concepts.match_label('Total testosterone', 'lab')  # mapped-to-none in the dictionary
                 self.assertIsNone(low['concept'])

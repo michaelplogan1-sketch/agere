@@ -138,7 +138,7 @@ class LabelTests(Base):
     def test_grammar_item_and_rejections(self):
         ok = Lb.label_item(self.ctx, self.item('How many women are there?', family='demographics', source='grammar'))
         self.assertEqual(ok['status'], 'ok', ok)
-        self.assertEqual(ok['answer']['value'], 30)
+        self.assertEqual(ok['answer']['value'], 29)  # 30 women on the roster, one of them deceased: patients are living patients (decision context)
         self.assertTrue(ok['grammar_reads'])
         bad = Lb.label_item(self.ctx, self.item('Blorp the frobnicated widgets sideways', family='vbc_seed', source='grammar'))
         self.assertEqual(bad['status'], 'not_parsed')

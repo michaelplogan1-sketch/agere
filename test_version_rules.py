@@ -52,7 +52,8 @@ class EdVisitEvidence(unittest.TestCase):
         db = sqlite3.connect(':memory:')
         db.executescript('CREATE TABLE payer_claim(payer_claim_id TEXT, patient_id TEXT, service_from TEXT, place_of_service TEXT, '
                          'counts_in_metrics INTEGER, final_status TEXT);'
-                         'CREATE TABLE payer_claim_line(payer_claim_id TEXT, revenue_code TEXT);')
+                         'CREATE TABLE payer_claim_line(payer_claim_id TEXT, revenue_code TEXT);'
+                         'CREATE TABLE death(patient_id TEXT, death_date TEXT, cclf8_death_date TEXT);')
         rows = [('c1', 'P1', '2029-01-05', '23', 1, 'paid'), ('c2', 'P1', '2029-04-05', '23', 1, 'denied'),
                 ('c3', 'P1', '2029-07-05', '23', 1, 'denied_upheld'), ('c4', 'P2', '2029-01-05', '23', 0, 'voided'),
                 ('c5', 'P2', '2029-02-05', '23', 1, 'paid'), ('c6', 'P2', '2028-12-31', '23', 1, 'paid')]

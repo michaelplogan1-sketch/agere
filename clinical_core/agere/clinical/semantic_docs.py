@@ -252,10 +252,11 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
   - PDC: >= 2 fills of the class in the year; covered days from the first fill to period end, overlaps de-duplicated.
 - Groups: when a person can belong to more than one group ("a person can be in both"), count them in EACH group they
   qualify for (groups overlap; no exclusive buckets) and return only the groups the question asks for.
-- Conditions (condition, payer_claim_diagnosis, encounter_diagnosis, problem_list_entry): default = any documentation
-  (paid or denied claim, problem list, encounter diagnosis, ADT diagnosis); name another rule if the question asks.
-  By ICD-10 code (or code range): diagnosis_any (condition, paid payer claim, encounter and problem-list diagnoses in one
-  relation, source column says which; count DISTINCT patient_id). condition alone is EHR condition records only and
+- Conditions (condition, payer_claim_diagnosis): ONE evidence rule everywhere (decision context): an EHR condition record
+  (is_diagnosis = 1, problem-list conditions included; diabetes and CKD also laboratory-evidence rows) or a counted payer
+  claim diagnosis (counts_in_metrics = 1, whatever the adjudication). Rule-outs never count.
+  By ICD-10 code (or code range): diagnosis_any (the same evidence in one relation, source column says which; count
+  DISTINCT patient_id). condition alone is EHR condition records only and
   undercounts; by library concept: concept_patient.
 - Procedures: "had procedure / CPT / HCPCS X" reads procedure_line (the client's own billing lines, source claim_line, plus
   payer claim lines, source payer_claim_line) WHERE code IN (...) AND counts_in_metrics = 1; claim_line alone misses

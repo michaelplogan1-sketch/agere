@@ -29,7 +29,7 @@
  "entities": {
   "patient": {
    "table": "patient",
-   "meaning": "One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and coverage_status active | inactive by whether a span covers the as-of date; coverage_source = coverage_record | enrollment_span (NULL = no coverage received). pcp_* = latest assigned primary-care relationship.",
+   "meaning": "One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, Use age_at(birth_date, as_of) for age. Feed-reported ages are historical metadata, never analytical age. else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and coverage_status active | inactive by whether a span covers the as-of date; coverage_source = coverage_record | enrollment_span (NULL = no coverage received). pcp_* = flattened latest assigned primary-care relationship; this attribute does not reconcile effective end dates, tied accounts or current responsibility. Use the governed care_team relation for dated documentary assignment.",
    "grain": "one row per roster patient",
    "keys": [
     "patient_id"
@@ -190,6 +190,7 @@
     }
    },
    "semantic_layer_columns_derived_elsewhere": [
+    "age_latest",
     "coverage_source",
     "pcp_clinician_id",
     "pcp_practice_id"
@@ -521,7 +522,7 @@
   },
   "condition": {
    "table": "condition",
-   "meaning": "One row per (condition record, matching library concept); concept NULL when no library concept matches. Sources: conditions, condition_assessments, problem_lists. label = received description.",
+   "meaning": "One row per (condition record, matching library concept); concept NULL when no library concept matches. Sources: conditions, condition_assessments, problem_lists. label = received description. condition holds EHR condition records ONLY (no payer claim diagnoses, no encounter diagnoses): to count documented diagnoses by ICD-10 code use diagnosis_any (all sources), by concept use concept_patient. is_diagnosis=1 distinguishes actual diagnosis labels from assessment topics; use it for patients with a condition. Concepts normalize mapped codes and subtypes; diabetes is the diabetes concept, CKD is chronic_kidney_disease.",
    "grain": "one row per received condition record",
    "keys": [
     "record_id"
@@ -928,7 +929,7 @@
   },
   "medication": {
    "table": "medication",
-   "meaning": "Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids (full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - '%beta%' also matches short_acting_beta_agonist and '%antihistamine%' matches both generations. Use beta_blocker, first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist. picked_up = 1 on fills that left the pharmacy (evidence dispensed | claim | payer_claim with status dispensed | paid | completed, not reversed / returned to stock; prepared-only dispenses never count): use picked_up = 1 for any fill, pickup or dispensing count. ONE pickup can arrive from two sources: the dispensing pharmacy (pharmacy_dispenses, days in payload days_supply_reported) and the payer's pharmacy claim (payer_pharmacy_claims / pharmacy_claims, days in payload days_supply). For fill counts or days' supply never add the sources together: take one fill per patient, drug class and fill date (e.g. per patient+event_date the larger days supply of the two sources), then sum over dates; counting patients needs no such step.",
+   "meaning": "Observation evidence only: a pickup is not confirmed current use; no row or no fill in a window is unknown current use, not non-use. Every medication mention, one row per (record, drug_class): source_stream and evidence (dispensed, claim, ordered, listed, administered, reported, pharmacy_history, payer_claim = payer pharmacy claim), drug_name as received, status. drug_class from the active ingredient (statin, beta_blocker, hf_evidence_based_beta_blocker, ace_inhibitor, arb, arni, mra, sglt2_inhibitor, glp1_agonist, metformin, insulin, anticoagulant, opioid, ...); NULL when unclassified. drug_class values are exact ids (full list and groups in drug_class_vocabulary): compare with = or IN, never LIKE - '%beta%' also matches short_acting_beta_agonist and '%antihistamine%' matches both generations. Use beta_blocker, first_generation_antihistamine (Beers), second_generation_antihistamine, short_acting_beta_agonist. picked_up = 1 on fills that left the pharmacy (evidence dispensed | claim | payer_claim with status dispensed | paid | completed, not reversed / returned to stock; prepared-only dispenses never count): use picked_up = 1 for any fill, pickup or dispensing count. ONE pickup can arrive from two sources: the dispensing pharmacy (pharmacy_dispenses, days in payload days_supply_reported) and the payer's pharmacy claim (payer_pharmacy_claims / pharmacy_claims, days in payload days_supply). For fill counts or days' supply never add the sources together: take one fill per patient, drug class and fill date (e.g. per patient+event_date the larger days supply of the two sources), then sum over dates; counting patients needs no such step.",
    "grain": "one row per received medication mention (order, dispense, claim, list, administration, report)",
    "keys": [
     "record_id"
@@ -1829,7 +1830,7 @@
   },
   "concept_patient": {
    "table": "concept_patient",
-   "meaning": "Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.",
+   "meaning": "Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates. The condition rows are the one condition-evidence rule (EHR diagnoses incl. problem-list conditions, counted payer-claim diagnoses in the concept's code set, laboratory evidence for diabetes and CKD): claims-only members count, rule-outs do not. Governed per-patient concept membership: count patients with a named condition concept here (concept-level, no codes); count patients by ICD-10 code from diagnosis_any.",
    "derivation": "Patients per library concept from condition/measurement/encounter rows.",
    "columns": {
     "concept": "text",
@@ -1912,7 +1913,7 @@
   },
   "appointment": {
    "table": "appointment",
-   "meaning": "One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from the latest version carrying a scheduled_date (a reschedule moves it), else the date of slot_start (population-feed bookings send booked_at + slot_start); booked_date = earliest booked version; lead_time_days = scheduled_date - booked_date, NULL when either is unknown. final_status = latest status received; ever_* flags over all versions; kept = any arrived, attended or fulfilled version. outcome = kept | no_show (never kept) | cancelled (never kept or no-show) | rescheduled | scheduled (still booked) | unassigned (unassigned_requires_review) | unknown. No-show rate = no_show / (kept + no_show), or with cancelled in the denominator - state which.",
+   "meaning": "One row per appointment_id (appointments arrive as a booked record plus later status records). scheduled_date from the latest version carrying a scheduled_date (a reschedule moves it), else the date of slot_start (population-feed bookings send booked_at + slot_start); booked_date = earliest booked version; lead_time_days = scheduled_date - booked_date, NULL when either is unknown. final_status = latest status received; ever_* flags over all versions; kept = any arrived, attended or fulfilled version. outcome = kept | no_show (never kept) | cancelled (never kept or no-show) | rescheduled | scheduled (still booked) | unassigned (unassigned_requires_review) | unknown. These are different measures: unqualified no-show/current-status questions use final_status; explicitly historical/ever questions use ever_no_show; explicitly history-based outcome questions use outcome. A later cancellation or completion can change final_status while ever_no_show remains 1. For rates state the status basis and denominator; do not substitute history for latest status.",
    "derivation": "Appointment entity from booked + status records (not yet an onboarding target).",
    "columns": {
     "appointment_id": "text",

@@ -249,6 +249,8 @@ from .general_analysis import ANALYSIS_SYSTEM, governed_knowledge
 SYSTEM_PARTS.append(('analysis', ANALYSIS_SYSTEM))
 from . import request_program
 SYSTEM_PARTS.append(('program', request_program.SYSTEM))
+from .decision_context import prompt_block as _decision_block
+SYSTEM_PARTS.append(('decision_context', '\n' + _decision_block() + '\n'))  # living patients, latest labs, one condition rule, one 12-month window
 SYSTEM = ''.join(text for _, text in SYSTEM_PARTS)
 
 AUDIT_SYSTEM = '''Review the original question against a typed warehouse request AND its compiled SQL.
@@ -1049,6 +1051,17 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
 
 
 def compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):
+    """Answer one question under its decision context (decision_context.py): living patients, latest labs, the governed condition
+    evidence and one 12-month rule are enforced in every query this question runs, and the answer carries the receipt."""
+    from . import decision_context
+    try: as_of = stack.retriever.meta['snapshot']['as_of']
+    except (AttributeError, KeyError, TypeError): as_of = None  # a stand-in stack without a snapshot
+    with decision_context.scope(question, as_of) as state:
+        result = _compose(stack, question, population=population, parent=parent, model=model, planning=planning)
+        return decision_context.finalize(stack.path, result, state)
+
+
+def _compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):
     started = time.perf_counter()
     if population is None and parent is None:
         from . import data_domains
@@ -1165,6 +1178,10 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
             r'\b(?:living|alive|deceased|died|dead|death)\b', question, re.I):
         from .clinical_definitions import CARE_GAP_LIVING
         limitations.append(CARE_GAP_LIVING['disclosure'])
+    elif re.search(r'patient_id NOT IN \(SELECT patient_id FROM death\)', contract['query']) and not re.search(
+            r'\b(?:living|alive|deceased|died|dead|death)\b', question, re.I):
+        from .clinical_definitions import PATIENTS_LIVING
+        limitations.append(PATIENTS_LIVING['disclosure'])
     if re.search(r'\bFROM "?payer_claim"?', contract['query']):
         from .clinical_definitions import MEDICAL_CLAIMS
         limitations.append(MEDICAL_CLAIMS['disclosure'])

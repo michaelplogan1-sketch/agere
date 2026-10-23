@@ -37,6 +37,7 @@ CREATE TABLE fill(patient_id TEXT, fill_date TEXT, days_supply INTEGER, supply_e
 CREATE TABLE enrollment_span(patient_id TEXT, product TEXT, coverage_start TEXT, coverage_end TEXT);
 CREATE TABLE cancer_screening(patient_id TEXT, test TEXT, event_date TEXT);
 CREATE TABLE death(patient_id TEXT, death_date TEXT, cclf8_death_date TEXT);
+CREATE TABLE payer_claim_diagnosis(payer_claim_id TEXT, patient_id TEXT, service_from TEXT, icd10 TEXT, counts_in_metrics INTEGER);
 '''
 
 
@@ -72,6 +73,7 @@ def build(path):
         ('t1', 'T1', '0111', '21', '2030-02-25', '2030-02-25', '2030-03-01', '01', 'I21.4', '', 1),
         ('t3', 'T3', '0111', '21', '2030-02-25', '2030-02-25', '2030-03-01', '20', 'I21.4', '', 1),
         ('t4', 'T4', '0111', '21', '2030-05-15', '2030-05-15', '2030-05-20', '01', 'I21.4', '', 1)])
+    ins('payer_claim_diagnosis', [('pc-h2', 'H2', '2029-10-01', 'I10', 1), ('pc-h2', 'H2', '2029-10-01', 'I50.22', 1)])  # the claim-only HF member's diagnoses
     ins('payer_claim_line', [('ed-l2', 'L2', '2029-12-01', None, '0450')])
     ins('procedure_line', [('L2', '2030-01-05', '97110', 1), ('T2', '2030-03-10', '99213', 1), ('Q2', '2030-02-10', '90834', 1),
                            ('B5', '2028-01-01', '77067', 1)])

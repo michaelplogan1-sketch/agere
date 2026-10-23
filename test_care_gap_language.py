@@ -47,10 +47,12 @@ class CareGapLanguage(unittest.TestCase):
         # a care gap counts living patients unless the question names living or deceased patients (Mike, 2026-10-21)
         self.assertEqual(self.count('How many patients 65 and older did not get a flu shot in the 2029-2030 season?'), 1)  # B
         self.assertEqual(self.count('How many patients 65 and older, living or deceased, did not get a flu shot in the 2029-2030 season?'), 2)
-        self.assertEqual(self.count('How many patients 65 and older have never had a flu shot on record?'), 1)  # D: history, not a gap
+        self.assertEqual(self.count('How many patients 65 and older, living or deceased, have never had a flu shot on record?'), 1)  # D: history, not a gap
+        self.assertEqual(self.count('How many patients 65 and older have never had a flu shot on record?'), 0)  # D is deceased: patients are living patients (2026-10-23)
         self.assertEqual(self.count('How many living patients 65+ did not get a flu shot in the 2029-2030 season?'), 1)  # B
         self.assertEqual(self.count('How many women aged 30 to 85 have ever received a flu shot on record?'), 1)  # A
-        self.assertEqual(self.count('How many patients with diabetes do not have coronary disease?'), 3)
+        self.assertEqual(self.count('How many patients with diabetes do not have coronary disease?'), 2)  # A, B: D is deceased (decision context, 2026-10-23)
+        self.assertEqual(self.count('How many patients, living or deceased, with diabetes do not have coronary disease?'), 3)
 
     def test_social_need_screens(self):
         self.assertEqual(self.count('How many patients have screened positive for food insecurity?'), 1)
@@ -63,8 +65,10 @@ class CareGapLanguage(unittest.TestCase):
 
     def test_deceased_patients_age_at_death(self):
         # D (born 1940) died 2029-01-01 aged 89; living A (1950) is 80 at the 2030-05-27 snapshot (Mike, 2026-10-21)
-        self.assertEqual(self.count('How many patients are over 89?'), 0)
-        self.assertEqual(self.count('How many patients are over 88?'), 1)
+        # patients are living patients (decision context, 2026-10-23): the deceased are counted, at their age at death, only when asked for
+        self.assertEqual(self.count('How many patients, living or deceased, are over 89?'), 0)
+        self.assertEqual(self.count('How many patients, living or deceased, are over 88?'), 1)
+        self.assertEqual(self.count('How many patients are over 88?'), 0)
 
 if __name__ == '__main__':
     unittest.main()

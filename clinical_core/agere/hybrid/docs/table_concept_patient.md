@@ -1,2 +1,2 @@
 ### concept_patient(concept, kind, patient_id, records, first_date, last_date)
-Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates.
+Patients having each library concept (condition, measurement, encounter), with record counts and first/last dates. The condition rows are the one condition-evidence rule (EHR diagnoses incl. problem-list conditions, counted payer-claim diagnoses in the concept's code set, laboratory evidence for diabetes and CKD), so claims-only members count and rule-outs do not.

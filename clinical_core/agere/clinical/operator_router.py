@@ -12,6 +12,7 @@ from .capability_registry import PRODUCT, LITERAL
 VERSION = 'operator-router/2'
 MODEL = 'claude-haiku-5-5'
 
+from .decision_context import prompt_block as _decision_block
 SYSTEM = (
     'You route analytics questions about a synthetic healthcare population to exactly one tool. '
     'Choose an analytic tool only when the question needs that method (time-to-event curves, control charts, '
@@ -198,7 +199,7 @@ def _ask(question, as_of, ledger, out, op=None, feedback=None, model=MODEL):
     from .context_student import send
     content = question if not feedback else (f'{question}\n\nYour previous tool call was rejected by the validator: {feedback[:600]}\n'
                                              'Call the tool again with corrected parameters.')
-    body = {'model': model, 'max_tokens': 1200, 'system': SYSTEM.format(as_of=as_of),
+    body = {'model': model, 'max_tokens': 1200, 'system': SYSTEM.format(as_of=as_of) + '\n' + _decision_block(),
             'tools': menu() if op is None else [tool(op)],
             'tool_choice': {'type': 'any', 'disable_parallel_tool_use': True} if op is None else
                            {'type': 'tool', 'name': op, 'disable_parallel_tool_use': True},

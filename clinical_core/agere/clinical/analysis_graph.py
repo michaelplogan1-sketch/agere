@@ -1266,6 +1266,7 @@ def code_identity():
                       Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
                       Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'), Path(__file__).with_name('clinical_tasks.py'),
                       Path(__file__).with_name('atomic_questions.py'), Path(__file__).with_name('hcc_suspecting.py'), *_foundation_files(),
+                      Path(__file__).with_name('decision_context.py'), Path(__file__).with_name('sql_query.py'),
                       *[p for p in _suite_paths() if p.exists()],
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
@@ -1418,6 +1419,8 @@ def execute(stack, plan, *, question=None):
     started = time.perf_counter()
     path, meta = stack.path, stack.retriever.meta
     plan = validate(plan, meta['snapshot']['as_of'])
+    from . import decision_context  # lab thresholds in cohort atoms follow the question's lab mode before the plan is keyed and cached
+    plan, _ = decision_context.enforce_plan(plan, question)
     from .plan_optimizer import optimize_plan  # identical nodes run once (compiler common-subexpression elimination)
     plan, fusion = optimize_plan(plan)
     if question is not None:
@@ -1426,7 +1429,12 @@ def execute(stack, plan, *, question=None):
     db = sqlite3.connect(path / 'stack.sqlite3')
     evidence_db = None
     try:
-        universe = {r[0] for r in db.execute('SELECT id FROM patients')}
+        universe = roster = {r[0] for r in db.execute('SELECT id FROM patients')}
+        dc_scope = decision_context.current()  # (not `scope`: source_state.scope is imported under that name below)
+        if dc_scope is not None and dc_scope.living_only and (path / 'semantic.sqlite3').exists():
+            # patients are living patients: the universe every membership is drawn from excludes the deceased (decision_context)
+            with sqlite3.connect(f"file:{path / 'semantic.sqlite3'}?mode=ro", uri=True) as semantic_db:
+                universe = decision_context.living_universe(semantic_db, roster)
         evidence_db, evidence_meta = evidence_connection(path, meta)
         # Validate every narrative vocabulary before running any graph node.
         observed = catalog(path)
@@ -1578,6 +1586,8 @@ def execute(stack, plan, *, question=None):
         if appointment_dependency:
             context_identities.append({'appointment_sources':appointment_dependency,'original_question':question})
         context_identities.append({'original_question': question})
+        context_identities.append({'decision_context': decision_context.VERSION, 'living_only': bool(dc_scope is not None and dc_scope.living_only),
+                                   'lab_mode': dc_scope.lab_mode if dc_scope is not None else None})
         if any(n.get('operation') == 'demand' or
                (n.get('operation') == 'queueing' and n['parameters'].get('demand_forecast'))
                for n in plan.get('nodes', [])):
@@ -1607,10 +1617,11 @@ def execute(stack, plan, *, question=None):
                 detail = sql_query.execute(path, {'query': c['membership_query'], 'returns': 'patient_set'}, patient_ids=c['population'])
                 if detail['truncated']: raise ValueError('Incomplete request population cannot feed an analytical engine')
                 selected_ids = set(detail['patient_ids'])
-                if not selected_ids <= universe: raise ValueError('Request population contains IDs outside the source roster')
+                if not selected_ids <= roster: raise ValueError('Request population contains IDs outside the source roster')
                 unknown = sql_query.execute(path, {'query': c['unknown_membership_query'], 'returns': 'patient_set'}, patient_ids=c['population'])
                 if unknown['truncated']: raise ValueError('Unresolved population exceeds the complete-output bound')
-                value = Membership(universe, selected_ids, set(unknown['patient_ids']) - selected_ids)
+                selected_ids &= universe
+                value = Membership(universe, selected_ids, (set(unknown['patient_ids']) - selected_ids) & universe)
                 detail['request_id'] = c['id']
             elif op == 'cohort':
                 try:
@@ -1622,7 +1633,7 @@ def execute(stack, plan, *, question=None):
                     detail = {'specification': params['specification'], 'grounding_failed': True,
                               'grounding': exc.issues}
                 else:
-                    value = Membership(universe, set(selected['patient_ids']), set(selected['unknown_patient_ids']))
+                    value = Membership(universe, set(selected['patient_ids']) & universe, set(selected['unknown_patient_ids']) & universe)
                     detail = {'specification': selected['specification'], 'source_examples': selected['examples'],
                               'selection_receipt': selected['id'], 'selection_cache_hit': selected['cache_hit'],
                               'grounding': selected.get('grounding', []), 'interpretation': selected.get('interpretation', []),
@@ -1782,7 +1793,8 @@ def execute(stack, plan, *, question=None):
                 detail = explain.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
             elif op == 'evidence':
-                value, detail = evidence_membership(evidence_db, params['plan'], universe)
+                value, detail = evidence_membership(evidence_db, params['plan'], roster)
+                value = Membership(universe, value.yes & universe, value.unknown & universe)
             elif op in ('intersect', 'union', 'difference'):
                 value = combine(op, [memberships[x] for x in node['inputs']])
                 detail = {'dependencies': node['inputs'], 'logic': 'Three-valued membership with unresolved predicates retained'}

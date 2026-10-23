@@ -28,6 +28,7 @@ VERSION = 'metric-router/1'
 MODEL = 'claude-haiku-5-5'
 NO_METRIC = 'no_metric'
 AMBIGUOUS = 'ambiguous_metrics'
+from .decision_context import prompt_block as _decision_block
 SYSTEM = (
     'You answer analytics questions about a synthetic healthcare population ONLY by choosing a governed metric and filling its typed '
     'slots; deterministic code computes the number. Choose a metric only when its definition answers the WHOLE question as asked '
@@ -394,7 +395,7 @@ def _ask(question, as_of, ledger, out, tools, forced=None, feedback=None, model=
     from .context_student import send
     content = question if not feedback else (f'{question}\n\nYour previous tool call was rejected by the validator: {feedback[:700]}\n'
                                              'Call the tool again with corrected slots, or call no_metric if no metric fits.')
-    body = {'model': model, 'max_tokens': 1500, 'system': SYSTEM.format(as_of=as_of), 'tools': tools,
+    body = {'model': model, 'max_tokens': 1500, 'system': SYSTEM.format(as_of=as_of) + '\n' + _decision_block(), 'tools': tools,
             'tool_choice': {'type': 'any', 'disable_parallel_tool_use': True} if forced is None else
                            {'type': 'tool', 'name': forced, 'disable_parallel_tool_use': True},
             'messages': [{'role': 'user', 'content': content}]}

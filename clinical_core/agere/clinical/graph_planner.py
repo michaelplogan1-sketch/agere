@@ -485,6 +485,8 @@ def propose(question, path, ledger, *, snapshot, graph_catalog, observed_values=
     catalog['node_contracts']['worklist']['parameters']={'program':'Exact work_programs id; all currently registered programs are supplied.'}
     # Instructions stay byte-stable across questions (cached system block); per-question feedback follows the catalog.
     notes = [f'A previous plan for this question failed when executed: {feedback[:500]}. Produce a different plan that avoids this failure.'] if feedback else []
+    from .decision_context import prompt_block
+    instructions = instructions + ' ' + prompt_block().replace('\n', ' ')  # the decision context, byte-stable across questions
     body = {'model': PersistentGateway.MODELS['claude'], 'max_tokens': 6000, 'system': instructions,
         'messages': [{'role': 'user', 'content': scope_content(catalog)}],
         'output_config': {'format': {'type': 'json_schema', 'schema': SCHEMA}}}
