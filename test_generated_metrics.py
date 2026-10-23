@@ -30,7 +30,7 @@ def fixture(root, digest='dig-1', freq7=20):
     db.executescript('''CREATE TABLE meta(key TEXT, value TEXT);
         CREATE TABLE record(record_id TEXT, stream TEXT, payload TEXT);
         CREATE TABLE payer_claim(payer_claim_id TEXT, patient_id TEXT, service_from TEXT, claim_received_date TEXT, first_available_date TEXT,
-            claim_frequency_code TEXT, final_status TEXT, place_of_service TEXT, paid_cents INTEGER, diagnosis_codes TEXT, counts_in_metrics INTEGER);
+            claim_frequency_code TEXT, final_status TEXT, place_of_service TEXT, paid_cents INTEGER, diagnosis_codes TEXT, counts_in_metrics INTEGER, reviewed INTEGER);
         CREATE TABLE visit(encounter_id TEXT, patient_id TEXT, event_date TEXT, type_concept TEXT);
         CREATE TABLE lab_result(result_id TEXT, patient_id TEXT, event_date TEXT, status_code TEXT, status_description TEXT);
         CREATE TABLE clinician(npi TEXT, specialty TEXT);
@@ -42,9 +42,9 @@ def fixture(root, digest='dig-1', freq7=20):
         status = ('paid', 'denied', 'voided')[i % 3]
         service = base + timedelta(days=i)
         received = service + timedelta(days=40)  # most received in 2028, the last ones in 2029
-        db.execute('INSERT INTO payer_claim VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+        db.execute('INSERT INTO payer_claim VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
                    (f'C{i}', f'P{i % 80}', service.isoformat(), received.isoformat(), service.isoformat(), freq, status, ('11', '22')[i % 2],
-                    1000 + i * 7, f'I{i % 97},J{i % 89}', 1 if i % 5 else 0))
+                    1000 + i * 7, f'I{i % 97},J{i % 89}', 0 if i % 5 == 0 or freq == '8' else 1, 1 if i % 3 == 0 else 0))  # voids and every fifth row are not current
         db.execute('INSERT INTO visit VALUES (?,?,?,?)', (f'V{i}', f'P{i % 80}', (base + timedelta(days=i * 2)).isoformat(), ('primary_care_visit', 'emergency_visit')[i % 4 == 0]))
         db.execute('INSERT INTO lab_result VALUES (?,?,?,?,?)', (f'L{i}', f'P{i % 80}', (base + timedelta(days=i)).isoformat(),
                                                                 ('F', 'C')[i % 2], ('Final result', 'Corrected result')[i % 2]))
@@ -56,10 +56,12 @@ def fixture(root, digest='dig-1', freq7=20):
     return root
 
 
-def expected(root, where, year=2028, date_col='service_from', table='payer_claim'):
+def expected(root, where, year=2028, date_col='service_from', table='payer_claim', current=True, distinct=None):
     db = sqlite3.connect(Path(root) / 'semantic.sqlite3')
     try:
-        return db.execute(f"SELECT count(*) FROM {table} WHERE {where} AND substr({date_col},1,10) BETWEEN '{year}-01-01' AND '{year}-12-31'").fetchone()[0]
+        ok = ' AND counts_in_metrics = 1' if current and table == 'payer_claim' else ''
+        what = f'count(DISTINCT {distinct})' if distinct else 'count(*)'
+        return db.execute(f"SELECT {what} FROM {table} WHERE {where} AND substr({date_col},1,10) BETWEEN '{year}-01-01' AND '{year}-12-31'{ok}").fetchone()[0]
     finally:
         db.close()
 
@@ -108,7 +110,7 @@ class Generation(Base):
     def test_categorical_columns_are_found_by_structure_not_by_name(self):
         by_table = {g['table']: {c['column'] for c in g['columns']} for g in self.index.groups}
         self.assertEqual(set(by_table), {'payer_claim', 'visit', 'lab_result'})  # no date / too few rows / the record table are skipped
-        self.assertEqual(by_table['payer_claim'], {'claim_frequency_code', 'final_status', 'place_of_service', 'counts_in_metrics'})
+        self.assertEqual(by_table['payer_claim'], {'claim_frequency_code', 'final_status', 'place_of_service', 'reviewed'})  # counts_in_metrics is validity, not a category
         for excluded in ('payer_claim_id', 'patient_id', 'service_from', 'paid_cents', 'diagnosis_codes'):  # key, dates, amounts, free codes
             self.assertNotIn(excluded, by_table['payer_claim'])
 
@@ -150,10 +152,10 @@ class Generation(Base):
         self.assertIn('voided', self.metric('payer_claim', 'final_status', 'voided', 'count')['name'])  # a self-describing word needs no label
 
     def test_flags_read_as_the_flag_itself(self):
-        yes = self.metric('payer_claim', 'counts_in_metrics', 1, 'count')
-        no = self.metric('payer_claim', 'counts_in_metrics', 0, 'count')
-        self.assertEqual(yes['name'], 'Payer claim: counts in metrics')
-        self.assertEqual(no['name'], 'Payer claim: not counts in metrics')
+        yes = self.metric('payer_claim', 'reviewed', 1, 'count')
+        no = self.metric('payer_claim', 'reviewed', 0, 'count')
+        self.assertEqual(yes['name'], 'Payer claim: reviewed')
+        self.assertEqual(no['name'], 'Payer claim: not reviewed')
 
     def test_every_generated_metric_compiles_through_the_router_and_explains_on_the_schema(self):
         db = sqlite3.connect(self.root / 'semantic.sqlite3')
@@ -183,7 +185,7 @@ class Compile(Base):
     def test_count_is_right(self):
         _, node = self.compiled('payer_claim', 'claim_frequency_code', '7', 'count')
         self.assertEqual(self.run_sql(node), [(expected(self.root, "claim_frequency_code = '7'"),)])
-        self.assertEqual(self.run_sql(node)[0][0], 20)
+        self.assertEqual(self.run_sql(node)[0][0], 16)  # 20 replacement rows, 4 of them not current
 
     def test_share_is_right(self):
         _, node = self.compiled('payer_claim', 'final_status', 'denied', 'share')
@@ -194,7 +196,7 @@ class Compile(Base):
     def test_by_is_right(self):
         _, node = self.compiled('payer_claim', 'claim_frequency_code', None, 'by')
         got = dict(self.run_sql(node))
-        self.assertEqual(got, {'1': expected(self.root, "claim_frequency_code = '1'"), '7': 20, '8': 10})
+        self.assertEqual(got, {'1': expected(self.root, "claim_frequency_code = '1'"), '7': 16})  # voids (8) are not current
 
     def test_the_period_applies_to_the_clock_the_question_names(self):
         m, plain = self.compiled('payer_claim', 'claim_frequency_code', '7', 'count', 'How many replacement claims were in 2028?')
@@ -207,12 +209,94 @@ class Compile(Base):
     def test_an_all_time_period_covers_every_date(self):
         m = self.metric('payer_claim', 'claim_frequency_code', '7', 'count')
         node = MR.compile_metric(m['id'], m, MR.validate_slots(m, {'period': {'preset': 'all_time'}}), AS_OF)
-        self.assertEqual(self.run_sql(node), [(20,)])
+        self.assertEqual(self.run_sql(node), [(16,)])
 
     def test_a_value_with_a_quote_or_brace_is_a_literal_not_sql(self):
         self.assertEqual(G.literal("it's"), "'it''s'")
         self.assertEqual(G.literal('a{b}'), "'a{{b}}'")
         self.assertEqual(G.literal(3), '3')
+
+
+class RowValidity(Base):
+    """Superseded, duplicate and voided versions are dropped by the flag the layer itself documents and the authored metrics filter."""
+
+    def execute(self, mid, **slots):
+        m = self.index.metric(mid)
+        node = MR.compile_metric(mid, m, MR.validate_slots(m, {'period': {'preset': 'year', 'year': 2028}, **slots}), AS_OF)
+        db = sqlite3.connect(self.root / 'semantic.sqlite3')
+        try:
+            return m, db.execute(node['parameters']['query']).fetchall()
+        finally:
+            db.close()
+
+    def test_the_validity_flag_is_discovered_from_the_documents_and_authored_metrics(self):
+        claim = next(g for g in self.index.groups if g['table'] == 'payer_claim')
+        self.assertEqual(claim['valid'], ['counts_in_metrics'])
+        for g in self.index.groups:
+            if g['table'] != 'payer_claim': self.assertEqual(g['valid'], [])  # no other fixture table carries one
+        self.assertIn('counts_in_metrics', G.validity_names(sqlite3.connect(self.root / 'semantic.sqlite3'), ['payer_claim'], G.table_docs()))
+        self.assertNotIn('kept', G.validity_names(sqlite3.connect(':memory:'), [], G.table_docs()))  # a population flag is not validity
+        self.assertNotIn('is_practice', G.validity_names(sqlite3.connect(':memory:'), [], G.table_docs()))
+
+    def test_a_superseded_version_is_not_counted(self):
+        db = sqlite3.connect(self.root / 'semantic.sqlite3')
+        rows = db.execute("SELECT count(*) FROM payer_claim WHERE claim_frequency_code = '7' AND substr(service_from,1,10) BETWEEN '2028-01-01' AND '2028-12-31'").fetchone()[0]
+        db.close()
+        m, got = self.execute('gen.payer_claim.claim_frequency_code.7.count')
+        self.assertEqual(rows, 20)
+        self.assertEqual(got, [(16,)])  # the four rows with counts_in_metrics = 0 are the superseded / duplicate versions
+        self.assertIn('current payer claim rows only (counts_in_metrics = 1)', m['summary'])
+
+    def test_share_and_by_use_the_same_current_rows(self):
+        _, share = self.execute('gen.payer_claim.final_status.denied.share')
+        self.assertEqual(share, [(round(100.0 * expected(self.root, "final_status = 'denied'") / expected(self.root, '1=1'), 2),)])
+        _, by = self.execute('gen.payer_claim.final_status.by')
+        self.assertEqual(sum(n for _, n in by), expected(self.root, '1=1'))
+
+    def test_a_value_only_non_current_rows_carry_is_counted_on_all_rows_and_says_so(self):
+        m, got = self.execute('gen.payer_claim.claim_frequency_code.8.count')  # voids: every row has counts_in_metrics = 0
+        self.assertEqual(got, [(10,)])
+        self.assertIn('all payer claim rows, not only current ones', m['summary'])
+        self.assertNotIn('counts_in_metrics', m['sql_template'])
+
+    def test_the_anchor_variants_keep_the_filter(self):
+        m = self.index.metric('gen.payer_claim.claim_frequency_code.7.count')
+        self.assertIn('"counts_in_metrics" = 1', m['variants']['received']['sql_template'])
+
+    def test_the_flag_itself_is_not_offered_as_a_category(self):
+        self.assertNotIn('gen.payer_claim.counts_in_metrics.0.count', self.index.specs)
+
+
+class Patients(Base):
+    def test_a_distinct_patient_count_exists_where_the_table_has_patient_id(self):
+        m = self.index.metric('gen.payer_claim.claim_frequency_code.7.patients')
+        self.assertEqual(m['output']['returns'], 'count')
+        self.assertIn('distinct patients (patient_id)', m['summary'])
+        self.assertIn('"counts_in_metrics" = 1', m['sql_template'])
+        self.assertNotIn('gen.clinician.specialty.cardiology.patients', self.index.specs)  # no patient_id there
+        db = sqlite3.connect(self.root / 'semantic.sqlite3')
+        try:
+            node = MR.compile_metric(m['id'], m, MR.validate_slots(m, {'period': {'preset': 'year', 'year': 2028}}), AS_OF)
+            got = db.execute(node['parameters']['query']).fetchone()[0]
+        finally:
+            db.close()
+        self.assertEqual(got, expected(self.root, "claim_frequency_code = '7'", distinct='patient_id'))
+        self.assertEqual(got, 16)
+
+    def test_offered_only_when_the_question_says_patients_members_or_people(self):
+        q = 'How many patients had a replacement claim in 2028?'
+        self.assertEqual(self.index.select(q)[0], 'gen.payer_claim.claim_frequency_code.7.patients')
+        self.assertIn('gen.payer_claim.claim_frequency_code.7.patients', self.index.select('How many members had replacement claims?'))
+        self.assertNotIn('gen.payer_claim.claim_frequency_code.7.patients', self.index.select('How many replacement claims were there in 2028?'))
+        self.assertEqual(self.index.select('How many replacement claims were there in 2028?')[0], 'gen.payer_claim.claim_frequency_code.7.count')
+
+    def test_it_routes_through_system_one(self):
+        fake = FakeS1(choose('payer_claim_claim_frequency_code_7_patients', {'period': 'year'}))
+        stack = SimpleNamespace(path=str(self.root), retriever=SimpleNamespace(encoder=None))
+        with mock.patch('clinical_core.agere.clinical.system_one.decide', fake.decide):
+            graph, info, rec = S1G.route_metric(stack, 'How many patients had a replacement claim in 2028?', AS_OF, None)
+        self.assertEqual(info['metric'], 'gen.payer_claim.claim_frequency_code.7.patients', info)
+        self.assertIn('count(DISTINCT "patient_id")', graph['nodes'][0]['parameters']['query'])
 
 
 class Ranking(Base):
@@ -231,9 +315,9 @@ class Ranking(Base):
         self.assertIn('gen.payer_claim.claim_frequency_code.7.count', self.index.select('How many claims have frequency code 7?'))
 
     def test_a_negated_flag_is_offered_only_for_a_negated_question(self):
-        self.assertIn('gen.payer_claim.counts_in_metrics.1.count', self.index.select('How many claims count in metrics?'))
-        self.assertNotIn('gen.payer_claim.counts_in_metrics.0.count', self.index.select('How many claims count in metrics?'))
-        self.assertIn('gen.payer_claim.counts_in_metrics.0.count', self.index.select('How many claims do not count in metrics?'))
+        self.assertIn('gen.payer_claim.reviewed.1.count', self.index.select('How many claims were reviewed?'))
+        self.assertNotIn('gen.payer_claim.reviewed.0.count', self.index.select('How many claims were reviewed?'))
+        self.assertIn('gen.payer_claim.reviewed.0.count', self.index.select('How many claims were not reviewed?'))
 
     def test_an_encoder_reorders_the_word_matches(self):
         class Encoder:  # a question and a percent definition point the same way, a count the other
@@ -358,7 +442,7 @@ class Cache(unittest.TestCase):
         db = sqlite3.connect(self.root / 'semantic.sqlite3')
         db.execute("UPDATE meta SET value = 'dig-2' WHERE key = 'source_digest'")
         db.execute("INSERT INTO payer_claim SELECT 'X' || payer_claim_id, patient_id, service_from, claim_received_date, first_available_date, '9', final_status, "
-                   "place_of_service, paid_cents, diagnosis_codes, counts_in_metrics FROM payer_claim WHERE claim_frequency_code = '7'")
+                   "place_of_service, paid_cents, diagnosis_codes, counts_in_metrics, reviewed FROM payer_claim WHERE claim_frequency_code = '7'")
         db.commit()
         db.close()
         fresh = G.load(self.root)

@@ -244,6 +244,38 @@ def doc_sentence(doc, column=None, limit=130):
     return parts[0][:limit] if parts else ''
 
 
+VALIDITY_NAME = re.compile(r'count|current|valid|actual')
+VALIDITY_CONTEXT = re.compile(r'\b(?:current|valid|unreversed|actual)\b')
+
+
+def validity_names(db, tables, docs):
+    """Names of row-validity flags (counts_in_metrics, result_current, is_diagnosis, ...): 0/1 columns that drop superseded,
+    duplicate, voided or non-diagnosis rows. Read from how the layer is already used, never listed by hand:
+      * the layer's own documentation prescribes `<flag> = 1` beside a validity word (current, valid, actual, unreversed) or the
+        flag's name says it (counts_*, *_current, valid*, actual*);
+      * an authored governed metric whose main table is that table filters `<flag> = 1` and the flag's name says it is a validity
+        flag (an authored population flag such as kept or is_practice is not one).
+    A name established anywhere applies wherever a table has that 0/1 column."""
+    names = set()
+    for doc in docs.values():
+        for m in re.finditer(r'\b([a-z_]+)\s*=\s*1\b', doc or ''):
+            before = (doc or '')[max(0, m.start() - 70):m.start()]
+            cut = max([before.rfind(x) + 1 for x in ('.', ';', ',', ')', '(')] + [mm.end() for mm in re.finditer(r'=\s*[01]\b', before)] + [0])
+            context = (before[cut:] + doc[m.end():m.end() + 25].split('=')[0]).replace(m.group(1), '')
+            if VALIDITY_NAME.search(m.group(1)) or VALIDITY_CONTEXT.search(context): names.add(m.group(1))
+    try:
+        from . import metrics
+        columns = {t: {r[1] for r in db.execute(f'PRAGMA table_info({quote(t)})')} for t in tables}
+        for m in metrics.library().values():
+            q = m.get('sql_template') or ''
+            main = re.search(r'\bFROM\s+(\w+)', q, re.I)
+            if not main or main.group(1) not in columns: continue
+            names |= {c for c in re.findall(r'\b(?:\w+\.)?(\w+)\s*=\s*1\b', q) if c in columns[main.group(1)] and VALIDITY_NAME.search(c)}
+    except Exception:  # noqa: BLE001 - the authored signal is an aid; the documentation signal stands alone
+        pass
+    return names
+
+
 def _authored_anchors():
     """{table: {date column}} the authored metrics already anchor their period on (table.column of time_anchor.field)."""
     out = {}
@@ -273,7 +305,7 @@ def clock_words(column, table):
     return own, sorted({w for o in own for w in (o, *CLOCK_WORDS.get(o, ()))})
 
 
-def _profile_table(db, table, authored, docs):
+def _profile_table(db, table, authored, docs, validity=frozenset()):
     cols = [(r[1], (r[2] or '').upper()) for r in db.execute(f'PRAGMA table_info({quote(table)})')]
     n = db.execute(f'SELECT count(*) FROM {quote(table)}').fetchone()[0]
     if n < MIN_TABLE_ROWS or not cols: return None, {'table': table, 'reason': f'{n} rows'}, None
@@ -306,17 +338,19 @@ def _profile_table(db, table, authored, docs):
         seen |= set(own)
         alts.append({'name': '_'.join(own), 'column': c, 'forms': forms})
         if len(alts) >= MAX_ALT_DATES: break
+    valid = [c for c, _ in cols if c in validity and prof[c]['ints'] == prof[c]['nonnull'] > 0 and prof[c]['distinct'] <= {0, 1}]
     candidates = []
     for name, _ in cols:
         p = prof[name]
-        if name == key or name in dates or p['date'] or not p['nonnull']: continue
+        if name == key or name in dates or name in valid or p['date'] or not p['nonnull']: continue
         if len(p['distinct']) > MAX_DISTINCT or len(p['distinct']) < 1: continue
         if p['strings'] and p['strings'] != p['nonnull'] or (not p['strings'] and p['ints'] != p['nonnull']): continue
         if p['strings'] and p['maxlen'] > 40: continue
         if p['ints'] and not all(0 <= v < 1000 for v in p['distinct']): continue
         if all(YEARLIKE.match(str(v)) for v in p['distinct']): continue
         candidates.append(name)
-    group = {'table': table, 'key': key, 'rows': n, 'date': primary, 'alt_dates': alts, 'doc': doc_sentence(docs.get(table)), 'columns': []}
+    group = {'table': table, 'key': key, 'rows': n, 'date': primary, 'alt_dates': alts, 'doc': doc_sentence(docs.get(table)), 'valid': valid,
+             'patient': 'patient_id' if 'patient_id' in prof and key != 'patient_id' else None, 'columns': []}
     skipped = []
     for name in candidates:
         rows = db.execute(f'SELECT {quote(name)}, count(*) FROM {quote(table)} WHERE {quote(name)} IS NOT NULL GROUP BY {quote(name)}').fetchall()
@@ -326,12 +360,16 @@ def _profile_table(db, table, authored, docs):
             continue
         kept = [(v, c) for v, c in sorted(rows, key=lambda r: (-r[1], str(r[0]))) if c >= MIN_VALUE_ROWS]
         if not kept: continue
+        current = {}
+        if valid:  # rows per value among the valid (current, non-duplicate) rows; a value only invalid rows carry stays unfiltered
+            where = ' AND '.join(f'{quote(x)} = 1' for x in valid)
+            current = dict(db.execute(f'SELECT {quote(name)}, count(*) FROM {quote(table)} WHERE {quote(name)} IS NOT NULL AND {where} GROUP BY {quote(name)}').fetchall())
         integer = all(isinstance(v, int) for v, _ in kept)
         labels = sibling_labels(db, table, name, [c for c, _ in cols]) or vocabulary_labels(table, name, [v for v, _ in kept])
         flag = integer and {v for v, _ in rows} <= {0, 1}
         group['columns'].append({'column': name, 'kind': 'flag' if flag else 'int' if integer else 'text', 'nonnull': total, 'distinct': len(rows),
                                  'doc': doc_sentence(docs.get(table), name),
-                                 'values': [{'v': v, 'n': c, **({'label': str(labels[v])} if v in labels and str(labels[v]).strip() else {})}
+                                 'values': [{'v': v, 'n': (current.get(v, 0) or c) if valid else c, **({'all': True} if valid and not current.get(v) else {}), **({'label': str(labels[v])} if v in labels and str(labels[v]).strip() else {})}
                                             for v, c in kept]})
     return (group if group['columns'] else None), skipped or ([] if group['columns'] else {'table': table, 'reason': 'no categorical column'}), key
 
@@ -343,9 +381,10 @@ def discover(db):
     groups, skipped, keys = [], [], {}
     tables = [n for (n,) in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name").fetchall()
               if n not in SKIP_TABLES and not n.startswith('sqlite_') and '_fts' not in n]
+    validity = validity_names(db, tables, docs)
     for t in tables:
         try:
-            group, why, key = _profile_table(db, t, authored, docs)
+            group, why, key = _profile_table(db, t, authored, docs, validity)
         except sqlite3.Error as exc:
             group, why, key = None, {'table': t, 'reason': f'{type(exc).__name__}: {exc}'[:120]}, None
         if key: keys.setdefault(key, set()).add(t)
@@ -376,18 +415,21 @@ def _period(date):
     return f"substr({quote(date)}, 1, 10) BETWEEN '{{period_start}}' AND '{{period_end}}'"
 
 
-def _sql(kind, group, col, value, date):
+def _sql(kind, group, col, value, date, unfiltered=False):
     t, key, c = quote(group['table']), group.get('key'), quote(col['column'])
     entity = f'count(DISTINCT {quote(key)})' if key else 'count(*)'
+    ok = '' if unfiltered else ''.join(f' AND {quote(x)} = 1' for x in group.get('valid') or [])  # current rows only
     if kind == 'count':
-        return f"SELECT {entity} AS n FROM {t} WHERE {c} = {literal(value)} AND {_period(date)}"
+        return f"SELECT {entity} AS n FROM {t} WHERE {c} = {literal(value)} AND {_period(date)}{ok}"
+    if kind == 'patients':
+        return f"SELECT count(DISTINCT {quote(group['patient'])}) AS patients FROM {t} WHERE {c} = {literal(value)} AND {_period(date)}{ok}"
     if kind == 'share':
         return (f"SELECT round(100.0 * sum(CASE WHEN {c} = {literal(value)} THEN 1 ELSE 0 END) / count(*), 2) AS share_pct "
-                f"FROM {t} WHERE {_period(date)}")
-    return f"SELECT {c} AS category, {entity} AS n FROM {t} WHERE {_period(date)} GROUP BY {c} ORDER BY n DESC, category"
+                f"FROM {t} WHERE {_period(date)}{ok}")
+    return f"SELECT {c} AS category, {entity} AS n FROM {t} WHERE {_period(date)}{ok} GROUP BY {c} ORDER BY n DESC, category"
 
 
-def _variants(kind, group, col, value, summary):
+def _variants(kind, group, col, value, summary, unfiltered=False):
     """Anchor variants: the same metric with the period on another date a question can name ('received in 2028'); summary(clock)
     states the full definition on that clock."""
     out = {}
@@ -397,7 +439,7 @@ def _variants(kind, group, col, value, summary):
             'when': rf'\b(?:{pattern})\s+(?:in|on|during|between|before|after|since|within|by)\b|\b(?:{pattern})\s+dates?\b|\bdate (?:of )?(?:{pattern})\b',
             'summary': summary(f"{group['table']}.{alt['column']}"),
             'anchor': alt['column'], 'time_anchor': {'field': f"{group['table']}.{alt['column']}"},
-            'sql_template': _sql(kind, group, col, value, alt['column'])}
+            'sql_template': _sql(kind, group, col, value, alt['column'], unfiltered)}
     return out
 
 
@@ -411,12 +453,23 @@ def expand(group, col, v=None, kind='count'):
     clock = f"{table}.{date}"
     notes = (f" Other clocks a question can name: {', '.join(a['name'] for a in group['alt_dates'])}." if group.get('alt_dates') else '')
     nulls = group['rows'] - col['nonnull']
+    unfiltered = bool(v and v.get('all'))
+    valid = group.get('valid') or []
+    if valid and not unfiltered:
+        clause += f"; current {tw} rows only ({' and '.join(f'{x} = 1' for x in valid)})"
+    elif valid:
+        clause += f"; all {tw} rows, not only current ones (no row with this value has {' and '.join(f'{x} = 1' for x in valid)})"
     layer = (col.get('doc') or group.get('doc') or '').strip()
     notes = (f' Layer: {layer}' if layer else '') + notes
     if kind == 'count':
         name = f"{tw.capitalize()}: {frag}"
         summary = lambda on, extra='': f"Number of {entity} {clause}; period on {on}.{extra}"
         num, den, unit, rng, returns = {'summary': f"{tw} rows with {col['column']} = {value!r}"}, {'summary': 'None (count).'}, 'rows', [0, 10 ** 9], 'count'
+    elif kind == 'patients':
+        name = f"{tw.capitalize()}: patients with {frag}"
+        summary = lambda on, extra='': f"Number of distinct patients ({group['patient']}) with {tw} rows {clause}; period on {on}.{extra}"
+        num, den, unit, rng, returns = ({'summary': f"distinct {group['patient']} of {tw} rows with {col['column']} = {value!r}"}, {'summary': 'None (count).'},
+                                        'patients', [0, 10 ** 9], 'count')
     elif kind == 'share':
         name = f"{tw.capitalize()}: share of rows where {frag}"
         summary = lambda on, extra='': (f"Percent of {entity} {clause}; period on {on}; denominator all {tw} rows in the period"
@@ -435,7 +488,7 @@ def expand(group, col, v=None, kind='count'):
             'population': {'summary': f"All rows of the semantic layer's {table} table."}, 'denominator': den, 'numerator': num,
             'time_anchor': {'field': clock, 'mode': 'period', 'default': 'all'}, 'value_sets': {}, 'exclusions': [], 'unit': unit,
             'expected_range': rng, 'versioning': {'rule': 'distinct_key' if key else 'none', **({'stream': table, 'key': key} if key else {})},
-            'output': {'returns': returns}, 'variants': _variants(kind, group, col, value, summary), 'sql_template': _sql(kind, group, col, value, date),
+            'output': {'returns': returns}, 'variants': _variants(kind, group, col, value, summary, unfiltered), 'sql_template': _sql(kind, group, col, value, date, unfiltered),
             'source_file': FILE}
 
 
@@ -447,6 +500,7 @@ def iter_specs(groups):
             for vi in range(len(col['values'])):
                 yield gi, ci, vi, 'count'
                 yield gi, ci, vi, 'share'
+                if g.get('patient'): yield gi, ci, vi, 'patients'
 
 
 # -- build, cache, load --------------------------------------------------------------------------------------------------
@@ -466,7 +520,7 @@ def _check(groups, db, as_of):
             good = []
             for v in col['values']:
                 ok = True
-                for kind in ('count', 'share'):
+                for kind in ('count', 'share') + (('patients',) if g.get('patient') else ()):
                     ok = ok and _validate_one(db, g, col, v, kind, as_of, probe, metrics, MR, rejected)
                 if ok: good.append(v)
             col['values'] = good
@@ -530,7 +584,7 @@ def build(stack, *, cache_dir=None, force=False):
 
 def report(data, skipped, rejected, seconds):
     groups = data['groups']
-    kinds = {'count': 0, 'share': 0, 'by': 0}
+    kinds = {'count': 0, 'share': 0, 'by': 0, 'patients': 0}
     for gi, ci, vi, kind in iter_specs(groups): kinds[kind] += 1
     return {'schema': VERSION, 'semantic_digest': data['semantic_digest'], 'tables': len(groups),
             'columns': sum(len(g['columns']) for g in groups), 'values': sum(len(c['values']) for g in groups for c in g['columns']),
@@ -591,6 +645,7 @@ class Index:
         low = question.lower()
         share = bool(re.search(r'\b(?:share|percent\w*|%|proportion|fraction|rate|ratio)\b', low))
         negation = bool(NEGATION.search(low))
+        people = bool(re.search(r'\b(?:patients?|members?|people|persons?|individuals?|enrollees?|beneficiar\w+)\b', low))
         by = bool(re.search(r'\b(?:by|per|each|across|break\w*|split|grouped)\b', low))
         n = len(self.cards) or 1
         hit = {}
@@ -609,8 +664,12 @@ class Index:
             elif not (value_hits or (numeric and col_hits)): continue
             weight = sum(math.log(1 + n / self.df[w]) * (2.0 if w in c['value'] else 1.0) for w in ws)
             score = weight / math.sqrt(len(c['all']) + 4)
-            score *= {'share': 1.25, 'count': 0.9, 'by': 0.8}[c['kind']] if share else {'by': 1.25, 'count': 1.0, 'share': 0.8}[c['kind']] if by \
-                else {'count': 1.1, 'share': 0.8, 'by': 0.6}[c['kind']]
+            mult = {'count': 1.1, 'share': 0.8, 'by': 0.6, 'patients': 0.0}  # patient counts only when the question says patients / members / people
+            if share: mult.update(share=1.25, count=0.9, by=0.8)
+            elif by: mult.update(by=1.25, count=1.0, share=0.8)
+            if people: mult.update(patients=1.4, count=mult['count'] * 0.7)
+            if not mult[c['kind']]: continue
+            score *= mult[c['kind']]
             if c['clock'] & q: score *= 1.05
             scored.append((score, c['id'], c['twin']))
         out, seen = [], set()
