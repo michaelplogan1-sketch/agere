@@ -5114,6 +5114,19 @@
    "flag": null
   },
   {
+   "id": "generated_metrics",
+   "name": "generated metrics",
+   "family": "metric_or_measure",
+   "module": "clinical_core.agere.clinical.generated_metrics",
+   "symbol": "build",
+   "role_on_question_path": "Generated governed metrics (count / share / by-column per categorical column of the semantic layer, origin generated, cached per semantic digest) offered to System One beside the authored ones; below authored certification.",
+   "current_wiring": "inside:s1_metric_router",
+   "evidence": "wave-1 build 2026-10-22",
+   "cost": "free",
+   "calibration": null,
+   "flag": null
+  },
+  {
    "id": "exact_fit",
    "name": "exact fit",
    "family": "check",

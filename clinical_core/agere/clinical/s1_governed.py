@@ -13,6 +13,11 @@ components, clinical scope, answer shape, breakdown, exact fit) run unchanged on
              other enum slots (anchor, measure, returns, ...) only when the question names one of the values
              required integers: the one number the question states and no slot has used
            Metrics with a population-atom slot (concept lists, lab thresholds) stay with the Claude router.
+           GENERATED metrics (generated_metrics.py: count / share / by-column metrics derived from the semantic layer's own
+           tables, dates and categorical values, origin 'generated', never certified as authored) compete for the same list:
+           at most AGERE_S1_GENERATED_OPTIONS (default 5) of the options are generated, interleaved after the authored
+           candidates (authored first on ties), and a generated metric is offered only when the question names its value
+           (or its column). AGERE_S1_GENERATED=off removes them.
   engine   choose among the engines the learned router and the question's words point at (AGERE_S1_ENGINE_OPTIONS, default 8)
            plus literal_lookup and none_of_these; then the closed-set parameters the question names, at most three choices;
            numbers are parsed ("top 10", "90 days", "6 months") into the one parameter that can hold them. Any number left
@@ -146,9 +151,44 @@ def fillable(m):
     return not any(d['type'] in ('population', 'number') for d in MR.slots_of(m).values())
 
 
+def generated_enabled():
+    return os.environ.get('AGERE_S1_GENERATED', 'on').strip().lower() not in ('off', '0', 'false', 'no')
+
+
+def is_generated(m):
+    return (m or {}).get('origin') == 'generated'
+
+
+def with_generated(lib, question, path, encoder=None):
+    """(library + the generated metrics that may fit the question in rank order, their ids). The stack's generated metrics are
+    built once per semantic digest (generated_metrics.build) and ranked here by word overlap; any failure leaves the authored
+    library alone."""
+    if not path or not generated_enabled(): return lib, []
+    try:
+        from . import generated_metrics
+        index = generated_metrics.load(path)
+        found = index.metrics(index.select(question, option_count('AGERE_S1_GENERATED_POOL', 12), encoder))
+    except Exception:  # noqa: BLE001 - generated metrics are an addition; a failure never blocks the authored ones
+        return lib, []
+    found = {mid: m for mid, m in found.items() if mid not in lib}
+    return {**lib, **found}, list(found)
+
+
 def metric_shortlist(question, lib, n, encoder=None):
     """Governed metrics that may fit the question, best first, at most n: authored match rules, a quality-measure alias, the
-    encoder's nearest metrics, then idf word overlap. Only metrics whose slots System One can fill."""
+    encoder's nearest metrics, then idf word overlap; generated metrics (origin 'generated', already in rank order in lib)
+    interleave after the authored ones, at most AGERE_S1_GENERATED_OPTIONS of them. Only metrics whose slots System One can fill."""
+    generated = [mid for mid, m in lib.items() if is_generated(m) and fillable(m)]
+    if generated:
+        a = metric_shortlist(question, {mid: m for mid, m in lib.items() if not is_generated(m)}, n, encoder)
+        g = generated[:min(n, option_count('AGERE_S1_GENERATED_OPTIONS', 5))]
+        out = []
+        for i in range(n):  # authored first on ties: a1, g1, a2, g2, ...; slots one side leaves unused go to the other
+            for pool in (a, g):
+                if i < len(pool) and pool[i] not in out: out.append(pool[i])
+        for pool in (a, g):
+            out += [x for x in pool if x not in out]
+        return out[:n]
     from . import metrics
     ranked = []
     try:
@@ -353,10 +393,12 @@ def metric_ask(question, rec, lib, encoder=None):
 def route_metric(stack, question, as_of, ledger, *, path=None, directory=None):
     """-> (graph | None, info, recorder). Same contract as metric_router.route; info['system_one'] has the receipts."""
     rec = Recorder(ledger, as_of)
-    lib = MR.routable(directory)
-    ask = metric_ask(question, rec, lib, getattr(getattr(stack, 'retriever', None), 'encoder', None))
-    graph, info = MR.route(question, as_of, ledger, None, path=path, ask=ask, directory=directory)
+    encoder = getattr(getattr(stack, 'retriever', None), 'encoder', None)
+    lib, offered = with_generated(MR.routable(directory), question, getattr(stack, 'path', None) or path, encoder)
+    ask = metric_ask(question, rec, lib, encoder)
+    graph, info = MR.route(question, as_of, ledger, None, path=path, ask=ask, directory=directory, lib=lib)
     info.update(chosen_by='system_one', system_one=rec.receipt())
+    if offered: info['generated_offered'] = offered
     return graph, info, rec
 
 
