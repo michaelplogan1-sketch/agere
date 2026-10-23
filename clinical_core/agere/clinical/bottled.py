@@ -215,6 +215,15 @@ def base_adapter_dir():
     return d if d and (d / 'adapters.safetensors').exists() else None
 
 
+def kv_bytes_per_token(model_dir):
+    """Attention-cache bytes one token costs (K+V, fp16) from the model's config.json; None when unreadable."""
+    try:
+        c = json.loads((Path(model_dir) / 'config.json').read_text())
+        return c['num_hidden_layers'] * c['num_key_value_heads'] * c.get('head_dim', c['hidden_size'] // c['num_attention_heads']) * 2 * 2
+    except (OSError, KeyError, ValueError):
+        return None
+
+
 class BottledModel:
     """Qwen3-4B (MLX) + bottled LoRA adapter, loaded lazily once per process on first use (never at import)."""
     _instance = None
@@ -234,11 +243,7 @@ class BottledModel:
         self.gen_lock = threading.Lock()
         import mlx.core as mx
         mx.set_cache_limit(int(MLX_CACHE_GB * 2**30))
-        try:
-            c = json.loads((self.model_dir / 'config.json').read_text())
-            self.kv_bytes_per_token = c['num_hidden_layers'] * c['num_key_value_heads'] * c.get('head_dim', c['hidden_size'] // c['num_attention_heads']) * 2 * 2
-        except (OSError, KeyError, ValueError):
-            self.kv_bytes_per_token = None
+        self.kv_bytes_per_token = kv_bytes_per_token(self.model_dir)
 
     def fit_k(self, prompt_tokens, k, max_tokens):
         """Decodes that fit the attention-cache budget (each holds its own cache over prompt + output). A long prompt gets fewer

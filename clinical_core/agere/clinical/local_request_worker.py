@@ -8,7 +8,12 @@ and the literal-question check reads the compiled SQL; its verdict is the local 
 cascade recompiles and literal-checks again, then answer_checks runs after execution). If the adapter is missing, its
 output does not parse/compile, or the check finds a dropped phrase, the worker falls back to the long-prompt local
 interpreter (shared_planner.interpret with the base model) unless AGERE_LOCAL_TYPED_FALLBACK=off.
+
+The process is long-lived (`--serve`, JSON lines on stdin/stdout, see shared_planner.PersistentWorker): models load once and
+stay resident, MLX buffers go back after every generation, and a prompt whose attention cache would exceed the 4 GB budget is
+declined with a reason (never shortened). Still disposable: the server kills it on timeout and starts a fresh one.
 """
+import gc
 import json
 import os
 import re
@@ -87,26 +92,91 @@ def interpret_short(catalog, question, population, generate, adapter=None):
                       'execution_accepted': False, 'worker': VERSION}
 
 
-def mlx_generate(adapter):
+class LocalDeclined(ValueError):
+    """The local model will not run this prompt (memory budget); the reason is the message."""
+
+
+def _release():
+    """Hand freed MLX buffers back so the next generation (or the server's own models) can use the memory."""
+    try:
+        import mlx.core as mx
+    except ImportError:
+        return
+    mx.clear_cache()
+
+
+def fit_check(n_tokens, max_tokens, kv_per_token, budget_gb=None):
+    """Decline (never shorten) when one decode's attention cache over prompt + output would exceed the shared-memory budget."""
+    from .bottled import KV_BUDGET_GB
+    budget = (budget_gb or KV_BUDGET_GB) * 2**30
+    if kv_per_token and (n_tokens + max_tokens) * kv_per_token > budget:
+        raise LocalDeclined(f'local model declined: a {n_tokens}-token prompt exceeds the {budget / 2**30:g} GB attention-cache budget')
+
+
+_RESIDENT = {}
+
+
+def resident(key, build):
+    """Load once per process: build() runs only when key is not already resident; a new key evicts the old one (one model set in memory)."""
+    if key not in _RESIDENT:
+        _RESIDENT.clear(); gc.collect(); _release()
+        _RESIDENT[key] = build()
+    return _RESIDENT[key]
+
+
+def _build_typed(adapter):
     os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_HUB_DISABLE_TELEMETRY='1')
     from mlx_lm import load, generate
     from mlx_lm.sample_utils import make_sampler
+    import mlx.core as mx
+    from .bottled import MLX_CACHE_GB, kv_bytes_per_token
+    mx.set_cache_limit(int(MLX_CACHE_GB * 2**30))
     model, tok = load(str(_base()), adapter_path=str(adapter))
+    kv = kv_bytes_per_token(_base())
 
     from .constrained_decoding import JsonGrammar, processors
 
     def run(messages):
         prompt = tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False, enable_thinking=False)
-        # grammar-constrained: the typed request is one JSON object (constrained_decoding); decode() still parses it
-        return generate(model, tok, prompt=prompt, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False,
-                        logits_processors=processors(tok, JsonGrammar(root='object')))
+        fit_check(len(tok.encode(prompt, add_special_tokens=False)), 700, kv)
+        try:
+            # grammar-constrained: the typed request is one JSON object (constrained_decoding); decode() still parses it
+            return generate(model, tok, prompt=prompt, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False,
+                            logits_processors=processors(tok, JsonGrammar(root='object')))
+        finally:
+            _release()
     return run
+
+
+def mlx_generate(adapter):
+    return resident(('typed', str(adapter)), lambda: _build_typed(adapter))
+
+
+class _Guarded:
+    """The long-prompt base model with the same memory discipline: budget check before, buffers returned after."""
+    def __init__(self, model):
+        self._m = model
+
+    def __getattr__(self, name):
+        return getattr(self._m, name)
+
+    def __call__(self, system, user, max_tokens=400, **kw):
+        from .bottled import kv_bytes_per_token
+        from .nl2sql import MODEL_DIR
+        tok = self._m.tokenizer
+        prompt = tok.apply_chat_template([{'role': 'system', 'content': system}, {'role': 'user', 'content': user}],
+                                         tokenize=False, add_generation_prompt=True, enable_thinking=False)
+        fit_check(len(tok.encode(prompt, add_special_tokens=False)), max_tokens, kv_bytes_per_token(MODEL_DIR))
+        try:
+            return self._m(system, user, max_tokens=max_tokens, **kw)
+        finally:
+            _release()
 
 
 def long_prompt(catalog, question, population):
     from .shared_planner import interpret
     from .nl2sql import LocalModel
-    return interpret(catalog, question, population=population, model=LocalModel.get(), force_model=True)
+    return interpret(catalog, question, population=population, model=_Guarded(LocalModel.get()), force_model=True)
 
 
 def handle(item, *, generate_factory=mlx_generate, fallback=long_prompt):
@@ -128,7 +198,34 @@ def handle(item, *, generate_factory=mlx_generate, fallback=long_prompt):
     return contract, interpretation
 
 
+def serve(stdin, stdout, handler=None):
+    """One JSON request per line in, one JSON reply per line out: {'ok': [contract, interpretation]} | {'declined': reason} |
+    {'error': text}. AGERE_* settings travel with each request so the server's switches stay live in a long-lived worker."""
+    handler = handler or handle
+    for line in stdin:
+        if not line.strip(): continue
+        try:
+            item = json.loads(line)
+            env = item.pop('env', None)
+            if env is not None:
+                for k in [k for k in os.environ if k.startswith('AGERE_') and k not in env]: del os.environ[k]
+                os.environ.update(env)
+            reply = {'ok': handler(item)}
+        except LocalDeclined as exc:
+            reply = {'declined': str(exc)}
+        except Exception as exc:  # noqa: BLE001 - the server reports the failure; the worker stays up
+            reply = {'error': f'{type(exc).__name__}: {exc}'[:500]}
+        finally:
+            _release()
+        stdout.write(json.dumps(reply, default=str) + '\n'); stdout.flush()
+
+
 def main():
+    if '--serve' in sys.argv[1:]:
+        out = os.fdopen(os.dup(1), 'w')  # replies own the real stdout; library prints go to stderr
+        os.dup2(2, 1); sys.stdout = sys.stderr
+        print(json.dumps({'ready': VERSION}), file=out, flush=True)
+        return serve(sys.stdin, out)
     item = json.load(sys.stdin)
     print(json.dumps(handle(item), default=str))
 
