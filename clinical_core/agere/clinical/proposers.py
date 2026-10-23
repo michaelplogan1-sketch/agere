@@ -79,8 +79,8 @@ STAGES = (
     ('reuse_certified', ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
                          'specialist_families_early', 'cohort_family_early', 'scoped_review_compiler', 'undelivered_input')),
     ('system_one_choice', ('s1_metric_router', 's1_operator_router', 'typed_decider', 'terminology_mapping', 'hcc_suspecting')),
-    ('free_planners', ('local_compiler', 'qwen_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql',
-                       'local_free_sql', 'specialist_families_late', 'cohort_family_late')),
+    ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late', 'qwen_typed_interpreter', 'local_normalizer',
+                       'qwen_rewrite_compiler', 'bottled_sql', 'local_free_sql')),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
     ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'semantic_analyst',
                 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')),
@@ -108,6 +108,9 @@ PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'fro
 # each tier may use only a share of the answer budget (a tier that runs out yields like a decline; the cascade continues).
 HEAVY = ('atomic_system_one', 'evidence_retrieval', 'evidence_review', 'qwen_rewrite_compiler', 'qwen_typed_interpreter', 'bottled_sql')
 TIER_SHARE = {'heavy': 0.25, 'other': 0.5}
+# Local-model tiers and atomic System One: they run only after the cheap tiers (stages A-B, local_compiler, the free families, evidence readers)
+# found nothing, in order of the learned router's value estimate for the question (static order without one); never dropped.
+COSTLY = ('local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'atomic_system_one')
 # Tiers that run a local MLX model (in process or in the typed-worker subprocess). Questions run concurrently (no service-wide
 # lock), but two local models on the GPU at once exhausted Metal memory and aborted the server: these tiers take turns.
 LOCAL_MODEL_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql',
@@ -143,6 +146,7 @@ def evidence_of(contract):
 
 
 class Cascade:
+    started, deferred, background, budget = None, (), None, None  # per-question state is set in __init__ / run (class defaults keep bare instances usable)
     def __init__(self, stack, catalog, question, *, population=None, ledger=None, hosted_model=None, memory_identity=None):
         self.stack, self.catalog, self.question, self.population = stack, catalog, question, population
         self.hosted_model, self.memory_identity = hosted_model, memory_identity
@@ -155,6 +159,10 @@ class Cascade:
         self.candidates = []  # executed proposals a check rejected: the System One fallback chooses among them on an outage
         self.routing = None
         self.learned_routing = None
+        self.measured = {}  # tier -> seconds measured this question (stored as the tier's running median when the question ends)
+        self.deferred = []  # tiers not run because the answer budget was short: [{'tier', 'expected_seconds', 'reason'}]
+        self.background = None
+        self.started = time.perf_counter()
 
     # -- shared resources -------------------------------------------------------------------------------------------
     @property
@@ -231,7 +239,31 @@ class Cascade:
             order, self.tier_routing = reorder(self.stack, self.question, order)
         except Exception:  # noqa: BLE001 - no promoted model / encoder: keep the order
             pass
-        return self.free_first(staged(order))
+        return self.heavy_last(self.free_first(staged(order)))
+
+    def heavy_last(self, order):
+        """A permutation: the costly tiers (COSTLY) run only after the cheap ones (stages A-B and local_compiler), and among themselves
+        by the learned router's predicted success for this question within their stage (static order without a prediction)."""
+        order = list(order)
+        costly = [t for t in order if t in COSTLY]
+        if not costly: return tuple(order)
+        anchors = [i for i, t in enumerate(order) if t not in COSTLY and (t == 'local_compiler' or stage_of(t) <= 1)]
+        if anchors:
+            after = max(anchors)
+            early = [t for i, t in enumerate(order) if t in COSTLY and i < after]  # a route asked for a local model first: it waits
+            if early:
+                order = [t for t in order if t not in early]
+                at = max(i for i, t in enumerate(order) if t == 'local_compiler' or (t not in COSTLY and stage_of(t) <= 1)) + 1
+                order[at:at] = early
+        learned = self.learned_routing or {}
+        predicted, movable = learned.get('predicted') or {}, set(learned.get('movable') or ())  # base rates alone never reorder the cascade
+        by_stage = {}
+        for i, t in enumerate(order):
+            if t in COSTLY and t in movable: by_stage.setdefault(stage_of(t), []).append(i)
+        for slots in by_stage.values():
+            members = sorted((order[i] for i in slots), key=lambda t: (-predicted.get(t, 0.0), order.index(t)))
+            for i, t in zip(slots, members): order[i] = t
+        return tuple(order)
 
     def free_first(self, order):
         """local_compiler (free; arbitrated engine route) ahead of the heavy tiers when its plan already passes the literal check.
@@ -252,9 +284,17 @@ class Cascade:
         return tuple(rest[:i] + ['local_compiler'] + rest[i:])
 
     def tier_seconds(self, name, budget):
-        """This tier's share of the answer budget in seconds, or None when the budget is unlimited."""
+        """This tier's time in seconds: its share cap (a fraction of max(budget, 120 s)) bounded by what the budget has left;
+        None when the budget is unlimited."""
         if budget.seconds == float('inf'): return None
-        return budget.seconds * TIER_SHARE['heavy' if name in HEAVY or name in PAID else 'other']
+        from .answer_budget import SHARE_BASE_SECONDS
+        cap = max(budget.seconds, SHARE_BASE_SECONDS) * TIER_SHARE['heavy' if name in HEAVY or name in PAID else 'other']
+        return max(0.5, min(cap, budget.remaining()))
+
+    def expected(self, name):
+        """Seconds this tier is expected to take on this stack (running median of its measured seconds; static defaults to start)."""
+        from .tier_timing import estimate
+        return estimate(getattr(self.stack, 'path', None), name)
 
     def call_tier(self, name, limit):
         """Run one tier on the cascade's own thread with a deadline (no concurrent tiers: in-process models and stack writes stay
@@ -264,11 +304,18 @@ class Cascade:
         try:
             if name in LOCAL_MODEL_TIERS:
                 with LOCAL_MODEL_LOCK:  # one local model on the GPU at a time across concurrent questions
-                    return self._call_tier(fn, name, limit)
-            return self._call_tier(fn, name, limit)
+                    return self._timed(fn, name, limit)
+            return self._timed(fn, name, limit)
         finally:
             mx = sys.modules.get('mlx.core')
             if mx is not None: mx.clear_cache()  # freed GPU buffers go back to the system before the next tier loads a model
+
+    def _timed(self, fn, name, limit):
+        t0 = time.perf_counter()  # measured after any local-model lock wait: the tier's own seconds feed its running median
+        try:
+            return self._call_tier(fn, name, limit)
+        finally:
+            self.measured.setdefault(name, []).append(time.perf_counter() - t0)
 
     def _call_tier(self, fn, name, limit):
         if limit is None: return fn()
@@ -283,68 +330,143 @@ class Cascade:
             raise QuestionNotUnderstood(f'time share exhausted: {name} used its {limit:.0f}s of the answer budget without a proposal')
         return found
 
+    def runnable(self, name):
+        """Would this tier be asked at all (saved cohort, switches, live-only paid tiers)? Only those can be deferred."""
+        return not (self.population is not None and name not in TYPED_WITH_POPULATION) and enabled(name, self.stack)
+
+    def attempt(self, name, limit):
+        """Ask one tier (time-limited), log what it did and absorb its failure. -> the proposal (contract, interpretation) or None."""
+        started = time.perf_counter()
+        if self.claude_down and name in CLAUDE_TIERS:  # one outage per question: no repeated failing Claude calls
+            self.note(name, 'skipped', f'Claude unavailable ({self.claude_down}) earlier in this question', started); return None
+        try:
+            found = self.call_tier(name, limit)
+        except QuestionNotUnderstood as exc:
+            self.note(name, 'declined', str(exc), started)
+            cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
+            if name in CLAUDE_TIERS and cause is not None and outage(cause): self.claude_down = self.claude_down or outage(cause)
+            return None
+        except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
+            self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
+            from ..fault_containment import on_tier_error  # a malformed state store is quarantined and recreated, not hit again
+            healed = on_tier_error(getattr(self.stack, 'path', '.'), exc)
+            if healed: self.log[-1]['healed_stores'] = healed
+            if name in PAID and (outage(exc) or (isinstance(exc, RuntimeError) and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)))):
+                self.provider_error = self.provider_error or exc
+                if name in CLAUDE_TIERS: self.claude_down = self.claude_down or outage(exc)  # only a real provider outage (billing, rate, overload)
+            return None
+        if found is None:
+            self.note(name, 'no proposal', None, started); return None
+        if found == 'held':
+            self.note(name, 'decline held', None, started); return None
+        self.note(name, 'accepted', None, started)
+        return found
+
+    def accept(self, order, name, found):
+        """A proposal passed every check: an independent proposer verifies it unless certified / confirmed by System One."""
+        contract, interpretation = claim_verification.verify(self, order, name, found)
+        name = interpretation.get('verified_proposer') or name
+        interpretation = {**interpretation, 'requirement_ledger': requirement_ledger.summary(
+            requirement_ledger.check(self.question, self.evidence(contract)))}
+        return contract, self.finish(interpretation, name)
+
+    def defer(self, name, reason, expected=None):
+        """Not run for lack of budget. Never dropped: listed in the receipt and continued in the background."""
+        entry = {'tier': name, 'expected_seconds': round(self.expected(name) if expected is None else expected, 2), 'reason': reason}
+        self.deferred.append(entry)
+        if getattr(self, 'budget', None) is not None: self.budget.skip(name)
+        self.note(name, 'skipped', f"skipped: budget ({reason}; expected ~{entry['expected_seconds']:g}s)", time.perf_counter())
+        return entry
+
+    def timing(self):
+        """Receipt: total seconds, per-tier seconds, tiers skipped for budget, deferred tiers, background continuation."""
+        spent = {}
+        for e in self.log:
+            if e.get('seconds') is not None and e['outcome'] != 'skipped': spent[e['proposer']] = round(spent.get(e['proposer'], 0.0) + e['seconds'], 3)
+        budget = getattr(self, 'budget', None)
+        return {'schema': 'answer-timing/1', 'total_seconds': round(time.perf_counter() - self.started, 3) if self.started else 0.0,
+                'budget_seconds': None if budget is None or budget.seconds == float('inf') else budget.seconds,
+                'tier_seconds': spent, 'skipped_for_budget': [d['tier'] for d in self.deferred], 'deferred_tiers': list(self.deferred),
+                'background_continuation': self.background}
+
+    def flush_timings(self):
+        """Store this question's measured tier seconds in the stack's running medians (bookkeeping; never raises)."""
+        try:
+            from .tier_timing import record
+            record(getattr(self.stack, 'path', None), self.measured)
+        except Exception:  # noqa: BLE001
+            pass
+        self.measured = {}
+
     def run(self):
         from .answer_budget import start as start_budget
         budget = self.budget = start_budget()
         try:
-            order = self.order()
-            for name in order:
-                if budget.expired() and budget.best():  # out of time with an executed candidate in hand; never skip to a refusal
-                    budget.skip(name); continue
-                if self.population is not None and name not in TYPED_WITH_POPULATION: continue
-                if not enabled(name, self.stack): continue
-                started = time.perf_counter()
-                if self.claude_down and name in CLAUDE_TIERS:  # one outage per question: no repeated failing Claude calls
-                    self.note(name, 'skipped', f'Claude unavailable ({self.claude_down}) earlier in this question', started); continue
-                try:
-                    found = self.call_tier(name, self.tier_seconds(name, budget))
-                except QuestionNotUnderstood as exc:
-                    self.note(name, 'declined', str(exc), started)
-                    cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
-                    if name in CLAUDE_TIERS and cause is not None and outage(cause): self.claude_down = self.claude_down or outage(cause)
-                    continue
-                except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
-                    self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
-                    from ..fault_containment import on_tier_error  # a malformed state store is quarantined and recreated, not hit again
-                    healed = on_tier_error(getattr(self.stack, 'path', '.'), exc)
-                    if healed: self.log[-1]['healed_stores'] = healed
-                    if name in PAID and (outage(exc) or (isinstance(exc, RuntimeError) and not isinstance(exc, (ValueError, KeyError, TypeError, AttributeError, sqlite3.Error)))):
-                        self.provider_error = self.provider_error or exc
-                        if name in CLAUDE_TIERS: self.claude_down = self.claude_down or outage(exc)  # only a real provider outage (billing, rate, overload)
-                    continue
-                if found is None:
-                    self.note(name, 'no proposal', None, started); continue
-                if found == 'held':
-                    self.note(name, 'decline held', None, started); continue
-                self.note(name, 'accepted', None, started)
-                contract, interpretation = claim_verification.verify(self, order, name, found)  # uncertified: an independent proposer checks it
-                name = interpretation.get('verified_proposer') or name
-                interpretation = {**interpretation, 'requirement_ledger': requirement_ledger.summary(
-                    requirement_ledger.check(self.question, self.evidence(contract)))}
-                return contract, self.finish(interpretation, name)
-            if budget.expired() and budget.best():
+            order = self.order_used = self.order()
+            for i, name in enumerate(order):
+                if not self.runnable(name): continue
+                if budget.expired():  # out of time: everything that would have run next is deferred, then the honest early reply
+                    for later in order[i:]:
+                        if self.runnable(later) and not (self.claude_down and later in CLAUDE_TIERS): self.defer(later, 'answer budget used up')
+                    break
+                est = self.expected(name)
+                if not budget.allows(est):
+                    self.defer(name, f'{budget.remaining():.0f}s left', est); continue
+                found = self.attempt(name, self.tier_seconds(name, budget))
+                if found is None: continue
+                return self.accept(order, name, found)
+            if budget.best() and (budget.expired() or self.deferred):
                 contract, interpretation = budget.best()  # time ran out: the best executed candidate, marked partial
+                self.queue_background()
                 return contract, budget.partial(self.finish(interpretation, interpretation['interpreter']))
             if self.held_decline:
                 contract, interpretation = self.held_decline
+                self.queue_background()
                 return contract, self.finish(interpretation, interpretation['interpreter'])
             if self.provider_error is not None:
+                self.queue_background()
                 found = self.system_one_fallback()  # Claude out: System One picks among the executed candidates (partial)
                 if found: return found
                 # A provider outage is reported as an outage (unverified), never as a question nobody could read.
-                self.provider_error.planner_receipt = {**self.usage(), 'proposers': self.log,
+                self.provider_error.planner_receipt = {**self.usage(), 'proposers': self.log, 'answer_timing': self.timing(),
                                                        'stage_diagnostics': stage_diagnostics.attribute(self.log, error=self.provider_error)}
                 raise self.provider_error
             reasons = [f"{e['proposer']}: {e['detail']}" for e in self.log if e['outcome'] == 'rejected']
             exc = QuestionNotUnderstood(
                 'The original question was preserved; no proposer produced a plan that keeps all of it, so nothing was '
                 'executed.' + (' Closest proposals and what they dropped: ' + ' | '.join(reasons[:4]) if reasons else ''))
+            self.queue_background()
             exc.planner_receipt = self.usage()
+            exc.planner_receipt['answer_timing'] = self.timing()
+            exc.planner_receipt['deferred_tiers'] = list(self.deferred)
             exc.planner_receipt['proposers'] = self.log
             exc.planner_receipt['stage_diagnostics'] = stage_diagnostics.attribute(self.log)  # which stage failed
             raise exc
         finally:
+            self.flush_timings()
             self.close()
+
+    def continue_run(self, tiers, seconds):
+        """Background continuation: ask the deferred tiers in order, each time-limited, within its own budget (no expected-cost gate:
+        nobody waits). -> the accepted (contract, interpretation) or None. Never queues another continuation."""
+        from .answer_budget import start as start_budget
+        budget = self.budget = start_budget(seconds)
+        for name in tiers:
+            if budget.expired(): break
+            if not self.runnable(name): continue
+            found = self.attempt(name, self.tier_seconds(name, budget))
+            if found is not None: return self.accept(getattr(self, 'order_used', None) or tuple(tiers), name, found)
+        return None
+
+    def queue_background(self):
+        """Hand the deferred tiers to the server's one background worker (AGERE_BACKGROUND_CONTINUE=off disables); records what happened."""
+        if not self.deferred or self.background is not None: return self.background
+        try:
+            from . import background_continuation
+            self.background = background_continuation.enqueue(self)
+        except Exception as exc:  # noqa: BLE001 - the early reply never waits on or fails because of the queue
+            self.background = {'queued': False, 'reason': f'{type(exc).__name__}: {exc}'[:200]}
+        return self.background
 
     def gaps(self, text):
         """Every requirement of the original question the executable text drops (requirement_ledger: literal check, comparator
@@ -431,7 +553,7 @@ class Cascade:
         return {**interpretation, 'interpreter': interpretation.get('interpreter') or name,
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},
-                'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing,
+                'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing, 'answer_timing': self.timing(),
                 'stage_diagnostics': stage_diagnostics.attribute(self.log, answered_by=name),
                 'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing,
                                     'tier_router': getattr(self, 'tier_routing', None),

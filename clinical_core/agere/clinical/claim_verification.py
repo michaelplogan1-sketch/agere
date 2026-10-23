@@ -9,6 +9,9 @@ executes, and reconciles:
               the first claim with the verifier's answer; 'split' / 'undecided' keeps the first claim with both readings
               attached, low confidence and a stability warning (heal, never block: an answer is always returned)
   no verifier nothing independent executed; the first claim stands and the receipt says what was tried
+Stop at confirmation (2026-10-23 latency): a certified answer, or one System One's cross-check confirmed with no 'answers_partially'
+vote, is not re-run through other tiers; the receipt says 'confirmed by System One'. Verifiers of an uncertified, unconfirmed answer
+start only while the answer budget still covers their expected seconds (otherwise noted skipped: budget).
 Never removes a tier and never stops the question: a verifier that errors or declines is just noted. Every paid call
 (System One judge, paid verifier tiers) is charged to the cascade. AGERE_VERIFY_CLAIMS=off restores first-claim-wins;
 AGERE_VERIFY_MAX (default 3) bounds the verifiers that actually propose (a free tier that proposes nothing does not count;
@@ -65,6 +68,13 @@ def needs_verification(name, contract):
     return cert != 'certified'
 
 
+def confirmed_by_system_one(contract):
+    """System One's cross-check (both families) confirmed the executed answer and neither family called it only partial."""
+    s1 = (((contract or {}).get('executed') or {}).get('answer_checks') or {}).get('system_one_cross_check') or {}
+    votes = s1.get('votes') or {}
+    return s1.get('verdict') == 'confirmed' and not any(isinstance(v, dict) and v.get('label') == 'answers_partially' for v in votes.values())
+
+
 def verifiers(order, first, *, tried=(), claude_down=False):
     """Independent proposers after `first`, cheapest class first (free, System One, then Claude), cascade order inside a class."""
     fam = FAMILY.get(first, first)
@@ -84,6 +94,9 @@ def verify(cascade, order, name, found):
     from . import answer_stability as S
     contract, interpretation = found
     if not needs_verification(name, contract): return found
+    if confirmed_by_system_one(contract):  # confirmed: no heavy re-run for a second opinion
+        return contract, {**interpretation, 'claim_verification': {'version': VERSION, 'first_claim': name, 'tried': [], 'status': 'confirmed',
+                                                                    'verification': 'confirmed by System One', 'seconds': 0.0}}
     started = time.perf_counter()
     first_family = FAMILY.get(name, name)
     receipt = {'version': VERSION, 'first_claim': name, 'tried': [], 'status': 'no_verifier'}
@@ -94,6 +107,10 @@ def verify(cascade, order, name, found):
         if cascade.claude_down and cost_class(v) == 'claude': continue
         budget = getattr(cascade, 'budget', None)
         if budget is not None and budget.expired(): receipt['stopped'] = 'answer time budget'; break
+        expected = cascade.expected(v) if hasattr(cascade, 'expected') else 0.0
+        if budget is not None and not budget.allows(expected):  # a second opinion only within what the budget has left
+            receipt.setdefault('skipped_for_budget', []).append({'tier': v, 'expected_seconds': round(expected, 2)})
+            cascade.note(v, 'skipped', f'skipped: budget (verification; expected ~{expected:g}s, {budget.remaining():.0f}s left)', time.perf_counter()); continue
         from .proposers import enabled as tier_on
         if cascade.population is not None:
             from .proposers import TYPED_WITH_POPULATION

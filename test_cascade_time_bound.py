@@ -33,7 +33,7 @@ class FreeFirst(unittest.TestCase):
         self.assertEqual(sorted(moved), sorted(order))  # a permutation: no tier dropped
         heavy = [moved.index(t) for t in P.HEAVY]
         self.assertLess(moved.index('local_compiler'), min(heavy))
-        self.assertEqual(moved.index('local_compiler') + 1, min(heavy))
+        self.assertEqual({'specialist_families_late', 'cohort_family_late'}, set(moved[moved.index('local_compiler') + 1:min(heavy)]))  # only the cheap free families sit between
         self.assertLess(moved.index('exact_local_plan'), moved.index('local_compiler'))  # cheaper free tiers still go first
         self.assertLess(moved.index('local_compiler'), moved.index('hosted_typed_interpreter'))  # System One / Claude order unchanged
 
@@ -58,8 +58,9 @@ class TimeShare(unittest.TestCase):
                 return None
             return tier
         deadline = time.monotonic() + 20
-        with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': budget, 'AGERE_S1_ROUTER': 'off', 'AGERE_LOCAL_TYPED': 'off'}), \
-                patch.multiple(P.Cascade, **{'tier_' + n: stub(n) for n in P.ORDER}):
+        with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': budget, 'AGERE_S1_ROUTER': 'off', 'AGERE_LOCAL_TYPED': 'off', 'AGERE_BACKGROUND_CONTINUE': 'off'}), \
+                patch.dict(P.TIER_SHARE, {'heavy': 0.01}), patch.object(P.Cascade, 'expected', lambda self, name: 0.0), \
+                patch.multiple(P.Cascade, **{'tier_' + n: stub(n) for n in P.ORDER}):  # tiny heavy share (1.2 s), no expected-cost gate
             c = cascade(live=True)
             started = time.perf_counter()
             with self.assertRaises(QuestionNotUnderstood):
@@ -68,7 +69,7 @@ class TimeShare(unittest.TestCase):
 
     def test_a_slow_tier_yields_like_a_decline_and_the_cascade_continues(self):
         c, reached, took = self.run_cascade('atomic_system_one')
-        share = 3 * P.TIER_SHARE['heavy']
+        share = 120 * 0.01
         self.assertLess(took, share + 3)  # nowhere near the 20 s the fake tier would take
         entry = next(e for e in c.log if e['proposer'] == 'atomic_system_one')
         self.assertEqual(entry['outcome'], 'declined')

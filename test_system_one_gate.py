@@ -20,7 +20,7 @@ S1_SWITCHES = ('AGERE_S1_CHECK', 'AGERE_S1_ROUTER', 'AGERE_S1_FALLBACK', 'AGERE_
 
 def clean_env(**extra):
     env = {k: v for k, v in os.environ.items() if k not in S1_SWITCHES}
-    return patch.dict(os.environ, {**env, **extra}, clear=True)
+    return patch.dict(os.environ, {**env, 'AGERE_ANSWER_BUDGET_SECONDS': 'off', 'AGERE_BACKGROUND_CONTINUE': 'off', **extra}, clear=True)  # every tier attempted
 
 
 class FakeS1:

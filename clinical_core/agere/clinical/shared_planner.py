@@ -861,6 +861,48 @@ def reuse_paraphrase(stack, catalog, question, population, memory_identity):
     return contract, interpretation
 
 
+def request_keys(stack, catalog, question, population, planning, memory_identity, hosted_model, code):
+    """-> (key, stable_key) of the saved-request cache. The stable key is the same request under any code identity: a verified
+    interpretation keeps its meaning across releases; it is recompiled and re-executed under the current code on replay."""
+    key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
+                                    'tables': catalog.tables, 'stream_fields': catalog.stream_fields, 'code': code,
+                                    'interpretation_policy':'deterministic-first-hosted-last/1',
+                                    'allow_live': bool(getattr(stack, 'allow_live', False)),
+                                    'hosted_model': hosted_model,
+                                    'planning': planning, 'procedural_memory': memory_identity})
+    stable_key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
+                                           'tables': catalog.tables, 'stream_fields': catalog.stream_fields,
+                                           'planning': planning, 'procedural_memory': memory_identity})
+    return key, stable_key
+
+
+def store_request(cache_path, key, stable_key, question, contract, interpretation):
+    """Save an accepted typed contract for exact replay and paraphrase reuse (replays and checked graphs are never saved here)."""
+    if not (interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer')
+            and contract.get('kind') != 'checked_graph' and (contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation))):
+        return False
+    with sqlite3.connect(cache_path) as db:
+        db.execute('CREATE TABLE IF NOT EXISTS shared_requests(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
+        saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
+                      {'analysis': contract['analysis']} if contract.get('kind') == 'general_analysis'
+                      else {'request': contract['request']})
+        db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
+                   (key, json.dumps({'question': question, 'stable_key': stable_key, **saved_plan, 'interpretation': interpretation}, default=str)))
+    return True
+
+
+def save_accepted(stack, question, contract, interpretation, *, population=None, planning='auto', memory_identity=None):
+    """store_request for a contract accepted outside plan() (a background continuation after the answer deadline), under the keys
+    plan() would compute, so the next identical question replays it and the next rewording reuses it."""
+    catalog = request_plan.Catalog.load(stack.path)
+    from . import procedural_memory as memory
+    if memory_identity is None:
+        memory_identity = request_plan.fingerprint([r['id'] for r in memory.select(stack.path, question, catalog=catalog, probe=True, population=population)])
+    hosted_model = os.environ.get('AGERE_SHARED_INTERPRETER_MODEL') or 'tiered'
+    key, stable_key = request_keys(stack, catalog, question, population, planning, memory_identity, hosted_model, policy_identity())
+    return store_request(Path(stack.path)/'question-plans.sqlite3', key, stable_key, question, contract, interpretation)
+
+
 def plan(stack, question, ledger=None, frontier=None, *, population=None, model=None, planning='auto'):
     validate_question(question)
     if planning not in ('auto', 'frontier'):
@@ -872,17 +914,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     from . import procedural_memory as memory
     request_lessons = memory.select(stack.path, question, catalog=catalog, probe=True, population=population)
     memory_identity = request_plan.fingerprint([r['id'] for r in request_lessons])
-    key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
-                                    'tables': catalog.tables, 'stream_fields': catalog.stream_fields, 'code': code,
-                                    'interpretation_policy':'deterministic-first-hosted-last/1',
-                                    'allow_live': bool(getattr(stack, 'allow_live', False)),
-                                    'hosted_model': hosted_model,
-                                    'planning': planning, 'procedural_memory': memory_identity})
-    # The same request under any code identity. A verified interpretation keeps its meaning across releases; it is
-    # recompiled and re-executed under the current code below, so changed definitions apply to the replay.
-    stable_key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
-                                           'tables': catalog.tables, 'stream_fields': catalog.stream_fields,
-                                           'planning': planning, 'procedural_memory': memory_identity})
+    key, stable_key = request_keys(stack, catalog, question, population, planning, memory_identity, hosted_model, code)
     cache_path = Path(stack.path)/'question-plans.sqlite3'
     carried = None
     with sqlite3.connect(cache_path) as db:
@@ -982,15 +1014,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                     failed.args = (str(declined) + ' ' + str(failed),)
                     raise failed from declined
                 interpretation['deterministic_decline'] = str(declined)
-    if not hit and model is None and interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer') and contract.get('kind') != 'checked_graph' and (
-            contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation)):
-        with sqlite3.connect(cache_path) as db:
-            saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
-                          {'analysis': contract['analysis']} if contract.get('kind') == 'general_analysis'
-                          else {'request': contract['request']})
-            db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
-                       (key, json.dumps({'question': question, 'stable_key': stable_key, **saved_plan,
-                                         'interpretation': interpretation}, default=str)))
+    if not hit and model is None: store_request(cache_path, key, stable_key, question, contract, interpretation)
     if interpretation.get('exact_contract_cache_hit') and interpretation.get('procedural_memory'):
         interpretation = copy.deepcopy(interpretation)
         interpretation['procedural_memory']['use_id'] = memory.begin_use(

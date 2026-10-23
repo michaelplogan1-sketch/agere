@@ -15,7 +15,7 @@ class Clock:
 
 class Budget(unittest.TestCase):
     def test_default_and_env(self):
-        for raw, want in (('', 120.0), ('45', 45.0), ('off', math.inf), ('0', math.inf), ('junk', 120.0), ('-3', 120.0), ('nan', 120.0)):
+        for raw, want in (('', 30.0), ('45', 45.0), ('off', math.inf), ('0', math.inf), ('junk', 30.0), ('-3', 30.0), ('nan', 30.0)):
             with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': raw}):
                 self.assertEqual(AB.default_seconds(), want, raw)
 
