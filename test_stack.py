@@ -30,7 +30,7 @@ class StackTests(unittest.TestCase):
             partition_ids({"worlds": [{"name": "test", "role": "evaluation"}]}, "test", "train")
 
     def test_world_adapter_ignores_truth_and_rejects_orphans(self):
-        sample = json.loads((Path(__file__).resolve().parent.parent / "caresignal-mvp/public/demo/patients_sample.json").read_text())[0]
+        sample = json.loads((Path(__file__).resolve().parent / "tests/fixtures/world_patient_sample.json").read_text())  # one synthetic patient: roster and feeds only
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
             (root / "feeds").mkdir()
