@@ -57,7 +57,7 @@ SYNONYMS = {
     r'allerg|intoleran': [r'allerg', r'intoleran', r'\bhives\b', r'angioedema', r'anaphyla', r'rash\b'],
     r'side effect|adverse': [r'side effect', r'adverse', r'intoleran', r'\bcough\b', r'myalgia', r'hyperkal'],
     r'discharge|disposition': [r'discharg', r'disposition', r'\bhome\b today', r'transferred to', r'skilled nursing'],
-    r'chest x-?ray|cxr': [r'chest x-?ray', r'\bcxr\b', r'chest radiograph', r'chest film'],
+    r'chest x-?ray|cxr': [r'chest x-?ray', r'\bcxr\b', r'chest radiograph', r'chest film', r'\bx-?ray\b', r'\bradiograph\w*', r'exam:\s*x-?ray'],
     r'stress test': [r'stress test', r'treadmill', r'stress echo', r'inducible ischemia'],
     r'follow[- ]?up': [r'follow[- ]?up', r'return (?:in|for|to)', r'recheck', r'see (?:the )?patient'],
     r'declin|refus': [r'declin', r'refus', r'does not want', r'not interested', r'would not'],
@@ -193,22 +193,26 @@ def _texts(db, patient_id, sources, as_of):
         for r in rows:
             if r['t']:
                 src = 'clinical_note' if r['stream'] in NOTE_STREAMS else 'hie_document' if r['stream'] in HIE_STREAMS else 'other_text'
-                out.append((r['record_id'], src, r['stream'], r['nt'] or r['stream'], r['event_date'], r['t']))
+                out.append((r['record_id'], src, r['stream'], r['nt'] or r['stream'], r['event_date'], r['t'], ''))
     if 'scanned_document_text' in want:
-        for r in db.execute('select t.record_id, t.text, d.document_type, d.event_date, t.text_source from scanned_document_text t '
+        cols = {c[1] for c in db.execute('pragma table_info(scanned_document)')}
+        title = 'd.document_title' if 'document_title' in cols else "''"
+        for r in db.execute(f'select t.record_id, t.text, d.document_type, d.event_date, t.text_source, {title} title from scanned_document_text t '
                             'left join scanned_document d on d.record_id=t.record_id where t.patient_id=? and '
                             'coalesce(d.event_date, ?)<=?', (patient_id, as_of, as_of)):
             if r['text']:
                 out.append((r['record_id'], 'scanned_document_text', r['text_source'] or 'scanned_document',
-                            r['document_type'] or 'scanned_document', r['event_date'], r['text']))
+                            r['document_type'] or 'scanned_document', r['event_date'], r['text'], r['title'] or ''))
     return out
 
 
 def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_of, max_passages=MAX_PASSAGES, per_record=PER_RECORD,
-             patterns=None):
+             patterns=None, note_types=None, prefer_records=None):
     """Candidate passages for one patient and concept, ranked and bounded. Each: {passage_id, record_id, source, stream,
     note_type, date, start, end, text, terms, duplicates}. `window` {'start','end'} filters on the note's event date
-    (a note dated in the window is where the statement was made; the reading's `historical` status handles the rest)."""
+    (a note dated in the window is where the statement was made; the reading's `historical` status handles the rest).
+    `note_types` (names from note_open.NOTE_TYPES) keeps only records whose note type, stream or document title matches one of them
+    (a cue such as "the discharge summary" or "the ED note"); `prefer_records` ranks passages of those records first."""
     db = stack_or_db if isinstance(stack_or_db, sqlite3.Connection) else connect(stack_or_db)
     pats = patterns or concept_patterns(concept)
     if not pats:
@@ -216,10 +220,17 @@ def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_
     window = window or {}
     lo, hi = window.get('start') or '', min(window.get('end') or as_of, as_of)
     cands, seen = [], {}
-    for record_id, source, stream, note_type, day, text in sorted(_texts(db, patient_id, sources or
+    type_rx = None
+    if note_types:
+        from . import note_open
+        type_rx = note_open.type_regex(note_types)
+    prefer = set(prefer_records or [])
+    for record_id, source, stream, note_type, day, text, title in sorted(_texts(db, patient_id, sources or
                                                                  ['clinical_note', 'scanned_document_text', 'hie_document', 'other_text'],
                                                                  as_of[:10]), key=lambda x: (x[4] or '', x[0])):
         if not day or day < lo or day > hi:
+            continue
+        if type_rx is not None and not type_rx.search(f'{note_type} {stream} {title}'):
             continue
         for ps in passages_in(text, pats):
             key = (re.sub(r'\W+', ' ', ps['text'].lower()).strip(), day)
@@ -230,7 +241,7 @@ def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_
                  'start': ps['start'], 'end': ps['end'], 'text': ps['text'], 'terms': ps['terms'], 'duplicates': []}
             seen[key] = c
             cands.append(c)
-    cands.sort(key=lambda c: (-c['terms'], c['date'] is None, _neg_date(c['date']), c['record_id'], c['start']))
+    cands.sort(key=lambda c: (c['record_id'] not in prefer, -c['terms'], c['date'] is None, _neg_date(c['date']), c['record_id'], c['start']))
     out, per = [], {}
     for c in cands:
         if per.get(c['record_id'], 0) >= per_record:

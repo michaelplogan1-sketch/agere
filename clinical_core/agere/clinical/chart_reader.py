@@ -356,7 +356,7 @@ def finish(core, pid, subject, it, as_of, question, receipt, death, note_preds, 
         headline = f"{headline} [{pid} is deceased (death date {death['death_date']}); a named patient is answered even though the living-patient default would exclude them]"
     intent_clean = _clean_intent(it)
     if note_preds:
-        intent_clean = {**(intent_clean or {}), 'note': [{k: v for k, v in p.items() if k != '_anchor'} for p in note_preds],
+        intent_clean = {**(intent_clean or {}), 'note': [{k: v for k, v in p.items() if k not in ('_anchor', '_response')} for p in note_preds],
                         'yes_no': core.get('facts', {}).get('lead') is not None}
     subj = PI.make_subject(pid, subject.get('quote'), intent_clean)
     status = 'answered'
@@ -426,6 +426,22 @@ def typed_chart(it, preds=None):
         out['limit'] = 1 + (int(it['ordinal']) if isinstance(it.get('ordinal'), int) else 0)
     if preds:
         out['note_predicates'] = plain(preds)
+        # what the wording restricted the reading to, stated at the top level so the literal check sees it without digging
+        srcs = list(dict.fromkeys(s for p in preds for s in p.get('sources') or []))
+        types = list(dict.fromkeys(t for p in preds for t in p.get('note_types') or []))
+        days = list(dict.fromkeys(f"{p['window']['start']}" if p['window']['start'] == p['window']['end'] else f"{p['window']['start']}..{p['window']['end']}"
+                                  for p in preds if p.get('window')))
+        opens = list(dict.fromkeys(f"{p['frame']}:{p['concept']['class']}" for p in preds if p['concept'].get('open')))
+        if srcs:
+            out['note_sources'] = srcs
+        if types:
+            out['note_types'] = types
+        if days:
+            out['note_dates'] = days
+        if opens:
+            out['open_concepts'] = opens
+        if any(p.get('_response') for p in preds):
+            out['asks_response'] = True
     return {k: v for k, v in out.items() if v not in (None, {}, [])}
 
 
