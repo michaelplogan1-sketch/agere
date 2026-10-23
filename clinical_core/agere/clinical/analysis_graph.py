@@ -1269,6 +1269,11 @@ def code_identity():
                       Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'), Path(__file__).with_name('clinical_tasks.py'),
                       Path(__file__).with_name('atomic_questions.py'), Path(__file__).with_name('hcc_suspecting.py'), *_foundation_files(),
                       Path(__file__).with_name('decision_context.py'), Path(__file__).with_name('sql_query.py'),
+                      # the chart reader and note frames compute inside their engine: their code and calibration key the cache too
+                      *[Path(__file__).with_name(f'{m}.py') for m in ('chart_reader', 'chart_intents', 'chart_queries', 'chart_summary',
+                                                                     'chart_notes', 'patient_ids', 'note_frames', 'note_questions',
+                                                                     'note_evidence', 'note_open') if Path(__file__).with_name(f'{m}.py').exists()],
+                      *[p for p in [Path(__file__).parents[3] / 'config' / 'agere' / 'note_frames_calibration.json'] if p.exists()],
                       *[p for p in _suite_paths() if p.exists()],
                       Path(__file__).with_name('market.py'),
                       Path(__file__).with_name('contract_strategy.py'), Path(__file__).with_name('programs.py'), Path(__file__).with_name('vbc.py'),
