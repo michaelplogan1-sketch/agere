@@ -1,0 +1,86 @@
+{"id": "cov-survival", "family": "coverage", "question": "How likely is a high-cost claimant this year to remain high-cost next year?", "expect_operation": "survival"}
+{"id": "cov-uplift", "family": "coverage", "question": "Who benefits most from care management outreach?", "expect_operation": "uplift"}
+{"id": "cov-queueing", "family": "coverage", "question": "How many ED nurses do we need each hour to keep waits under 30 minutes?", "expect_operation": "queueing"}
+{"id": "cov-briefing", "family": "coverage", "question": "What should I look at today?", "expect_operation": "briefing"}
+{"id": "cov-pathway", "family": "coverage", "question": "After an ED visit, what share of patients go home, to observation, to inpatient, or transfer out?", "expect_operation": "pathway"}
+{"id": "cov-program_effect", "family": "coverage", "question": "Did our complex case management program reduce inpatient admissions among enrolled members?", "expect_operation": "program_effect"}
+{"id": "cov-outreach", "family": "coverage", "question": "Which self-pay accounts should our financial counselors call first this week to screen for financial assistance?", "expect_operation": "outreach"}
+{"id": "cov-early_signal", "family": "coverage", "question": "Which patients look like they're heading toward a heart failure admission?", "expect_operation": "early_signal"}
+{"id": "cov-profile", "family": "coverage", "question": "Which specialists deliver lower episode cost after adjusting for patient mix?", "expect_operation": "profile"}
+{"id": "cov-scheduling", "family": "coverage", "question": "Which appointments next week are most likely to be no-shows, and how many extra slots can each clinic safely book?", "expect_operation": "scheduling"}
+{"id": "cov-calibration", "family": "coverage", "question": "How well calibrated are our risk scores?", "expect_operation": "calibration"}
+{"id": "cov-monitor", "family": "coverage", "question": "Did the denial rate for any payer jump out of its normal range in the last month?", "expect_operation": "monitor"}
+{"id": "cov-claims_review", "family": "coverage", "question": "Which providers bill unusually compared to peers?", "expect_operation": "claims_review"}
+{"id": "cov-network", "family": "coverage", "question": "Which specialists and hospitals do our patients actually use?", "expect_operation": "network"}
+{"id": "cov-loop_closure", "family": "coverage", "question": "Which abnormal lab results have no documented acknowledgement or follow-up action after 14 days?", "expect_operation": "loop_closure"}
+{"id": "cov-diagnostic_delay", "family": "coverage", "question": "How long was the diagnosis of CKD delayed after eGFR first met the criteria?", "expect_operation": "diagnostic_delay"}
+{"id": "cov-risk_outcomes", "family": "coverage", "question": "What is our expected excess readmission ratio for heart failure, pneumonia and COPD under HRRP?", "expect_operation": "risk_outcomes"}
+{"id": "cov-risk_adjustment", "family": "coverage", "question": "What is the average RAF score by practice?", "expect_operation": "risk_adjustment"}
+{"id": "cov-target_trial", "family": "coverage", "question": "Among new users, do SGLT2 inhibitors reduce heart failure hospitalization compared with DPP-4 inhibitors?", "expect_operation": "target_trial"}
+{"id": "cov-line_of_therapy", "family": "coverage", "question": "What are the most common treatment sequences for patients newly diagnosed with type 2 diabetes?", "expect_operation": "line_of_therapy"}
+{"id": "cov-trial_feasibility", "family": "coverage", "question": "How many patients meet the inclusion and exclusion criteria for a HFrEF trial (EF 40% or less, NT-proBNP elevated, eGFR above 30, on stable GDMT)?", "expect_operation": "trial_feasibility"}
+{"id": "cov-contract_strategy", "family": "coverage", "question": "Should we move from MSSP BASIC to ENHANCED given a $120 PMPM benchmark?", "expect_operation": "contract_strategy"}
+{"id": "cov-demand", "family": "coverage", "question": "Forecast ED visits for the next 6 months", "expect_operation": "demand"}
+{"id": "cov-acquisition_policy", "family": "coverage", "question": "Where should we spend evidence acquisition effort?", "expect_operation": "acquisition_policy"}
+{"id": "cov-antimicrobial_use", "family": "coverage", "question": "antibiotic days of therapy per 1,000 patient days by facility", "expect_operation": "antimicrobial_use"}
+{"id": "cov-benchmark_rebasing", "family": "coverage", "question": "Should we renew our MSSP agreement early?", "expect_operation": "benchmark_rebasing"}
+{"id": "cov-bundle_compliance", "family": "coverage", "question": "what is our SEP-1 sepsis bundle compliance by facility", "expect_operation": "bundle_compliance"}
+{"id": "cov-capacity_simulation", "family": "coverage", "question": "If we opened 12 more inpatient beds, how much would ED boarding hours fall?", "expect_operation": "capacity_simulation"}
+{"id": "cov-care_gap_closure", "family": "coverage", "question": "Which members have an open breast cancer screening gap?", "expect_operation": "care_gap_closure"}
+{"id": "cov-cdi_opportunity", "family": "coverage", "question": "Which inpatient stays have CDI opportunities?", "expect_operation": "cdi_opportunity"}
+{"id": "cov-change_attribution", "family": "coverage", "question": "Is the drop in {feed} volume a real change or a data problem?", "expect_operation": "change_attribution"}
+{"id": "cov-contract_reimbursement", "family": "coverage", "question": "Which payers are underpaying us versus our contracted rates?", "expect_operation": "contract_reimbursement"}
+{"id": "cov-cql_measure", "family": "coverage", "question": "Show the executable CQL logic for the blood pressure control measure", "expect_operation": "cql_measure"}
+{"id": "cov-ddi_screening", "family": "coverage", "question": "Which patients have dangerous drug-drug interactions in their current fills?", "expect_operation": "ddi_screening"}
+{"id": "cov-denial_prediction", "family": "coverage", "question": "Which claims are likely to be denied?", "expect_operation": "denial_prediction"}
+{"id": "cov-derived_value", "family": "coverage", "question": "What is the average length of stay?", "expect_operation": "derived_value"}
+{"id": "cov-discharge_forecast", "family": "coverage", "question": "how many patients will be discharged over the next 7 days", "expect_operation": "discharge_forecast"}
+{"id": "cov-domain_pack", "family": "coverage", "question": "What is our on-time delivery rate by carrier?", "expect_operation": "domain_pack"}
+{"id": "cov-eligibility_340b", "family": "coverage", "question": "Which prescriptions are 340B eligible?", "expect_operation": "eligibility_340b"}
+{"id": "cov-flow_decomposition", "family": "coverage", "question": "What is the median and 90th percentile ED boarding time for admitted patients?", "expect_operation": "flow_decomposition"}
+{"id": "cov-guideline_conformance", "family": "coverage", "question": "Are our heart failure discharges following the guideline pathway?", "expect_operation": "guideline_conformance"}
+{"id": "cov-hai_surveillance", "family": "coverage", "question": "what is our hospital-onset C. diff rate per 1,000 patient-days by facility", "expect_operation": "hai_surveillance"}
+{"id": "cov-identity_resolution", "family": "coverage", "question": "Which linked patient charts are probably false merges?", "expect_operation": "identity_resolution"}
+{"id": "cov-mlr", "family": "coverage", "question": "what was our medical loss ratio for medicaid members", "expect_operation": "mlr"}
+{"id": "cov-network_adequacy", "family": "coverage", "question": "which counties have thin specialist networks for our members", "expect_operation": "network_adequacy"}
+{"id": "cov-network_spread", "family": "coverage", "question": "Is GLP-1 prescribing spreading between doctors who share patients?", "expect_operation": "network_spread"}
+{"id": "cov-or_block_optimization", "family": "coverage", "question": "how should we allocate OR blocks across surgical services by weekday", "expect_operation": "or_block_optimization"}
+{"id": "cov-outreach_allocation", "family": "coverage", "question": "Assign our outreach candidates to phone, text or mail given {n} staff hours a week", "expect_operation": "outreach_allocation"}
+{"id": "cov-outreach_bandit", "family": "coverage", "question": "Which outreach channel gets the most patients to engage?", "expect_operation": "outreach_bandit"}
+{"id": "cov-overbooking_fairness", "family": "coverage", "question": "audit who bears the burden of overbooking by age and payer", "expect_operation": "overbooking_fairness"}
+{"id": "cov-policy_evaluation", "family": "coverage", "question": "Evaluate our outreach policy off-policy before we change it", "expect_operation": "policy_evaluation"}
+{"id": "cov-policy_search", "family": "coverage", "question": "Evolve a better targeting rule for our GDMT pharmacist program using the simulator", "expect_operation": "policy_search"}
+{"id": "cov-price_benchmark", "family": "coverage", "question": "How do our negotiated rates for 99213 compare across payers?", "expect_operation": "price_benchmark"}
+{"id": "cov-prior_auth_access", "family": "coverage", "question": "Which prior authorization requests are still unresolved?", "expect_operation": "prior_auth_access"}
+{"id": "cov-prior_auth_rules", "family": "coverage", "question": "Does CPT 72148 need prior authorization for Medicare Advantage?", "expect_operation": "prior_auth_rules"}
+{"id": "cov-provider_network_graph", "family": "coverage", "question": "Are there referral patterns that suggest kickbacks?", "expect_operation": "provider_network_graph"}
+{"id": "cov-saved_monitors", "family": "coverage", "question": "Did any of my saved monitors change with the new data?", "expect_operation": "saved_monitors"}
+{"id": "cov-scorecard_risk", "family": "coverage", "question": "Build an auditable points-based risk model for 12-month hospital admission", "expect_operation": "scorecard_risk"}
+{"id": "cov-settlement_bridge", "family": "coverage", "question": "What is closing our open care gaps worth in shared savings dollars?", "expect_operation": "settlement_bridge"}
+{"id": "cov-social_needs", "family": "coverage", "question": "Which patients have {need} and were never referred?", "expect_operation": "social_needs"}
+{"id": "cov-spatiotemporal_cluster", "family": "coverage", "question": "were there any respiratory illness clusters in the ED by ZIP code in the last 12 months", "expect_operation": "spatiotemporal_cluster"}
+{"id": "cov-staffing_plan", "family": "coverage", "question": "Build a shift roster for the emergency department that covers the forecast for the {horizon}", "expect_operation": "staffing_plan"}
+{"id": "cov-star_rating", "family": "coverage", "question": "Where will our MA plan land on stars this year?", "expect_operation": "star_rating"}
+{"id": "cov-survey_adjustment", "family": "coverage", "question": "What share of HRA respondents rate their health good or better after weighting for nonresponse?", "expect_operation": "survey_adjustment"}
+{"id": "cov-transitions_of_care", "family": "coverage", "question": "Which discharges did not get a follow-up visit within 7 days?", "expect_operation": "transitions_of_care"}
+{"id": "cov-upcoding_detection", "family": "coverage", "question": "Which providers are upcoding E/M visits compared with their specialty peers?", "expect_operation": "upcoding_detection"}
+{"id": "cov-visit_groups", "family": "coverage", "question": "how many hospital visits did we have by facility in the last 12 months", "expect_operation": "visit_groups"}
+{"id": "cov-intersect", "family": "coverage", "question": "Which patients have both diabetes and heart failure?"}
+{"id": "cov-union", "family": "coverage", "question": "How many patients have diabetes or chronic kidney disease?"}
+{"id": "cov-difference", "family": "coverage", "question": "Which patients with diabetes do not have hypertension?"}
+{"id": "cov-compare", "family": "coverage", "question": "Compare the ED visit rate between Medicare and Medicaid patients in 2029"}
+{"id": "cov-sequence", "family": "coverage", "question": "Which patients had an ED visit followed by an inpatient admission within 30 days in 2029?"}
+{"id": "cov-longitudinal", "family": "coverage", "question": "How has the average HbA1c of diabetic patients changed by year from 2027 to 2029?"}
+{"id": "cov-baseline", "family": "coverage", "question": "What was the readmission rate in 2028 compared with the 2027 baseline?"}
+{"id": "cov-clinical_task", "family": "coverage", "question": "Which heart failure patients with reduced ejection fraction are missing a GDMT pillar, and what reasons are documented?", "expect_operation": "clinical_task"}
+{"id": "cov-default_definition", "family": "coverage", "question": "How much avoidable spend did we have in 2029?", "expect_operation": "default_definition"}
+{"id": "cov-ed_visits", "family": "coverage", "question": "How many ED visits did Medicaid patients have in 2029?", "expect_operation": "ed_visits"}
+{"id": "cov-feed_gaps", "family": "coverage", "question": "Which received feeds arrived incomplete in the last six months?", "expect_operation": "feed_gaps"}
+{"id": "cov-hcc_suspects", "family": "coverage", "question": "Which HCC conditions are supported by labs or fills but not coded this year?", "expect_operation": "hcc_suspects"}
+{"id": "cov-library_measure", "family": "coverage", "question": "What is our FUH 7-day follow-up rate after mental health hospitalization?", "expect_operation": "library_measure"}
+{"id": "cov-medication_state", "family": "coverage", "question": "Which heart failure patients have an SGLT2 inhibitor on the medication list but no fill?", "expect_operation": "medication_state"}
+{"id": "cov-onboarding_review", "family": "coverage", "question": "Which source feeds were received and in what format?", "expect_operation": "onboarding_review"}
+{"id": "cov-record_linkage", "family": "coverage", "question": "Which charts look like duplicate records of the same person?", "expect_operation": "record_linkage"}
+{"id": "cov-scanned_document_search", "family": "coverage", "question": "How many faxed documents mention an echocardiogram?", "expect_operation": "scanned_document_search"}
+{"id": "cov-source_defects", "family": "coverage", "question": "What data quality defects were detected in the received claims tables?", "expect_operation": "source_defects"}
+{"id": "cov-terminology_map", "family": "coverage", "question": "Which received lab labels are unmapped to LOINC?", "expect_operation": "terminology_map"}
