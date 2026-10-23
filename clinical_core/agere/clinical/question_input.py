@@ -18,6 +18,11 @@ def failure(exc):
         result.update(new_paid_api_calls=exc.planner_receipt['new_paid_api_calls'],
                       planning_economics=economics(exc.planner_receipt),
                       evidence_discovery=exc.planner_receipt.get('evidence_discovery', []))
+        # why it was not answered: every tier that tried and what it did (no proposal / declined / rejected and the reason)
+        tried = [p for p in exc.planner_receipt.get('proposers') or [] if isinstance(p, dict) and p.get('outcome') != 'no proposal']
+        result['tiers_tried'] = [{'tier': p.get('proposer'), 'outcome': p.get('outcome'), 'detail': str(p.get('detail') or '')[:300],
+                                  'seconds': p.get('seconds')} for p in tried]
+        if exc.planner_receipt.get('stage_diagnostics'): result['stage_diagnostics'] = exc.planner_receipt['stage_diagnostics']
     return result
 
 

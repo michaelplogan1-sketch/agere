@@ -175,3 +175,16 @@ class Stages(unittest.TestCase):
         self.assertEqual(P.ORDER[:3], ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache'))
         self.assertLess(P.ORDER.index('local_compiler'), P.ORDER.index('atomic_system_one'))
         self.assertLess(P.ORDER.index('atomic_system_one'), P.ORDER.index('metric_router'))
+
+
+class WhyNotAnswered(unittest.TestCase):
+    def test_a_refusal_lists_the_tiers_that_tried(self):
+        from clinical_core.agere.clinical.question_input import failure
+        exc = QuestionNotUnderstood('nothing kept the whole question')
+        exc.planner_receipt = {'new_paid_api_calls': 0, 'proposers': [
+            {'proposer': 'exact_local_plan', 'outcome': 'no proposal', 'detail': None, 'seconds': 0.0},
+            {'proposer': 'local_free_sql', 'outcome': 'rejected', 'detail': 'value check: made-up label', 'seconds': None}]}
+        with patch('clinical_core.agere.clinical.shared_planner.economics', return_value={}):
+            out = failure(exc)
+        self.assertEqual([t['tier'] for t in out['tiers_tried']], ['local_free_sql'])
+        self.assertIn('made-up label', out['tiers_tried'][0]['detail'])
