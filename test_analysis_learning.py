@@ -75,7 +75,12 @@ class AnalysisLearning(unittest.TestCase):
         self.assertIsNone(self.seed(analysis=s))
         self.assertTrue(self.seed(population=['A']))
         self.assertIsNone(G.lookup_shape(self.path, self.catalog, Q.replace('2029', '2028'), 'p1', ['B']))
-        self.assertIsNone(G.lookup_shape(self.path, self.catalog, Q.replace('2029', '2028'), 'different-policy', ['A']))
+        # A different policy key means a different code release: the checked shape is recompiled under the current
+        # code and marked carry_forward (03354fd), not dropped. Only a different population may never reuse it.
+        carried = G.lookup_shape(self.path, self.catalog, Q.replace('2029', '2028'), 'different-policy', ['A'])
+        self.assertIsNotNone(carried)
+        self.assertIn('earlier code release', carried[1]['carry_forward'])
+        self.assertIn('2028', carried[0]['query'])
 
     def test_invalid_parameters_and_unreviewed_shapes_cannot_enter_learning(self):
         for parameter in [{'name': 'year', 'value': True, 'quote': '2029'},
