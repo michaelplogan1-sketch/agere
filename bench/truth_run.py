@@ -240,9 +240,10 @@ def main(argv=None):
         out.mkdir(parents=True, exist_ok=True)
         run_manifest.write(out, manifest_for(args, ECOSYSTEM / 'releases' / args.release / 'questions/questions.jsonl'))
     # Every finished answer is appended to partial.jsonl as it lands, so a crash keeps the work; --resume skips those questions.
-    # A row whose failure was the service itself (unreachable, 5xx) is asked again, never kept as the system's answer.
+    # A row whose failure was the service being unreachable is asked again. HTTP 502 (no tier answered, Claude unavailable)
+    # and the client timeout are the system's own outcomes and are kept.
     partial = out / 'partial.jsonl'
-    transport = lambda r: bool(r.get('error')) and any(t in str(r['error']) for t in ('HTTP 5', 'Connection', 'URLError', 'timed out', 'Remote end closed'))
+    transport = lambda r: bool(r.get('error')) and any(t in str(r['error']) for t in ('Connection refused', 'Connection reset', 'URLError', 'Remote end closed', 'HTTP 503'))
     done = {}
     if partial.exists():
         for line in partial.read_text().splitlines():
