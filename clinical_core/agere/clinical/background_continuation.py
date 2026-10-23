@@ -80,8 +80,8 @@ def enqueue(cascade):
     tiers = [d['tier'] for d in cascade.deferred]
     if _evaluating(): return {'queued': False, 'reason': 'evaluation mode: no background continuation', 'tiers': tiers}
     if os.environ.get('AGERE_BACKGROUND_CLAUDE', 'off') != 'on':  # token economics: background work is free / System One only unless asked
-        from .proposers import STAGES, stage_of
-        tiers = [t for t in tiers if stage_of(t) != len(STAGES) - 1]
+        from .proposers import STAGES, LOCAL_QWEN, stage_of  # the last stage also holds the free local Qwen tiers: those still continue
+        tiers = [t for t in tiers if stage_of(t) != len(STAGES) - 1 or t in LOCAL_QWEN]
     if not enabled(): return {'queued': False, 'reason': 'AGERE_BACKGROUND_CONTINUE=off', 'tiers': tiers}
     if not tiers: return {'queued': False, 'reason': 'nothing deferred', 'tiers': tiers}
     job = {'stack': cascade.stack, 'catalog': cascade.catalog, 'question': cascade.question, 'population': cascade.population,

@@ -181,7 +181,7 @@ class CascadeOrder(unittest.TestCase):
             c = cascade(q='what does the last note say about dyspnea')
             with self.assertRaises(QuestionNotUnderstood) as ctx:
                 c.run()
-        first = [t for t in reached if P.stage_of(t) != 0]  # reuse/certified tiers always run first (cascade stages)
+        first = [t for t in reached if P.STAGES[P.stage_of(t)][0] not in ('reuse_certified', 'spec_path')]  # reuse/certified tiers, then the spec path, always run first (cascade stages)
         self.assertEqual(first[:2], ['evidence_retrieval', 'evidence_review'])  # then the System One route: evidence before free planners
         self.assertLess(reached.index('evidence_review'), reached.index('local_compiler'))
         self.assertTrue(all(P.stage_of(t) == len(P.STAGES) - 1 for t in reached[-9:]))  # Claude tiers last

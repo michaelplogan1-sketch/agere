@@ -25,6 +25,63 @@ class PlanError(ValueError):
 class AmbiguousRequest(PlanError):
     """The user must choose a scope; a fallback model must not silently choose."""
 
+# --- the question spec's two additions (docs/agere/QUESTION_SPEC.md): a `note` predicate and a single-patient `subject`. The compiler validates
+# them and keeps their place in the SQL; the System One note reader and the chart reader run through this registry (builders A and C
+# register `note_frames.evaluate`, `note_frames.answer_patient`, `chart_reader.resolve_subject`, `chart_reader.answer`; an unregistered one
+# is imported lazily from its module, and a missing module leaves the note predicate unresolved, never guessed).
+NOTE_FRAMES = ('condition', 'symptom', 'medication_event', 'procedure_test', 'finding_value', 'adverse_event', 'care_process',
+               'social_need', 'function_cognition', 'preference_refusal', 'plan_followup', 'note_contradiction')
+ASSERTION_STATUSES = ('documented', 'denied', 'possible', 'planned_not_done', 'historical', 'other_person', 'not_mentioned')
+NOTE_COMBINE = ('any', 'latest', 'first', 'trend', 'conflict', 'all')
+NOTE_SOURCES = ('clinical_note', 'scanned_document_text', 'hie_document')
+EXECUTOR_HOMES = {'note_frames.evaluate': ('note_frames', 'evaluate'), 'note_frames.answer_patient': ('note_frames', 'answer_patient'),
+                  'chart_reader.resolve_subject': ('chart_reader', 'resolve_subject'), 'chart_reader.answer': ('chart_reader', 'answer')}
+EXECUTORS = {}
+
+
+def register_executor(name, fn):
+    """Register (or with fn=None remove) the callable that runs a note predicate or a patient subject."""
+    if fn is None: EXECUTORS.pop(name, None)
+    else: EXECUTORS[name] = fn
+    return fn
+
+
+def executor(name):
+    """The registered callable, else the module attribute named in EXECUTOR_HOMES (lazy import), else None."""
+    if name in EXECUTORS: return EXECUTORS[name]
+    home = EXECUTOR_HOMES.get(name)
+    if not home: return None
+    import importlib
+    try:
+        return getattr(importlib.import_module(f'{__package__}.{home[0]}'), home[1], None)
+    except ImportError:
+        return None
+
+
+def note_catalog():
+    """-> (frames, statuses, combine, sources, details): the note_frames module's closed lists when it is present (details: frame ->
+    {field: options}), else the contract's own lists."""
+    try:
+        from . import note_frames as N
+    except ImportError:
+        return NOTE_FRAMES, ASSERTION_STATUSES, NOTE_COMBINE, NOTE_SOURCES, {}
+    frames = getattr(N, 'FRAMES', None)
+    names = tuple(frames) if isinstance(frames, (dict, list, tuple, set)) and frames else NOTE_FRAMES
+    details = {}
+    if isinstance(frames, dict):
+        for name, spec in frames.items():
+            fields = spec.get('detail', spec.get('details')) if isinstance(spec, dict) else None
+            if isinstance(fields, dict):
+                details[name] = {k: tuple(v) for k, v in fields.items() if isinstance(v, (list, tuple, set))}
+    def pick(attr, default):
+        value = getattr(N, attr, None)
+        return tuple(value) if isinstance(value, (list, tuple, set, dict)) and value else default
+    return names, pick('STATUSES', ASSERTION_STATUSES), pick('COMBINE', NOTE_COMBINE), pick('SOURCES', NOTE_SOURCES), details
+
+
+NOTE_PRED = re.compile(r"""note_pred\(((?:[A-Za-z_]\w*\.)?"?patient_id"?), '(n\d+)'\)""")
+
+
 def quote_text(value):
     """A requirement may be expressed in several discontiguous source spans."""
     return ' '.join(value) if isinstance(value, list) else value
@@ -129,6 +186,8 @@ class Compiler:
         self.json_streams = {}
         self.notes, self.rescaled = [], set()
         self.conditions = {}  # measure path -> its conditional (numerator) predicate
+        self.note_predicates = {}  # id -> the validated note predicate; the SQL holds note_pred(patient_id, id) until a reader fills it
+        self.subject = None  # the named patient of a single-patient question
 
     def bind(self, obj, path, kind):
         quotes = obj.get('quote')
@@ -189,6 +248,8 @@ class Compiler:
         if op == 'concept':
             from .request_vocabulary import concept_sql
             return concept_sql(expr, self, scope)
+        if op == 'note':
+            return self.note(expr, scope, path)
         if op in ('and', 'or'):
             if set(expr) != {'op', 'args', 'quote'} or not isinstance(expr['args'], list) or not 2 <= len(expr['args']) <= 24:
                 raise PlanError('Boolean operations need 2..24 explicit operands')
@@ -269,6 +330,53 @@ class Compiler:
             value = self.percent_scale(expr['field'], value)
         return f'({field} {op.upper()} {literal(value)})'
 
+    def note(self, expr, scope, path):
+        """A System One note predicate (docs/agere/QUESTION_SPEC.md, Addition 1). Validated here; the SQL holds a three-valued
+        note_pred(patient_id, id) that the note reader fills at execution (spec_exec): true, false, or NULL for an undecided patient."""
+        from datetime import date
+        frames, statuses, combines, sources, details = note_catalog()
+        required = {'op', 'frame', 'concept', 'statuses', 'quote'}
+        if not required <= set(expr) or set(expr) - required - {'detail', 'window', 'combine', 'sources'}:
+            raise PlanError('A note predicate needs op, frame, concept, statuses and quote (optional detail, window, combine, sources)')
+        if expr['frame'] not in frames: raise PlanError(f'Unknown note frame: {expr["frame"]}')
+        concept = expr['concept']
+        if (not isinstance(concept, dict) or set(concept) - {'term', 'codes', 'quote'} or not isinstance(concept.get('term'), str) or not concept['term'].strip()
+                or not isinstance(concept.get('codes', []), list) or any(not isinstance(c, str) for c in concept.get('codes', []))):
+            raise PlanError('A note concept needs a term, optional codes and the question wording')
+        if concept.get('quote') is not None: self.bind({'quote': concept['quote']}, path + '.concept', 'predicate')
+        wanted = expr['statuses']
+        if not isinstance(wanted, list) or not 1 <= len(wanted) <= len(statuses) or len(set(wanted)) != len(wanted) or any(x not in statuses for x in wanted):
+            raise PlanError('Note statuses must be distinct values of: ' + ', '.join(statuses))
+        detail = expr.get('detail')
+        if detail is not None:
+            if not isinstance(detail, dict): raise PlanError('Note detail must be an object')
+            allowed = details.get(expr['frame'])
+            for key, value in detail.items():
+                values = value if isinstance(value, list) else [value]
+                if allowed is not None and (key not in allowed or any(v not in allowed[key] for v in values)):
+                    raise PlanError(f'Note detail {key} is not a declared option of the {expr["frame"]} frame')
+        if expr.get('combine', 'any') not in combines: raise PlanError('Unknown note combine: ' + str(expr.get('combine')))
+        given = expr.get('sources')
+        if given is not None and (not isinstance(given, list) or not given or any(x not in sources for x in given)):
+            raise PlanError('Note sources must be among: ' + ', '.join(sources))
+        window = expr.get('window')
+        if window is not None:
+            if not isinstance(window, dict) or set(window) - {'start', 'end', 'quote'} or not {'start', 'end'} <= set(window):
+                raise PlanError('A note window needs start, end and the question wording')
+            try:
+                start, end = (date.fromisoformat(window[k]).isoformat() for k in ('start', 'end'))
+            except (ValueError, TypeError) as exc:
+                raise PlanError('Invalid note window') from exc
+            as_of = self.catalog.identity.get('as_of')
+            if start > end or (as_of and end > str(as_of)[:10]): raise PlanError('A note window must end by the snapshot date')
+            if window.get('quote') is not None: self.bind({'quote': window['quote']}, path + '.window', 'predicate')
+        if self.base is None or 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base not in scope:
+            raise PlanError('A note predicate needs a patient-keyed source')
+        self.serial += 1
+        ident = 'n' + str(self.serial)
+        self.note_predicates[ident] = copy.deepcopy(dict(expr))
+        return f'(note_pred({self.field(self.base + ".patient_id", scope)}, {literal(ident)}) = 1)'
+
     def sequence(self, expr, scope, path, depth):
         """A later (or earlier) event for the same patient within a day window of an anchor event.
 
@@ -338,6 +446,22 @@ class Compiler:
         return (f'EXISTS (SELECT 1 FROM {identifier(then["table"])} AS {t_alias}{joins} WHERE {t_alias}.patient_id = {outer} AND '
                 + ' AND '.join(conditions) + ')')
 
+    def bind_subject(self, subject):
+        """A single-patient question (docs/agere/QUESTION_SPEC.md, Addition 2): every patient-keyed relation binds this patient_id."""
+        if (not isinstance(subject, dict) or set(subject) != {'kind', 'patient_id', 'quote'} or subject['kind'] != 'patient'
+                or not isinstance(subject['patient_id'], str) or not subject['patient_id'].strip()):
+            raise PlanError('A subject names one patient: kind patient, patient_id and the question wording')
+        if 'patient_id' not in self.catalog.tables.get(self.base, []): raise PlanError('This source cannot be bound to one patient')
+        table = 'patient' if 'patient' in self.catalog.tables else self.base
+        try:
+            with sqlite3.connect(f'file:{self.catalog.target}?mode=ro', uri=True) as db:
+                found = db.execute(f'SELECT 1 FROM {identifier(table)} WHERE patient_id = ? LIMIT 1', (subject['patient_id'],)).fetchone()
+        except sqlite3.Error as exc:
+            raise PlanError('The named patient could not be looked up') from exc
+        if not found: raise PlanError('The named patient id is not in the received warehouse')
+        self.bind(subject, 'subject', 'predicate')
+        self.subject = dict(subject)
+
     def percent_scale(self, name, value):
         """A fractional threshold (0.75) on a percentile column stored on a 0-100 scale means 75."""
         if not 0 < value <= 1: return value
@@ -361,6 +485,10 @@ class Compiler:
         if not isinstance(expr, dict): raise PlanError('Typed measure required')
         self.bind(expr, path, 'measure')
         kind = expr.get('kind')
+        if kind == 'note_answer':
+            if set(expr) - {'kind', 'alias', 'quote'} or self.subject is None:
+                raise PlanError('A note answer is read for one named patient (subject) and takes only kind, alias and quote')
+            return '1'
         allowed = ({'kind', 'field', 'alias', 'quote', 'grain'} if kind == 'field' else
                    {'kind', 'alias', 'quote', 'numerator', 'denominator', 'scale'} if kind == 'ratio' else
                    {'kind', 'field', 'alias', 'quote', 'where', 'scale'})
@@ -400,6 +528,7 @@ class Compiler:
         """The decision context's living-patient rule in the compiled SQL (decision_context.py): a request that counts or lists patients
         reads living patients only, unless the question asks for the deceased or the request already reads `death`. None otherwise."""
         from . import decision_context
+        if self.subject is not None: return None  # a named patient is answered whether or not they died (their answer says so)
         if self.population is not None or 'death' not in self.catalog.tables: return None
         if 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base == 'death': return None
         if not decision_context.population(self.question)['living_only'] or decision_context.references_death(where): return None
@@ -413,7 +542,7 @@ class Compiler:
 
     def compile(self, plan):
         required = {'source', 'select', 'where', 'group_by', 'order_by', 'limit', 'unresolved'}
-        if not isinstance(plan, dict) or set(plan) - {'analyses', 'joins', 'having', 'workflow'} != required: raise PlanError('Complete typed request fields required')
+        if not isinstance(plan, dict) or set(plan) - {'analyses', 'joins', 'having', 'workflow', 'subject'} != required: raise PlanError('Complete typed request fields required')
         if not isinstance(plan['source'], dict) or set(plan['source']) - {'stream'} != {'table', 'quote'}: raise PlanError('Explicit source relation required')
         self.base = plan['source']['table']
         if self.base not in self.catalog.tables: raise PlanError(f'Unknown source: {self.base}')
@@ -426,6 +555,7 @@ class Compiler:
                 raise PlanError('Unknown received source stream')
             self.json_streams['b'] = stream
         scope = {self.base: 'b'}
+        if plan.get('subject') is not None: self.bind_subject(plan['subject'])
         joins = plan.get('joins', [])
         if not isinstance(joins, list) or len(joins) > 6: raise PlanError('At most six explicit dimension joins')
         for i, join in enumerate(joins):
@@ -465,6 +595,7 @@ class Compiler:
         where = self.predicate(plan['where'], scope) if plan['where'] else '1'
         living = self.living_filter(plan, where)
         if living: where = f'({where}) AND {living}'
+        if self.subject: where = f'({where}) AND b.patient_id = {literal(self.subject["patient_id"])}'
         if stream: where = f'b.stream = {literal(stream)} AND ({where})'
         if self.population is not None:
             if 'patient_id' not in self.catalog.tables[self.base]: raise PlanError('This source cannot be scoped to the saved patient cohort')
@@ -542,7 +673,7 @@ class Compiler:
         # Never accept a numeric/time literal that vanished during interpretation.
         # A number joined to letters by a hyphen is part of a name or code (PHQ-9, COVID-19), not a constraint.
         numeric = set(re.findall(r'(?<!\w)(?<![A-Za-z]-)\d+(?:\.\d+)?', self.question))
-        rendered_numbers = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', query + json.dumps([a['parameters'] for a in analyses])))
+        rendered_numbers = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', query + json.dumps([a['parameters'] for a in analyses]) + json.dumps(self.note_predicates)))
         # Analytical contracts commonly express quoted percentages as fractions
         # (2% -> 0.02). Only numeric parameter values in that same bound analysis
         # may account for this conversion; prose/aliases cannot satisfy it.
@@ -574,6 +705,9 @@ class Compiler:
         membership = ('SELECT DISTINCT b.patient_id AS patient_id' + relation) if 'patient_id' in self.catalog.tables[self.base] else None
         returns = 'table' if groups or plan.get('having') or len(aliases) > 1 or not aggregate else 'count' if plan['select'][0]['kind'] in ('count', 'count_distinct') and not plan['select'][0].get('scale') else 'value'
         if not aggregate and aliases == ['patient_id']: returns = 'patient_set'
+        if any(e['kind'] == 'note_answer' for e in plan['select']):
+            if len(plan['select']) != 1 or groups or plan.get('having'): raise PlanError('A note answer is the only output of a single-patient question')
+            returns = 'note_answer'
         # A limited patient list must not silently create work for the unlimited set.
         if returns == 'patient_set': membership = query
         elif membership and (plan.get('having') or limit) and groups:
@@ -600,6 +734,8 @@ class Compiler:
                                                 if 'patient_id' in self.catalog.tables[self.base] else None),
                    'population': sorted(self.population) if self.population is not None else None}
         if self.notes: payload['notes'] = list(dict.fromkeys(self.notes))
+        if self.note_predicates: payload['note_predicates'] = self.note_predicates
+        if self.subject: payload['subject'] = self.subject
         if self.base == 'utilization_event':
             payload['coverage_query'] = ('SELECT b.sources, b.in_ehr, count(*) AS events' + relation +
                                          ' GROUP BY b.sources,b.in_ehr')

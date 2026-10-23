@@ -923,6 +923,12 @@ def _guard(stack, question, graph, receipt, answer, profile, state, verdict):
         verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found))
 
 
+def spec_confirmed(receipt):
+    """True when the answer's spec was confirmed part by part by System One (spec_path); such an answer needs no result-summary cross-check."""
+    spec = (receipt or {}).get('spec_verification') if isinstance(receipt, dict) else None
+    return bool(isinstance(spec, dict) and spec.get('confirmed') and spec.get('verdict') == 'confirmed')
+
+
 def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hosted, state, verdict, result=None, claude_ok=True):
     """answer_guard_cross_check for an uncertified answer, live stacks only. System One first (system_one_cross_check: Jev and
     Perplexity each judge it): both confirm -> cross-checked, no Claude call; both refute -> concrete contradiction; the families
@@ -930,6 +936,9 @@ def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hoste
     unavailability annotate; a disagreement from a non-relaxed independent path is a concrete contradiction."""
     from . import answer_guard as AG
     if _os.environ.get('AGERE_CROSS_CHECK', 'on') == 'off': return 'off'
+    if spec_confirmed(receipt):  # the spec was checked part by part against the question (spec_verify): the result-summary cross-check is replaced
+        verdict['annotations'].append('Verified part by part against the question by System One (spec verification); the result-summary cross-check is not repeated.')
+        return 'spec_verified'
     if not getattr(stack, 'allow_live', False) or ledger is None: return 'not live'
     if state.get('certified'): return 'certified'
     if AG._asserted(answer) and _s1_gate.ready(stack, 'AGERE_S1_CROSS_CHECK'):
@@ -1144,7 +1153,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
         stage = STAGES[stage_of(tier)][0] if tier is not None else None
         planner = (_route(receipt) == 'local_model_sql' or stage == 'free_planners'
                    or (stage == 'claude' and tier not in GOVERNED_CLAUDE_ROUTERS))
-        if not planner or state.get('certified') or not verdict['accept']: return None
+        if not planner or state.get('certified') or not verdict['accept'] or spec_confirmed(receipt): return None
         s1 = verdict.get('system_one_cross_check') or {}
         if s1.get('verdict') != 'confirmed':
             verdict['accept'] = False
@@ -1157,7 +1166,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
     run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
-    if verdict['accept']: _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
+    if verdict['accept'] and not spec_confirmed(receipt): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
     run('jev_normalization_check', lambda: _norm.annotate_verdict(stack, graph, answer, verdict, ledger=ledger))
     from . import answer_verifier as _av, semantic_entropy as _se, label_choice as _lc  # learned verifier, sampled-agreement entropy, score label

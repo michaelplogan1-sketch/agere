@@ -40,7 +40,10 @@ TIERS = {
     'specialist_families_early': ('free', 'DQ/VBC families certified, bounds 2.45% / 2.5%', 'graph'),
     'cohort_family_early': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71, 752 cases / 0 errors', 'graph'),
     'undelivered_input': ('free', 'deterministic delivered-field check; declines only', 'decline'),
-    'paraphrase_reuse': ('free (MiniLM)', 'verified interpretation of a slot-identical rewording', 'typed'),
+    'paraphrase_reuse': ('free (MiniLM); System One confirms the slot mapping of a reused spec', 'verified interpretation of a slot-identical rewording', 'typed'),
+    'spec_path': ('grammar free; System One slot choices ~$0.0002; ONE Haiku spec call (~$0.01) + one repair, Sonnet only after two failed validations; '
+                  'System One ~$0.0002 per verified part', 'question spec filled three ways in parallel, compiled, literal-checked, decision-context-checked and '
+                  'verified part by part by System One; uncalibrated', 'typed'),
     'terminology_mapping': ('free (saved/deterministic); Jev/Perplexity ~$0.0002 for an unmapped term, live only', 'retrieve-then-classify clinical term (System One p>=0.8 or abstain), then the fully consumed grammar; uncalibrated', 'typed'),
     'semantic_cache': ('free (MiniLM)', 'certified, 0/94 test errors', 'graph'),
     'template_decoding': ('free (MiniLM; local model only to fill slots)', 'TeCoD: verified query structure kept, only typed value slots refilled; literal-bound; uncalibrated', 'graph'),
@@ -70,36 +73,52 @@ TIERS = {
     'local_free_sql': ('free (Qwen3-4B)', 'FAILED calibration: precision too low; proposes only', 'graph'),
     'legacy_cost_ladder': ('free locally; its paid rungs only when live', 'pre-2026-10-19 ladder + together semantics, last resort; uncalibrated', 'graph'),
 }
-# The cascade runs in five stages (CTO, 2026-10-23); a tier never runs before an earlier stage's tiers, whatever the learned
-# routers prefer (they reorder within a stage only). A: reuse and certified free tiers. B: System One typed choice (~$0.0002).
-# C: free but uncalibrated planners (local compiler, local models) whose answers System One must confirm. D: System One on record
-# evidence (per patient). E: Claude, cheapest first; legacy ladder last. The learned and System One routers may reorder B-D for a
-# question (e.g. chart evidence first) but never move anything ahead of A or a Claude tier ahead of B-D. 'system_one_*' tiers -> B.
+# The cascade runs in six stages (CTO, 2026-10-23; Mike, 2026-10-23: the spec path is the main path); a tier never runs before an earlier
+# stage's tiers, whatever the learned routers prefer (they reorder within a stage only). A: reuse and certified free tiers. SPEC: the question
+# spec (docs/agere/QUESTION_SPEC.md) filled by the grammar, System One slot choices and one Haiku spec call in parallel, compiled, checked and
+# verified part by part by System One. B: governed engines and metric routers by System One typed choice (~$0.0002). C: free deterministic
+# planners (local compiler, the families). D: System One on record evidence (per patient). E: the Claude routers, then the FREE-FORM writers
+# (FREE_FORM: Claude SQL / plan writers and the local Qwen tiers), last, marked free-form, each answer needing System One's confirmation.
+# The learned and System One routers may reorder B-D for a question (e.g. chart evidence first) but never move anything ahead of A or the
+# spec path, nor a Claude tier ahead of B-D. 'system_one_*' tiers -> B.
 STAGES = (
     ('reuse_certified', ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
                          'specialist_families_early', 'cohort_family_early', 'scoped_review_compiler', 'undelivered_input')),
+    ('spec_path', ('spec_path',)),
     ('system_one_choice', ('s1_metric_router', 's1_operator_router', 'typed_decider', 'terminology_mapping', 'hcc_suspecting')),
-    ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late', 'qwen_typed_interpreter', 'local_normalizer',
-                       'qwen_rewrite_compiler', 'bottled_sql', 'local_free_sql')),
+    ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late')),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
-    ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'semantic_analyst',
-                'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')),
+    ('claude', ('metric_router', 'operator_router', 'hosted_typed_interpreter', 'hosted_verified_sql', 'local_normalizer', 'qwen_rewrite_compiler',
+                'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
+                'stack_planner_propose', 'legacy_cost_ladder')),
 )
 STAGE_OF = {t: i for i, (_, tiers) in enumerate(STAGES) for t in tiers}
+STAGE_INDEX = {name: i for i, (name, _) in enumerate(STAGES)}
+CHEAP_STAGES = frozenset({'reuse_certified', 'spec_path', 'system_one_choice'})  # the stages the costly (local-model, per-patient) tiers wait for
+# Free-form writers: they write SQL or a plan with no verified spec behind it. They run last; their answers are marked free-form and ship only after
+# System One confirms them (answer_checks.local_sql_confirmed).
+FREE_FORM = frozenset({'hosted_verified_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder',
+                       'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql'})
 # Rejection reasons that mean "not yet confirmed", not "shown wrong" (answer_checks): the System One fallback may pick these.
 FALLBACK_SOFT_REASONS = ("an uncalibrated free planner's answer is shipped only when", 'certificate:')
 
 
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
-    return 1 if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
+    return STAGE_INDEX['system_one_choice'] if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
+
+
+def cheap(tier):
+    return STAGES[stage_of(tier)][0] in CHEAP_STAGES
 
 
 def staged(order):
-    """Hard boundaries only: reuse/certified tiers first, Claude last; the routers' order is kept inside, so a System One router
-    may send a chart-evidence question to the evidence readers before the free planners (a stable sort: nothing dropped)."""
+    """Hard boundaries only: reuse/certified tiers first, then the spec path, Claude and the free-form writers last; the routers' order is kept
+    inside, so a System One router may send a chart-evidence question to the evidence readers before the free planners (a stable sort: nothing
+    dropped)."""
     last = len(STAGES) - 1
-    return tuple(sorted(order, key=lambda t: 0 if stage_of(t) == 0 else 2 if stage_of(t) == last else 1))
+    spec = STAGE_INDEX['spec_path']
+    return tuple(sorted(order, key=lambda t: 0 if stage_of(t) == 0 else 1 if stage_of(t) == spec else 3 if stage_of(t) == last else 2))
 
 
 ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
@@ -130,7 +149,7 @@ LOCAL_MODEL_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bot
 # cohort_family_early/late are not listed: they usually run no model, so they take LOCAL_MODEL_LOCK only around the bottled slot fill itself (bottled_cohort_hook)
 from .foreground_priority import LOCAL_MODEL_LOCK  # a priority lock: a foreground local tier is served before a queued background one
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
-TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
+TYPED_WITH_POPULATION = {'spec_path', 'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
@@ -261,13 +280,13 @@ class Cascade:
         order = list(order)
         costly = [t for t in order if t in COSTLY]
         if not costly: return tuple(order)
-        anchors = [i for i, t in enumerate(order) if t not in COSTLY and (t == 'local_compiler' or stage_of(t) <= 1)]
+        anchors = [i for i, t in enumerate(order) if t not in COSTLY and (t == 'local_compiler' or cheap(t))]
         if anchors:
             after = max(anchors)
             early = [t for i, t in enumerate(order) if t in COSTLY and i < after]  # a route asked for a local model first: it waits
             if early:
                 order = [t for t in order if t not in early]
-                at = max(i for i, t in enumerate(order) if t == 'local_compiler' or (t not in COSTLY and stage_of(t) <= 1)) + 1
+                at = max(i for i, t in enumerate(order) if t == 'local_compiler' or (t not in COSTLY and cheap(t))) + 1
                 order[at:at] = early
         learned = self.learned_routing or {}
         predicted, movable = learned.get('predicted') or {}, set(learned.get('movable') or ())  # base rates alone never reorder the cascade
@@ -588,6 +607,7 @@ class Cascade:
             interpretation = {**interpretation, 'feedback_identity': feedback_identity(self.stack.path, self.question),
                               'feedback_consumed': name in FEEDBACK_READERS}
         return {**interpretation, 'interpreter': interpretation.get('interpreter') or name,
+                **({'free_form': True} if name in FREE_FORM else {}),
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},
                 'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing, 'answer_timing': self.timing(),
@@ -607,8 +627,22 @@ class Cascade:
 
     def tier_paraphrase_reuse(self):
         from .shared_planner import reuse_paraphrase
-        return self.typed('paraphrase_reuse', reuse_paraphrase(self.stack, self.catalog, self.question, self.population,
-                                                                self.memory_identity))
+        found = reuse_paraphrase(self.stack, self.catalog, self.question, self.population, self.memory_identity)
+        if found and found[1].get('review') in ('spec_verified', 'spec_partly_verified') and getattr(self.stack, 'allow_live', False):
+            # a reworded question reusing a verified spec: System One confirms the slot mapping against THIS wording, part by part
+            from . import spec_path
+            check = spec_path.confirm_reuse(self.stack, self.catalog, self.question, found[0], ledger=self.ledger)
+            if check is not None:
+                self.spend(check['calls'], check['cost_usd'])
+                if check['failed']:
+                    return self.reject('paraphrase_reuse', ['spec slot mapping: System One refused ' + '; '.join(f'{p["id"]} ({p["label"]})' for p in check['parts'] if p['status'] == 'fail')])
+                found = (found[0], {**found[1], 'spec_verification': spec_path.spec_verify.summary(check), 'slot_mapping_confirmed': check['confirmed']})
+        return self.typed('paraphrase_reuse', found)
+
+    def tier_spec_path(self):
+        from . import spec_path
+        if not spec_path.enabled(self.stack): return None
+        return spec_path.propose(self)
 
     def tier_terminology_mapping(self):
         from .terminology import tier
@@ -847,7 +881,10 @@ def execute(stack, question, graph, receipt, *, started):
     answer.setdefault('missing', [])
     answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []),
         f"Proposed by {receipt['interpretation']['interpreter']} ({receipt['interpretation']['proposer']['calibration']}); "
-        'accepted after the literal-question and output checks. Not clinical qualification.']))
+        'accepted after the literal-question and output checks. Not clinical qualification.',
+        *(['Free-form answer: no verified question spec stands behind it; it was shipped because System One confirmed it answers the question.']
+          if receipt['interpretation'].get('free_form') else [])]))
+    if receipt['interpretation'].get('free_form'): answer['free_form'] = True
     if answer.get('headline') is None:
         value = answer.get('count', answer.get('value'))
         answer['headline'] = str(value) if value is not None else f"{len(answer.get('table') or [])} rows"

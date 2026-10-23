@@ -27,7 +27,7 @@ FAMILY = {
     'exact_local_plan': 'authored', 'scoped_review_compiler': 'authored', 'undelivered_input': 'decline',
     'specialist_families_early': 'families', 'specialist_families_late': 'families',
     'cohort_family_early': 'cohort_family', 'cohort_family_late': 'cohort_family',
-    'paraphrase_reuse': 'saved_work', 'semantic_cache': 'saved_work', 'template_decoding': 'saved_work', 'learned_verified_sql': 'saved_work', 'bottled_sql': 'saved_work',
+    'spec_path': 'spec', 'paraphrase_reuse': 'saved_work', 'semantic_cache': 'saved_work', 'template_decoding': 'saved_work', 'learned_verified_sql': 'saved_work', 'bottled_sql': 'saved_work',
     'evidence_retrieval': 'evidence', 'evidence_review': 'evidence', 'atomic_system_one': 'system_one', 'typed_decider': 'system_one',
     'local_normalizer': 'local_model', 'qwen_rewrite_compiler': 'local_model', 'qwen_typed_interpreter': 'local_model', 'local_free_sql': 'local_model',
     'local_compiler': 'compiler', 'metric_router': 'router', 'operator_router': 'router', 's1_metric_router': 'router', 's1_operator_router': 'router',
