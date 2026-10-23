@@ -424,6 +424,23 @@ class NotesAndSubject(Fixture):
             F.validate(self.w.catalog, q, spec)
 
 
+class RunawaySql(unittest.TestCase):
+    def test_a_query_inside_a_tier_stops_at_the_tiers_time_share(self):
+        import time
+        from clinical_core.agere.clinical import answer_budget as B, sql_query
+        w = Warehouse()
+        self.addCleanup(w.close)
+        runaway = 'WITH RECURSIVE c(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 100000000) SELECT count(*) AS n FROM c'
+        token = B._deadline.set(time.monotonic() + 1.0)
+        try:
+            started = time.monotonic()
+            with self.assertRaises(ValueError):
+                sql_query.execute(w.path, {'query': runaway, 'returns': 'count'}, target=w.path / 'semantic.sqlite3')
+            self.assertLess(time.monotonic() - started, 5)
+        finally:
+            B._deadline.reset(token)
+
+
 class ChecksReplaceTheCrossCheck(unittest.TestCase):
     def test_a_confirmed_spec_skips_the_result_summary_cross_check(self):
         receipt = {'spec_verification': {'confirmed': True, 'verdict': 'confirmed'}}
