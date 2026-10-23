@@ -78,7 +78,7 @@ TIERS = {
 STAGES = (
     ('reuse_certified', ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
                          'specialist_families_early', 'cohort_family_early', 'scoped_review_compiler', 'undelivered_input')),
-    ('system_one_choice', ('typed_decider', 'terminology_mapping', 'hcc_suspecting')),
+    ('system_one_choice', ('s1_metric_router', 's1_operator_router', 'typed_decider', 'terminology_mapping', 'hcc_suspecting')),
     ('free_planners', ('local_compiler', 'qwen_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql',
                        'local_free_sql', 'specialist_families_late', 'cohort_family_late')),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
@@ -90,7 +90,7 @@ STAGE_OF = {t: i for i, (_, tiers) in enumerate(STAGES) for t in tiers}
 
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
-    return 1 if tier.startswith('system_one_') else len(STAGES) - 1
+    return 1 if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
 
 
 def staged(order):

@@ -214,7 +214,7 @@ class Cascade(unittest.TestCase):
             for claude in CLAUDE_TIERS: self.assertLess(order.index(name), order.index(claude), (name, claude))
             self.assertIn(name, proposers.TIERS)
         self.assertLess(order.index('s1_metric_router'), order.index('s1_operator_router'))
-        self.assertLess(order.index('qwen_typed_interpreter'), order.index('s1_metric_router'))
+        self.assertLess(order.index('s1_metric_router'), order.index('local_compiler'))  # governed System One choice before the uncalibrated free planners (cascade stages)
 
     def test_only_live_stacks_run_them(self):
         stack = SimpleNamespace(allow_live=False)
