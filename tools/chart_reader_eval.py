@@ -89,11 +89,16 @@ def run(args):
         if out.get('subject'):
             subjects[q['id']] = out['subject']
         cost = out.get('cost') or {}
+        # the scorer reads the JSON of the whole answer object; for a note answer also score the headline alone, where the Yes / No lead is
+        # the first word (what a person reads): reported as `lead_verdict`
+        lead_ok = None
+        if q['answer_type'] == 'note' and out.get('status') == 'answered':
+            lead_ok, _ = dev_run.score(q, {'status': out.get('status'), 'answer': out.get('headline') or ''})
         verdict = 'correct' if correct is True else 'refused' if correct is None else 'WRONG'
-        rows.append({'id': q['id'], 'bucket': q['bucket'], 'asked': text, 'verdict': verdict, 'status': out.get('status'), 'seconds': round(secs, 2),
+        rows.append({'id': q['id'], 'bucket': q['bucket'], 'asked': text, 'verdict': verdict, 'lead_verdict': lead_ok, 'status': out.get('status'), 'seconds': round(secs, 2),
                      'paid_calls': cost.get('new_paid_api_calls', 0), 'usd': cost.get('system_one_usd', 0.0), 'detail': detail,
                      'headline': (out.get('headline') or out.get('error') or '')[:240], 'intent': out.get('intent')})
-        print(f"{q['id']:>6} {verdict:8} {secs:5.2f}s ${cost.get('system_one_usd', 0.0):.4f}  {text[:70]}\n         -> {(out.get('headline') or out.get('error') or '')[:150]}", flush=True)
+        print(f"{q['id']:>6} {verdict:8} lead={lead_ok!s:5} {secs:5.2f}s ${cost.get('system_one_usd', 0.0):.4f}  {text[:70]}\n         -> {(out.get('headline') or out.get('error') or '')[:150]}", flush=True)
     print('\n=== per bucket ===')
     for b in BUCKETS:
         rs = [r for r in rows if r['bucket'] == b]
@@ -103,6 +108,8 @@ def run(args):
         c = sum(r['verdict'] == 'correct' for r in rs)
         w = sum(r['verdict'] == 'WRONG' for r in rs)
         f = sum(r['verdict'] == 'refused' for r in rs)
+        lead = sum(r.get('lead_verdict') is True or (r.get('lead_verdict') is None and r['verdict'] == 'correct') for r in rs)
+        print(f"{b}: headline-lead scoring correct={lead} ({100 * lead / n:.1f}%)")
         print(f"{b}: n={n} correct={c} ({100 * c / n:.1f}%) wrong={w} refused={f} seconds_total={sum(r['seconds'] for r in rs):.1f} "
               f"paid_calls={sum(r['paid_calls'] for r in rs)} usd={sum(r['usd'] for r in rs):.4f}")
     if args.out:

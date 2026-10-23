@@ -266,8 +266,9 @@ FRAMES = {
 ASSERTION_FRAMES = tuple(f for f in FRAMES if f != 'note_contradiction')
 DEFAULT_THRESHOLD = 0.8
 WINDOW_KEYS = {'start', 'end', 'quote'}
-CONCEPT_KEYS = {'term', 'codes', 'quote'}
-PREDICATE_KEYS = {'op', 'frame', 'concept', 'statuses', 'detail', 'window', 'combine', 'sources', 'quote', 'return_detail', 'min_p'}
+CONCEPT_KEYS = {'term', 'codes', 'quote', 'open', 'class'}
+OPEN_CLASSES = ('adverse', 'social', 'symptom', 'response')  # note_open: the classes an open concept may name
+PREDICATE_KEYS = {'op', 'frame', 'concept', 'statuses', 'detail', 'window', 'combine', 'sources', 'quote', 'return_detail', 'min_p', 'note_types', 'near_records'}
 
 
 def frame_catalog():
@@ -302,6 +303,13 @@ def validate_predicate(p):
     concept = p.get('concept')
     if not isinstance(concept, dict) or set(concept) - CONCEPT_KEYS or not str(concept.get('term') or '').strip():
         raise ValueError('concept needs a non-empty "term" (plus optional "codes" list and "quote")')
+    is_open = concept.get('open')
+    if is_open is not None and not isinstance(is_open, bool):
+        raise ValueError('concept.open is true or false')
+    if is_open and (frame == 'note_contradiction' or concept.get('class') not in OPEN_CLASSES):
+        raise ValueError(f'an open concept needs concept.class from {list(OPEN_CLASSES)} and an assertion frame')
+    if concept.get('class') and not is_open:
+        raise ValueError('concept.class is only for an open concept (concept.open true)')
     codes = concept.get('codes') or []
     if not isinstance(codes, list) or any(not isinstance(c, str) or not c for c in codes):
         raise ValueError('concept.codes must be a list of strings such as "RxNorm:6809" or "ICD10:E11"')
@@ -367,6 +375,14 @@ def validate_predicate(p):
     sources = p.get('sources') or list(SOURCES)
     if not isinstance(sources, list) or any(s not in SOURCES for s in sources):
         raise ValueError(f'sources must be drawn from {list(SOURCES)}')
+    note_types = p.get('note_types') or []
+    if note_types:
+        from . import note_open
+        if not isinstance(note_types, list) or any(t not in note_open.NOTE_TYPES for t in note_types):
+            raise ValueError(f'note_types must be drawn from {list(note_open.NOTE_TYPES)}')
+    near = p.get('near_records') or []
+    if near and (not isinstance(near, list) or any(not isinstance(r, str) or not r for r in near)):
+        raise ValueError('near_records is a list of record ids whose passages are read first')
     rd = p.get('return_detail') or []
     if not isinstance(rd, list) or any(f not in spec['details'] for f in rd):
         raise ValueError(f'return_detail must list fields of frame {frame}: {list(spec["details"])}')
@@ -375,11 +391,16 @@ def validate_predicate(p):
         raise ValueError('min_p must be in (0, 1]')
     out = {'op': 'note', 'frame': frame,
            'concept': {'term': str(concept['term']).strip(), 'codes': list(dict.fromkeys(codes)),
-                       **({'quote': concept['quote']} if concept.get('quote') else {})},
+                       **({'quote': concept['quote']} if concept.get('quote') else {}),
+                       **({'open': True, 'class': concept['class']} if is_open else {})},
            'statuses': [s for s in STATUSES if s in statuses], 'detail': norm_detail, 'combine': combine,
            'sources': [s for s in SOURCES if s in sources]}
     if window:
         out['window'] = window
+    if note_types:
+        out['note_types'] = list(dict.fromkeys(note_types))
+    if near:
+        out['near_records'] = list(dict.fromkeys(near))
     if rd:
         out['return_detail'] = list(dict.fromkeys(rd))
     if min_p is not None:

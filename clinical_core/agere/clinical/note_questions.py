@@ -22,7 +22,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date as _date
 from pathlib import Path
 
-from . import note_evidence, note_frames
+from . import note_evidence, note_frames, note_open
 from . import system_one
 
 VERSION = 'note-questions/1'
@@ -73,7 +73,7 @@ def humanize(option):
 def status_question(predicate, passage):
     f = note_frames.FRAMES[_read_frame(predicate)]
     kind = KIND_PHRASE[f['concept_kind']]
-    term = predicate['concept']['term']
+    term = predicate.get('_ask_term') or predicate['concept']['term']
     return (f"About the PATIENT only: what does this {passage['note_type']} passage dated {passage['date']} say regarding the "
             f"{kind} \"{term}\"? {f['stem']} \"{term}\"? Choose the one best description of what the passage states.")
 
@@ -87,7 +87,7 @@ def _read_frame(predicate):
 
 def detail_question(predicate, passage, field, option=None, asked=''):
     f = note_frames.FRAMES[_read_frame(predicate)]
-    term = predicate['concept']['term']
+    term = predicate.get('_ask_term') or predicate['concept']['term']
     head = f"About the PATIENT only, regarding \"{term}\" in this {passage['note_type']} passage dated {passage['date']}: "
     if option is not None:
         return head + f"{f['details'][field]['ask'].rstrip('?')}? Is \"{humanize(option)}\" stated or clearly meant?"
@@ -390,6 +390,149 @@ def combine(predicate, readings):
     raise ValueError(rule)
 
 
+# -- open concepts -----------------------------------------------------------------------------------------------------
+OPEN_MAX_PASSAGES = 30
+OPEN_MAX_RESPONSE = 8
+OPEN_MAX_MEMBERS = 5
+
+
+def _ask_term(frame, cls, label):
+    if cls == 'adverse':
+        return f'an adverse reaction, allergy or intolerance to {label}'
+    return label
+
+
+def read_open_passage(predicate, passage, *, as_of, ledger, allow_live, decide=None, cal=None):
+    """One passage of an OPEN concept -> [reading]. Each class member the concept library finds in the passage is read as its own typed
+    question (the usual status question, detail fields for the frame's open set); a passage with a cue and no known member is read once
+    with the class phrase and named by its quoted cue sentence. Every reading carries `finding` {concept, source, quote}."""
+    c = predicate['concept']
+    frame, cls = predicate['frame'], c['class']
+    fields = [f for f in note_open.OPEN_DETAILS.get(frame, []) if f in note_frames.FRAMES[frame]['details']]
+    mem = note_open.members(frame, cls, passage['text'], limit=OPEN_MAX_MEMBERS)
+    readings = []
+    for m in mem:
+        sub = {**predicate, 'concept': {'term': m['label'], 'codes': []}, 'return_detail': fields, '_ask_term': _ask_term(frame, cls, m['label'])}
+        sub.pop('near_records', None)
+        r = read_passage(sub, passage, as_of=as_of, ledger=ledger, allow_live=allow_live, all_details=False, decide=decide, cal=cal)
+        r['finding'] = {'concept': m['label'], 'source': 'library', 'quote': m['quote']}
+        readings.append(r)
+    if not mem:
+        sub = {**predicate, 'return_detail': fields, '_ask_term': note_open.ASK_CLASS.get(cls, '{}').format(c['term'])}
+        r = read_passage(sub, passage, as_of=as_of, ledger=ledger, allow_live=allow_live, all_details=False, decide=decide, cal=cal)
+        q = note_open.cue_sentence(frame, cls, passage['text'])
+        r['finding'] = {'concept': q[:120], 'source': 'quote', 'quote': q}
+        readings.append(r)
+    return readings
+
+
+def _norm_text(text):
+    return re.sub(r'\s+', ' ', re.sub(r'\d+', '#', text.lower())).strip()
+
+
+def _clone(reading, passage):
+    return {**reading, 'passage_id': passage['passage_id'], 'record_id': passage['record_id'], 'date': passage['date'],
+            'note_type': passage['note_type'], 'source': passage['source'], 'quote': passage['text'], 'start': passage['start'],
+            'end': passage['end'], 'duplicates': passage.get('duplicates', []), 'cost_usd': 0.0, 'cloned': True}
+
+
+def _open_ev(r, f):
+    return {'record_id': r['record_id'], 'date': r['date'], 'note_type': r['note_type'], 'source': r['source'], 'quote': f['quote'],
+            'status': r['status'], 'p': None if r['p'] is None else round(r['p'], 4), 'detail': r['detail'], 'duplicates': r.get('duplicates', []),
+            'start': r['start'], 'end': r['end']}
+
+
+def combine_open(predicate, readings):
+    """Reduce the readings of an open concept to the FINDINGS the notes support: one per distinct named concept, each with its best status,
+    details, first and last dates and every supporting record with its quote. A reading below its threshold is an undecided finding (never
+    counted, never dropped); a reading whose status is not one the question asks for is not a finding. -> the combine() shape plus
+    `findings` and `undecided_findings`."""
+    statuses = predicate['statuses']
+    found, unsure = {}, {}
+    for r in readings:
+        f = r['finding']
+        key = re.sub(r'\W+', ' ', f['concept'].lower()).strip()
+        if r.get('undecided') or r['status'] is None:
+            unsure.setdefault(key, {'concept': f['concept'], 'concept_source': f['source'], 'status': 'undecided',
+                                    'best_guess': r.get('best_guess'), 'evidence': []})['evidence'].append(_open_ev(r, f))
+            continue
+        if r['status'] not in statuses or _matches(predicate, r) is False:
+            continue
+        g = found.setdefault(key, {'concept': f['concept'], 'concept_source': f['source'], 'status': r['status'], 'detail': {}, 'p': r['p'],
+                                   'evidence': []})
+        g['evidence'].append(_open_ev(r, f))
+        if _rank(r) < note_frames.PRECEDENCE.index(g['status']) or (r['status'] == g['status'] and (r['p'] or 0) > (g['p'] or 0)):
+            g['status'], g['p'] = r['status'], r['p']
+        for k, v in (r['detail'] or {}).items():
+            g['detail'].setdefault(k, v)
+    findings = []
+    for g in found.values():
+        g['evidence'].sort(key=lambda e: (e['date'] or '', e['record_id']))
+        dates = [e['date'] for e in g['evidence'] if e['date']]
+        g.update({'first_date': dates[0] if dates else None, 'last_date': dates[-1] if dates else None,
+                  'n_records': len({e['record_id'] for e in g['evidence']}), 'p': None if g['p'] is None else round(g['p'], 4)})
+        findings.append(g)
+    findings.sort(key=lambda g: (note_frames.PRECEDENCE.index(g['status']), g['first_date'] or '', g['concept']))
+    undecided_findings = [u for k, u in unsure.items() if k not in found]
+    for u in undecided_findings:
+        u['evidence'].sort(key=lambda e: (e['date'] or '', e['record_id']))
+    out = {'combine': 'open', 'undecided': len([r for r in readings if r.get('undecided')]), 'passages_read': len(readings),
+           'findings': findings, 'undecided_findings': undecided_findings}
+    if findings:
+        top = findings[0]
+        out.update({'status': top['status'], 'holds': True, 'p': top['p'], 'detail': top['detail'],
+                    'evidence': [{**e, 'supports': True} for g in findings for e in g['evidence']]})
+    elif undecided_findings:
+        out.update({'status': 'unknown', 'holds': None, 'p': None, 'detail': {},
+                    'evidence': [{**e, 'supports': False} for g in undecided_findings for e in g['evidence']]})
+    else:
+        out.update({'status': 'not_mentioned', 'holds': 'not_mentioned' in statuses, 'p': None, 'detail': {}, 'evidence': []})
+    return out
+
+
+def evaluate_open(db, predicate, patient_ids, *, as_of, ledger_path, workers, allow_live, decide, cal, max_passages=None):
+    """Retrieve by the frame's cue lexicon and read each passage; passages whose text is identical apart from digits are read once and the
+    reading is copied to the others (a templated note repeated at every visit costs one read, and still lists every record and date)."""
+    c = predicate['concept']
+    pats = note_open.patterns(predicate['frame'], c['class'])
+    jobs, clones = [], []
+    for pid in patient_ids:
+        ps = note_evidence.retrieve(db, pid, c, window=predicate.get('window'), sources=predicate.get('sources'), as_of=as_of, patterns=pats,
+                                    max_passages=max_passages or (OPEN_MAX_RESPONSE if c['class'] == 'response' else OPEN_MAX_PASSAGES), note_types=predicate.get('note_types'),
+                                    prefer_records=predicate.get('near_records'))
+        rep = {}
+        for p in sorted(ps, key=lambda p: (p['date'] or '', p['record_id'], p['start'])):
+            k = (pid, _norm_text(p['text']))
+            if k in rep:
+                clones.append((pid, p, rep[k]))
+            else:
+                rep[k] = p
+                jobs.append((pid, p))
+
+    def run(job):
+        pid, passage = job
+        return pid, passage, read_open_passage(predicate, passage, as_of=as_of, ledger=ledger_path, allow_live=allow_live, decide=decide, cal=cal)
+    workers = max(1, min(int(workers), 4))
+    if workers == 1 or len(jobs) <= 1:
+        results = [run(j) for j in jobs]
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            results = list(pool.map(run, jobs))
+    by, read_by_passage = {pid: [] for pid in patient_ids}, {}
+    for pid, passage, rs in results:
+        by[pid].extend(rs)
+        read_by_passage[passage['passage_id']] = rs
+    for pid, p, repr_p in clones:
+        by[pid].extend(_clone(r, p) for r in read_by_passage.get(repr_p['passage_id'], []))
+    out = {}
+    for pid in patient_ids:
+        c_out = combine_open(predicate, by[pid])
+        c_out['cost_usd'] = round(sum(r['cost_usd'] for r in by[pid]), 6)
+        c_out['retrieved'] = len({r['passage_id'] for r in by[pid]})
+        out[pid] = c_out
+    return out
+
+
 # -- the executor ------------------------------------------------------------------------------------------------------
 def _ledger_arg(ledger):
     return str(getattr(ledger, 'path', ledger)) if ledger is not None else None
@@ -401,15 +544,22 @@ def evaluate(stack, predicate, patient_ids, *, as_of, ledger=None, workers=4, al
     Perplexity's 429s stay rare); each worker opens the ledger by path."""
     as_of = str(as_of)[:10]
     path = _ledger_arg(ledger)
-    patterns = note_evidence.concept_patterns(predicate['concept'])
     cal = load_calibration()
     db = note_evidence.connect(stack)
+    if predicate['concept'].get('open'):
+        try:
+            return evaluate_open(db, predicate, list(patient_ids), as_of=as_of, ledger_path=path, workers=workers, allow_live=allow_live,
+                                 decide=decide, cal=cal, max_passages=max_passages)
+        finally:
+            db.close()
+    patterns = note_evidence.concept_patterns(predicate['concept'])
     window = predicate.get('window')
-    base = predicate if predicate['frame'] != 'note_contradiction' else predicate
+    base = predicate
     jobs = []
     for pid in patient_ids:
         ps = note_evidence.retrieve(db, pid, predicate['concept'], window=window, sources=predicate.get('sources'), as_of=as_of,
-                                    patterns=patterns, **({'max_passages': max_passages} if max_passages else {}))
+                                    patterns=patterns, note_types=predicate.get('note_types'), prefer_records=predicate.get('near_records'),
+                                    **({'max_passages': max_passages} if max_passages else {}))
         jobs += [(pid, p) for p in ps]
     db.close()
 

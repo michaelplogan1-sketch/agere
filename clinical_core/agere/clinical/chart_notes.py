@@ -17,15 +17,16 @@ from datetime import date, timedelta
 
 from . import chart_intents as CI
 from . import chart_queries as Q
+from . import note_open as NO
 
-VERSION = 'chart-notes/1'
+VERSION = 'chart-notes/2'
 STRONG = re.compile(
     r"\b(?:in (?:the |his |her |their )?notes?|the notes?|notes? (?:say|show|record|mention|document|list|stated)|chart (?:say|show|mention)s?|later notes?|"
     r"discussed|discussion|conversation|goals[- ]of[- ]care|code status|dnr|dni|resuscitat\w*|chest compressions|breathing tube|intubat\w*|"
     r"advance directive|polst|molst|living will|health ?care proxy|why was|why did|why is|reason (?:for|why|\w+ (?:was|were))|accept(?:ed)?|declin\w+|refus\w+|"
     r"(?:report|reports|reported)\s+(?:taking|using|having)|discharge summary|impression|x-?ray|radiolog\w+|ruled out|rule[- ]out|stress test|"
     r"memory concern|intoleran\w+|outside (?:report|record|chest)|scanned|did the patient|does the patient|patient (?:choose|chose|want|wants|prefer))\b", re.I)
-WEAK = re.compile(r"\b(?:falls?|fell|raised|trouble|barriers?|recommended|mentioned|anywhere|documented|noted)\b", re.I)
+WEAK = re.compile(r"\b(?:falls?|fell|raised|trouble|barriers?|symptoms?|complaints?|recommended|mentioned|anywhere|documented|noted)\b", re.I)
 STRUCTURED_FIRST = re.compile(r"\b(?:ed visits?|admissions?|claims?|fills?|pick(?:ed)? up|prescribed|prescriptions?|mammogra\w+|flu shot|vaccin\w+|a1c|egfr|ldl|"
                               r"blood pressure|practice|attributed|allergies|medication list|active medications?|appointments?|no-shows?)\b", re.I)
 FRAME_CUES = [  # (frame, pattern); evaluated on the asking sentence; every match is kept (at most two are used)
@@ -93,7 +94,7 @@ def is_note_question(question, intent):
         return True
     # only weak cues: a note question when no structured domain claims it
     return intent.get('domain') in ('wellness', 'condition', 'social_need', 'allergy', 'smoking') and bool(
-        re.search(r'\b(?:falls?|raised|trouble|barriers?|mentioned|anywhere)\b', q, re.I))
+        re.search(r'\b(?:falls?|raised|trouble|barriers?|symptoms?|complaints?|mentioned|anywhere)\b', q, re.I))
 
 
 def sentences(question):
@@ -106,6 +107,39 @@ def asking_and_context(question):
     ask = next((s for s in reversed(parts) if s.endswith('?')), parts[-1])
     context = ' '.join(s for s in parts if s is not ask)
     return ask, context
+
+
+def split_parts(question):
+    """-> (ask, context, response_asked). A multi-part question ("Anything about X? What was done about it?") asks its FIRST question and
+    then, in a later question that only points back at the finding, for the documented response. The later part is not the frame cue."""
+    parts = sentences(question)
+    qs = [s for s in parts if s.endswith('?')]
+    if len(qs) > 1 and all(NO.RESPONSE_PART.search(s) for s in qs[1:]) and not NO.RESPONSE_PART.search(qs[0]):
+        ask = qs[0]
+        context = ' '.join(s for s in parts if s is not ask and s not in qs[1:])
+        return ask, context, True
+    ask, context = asking_and_context(question)
+    return ask, context, False
+
+
+US_DATE = re.compile(r'\b(\d{1,2})/(\d{1,2})/((?:19|20)\d\d)\b')
+NOTE_NOUN = r'(?:note|report|summary|visit|admission|document|study|film|letter|encounter|record|discharge|consult\w*|x-?ray|imaging|scan|message|call)'
+
+
+def note_dates(text):
+    """ISO dates a question gives for a note ("the 2029-08-05 note", "the 08/05/2029 ED note", "the ED note from August 5, 2029")."""
+    out = [m.group(1) for m in ISO.finditer(text or '')]
+    for m in US_DATE.finditer(text or ''):
+        try:
+            out.append(date(int(m.group(3)), int(m.group(1)), int(m.group(2))).isoformat())
+        except ValueError:
+            pass
+    for m in re.finditer(r'\b(' + '|'.join(MONTHS) + r')\s+(\d{1,2}),?\s+((?:19|20)\d\d)\b', text or '', re.I):
+        try:
+            out.append(date(int(m.group(3)), MONTHS.index(m.group(1).lower()) + 1, int(m.group(2))).isoformat())
+        except ValueError:
+            pass
+    return list(dict.fromkeys(out))
 
 
 def window_for(ask, context, as_of):
@@ -121,15 +155,26 @@ def window_for(ask, context, as_of):
         start = date(year, month, 1)
         end = (date(year + (month == 12), month % 12 + 1, 1) - timedelta(days=1))
         return {'kind': 'month', 'start': start.isoformat(), 'end': end.isoformat(), 'start_exclusive': False, 'phrase': m.group()}
-    iso = ISO.search(q)
-    if iso:
-        d = iso.group(1)
+    dates = note_dates(q)
+    if dates:
+        d = dates[0]
         if LATER.search(ask):
             start = (date.fromisoformat(d) + timedelta(days=1)).isoformat()
             return {'kind': 'after_date', 'start': start, 'end': str(as_of)[:10], 'start_exclusive': False, 'phrase': f'after {d}'}
-        if re.search(r'\b(?:the|that|this)\s+' + re.escape(d) + r"|\b" + re.escape(d) + r"\s+(?:note|discharge|summary|report|visit|admission|document)", q, re.I):
+        if dated_note_reference(q):
             return {'kind': 'day', 'start': d, 'end': d, 'start_exclusive': False, 'phrase': d}
     return None
+
+
+DATE_TEXT = (r"(?:\b(?:19|20)\d\d-\d\d-\d\d\b|\b\d{1,2}/\d{1,2}/(?:19|20)\d\d\b|\b(?:" + '|'.join(MONTHS) + r")\s+\d{1,2},?\s+(?:19|20)\d\d\b)")
+
+
+def dated_note_reference(q):
+    """Does the wording point at ONE dated note ("the 2029-08-05 note", "the 2027-10-28 discharge summary", "the ED note from 2029-08-05",
+    "the note dated 08/05/2029")? A date that only dates an event ("stopped on 2029-08-05") does not bind a note."""
+    noun = NOTE_NOUN
+    return bool(re.search(r"\b(?:the|that|this|a|an)\s+" + DATE_TEXT + r"|" + DATE_TEXT + r"\s+(?:\w+\s+){0,3}?" + noun + r"\b|\b" + noun +
+                          r"s?\s+(?:from|of|dated|on|written|done|taken)\s+" + DATE_TEXT, q or '', re.I))
 
 
 def frames_of(ask):
@@ -184,8 +229,9 @@ def _med_word(text):
 def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     """-> [predicate dict]. `choose(question, options, task_key)` -> label | None is the System One closed-list choice (frame, when the cues are silent)."""
     question = PATIENT_TOKEN.sub(' ', question or '').strip()
-    ask, context = asking_and_context(question)
+    ask, context, response_asked = split_parts(question)
     window = window_for(ask, context, as_of)
+    cues = NO.source_cues(question)
     drug = CI._drug(ask, lexicon) or CI._drug(context, lexicon) or _med_word(ask) or _med_word(context)
     frames = frames_of(ask)
     if not frames and context:
@@ -218,7 +264,11 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
         return []
     preds = []
     for frame in frames[:2]:
-        term, quote = concept_for(frame, ask, context, drug)
+        oc = None if (drug and frame != 'social_need') else NO.open_class(frame, ask)
+        if oc:  # a CLASS ("drug intolerance", "social or financial barriers", "symptoms"), not a thing: read by the frame's cue lexicon
+            term, quote = oc[1], oc[1]
+        else:
+            term, quote = concept_for(frame, ask, context, drug)
         if not term:
             continue
         statuses = ['denied'] if frame == 'condition' and re.search(r'\bruled out\b|\bnot present\b|\bdenies\b', ask, re.I) else ['documented']
@@ -237,15 +287,28 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
                 detail['decision'] = 'declined'
         ret = [fld for cue, fr, fld in RETURN_CUES if fr == frame and re.search(cue, ask, re.I)]
         pred = {'op': 'note', 'frame': frame, 'concept': {'term': term, 'codes': [], 'quote': quote}, 'statuses': statuses, 'quote': question[:300]}
+        if oc:
+            pred['concept'] = {'term': term, 'codes': [], 'quote': quote, 'open': True, 'class': oc[0]}
+            pred['statuses'] = ['documented', 'historical']
+        if cues['sources']:
+            pred['sources'] = list(cues['sources'])
+        if cues['note_types']:
+            pred['note_types'] = list(cues['note_types'])
+        if response_asked and not preds:
+            pred['_response'] = True  # the later part of the question: what was documented as done about the finding
+            if frame == 'social_need':
+                ret.append('response')
         if detail:
             pred['_ask_detail'] = detail  # judged here against the fields answer_patient returns; never sent as a constraint
         if ret:
             pred['return_detail'] = list(dict.fromkeys(ret))
+        if frame == 'procedure_test' and {'result', 'result_text'} & set(ret) and not (window and window.get('kind') == 'day'):
+            pred['combine'] = 'any'  # "the impression on the report" with no date: every matching report's result, not only the latest
         if window:
             pred['window'] = {'start': window['start'], 'end': window['end'], 'quote': window.get('phrase') or ''}
         preds.append(pred)
     # multi-hop: "later notes" with no date in the question -> run the context event first and use its date
-    if preds and LATER.search(ask) and not ISO.search(question) and context:
+    if preds and LATER.search(ask) and not note_dates(question) and context:
         anchor_frames = frames_of(context)
         aterm, aquote = concept_for(anchor_frames[0], context, '', drug=None) if anchor_frames else (None, None)
         if aterm and anchor_frames and anchor_frames[0] != preds[0]['frame'] or (aterm and aterm != preds[0]['concept']['term']):
@@ -284,6 +347,85 @@ def _val(v):
     return ', '.join(map(str, v)) if isinstance(v, (list, tuple, set)) else str(v)
 
 
+RESULT_WORDS = re.compile(r'impression|conclusion|result|finding|assessment|plan|recommend', re.I)
+
+
+def focus_quote(quote, pred, limit=400):
+    """The part of a passage that speaks to the question: a short passage whole; a long one cut to the sentences that carry the concept (and, for
+    a result question, the impression / result sentences) instead of its first `limit` characters (a letterhead)."""
+    text = str(quote or '').strip()
+    if len(text) <= limit:
+        return text
+    from . import note_evidence as NE
+    pats = [re.compile(p, re.I) for p in NE.concept_patterns(pred['concept'])] if not pred['concept'].get('open') else []
+    want_result = bool({'result', 'result_text'} & set(pred.get('return_detail') or []))
+    keep = [s for _, _, s in NE.sentences(text) if any(p.search(s) for p in pats) or (want_result and RESULT_WORDS.search(s))]
+    out = ' '.join(keep) if keep else text
+    return out[:limit]
+
+
+def _quote(e, n=300):
+    return str(e.get('quote') or '').strip().replace('\n', ' ')[:n]
+
+
+def _where(e):
+    return f"{e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}".strip()
+
+
+def _detail_text(detail):
+    shown = {k: v for k, v in (detail or {}).items() if v not in (None, [], '')}
+    return ' (' + '; '.join(f'{k}: {_val(v)}' for k, v in shown.items()) + ')' if shown else ''
+
+
+def render_open(pred, res):
+    """Words for an open-concept result: every finding with its status, detail, dates, record ids and quotes; undecided findings as undecided.
+    Never a bare count: a finding is stated in words with the quote that supports it."""
+    label = pred['concept']['term']
+    frame = pred['frame'].replace('_', ' ')
+    findings, unsure = res.get('findings') or [], res.get('undecided_findings') or []
+    if not findings and not unsure:
+        return (f"{frame} ({label}): nothing documented in the notes read ({res.get('passages_read', 0)} passage reading(s), none states it)", [])
+    parts = []
+    for i, g in enumerate(findings, 1):
+        ev = g['evidence']
+        span = g['first_date'] if g['first_date'] == g['last_date'] else f"{g['first_date']} to {g['last_date']}"
+        ids = ', '.join(dict.fromkeys(e['record_id'] for e in ev))
+        text = f"({i}) {g['concept']}: {WORDS.get(g['status'], g['status'])}{_detail_text(g.get('detail'))}; {span}; {g['n_records']} record(s): {ids}"
+        shown = []
+        for e in ev[:1] + ev[-1:]:
+            if e not in shown:
+                shown.append(e)
+        text += ' | ' + ' | '.join(f'{_where(e)}: "{_quote(e)}"' for e in shown)
+        parts.append(text)
+    if findings:
+        head = f"{frame} ({label}): {len(findings)} finding(s) in the notes"
+    else:
+        head = f"{frame} ({label}): no finding the readers could settle"
+    line = head + ': ' + ' ; '.join(parts) if parts else head
+    if unsure:
+        line += ' ; undecided (not counted as findings): ' + ' ; '.join(
+            f"{u['concept']} [{u['evidence'][0]['record_id']}, {u['evidence'][0]['date']}: \"{_quote(u['evidence'][0], 160)}\"]" for u in unsure[:5])
+    sources = [e for g in findings + unsure for e in g['evidence']]
+    return line, sources
+
+
+def response_predicates(pred, res, as_of):
+    """The predicates that read what the notes document as DONE about the findings of `pred` (same or later notes): a care process and a
+    plan / follow-up, both open, the passages of the finding's own records first."""
+    evs = [e for g in (res.get('findings') or []) for e in g['evidence']] or [e for e in (res.get('evidence') or []) if e.get('supports')]
+    dates = sorted(e['date'] for e in evs if e.get('date'))
+    if not dates:
+        return [], None
+    names = [g['concept'] for g in (res.get('findings') or [])][:3] or [pred['concept']['term']]
+    term = 'action taken about ' + ', '.join(names)
+    base = {'op': 'note', 'concept': {'term': term, 'codes': [], 'quote': term, 'open': True, 'class': 'response'}, 'combine': 'any',
+            'statuses': ['documented', 'planned_not_done'], 'window': {'start': dates[0][:10], 'end': str(as_of)[:10], 'quote': f'from {dates[0][:10]}'},
+            'near_records': list(dict.fromkeys(e['record_id'] for e in evs)), 'quote': 'what was done about it'}
+    if pred.get('sources'):
+        base['sources'] = list(pred['sources'])
+    return [{**base, 'frame': 'care_process'}, {**base, 'frame': 'plan_followup'}], dates[0][:10]
+
+
 def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no=False, allow_live=None):
     """Run each predicate through note_frames.answer_patient and merge into one core answer."""
     if nf is None:
@@ -294,6 +436,7 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
         pred = dict(pred)
         anchor = pred.pop('_anchor', None)
         ask_detail = pred.pop('_ask_detail', None)
+        want_response = pred.pop('_response', False)
         if anchor:
             a = _read(nf, stack, _valid(nf, anchor), patient_id, as_of, ledger, allow_live)
             dates = sorted(e.get('date') for e in (a.get('evidence') or []) if e.get('date'))
@@ -308,25 +451,53 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
         status = res.get('status', 'unknown')
         detail = res.get('detail') or {}
         ok = bool(res['holds']) if res.get('holds') is not None else status in POSITIVE
+        is_open = bool(pred['concept'].get('open'))
         if ok and ask_detail:
             ok = detail_matches(ask_detail, detail)
         statuses.append(status)
         matches.append(ok)
-        shown = {k: v for k, v in detail.items() if (not pred.get('return_detail') or k in pred['return_detail']) and v not in (None, [], '')} or {
-            k: v for k, v in detail.items() if v not in (None, [], '')}
         ev = res.get('evidence') or []
-        line = f"{pred['frame'].replace('_', ' ')} '{pred['concept']['term']}': {WORDS.get(status, status)}"
-        if status in POSITIVE and ask_detail and not ok:
-            line += ' but not as asked (' + '; '.join(f'{k} {_val(v)}' for k, v in ask_detail.items()) + ' not matched)'
-        if shown:
-            line += ' (' + '; '.join(f'{k}: {_val(v)}' for k, v in shown.items()) + ')'
-        for e in sorted(ev, key=lambda e: not e.get('supports'))[:4]:
-            line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}: \"{str(e.get('quote') or '')[:400]}\""
-        if anchor_note:
-            line += f' | {anchor_note}'
-        lines.append(line)
-        rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok})
-        sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in ev)
+        if is_open:
+            line, open_sources = render_open(pred, res)
+            if pred.get('sources') or pred.get('note_types'):
+                line += ' | read only: ' + ', '.join([*(pred.get('note_types') or []), *(pred.get('sources') or [])])
+            if anchor_note:
+                line += f' | {anchor_note}'
+            lines.append(line)
+            for g in (res.get('findings') or []) + (res.get('undecided_findings') or []):
+                rows.append({'frame': pred['frame'], 'concept': g['concept'], 'status': g['status'], 'detail': g.get('detail') or {}, 'p': g.get('p'),
+                             'first_date': g.get('first_date'), 'last_date': g.get('last_date'), 'records': [e['record_id'] for e in g['evidence']],
+                             'matches_question': g['status'] != 'undecided'})
+            if not (res.get('findings') or res.get('undecided_findings')):
+                rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': {}, 'p': None, 'matches_question': False})
+            sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in open_sources)
+        else:
+            shown = {k: v for k, v in detail.items() if (not pred.get('return_detail') or k in pred['return_detail']) and v not in (None, [], '')} or {
+                k: v for k, v in detail.items() if v not in (None, [], '')}
+            line = f"{pred['frame'].replace('_', ' ')} '{pred['concept']['term']}': {WORDS.get(status, status)}"
+            if status in POSITIVE and ask_detail and not ok:
+                line += ' but not as asked (' + '; '.join(f'{k} {_val(v)}' for k, v in ask_detail.items()) + ' not matched)'
+            if shown:
+                line += ' (' + '; '.join(f'{k}: {_val(v)}' for k, v in shown.items()) + ')'
+            if pred.get('sources') or pred.get('note_types'):
+                line += ' [read only: ' + ', '.join([*(pred.get('note_types') or []), *(pred.get('sources') or [])]) + ']'
+            top = sorted(ev, key=lambda e: not e.get('supports'))[:6 if pred.get('combine') == 'any' else 4]
+            multi = pred.get('combine') == 'any' and len([e for e in top if e.get('supports')]) > 1
+            for e in top:
+                own = ''
+                if multi:  # several reports: each one's own reading, not the best one's
+                    own = _detail_text({k: v for k, v in (e.get('detail') or {}).items() if k in (pred.get('return_detail') or [])})
+                line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}{own}: \"{focus_quote(e.get('quote'), pred)}\""
+            if anchor_note:
+                line += f' | {anchor_note}'
+            lines.append(line)
+            rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok})
+            sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in ev)
+        if want_response:
+            rline, rrows, rsources, rstatuses = _response_part(nf, stack, pred, res, patient_id, as_of, ledger, allow_live)
+            lines.append(rline)
+            rows.extend(rrows)
+            sources.extend(rsources)
     positive = [s in POSITIVE and m for s, m in zip(statuses, matches)]
     if yes_no and len(statuses) >= 1:
         if any(positive):
@@ -342,6 +513,32 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
     headline = (f'{lead}: ' if lead else '') + ' || '.join(lines) if lines else 'No note predicate could be built from the question'
     return Q.core('note', headline, value=headline, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': lead},
                   notes=['note frames: System One reads retrieved passages; code reduces them to one patient value; an undecided patient is never read as "no"'])
+
+
+def _response_part(nf, stack, pred, res, patient_id, as_of, ledger, allow_live):
+    """"What was done about it?": read the same and later notes for a documented response to the findings and state each in words."""
+    rps, since = response_predicates(pred, res, as_of)
+    if not rps:
+        return 'documented response: none to read, because no finding was established', [], [], []
+    found, unsure, statuses = {}, 0, []
+    for rp in rps:
+        r = _read(nf, stack, _valid(nf, rp), patient_id, as_of, ledger, allow_live)
+        statuses.append(r.get('status'))
+        unsure += len(r.get('undecided_findings') or [])
+        for g in r.get('findings') or []:
+            for e in g['evidence']:
+                key = re.sub(r'\W+', ' ', str(e.get('quote')).lower()).strip()
+                found.setdefault(key, {'frame': rp['frame'], 'status': g['status'], 'detail': g.get('detail') or {}, 'e': e})
+    if not found:
+        tail = f' ({unsure} reading(s) undecided)' if unsure else ''
+        return f'documented response (notes from {since} on): none documented in the notes read{tail}', [{'frame': 'response', 'status': 'not_mentioned'}], [], statuses
+    parts, rows, sources = [], [], []
+    for v in sorted(found.values(), key=lambda v: (v['e'].get('date') or '', v['e'].get('record_id') or ''))[:6]:
+        e = v['e']
+        parts.append(f"{v['frame'].replace('_', ' ')}: {WORDS.get(v['status'], v['status'])}{_detail_text(v['detail'])} | {_where(e)}: \"{_quote(e)}\"")
+        rows.append({'frame': v['frame'], 'concept': 'response', 'status': v['status'], 'detail': v['detail'], 'records': [e.get('record_id')], 'matches_question': True})
+        sources.append(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')))
+    return f'documented response (notes from {since} on): ' + ' ; '.join(parts), rows, sources, statuses
 
 
 def _read(nf, stack, pred, patient_id, as_of, ledger, allow_live):
