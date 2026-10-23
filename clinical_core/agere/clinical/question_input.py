@@ -19,9 +19,15 @@ def failure(exc):
                       planning_economics=economics(exc.planner_receipt),
                       evidence_discovery=exc.planner_receipt.get('evidence_discovery', []))
         # why it was not answered: every tier that tried and what it did (no proposal / declined / rejected and the reason)
-        tried = [p for p in exc.planner_receipt.get('proposers') or [] if isinstance(p, dict) and p.get('outcome') != 'no proposal']
+        tried = [p for p in exc.planner_receipt.get('proposers') or [] if isinstance(p, dict) and p.get('outcome') != 'no proposal'
+                 and not str(p.get('detail') or '').startswith('skipped: budget')]  # budget skips are listed as deferred_tiers
         result['tiers_tried'] = [{'tier': p.get('proposer'), 'outcome': p.get('outcome'), 'detail': str(p.get('detail') or '')[:300],
                                   'seconds': p.get('seconds')} for p in tried]
+        # what would have run next when the answer budget ran out, and what was done about it (timing: total / per-tier seconds)
+        if exc.planner_receipt.get('deferred_tiers'): result['deferred_tiers'] = exc.planner_receipt['deferred_tiers']
+        if exc.planner_receipt.get('answer_timing'):
+            result['answer_timing'] = exc.planner_receipt['answer_timing']
+            result['background_continuation'] = exc.planner_receipt['answer_timing'].get('background_continuation')
         if exc.planner_receipt.get('stage_diagnostics'): result['stage_diagnostics'] = exc.planner_receipt['stage_diagnostics']
     return result
 

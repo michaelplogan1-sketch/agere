@@ -38,7 +38,7 @@ def ledger():
 def clean_env():
     # System One routing is a live typed call; the order tests check the cascade itself, so it stays out here.
     env = {k: v for k, v in os.environ.items() if k not in OFF_SWITCHES}
-    return patch.dict(os.environ, {**env, 'AGERE_S1_ROUTER': 'off'}, clear=True)
+    return patch.dict(os.environ, {**env, 'AGERE_S1_ROUTER': 'off', 'AGERE_ANSWER_BUDGET_SECONDS': 'off', 'AGERE_BACKGROUND_CONTINUE': 'off'}, clear=True)  # every tier attempted
 
 
 class Cascade(unittest.TestCase):

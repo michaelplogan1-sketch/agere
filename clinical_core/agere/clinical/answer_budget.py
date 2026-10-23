@@ -1,8 +1,8 @@
-"""End-to-end answer time budget (AGERE_ANSWER_BUDGET_SECONDS, default 120).
+"""End-to-end answer time budget (AGERE_ANSWER_BUDGET_SECONDS, default 30: the production target; benchmarks set it higher).
 
 The cascade starts one budget per question and consults it between proposers. When time runs out it stops asking new
 proposers and returns the best candidate that already executed, marked partial with what was not tried. A budget never
-blocks an answer that is ready: it only decides whether to START more work. 0, 'off' or 'none' means no time limit.
+blocks an answer that is ready: it only decides whether to START more work (a tier starts only when allows(expected cost) holds). 0, 'off' or 'none' means no time limit.
 
     budget = answer_budget.start()            # per question; also becomes current() for code deeper in the call
     budget.remaining() -> seconds (inf when unlimited); budget.expired() -> bool
@@ -14,7 +14,8 @@ import math
 import os
 import time
 
-DEFAULT_SECONDS = 120.0
+DEFAULT_SECONDS = 30.0
+SHARE_BASE_SECONDS = 120.0  # tier time shares are fractions of max(budget, this), so a short production budget does not shrink a tier's own cap
 VERSION = 'answer-time-budget/1'
 _current = contextvars.ContextVar('agere_answer_budget', default=None)
 _cancel = contextvars.ContextVar('agere_tier_cancel', default=None)      # threading.Event set when the running tier passed its time share
