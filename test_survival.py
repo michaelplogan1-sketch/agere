@@ -217,7 +217,8 @@ class Compiler(unittest.TestCase):
         _, p = self.last('Cox model for time to first ED visit among diabetics adjusted for age, sex and payer')
         self.assertEqual(p['covariates'], ['age_band', 'sex', 'coverage_type'])
         spec, p = self.last('Time to first ED visit after discharge for medicare patients by sex')
-        self.assertEqual(spec['all'][0]['conditions'][0]['value'], 'medicare')
+        # "Medicare" = medicare, dual or Medigap coverage (decision context, Mike 2026-10-23): one OR group
+        self.assertEqual(sorted(a['conditions'][0]['value'] for a in spec['any']), ['dual', 'medicare', 'medigap'])
 
     def test_declines_rather_than_guesses(self):
         for q, route in [('Time to readmission or ED visit after discharge', 'fallback'),          # two events
