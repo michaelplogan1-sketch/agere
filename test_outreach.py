@@ -140,8 +140,8 @@ class Worklist(unittest.TestCase):
                  lab('dm', 'HbA1c', 9.8, '%', '2029-06-01'),
                  ('htn', 'conditions', {'description': 'Essential hypertension', 'event_date': '2027-01-01'}),
                  ('htn', 'vitals', {'blood_pressure_systolic': 152, 'blood_pressure_diastolic': 94, 'event_date': '2029-07-01'}),
-                 ('hf_gap', 'conditions', {'description': 'Heart failure', 'event_date': '2027-01-01'}),
-                 ('hf_ok', 'conditions', {'description': 'Heart failure', 'event_date': '2027-01-01'}),
+                 ('hf_gap', 'conditions', {'description': 'Chronic congestive heart failure', 'event_date': '2027-01-01'}),
+                 ('hf_ok', 'conditions', {'description': 'Chronic congestive heart failure', 'event_date': '2027-01-01'}),
                  med('hf_ok', 'carvedilol 12.5 mg tablet'), med('hf_ok', 'sacubitril-valsartan 49-51 mg tablet'),
                  med('hf_ok', 'spironolactone 25 mg tablet'), med('hf_ok', 'empagliflozin 10 mg tablet'),
                  ('sdoh', 'social_screens', {'food_difficulty_reported': True, 'transport': 'reliable', 'event_date': '2029-03-01'}),
@@ -232,7 +232,7 @@ class Compiler(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.path = build([('p1', 'conditions', {'description': 'Diabetes mellitus type 2', 'event_date': '2027-01-01'}),
-                          ('p2', 'conditions', {'description': 'Heart failure', 'event_date': '2027-01-01'})],
+                          ('p2', 'conditions', {'description': 'Chronic congestive heart failure', 'event_date': '2027-01-01'})],
                          {'p1': {'age_reported': 60}, 'p2': {'age_reported': 70}})
         cls.profile = source_profile.load(cls.path)
 

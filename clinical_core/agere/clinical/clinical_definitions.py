@@ -103,6 +103,13 @@ CARE_GAP_LIVING = {
 }
 
 
+PATIENTS_LIVING = {
+    'version': 1, 'decision': 'Mike (clinical owner), 2026-10-23',
+    'disclosure': ('Patients are living patients: anyone with a death record is excluded unless the question asks for the '
+                   'deceased (decision context decision-context/1).'),
+}
+
+
 AGE = {
     'version': 1, 'decision': DECIDED_BY,
     'disclosure': ('Age is calculated from birth_date: at the warehouse as-of date for living patients, and at the '

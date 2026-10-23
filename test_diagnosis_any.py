@@ -1,6 +1,7 @@
-"""diagnosis_any: the all-source diagnosis relation of the semantic layer (EHR condition records, paid payer claim diagnoses,
-encounter diagnoses, problem-list entries), its idempotent upgrade of an existing semantic.sqlite3, the read-only temp-view
-fallback and the planner-facing documentation. Synthetic fixture only; no model, network or stack database."""
+"""diagnosis_any: the governed diagnosis relation of the semantic layer under the ONE condition-evidence rule (decision context,
+Mike 2026-10-23: EHR condition records incl. problem-list conditions and laboratory evidence for diabetes / CKD, plus counted payer-claim
+diagnoses; encounter diagnoses are not evidence), its idempotent upgrade of an existing semantic.sqlite3, the read-only temp-view
+fallback (also over an older table) and the planner-facing documentation. Synthetic fixture only; no model, network or stack database."""
 import sqlite3
 import tempfile
 import unittest
@@ -54,19 +55,21 @@ class DiagnosisAny(unittest.TestCase):
         self.path = Path(self.tmp.name) / 'semantic.sqlite3'
         fixture(self.path)
 
-    def test_the_relation_unions_all_four_sources_with_the_paid_claim_rule(self):
+    def test_the_relation_is_the_compilers_condition_evidence(self):
         out = S.upgrade_diagnosis_any(self.path)
-        self.assertEqual(out, {'upgraded': True, 'rows': 6})
+        self.assertEqual(out, {'upgraded': True, 'rows': 5})
         db = sqlite3.connect(self.path)
-        self.assertEqual(f11(db), {'p1', 'p7', 'p2', 'p5', 'p10', 'p12'})
+        self.assertEqual(f11(db), {'p1', 'p7', 'p2', 'p3'})   # EHR diagnosis, problem-list condition, counted claims (a denied claim counts)
         by_source = dict(db.execute('SELECT source, count(DISTINCT patient_id) FROM diagnosis_any GROUP BY 1'))
-        self.assertEqual(by_source, {'condition': 2, 'payer_claim': 1, 'encounter': 2, 'problem_list': 1})
-        # not diagnoses / not counted: assessment topic p9, lab evidence p8, denied claim p3, superseded claim p4, uncoded rows, claim-sourced ED dx p11
-        self.assertFalse({'p9', 'p8', 'p3', 'p4', 'p6', 'p11', 'p13'} & {r[0] for r in db.execute('SELECT patient_id FROM diagnosis_any')})
+        self.assertEqual(by_source, {'condition': 3, 'payer_claim': 2})
+        # not evidence: assessment topic p9, superseded claim p4 (counts_in_metrics 0), uncoded rows p6, encounter diagnoses p5 / p10 / p11,
+        # problem_list_entry p12 / p13; p8 is laboratory evidence of DIABETES (E11.9), which counts for diabetes and CKD only
+        self.assertFalse({'p9', 'p4', 'p6', 'p5', 'p10', 'p11', 'p12', 'p13'} & {r[0] for r in db.execute('SELECT patient_id FROM diagnosis_any')})
+        self.assertIn('p8', {r[0] for r in db.execute("SELECT patient_id FROM diagnosis_any WHERE icd10 LIKE 'E11%'")})
         row = db.execute("SELECT icd10, source, source_detail, event_date, record_ref FROM diagnosis_any WHERE patient_id = 'p2'").fetchone()
         self.assertEqual(row, ('F11.20', 'payer_claim', 'paid', '2029-03-01', 'k1'))
         self.assertEqual(db.execute("SELECT icd10 FROM diagnosis_any WHERE patient_id = 'p1'").fetchone()[0], 'F11.20')  # upper case
-        self.assertEqual(db.execute("SELECT count(*) FROM diagnosis_any WHERE icd10 = 'f11.20'").fetchone()[0], 6)     # code compare ignores case
+        self.assertEqual(db.execute("SELECT count(*) FROM diagnosis_any WHERE icd10 = 'f11.20'").fetchone()[0], 4)     # code compare ignores case
         self.assertEqual(db.execute("SELECT value FROM meta WHERE key = 'diagnosis_any'").fetchone()[0], str(S.DIAGNOSIS_ANY_VERSION))
         self.assertTrue(any('diagnosis_any_code' in r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type = 'index'")))
         db.close()
@@ -75,7 +78,7 @@ class DiagnosisAny(unittest.TestCase):
         S.upgrade_diagnosis_any(self.path)
         db = sqlite3.connect(self.path)
         alone = db.execute("SELECT count(DISTINCT patient_id) FROM condition WHERE icd10 LIKE 'F11%' AND is_diagnosis = 1").fetchone()[0]
-        self.assertEqual((alone, len(f11(db))), (1, 6))
+        self.assertEqual((alone, len(f11(db))), (1, 4))
         db.close()
 
     def test_the_upgrade_is_idempotent(self):
@@ -85,7 +88,7 @@ class DiagnosisAny(unittest.TestCase):
         db = sqlite3.connect(self.path)
         db.execute("INSERT INTO condition VALUES ('c6', 'p20', 'conditions', NULL, 'x', 'F11.21', '2029-05-01', NULL, 1, NULL)"); db.commit(); db.close()
         self.assertFalse(S.upgrade_diagnosis_any(self.path)['upgraded'])            # already at this version: left alone
-        self.assertEqual(S.upgrade_diagnosis_any(self.path, force=True), {'upgraded': True, 'rows': 7})  # force rebuilds (one table, no duplicates)
+        self.assertEqual(S.upgrade_diagnosis_any(self.path, force=True), {'upgraded': True, 'rows': 6})  # force rebuilds (one table, no duplicates)
         db = sqlite3.connect(self.path)
         self.assertEqual(db.execute("SELECT count(*) FROM sqlite_master WHERE name = 'diagnosis_any'").fetchone()[0], 1)
         self.assertEqual(db.execute("SELECT count(*) FROM sqlite_master WHERE type = 'index' AND name LIKE 'diagnosis_any%'").fetchone()[0], 2)
@@ -98,7 +101,7 @@ class DiagnosisAny(unittest.TestCase):
         before = self.path.read_bytes()
         db = sqlite3.connect(f'file:{self.path}?mode=ro', uri=True)
         self.assertEqual(S.ensure_diagnosis_view(db), 'view')
-        self.assertEqual(f11(db), {'p1', 'p7', 'p2', 'p5', 'p10', 'p12'})
+        self.assertEqual(f11(db), {'p1', 'p7', 'p2', 'p3'})
         self.assertEqual(S.ensure_diagnosis_view(db), 'view')                        # repeated: no error
         db.close()
         self.assertEqual(self.path.read_bytes(), before)
@@ -109,7 +112,7 @@ class DiagnosisAny(unittest.TestCase):
 
     def test_sql_query_registration_provides_it(self):
         db = sql_query.register(sqlite3.connect(f'file:{self.path}?mode=ro', uri=True))
-        self.assertEqual(db.execute("SELECT count(DISTINCT patient_id) FROM diagnosis_any WHERE icd10 LIKE 'F11%'").fetchone()[0], 6)
+        self.assertEqual(db.execute("SELECT count(DISTINCT patient_id) FROM diagnosis_any WHERE icd10 LIKE 'F11%'").fetchone()[0], 4)
         db.close()
 
     def test_a_database_with_no_diagnosis_source_gets_nothing(self):
@@ -122,7 +125,7 @@ class DiagnosisAny(unittest.TestCase):
         doc = S.SCHEMA_DOC
         self.assertIn('diagnosis_any', doc['condition']); self.assertIn('concept_patient', doc['condition'])
         self.assertIn('EHR condition records ONLY', doc['condition'])
-        self.assertIn('paid', doc['diagnosis_any']); self.assertIn('DISTINCT patient_id', doc['diagnosis_any'])
+        self.assertIn('counts_in_metrics', doc['diagnosis_any']); self.assertIn('DISTINCT patient_id', doc['diagnosis_any'])
         self.assertIn('diagnosis_any', doc['concept_patient'])
         self.assertEqual(S.SOURCE_COVERAGE['diagnoses']['default_relation'], 'diagnosis_any')
         self.assertIn('diagnosis_any(', nl2sql.TABLES)

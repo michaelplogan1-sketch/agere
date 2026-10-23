@@ -21,7 +21,8 @@ SOURCES = {
     'pharmacy claims': ('payer_pharmacy_claim', None),
     'er visits': ('utilization_event', ('kind', 'ed_visit')),
     'emergency visits': ('utilization_event', ('kind', 'ed_visit')),
-    'inpatient admissions': ('stay', ('type', 'inpatient')),
+    'inpatient admissions': ('stay', ('type', 'inpatient')), 'inpatient stays': ('stay', ('type', 'inpatient')),
+    'observation stays': ('utilization_event', ('kind', 'observation')),
     'admissions': ('stay', ('type', 'inpatient')), 'hospital stays': ('stay', None),
     'inpatient discharges': ('stay', ('type', 'inpatient')), 'hospital discharges': ('stay', ('type', 'inpatient')),
     'discharges': ('stay', ('type', 'inpatient')),
@@ -59,7 +60,9 @@ EVIDENCE = [
      [('vaccine', 'like', 'pneumococcal%'), ('status', '=', 'completed')]),
     (r'mammograms?', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
     (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
-    (r'(?:(?:inpatient|hospital)\s+)?admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    # decision context: an inpatient stay is the all-source admission (stay), an observation stay the all-source utilization_event
+    (r'(?:(?:inpatient|hospital)\s+(?:admissions?|stays?))|admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    (r'observation\s+(?:stays?|visits?|admissions?)', 'utilization_event', 'event_date', [('kind', '=', 'observation')]),
     (r'(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
     (r'(?:(?:office|clinic|outpatient)\s+)?(?:visits?|encounters?)', 'visit', 'event_date', [('encounter_id', 'not_null', None)]),
 ]
@@ -67,7 +70,7 @@ EVIDENCE = [
 SEQUENCE_EVENTS = [
     (r'(?:an?\s+|their\s+|the\s+)?(?:(?:inpatient|hospital)\s+)?discharges?', 'stay', 'discharge_date',
      [('type', '=', 'inpatient'), ('discharge_known', '=', 1)]),
-    (r'(?:an?\s+|their\s+|the\s+)?(?:inpatient|hospital)\s+admissions?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    (r'(?:an?\s+|their\s+|the\s+)?(?:inpatient|hospital)\s+(?:admissions?|stays?)', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
     (r'(?:their\s+)?death', 'death', 'death_date', []),
     # Mike, 2026-10-21: a primary care visit is an EHR primary-care visit or a counted payer claim for an office E/M
     # visit (CPT 99202-99215); both rows share the pattern, so either source satisfies the event.
@@ -416,7 +419,7 @@ class Parser:
     NEGATED_LEAD = (r"(?:(?:have|has|had)\s+(?:had\s+)?no|with\s+no|no|(?:did|do|does)\s+not\s+(?:get|have|receive)|didn't\s+(?:get|have|receive)|"
                     r"(?:have|has)\s+not\s+had|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
                     r"(?:are|were|is)\s+missing|missing|without)")
-    POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+received|received|been)|had|have|has|with|got|received|ever\s+received|"
+    POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|got|received|"
                      r"(?:were|was|been)(?=\s+admitted))")
 
     def window(self, text, table, field):
@@ -432,7 +435,7 @@ class Parser:
         if m:
             y = int(m[1]); q = m.group().strip()
             return [atom(f'{table}.{field}', '>=', f'{y}-01-01', q), atom(f'{table}.{field}', '<', f'{y+1}-01-01', q)], text[m.end():]
-        m = re.match(r'^\s+(?:on\s+(?:record|file)|ever)\b', text, re.I)
+        m = re.match(r'^\s+(?:on\s+(?:record|file)|ever|at\s+any\s+(?:time|point))\b', text, re.I)
         return ([], text[m.end():]) if m else ([], text)
 
     LAB_COMPARISON = re.compile(r'^\s+(?:(?:results?|values?|scores?|levels?)\s+)?(?:(?:is|was|were|of|that\s+(?:is|was)|measured|came\s+back)\s+)?'
@@ -452,6 +455,17 @@ class Parser:
         atoms = [atom('measurement.value_canonical', self.LAB_OPS[m[1].lower()], number, quote)]
         if 'result_current' in cols: atoms.append(atom('measurement.result_current', '=', 1, quote))
         return atoms, text[m.end():]
+
+    def latest_lab(self, table, atoms):
+        """Decision context (Mike, 2026-10-23): a lab result threshold reads the LATEST result per patient and concept (measurement_latest)
+        unless the question says ever / any / at any time / history of. -> (table, atoms) rebound to measurement_latest."""
+        from . import decision_context
+        cols = self.catalog.tables.get('measurement_latest', [])
+        if decision_context.lab_mode(self.question) != 'latest' or not {'concept', 'value_canonical', 'event_date'} <= set(cols):
+            return table, atoms
+        moved = [{**a, 'field': a['field'].replace('measurement.', 'measurement_latest.', 1)} if str(a.get('field', '')).startswith('measurement.') else a
+                 for a in atoms if a.get('field') != 'measurement.result_current']  # latest rows are current results already
+        return 'measurement_latest', moved
 
     def thing(self, text):
         """(table, date field, fixed atoms, quote, tail) for one named kind of received evidence."""
@@ -688,6 +702,7 @@ class Parser:
         table, field, atoms, _, after = found
         measured = self.lab_comparison(after) if table == 'measurement' else None
         if measured: atoms, after = [*atoms, *measured[0]], measured[1]
+        if measured: table, atoms = self.latest_lab(table, atoms)
         win, tail = self.window(after, table, field)
         quote = start[:len(start) - len(tail)].strip()
         # Verbs and 'on record' carry no constraint of their own; bind them to the evidence leaf they introduce.
@@ -733,6 +748,12 @@ class Parser:
         of = re.match(r'^Of\s+(?:the\s+|our\s+)?(.+?),\s*(how many|what\s+(?:percent(?:age)?|share|proportion|fraction))\s+(.+)$', text, re.I)
         if of:
             return self.of_scope(of)
+        # "What share of patients with heart failure had an ED visit in 2029?" is "Of patients with heart failure, what share had ...":
+        # the same population and condition, asked in one clause (a population ends at the verb, never at a relative "who have").
+        direct = re.match(r'^(what\s+(?:percent(?:age)?|share|proportion|fraction))\s+of\s+((?:the\s+|our\s+)?(?:patients|members|people)\s+(?:with|who)\s+.+?)'
+                          r'(?<!\bwho)(?<!\bthat)\s+((?:had|have|has|filled|received|got)\s+.+)$', text, re.I)
+        if direct:
+            return self.of_scope([direct.group(0), direct[2], direct[1], direct[3]])
         unit = re.search(r',?\s+in\s+(cents|days)\s*$',text,re.I)
         if unit: text=text[:unit.start()].strip()
         lead = re.match(r'(?i)(?:(?:please\s+)|(?:(?:can|could|would|will)\s+you\s+)|(?:tell\s+me\s+)|(?:(?:give|show|return)(?:\s+me)?\s+both\s+)|(?:I\s+(?:want|would like)\s+(?:you\s+to|to)\s+))*'

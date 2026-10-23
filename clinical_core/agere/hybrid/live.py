@@ -76,7 +76,8 @@ def system_blocks(docs_dir=DOCS):
     # tool loop's 5-minute automatic breakpoint, as longer TTLs must). The question and analyst number follow in messages.
     from ..gateway import cache_control
     index = (Path(docs_dir) / 'catalog_index.md').read_text()
-    return [{'type': 'text', 'text': PREAMBLE + _rules() + FINAL},
+    from ..clinical.decision_context import prompt_block  # patients are living patients, latest labs, one condition rule, one 12-month window
+    return [{'type': 'text', 'text': PREAMBLE + _rules() + '\n' + prompt_block() + '\n' + FINAL},
             {'type': 'text', 'text': index, 'cache_control': cache_control()}]
 
 
@@ -222,7 +223,8 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
                                docs_dir=docs_dir, run=k + 1)
 
     with ThreadPoolExecutor(max_workers=runs) as pool:
-        outs = list(pool.map(one, range(runs)))
+        from ..clinical.decision_context import copy_context_call  # each analyst thread keeps the question's decision context
+        outs = list(pool.map(lambda k: copy_context_call(one, k), range(runs)))
     items = {f'run{k + 1}': item for k, (item, _) in enumerate(outs)}
     results = [res for _, res in outs]
     if not answer_type:  # the contract names it; the runs must agree on the type to be compared

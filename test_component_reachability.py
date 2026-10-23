@@ -88,7 +88,7 @@ class EntryPoints(unittest.TestCase):
     def test_planner_hands_declined_questions_to_the_cascade(self):
         from clinical_core.agere.clinical import shared_planner
         self.assertIn('Cascade(', inspect.getsource(shared_planner.plan))
-        self.assertIn('proposers.execute', inspect.getsource(shared_planner.compose))
+        self.assertIn('proposers.execute', inspect.getsource(shared_planner._compose))  # compose() wraps it in the decision-context scope
 
     def test_stack_compose_uses_the_shared_planner(self):
         from clinical_core.agere.clinical.stack_runtime import Stack

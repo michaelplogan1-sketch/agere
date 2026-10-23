@@ -26,9 +26,11 @@ enrollment_span, cancer_screening, death):
   adherence_pdc          2+ fills of a class in a period; PDC from first fill to period end, overlaps not shifted, earlier
                          supply counts; below a threshold
 
-Conventions (shared with bench/gold10_reference.py and docs/agere/gold10/QUESTIONS.md "Shared building blocks"):
-diagnosis evidence = condition records, encounter diagnoses or any received payer claim (principal or secondary dx,
-dots ignored); events are
+Conventions (shared with bench/gold10_reference.py and docs/agere/gold10/QUESTIONS.md "Shared building blocks"), except
+where the decision context (decision_context.py, Mike 2026-10-23) decided otherwise: diagnosis evidence = the ONE condition-evidence
+rule of every path (diagnosis_any: EHR condition records, counted payer-claim diagnoses, laboratory evidence for diabetes / CKD),
+a named condition's code set = the concept library's, patients = living patients, "in the last year" = the 12 months ending at
+as_of; events are
 counted from claims that count in metrics; "in the N months before as_of" = (as_of - N months, as_of]; "X to Y days
 before as_of" = [as_of - Y, as_of - X]; follow-up "within N days" = days 1..N after the anchor; age = whole years at as_of.
 
@@ -73,22 +75,32 @@ DRUG_CLASSES = {
                       ['apixaban', 'rivaroxaban', 'dabigatran', 'edoxaban', 'warfarin']),
     'antiplatelet': (r'antiplatelets?', ['clopidogrel', 'prasugrel', 'ticagrelor', 'aspirin']),
     'ics': (r'inhaled corticosteroids?|ics', ['fluticasone', 'budesonide', 'beclomethasone', 'mometasone', 'ciclesonide']),
+    'lama': (r'lamas?|long[- ]acting muscarinic antagonists?', ['tiotropium', 'umeclidinium', 'aclidinium', 'glycopyrr']),
+    'laba': (r'labas?|long[- ]acting beta[- ]?agonists?', ['salmeterol', 'formoterol', 'vilanterol', 'indacaterol', 'olodaterol', 'arformoterol']),
 }
+# the fill relation's own class vocabulary for classes whose generic names miss brand-only or combination products
+FILL_CLASSES = {'ics': ['inhaled_corticosteroid'], 'lama': ['lama'], 'laba': ['laba']}
 # GDMT for HFrEF: the four pillars (the RAS pillar is ACEi, ARB or ARNI)
 GDMT_PILLARS = [('hf_beta_blocker', ['hf_beta_blocker']), ('ras', ['acei', 'arb', 'arni']), ('mra', ['mra']), ('sglt2', ['sglt2'])]
 
 # condition name -> ICD-10 prefixes (QUESTIONS.md shared blocks: HF = I50.*, diabetes = E10/E11, low back pain = M54.5*)
+def _library(concept):
+    """The concept library's ICD-10 prefixes for a condition, dots dropped (the one definition every path uses)."""
+    from .concepts import CONDITIONS as LIBRARY
+    return [c.replace('.', '') for c in LIBRARY[concept]['icd10']]
+
+
 CONDITIONS = [
-    (r'heart failure|\bhf\b|\bchf\b|hfref', ['I50']),
-    (r'diabet\w*|\bdm\b|\bt2dm?\b', ['E10', 'E11']),
+    (r'heart failure|\bhf\b|\bchf\b|hfref', _library('heart_failure')),
+    (r'diabet\w*|\bdm\b|\bt2dm?\b', _library('diabetes')),
     (r'low back pain|\blbp\b|lumbago', ['M545']),
-    (r'hypertensi\w*|\bhtn\b|high blood pressure', ['I10', 'I11', 'I12', 'I13', 'I15', 'I16']),
-    (r'\bcopd\b|chronic obstructive pulmonary', ['J44']),
-    (r'asthma\w*', ['J45']),
-    (r'\bckd\b|chronic kidney disease', ['N18']),
-    (r'atrial fibrillation|\bafib\b|\ba-?fib\b', ['I48']),
-    (r'coronary artery disease|\bcad\b|ischemic heart disease', ['I25']),
-    (r'depress\w*', ['F32', 'F33']),
+    (r'hypertensi\w*|\bhtn\b|high blood pressure', _library('hypertension')),
+    (r'\bcopd\b|chronic obstructive pulmonary', _library('copd')),
+    (r'asthma\w*', _library('asthma')),
+    (r'\bckd\b|chronic kidney disease', _library('chronic_kidney_disease')),
+    (r'atrial fibrillation|\bafib\b|\ba-?fib\b', _library('atrial_fibrillation')),
+    (r'coronary artery disease|\bcad\b|ischemic heart disease', _library('coronary_artery_disease')),
+    (r'depress\w*', _library('depression')),
 ]
 MEASUREMENTS = [
     (r'hemoglobin a1c|\bhba1c\b|\ba1c\b', 'hba1c'), (r'phq-?9', 'phq9'), (r'phq-?2', 'phq2'), (r'\bldl\b', 'ldl'),
@@ -156,17 +168,17 @@ def _shift(a, days=None, months=None, sign='-'):
 
 
 def condition_sql(prefixes):
+    """Patients with a documented diagnosis in the code set: the ONE condition-evidence rule (decision_context.py; diagnosis_any is the
+    EHR condition records, problem-list conditions and laboratory evidence for diabetes / CKD, and the counted payer-claim diagnoses)."""
     cond = ' OR '.join(f"replace(icd10, '.', '') LIKE {q(p + '%')}" for p in prefixes)
-    return (f"SELECT patient_id FROM condition WHERE {cond} "
-            f"UNION SELECT patient_id FROM encounter_diagnosis WHERE {cond} "
-            f"UNION SELECT patient_id FROM payer_claim WHERE {_dx_clause(prefixes)}")
+    return f"SELECT patient_id FROM diagnosis_any WHERE {cond}"
 
 
 def _dead_sql(a, source, tables):
     if tables is not None and 'death' not in tables:
         return f"SELECT patient_id FROM record WHERE stream = 'death_records' AND json_extract(payload, '$.date_of_death') <= {a}"
-    col = 'cclf8_death_date' if source == 'cclf8' else 'death_date'
-    return f"SELECT patient_id FROM death WHERE {col} <= {a}"
+    if source != 'cclf8': return "SELECT patient_id FROM death"  # patients are living patients: no death row at all (decision context)
+    return f"SELECT patient_id FROM death WHERE cclf8_death_date <= {a}"
 
 
 def _age_sql(a, lo, hi):
@@ -310,10 +322,17 @@ def _class_terms(c):
     return c['terms']
 
 
-def on_class_sql(terms, a, days):
+def on_class_sql(terms, a, days, months=None, drug_classes=None):
+    """Patients on a class. A question that states a fill window ("no ... fill in the last year") means a fill in the 12 months ending at
+    as_of (decision context), nothing else; without one the recorded convention applies (an active list entry, or a fill whose supply
+    covers any of the last `days` days)."""
+    by_name = _like_any(FILL_NAME, terms)
+    match = f"({by_name} OR drug_class IN ({', '.join(q(c) for c in drug_classes)}))" if drug_classes else by_name
+    if months:
+        return f"SELECT patient_id FROM fill WHERE fill_date > date({a}, '-{int(months)} months') AND fill_date <= {a} AND {match}"
     return (f"SELECT patient_id FROM medication_list_entry WHERE list_status = 'active' AND {_like_any('name', terms)} "
             f"UNION SELECT patient_id FROM fill WHERE fill_date <= {a} AND supply_end >= date({a}, '-{int(days)} day') "
-            f"AND {_like_any(FILL_NAME, terms)}")
+            f"AND {match}")
 
 
 FILL_NAME = "coalesce(drug_name, '') || ' ' || coalesce(rxnorm_ingredient, '')"
@@ -332,7 +351,7 @@ def render_therapy_class_gap(p, as_of, tables=None, returns='patient_set'):
     ctes = [f"pop AS ({base})"]
     names = []
     for i, c in enumerate(p['classes']):
-        ctes.append(f"c{i} AS ({on_class_sql(c['terms'], a, days)})")
+        ctes.append(f"c{i} AS ({on_class_sql(c['terms'], a, days, p.get('fill_months'), c.get('drug_classes'))})")
         names.append(c['name'])
     miss = [f"p.patient_id NOT IN (SELECT patient_id FROM c{i})" for i in range(len(names))]
     cond = (' AND ' if p.get('mode') == 'all_missing' else ' OR ').join(miss)
@@ -654,7 +673,9 @@ def _class_item(text, hf):
         terms = _drug_terms_in(text)
         return {'name': terms[0].split()[0], 'terms': terms} if terms else None
     terms = [t for k in keys for t in DRUG_CLASSES[k][1]]
-    return {'name': 'ras' if set(keys) >= {'acei', 'arb'} else '_'.join(keys), 'terms': list(dict.fromkeys(terms))}
+    fill = [c for k in keys for c in FILL_CLASSES.get(k, [])]
+    return {'name': 'ras' if set(keys) >= {'acei', 'arb'} else '_'.join(keys), 'terms': list(dict.fromkeys(terms)),
+            **({'drug_classes': fill} if fill and len(fill) == len(keys) else {})}
 
 
 def parse_classes(question, defn, hf):
@@ -681,7 +702,7 @@ def parse_classes(question, defn, hf):
         if m:
             ex = [w.strip().lower() for w in re.split(r',|\bor\b|/', m.group(1)) if re.fullmatch(r'\s*[a-zA-Z][a-zA-Z \-]{2,39}\s*', w)]
             if ex: terms = ex
-        out.append({'name': k, 'terms': list(terms)})
+        out.append({'name': k, 'terms': list(terms), **({'drug_classes': FILL_CLASSES[k]} if k in FILL_CLASSES and terms is DRUG_CLASSES[k][1] else {})})
     if not out:
         terms = _drug_terms_in(text)
         out = [{'name': t, 'terms': [t]} for t in terms]
@@ -850,7 +871,10 @@ def parse(question, as_of):
     # condition evidence named in the definition (outside ED clauses), else the condition the question names
     def_dx = list(dict.fromkeys(x for role, text, _ in segs if role != 'ed' for x in _icd_tokens(text)))
     pop = {}
-    alive = bool(re.search(r'\balive\b|\bliving\b|not deceased|\bdeath\b', al))
+    from . import decision_context
+    # patients are living patients unless the question asks for the deceased (the question's own words: an inline definition that names a
+    # death date to exclude is the same rule, not a request for the deceased)
+    alive = not decision_context.asks_deceased(qtext)
     death_source = 'cclf8' if re.search(r'cclf\s*8', al) else 'any'
     age = _age(dl) or _age(ql)
     sex = _sex(dl) or _sex(ql)
@@ -938,10 +962,16 @@ def parse(question, as_of):
         m = re.search(r'(?:covers?|covering)\s+any\s+(?:day\s+)?(?:of|in)\s+the\s+(?:last\s+)?(\d+)\s+days', dl) \
             or re.search(r'\bfill\b[^.]{0,60}?\b(?:in|within) the (?:last|past)\s+(\d+)\s+days', dl)
         params['active_days'] = int(m.group(1)) if m else DEFAULT_ACTIVE_DAYS
-        if not m: defaults.append(f'active = med list or a fill covering any of the last {DEFAULT_ACTIVE_DAYS} days')
-        params['mode'] = 'all_missing' if re.search(r'\bnot on any\b|\bnone of\b|\bno (?:gdmt|pillar)', al) else 'any_missing'
-        alive = alive or True
-        if not re.search(r'\balive\b|\bliving\b|not deceased|\bdeath\b', al): defaults.append('alive at as_of')
+        if not m and not re.search(r'\bfills?\b[^.]*\b(?:in|within|over|during) the (?:last|past)\s+(?:year|12 months|\d+ months?)\b', al):
+            defaults.append(f'active = med list or a fill covering any of the last {DEFAULT_ACTIVE_DAYS} days')
+        none_of = re.search(r'\bnot on any\b|\bnone of\b|\bno (?:gdmt|pillar)', al) or (
+            len(classes) > 1 and re.search(r'\b(?:no|without|neither|not on)\b[^.]*?\b(?:or|nor)\b', ql))  # "no ICS, LAMA or LABA fill"
+        params['mode'] = 'all_missing' if none_of else 'any_missing'
+        fw = re.search(r'\b(?:in|within|over|during) the (?:last|past)\s+(?:(\d+)\s+months?|(?:year|12 months))\b', al)
+        if fw and re.search(r'\bfills?\b|\bfilled\b', al):
+            params['fill_months'] = int(fw.group(1)) if fw.group(1) else 12  # the stated window: the 12 months ending at as_of
+            params.pop('active_days', None)
+        if alive and not re.search(r'\balive\b|\bliving\b|not deceased', al): defaults.append('living patients (no death record)')
         if returns == 'patient_set':
             from .analysis_graph import patient_list_question
             if patient_list_question(qtext): returns = 'table'

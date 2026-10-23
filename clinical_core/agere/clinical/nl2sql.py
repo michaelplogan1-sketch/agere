@@ -51,7 +51,7 @@ cancer_screening(record_id, patient_id, test, result_status, event_date, result_
 procedure_line(record_id, patient_id, source ['claim_line','payer_claim_line'], claim_id, line_number, service_date, code_system, code, cpt, hcpcs, revenue_code, units, place_of_service, claim_status, counts_in_metrics, duplicate_of_record_id)  -- EVERY procedure line (provider billing + payer claims); use for any "had procedure/CPT/HCPCS X" question WHERE counts_in_metrics = 1
 encounter_diagnosis(encounter_id, patient_id, rank, icd10, type, record_id, source ['ehr','hl7_adt','payer_claim'], event_date)  -- ICD-10 dx on encounters of every source; ED dx: JOIN encounter e USING(encounter_id) WHERE e.type_concept = 'emergency_visit'
 death(patient_id, death_date, death_source, cclf8_death_date, payer_death_date, epic_death_date, athena_death_date, ecw_death_date, fhir_death_date, demographic_update_death_date, enrollment_death_term_date, sources, sources_disagree, first_reported_date, record_ids)  -- one row per patient with a reported death; "alive at X" = no death_date <= X
-diagnosis_any(patient_id, icd10, source ['condition','payer_claim','encounter','problem_list'], source_detail, event_date, record_ref)  -- EVERY documented ICD-10 diagnosis of every source (EHR condition records, PAID payer claim diagnoses, EHR/ADT encounter diagnoses, problem-list entries), one row per source record; the table for "patients with a diagnosis code / code range" (icd10 LIKE 'F11%'): count(DISTINCT patient_id)
+diagnosis_any(patient_id, icd10, source ['condition','payer_claim'], source_detail, event_date, record_ref)  -- EVERY documented ICD-10 diagnosis under the one condition-evidence rule (EHR condition records incl. problem-list conditions and, for diabetes/CKD, laboratory evidence; counted payer claim diagnoses, counts_in_metrics = 1), one row per source record; the table for "patients with a diagnosis code / code range" (icd10 LIKE 'F11%'): count(DISTINCT patient_id)
 concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept (governed, every source; concept-level, no codes): the table for "patients with <named condition concept>"
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
 record(record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)  -- every received record; other fields via json_extract(payload,'$.field')"""
@@ -61,7 +61,7 @@ RULES = """Write ONE SQLite SELECT that answers the question. Rules:
 - Appointments: use appointment (one row each, statuses resolved). Claims: use claim (one row per claim_id; net paid after reversals).
 - Age: age_at(patient.birth_date, the supplied as-of date). Length of stay: stay.los_days. Social needs: social_need (both screening instruments).
 - Clinical conditions, labs, vitals and encounter types: use the concept columns (they cover ICD-10, SNOMED and label variants).
-- Patients with a diagnosis named by ICD-10 code or code range (every documented diagnosis: paid payer claim, problem list, EHR condition, encounter diagnosis): diagnosis_any WHERE icd10 LIKE 'F11%', count(DISTINCT patient_id). condition holds EHR condition records only and undercounts; a library concept is counted from concept_patient.
+- Patients with a diagnosis named by ICD-10 code or code range (the one condition-evidence rule: EHR condition incl. problem list, counted payer claim): diagnosis_any WHERE icd10 LIKE 'F11%', count(DISTINCT patient_id). condition holds EHR condition records only and undercounts; a library concept is counted from concept_patient.
 - Stream fields not in a typed table: json_extract(payload,'$.field') on record WHERE stream='<stream>'. Booleans compare to 1/0.
 - Day differences: julianday(a) - julianday(b). Year: substr(date,1,4). Percent: 100.0 * part / whole.
 - Lab and vital values: ALWAYS the measurement table (both vitals layouts are merged there); never json_extract on vitals/labs.
@@ -70,6 +70,10 @@ RULES = """Write ONE SQLite SELECT that answers the question. Rules:
   equates an id or patient_id; never produce a cross join.
 - Use field values exactly as listed for the stream (e.g. a status or vaccine value).
 - Output only the SQL in a ```sql block, nothing else."""
+from . import decision_context as _decision_context
+from .decision_context import prompt_block as _decision_block  # the decision context is part of the rules every SQL writer is given
+RULES = RULES + '\n' + _decision_block() + '\n'
+
 EXAMPLES = [  # generic semantic-layer patterns; retrieved per question (not benchmark answers)
     ("How many patients with diabetes have an HbA1c above 9?",
      "SELECT count(DISTINCT c.patient_id) FROM condition c JOIN measurement m ON m.patient_id = c.patient_id WHERE c.concept = 'diabetes' AND m.concept = 'hba1c' AND m.value_canonical > 9"),
@@ -707,7 +711,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
     if independent is not None or oracle is not None:
         return _independent_ladder(question, receipt, attempt, check, primary, second, judge, decider, independent or [], oracle)
     with ThreadPoolExecutor(max_workers=1) as pool:  # independent analysts work at the same time (separate ledger connections)
-        f2 = pool.submit(attempt, second, 'second')
+        f2 = pool.submit(_decision_context.copy_context_call, attempt, second, 'second')  # the worker keeps the question's decision context
         first = attempt(primary, 'primary')
         other = f2.result()
     if 'missing' in (first, other):  # either analyst says the data does not exist: refuse rather than substitute
@@ -761,7 +765,7 @@ def _independent_ladder(question, receipt, attempt, check, primary, second, judg
             return {'_error': f'{type(exc).__name__}: {exc}'[:200]}
     # Free sources (compiler, local model) run while the primary hosted model writes its query.
     pool = ThreadPoolExecutor(max_workers=1)
-    pending = pool.submit(lambda: [produce(s) for s in independent]) if independent else None
+    pending = pool.submit(_decision_context.copy_context_call, lambda: [produce(s) for s in independent]) if independent else None
     first = attempt(primary, 'primary') if independent else None
     produced = pending.result() if pending else []
     pool.shutdown(wait=False)
@@ -793,7 +797,7 @@ def _independent_ladder(question, receipt, attempt, check, primary, second, judg
             other = attempt(second, 'second')
     else:
         with ThreadPoolExecutor(max_workers=1) as pool:
-            f2 = pool.submit(attempt, second, 'second')
+            f2 = pool.submit(_decision_context.copy_context_call, attempt, second, 'second')  # the worker keeps the question's decision context
             first = attempt(primary, 'primary')
             other = f2.result()
     if 'missing' in (first, other): missing()

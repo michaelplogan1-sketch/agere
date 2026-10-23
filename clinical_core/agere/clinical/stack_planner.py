@@ -108,6 +108,8 @@ def propose(question,path,ledger,*,snapshot=None,observed_values=None):
         observed={'roster':{k:sorted(v) for k,v in observed_values['roster'].items()},
                   'encounter_organizations':sorted(observed_values['encounter_organizations']),
                   'documented_concepts':observed_values['documented_concepts'][:40]}
+    from .decision_context import prompt_block
+    instructions=instructions+' '+prompt_block().replace('\n',' ')  # the decision context
     body={'model':PersistentGateway.MODELS['claude'],'max_tokens':4000,'system':instructions,
       'messages':[{'role':'user','content':json.dumps({'question':question,'registry':CATALOG,
         'snapshot':snapshot,'cohort_contract':contract,'observed_values':observed,

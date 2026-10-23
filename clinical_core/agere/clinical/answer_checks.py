@@ -727,7 +727,7 @@ def value_existence(stack, graph, answer, *, catalog=None, target=None):
 
 # ---- diagnosis source coverage ----------------------------------------------------------------------------------------------
 COVERAGE_VERSION = 'diagnosis-source-coverage/1'
-DX_SOURCES = ('condition', 'payer_claim_diagnosis', 'encounter_diagnosis', 'problem_list_entry')  # the four diagnosis sources of diagnosis_any
+DX_SOURCES = ('condition', 'payer_claim_diagnosis')  # the two sources of the one condition-evidence rule (decision_context; diagnosis_any v2)
 COVERAGE_MIN_GAIN = 2      # diagnosis_any must hold more than the answer + 2 patients ...
 COVERAGE_MIN_RATIO = 1.1   # ... and more than 1.1x the answer: a gap of a patient or two is noise, not a missing source
 # a question that names one source asks for that source alone ("on a paid claim", "problem list entries", "ED principal diagnosis")
@@ -828,8 +828,8 @@ def diagnosis_source_coverage(stack, question, graph, answer, *, catalog=None, t
 
 
 def _coverage_reason(c):
-    return (f"diagnosis source coverage: this plan reads {', '.join(c['reads'])} (one of four diagnosis sources: EHR condition records, "
-            f"paid payer claims, encounter diagnoses, problem list) and counts {c['answer']} patients with {', '.join(c['patterns'][:6])}; "
+    return (f"diagnosis source coverage: this plan reads {', '.join(c['reads'])} (one of the two condition-evidence sources: EHR condition records, "
+            f"counted payer claim diagnoses) and counts {c['answer']} patients with {', '.join(c['patterns'][:6])}; "
             f"diagnosis_any holds {c['diagnosis_any']} patients with these codes; count by ICD-10 code from diagnosis_any "
             f"(all sources), or by library concept from concept_patient")
 
@@ -1047,7 +1047,7 @@ def _certificates(receipt, state, verdict):
 
 # Checks whose failure to run leaves the answer unverified (the rest annotate).
 MANDATORY_CHECKS = frozenset({'zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage',
-                              'local_sql_confirmation', 'answer_shape_review'})
+                              'local_sql_confirmation', 'answer_shape_review', 'decision_context'})
 
 
 def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None, claude_ok=True, tier=None):
@@ -1106,6 +1106,25 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
             verdict['reasons'].append(_coverage_reason(c))
         return c
     run('diagnosis_source_coverage', coverage)
+    def decision():
+        """Mandatory (Mike, 2026-10-23): the answer follows the decision context (living patients, latest labs, all-source events)."""
+        from . import decision_context as DC
+        state = DC.current()
+        if state is None: return None  # not under a question scope (a tool or a test calling check directly)
+        target = _semantic_target(stack, catalog)
+        db = _probe_db(target) if target is not None and target.exists() else None
+        try:
+            found = DC.verify(question, answer, state, db, _queries(graph, answer))
+        finally:
+            if db is not None: db.close()
+        DC.stamp(answer, question, state)
+        state.reset_run()
+        verdict['decision_context'] = {'version': DC.VERSION, **found}
+        if not found['ok']:  # heal, don't block: the next proposer tries
+            verdict['accept'] = False
+            verdict['reasons'] += [f'decision context: {r}' for r in found['reasons']]
+        return found
+    run('decision_context', decision)
     prof = _profile(stack, profile)
     run('answer_guard_suspicion', lambda: _guard(stack, question, graph, receipt, answer, prof, state, verdict))
     verdict['checks_run'].append('answer_guard_dense_catalog')  # inside the guard probe (AG.probe dense='auto')
@@ -1156,7 +1175,8 @@ def gate(cascade, name, graph, receipt, result):
     if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
     summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one',
-                                       'system_one_cross_check', 'normalization_check', 'answer_verifier', 'semantic_entropy', 'label_choice', 'diagnosis_coverage') if k in verdict}
+                                       'system_one_cross_check', 'normalization_check', 'answer_verifier', 'semantic_entropy', 'label_choice', 'diagnosis_coverage',
+                                       'decision_context') if k in verdict}
     if isinstance(receipt, dict): receipt['answer_checks'] = summary
     if not verdict['accept']:
         cascade.reject(name, verdict['reasons'] or ['answer checks rejected the proposal']); return None

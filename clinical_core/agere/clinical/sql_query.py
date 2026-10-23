@@ -17,6 +17,7 @@ from .dose import register as register_dose
 def register(db):
     from .clinical_inputs import register as register_clinical_inputs
     semantic_layer.ensure_diagnosis_view(db)  # a semantic.sqlite3 built before diagnosis_any gets it as a temp view
+    semantic_layer.ensure_concept_view(db)  # ... and the condition rows of concept_patient at the same evidence definition
     return register_clinical_inputs(register_dose(register_age(db)))
 
 VERSION = 'semantic-sql/1'
@@ -26,6 +27,25 @@ TIME_LIMIT_SECONDS = 600
 _ALLOWED = {sqlite3.SQLITE_SELECT, sqlite3.SQLITE_READ, sqlite3.SQLITE_FUNCTION}
 _RECURSIVE = getattr(sqlite3, 'SQLITE_RECURSIVE', None)
 if _RECURSIVE is not None: _ALLOWED.add(_RECURSIVE)
+
+
+_RELATIONS = {}
+
+
+def _relations(target):
+    """The table names of a semantic database (cached per file and modification time)."""
+    import os
+    try:
+        key = (str(target), os.stat(target).st_mtime_ns)
+    except OSError:
+        return None
+    if key not in _RELATIONS:
+        try:
+            with sqlite3.connect(f'file:{target}?mode=ro', uri=True) as db:
+                _RELATIONS[key] = frozenset(r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')"))
+        except sqlite3.Error:
+            return None
+    return _RELATIONS[key]
 
 
 def validate(p):
@@ -49,14 +69,18 @@ def _authorizer(action, *_):
 def execute(path, params, patient_ids=None, target=None, time_limit=None):
     """target: an existing semantic.sqlite3 to read as-is (never rebuilt; used to replay against a read-only build)."""
     p = validate(params)
+    from . import decision_context  # the question's decision context: living patients and latest labs in the SQL that runs
     target = target or semantic_layer.ensure(path)
+    run_sql, dc_receipt = decision_context.enforce_sql(p['query'], p['returns'], _relations(target) if decision_context.current() else None)
+    shown = p
+    p = {**p, 'query': run_sql}
     from . import duckdb_engine  # DuckDB serving (AGERE_SQL_ENGINE=duckdb) with SQLite fallback; shadow comparison
     engine_receipt = None
     if duckdb_engine.engine() == 'duckdb':
         started = time.perf_counter()
         columns, rows, engine_receipt = duckdb_engine.serve(target, p['query'], patient_ids, time_limit=time_limit or TIME_LIMIT_SECONDS,
                                                             max_rows=MAX_ROWS)
-        if columns is not None: return _result(p, columns, rows, started, engine_receipt)
+        if columns is not None: return _result(p, columns, rows, started, engine_receipt, shown, dc_receipt)
     from . import plan_optimizer  # repeated sub-selects run once (fused CTE); an unfusable form is re-run as planned
     query, fusion = plan_optimizer.fuse_sql(p['query'])
     unfused, args = p['query'], {}
@@ -90,14 +114,15 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
         engine_receipt = {**(engine_receipt or {'engine': 'sqlite'}), 'shadow': duckdb_engine.shadow(
             target, p['query'], patient_ids, columns, rows[:MAX_ROWS], round(time.perf_counter() - started, 4), max_rows=MAX_ROWS)}
     if fusion['fused'] or fusion.get('fallback'): engine_receipt = {**(engine_receipt or {'engine': 'sqlite'}), 'plan_optimizer': fusion}
-    return _result(p, columns, rows, started, engine_receipt)
+    return _result(p, columns, rows, started, engine_receipt, shown, dc_receipt)
 
 
-def _result(p, columns, rows, started, engine_receipt=None):
+def _result(p, columns, rows, started, engine_receipt=None, shown=None, dc_receipt=None):
     truncated = len(rows) > MAX_ROWS
     rows = [list(r) for r in rows[:MAX_ROWS]]
-    result = {'schema': VERSION, 'query': p['query'], 'returns': p['returns'], 'columns': columns,
+    result = {'schema': VERSION, 'query': (shown or p)['query'], 'returns': p['returns'], 'columns': columns,
               'row_count': len(rows), 'truncated': truncated, 'elapsed_seconds': round(time.perf_counter() - started, 3)}
+    if dc_receipt and dc_receipt.get('rewritten'): result['decision_context'] = {**dc_receipt, 'executed_query': p['query']}
     if engine_receipt: result['engine'] = engine_receipt
     if p['returns'] in ('count', 'value'):
         if not rows or not columns: raise ValueError('Scalar query returned no rows')

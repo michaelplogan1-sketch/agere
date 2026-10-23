@@ -1321,6 +1321,8 @@ def _population_question(q, r, profile, as_of, info):
     # "latest 2029 A1c", "their last 2029 reading": the latest value within that year
     latest_year = next(iter(r.take(r'\b(?:latest|most recent|last|final) ((?:19|20)\d{2})\b', 'latest value in year')), None)
     latest = r.take(r'\b(?:latest|most recent|last)\b', 'latest value') or ([latest_year] if latest_year else [])
+    from . import decision_context  # a lab threshold reads the latest result unless the question says ever / any / at any time (decision context)
+    lab_aggregate = 'latest' if latest or decision_context.lab_mode(low) == 'latest' else 'any'
     adjust = r.take(r'\b(?:risk[- ]adjusted|case[- ]mix(?: adjusted)?|adjusted(?: for case mix)?|fair(?:ly)? compar\w+)\b', 'case-mix adjustment')
     readmit = r.take(r'\b(?:30[- ]day )?readmi(?:ssions?|tted|t)\b(?: within 30 days)?', 'readmission')
     r.take(r'\bwithin 30 days\b')
@@ -1460,7 +1462,7 @@ def _population_question(q, r, profile, as_of, info):
                 for i in range(m.end(), m.end() + mm.end()): r.used[i] = True
                 break
         allp.append({'kind': 'measurement', 'concept': concept, 'names': names, 'op': cmp[0] if cmp else 'gt',
-                     'value': cmp[1] if cmp else -1e12, 'aggregate': 'latest' if latest else 'any', 'window': W})
+                     'value': cmp[1] if cmp else -1e12, 'aggregate': lab_aggregate, 'window': W})
     r.take(r'\bpercent-unit\b', None)
     # measurements with comparisons. Longest alias first across concepts: 'albumin-to-creatinine ratio' is uacr, not creatinine.
     for concept, aliases in MEASUREMENT_ALIAS_ORDER:
@@ -1487,7 +1489,7 @@ def _population_question(q, r, profile, as_of, info):
     for concept, cmp, start in measured:
         if cmp:
             atom = {'kind': 'measurement', 'concept': concept, 'op': cmp[0], 'value': cmp[1],
-                    'aggregate': 'latest' if latest else 'any', 'window': W}
+                    'aggregate': lab_aggregate, 'window': W}
         else:
             atom = {'kind': 'concept', 'concept': concept, 'window': W}
         position[id(atom)] = start
@@ -2031,8 +2033,8 @@ def _medication_question(q, r, profile, as_of, info):
             and not re.search(r'\bever\b|\bhistory\b|\bpreviously\b|\b(?:were|was|has been|have been|had)\b', low):
         # Present tense ("are on a statin") is current therapy, not any fill ever received: a fill in the 12 months to the
         # snapshot date (stated in the purpose; ask with a period or "ever" for another reading).
-        from datetime import date, timedelta
-        start = (date.fromisoformat(as_of) - timedelta(days=364)).isoformat()
+        from .decision_context import rolling_year  # the 12 months ending at as_of: one definition of a year
+        start = rolling_year(as_of)[0]
         period = current = (start, as_of)
     conds = []
     for concept, aliases in sorted(CONDITION_ALIASES.items(), key=lambda kv: -max(map(len, kv[1]))):

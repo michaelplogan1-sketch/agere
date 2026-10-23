@@ -66,6 +66,12 @@ def run_sql(db_path, sql, timeout_s=120.0):
     con = sqlite3.connect(f'file:{db_path}?mode=ro', uri=True)
     from ..clinical.age import register
     register(con)
+    from ..clinical import decision_context, semantic_layer  # the question's decision context holds for analyst SQL too
+    semantic_layer.ensure_diagnosis_view(con)  # diagnosis_any / concept_patient at the current condition-evidence definition
+    semantic_layer.ensure_concept_view(con)
+    if decision_context.current() is not None:
+        tables = frozenset(r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')"))
+        sql, _ = decision_context.enforce_sql(sql, None, tables)
     deadline = time.monotonic() + timeout_s
     con.set_progress_handler(lambda: int(time.monotonic() > deadline), 100_000)
     try:

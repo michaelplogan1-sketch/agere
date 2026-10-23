@@ -95,60 +95,111 @@ SOURCE_COVERAGE = {
                    'Use direct dated evidence with explicit polarity, preserve conflicts/unknowns, and separate target dose from tolerance.'},
     'diagnoses': {
         'relations': ['diagnosis_any', 'concept_patient', 'condition'],  'default_relation': 'diagnosis_any',
-        'meaning': 'A documented diagnosis is an ICD-10 code on a paid payer claim, an EHR problem-list entry, an EHR condition record or an '
-                   'EHR/ADT encounter diagnosis. Count patients with a code (or code range) from diagnosis_any (every source, one row per source '
-                   'record; count DISTINCT patient_id); count patients with a library concept from concept_patient. condition alone is the '
-                   'EHR condition records, not payer claim diagnoses, encounter diagnoses or the problem list, and undercounts documented diagnoses.'},
+        'meaning': 'A documented diagnosis is an ICD-10 code on an EHR condition record (problem-list conditions included) or on a counted payer '
+                   'claim (counts_in_metrics = 1); diabetes and CKD also count laboratory-evidence rows. Count patients with a code (or code range) '
+                   'from diagnosis_any (the same evidence by code, one row per source record; count DISTINCT patient_id); count patients with a '
+                   'library concept from concept_patient. condition alone is the EHR condition records, not the payer claim diagnoses, and '
+                   'undercounts documented diagnoses.'},
     'screening': {
         'relations': ['social_need'],
         'meaning': 'An explicit screened negative is distinct from never screened. No row is unknown need, never a negative response.'},
 }
 
-DIAGNOSIS_ANY_VERSION = 1
-DIAGNOSIS_ANY_DOC = ('Every documented ICD-10 diagnosis of every source, one row per source record: patient_id, icd10 (upper case, as received, '
-                     'dotted), source = condition (EHR condition records with is_diagnosis = 1, incl. EHR problem-list conditions; assessment '
-                     'topics, rule-outs and laboratory-evidence rows are not diagnoses) | payer_claim (payer_claim_diagnosis of PAID payer claims, '
-                     'current non-duplicate versions: payer_claim.final_status = paid AND counts_in_metrics = 1) | encounter (encounter_diagnosis: '
-                     'EHR encounter dx and HL7 ADT DG1; the dx of payer ED claims are payer_claim rows) | problem_list (problem_list_entry), '
-                     'source_detail = the source table / feed, event_date (YYYY-MM-DD; claim service_from, encounter date, problem first_recorded), '
-                     'record_ref = source record / claim id. Use it to count or list patients with a diagnosis code: SELECT count(DISTINCT patient_id) '
-                     "FROM diagnosis_any WHERE icd10 LIKE 'F11%'. The same patient appears once per source record, so always count DISTINCT patient_id. "
-                     'condition alone holds only EHR condition records and undercounts documented diagnoses (payer claims, encounters and the problem list '
-                     'add patients). By library concept (no codes) use concept_patient.')
+DIAGNOSIS_ANY_VERSION = 2  # 2: the compiler's condition evidence (decision_context.py, Mike 2026-10-23): EHR condition rows + counted payer-claim diagnoses
+DIAGNOSIS_ANY_DOC = ('Every documented ICD-10 diagnosis, one row per source record: patient_id, icd10 (upper case, as received, dotted), '
+                     'source = condition (EHR condition records with is_diagnosis = 1, incl. EHR problem-list conditions, and, for diabetes and '
+                     'CKD only, laboratory-evidence rows; assessment topics, rule-outs and the laboratory-evidence rows of every other condition '
+                     'are not diagnoses) | payer_claim (payer_claim_diagnosis rows with counts_in_metrics = 1: current non-duplicate claim '
+                     'versions whatever their adjudication, so claims-only members count), source_detail = the source table / claim status, '
+                     'event_date (YYYY-MM-DD; claim service_from, condition date), record_ref = source record / claim id. This is the one '
+                     'condition-evidence rule every path uses (grammar, compiler, metrics, families), read by ICD-10 code. Encounter diagnoses are '
+                     'not part of it (encounter_diagnosis holds them). Use it to count or list patients with a diagnosis code: SELECT '
+                     "count(DISTINCT patient_id) FROM diagnosis_any WHERE icd10 LIKE 'F11%'. The same patient appears once per source record, so "
+                     'always count DISTINCT patient_id. condition alone holds only EHR condition records and undercounts documented diagnoses '
+                     '(payer claims add patients). By library concept (no codes) use concept_patient.')
 
 
 def _diagnosis_any_sql(cols):
     """The diagnosis_any SELECT for the tables present (cols = {table: set of columns}); None when no diagnosis source exists."""
+    from .decision_context import LAB_EVIDENCE_CONDITIONS
     parts = []
     c = cols.get('condition', set())
     if {'patient_id', 'icd10'} <= c:
-        keep = ' AND (is_diagnosis = 1' + (" OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')" if 'diagnosis_basis' in c else '') + ')' \
-            if 'is_diagnosis' in c else ''
+        lab = ''
+        if {'concept', 'diagnosis_basis'} <= c and 'is_diagnosis' in c:  # diabetes and CKD also count laboratory evidence (Mike 2026-10-21)
+            names = ','.join("'" + n + "'" for n in LAB_EVIDENCE_CONDITIONS)
+            lab = f" OR (is_diagnosis IS NULL AND diagnosis_basis = 'laboratory_evidence' AND concept IN ({names}))"
+        keep = ' AND (is_diagnosis = 1' + (" OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')" if 'diagnosis_basis' in c else '') + lab + ')'             if 'is_diagnosis' in c else ''
         day = ' coalesce(event_date, recorded_date)' if {'event_date', 'recorded_date'} <= c else (' event_date' if 'event_date' in c else ' NULL')
         parts.append(f"SELECT patient_id, upper(trim(icd10)) AS icd10, 'condition' AS source, {'source_table' if 'source_table' in c else 'NULL'} AS source_detail, "
                      f"substr({day.strip()}, 1, 10) AS event_date, {'record_id' if 'record_id' in c else 'NULL'} AS record_ref "
                      f"FROM condition WHERE icd10 IS NOT NULL AND trim(icd10) <> ''{keep}")
     d, pc = cols.get('payer_claim_diagnosis', set()), cols.get('payer_claim', set())
     if {'patient_id', 'icd10', 'payer_claim_id'} <= d:
-        paid = ' JOIN payer_claim c ON c.payer_claim_id = d.payer_claim_id' if {'payer_claim_id', 'final_status'} <= pc else ''
-        where = " AND c.final_status = 'paid'" if paid else ''
+        joined = ' LEFT JOIN payer_claim c ON c.payer_claim_id = d.payer_claim_id' if {'payer_claim_id', 'final_status'} <= pc else ''
         counted = " AND coalesce(d.counts_in_metrics, 1) = 1" if 'counts_in_metrics' in d else ''
-        day = 'coalesce(d.service_from, c.service_from)' if paid and 'service_from' in pc and 'service_from' in d else \
+        day = 'coalesce(d.service_from, c.service_from)' if joined and 'service_from' in pc and 'service_from' in d else \
             ('d.service_from' if 'service_from' in d else 'NULL')
-        parts.append(f"SELECT d.patient_id, upper(trim(d.icd10)), 'payer_claim', {'c.final_status' if paid else 'NULL'}, substr({day}, 1, 10), d.payer_claim_id "
-                     f"FROM payer_claim_diagnosis d{paid} WHERE d.icd10 IS NOT NULL AND trim(d.icd10) <> ''{where}{counted}")
-    e = cols.get('encounter_diagnosis', set())
-    if {'patient_id', 'icd10'} <= e:
-        own = " AND coalesce(source, 'ehr') <> 'payer_claim'" if 'source' in e else ''
-        parts.append(f"SELECT patient_id, upper(trim(icd10)), 'encounter', {'source' if 'source' in e else 'NULL'}, "
-                     f"substr({'event_date' if 'event_date' in e else 'NULL'}, 1, 10), {'record_id' if 'record_id' in e else 'NULL'} "
-                     f"FROM encounter_diagnosis WHERE icd10 IS NOT NULL AND trim(icd10) <> ''{own}")
-    p = cols.get('problem_list_entry', set())
-    if {'patient_id', 'icd10'} <= p:
-        parts.append(f"SELECT patient_id, upper(trim(icd10)), 'problem_list', 'problem_list_entry', "
-                     f"substr({'first_recorded' if 'first_recorded' in p else 'NULL'}, 1, 10), {'record_id' if 'record_id' in p else 'NULL'} "
-                     f"FROM problem_list_entry WHERE icd10 IS NOT NULL AND trim(icd10) <> ''")
+        parts.append(f"SELECT d.patient_id, upper(trim(d.icd10)), 'payer_claim', {'c.final_status' if joined else 'NULL'}, substr({day}, 1, 10), d.payer_claim_id "
+                     f"FROM payer_claim_diagnosis d{joined} WHERE d.icd10 IS NOT NULL AND trim(d.icd10) <> ''{counted}")
     return ' UNION ALL '.join(parts) or None
+
+
+CONCEPT_PATIENT_VERSION = 2  # 2: the condition rows of concept_patient are the compiler's condition evidence (decision_context.py), claims-only members included
+
+
+def _condition_concept_sql(cols):
+    """concept_patient's condition rows under the ONE condition-evidence rule: per library condition concept and patient, the EHR condition
+    records (is_diagnosis = 1, problem-list conditions, and laboratory-evidence rows of diabetes / CKD) and the counted payer-claim
+    diagnoses in the concept's code set (concepts.condition_evidence_sql, aggregated). None when the database holds neither source."""
+    from .decision_context import LAB_EVIDENCE_CONDITIONS
+    c, d = cols.get('condition', set()), cols.get('payer_claim_diagnosis', set())
+    parts = []
+    if {'patient_id', 'concept', 'is_diagnosis'} <= c:
+        names = ','.join("'" + n + "'" for n in LAB_EVIDENCE_CONDITIONS)
+        basis = ("(is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list') OR (is_diagnosis IS NULL AND diagnosis_basis = 'laboratory_evidence' "
+                 f"AND concept IN ({names}))") if 'diagnosis_basis' in c else '0'
+        parts.append(f"SELECT patient_id, concept, {'event_date' if 'event_date' in c else 'NULL'} AS event_date FROM condition "
+                     f"WHERE concept IS NOT NULL AND (is_diagnosis = 1 OR {basis})")
+    if {'patient_id', 'icd10', 'counts_in_metrics'} <= d:
+        prefixes = ' UNION ALL '.join(f"SELECT '{name}' AS concept, '{code}' AS prefix" for name, v in concepts.CONDITIONS.items() for code in v['icd10'])
+        parts.append(f"SELECT d.patient_id, m.concept, {'d.service_from' if 'service_from' in d else 'NULL'} FROM payer_claim_diagnosis d "
+                     f"JOIN ({prefixes}) m ON d.icd10 LIKE m.prefix || '%' WHERE d.counts_in_metrics = 1")
+    if not parts: return None
+    return ("SELECT concept, 'condition' AS kind, patient_id, count(*) AS records, min(event_date) AS first_date, max(event_date) AS last_date "
+            "FROM (" + ' UNION ALL '.join(parts) + ') GROUP BY concept, patient_id')
+
+
+def build_concept_patient_conditions(out):
+    """(Re)write the condition rows of concept_patient inside an open semantic connection (the caller commits). -> rows."""
+    tables = [r[0] for r in out.execute("SELECT name FROM sqlite_master WHERE type = 'table'")]
+    sql = _condition_concept_sql({t: _columns(out, t) for t in tables})
+    if sql is None: return 0
+    out.execute("DELETE FROM concept_patient WHERE kind = 'condition'")
+    out.execute(f'INSERT OR REPLACE INTO concept_patient {sql}')
+    out.execute('INSERT OR REPLACE INTO meta VALUES (?,?)', ('concept_patient', str(CONCEPT_PATIENT_VERSION)))
+    return out.execute("SELECT count(*) FROM concept_patient WHERE kind = 'condition'").fetchone()[0]
+
+
+def ensure_concept_view(db):
+    """concept_patient at the current condition-evidence definition on a connection to a semantic database built before it: a TEMP VIEW that
+    keeps the stored measurement / encounter rows and recomputes the condition rows (shadowing the table; the stack file is untouched).
+    -> 'table' | 'view' | None."""
+    try:
+        names = {r[0]: r[1] for r in db.execute("SELECT name, type FROM sqlite_master WHERE type IN ('table', 'view')")}
+        if 'concept_patient' not in names: return None
+        try:
+            ver = db.execute("SELECT value FROM meta WHERE key = 'concept_patient'").fetchone()
+        except sqlite3.Error:
+            ver = None
+        if ver and ver[0] == str(CONCEPT_PATIENT_VERSION): return 'table'
+        sql = _condition_concept_sql({t: _columns(db, t) for t, k in names.items() if k == 'table' and t != 'concept_patient'})
+        if sql is None: return 'table'
+        db.execute("CREATE TEMP VIEW IF NOT EXISTS concept_patient AS SELECT concept, kind, patient_id, records, first_date, last_date "
+                   f"FROM main.concept_patient WHERE kind <> 'condition' UNION ALL {sql}")
+        return 'view'
+    except sqlite3.Error:
+        return None
 
 
 def build_diagnosis_any(out):
@@ -166,14 +217,20 @@ def build_diagnosis_any(out):
 
 
 def ensure_diagnosis_view(db):
-    """Make diagnosis_any readable on a connection to a semantic database that does not hold the table yet (built before the table
-    existed, not upgraded): a TEMP VIEW over the same SELECT, in the connection's own temp store, so the stack file stays untouched
-    and a read-only connection works. -> 'table' | 'view' | None (no diagnosis source / failed: the query then fails as before)."""
+    """Make diagnosis_any readable, at the current definition (DIAGNOSIS_ANY_VERSION), on a connection to a semantic database that does
+    not hold the table yet or holds an older definition: a TEMP VIEW over the same SELECT, in the connection's own temp store (it shadows
+    the older table), so the stack file stays untouched and a read-only connection works. -> 'table' | 'view' | None (no diagnosis
+    source / failed: the query then fails as before)."""
     try:
         names = {r[0]: r[1] for r in db.execute("SELECT name, type FROM sqlite_master WHERE type IN ('table', 'view')")}
-        if 'diagnosis_any' in names: return 'table'
-        sql = _diagnosis_any_sql({t: _columns(db, t) for t, k in names.items() if k == 'table'})
-        if not sql: return None
+        if 'diagnosis_any' in names:
+            try:
+                ver = db.execute("SELECT value FROM meta WHERE key = 'diagnosis_any'").fetchone()
+            except sqlite3.Error:
+                ver = None
+            if ver and ver[0] == str(DIAGNOSIS_ANY_VERSION): return 'table'
+        sql = _diagnosis_any_sql({t: _columns(db, t) for t, k in names.items() if k == 'table' and t != 'diagnosis_any'})
+        if not sql: return 'table' if 'diagnosis_any' in names else None
         db.execute('CREATE TEMP VIEW IF NOT EXISTS diagnosis_any AS SELECT patient_id, icd10 COLLATE NOCASE AS icd10, source, source_detail, '
                    f'event_date, record_ref FROM ({sql})')
         return 'view'
@@ -1170,6 +1227,7 @@ def build(path):
         from . import population_events
         feeds['population_events'] = population_events.build(out)  # last: payer evidence folded into the entity tables
         feeds['diagnosis_any'] = {'rows': build_diagnosis_any(out)}  # after every diagnosis source (condition, claims, encounters, problem list)
+        feeds['concept_patient_conditions'] = {'rows': build_concept_patient_conditions(out)}  # the same evidence by library concept
         # Build log steps 8, 9, 11: adjudication history (every version, with CARC), record corrections across streams and
         # canonical picked-up fills. History needs the build's received warehouse, which keeps superseded versions.
         from . import adjudication_history, fill_events

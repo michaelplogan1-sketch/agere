@@ -324,8 +324,8 @@ def macro_sql(kind, catalog):
 
 # ---- registered engine ----------------------------------------------------------------------------------------------
 def default_period(as_of):
-    end = date.fromisoformat(str(as_of)[:10])
-    return (end - timedelta(days=364)).isoformat(), end.isoformat()
+    from .decision_context import rolling_year  # one definition of a year: the 12 months ending at as_of
+    return rolling_year(as_of)
 
 
 def validate(p):
