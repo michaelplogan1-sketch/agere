@@ -67,6 +67,9 @@ class FakeNoteFrames:
 def run(args):
     qs = read_dev(args.bucket or BUCKETS)
     by_id = {q['id']: q for q in qs}
+    if args.live:
+        import run_integrated_stack  # in-process runs must load the provider keys or Jev / Perplexity read as unavailable
+        run_integrated_stack.keys()
     stack = LightStack(args.stack, allow_live=args.live)
     nf = FakeNoteFrames if args.fake_notes else None
     rows, subjects = [], {}

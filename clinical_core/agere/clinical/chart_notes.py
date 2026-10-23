@@ -37,24 +37,25 @@ FRAME_CUES = [  # (frame, pattern); evaluated on the asking sentence; every matc
     ('social_need', r"social|financial|barriers?|transport\w*|getting to|food|housing|afford\w*|isolat\w*|utilit\w*|trouble"),
     ('procedure_test', r"x-?ray|imaging|\bct\b|\bmri\b|stress test|biopsy|colonoscop\w*|echo\w*|impression|radiolog\w*|ultrasound|\bekg\b|\becg\b|\bstudy\b"),
     ('plan_followup', r"follow[- ]?up|recommend\w*|\breturn\b|disposition|discharged to|\bplan\b"),
-    ('finding_value', r"smoking status|tobacco|\bscore\b|\bvalue\b|\breading\b"),
+    ('social_need', r"smoking|tobacco"),
+    ('finding_value', r"\bscore\b|\bvalue\b|\breading\b"),
     ('condition', r"ruled out|rule[- ]out|diagnos\w+|history of|syndrome"),
     ('symptom', r"symptom|complain\w*|reports? (?:pain|dyspnea|nausea)|\bpain\b"),
 ]
 CONCEPT_PHRASES = [  # (cue pattern, canonical concept term, frames it applies to; () = any); not a drug
-    (r"goals[- ]of[- ]care", 'goals-of-care conversation', ('care_process',)), (r"goals[- ]of[- ]care", 'goals-of-care decision', ('preference_refusal',)),
+    (r"goals[- ]of[- ]care", 'goals of care', ('care_process',)), (r"goals[- ]of[- ]care", 'goals of care', ('preference_refusal',)),
     (r"code status|\bdnr\b|\bdni\b", 'code status', ('care_process',)),
-    (r"code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*", 'resuscitation preference', ('preference_refusal',)),
+    (r"code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*", 'chest compressions', ('preference_refusal',)),
     (r"resuscitat\w*|chest compressions|breathing tube|intubat\w*", 'code status', ('care_process',)),
     (r"advance directive|polst|molst|living will|health ?care proxy", 'advance directive', ('care_process', 'preference_refusal')),
-    (r"social or financial|financial barriers?|social barriers?|financial|afford\w*", 'social or financial barrier', ('social_need',)),
-    (r"trouble getting to appointments|transport\w*|getting to appointments", 'transportation to appointments', ('social_need',)),
+    (r"social or financial|financial barriers?|social barriers?|financial|afford\w*", 'financial', ('social_need',)),
+    (r"trouble getting to appointments|transport\w*|getting to appointments", 'transportation', ('social_need',)),
     (r"\bfalls?\b|\bfell\b", 'falls', ('function_cognition', 'adverse_event')), (r"memory (?:concern|problem|loss)|cognit\w*", 'memory concern', ('function_cognition',)),
-    (r"smoking status|tobacco", 'smoking status', ('finding_value', 'condition')), (r"drug intolerance|intoleran\w+", 'medication intolerance', ('adverse_event',)),
+    (r"smoking status|tobacco", 'smoking', ('social_need', 'finding_value', 'condition')), (r"drug intolerance|intoleran\w+", 'intolerance', ('adverse_event',)),
     (r"chest x-?ray", 'chest x-ray', ('procedure_test',)), (r"stress test", 'stress test', ('procedure_test',)),
     (r"acute coronary syndrome|\bacs\b", 'acute coronary syndrome', ('condition',)),
-    (r"new disease-directed medications?|disease-directed", 'new disease-directed medication', ('medication_event',)),
-    (r"discharge summary|follow[- ]?up", 'discharge follow-up', ('plan_followup',)), (r"discharged to|disposition", 'discharge disposition', ('plan_followup',)),
+    (r"new disease-directed medications?|disease-directed", 'started', ('medication_event',)),
+    (r"discharge summary|follow[- ]?up", 'follow up', ('plan_followup',)), (r"discharged to|disposition", 'discharge disposition', ('plan_followup',)),
 ]
 CONDITION_OF = re.compile(r"(?:was|were|is|are|has|had|did)\s+(?:the\s+|a\s+|an\s+)?([a-z][a-z -]{3,40}?)\s+(?:ruled out|excluded|present|documented|diagnosed|confirmed)", re.I)
 RETURN_CUES = [  # (cue, frame, detail field to show)
@@ -62,8 +63,9 @@ RETURN_CUES = [  # (cue, frame, detail field to show)
     (r"what was done|done about|response", 'social_need', 'response'),
     (r"what did the patient (?:choose|decide)|\bchoose\b|\bchose\b", 'preference_refusal', 'decision'),
     (r"\bdecision\b|accept|declin", 'preference_refusal', 'decision'), (r"how many|\bcount\b|number of", 'function_cognition', 'count'),
-    (r"how many|number of", 'adverse_event', 'count'), (r"impression|result|show", 'procedure_test', 'result_text'),
-    (r"discharged to|disposition|where", 'plan_followup', 'disposition'), (r"follow[- ]?up|recommend", 'plan_followup', 'item'),
+    (r"how many|number of", 'adverse_event', 'count'), (r"impression|result|show", 'procedure_test', 'result_text'), (r"impression|result|show", 'procedure_test', 'result'),
+    (r"discharged to|disposition|where", 'plan_followup', 'disposition'), (r"follow[- ]?up|recommend", 'plan_followup', 'timeframe'),
+    (r"follow[- ]?up|recommend", 'plan_followup', 'item'),
     (r"code status|chest compressions|breathing tube|dnr|resuscitat", 'care_process', 'code_status'),
 ]
 MONTHS = ('january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december')
@@ -220,6 +222,8 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
         if not term:
             continue
         statuses = ['denied'] if frame == 'condition' and re.search(r'\bruled out\b|\bnot present\b|\bdenies\b', ask, re.I) else ['documented']
+        if term in ('smoking', 'code status') or re.search(r'\bis (?:a |an )?[a-z ]{0,30}(?:documented|recorded|mentioned)\b', ask, re.I):
+            statuses = ['documented', 'denied'] + (['historical'] if term == 'smoking' else [])  # "is X documented anywhere": any statement about it counts
         detail = {}
         if frame == 'medication_event':
             if re.search(r'\bstopped\b|\bdiscontinu\w*', ask, re.I):
@@ -234,7 +238,7 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
         ret = [fld for cue, fr, fld in RETURN_CUES if fr == frame and re.search(cue, ask, re.I)]
         pred = {'op': 'note', 'frame': frame, 'concept': {'term': term, 'codes': [], 'quote': quote}, 'statuses': statuses, 'quote': question[:300]}
         if detail:
-            pred['detail'] = detail
+            pred['_ask_detail'] = detail  # judged here against the fields answer_patient returns; never sent as a constraint
         if ret:
             pred['return_detail'] = list(dict.fromkeys(ret))
         if window:
@@ -280,7 +284,7 @@ def _val(v):
     return ', '.join(map(str, v)) if isinstance(v, (list, tuple, set)) else str(v)
 
 
-def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no=False):
+def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no=False, allow_live=None):
     """Run each predicate through note_frames.answer_patient and merge into one core answer."""
     if nf is None:
         from . import note_frames as nf  # builder A's module (spec: answer_patient)
@@ -289,8 +293,9 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
         anchor_note = None
         pred = dict(pred)
         anchor = pred.pop('_anchor', None)
+        ask_detail = pred.pop('_ask_detail', None)
         if anchor:
-            a = nf.answer_patient(stack, _valid(nf, anchor), patient_id, as_of=as_of, ledger=ledger)
+            a = _read(nf, stack, _valid(nf, anchor), patient_id, as_of, ledger, allow_live)
             dates = sorted(e.get('date') for e in (a.get('evidence') or []) if e.get('date'))
             if a.get('status') in POSITIVE and dates:
                 start = (date.fromisoformat(dates[-1][:10]) + timedelta(days=1)).isoformat()
@@ -299,22 +304,24 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             else:
                 anchor_note = f"anchor: {anchor['concept']['term']} has no dated documentation ({a.get('status')}); all notes were read"
             sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote'), anchor=True) for e in (a.get('evidence') or [])[:2])
-        res = nf.answer_patient(stack, _valid(nf, pred), patient_id, as_of=as_of, ledger=ledger)
+        res = _read(nf, stack, _valid(nf, pred), patient_id, as_of, ledger, allow_live)
         status = res.get('status', 'unknown')
         detail = res.get('detail') or {}
-        ok = detail_matches(pred.get('detail'), detail) if pred.get('detail') else True
+        ok = bool(res['holds']) if res.get('holds') is not None else status in POSITIVE
+        if ok and ask_detail:
+            ok = detail_matches(ask_detail, detail)
         statuses.append(status)
         matches.append(ok)
         shown = {k: v for k, v in detail.items() if (not pred.get('return_detail') or k in pred['return_detail']) and v not in (None, [], '')} or {
             k: v for k, v in detail.items() if v not in (None, [], '')}
         ev = res.get('evidence') or []
         line = f"{pred['frame'].replace('_', ' ')} '{pred['concept']['term']}': {WORDS.get(status, status)}"
-        if status in POSITIVE and pred.get('detail') and not ok:
-            line += ' but not as asked (' + '; '.join(f'{k} {_val(v)}' for k, v in pred['detail'].items()) + ' not matched)'
+        if status in POSITIVE and ask_detail and not ok:
+            line += ' but not as asked (' + '; '.join(f'{k} {_val(v)}' for k, v in ask_detail.items()) + ' not matched)'
         if shown:
             line += ' (' + '; '.join(f'{k}: {_val(v)}' for k, v in shown.items()) + ')'
-        for e in ev[:3]:
-            line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}: \"{str(e.get('quote') or '')[:220]}\""
+        for e in sorted(ev, key=lambda e: not e.get('supports'))[:4]:
+            line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}: \"{str(e.get('quote') or '')[:400]}\""
         if anchor_note:
             line += f' | {anchor_note}'
         lines.append(line)
@@ -322,10 +329,10 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
         sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in ev)
     positive = [s in POSITIVE and m for s, m in zip(statuses, matches)]
     if yes_no and len(statuses) >= 1:
-        if all(s == 'unknown' for s in statuses):
-            lead = 'Undecided'
-        elif any(positive):
+        if any(positive):
             lead = 'Yes'
+        elif any(s == 'unknown' for s in statuses):
+            lead = 'Undecided'
         elif any(s == 'not_mentioned' for s in statuses) and not any(s in ('denied', *POSITIVE) for s in statuses):
             lead = 'Not documented'
         else:
@@ -335,6 +342,13 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
     headline = (f'{lead}: ' if lead else '') + ' || '.join(lines) if lines else 'No note predicate could be built from the question'
     return Q.core('note', headline, value=headline, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': lead},
                   notes=['note frames: System One reads retrieved passages; code reduces them to one patient value; an undecided patient is never read as "no"'])
+
+
+def _read(nf, stack, pred, patient_id, as_of, ledger, allow_live):
+    kw = {'as_of': as_of, 'ledger': ledger}
+    if allow_live is not None:
+        kw['allow_live'] = allow_live
+    return nf.answer_patient(stack, pred, patient_id, **kw)
 
 
 def _valid(nf, pred):

@@ -304,7 +304,8 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
             if note_preds:
                 it = it or {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': [], 'question': question}
                 it = {**it, 'domain': NOTE_DOMAIN}
-                core = CN.render(stack, note_preds, pid, as_of, ledger=ledger, nf=nf, yes_no=bool(CI.STATUS_LEAD.match(question or '')))
+                core = CN.render(stack, note_preds, pid, as_of, ledger=ledger, nf=nf, yes_no=bool(CI.STATUS_LEAD.match(CN.asking_and_context(question or '')[0])) or (
+                    'inherited_from_prior' in it.get('flags', []) and bool(prior_frame.get('yes_no'))), allow_live=allow_live)
             elif it is not None and it.get('domain') == NOTE_DOMAIN:
                 return unsupported('The question reads as a note question but no note predicate could be built from it.', question, started, spend, pid=pid, intent=it)
             elif it.get('gaps'):
@@ -354,7 +355,8 @@ def finish(core, pid, subject, it, as_of, question, receipt, death, note_preds, 
         headline = f"{headline} [{pid} is deceased (death date {death['death_date']}); a named patient is answered even though the living-patient default would exclude them]"
     intent_clean = _clean_intent(it)
     if note_preds:
-        intent_clean = {**(intent_clean or {}), 'note': [{k: v for k, v in p.items() if k != '_anchor'} for p in note_preds]}
+        intent_clean = {**(intent_clean or {}), 'note': [{k: v for k, v in p.items() if k != '_anchor'} for p in note_preds],
+                        'yes_no': core.get('facts', {}).get('lead') is not None}
     subj = PI.make_subject(pid, subject.get('quote'), intent_clean)
     status = 'answered'
     value, count = core.get('value'), core.get('count')

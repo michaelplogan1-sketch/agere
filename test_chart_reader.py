@@ -225,7 +225,6 @@ class PatientIds(Base):
 
     def test_named_patient_detector_is_format_only(self):
         self.assertTrue(PI.names_a_patient(f'a1c for {RICH}'))
-        self.assertTrue(PI.names_a_patient('labs for P-HF11x1') is False or True)
         self.assertFalse(PI.names_a_patient('how many patients with diabetes in the practice'))
 
 
@@ -520,7 +519,7 @@ class FakeNotes:
     def validate_predicate(self, p):
         return p
 
-    def answer_patient(self, stack, predicate, patient_id, *, as_of, ledger=None):
+    def answer_patient(self, stack, predicate, patient_id, *, as_of, ledger=None, allow_live=True):
         self.calls.append((predicate, patient_id))
         return self.readings.get((predicate['frame'], predicate['concept']['term']), {'status': 'not_mentioned', 'detail': {}, 'evidence': [], 'p': 0.9})
 
@@ -542,15 +541,15 @@ class Notes(Base):
         self.assertEqual((p[0]['frame'], p[0]['concept']['term']), ('medication_event', 'lisinopril'))
         self.assertEqual(p[0]['window']['start'], '2029-08-06')
         p = CN.build('What was the reason aspirin was stopped?', AS_OF)
-        self.assertEqual((p[0]['detail'], p[0]['return_detail']), ({'event': 'stopped'}, ['reason']))
+        self.assertEqual((p[0]['_ask_detail'], p[0]['return_detail']), ({'event': 'stopped'}, ['reason']))
         p = CN.build('Did the patient accept statin therapy when it was discussed?', AS_OF)
-        self.assertEqual((p[0]['frame'], p[0]['detail']), ('preference_refusal', {'decision': 'accepted'}))
+        self.assertEqual((p[0]['frame'], p[0]['_ask_detail']), ('preference_refusal', {'decision': 'accepted'}))
         p = CN.build('Was acute coronary syndrome ruled out during the April 2027 admission, and what did the stress test show?', AS_OF)
         self.assertEqual({x['frame'] for x in p}, {'condition', 'procedure_test'})
         self.assertEqual(p[0]['window'], {'start': '2027-04-01', 'end': '2027-04-30', 'quote': 'April 2027'})
         p = CN.build('What follow-up did the 2027-10-28 discharge summary recommend, and where was the patient discharged to?', AS_OF)
         self.assertEqual((p[0]['window']['start'], p[0]['window']['end']), ('2027-10-28', '2027-10-28'))
-        self.assertEqual(p[0]['return_detail'], ['disposition', 'item'])
+        self.assertEqual(p[0]['return_detail'], ['disposition', 'timeframe', 'item'])
 
     def test_system_one_picks_the_frame_when_the_cues_are_silent(self):
         asked = []
@@ -599,11 +598,23 @@ class Notes(Base):
 
     def test_a_later_notes_question_runs_the_anchor_first_for_its_date(self):
         ev = [{'record_id': 'N-1', 'date': '2029-09-01', 'note_type': 'progress_note', 'quote': 'Goals of care: comfort-focused.'}]
-        nf = FakeNotes({('care_process', 'goals-of-care conversation'): {'status': 'documented', 'detail': {}, 'evidence': ev, 'p': 0.9}})
+        nf = FakeNotes({('care_process', 'goals of care'): {'status': 'documented', 'detail': {}, 'evidence': ev, 'p': 0.9}})
         a = CR.ask(self.stack, f'{RICH} had a goals-of-care talk choosing comfort-focused care. Do the later notes still show new disease-directed medications being started?', nf=nf)
         self.assertEqual(nf.calls[0][0]['frame'], 'care_process')
         self.assertEqual(nf.calls[1][0]['window']['start'], '2029-09-02')
         self.assertIn('later notes read from 2029-09-02', a['headline'])
+
+
+class RealNoteFrames(Base):
+    def test_predicates_validate_against_note_frames_and_run_offline(self):
+        from clinical_core.agere.clinical import note_frames as NF
+        for text in ('What was the reason aspirin was stopped?', 'Did the patient accept statin therapy when it was discussed?',
+                     'Do the notes say he has trouble getting to appointments?', 'Is a DNR order or code status documented?',
+                     'What was the impression on the outside chest x-ray report?', 'How many falls did she report in the past year?',
+                     'Was acute coronary syndrome ruled out during the April 2027 admission, and what did the stress test show?',
+                     'What follow-up did the 2027-10-28 discharge summary recommend, and where was the patient discharged to?'):
+            for pred in CN.build(text, AS_OF):
+                NF.validate_predicate({k: v for k, v in pred.items() if not k.startswith('_')})  # raises ValueError when a field or option is wrong
 
 
 class Tier(Base):
