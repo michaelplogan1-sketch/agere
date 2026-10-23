@@ -458,6 +458,8 @@ def tier(stack, question, population=None, *, ledger=None, decide=None):
         return None
     if not note and it.get('gaps'):
         return None
+    # remembered here, in the request's own thread, so the next turn's "she" / "and the one before that" binds this patient
+    PI.remember_current(PI.make_subject(sub['patient_id'], sub['quote'], frame=_clean_intent(it) if not note else None))
     params = {'patient_id': sub['patient_id'], 'question': question[:2000], 'subject_quote': sub['quote'] or sub['patient_id'], 'how': sub['how'],
               'chart': typed_chart(it, preds if note else None)}
     from .engine_suite import plan

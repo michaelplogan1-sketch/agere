@@ -263,6 +263,14 @@ def recall(path, conversation_id):
     return None
 
 
+_CONVERSATION = contextvars.ContextVar('agere_patient_conversation', default=None)
+
+
+def remember_current(subject):
+    """The chart reader answered for this patient: the current conversation's next turn may say "she" / "and the one before"."""
+    remember(_CONVERSATION.get(), subject)
+
+
 def current_prior():
     """The prior subject of the request being composed (set by rebind), or None."""
     return _PRIOR.get()
@@ -273,6 +281,7 @@ def rebind(path, conversation_id, question):
     by the prior turn's patient id when the question names no patient. Any other question is returned unchanged."""
     prior = recall(path, conversation_id) if conversation_id else None
     _PRIOR.set(prior)
+    _CONVERSATION.set(conversation_id or None)
     if prior and not names_a_patient(question) and has_pronoun(question):
         return rewrite_pronouns(question, prior['patient_id'])
     if prior and not names_a_patient(question) and is_elliptical(question):

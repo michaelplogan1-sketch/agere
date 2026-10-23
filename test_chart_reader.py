@@ -698,3 +698,12 @@ class PlaceholderPlan(unittest.TestCase):
         self.assertEqual(A._placeholder(g, v), 'placeholder')
         self.assertFalse(v['accept'])
         self.assertIsNone(A._placeholder({'nodes': [{'parameters': {'query': 'SELECT 1 FROM patient WHERE age > 10'}}]}, {'accept': True, 'reasons': []}))
+
+
+class ConversationMemory(unittest.TestCase):
+    def test_remember_current_binds_the_next_turn(self):
+        from pathlib import Path as _P
+        from clinical_core.agere.clinical import patient_ids as PI
+        PI.rebind(_P('/nonexistent'), 'conv-mem-1', 'What is the latest A1c on SYN-67436663-A0F?')  # opens the conversation scope
+        PI.remember_current(PI.make_subject('SYN-67436663-A0F'))
+        self.assertEqual(PI.rebind(_P('/nonexistent'), 'conv-mem-1', 'is she on a statin?'), 'is SYN-67436663-A0F on a statin?')
