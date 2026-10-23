@@ -64,6 +64,8 @@ SYNONYMS = {
     r'depress|mood|phq': [r'depress', r'\bmood\b', r'\bphq', r'sad\b', r'anhedonia'],
     r'pain': [r'\bpain', r'\bache', r'\bsore\b'],
     r'shortness of breath|dyspnea|sob': [r'shortness of breath', r'dyspnea', r'\bsob\b', r'breathless', r'winded'],
+    r'start|initiat|begin|new medication': [r'\bstart(?:ed|ing)?\b', r'\binitiat\w*', r'\bbegin\b', r'\bbegan\b', r'\bnew prescription'],
+    r'stop|discontinu|held|hold': [r'\bstop(?:ped)?\b', r'\bdiscontinu\w*', r'\bheld\b', r'\bon hold\b', r'\bhold\b'],
     r'edema|swelling': [r'edema', r'swelling', r'swollen'],
 }
 STOP = {'the', 'and', 'for', 'with', 'any', 'from', 'that', 'this', 'patient', 'patients', 'documented', 'documentation', 'history',
@@ -97,7 +99,7 @@ def concept_patterns(concept):
     if term:
         out.append(r'\b' + r'\W+'.join(re.escape(w) for w in re.findall(r'[a-z0-9]+', term)) + r'\w*')
     words = [w for w in re.findall(r'[a-z0-9]+', term) if len(w) > 3 and w not in STOP]
-    if len(words) > 1:
+    if len(words) > 2:  # long free-text terms only; short phrases match as a phrase (single words over-match: "heart", "failure")
         out += [r'\b' + re.escape(w) + r'\w*' for w in words]
     for rx, extra in SYNONYMS.items():
         if re.search(rx, term):
@@ -139,6 +141,11 @@ def sentences(text):
 def passages_in(text, patterns, *, context=1, max_chars=MAX_CHARS):
     """Passages of one text matching any pattern: [{start, end, text, terms, hits}]. Overlapping context merges."""
     rx = [re.compile(p, re.I) for p in patterns]
+    if len(text.strip()) <= max_chars and any(r.search(text) for r in rx):  # a short document is its own passage
+        body = text.strip()
+        start = text.index(body)
+        return [{'start': start, 'end': start + len(body), 'text': body, 'terms': len({k for k, r in enumerate(rx) if r.search(text)}),
+                 'hits': 1}]
     sents = sentences(text)
     hit_idx = []
     for i, (_, _, s) in enumerate(sents):

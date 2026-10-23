@@ -1,0 +1,44 @@
+cond-001|historical||Chronic congestive heart failure (disorder)
+cond-002|not_mentioned||
+cond-003|documented||Disorder of kidney due to diabetes mellitus
+cond-004|documented||Chronic obstructive bronchitis
+cond-005|not_mentioned||
+cond-006|documented||Unspecified atrial fibrillation
+cond-007|documented||Asthma
+cond-008|documented|course=improving|pneumonia symptoms have improved since returning home
+cond-009|documented||Recurrent urinary tract infection
+cond-010|documented||Body mass index 30+ - obesity
+cond-011|documented||Osteoarthritis of knee
+cond-012|historical||history of colon cancer
+cond-013|documented||Alzheimer's disease
+cond-014|documented||Chronic congestive heart failure
+cond-015|not_mentioned||
+cond-016|documented||Essential hypertension
+cond-017|not_mentioned||
+cond-018|documented||COPD, unspecified (GOLD III)
+cond-019|documented||Major depressive disorder
+cond-020|documented||atrial fibrillation
+cond-021|documented||Anemia
+cond-022|documented||Known hypothyroidism
+cond-023|documented||Asthma
+cond-024|documented|course=improving|Admitted with community-acquired pneumonia; improved on IV ceftriaxone
+cond-025|not_mentioned||
+cond-026|not_mentioned||
+cond-027|documented||osteoarthritis of the hand
+cond-028|historical||history of breast cancer
+cond-029|not_mentioned||
+cond-030|historical||h/o stroke
+cond-031|documented||Chronic congestive heart failure
+cond-032|not_mentioned||
+cond-033|documented||hypertension
+cond-034|not_mentioned||
+cond-035|possible||Depressive symptoms need further diagnostic assessment
+cond-036|documented||atrial fibrillation
+cond-037|documented||anemia assessment
+cond-038|documented||hypothyroidism
+cond-039|documented||Known asthma
+cond-040|documented||Recurrent urinary tract infection
+cond-041|not_mentioned||
+cond-042|documented||Body mass index 30+ - obesity
+cond-043|not_mentioned||
+cond-044|not_mentioned||

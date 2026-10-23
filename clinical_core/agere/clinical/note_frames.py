@@ -95,6 +95,7 @@ FRAMES = {
             'trigger': _d('choice', ['exertion', 'rest', 'positional', 'meal_related', 'medication_related', 'none_described'],
                           'What brings the symptom on, if the passage says?'),
             'duration': _d('quote', [], 'The words giving how long the symptom has lasted.'),
+            'event_time': _d('time', [], _TIME),
         }},
     'medication_event': {
         'label': 'Medication event',
@@ -113,6 +114,7 @@ FRAMES = {
             'initiated_by': _d('choice', ['clinician', 'patient', 'pharmacy_or_plan', 'unspecified'], 'Who made the change?'),
             'reason_not_done': _d('choice', _REASON_NOT, 'If it was not given or prescribed, why not?'),
             'amount': _d('number', [], 'Which number is the dose or amount given or ordered?'),
+            'sig': _d('quote', [], 'The dose, route and frequency as written (the signature line).'),
             'event_time': _d('time', [], _TIME),
         }},
     'procedure_test': {
@@ -198,7 +200,7 @@ FRAMES = {
                                    'substance_use', 'health_insurance', 'discrimination', 'other'],
                          'Which social-need domains does the passage describe? Choose every one described.'),
             'response': _d('choice', ['referral_made', 'resources_provided', 'counseling', 'screened_only', 'patient_declined',
-                                      'none_documented'], 'What was done about the need?'),
+                                      'need_resolved', 'none_documented'], 'What was done about the need?'),
             'severity': _d('choice', _SEV, 'How serious does the passage say the need is?'),
         }},
     'function_cognition': {
@@ -238,7 +240,7 @@ FRAMES = {
         'default_combine': 'latest',
         'details': {
             'item': _d('choice', ['follow_up_visit', 'referral', 'test_order', 'medication_plan', 'monitoring', 'call_back',
-                                  'return_precautions', 'education', 'disposition'], 'Which kind of plan item is it?'),
+                                  'return_precautions', 'education', 'disposition', 'goal'], 'Which kind of plan item is it?'),
             'timeframe': _d('quote', [], 'The words giving when (a date or interval).'),
             'due_on': _d('date', [], 'By what date is it due?'),
             'disposition': _d('choice', ['home', 'home_health', 'skilled_nursing', 'inpatient_rehab', 'hospice', 'admitted',

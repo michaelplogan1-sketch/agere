@@ -325,5 +325,45 @@ class ExecutorTests(unittest.TestCase):
         self.assertLessEqual({'status', 'detail', 'evidence', 'p'}, set(a))
 
 
+class LabelSetTests(unittest.TestCase):
+    ROWS = [json.loads(l) for l in (Path(__file__).parent / 'labeled.jsonl').open()]
+
+    def test_size_and_frames(self):
+        self.assertGreaterEqual(len(self.ROWS), 484)
+        from collections import Counter
+        c = Counter(r['frame'] for r in self.ROWS)
+        self.assertEqual(len(c), 11)
+        self.assertTrue(all(n >= 40 for n in c.values()), c)
+
+    def test_labels_use_schema_options_and_exact_quotes(self):
+        for r in self.ROWS:
+            for k in ('pass1', 'pass2'):
+                lab = r[k]
+                self.assertIn(lab['status'], nf.STATUSES, r['id'])
+                self.assertIn(lab['quote'] or '', ['', *[lab['quote']]])
+                if lab['quote']:
+                    self.assertIn(lab['quote'], r['text'], (r['id'], k))
+                spec = nf.FRAMES[r['frame']]['details']
+                for f, v in lab['detail'].items():
+                    self.assertIn(f, spec, (r['id'], f))
+                    if spec[f]['kind'] in ('choice', 'multi'):
+                        for x in (v if isinstance(v, list) else [v]):
+                            self.assertIn(x, spec[f]['options'], (r['id'], f, x))
+
+    def test_dev_bucket_predicates_validate(self):
+        from tools.note_labels import dev_bucket2
+        for qid, (pred, _) in dev_bucket2.PREDICATES.items():
+            nf.validate_predicate(pred)
+
+
+class CoverageTests(unittest.TestCase):
+    def test_ctgov_sample(self):
+        from tools.note_labels import coverage_ctgov
+        t = coverage_ctgov.tally()
+        self.assertEqual(t['lines'], 200)
+        self.assertEqual(t['gap'], 0)
+        self.assertGreaterEqual(t['frames_plus_structured_share'], 0.95)
+
+
 if __name__ == '__main__':
     unittest.main()

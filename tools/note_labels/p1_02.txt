@@ -1,0 +1,44 @@
+medi-001|denied|adherence=not_taking|use on no days (0 of the past 14 days)
+medi-002|not_mentioned||
+medi-003|documented|event=continued|continue statin
+medi-004|documented|adherence=taking_as_directed|reports current regular use
+medi-005|denied|adherence=not_taking|no supply remaining
+medi-006|not_mentioned||
+medi-007|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-008|documented|adherence=taking_as_directed|reports use on 12 of 14 days
+medi-009|documented||reports taking this medicine
+medi-010|documented|adherence=taking_as_directed|reports regular use
+medi-011|denied|adherence=not_taking|is not being used: was unsure whether it was still needed
+medi-012|documented|adherence=taking_differently|reports use on 11 of 14 days
+medi-013|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-014|documented|event=continued|continue statin
+medi-015|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-016|not_mentioned||
+medi-017|not_mentioned||
+medi-018|planned_not_done|event=changed_dose;direction=increased|Did not increase Furosemide 40 MG Oral Tablet today
+medi-019|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-020|not_mentioned||
+medi-021|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-022|denied|adherence=not_taking|is not being used: was unsure whether it was still needed
+medi-023|documented|adherence=taking_differently|reports use on 5 of 14 days
+medi-024|documented|adherence=taking_differently|reports use on 1 of 14 days
+medi-025|planned_not_done||discussed statin therapy
+medi-026|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-027|not_mentioned||
+medi-028|historical|event=changed_dose;direction=increased|Increase furosemide, recheck 1 wk
+medi-029|documented||carvedilol 25 MG Oral Tablet dispensed 2026-09-23
+medi-030|documented||says taking
+medi-031|documented|adherence=taking_differently|reports use on 1 of 14 days
+medi-032|denied|adherence=not_taking|use on no days (0 of the past 14 days)
+medi-033|documented||lisinopril 20 mg
+medi-034|planned_not_done||discussed statin therapy
+medi-035|documented|adherence=taking_as_directed|reports use on 12 of 14 days
+medi-036|not_mentioned||
+medi-037|planned_not_done|event=changed_dose;direction=increased|Did not increase Furosemide 40 MG Oral Tablet today
+medi-038|documented||carvedilol 25 mg tablet: 6 tablet counted in the presented container
+medi-039|planned_not_done|event=changed_dose;direction=increased|Did not increase Acetaminophen 325 MG / Oxycodone Hydrochloride 10 MG Oral Tablet [Percocet] today
+medi-040|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-041|documented|adherence=taking_as_directed|reports use on 14 of 14 days
+medi-042|denied|adherence=not_taking|reports use on 0 of 14 days
+medi-043|not_mentioned||
+medi-044|documented|adherence=taking_as_directed|reports use on 14 of 14 days

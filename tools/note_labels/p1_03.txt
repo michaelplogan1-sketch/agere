@@ -1,0 +1,44 @@
+proc-001|planned_not_done|category=screening|Discuss stool testing and colonoscopy
+proc-002|planned_not_done|category=screening|mammogram ordered
+proc-003|documented|category=imaging;result=not_reported|EXAM: MRI
+proc-004|documented|category=imaging;result=not_reported|EXAM: ULTRASOUND NON OB
+proc-005|planned_not_done|category=cardiac_test|echocardiogram ordered
+proc-006|documented|category=imaging;result=normal|CXR clear
+proc-007|documented|category=cardiac_test;result=normal|Stress test negative for inducible ischemia
+proc-008|historical|category=endoscopy|Prior colonoscopy records are not available here
+proc-009|planned_not_done|category=cardiac_test|stress test ordered
+proc-010|planned_not_done|category=endoscopy|Discussed upper endoscopy and colonoscopy
+proc-011|documented|category=imaging;result=not_reported|EXAM: MRI
+proc-012|documented|category=imaging;result=normal|Norma1 renal ultrasound
+proc-013|documented|category=cardiac_test;result=not_reported|EXAM: Transthoracic echocardiogram, complete
+proc-014|documented|category=imaging;result=abnormal|hyperinflation without focal consolidation
+proc-015|planned_not_done|category=screening|mammogram ordered
+proc-016|documented|category=imaging;result=not_reported|EXAM: MRI
+proc-017|documented|category=imaging;result=not_reported|EXAM: ULTRASOUND NON OB
+proc-018|documented|category=imaging;result=abnormal|right lower lobe consolidation
+proc-019|planned_not_done|category=cardiac_test|stress test
+proc-020|planned_not_done|category=endoscopy|Discussed upper endoscopy and colonoscopy
+proc-021|planned_not_done|category=screening|Discuss stool testing and colonoscopy
+proc-022|documented|category=screening;result=not_reported|EXAM: Bilateral screening mammogram with tomosynthesis
+proc-023|documented|category=imaging;result=not_reported|EXAM: MRI
+proc-024|documented|category=imaging;result=normal|IMPRESSION: Normal renal ultrasound.
+proc-025|documented|category=imaging;result=abnormal|right lower lobe consolidation
+proc-026|planned_not_done|category=cardiac_test|stress test ordered
+proc-027|historical|category=endoscopy|Prior colonoscopy records are not available here
+proc-028|planned_not_done|category=cardiac_test|stress test ordered
+proc-029|planned_not_done|category=endoscopy|colonoscopy referral placed
+proc-030|documented|category=imaging;result=not_reported|EXAM: MRI
+proc-031|documented|category=imaging;result=normal|IMPRESSION: Normal renal ultrasound.
+proc-032|documented|category=cardiac_test;result=not_reported|EXAM: Transthoracic echocardiogram, complete
+proc-033|documented|category=imaging;result=abnormal|hyperinflation without focal consolidation
+proc-034|planned_not_done|category=screening|mammogram ordered
+proc-035|documented|category=imaging;result=not_reported|EXAM: MRI
+proc-036|documented|category=imaging;result=abnormal|RUQ ultrasound with gallbladder wall thickening and stones
+proc-037|documented|category=imaging;result=abnormal|pulmonary venous congestion with small bilateral effusions
+proc-038|planned_not_done|category=cardiac_test|stress test ordered
+proc-039|documented|category=endoscopy;result=not_reported|PROCEDURE: colonoscopy/EGD.
+proc-040|planned_not_done|category=screening|Discuss stool testing and colonoscopy
+proc-041|documented|category=screening;result=not_reported|EXAM: Bilateral screening mammogram with tomosynthesis
+proc-042|documented|category=imaging;result=not_reported|EXAM:MRI
+proc-043|documented|category=imaging;result=not_reported|EXAM: ULTRASOUND NON O8
+proc-044|documented|category=imaging;result=abnormal|pulmonary venous congestion with small bilateral effusions
