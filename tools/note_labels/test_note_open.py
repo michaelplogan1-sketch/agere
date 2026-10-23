@@ -166,6 +166,19 @@ class OpenRetrieval(OpenBase):
             nf.validate_predicate({'op': 'note', 'frame': 'symptom', 'concept': {'term': 'x'}, 'statuses': ['documented'], 'note_types': ['poem']})
 
 
+class ClosedPromptsUnchanged(unittest.TestCase):
+    def test_closed_predicate_questions_are_the_calibrated_text(self):
+        """Calibration was fit on these exact questions; open concepts must not change them."""
+        pred = nf.validate_predicate({'op': 'note', 'frame': 'medication_event', 'concept': {'term': 'metformin'}, 'statuses': ['documented']})
+        passage = {'note_type': 'office_followup', 'date': '2029-06-01', 'text': 't', 'passage_id': 'x', 'record_id': 'r'}
+        f = nf.FRAMES['medication_event']
+        self.assertEqual(nq.status_question(pred, passage),
+                         f"About the PATIENT only: what does this office_followup passage dated 2029-06-01 say regarding the "
+                         f"medicine \"metformin\"? {f['stem']} \"metformin\"? Choose the one best description of what the passage states.")
+        self.assertEqual(nq.detail_question(pred, passage, 'event'),
+                         "About the PATIENT only, regarding \"metformin\" in this office_followup passage dated 2029-06-01: " + f['details']['event']['ask'])
+
+
 class SourceCues(OpenBase):
     def test_cue_table(self):
         c = no.source_cues('What was the impression on the outside chest x-ray report?')

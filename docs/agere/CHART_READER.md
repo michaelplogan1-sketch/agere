@@ -26,3 +26,6 @@ Domains: labs and vitals, medication list, fills (last, count, PDC), prescriptio
 
 ## Checks
 `python -m tools.chart_reader_eval` scores the dev buckets with the dev-set scorer; `python -m tools.chart_reader_oracle --n 30` cross-checks 36 question templates against independent SQL from `tools/dev_set/definitions.py`; `python -m unittest test_chart_reader`.
+
+## Open concepts, source cues, multi-part (2026-10-23)
+See NOTE_FRAMES.md "Open concepts and source cues". The typed chart carries `note_sources`, `note_types`, `note_dates`, `open_concepts`, `asks_response`; `chart_notes.split_parts` / `render_open` / `focus_quote` render findings in words with quotes. `tools/chart_reader_eval` also reports `lead_verdict` (the scorer applied to the headline alone, where the Yes / No lead is the first word).
