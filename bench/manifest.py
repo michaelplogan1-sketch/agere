@@ -22,8 +22,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
+import sqlite3
 import subprocess
 
 SCHEMA = 'agere-run-manifest/1'
@@ -136,6 +138,98 @@ def pin_answer_key(out_dir, score_output, name='manifest.json'):
     m['pinned_sha256'] = sha256_json(m['pinned'])
     path.write_text(json.dumps(m, indent=1, default=str))
     return m
+
+
+# -- run identity (resume safety) -------------------------------------------------------------------------------------
+_FLAG_SECRET = re.compile(r'(?:key|token|secret|password|credential)', re.I)
+CERTIFIED_STORES = ('learning.sqlite3', 'question-plans.sqlite3', 'vcache.sqlite3')  # what the contestant knows beyond its code
+
+
+def agere_flags(environ=None):
+    """Every AGERE_* environment setting of this process (secrets by name excluded), sorted."""
+    environ = os.environ if environ is None else environ
+    return {k: environ[k] for k in sorted(environ) if k.startswith('AGERE_') and not _FLAG_SECRET.search(k)}
+
+
+def _table_digest(db, table):
+    h = hashlib.sha256()
+    for row in db.execute(f'SELECT * FROM "{table}" ORDER BY rowid'):
+        h.update(repr(row).encode())
+    return h.hexdigest()
+
+
+def stack_digest(stack_dir):
+    """Content digest of what defines the contestant at run time: run.json (the data release) and the rows of the certified
+    stores (learning, plans, verified-cache), table by table, read-only (so a WAL checkpoint does not change it). None when
+    no stack directory was given."""
+    if not stack_dir:
+        return None
+    stack = Path(stack_dir)
+    parts = {}
+    run = stack / 'run.json'
+    parts['run.json'] = sha256_file(run) if run.is_file() else None
+    for name in CERTIFIED_STORES:
+        path = stack / name
+        if not path.is_file():
+            parts[name] = None
+            continue
+        db = sqlite3.connect(f'file:{path}?mode=ro', uri=True)
+        try:
+            tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")]
+            parts[name] = {t: _table_digest(db, t) for t in tables}
+        except sqlite3.Error as exc:
+            parts[name] = f'unreadable: {type(exc).__name__}'
+        finally:
+            db.close()
+    return sha256_json(parts)
+
+
+def run_identity(stack_dir, system):
+    """Manifest `extra`: the AGERE_* flags and the stack digest a resume must still match (agere runs only)."""
+    if system != 'agere':
+        return None
+    return {'agere_flags': agere_flags(), 'stack_digest': stack_digest(stack_dir), 'evaluation_mode': True}
+
+
+RESUME_SETTINGS_IGNORED = ('jobs', 'budget_usd', 'url')  # how a run is driven, not what it measures
+
+
+def resume_conflicts(old, new):
+    """Human-readable differences that forbid continuing a saved run with the current one (empty = may resume)."""
+    po, pn = old.get('pinned') or {}, new.get('pinned') or {}
+    out = []
+    co, cn = po.get('code') or {}, pn.get('code') or {}
+    if co.get('head') != cn.get('head'):
+        out.append(f"code commit changed: saved {str(co.get('head'))[:12]} vs now {str(cn.get('head'))[:12]}")
+    elif co.get('diff_sha256') != cn.get('diff_sha256'):
+        out.append('uncommitted code changed since the run started (same commit, different working-tree diff)')
+    eo, en = po.get('extra') or {}, pn.get('extra') or {}
+    if 'stack_digest' not in eo:
+        out.append('the saved manifest predates run identity (no stack digest / AGERE_* flags recorded)')
+    elif eo.get('stack_digest') != en.get('stack_digest'):
+        out.append('stack digest changed (the certified stores or run.json differ from when the run started)')
+    if (eo.get('agere_flags') or {}) != (en.get('agere_flags') or {}):
+        names = sorted({k for k in set(eo.get('agere_flags') or {}) | set(en.get('agere_flags') or {})
+                        if (eo.get('agere_flags') or {}).get(k) != (en.get('agere_flags') or {}).get(k)})
+        out.append('AGERE_* flags differ: ' + ', '.join(names[:12]))
+    if po.get('system') != pn.get('system'):
+        out.append(f"system differs: {po.get('system')} vs {pn.get('system')}")
+    ms_o = {k: v for k, v in (po.get('model_settings') or {}).items() if k not in RESUME_SETTINGS_IGNORED}
+    ms_n = {k: v for k, v in (pn.get('model_settings') or {}).items() if k not in RESUME_SETTINGS_IGNORED}
+    if ms_o != ms_n:
+        out.append('settings differ (mode / model / as-of / ...): ' + ', '.join(sorted(k for k in set(ms_o) | set(ms_n) if ms_o.get(k) != ms_n.get(k))))
+    for field in ('questions_file', 'scorer', 'data', 'docs', 'cache_policy', 'pricing'):
+        if sha256_json(po.get(field)) != sha256_json(pn.get(field)):
+            out.append(f'{field} differs')
+    return out
+
+
+def stamp_finished(out_dir, name='manifest.json'):
+    """Record the run's end time beside its start (created_at): the wall-clock window of everything it wrote."""
+    path = Path(out_dir) / name
+    m = json.loads(path.read_text())
+    m['finished_at'] = datetime.now(timezone.utc).isoformat(timespec='seconds')
+    path.write_text(json.dumps(m, indent=1, default=str))
 
 
 def hash_cache(path):

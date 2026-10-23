@@ -22,6 +22,46 @@ MODEL = 'claude-opus-5-5'
 KEY_FILE = Path('/Users/mikel/insight-engine/.env')
 
 
+EVALUATION_HEADERS = {'X-Agere-Evaluation': '1'}  # every benchmark request: the service learns nothing from it
+FROZEN_LEARNING_HEADER = 'X-Agere-Frozen-Learning'
+# The parts of a refused Agere response that say why: kept in a row's diagnostics, never printed.
+KEEP_KEYS = ('status', 'error', 'reason', 'tiers_tried', 'deferred_tiers', 'stage_diagnostics', 'answer_timing',
+             'background_continuation', 'new_paid_api_calls', 'planning_economics', 'cost_receipt', 'cost_telemetry',
+             'evaluation', 'data_absence_established')
+_SECRET_KEY = re.compile(r'(?:api[_-]?key|(?:^|_)token$|secret|password|passwd|authorization|credential|cookie)', re.I)  # not 'input_tokens'
+_SECRET_TEXT = [(re.compile(r'\bsk-[A-Za-z0-9_\-]{8,}'), '[redacted]'),
+                (re.compile(r'(?i)\bBearer\s+[A-Za-z0-9._~+/=\-]{8,}'), 'Bearer [redacted]'),
+                (re.compile(r'(?i)\b(api[_-]?key|token|secret|password|authorization)\b(["\']?\s*[:=]\s*["\']?)[^\s,"\'}]+'), r'\1\2[redacted]')]
+
+
+def scrub(value, depth=0):
+    """A JSON-safe copy of a response fragment with credential-looking keys dropped and credential-looking text redacted."""
+    if depth > 12:
+        return None
+    if isinstance(value, dict):
+        return {str(k): scrub(v, depth + 1) for k, v in value.items() if not _SECRET_KEY.search(str(k))}
+    if isinstance(value, (list, tuple)):
+        return [scrub(v, depth + 1) for v in value[:200]]
+    if isinstance(value, str):
+        for pattern, repl in _SECRET_TEXT:
+            value = pattern.sub(repl, value)
+        return value[:2000]
+    return value if value is None or isinstance(value, (bool, int, float)) else str(value)[:200]
+
+
+class AgereHTTPError(RuntimeError):
+    """A 4xx/5xx reply. str() stays 'HTTP <code> from <host>: ...' (what rows and logs show); .status and .body carry the
+    structured JSON body (tiers_tried, stage_diagnostics, cost fields) so a refusal keeps its diagnostics."""
+
+    def __init__(self, message, status=None, body=None):
+        super().__init__(message)
+        self.status, self.body = status, body or {}
+
+    @property
+    def diagnostics(self):
+        return {'http_status': self.status, **self.body}
+
+
 def post_json(url, body, headers=None, timeout=180):
     request = urllib.request.Request(url, data=json.dumps(body, allow_nan=False).encode(),
                                      headers={'Content-Type': 'application/json', **(headers or {})}, method='POST')
@@ -30,14 +70,21 @@ def post_json(url, body, headers=None, timeout=180):
             return json.load(response)
     except urllib.error.HTTPError as exc:
         # Never print request headers, credentials or an arbitrary response body; the provider's structured error
-        # type and message (no credentials) are kept so a failed run says why.
-        detail = ''
+        # type and message (no credentials) are kept so a failed run says why. An Agere refusal also keeps its
+        # structured body (allowlisted keys, scrubbed) on the exception for the row's diagnostics.
+        detail, kept = '', {}
         try:
-            err = json.loads(exc.read().decode('utf-8', 'replace')).get('error') or {}
-            detail = f": {str(err.get('type', ''))[:60]}: {str(err.get('message', ''))[:200]}"
+            payload = json.loads(exc.read().decode('utf-8', 'replace'))
+            err = payload.get('error') if isinstance(payload, dict) else None
+            if isinstance(err, dict):
+                detail = f": {str(err.get('type', ''))[:60]}: {str(err.get('message', ''))[:200]}"
+            elif err:
+                detail = f": {str(scrub(str(err)))[:200]}"
+            if isinstance(payload, dict):
+                kept = scrub({k: payload[k] for k in KEEP_KEYS if k in payload})
         except (ValueError, AttributeError, OSError):
             pass
-        raise RuntimeError(f'HTTP {exc.code} from {urllib.parse.urlparse(url).hostname}{detail}') from None
+        raise AgereHTTPError(f'HTTP {exc.code} from {urllib.parse.urlparse(url).hostname}{detail}', exc.code, kept) from None
 
 
 def api_key(path=KEY_FILE):
@@ -73,14 +120,54 @@ def usage_cost(usage, model=MODEL):
             counters[-1] * price['cache_read']) / 1_000_000
 
 
-def agere(question, url='http://127.0.0.1:8885', transport=post_json, timeout=900):
+def diagnostics_of(response):
+    """Why-and-what of one Agere reply, for a row (never printed): the tiers tried and the winner with each tier's verdict,
+    the stage diagnostics, paid calls and USD, the isolation receipt. No credentials: only allowlisted keys, scrubbed."""
+    response = response if isinstance(response, dict) else {}
+    receipt = response.get('planner_receipt') or {}
+    interp = receipt.get('interpretation') or {}
+    log = interp.get('proposers') or response.get('tiers_tried') or []
+    tiers = [{'tier': e.get('proposer') or e.get('tier'), 'verdict': e.get('outcome'), 'seconds': e.get('seconds'),
+              **({'detail': str(e.get('detail'))[:300]} if e.get('detail') else {})} for e in log if isinstance(e, dict)][:60]
+    winner = (interp.get('proposer') or {}).get('name') or interp.get('interpreter')
+    out = {'tiers_tried': tiers, 'winning_tier': winner, 'route': receipt.get('route'),
+           'stage_diagnostics': receipt.get('stage_diagnostics') or response.get('stage_diagnostics'),
+           'deferred_tiers': receipt.get('deferred_tiers') or response.get('deferred_tiers'),
+           'answer_timing': receipt.get('answer_timing') or response.get('answer_timing'),
+           'cost_receipt': response.get('cost_receipt'), 'evaluation': response.get('evaluation'),
+           'status': (response.get('answer') or {}).get('status') or response.get('status')}
+    return scrub({k: v for k, v in out.items() if v not in (None, [], {})})
+
+
+def agere(question, url='http://127.0.0.1:8885', transport=post_json, timeout=900, frozen_learning=None):
     # A slow answer is reported as latency, never scored as a failure: allow up to 15 minutes per question by default.
     # The contest harness passes its shared wall-clock limit here.
-    response = transport(url.rstrip('/') + '/api/stack/compose', {'question': question['question']},
-                         **({'timeout': timeout} if transport is post_json else {}))
+    # Always an evaluation request: the service runs it with every learning write off (X-Agere-Evaluation), so a measured
+    # run never teaches the stack the test. A transport that takes no headers (a test fake) is called without them.
+    headers = dict(EVALUATION_HEADERS)
+    frozen = frozen_learning or os.environ.get('AGERE_FROZEN_LEARNING_ID')
+    if frozen:
+        headers[FROZEN_LEARNING_HEADER] = str(frozen)[:120]
+    kwargs = {'timeout': timeout} if transport is post_json else {}
+    if transport is post_json or getattr(transport, 'accepts_headers', False):
+        kwargs['headers'] = headers
+    response = transport(url.rstrip('/') + '/api/stack/compose', {'question': question['question']}, **kwargs)
     economics = response.get('planning_economics') or {}
     # Planning usage alone is insufficient if graph execution also invokes models.
     planner = response.get('planner_receipt') or {}
+    cost = response.get('cost_receipt')
+    if isinstance(cost, dict) and cost.get('paid_calls') is not None and cost.get('ledger_consistent'):
+        # The service's per-request receipt covers every provider the ledger saw (Claude, Jev, Perplexity) and the
+        # background work the answer started; it is the authority when present.
+        total_calls = cost['paid_calls']
+        known = cost.get('usd') is not None or total_calls == 0
+        usd = 0.0 if total_calls == 0 else cost.get('usd')
+        return {'answer': response.get('answer'), 'response': response, 'input_tokens': None, 'output_tokens': None,
+                'estimated_cost_usd': usd if known else None,
+                'cost_scope': 'request_ledger' if known else 'incomplete_product_usage',
+                'known_planning_cost_usd': economics.get('known_api_estimate_usd'),
+                'new_paid_api_calls': total_calls, 'model': planner.get('model'), 'error': None,
+                'diagnostics': diagnostics_of(response)}
     total_calls = response.get('new_paid_api_calls')
     planner_calls = planner.get('new_paid_api_calls')
     complete = (type(total_calls) is int and type(planner_calls) is int and total_calls == planner_calls)
@@ -94,7 +181,8 @@ def agere(question, url='http://127.0.0.1:8885', transport=post_json, timeout=90
             'output_tokens': outputs, 'estimated_cost_usd': cost,
             'cost_scope': 'all_reported_calls' if complete else 'incomplete_product_usage',
             'known_planning_cost_usd': economics.get('known_api_estimate_usd'),
-            'new_paid_api_calls': total_calls, 'model': planner.get('model'), 'error': None}
+            'new_paid_api_calls': total_calls, 'model': planner.get('model'), 'error': None,
+            'diagnostics': diagnostics_of(response)}
 
 
 SQL_TOOL = {'name': 'query_sql', 'description': 'Read-only SQLite SELECT over received warehouse records. '
