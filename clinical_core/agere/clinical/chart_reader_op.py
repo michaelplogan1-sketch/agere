@@ -34,12 +34,15 @@ def schema(obj, string, array):
     return obj({'patient_id': {'type': 'string', 'description': 'Exact patient id (SYN-xxxxxxxx-xxx, WHP-xxxxxxxxxxxx or P-xxxx)'},
                 'question': {'type': 'string', 'description': 'The single-patient question, verbatim'},
                 'subject_quote': {'type': 'string', 'description': 'The words that named the patient'},
-                'how': string(HOW, 'How the patient was identified')})
+                'how': string(HOW, 'How the patient was identified'),
+                'chart': {'type': 'object', 'description': 'The typed chart request: intent, domain, concept, window, ordering, note predicates'}})
 
 
 def validate(p):
-    if not isinstance(p, dict) or set(p) - {'patient_id', 'question', 'subject_quote', 'how'}:
-        raise ValueError('chart_reader parameters: patient_id, question, subject_quote, how')
+    if not isinstance(p, dict) or set(p) - {'patient_id', 'question', 'subject_quote', 'how', 'chart'}:
+        raise ValueError('chart_reader parameters: patient_id, question, subject_quote, how, chart')
+    if 'chart' in p and not isinstance(p['chart'], dict):
+        raise ValueError('chart: the typed chart request (an object)')
     pid, question = p.get('patient_id'), p.get('question')
     if not isinstance(pid, str) or not re.fullmatch(r'(?:SYN-[0-9A-F]{8}-[0-9A-F]{3}|WHP-[0-9A-F]{12}|P-[A-Z0-9]{2,8})', pid):
         raise ValueError('patient_id: an exact warehouse patient id (SYN-xxxxxxxx-xxx, WHP-xxxxxxxxxxxx or P-xxxx)')

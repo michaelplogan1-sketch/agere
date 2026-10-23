@@ -19,6 +19,7 @@ read-back of how the question was understood.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import sqlite3
@@ -408,6 +409,26 @@ def _elliptical(question):
 
 
 # -- cascade rung ---------------------------------------------------------------------------------------------------------------------
+def typed_chart(it, preds=None):
+    """The typed chart request the graph executes, so the literal check reads what was understood (concept, intent, window,
+    ordering, note predicates) instead of only the restated question (the same admission rule as every other plan)."""
+    def plain(v):
+        return json.loads(json.dumps(v, default=str))
+    concept = it.get('concept') or {}
+    out = {'intent': it.get('intent'), 'domain': it.get('domain'), 'mode': it.get('mode'), 'ordinal': it.get('ordinal'),
+           'attribute': it.get('attribute'), 'window': plain(it.get('window')),
+           'concept': plain({k: concept.get(k) for k in ('kind', 'value', 'term', 'label', 'concepts', 'classes') if concept.get(k) is not None}) if isinstance(concept, dict) else plain(concept),
+           'flags': list(it.get('flags') or [])}
+    if it.get('domain') == 'readmission':  # the chart reader's readmission is stay.readmitted_30d: say so, so another window is caught
+        out['measure'] = {'field': 'stay.readmitted_30d', 'within_days': 30, 'after': 'discharge_date'}
+    if it.get('mode') in ('latest', 'first') or it.get('ordinal') or it.get('intent') in ('latest_value', 'last_event'):
+        out['order_by'] = [{'field': 'event_date', 'direction': 'asc' if it.get('mode') == 'first' else 'desc'}]
+        out['limit'] = 1 + (int(it['ordinal']) if isinstance(it.get('ordinal'), int) else 0)
+    if preds:
+        out['note_predicates'] = plain(preds)
+    return {k: v for k, v in out.items() if v not in (None, {}, [])}
+
+
 def tier(stack, question, population=None, *, ledger=None, decide=None):
     """Ladder-rung contract: (graph, receipt) or None. A single-patient question (a patient id, member id, or a pronoun in a conversation) is
     typed here; the graph carries one chart_reader node whose engine (chart_reader_op) answers it. Ambiguous / unknown ids decline with a
@@ -437,7 +458,8 @@ def tier(stack, question, population=None, *, ledger=None, decide=None):
         return None
     if not note and it.get('gaps'):
         return None
-    params = {'patient_id': sub['patient_id'], 'question': question[:2000], 'subject_quote': sub['quote'] or sub['patient_id'], 'how': sub['how']}
+    params = {'patient_id': sub['patient_id'], 'question': question[:2000], 'subject_quote': sub['quote'] or sub['patient_id'], 'how': sub['how'],
+              'chart': typed_chart(it, preds if note else None)}
     from .engine_suite import plan
     graph, info = plan(OP, params, f"Read one patient's chart: {sub['patient_id']}", question,
                        [f"patient {sub['patient_id']} ({sub['how']})", *( [f"intent {it.get('intent')} over {it.get('domain')}"] if not note else ['note frames'])])

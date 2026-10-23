@@ -163,8 +163,19 @@ def _names(gap, r):
     return f'"{r["key"].replace("_", " ")}"' in gap
 
 
+# A warehouse patient id is an entity reference, not numbers: when the plan carries the same id, the id is covered as a whole
+# (its digits are not thresholds the plan must contain).
+PATIENT_ID = re.compile(r'\b(?:SYN-[0-9A-F]{8}-[0-9A-F]{3}|WHP-[0-9A-F]{12}|P-[A-Z0-9]{2,8})\b', re.I)
+
+
+def _covered_ids(question, text):
+    low = (text or '').lower()
+    return PATIENT_ID.sub(lambda m: 'the patient' if m.group().lower() in low else m.group(), question)
+
+
 def gaps(question, text):
     """Readable reasons for every dropped requirement (literal-check gaps first, then comparators and Boolean structure)."""
+    question = _covered_ids(question, text)
     ledger = check(question, text)
     literal = missing(question, text or '')
     extra = [r['reason'] for r in ledger['requirements'] if r['status'] == 'dropped' and r['kind'] != 'literal']

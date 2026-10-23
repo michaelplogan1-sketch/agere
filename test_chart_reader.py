@@ -663,3 +663,19 @@ class Tier(Base):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class Admission(unittest.TestCase):
+    """The chart reader's graph carries its typed request, so the literal check reads what was understood (2026-10-23)."""
+    def test_typed_chart_carries_concept_ordering_and_flags(self):
+        from clinical_core.agere.clinical.chart_reader import typed_chart
+        t = typed_chart({'intent': 'latest_value', 'domain': 'lab', 'mode': 'latest', 'concept': {'kind': 'lab', 'value': 'hba1c', 'label': 'HbA1c'},
+                         'flags': ['not_filled']})
+        self.assertEqual(t['order_by'], [{'field': 'event_date', 'direction': 'desc'}])
+        self.assertEqual((t['limit'], t['concept']['label'], t['flags']), (1, 'HbA1c', ['not_filled']))
+        self.assertEqual(typed_chart({'domain': 'readmission', 'intent': 'status'})['measure']['within_days'], 30)
+
+    def test_patient_id_digits_are_not_thresholds(self):
+        from clinical_core.agere.clinical import requirement_ledger as RL
+        q = 'What is the latest LDL for SYN-69C872CB-6B9?'
+        self.assertFalse(any('number' in g for g in RL.gaps(q, '"patient_id": "SYN-69C872CB-6B9" "concept": "ldl" latest order_by event_date desc limit 1')))
