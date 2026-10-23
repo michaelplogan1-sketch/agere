@@ -153,3 +153,11 @@ class SqliteDeadline(unittest.TestCase):
         finally:
             B._deadline.reset(token)
         self.assertEqual(db.execute('SELECT 1').fetchone(), (1,))  # outside a tier nothing is interrupted
+
+
+class DataCurrencyClause(unittest.TestCase):
+    def test_use_data_received_as_of_is_context_not_a_literal(self):  # every benchmark plan failed on 2030, 05, 27
+        from clinical_core.agere.clinical import requirement_ledger as R
+        plan = '"query": "SELECT count(DISTINCT patient_id) FROM concept_patient WHERE concept = \'diabetes\'"'
+        self.assertEqual(R.gaps('How many patients have diabetes? Use data received as of 2030-05-27.', plan), [])
+        self.assertTrue(R.gaps('How many patients with diabetes as of 2029-12-31?', plan))  # a point-in-time limit stays required

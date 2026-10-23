@@ -81,9 +81,14 @@ def _fmt(v):
     return str(round(v, 6)).rstrip('0').rstrip('.') if '.' in str(round(v, 6)) else str(round(v, 6))
 
 
+# "Use data received as of 2030-05-27": the stack always answers as of its snapshot, so the date is context, not a literal
+# the plan must carry (its digits made every plan fail the number check).
+AS_OF_CLAUSE = re.compile(r'\b(?:use|using)\s+(?:the\s+)?(?:data|records?)\s+(?:received|available|delivered)\s+as\s+of\s+\d{4}-\d{2}-\d{2}\b\.?', re.I)  # a bare 'as of DATE' stays a requirement
+
+
 def missing(question, evidence):
     """Literal elements of the question absent from the executable evidence text (a list of readable reasons)."""
-    q, text = question, evidence.lower()
+    q, text = AS_OF_CLAUSE.sub(' ', question), evidence.lower()
     gaps = []
     have = _numbers(text)
     absent = sorted(n for n in N.numbers(q) if _fmt(float(n)) not in have)
