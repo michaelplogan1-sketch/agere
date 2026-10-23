@@ -1,7 +1,7 @@
 {
  "schema": "cascade-thresholds/1",
  "version": "agere-cascade/1",
- "written_at": "2026-10-19T00:01:00Z",
+ "written_at": "2026-10-23T02:25:30Z",
  "target": {
   "alpha": 0.05,
   "delta": 0.1
@@ -90,7 +90,7 @@
    "threshold": null,
    "calibrated": false,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "9c0c3ab23c75367d",
+   "bind": "d725368f426023ef",
    "data": {
     "labelled": 181,
     "calibration": 92,
@@ -103,7 +103,7 @@
     "errors_all": 82
    },
    "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "bound_if_accept_all": 0.4742,
    "eligible": 92,
    "decision": "defer",
@@ -152,7 +152,7 @@
    "threshold": 0.71,
    "calibrated": true,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "5cb9df79341c4aad",
+   "bind": "3e179d2514b0943c",
    "data": {
     "labelled": 1102,
     "calibration": 752,
@@ -165,7 +165,7 @@
     "errors_all": 0
    },
    "score": "cascade.cohort_family_score: 1 - 0.08 x convention defaults applied - 0.25 x model-filled slots - 0.05 without an inline definition",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "n_accepted": 752,
    "errors_accepted": 0,
    "coverage": 1.0,
@@ -209,7 +209,7 @@
     "errors_all": 0
    },
    "score": "family_common.score: 1 - 0.08 x convention defaults applied - 0.05 without an inline definition",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "n_accepted": 93,
    "errors_accepted": 0,
    "coverage": 1.0,
@@ -241,7 +241,7 @@
    "threshold": 1.0,
    "calibrated": true,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "3a08c702e61a78c4",
+   "bind": "68894d64c3173d41",
    "data": {
     "labelled": 142,
     "calibration": 91,
@@ -253,7 +253,7 @@
     "errors_all": 0
    },
    "score": "family_common.score: 1 - 0.08 x convention defaults applied - 0.05 without an inline definition",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "n_accepted": 91,
    "errors_accepted": 0,
    "coverage": 1.0,
@@ -285,7 +285,7 @@
    "threshold": null,
    "calibrated": false,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "0615a2a334e85d63",
+   "bind": "2fd5b98091266810",
    "data": {
     "labelled": 70,
     "calibration": 36,
@@ -298,7 +298,7 @@
     "errors_all": 65
    },
    "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "bound_if_accept_all": 1.0,
    "eligible": 36,
    "decision": "defer",
@@ -347,7 +347,7 @@
    "threshold": null,
    "calibrated": false,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "da1e0a4d1cc132dd",
+   "bind": "527e18c48b7b6a9b",
    "data": {
     "labelled": 43,
     "calibration": 19,
@@ -360,7 +360,7 @@
     "errors_all": 43
    },
    "score": "learned-router probability when it chose the engine, else 1.0",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "bound_if_accept_all": 1.0,
    "eligible": 19,
    "decision": "defer",
@@ -409,7 +409,7 @@
    "threshold": null,
    "calibrated": false,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "d0365cef495a31bd",
+   "bind": "d6ba417a79c7eccc",
    "data": {
     "labelled": 0,
     "calibration": 0,
@@ -419,7 +419,7 @@
     "errors_all": 0
    },
    "score": "typed decider probability of its chosen analysis",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "bound_if_accept_all": null,
    "eligible": 0,
    "decision": "uncalibrated",
@@ -467,7 +467,7 @@
    "threshold": null,
    "calibrated": false,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "8bdd5722c3747f88",
+   "bind": "323c494434287409",
    "data": {
     "labelled": 3,
     "calibration": 3,
@@ -479,7 +479,7 @@
     "errors_all": 0
    },
    "score": "route-level (1.0 for every claim): the certificate covers all of the route's claims",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "bound_if_accept_all": 0.5358,
    "eligible": 3,
    "decision": "uncalibrated",
@@ -527,7 +527,7 @@
    "threshold": 0.5619,
    "calibrated": true,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "d6adb66ac77d204c",
+   "bind": "17c9d30977725a93",
    "data": {
     "labelled": 1003,
     "calibration": 738,
@@ -539,7 +539,7 @@
     "errors_all": 0
    },
    "score": "local encoder cosine similarity to the verified question (identical slots required first)",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "n_accepted": 228,
    "errors_accepted": 0,
    "coverage": 0.3089,
@@ -571,7 +571,7 @@
    "threshold": 0.8,
    "calibrated": true,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "0c5ae66c63e0b6f7",
+   "bind": "9854052662998677",
    "data": {
     "labelled": 1843,
     "calibration": 1267,
@@ -583,7 +583,7 @@
     "errors_all": 1
    },
    "score": "rule confidence",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "n_accepted": 1267,
    "errors_accepted": 1,
    "coverage": 1.0,
@@ -615,7 +615,7 @@
    "threshold": 0.4112975485854458,
    "calibrated": true,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "0c5ae66c63e0b6f7",
+   "bind": "9854052662998677",
    "data": {
     "labelled": 153,
     "calibration": 102,
@@ -627,7 +627,7 @@
     "errors_all": 13
    },
    "score": "barrier-type classifier probability of its label (0 when the student contradicts a barrier)",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "n_accepted": 68,
    "errors_accepted": 0,
    "coverage": 0.6667,
@@ -659,7 +659,7 @@
    "threshold": null,
    "calibrated": false,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "0c5ae66c63e0b6f7",
+   "bind": "9854052662998677",
    "data": {
     "labelled": 153,
     "calibration": 102,
@@ -671,7 +671,7 @@
     "errors_all": 20
    },
    "score": "Jev probability of its label",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "bound_if_accept_all": 0.213,
    "eligible": 37,
    "decision": "defer",
@@ -720,7 +720,7 @@
    "threshold": null,
    "calibrated": false,
    "method": "Learn-then-Test (fixed-sequence exact binomial tests)",
-   "bind": "0c5ae66c63e0b6f7",
+   "bind": "9854052662998677",
    "data": {
     "labelled": 153,
     "calibration": 102,
@@ -732,7 +732,7 @@
     "errors_all": 94
    },
    "score": "Perplexity Decisions probability of its label",
-   "fitted_at": "2026-10-19T00:01:00Z",
+   "fitted_at": "2026-10-23T02:25:30Z",
    "bound_if_accept_all": 0.6632,
    "eligible": 75,
    "decision": "defer",
