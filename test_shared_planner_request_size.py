@@ -111,6 +111,7 @@ class RequestAdmission(unittest.TestCase):
 class PlannerAdmission(unittest.TestCase):
     def setUp(self):
         fixtures.SharedPlanner.setUp(self)
+        import os as _os; from unittest.mock import patch as _patch; _spec_off = _patch.dict(_os.environ, {'AGERE_SPEC_PATH': 'off'}); _spec_off.start(); self.addCleanup(_spec_off.stop)  # these tests exercise the hosted interpreter tier, not the spec path
 
     def test_size_failure_preserves_question_scope_and_explains_admission(self):
         seen = []
