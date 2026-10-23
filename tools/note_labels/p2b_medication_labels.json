@@ -1,0 +1,321 @@
+[
+ {
+  "id": "medi-001",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "the patient now reports use on no days (0 of the past 14 days)"
+ },
+ {
+  "id": "medi-002",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-003",
+  "status": "documented",
+  "detail": {
+   "event": "continued"
+  },
+  "quote": "continue statin"
+ },
+ {
+  "id": "medi-004",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_as_directed"
+  },
+  "quote": "losartan potassium 50 MG Oral Tablet: reports current regular use."
+ },
+ {
+  "id": "medi-005",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "spironolactone 25 mg tablet: no supply remaining."
+ },
+ {
+  "id": "medi-006",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-007",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "furosemide 40 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-008",
+  "status": "documented",
+  "detail": {},
+  "quote": "carvedilol 25 mg tablet: reports use on 12 of 14 days"
+ },
+ {
+  "id": "medi-009",
+  "status": "documented",
+  "detail": {},
+  "quote": "reports taking this medicine"
+ },
+ {
+  "id": "medi-010",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_as_directed"
+  },
+  "quote": "amLODIPine 2.5 MG Oral Tablet: reports regular use."
+ },
+ {
+  "id": "medi-011",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "Patient says Warfarin Sodium 5 MG Oral Tablet still has not been restarted."
+ },
+ {
+  "id": "medi-012",
+  "status": "documented",
+  "detail": {},
+  "quote": "metformin 500 mg extended-release tablet: reports use on 11 of 14 days"
+ },
+ {
+  "id": "medi-013",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "lisinopril 20 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-014",
+  "status": "documented",
+  "detail": {
+   "event": "continued"
+  },
+  "quote": "continue statin"
+ },
+ {
+  "id": "medi-015",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "losartan 50 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-016",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-017",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-018",
+  "status": "planned_not_done",
+  "detail": {
+   "event": "changed_dose"
+  },
+  "quote": "Did not increase Furosemide 40 MG Oral Tablet today because the current directions and actual use still need confirmation."
+ },
+ {
+  "id": "medi-019",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "carvedilol 25 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-020",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-021",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "amlodipine 2.5 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-022",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking",
+   "reason": [
+    "other_with_quote"
+   ]
+  },
+  "quote": "Patient reports Warfarin Sodium 5 MG Oral Tablet is not being used: was unsure whether it was still needed."
+ },
+ {
+  "id": "medi-023",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_differently"
+  },
+  "quote": "metformin 500 mg extended-release tablet: reports use on 5 of 14 days"
+ },
+ {
+  "id": "medi-024",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_differently"
+  },
+  "quote": "lisinopril 20 mg tablet: reports use on 1 of 14 days"
+ },
+ {
+  "id": "medi-025",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-026",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "losartan 50 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-027",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-028",
+  "status": "historical",
+  "detail": {
+   "event": "changed_dose"
+  },
+  "quote": "The plan at that encounter was: Increase furosemide, recheck 1 wk."
+ },
+ {
+  "id": "medi-029",
+  "status": "historical",
+  "detail": {},
+  "quote": "carvedilol 25 MG Oral Tablet dispensed 2026-09-23"
+ },
+ {
+  "id": "medi-030",
+  "status": "documented",
+  "detail": {},
+  "quote": "Oxycontin]: says taking."
+ },
+ {
+  "id": "medi-031",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_differently"
+  },
+  "quote": "amlodipine 2.5 mg tablet: reports use on 1 of 14 days"
+ },
+ {
+  "id": "medi-032",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "the patient now reports use on no days (0 of the past 14 days)"
+ },
+ {
+  "id": "medi-033",
+  "status": "documented",
+  "detail": {},
+  "quote": "Medications: lisinopril 20 mg"
+ },
+ {
+  "id": "medi-034",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-035",
+  "status": "documented",
+  "detail": {},
+  "quote": "losartan 50 mg tablet: reports use on 12 of 14 days"
+ },
+ {
+  "id": "medi-036",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-037",
+  "status": "planned_not_done",
+  "detail": {
+   "event": "changed_dose"
+  },
+  "quote": "Did not increase Furosemide 40 MG Oral Tablet today because the current directions and actual use still need confirmation."
+ },
+ {
+  "id": "medi-038",
+  "status": "documented",
+  "detail": {},
+  "quote": "carvedilol 25 mg tablet: 6 tablet counted in the presented container."
+ },
+ {
+  "id": "medi-039",
+  "status": "planned_not_done",
+  "detail": {
+   "event": "changed_dose"
+  },
+  "quote": "Did not increase Acetaminophen 325 MG / Oxycodone Hydrochloride 10 MG Oral Tablet [Percocet] today because the current directions and actual use still need confirmation."
+ },
+ {
+  "id": "medi-040",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "amlodipine 2.5 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-041",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_as_directed"
+  },
+  "quote": "metformin 500 mg extended-release tablet: reports use on 14 of 14 days"
+ },
+ {
+  "id": "medi-042",
+  "status": "denied",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "lisinopril 10 mg tablet: reports use on 0 of 14 days"
+ },
+ {
+  "id": "medi-043",
+  "status": "not_mentioned",
+  "detail": {},
+  "quote": ""
+ },
+ {
+  "id": "medi-044",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_as_directed"
+  },
+  "quote": "spironolactone 25 mg tablet: reports use on 14 of 14 days"
+ }
+]

@@ -1,0 +1,44 @@
+plan-001|planned_not_done|item=follow_up_visit|Called to arrange follow-up of the previous glycemic result
+plan-002|historical|item=referral|Patient referral for dental care
+plan-003|planned_not_done|item=disposition|discharge planning once stable
+plan-004|planned_not_done|item=monitoring|recheck the count
+plan-005|denied||No routine average-risk colorectal screening scheduled
+plan-006|planned_not_done|item=referral|Discussed the specific referrals recorded today
+plan-007|documented|item=return_precautions;disposition=home|Home with continued small frequent fluids, intake monitoring and return precautions
+plan-008|not_mentioned||
+plan-009|historical|item=monitoring|Increase furosemide, recheck 1 wk
+plan-010|planned_not_done|item=call_back|Contact this practice for trouble obtaining the prescription or worsening symptoms
+plan-011|historical|item=referral|Patient referral for dental care
+plan-012|planned_not_done|item=monitoring|recheck BP in 3 months before medication
+plan-013|planned_not_done|item=follow_up_visit|Next well visit per Bright Futures schedule
+plan-014|planned_not_done|item=call_back|Contact this practice for trouble obtaining the prescription or worsening symptoms
+plan-015|documented|disposition=home|have improved since returning home
+plan-016|planned_not_done|item=return_precautions|recheck if not improving in 48-72 hours
+plan-017|historical|item=test_order|Pre-op CT/coronaries scheduled
+plan-018|planned_not_done|item=follow_up_visit|Outpatient cardiology follow up
+plan-019|historical|item=referral|Patient referral for dental care
+plan-020|planned_not_done|item=follow_up_visit|Arrange cardiology follow up and review return precautions
+plan-021|not_mentioned||
+plan-022|planned_not_done|item=follow_up_visit|parent will return
+plan-023|planned_not_done|item=follow_up_visit|discussed follow up
+plan-024|historical|item=referral|Patient referral for dental care
+plan-025|planned_not_done|item=disposition|observe through tomorrow before discharge
+plan-026|planned_not_done|item=monitoring|recheck BMP
+plan-027|not_mentioned||
+plan-028|planned_not_done|item=referral|Discussed the specific referrals recorded today
+plan-029|documented|item=return_precautions|return precautions reviewed
+plan-030|planned_not_done|item=disposition|Assess transfers, walking and help at home before discharge
+plan-031|historical|item=monitoring|Increase furosemide, recheck 1 wk
+plan-032|planned_not_done|item=follow_up_visit|Confirm the specialist date and future laboratory collection
+plan-033|documented|item=referral|Urgent care referral
+plan-034|planned_not_done|item=referral|refer for consideration of alternative replacement
+plan-035|planned_not_done|item=follow_up_visit|Next well visit per Bright Futures schedule
+plan-036|planned_not_done|item=follow_up_visit|Follow-up with primary care within 7 days arranged
+plan-037|not_mentioned||
+plan-038|historical|item=test_order|TSS scheduled
+plan-039|planned_not_done|item=follow_up_visit|Outpatient cardiology follow up
+plan-040|historical|item=referral|Patient referral for dental care
+plan-041|planned_not_done|item=follow_up_visit|Arrange cardiology folow up and review return precautions
+plan-042|documented|disposition=home|improved since returning home
+plan-043|historical|item=test_order|PT, ESI scheduled
+plan-044|planned_not_done|item=follow_up_visit|discussed follow up

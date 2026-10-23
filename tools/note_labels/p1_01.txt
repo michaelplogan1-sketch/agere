@@ -1,0 +1,44 @@
+symp-001|denied||no chest pain
+symp-002|historical||Dyspnea on flat ground
+symp-003|historical||New dizziness or fatigue
+symp-004|documented|course=worsening|Reports more fatigue lately
+symp-005|documented||Chronic neck pain
+symp-006|denied||no fever
+symp-007|not_mentioned||
+symp-008|documented||INDICATION: Palpitations
+symp-009|not_mentioned||
+symp-010|documented|course=worsening|Reports increased dyspnea on exertion
+symp-011|denied||no edema
+symp-012|documented||7 days of cough
+symp-013|denied||No dizziness reported
+symp-014|historical||New dizziness or fatigue
+symp-015|denied||No current nausea
+symp-016|denied||No chest pain, resting shortness of breath
+symp-017|documented|severity=mild|edema trace
+symp-018|documented|course=persistent|Persistent dry cough reported
+symp-019|historical||New dizziness or fatigue
+symp-020|documented|course=worsening|Reports more fatigue lately
+symp-021|not_mentioned||
+symp-022|documented||cough and fever
+symp-023|denied||No current nausea
+symp-024|historical||Tremor, palpitations, diplopia
+symp-025|not_mentioned||
+symp-026|documented||breathlessness over several days
+symp-027|denied||edema none
+symp-028|documented||4 days of cough
+symp-029|historical|severity=mild|mild fatigue
+symp-030|documented||Chronic pain
+symp-031|denied||No fever
+symp-032|not_mentioned||
+symp-033|denied||No chest pain, resting shortness of breath
+symp-034|not_mentioned||
+symp-035|denied||No cough
+symp-036|documented||New dizziness or fatigue
+symp-037|not_mentioned||
+symp-038|denied||No fever
+symp-039|denied||No chest pain
+symp-040|historical||breathless on stairs
+symp-041|denied||No dizziness reported
+symp-042|historical||New dizziness or fatigue
+symp-043|documented||Chronic low back pain
+symp-044|denied||no fever

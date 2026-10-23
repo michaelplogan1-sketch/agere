@@ -1,0 +1,919 @@
+[
+ {
+  "id": "symp-003",
+  "status": "historical",
+  "detail": {
+   "course": "new"
+  },
+  "quote": "New dizziness or fatigue; onset and medication relationship unclear"
+ },
+ {
+  "id": "adve-019",
+  "status": "documented",
+  "detail": {
+   "kind": "allergy",
+   "severity": "unspecified"
+  },
+  "quote": "amoxicillin (rash), shellfish"
+ },
+ {
+  "id": "adve-004",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "cond-018",
+  "status": "documented",
+  "detail": {
+   "course": "unspecified"
+  },
+  "quote": "COPD, unspecified (GOLD III)"
+ },
+ {
+  "id": "symp-009",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "care-015",
+  "status": "documented",
+  "detail": {
+   "kind": "code_status",
+   "outcome": "completed"
+  },
+  "quote": "would want attempted resuscitation if the heart stops; accepts intubation for respiratory failure"
+ },
+ {
+  "id": "func-019",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "cond-008",
+  "status": "documented",
+  "detail": {
+   "course": "improving"
+  },
+  "quote": "Patient reports the pneumonia symptoms have improved since returning home"
+ },
+ {
+  "id": "plan-034",
+  "status": "planned_not_done",
+  "detail": {
+   "item": "monitoring"
+  },
+  "quote": "Recheck actual administration and evaluate ongoing loss or impaired absorption"
+ },
+ {
+  "id": "pref-018",
+  "status": "documented",
+  "detail": {
+   "decision": "declined"
+  },
+  "quote": "Patient declines testing"
+ },
+ {
+  "id": "care-030",
+  "status": "documented",
+  "detail": {
+   "kind": "code_status",
+   "outcome": "completed"
+  },
+  "quote": "DNR/POLST completed"
+ },
+ {
+  "id": "symp-033",
+  "status": "denied",
+  "quote": "No chest pain, resting shortness of breath"
+ },
+ {
+  "id": "medi-001",
+  "status": "documented",
+  "detail": {
+   "adherence": "not_taking"
+  },
+  "quote": "the patient now reports use on no days (0 of the past 14 days)"
+ },
+ {
+  "id": "cond-007",
+  "status": "documented",
+  "detail": {
+   "course": "unspecified"
+  },
+  "quote": "Epilepsy; Asthma; Chronic pain;"
+ },
+ {
+  "id": "func-010",
+  "status": "documented",
+  "detail": {
+   "domain": "mobility_gait_balance",
+   "level": "unspecified"
+  },
+  "quote": "Short observation for mobility assessment and a safe discharge plan"
+ },
+ {
+  "id": "pref-005",
+  "status": "documented",
+  "detail": {
+   "decision": "declined"
+  },
+  "quote": "Does not want GI scheduling now"
+ },
+ {
+  "id": "care-013",
+  "status": "planned_not_done",
+  "detail": {
+   "kind": "rehabilitation",
+   "outcome": "ordered_or_referred"
+  },
+  "quote": "Refer for graded rehabilitation and review progress"
+ },
+ {
+  "id": "find-044",
+  "status": "historical",
+  "detail": {
+   "value": "112.1",
+   "interpretation": "not_stated"
+  },
+  "quote": "clinic weight 112.1 kg"
+ },
+ {
+  "id": "soci-005",
+  "status": "historical",
+  "detail": {
+   "domain": [
+    "medical_cost_burden"
+   ],
+   "response": "none_documented"
+  },
+  "quote": "Fills beta-blocker only \u2014 cost and pillbox burden cited"
+ },
+ {
+  "id": "proc-009",
+  "status": "planned_not_done",
+  "detail": {
+   "category": "cardiac_test"
+  },
+  "quote": "stress test ordered"
+ },
+ {
+  "id": "proc-044",
+  "status": "documented",
+  "detail": {
+   "category": "imaging",
+   "result": "abnormal"
+  },
+  "quote": "Chest radiograph reported by ED as pulmonary venous congestion with small bilateral effusions"
+ },
+ {
+  "id": "care-031",
+  "status": "planned_not_done",
+  "detail": {
+   "kind": "referral",
+   "outcome": "ordered_or_referred"
+  },
+  "quote": "Referral for audiology"
+ },
+ {
+  "id": "medi-033",
+  "status": "documented",
+  "quote": "Medications: lisinopril 20 mg"
+ },
+ {
+  "id": "plan-005",
+  "status": "denied",
+  "quote": "No routine average-risk colorectal screening scheduled at this age"
+ },
+ {
+  "id": "adve-027",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "medi-022",
+  "status": "documented",
+  "detail": {
+   "adherence": "not_taking",
+   "reason": [
+    "patient_choice"
+   ]
+  },
+  "quote": "Warfarin Sodium 5 MG Oral Tablet is not being used: was unsure whether it was still needed"
+ },
+ {
+  "id": "pref-033",
+  "status": "documented",
+  "detail": {
+   "decision": "accepted",
+   "reason": [
+    "comfort_focused_goals"
+   ]
+  },
+  "quote": "Patient elects comfort-focused care"
+ },
+ {
+  "id": "find-035",
+  "status": "historical",
+  "detail": {
+   "value": "36",
+   "interpretation": "not_stated"
+  },
+  "quote": "BMI 36 with HFpEF and T2DM"
+ },
+ {
+  "id": "pref-043",
+  "status": "documented",
+  "detail": {
+   "decision": "declined"
+  },
+  "quote": "patient declines at this time"
+ },
+ {
+  "id": "find-025",
+  "status": "documented",
+  "detail": {
+   "value": "72.2",
+   "interpretation": "not_stated"
+  },
+  "quote": "eGFR 72.2 mL/min/1"
+ },
+ {
+  "id": "plan-016",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "medi-036",
+  "status": "possible",
+  "detail": {
+   "adherence": "not_stated"
+  },
+  "quote": "Spironolactone: cannot confirm current use"
+ },
+ {
+  "id": "plan-033",
+  "status": "planned_not_done",
+  "detail": {
+   "item": "referral"
+  },
+  "quote": "Urgent care referral: oral rehydration not tolerated"
+ },
+ {
+  "id": "plan-026",
+  "status": "planned_not_done",
+  "detail": {
+   "item": "test_order"
+  },
+  "quote": "recheck BMP"
+ },
+ {
+  "id": "soci-007",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "soci-027",
+  "status": "documented",
+  "detail": {
+   "domain": [
+    "food_insecurity",
+    "financial_strain"
+   ],
+   "response": "none_documented"
+  },
+  "quote": "Reports trouble affording groceries at times"
+ },
+ {
+  "id": "proc-008",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "find-011",
+  "status": "documented",
+  "detail": {
+   "value": "10",
+   "interpretation": "not_stated"
+  },
+  "quote": "PHQ-9 total 10 on 2029-12-14"
+ },
+ {
+  "id": "adve-018",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "func-039",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "find-030",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "proc-040",
+  "status": "planned_not_done",
+  "detail": {
+   "category": "screening"
+  },
+  "quote": "Patient accepts testing"
+ },
+ {
+  "id": "cond-041",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "medi-043",
+  "status": "possible",
+  "detail": {
+   "adherence": "not_stated"
+  },
+  "quote": "losartan potassium 50 MG Oral Tablet: cannot confirm current use"
+ },
+ {
+  "id": "pref-041",
+  "status": "documented",
+  "detail": {
+   "decision": "declined",
+   "reason": [
+    "prefers_alternative"
+   ]
+  },
+  "quote": "the patient prefers to keep the current dose and work on diet and adherence first"
+ },
+ {
+  "id": "plan-003",
+  "status": "planned_not_done",
+  "detail": {
+   "item": "disposition",
+   "disposition": "not_stated"
+  },
+  "quote": "discharge planning once stable on room air and mobilizing"
+ },
+ {
+  "id": "proc-018",
+  "status": "documented",
+  "detail": {
+   "category": "imaging",
+   "result": "abnormal"
+  },
+  "quote": "Chest radiograph reported by ED as right lower lobe consolidation"
+ },
+ {
+  "id": "adve-022",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "find-012",
+  "status": "documented",
+  "detail": {
+   "value": "44th %ile",
+   "interpretation": "not_stated"
+  },
+  "quote": "BMI 44th %ile"
+ },
+ {
+  "id": "medi-039",
+  "status": "documented",
+  "detail": {
+   "reason": [
+    "clinician_decision"
+   ],
+   "adherence": "not_stated"
+  },
+  "quote": "Did not increase Acetaminophen 325 MG / Oxycodone Hydrochloride 10 MG Oral Tablet [Percocet] today"
+ },
+ {
+  "id": "pref-036",
+  "status": "documented",
+  "detail": {
+   "decision": "declined"
+  },
+  "quote": "Declines a dedicated mood visit now"
+ },
+ {
+  "id": "soci-022",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "adve-032",
+  "status": "denied",
+  "quote": "no dysphagia, weight loss or bleeding"
+ },
+ {
+  "id": "medi-010",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_as_directed"
+  },
+  "quote": "amLODIPine 2.5 MG Oral Tablet: reports regular use"
+ },
+ {
+  "id": "symp-027",
+  "status": "denied",
+  "quote": "edema none"
+ },
+ {
+  "id": "plan-027",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "care-032",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "adve-003",
+  "status": "documented",
+  "detail": {
+   "kind": "side_effect",
+   "severity": "unspecified"
+  },
+  "quote": "Stop 40 mg due to hyperkalemia; pt instructed to discontinue"
+ },
+ {
+  "id": "plan-021",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "func-021",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "care-029",
+  "status": "documented",
+  "detail": {
+   "kind": "advance_directive",
+   "outcome": "completed"
+  },
+  "quote": "would want attempted resuscitation if the heart stops; accepts intubation for respiratory failure"
+ },
+ {
+  "id": "soci-032",
+  "status": "documented",
+  "detail": {
+   "domain": [
+    "medical_cost_burden"
+   ],
+   "response": "none_documented"
+  },
+  "quote": "Contact the pharmacy about collection and cost"
+ },
+ {
+  "id": "soci-001",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "proc-011",
+  "status": "documented",
+  "detail": {
+   "category": "imaging",
+   "result": "not_reported"
+  },
+  "quote": "EXAM: MRI"
+ },
+ {
+  "id": "care-003",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "proc-026",
+  "status": "planned_not_done",
+  "detail": {
+   "category": "cardiac_test"
+  },
+  "quote": "stress test ordered"
+ },
+ {
+  "id": "soci-038",
+  "status": "documented",
+  "detail": {
+   "domain": [
+    "medical_cost_burden"
+   ],
+   "response": "none_documented"
+  },
+  "quote": "Contact the pharmacy about collection and cost"
+ },
+ {
+  "id": "medi-018",
+  "status": "documented",
+  "detail": {
+   "reason": [
+    "clinician_decision"
+   ],
+   "adherence": "not_stated"
+  },
+  "quote": "Did not increase Furosemide 40 MG Oral Tablet today"
+ },
+ {
+  "id": "func-042",
+  "status": "documented",
+  "detail": {
+   "domain": "falls",
+   "level": "unspecified"
+  },
+  "quote": "presented to the ED with a fall with extremity injury"
+ },
+ {
+  "id": "care-009",
+  "status": "documented",
+  "detail": {
+   "kind": "code_status",
+   "outcome": "completed"
+  },
+  "quote": "CPR in cardiac/respiratory arrest: attempt. Intubation preference: intubate."
+ },
+ {
+  "id": "func-032",
+  "status": "documented",
+  "detail": {
+   "domain": "vision",
+   "level": "unspecified"
+  },
+  "quote": "Monocular acuity: right 20/40, left 20/25"
+ },
+ {
+  "id": "find-038",
+  "status": "documented",
+  "detail": {
+   "value": "38%",
+   "interpretation": "not_stated"
+  },
+  "quote": "Left ventricular ejection fraction 38% by biplane measurement"
+ },
+ {
+  "id": "func-041",
+  "status": "documented",
+  "detail": {
+   "domain": "vision",
+   "level": "unspecified"
+  },
+  "quote": "Monocular acuity: right 20/40, left 20/32"
+ },
+ {
+  "id": "pref-027",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "adve-006",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "func-008",
+  "status": "planned_not_done",
+  "detail": {
+   "domain": "mobility_gait_balance"
+  },
+  "quote": "Discuss outpatient balance assessment and practical support"
+ },
+ {
+  "id": "symp-022",
+  "status": "documented",
+  "detail": {
+   "severity": "unspecified",
+   "course": "new"
+  },
+  "quote": "presented to the ED with cough and fever"
+ },
+ {
+  "id": "proc-019",
+  "status": "planned_not_done",
+  "detail": {
+   "category": "cardiac_test"
+  },
+  "quote": "stress test\nordered"
+ },
+ {
+  "id": "plan-023",
+  "status": "planned_not_done",
+  "detail": {
+   "item": "follow_up_visit"
+  },
+  "quote": "discussed follow up"
+ },
+ {
+  "id": "func-011",
+  "status": "documented",
+  "detail": {
+   "domain": "falls",
+   "level": "unspecified"
+  },
+  "quote": "presented to the ED with a fall with extremity injury"
+ },
+ {
+  "id": "proc-029",
+  "status": "planned_not_done",
+  "detail": {
+   "category": "endoscopy"
+  },
+  "quote": "colonoscopy referral placed"
+ },
+ {
+  "id": "proc-028",
+  "status": "planned_not_done",
+  "detail": {
+   "category": "cardiac_test"
+  },
+  "quote": "stress test ordered"
+ },
+ {
+  "id": "find-015",
+  "status": "historical",
+  "detail": {
+   "value": "6.4",
+   "interpretation": "not_stated"
+  },
+  "quote": "A1c 6.4 from 8"
+ },
+ {
+  "id": "pref-031",
+  "status": "documented",
+  "detail": {
+   "decision": "declined",
+   "reason": [
+    "prefers_alternative"
+   ]
+  },
+  "quote": "the patient prefers to keep the current dose and recheck before any change"
+ },
+ {
+  "id": "pref-012",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "pref-021",
+  "status": "documented",
+  "detail": {
+   "decision": "accepted",
+   "reason": [
+    "comfort_focused_goals"
+   ]
+  },
+  "quote": "Patient elects comfort-focused care"
+ },
+ {
+  "id": "cond-006",
+  "status": "documented",
+  "detail": {
+   "course": "unspecified"
+  },
+  "quote": "Unspecified atrial fibrillation (onset recorded as 2019-11)"
+ },
+ {
+  "id": "soci-040",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "func-029",
+  "status": "documented",
+  "detail": {
+   "domain": "vision",
+   "level": "unspecified"
+  },
+  "quote": "Monocular acuity: right 20/40, left 20/40"
+ },
+ {
+  "id": "care-024",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "pref-011",
+  "status": "documented",
+  "detail": {
+   "decision": "declined"
+  },
+  "quote": "pt declines at this time"
+ },
+ {
+  "id": "symp-017",
+  "status": "documented",
+  "detail": {
+   "severity": "mild",
+   "course": "unspecified"
+  },
+  "quote": "edema trace"
+ },
+ {
+  "id": "soci-004",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "symp-024",
+  "status": "historical",
+  "quote": "Tremor, palpitations, diplopia"
+ },
+ {
+  "id": "find-006",
+  "status": "documented",
+  "detail": {
+   "interpretation": "normal"
+  },
+  "quote": "potassium and renal function acceptable on recent BMP"
+ },
+ {
+  "id": "medi-044",
+  "status": "documented",
+  "detail": {
+   "adherence": "taking_as_directed"
+  },
+  "quote": "spironolactone 25 mg tablet: reports use on 14 of 14 days"
+ },
+ {
+  "id": "cond-029",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "symp-026",
+  "status": "documented",
+  "detail": {
+   "severity": "unspecified",
+   "course": "unspecified"
+  },
+  "quote": "Patient reports fever, cough and breathlessness over several days"
+ },
+ {
+  "id": "soci-009",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "soci-016",
+  "status": "documented",
+  "detail": {
+   "domain": [
+    "medical_cost_burden"
+   ],
+   "response": "none_documented"
+  },
+  "quote": "Contact the pharmacy about collection and cost"
+ },
+ {
+  "id": "plan-030",
+  "status": "planned_not_done",
+  "detail": {
+   "item": "disposition",
+   "disposition": "not_stated"
+  },
+  "quote": "Assess transfers, walking and help at home before discharge"
+ },
+ {
+  "id": "symp-013",
+  "status": "denied",
+  "quote": "No dizziness reported"
+ },
+ {
+  "id": "adve-038",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "plan-018",
+  "status": "planned_not_done",
+  "detail": {
+   "item": "follow_up_visit"
+  },
+  "quote": "Outpatient cardiology follow up to review prior testing"
+ },
+ {
+  "id": "plan-019",
+  "status": "historical",
+  "detail": {
+   "item": "referral"
+  },
+  "quote": "Patient referral for dental care (procedure)"
+ },
+ {
+  "id": "pref-029",
+  "status": "documented",
+  "detail": {
+   "decision": "declined"
+  },
+  "quote": "Patient declines testing"
+ },
+ {
+  "id": "plan-009",
+  "status": "historical",
+  "detail": {
+   "item": "monitoring"
+  },
+  "quote": "Increase furosemide, recheck 1 wk"
+ },
+ {
+  "id": "medi-017",
+  "status": "possible",
+  "detail": {
+   "adherence": "not_stated"
+  },
+  "quote": "Empagliflozin: cannot establish a current use pattern"
+ },
+ {
+  "id": "proc-006",
+  "status": "documented",
+  "detail": {
+   "category": "imaging",
+   "result": "normal"
+  },
+  "quote": "CXR clear"
+ },
+ {
+  "id": "adve-021",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "care-007",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "care-027",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "adve-017",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "plan-002",
+  "status": "historical",
+  "detail": {
+   "item": "referral"
+  },
+  "quote": "Patient referral for dental care (procedure)"
+ },
+ {
+  "id": "pref-008",
+  "status": "documented",
+  "detail": {
+   "decision": "declined"
+  },
+  "quote": "Patient declines the proposed blood draw today"
+ },
+ {
+  "id": "soci-006",
+  "status": "documented",
+  "detail": {
+   "domain": [
+    "transportation_insecurity"
+   ],
+   "response": "none_documented"
+  },
+  "quote": "Transport difficulty reported: True"
+ },
+ {
+  "id": "adve-031",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "func-007",
+  "status": "documented",
+  "detail": {
+   "domain": "memory_cognition",
+   "level": "unspecified"
+  },
+  "quote": "dementia"
+ },
+ {
+  "id": "func-022",
+  "status": "documented",
+  "detail": {
+   "domain": "memory_cognition",
+   "level": "unspecified"
+  },
+  "quote": "dementia"
+ },
+ {
+  "id": "symp-025",
+  "status": "not_mentioned",
+  "quote": ""
+ },
+ {
+  "id": "care-043",
+  "status": "historical",
+  "detail": {
+   "kind": "home_health"
+  },
+  "quote": "Transition from acute care to home-health care (finding)"
+ }
+]

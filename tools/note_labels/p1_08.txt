@@ -1,0 +1,44 @@
+func-001|documented|domain=falls|a fall with extremity injury
+func-002|documented|domain=memory_cognition;level=impaired|Progressive memory decline over the past year
+func-003|planned_not_done|domain=mobility_gait_balance|Discuss outpatient balance assessment
+func-004|documented|domain=vision|Monocular acuity: right 20/20, left 20/20
+func-005|documented|domain=mobility_gait_balance|Short observation for mobility assessment
+func-006|historical|domain=falls|Follow-up of prior falls
+func-007|documented|domain=memory_cognition;level=impaired|dementia
+func-008|planned_not_done|domain=mobility_gait_balance|Discuss outpatient balance assessment
+func-009|documented|domain=vision|Monocular acuity: right 20/32, left 20/25
+func-010|documented|domain=mobility_gait_balance|Short observation for mobility assessment
+func-011|documented|domain=falls|a fall with extremity injury
+func-012|documented|domain=memory_cognition;level=impaired|dementia
+func-013|planned_not_done|domain=mobility_gait_balance|Discuss outpatient balance assessment
+func-014|not_mentioned||
+func-015|documented|domain=mobility_gait_balance|Short observation for mobility assessment
+func-016|documented|domain=falls|a fall with extremity injury
+func-017|documented|domain=memory_cognition;level=impaired|dementia
+func-018|planned_not_done|domain=mobility_gait_balance|Discuss outpatient balance assessment
+func-019|not_mentioned||
+func-020|documented|domain=mobility_gait_balance|Short observation for mobility assessment
+func-021|not_mentioned||
+func-022|documented|domain=memory_cognition;level=impaired|dementia
+func-023|not_mentioned||
+func-024|documented|domain=falls|a fall with extremity injury
+func-025|documented|domain=memory_cognition;level=impaired|dementia
+func-026|documented|domain=vision|Monocular acuity: right 20/20, left 20/20
+func-027|documented|domain=falls|a fall with extremity injury
+func-028|documented|domain=memory_cognition;level=impaired|dementia
+func-029|documented|domain=vision|Monocular acuity: right 20/40, left 20/40
+func-030|documented|domain=falls|a fall with extremity injury
+func-031|documented|domain=memory_cognition;level=impaired|dementia
+func-032|documented|domain=vision|Monocular acuity: right 20/40, left 20/25
+func-033|documented|domain=falls|a fall with extremity injury
+func-034|documented|domain=memory_cognition;level=impaired|dementia
+func-035|not_mentioned||
+func-036|documented|domain=falls|fell from a scooter at low speed
+func-037|documented|domain=memory_cognition;level=impaired|Progressive memory decline over the past year
+func-038|documented|domain=vision|Monocular acuity: right 20/25, left 20/20
+func-039|not_mentioned||
+func-040|documented|domain=memory_cognition;level=impaired|dementia
+func-041|documented|domain=vision|Monocular acuity: right 20/40, left 20/32
+func-042|documented|domain=falls|a fall with extremity injury
+func-043|historical|domain=memory_cognition|Late-life depression with cognitive complaints
+func-044|planned_not_done|domain=vision|Referral for vision assessment

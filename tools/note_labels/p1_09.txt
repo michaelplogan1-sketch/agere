@@ -1,0 +1,44 @@
+pref-001|documented|decision=declined|Patient does not want to work on advance-care paperwork today
+pref-002|not_mentioned||
+pref-003|documented|decision=deferred|Prefers to defer an additional review
+pref-004|documented|decision=declined|Declines the proposed GI assessment now
+pref-005|documented|decision=declined|Does not want GI scheduling now
+pref-006|documented|decision=requested;reason=comfort_focused_goals|Patient elects comfort-focused care
+pref-007|documented|decision=declined|the patient prefers to keep the current dose and recheck before any change
+pref-008|documented|decision=declined|Patient declines the proposed blood draw today
+pref-009|documented|decision=declined|Does not want to arrange a medication-history call at present
+pref-010|documented|decision=deferred|Patient prefers to defer the supplement
+pref-011|documented|decision=declined|pt declines at this time
+pref-012|not_mentioned||
+pref-013|documented|decision=declined|Does not want to schedule the test now
+pref-014|documented|decision=declined|Patient declines medication
+pref-015|documented|decision=declined|Does not want further scheduling assistance now
+pref-016|documented|decision=deferred|Patient prefers to defer the supplement
+pref-017|documented|decision=declined|Does not want to arrange an additional visit at present
+pref-018|documented|decision=declined|Patient declines testing
+pref-019|documented|decision=requested;reason=prefers_alternative|patient prefers counseling
+pref-020|documented|decision=declined|patient declines treatment today
+pref-021|documented|decision=requested;reason=comfort_focused_goals|Patient elects comfort-focused care
+pref-022|documented|decision=declined|patient declines at this time
+pref-023|documented|decision=deferred|Patient prefers to defer the supplement
+pref-024|documented|decision=declined|patient declines at this time
+pref-025|documented|decision=declined|Patient declines medication
+pref-026|documented|decision=declined|Declines an additional prevention appointment at present
+pref-027|not_mentioned||
+pref-028|documented|decision=deferred|Patient prefers to defer the supplement
+pref-029|documented|decision=declined|Patient declines testing
+pref-030|documented|decision=declined|patient declines treatment today
+pref-031|documented|decision=declined|the patient prefers to keep the current dose and recheck before any change
+pref-032|historical|decision=declined|declines thera
+pref-033|documented|decision=requested;reason=comfort_focused_goals|Patient elects comfort-focused care
+pref-034|documented|decision=declined|Patient declines the proposed blood draw today
+pref-035|documented|decision=declined|Patient declines the proposed blood draw today
+pref-036|documented|decision=declined|Declines a dedicated mood visit now
+pref-037|documented|decision=declined|Patient declines medication
+pref-038|documented|decision=declined|Patient declines the proposed blood draw today
+pref-039|documented|decision=declined|Patient declines testing
+pref-040|documented|decision=declined|Patient declines testing
+pref-041|documented|decision=declined|the patient prefers to keep the current dose and work on diet and adherence first
+pref-042|documented|decision=declined|Patient declines the proposed blood draw today
+pref-043|documented|decision=declined|patient declines at this time
+pref-044|documented|decision=declined|Patient declines medication
