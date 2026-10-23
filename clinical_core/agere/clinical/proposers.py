@@ -35,6 +35,7 @@ VERSION = 'checked-proposer-cascade/1'
 
 # name -> (cost class, calibration evidence from the 2026-10-21 component inventory, what it proposes)
 TIERS = {
+    'chart_reader': ('free (grammar + SQL); System One only for open slots and note passages', 'single named patient: typed chart intents over every structured source + note frames; deterministic SQL; 1,080/1,080 oracle checks', 'graph'),
     'exact_local_plan': ('free', 'exact authored plans and recipes; exact normalized-question match', 'graph'),
     'scoped_review_compiler': ('free', 'exact source-review command grammar; abstains otherwise; uncalibrated', 'graph'),
     'specialist_families_early': ('free', 'DQ/VBC families certified, bounds 2.45% / 2.5%', 'graph'),
@@ -76,7 +77,7 @@ TIERS = {
 # evidence (per patient). E: Claude, cheapest first; legacy ladder last. The learned and System One routers may reorder B-D for a
 # question (e.g. chart evidence first) but never move anything ahead of A or a Claude tier ahead of B-D. 'system_one_*' tiers -> B.
 STAGES = (
-    ('reuse_certified', ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
+    ('reuse_certified', ('exact_local_plan', 'chart_reader', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
                          'specialist_families_early', 'cohort_family_early', 'scoped_review_compiler', 'undelivered_input')),
     ('system_one_choice', ('s1_metric_router', 's1_operator_router', 'typed_decider', 'terminology_mapping', 'hcc_suspecting')),
     ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late', 'qwen_typed_interpreter', 'local_normalizer',
@@ -729,6 +730,10 @@ class Cascade:
                     'id': request_plan.fingerprint({'question': self.question, 'graph': graph})}
         return contract, {'interpreter': name, 'review': 'literal_check_then_output_check', 'execution_accepted': True,
                           'legacy_route': receipt.get('route'), 'attempts': []}
+
+    def tier_chart_reader(self):  # a named patient is never a cohort question: the chart reader answers it first
+        from .chart_reader import tier
+        return self.graph('chart_reader', tier(self.stack, self.question, self.population, ledger=self.ledger))
 
     def tier_exact_local_plan(self): return self.graph('exact_local_plan', self.ladder.exact_local())
     def tier_specialist_families_early(self): return self.graph('specialist_families_early', self.ladder.specialist_families(True))
