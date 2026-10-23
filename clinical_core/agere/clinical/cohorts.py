@@ -14,7 +14,7 @@ from . import concepts, grounding, record_store, source_profile
 
 VERSION = 'observed-cohort/2'
 PATIENT_FIELDS = {'patient_id', 'age', 'sex', 'region', 'preferred_language', 'coverage',
-                  'age_reported','sex_reported','profile_captured_date'}
+                  'age_reported','age_latest','sex_reported','profile_captured_date'}
 COMMON = {'organization_id', 'source_system', 'status'}
 RECORD_FIELDS = {
     'medical_claims': {'dx', 'provider', 'facility', 'place'},
@@ -169,7 +169,13 @@ def patient_value(patient, field, as_of):
 
 def evaluate_atom(atom, patient, records, as_of):
     if atom['kind'] == 'patient':
-        got = patient_value(patient, atom['field'], as_of)
+        got = patient_value(patient, 'age_reported' if atom['field'] == 'age_latest' else atom['field'], as_of)
+        if atom['field'] == 'age_latest':  # a later reported age (demographic update) supersedes the roster value; age_reported = as captured
+            if got is None:
+                got = patient_value(patient, 'age', as_of)
+            updates = [r for r in records if r.get('source_table') == 'demographic_updates' and isinstance(r.get('age_reported'), (int, float))
+                       and (r.get('event_date') or '')[:10] <= as_of]
+            if updates: got = max(updates, key=lambda r: (r.get('event_date') or '', r.get('available_date') or ''))['age_reported']
         return compare(got, atom['op'], atom['value']), {'predicate': atom, 'observed_value': got,
                'source': {'table': 'patients', 'field': 'birth_date' if atom['field'] == 'age' else atom['field'],
                           'patient_hash': digest(patient), 'as_of': as_of}}
@@ -401,6 +407,8 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
         if patient_ids is not None:
             allowed=set(patient_ids);roster=[(pid,p) for pid,p in roster if pid in allowed]
         streams = _streams(grounded)
+        if any(a.get('kind') == 'patient' and a.get('field') == 'age_latest' for part in grounded.values() if isinstance(part, list) for a in part):
+            streams = set(streams) | {'demographic_updates'}  # latest reported age supersedes the roster age
         # Same rows and per-patient order as `... WHERE stream IN (...) [AND patient=?] ORDER BY id` (record_store).
         records = record_store.load(path, streams, patient=patient or None, order='id')
         membership = {'matched': [], 'not_matched': [], 'unknown': []}; previews = {k: [] for k in membership}

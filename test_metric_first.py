@@ -9,7 +9,7 @@ from unittest import mock
 
 os.environ.setdefault('AGERE_METRIC_ENCODER', 'off')
 
-from clinical_core.agere.clinical import metric_router as MR, metric_families as MF, metrics, semantic_layer, learning
+from clinical_core.agere.clinical import age, metric_router as MR, metric_families as MF, metrics, semantic_layer, learning
 from clinical_core.agere.clinical import economical_planner as planner, operator_router
 from test_metric_layer import build_fixture
 
@@ -328,7 +328,9 @@ class RungOrdering(unittest.TestCase):
         ps = self.patches(order) + [mock.patch.object(MR, '_ask', side_effect=fake_ask)]
         for p in ps: p.start()
         try:
-            return planner.plan(self.stack(root), question, SimpleNamespace(path=root / 'ledger.sqlite3'), None)
+            # The ladder order is what legacy_plan preserves; planner.plan is the shared cascade (proposers.py), which
+            # verifies and executes each proposal and so needs a real stack, not this fake.
+            return planner.legacy_plan(self.stack(root), question, SimpleNamespace(path=root / 'ledger.sqlite3'), None)
         finally:
             for p in ps: p.stop()
 
@@ -381,7 +383,13 @@ class ReproducesReferences(unittest.TestCase):
         refs = json.loads(REFERENCES.read_text())['references']
         oracle = json.loads(ORACLE.read_text())['oracle']
         lib = MR.routable()
-        db = sqlite3.connect(f'file:{STACK / "semantic.sqlite3"}?mode=ro', uri=True)
+        source = sqlite3.connect(f'file:{STACK / "semantic.sqlite3"}?mode=ro', uri=True)
+        db = age.register(sqlite3.connect(':memory:'))  # metric SQL uses age_at(birth_date), registered like the governed connection
+        source.backup(db); source.close()
+        # The v1.23 delivery carries reported ages only and age is derived from birth dates alone (age.py), so the in-memory copy
+        # gets the birth date that reproduces each reported age at the snapshot; the read-only stack itself is untouched.
+        db.execute("UPDATE patient SET birth_date = printf('%04d-01-01', CAST(substr((SELECT value FROM meta WHERE key = 'as_of'), 1, 4) AS INTEGER) - age_latest) "
+                   'WHERE birth_date IS NULL AND age_latest IS NOT NULL')
         seen, checked = set(), []
         try:
             for qid in sorted(refs):

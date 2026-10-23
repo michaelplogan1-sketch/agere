@@ -130,7 +130,8 @@ def lab(pid, test, value, unit, day):
 class Worklist(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        patients = {pid: {'age_reported': age, 'sex_reported': sex} for pid, age, sex in
+        # Age is derived from the received birth date only; a reported age is never a fallback (age.py).
+        patients = {pid: {'age_reported': age, 'birth_date': f'{2029 - age}-01-01', 'sex_reported': sex} for pid, age, sex in
                     [('dm', 60, 'F'), ('htn', 55, 'M'), ('hf_gap', 70, 'M'), ('hf_ok', 68, 'F'), ('ckd', 66, 'F'), ('sdoh', 40, 'M'),
                      ('util', 72, 'F'), ('well', 35, 'M')]}
         cov = lambda pid: (pid, 'coverage', {'coverage_type': 'medicare', 'status': 'active', 'effective_start': '2028-01-01', 'event_date': '2028-01-01'})

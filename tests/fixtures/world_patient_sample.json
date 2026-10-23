@@ -1,0 +1,290 @@
+{
+ "feeds": {
+  "adt": [],
+  "labs": [
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-03-08",
+    "test": "potassium",
+    "value": 4.4
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-03-08",
+    "test": "egfr",
+    "value": 62
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-03-08",
+    "test": "nt_probnp",
+    "value": 900
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-06-06",
+    "test": "potassium",
+    "value": 4.1
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-06-06",
+    "test": "egfr",
+    "value": 62
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-07-19",
+    "test": "potassium",
+    "value": 4.5
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-07-19",
+    "test": "egfr",
+    "value": 67
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-10-08",
+    "test": "potassium",
+    "value": 4.1
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-10-08",
+    "test": "egfr",
+    "value": 68
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-10-09",
+    "test": "potassium",
+    "value": 4.4
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2025-10-09",
+    "test": "egfr",
+    "value": 62
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2026-08-08",
+    "test": "potassium",
+    "value": 4.3
+   },
+   {
+    "lab": "System Core Lab",
+    "patient_id": "P-1001",
+    "result_date": "2026-08-08",
+    "test": "egfr",
+    "value": 62
+   }
+  ],
+  "medical_claims": [
+   {
+    "claim_id": "MC-P-1001-0",
+    "dx": [
+     "I50.30"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2025-04-04",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Cedar-PCP-2",
+    "service_date": "2025-03-08"
+   },
+   {
+    "claim_id": "MC-P-1001-1",
+    "dx": [
+     "I50.30"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2025-08-07",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Cedar-PCP-2",
+    "service_date": "2025-06-06"
+   },
+   {
+    "claim_id": "MC-P-1001-2",
+    "dx": [
+     "I50.32"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2025-11-05",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Metro-CARD-2",
+    "service_date": "2025-07-19"
+   },
+   {
+    "claim_id": "MC-P-1001-3",
+    "dx": [
+     "I50.42"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2025-11-03",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Metro-CARD-1",
+    "service_date": "2025-10-08"
+   },
+   {
+    "claim_id": "MC-P-1001-4",
+    "dx": [
+     "I50.9"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2025-12-23",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Metro-CARD-2",
+    "service_date": "2025-10-09"
+   },
+   {
+    "claim_id": "MC-P-1001-5",
+    "dx": [
+     "I50.42"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2026-02-12",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Cedar-PCP-2",
+    "service_date": "2025-11-26"
+   },
+   {
+    "claim_id": "MC-P-1001-6",
+    "dx": [
+     "I50.9"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2026-08-23",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Cedar-PCP-2",
+    "service_date": "2026-05-09"
+   },
+   {
+    "claim_id": "MC-P-1001-8",
+    "dx": [
+     "I50.30"
+    ],
+    "facility": "Cedar Hills Clinic",
+    "paid_date": "2026-09-19",
+    "patient_id": "P-1001",
+    "place": "office",
+    "provider": "Cedar-PCP-2",
+    "service_date": "2026-08-08"
+   }
+  ],
+  "notes": [
+   {
+    "author": "Cedar-PCP-2",
+    "date": "2025-03-08",
+    "note_id": "N-P-1001-0",
+    "note_type": "pcp",
+    "patient_id": "P-1001",
+    "text": "PRIMARY CARE OFFICE VISIT - 2025-03-08\nAuthor: Cedar-PCP-2\n\nHPI: Patient is a 78 year old female here for routine follow up and she says she feels about the same as last time, knees are bothering her some with the osteoarthritis but she is still getting around the house and doing her own shopping. We titrated dapagliflozin today and she understands the plan. Potassium was 4.3 which is normal and we reviewed that with her and her daughter who came along to the visit.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 30 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Cedar-PCP-2",
+    "date": "2025-06-06",
+    "note_id": "N-P-1001-1",
+    "note_type": "pcp",
+    "patient_id": "P-1001",
+    "text": "PRIMARY CARE OFFICE VISIT - 2025-06-06\nAuthor: Cedar-PCP-2\n\nHPI: Follow up visit today, she reports some fatigue in the afternoons but otherwise no new complaints, denies chest pain and her heartburn has been quiet on the current regimen. When the topic came up she said she is not interested in smoking cessation resources at this time and we left it at that for now.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 25 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Metro-CARD-2",
+    "date": "2025-07-19",
+    "note_id": "N-P-1001-2",
+    "note_type": "cardiology",
+    "patient_id": "P-1001",
+    "text": "CARDIOLOGY CLINIC NOTE - 2025-07-19\nAuthor: Metro-CARD-2\n\nHPI: Interval hx: follow up visit. Pt states: some fatigue, otherwise no new complaints. Echo: LVEF 55%. Jardiance continued at current dose. Statins: no intolerance reported.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 25 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Metro-CARD-1",
+    "date": "2025-10-08",
+    "note_id": "N-P-1001-3",
+    "note_type": "cardiology",
+    "patient_id": "P-1001",
+    "text": "CARDIOLOGY CLINIC NOTE - 2025-10-08\nAuthor: Metro-CARD-1\n\nHPI: Interval hx: seen for med check. Pt states: good adherence, uses weekly pill box. Echo: LVEF 55%. Transportation: drives self, no barriers.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 40 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Metro-CARD-2",
+    "date": "2025-10-09",
+    "note_id": "N-P-1001-4",
+    "note_type": "cardiology",
+    "patient_id": "P-1001",
+    "text": "CARDIOLOGY CLINIC NOTE - 2025-10-09\nAuthor: Metro-CARD-2\n\nHPI: Interval hx: seen for med check. Pt states: good adherence. Echo: LVEF 55%. Plan: continue empagliflozin, tolerating well.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 40 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Cedar-PCP-2",
+    "date": "2025-11-26",
+    "note_id": "N-P-1001-5",
+    "note_type": "pcp",
+    "patient_id": "P-1001",
+    "text": "PRIMARY CARE OFFICE VISIT - 2025-11-26\nAuthor: Cedar-PCP-2\n\nHPI: She is seen today for a med check and reports good adherence, says she has not missed any doses since the last visit. She reports taking dapagliflozin which she has been filling out of pocket and not through her insurance. We titrated Jardiance today and she will let us know if she has any lightheadedness, weight today is about stable from the fall.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 40 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Cedar-PCP-2",
+    "date": "2026-05-09",
+    "note_id": "N-P-1001-6",
+    "note_type": "pcp",
+    "patient_id": "P-1001",
+    "text": "PRIMARY CARE OFFICE VISIT - 2026-05-09\nAuthor: Cedar-PCP-2\n\nHPI: She is here for chronic disease follow up, doing okay overall, walking a little with her cane and the reflux is controlled. The PA was approved for her CGM supplies so she should be able to pick those up.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 30 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Cedar-PCP-2",
+    "date": "2026-08-01",
+    "note_id": "N-P-1001-7",
+    "note_type": "pcp",
+    "patient_id": "P-1001",
+    "text": "PRIMARY CARE OFFICE VISIT - 2026-08-01\nAuthor: Cedar-PCP-2\n\nHPI: Follow up visit, she has some fatigue especially in the heat this summer but otherwise no new complaints, no swelling in the legs that she has noticed. PA was approved for the CGM supplies and she is happy about that.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 25 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   },
+   {
+    "author": "Cedar-PCP-2",
+    "date": "2026-08-08",
+    "note_id": "N-P-1001-8",
+    "note_type": "pcp",
+    "patient_id": "P-1001",
+    "text": "PRIMARY CARE OFFICE VISIT - 2026-08-08\nAuthor: Cedar-PCP-2\n\nHPI: Routine follow up, she feels about the same as last week, no new issues and her knees are about there usual. We titrated Farxiga today and reviewed the plan with her.\n\nREVIEW OF SYSTEMS: Constitutional: negative for fever, chills, weight change. Eyes: negative. ENT: negative. Cardiovascular: see HPI. Respiratory: see HPI. GI: negative for nausea, vomiting, diarrhea, abdominal pain. GU: negative. MSK: negative. Skin: negative. Neuro: negative for focal weakness. Psych: negative. Endo: negative. Heme/Lymph: negative. Allergy/Immuno: negative. All other systems reviewed and are negative.\n\nPHYSICAL EXAM: General: well appearing, NAD. HEENT: NCAT, MMM. Neck: supple, no JVD. CV: RRR, no m/r/g. Lungs: CTAB, no wheezes/rales. Abd: soft, NT/ND, +BS. Ext: no edema. Neuro: A&Ox3, no focal deficits. Skin: warm, dry.\n\nMEDICATIONS (imported):\n- Empagliflozin\n- Spironolactone\n- Losartan\n- Amlodipine\n- Furosemide\n- dapagliflozin 10 mg\n\nPROBLEM LIST: Heart failure, EF 55%; Hypertension; Hyperlipidemia; Obesity; GERD; Osteoarthritis\n\nASSESSMENT/PLAN:\n1. Heart failure, EF 55% - stable, continue current management.\n2. Hypertension - stable, continue current management.\n3. Hyperlipidemia - stable, continue current management.\n4. Obesity - stable, continue current management.\n5. GERD - stable, continue current management.\n6. Osteoarthritis - stable, continue current management.\n\nI personally saw and evaluated the patient. Greater than 50% of this visit was spent in counseling and coordination of care. Total time 30 minutes. This note was created with voice recognition software; please excuse transcription errors."
+   }
+  ],
+  "pharmacy_claims": [],
+  "sdoh_purchased": [
+   {
+    "financial_risk": 3,
+    "isolation_risk": 7,
+    "patient_id": "P-1001",
+    "transport_risk": 5,
+    "vendor": "SocioScore"
+   }
+  ]
+ },
+ "id": "P-1001",
+ "roster": {
+  "age": 78,
+  "patient_id": "P-1001",
+  "pcp": "Cedar-PCP-2",
+  "plan": "VA Community Care",
+  "practice": "Cedar Hills Clinic",
+  "region": "Cedar",
+  "sex": "F"
+ }
+}

@@ -218,6 +218,18 @@ def age_on(birth, when):
     return age_at(birth, when)
 
 
+def scoring_age(birth, when):
+    """Age on the CMS reference date for scoring. A valid birth date after that date (a newborn in a later delivery) is age 0,
+    the youngest band; a missing or invalid birth date stays unknown (None) and is never replaced by feed age."""
+    age = age_on(birth, when)
+    if age is not None: return age
+    try:
+        day = lambda v: v if isinstance(v, date) else date.fromisoformat(str(v)[:10])
+        return 0 if day(birth) > day(when) else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _band(age):
     # a person born after the age reference date (a newborn in a later delivery: age < 0) scores in the youngest band
     age = max(int(age or 0), AGE_BANDS[0][0])
@@ -652,8 +664,8 @@ def run(db, cap, patient_ids, params, as_of):
     pats, unknown_age = [], []
     for pid, info in scope.items():
         # CMS defines age on February 1 of the payment year. Missing/invalid
-        # birth dates cannot be replaced with feed age or a zero-age score.
-        age = age_on(info['birth_date'], date(year + 1, 2, 1))
+        # birth dates cannot be replaced with feed age or a zero-age score; a newborn born after the date is age 0.
+        age = scoring_age(info['birth_date'], date(year + 1, 2, 1))
         if age is None:
             unknown_age.append(pid)
             continue

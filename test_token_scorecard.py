@@ -10,6 +10,7 @@ os.environ.setdefault('AGERE_LOCAL_TYPED', 'off')
 os.environ.setdefault('AGERE_LOCAL_NORMALIZER', 'off')
 
 from clinical_core.agere.clinical import token_scorecard as S  # noqa: E402
+from clinical_core.agere import request_lineage  # noqa: E402
 from clinical_core.agere.gateway import BudgetLedger  # noqa: E402
 from tools import token_scorecard as CLI  # noqa: E402
 from tools.component_usage import QUESTIONS, load_questions  # noqa: E402
@@ -69,6 +70,9 @@ class FixedSet(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             ledger_path = Path(tmp) / 'ledger.sqlite3'
             os.environ['AGERE_LEDGER_PATH'] = str(ledger_path); os.environ['AGERE_TRAINING_DIR'] = str(Path(tmp) / 'tr')
+            # A request-lineage execution left active by an earlier test points at a deleted directory and would make every
+            # ledger event of this run fail: run in a clean lineage context and restore the caller's afterwards.
+            lineage = request_lineage.ACTIVE.set(None)
             try:
                 class Stack:
                     path, allow_live, receipts = Path(tmp), True, Path(tmp)
@@ -93,7 +97,8 @@ class FixedSet(unittest.TestCase):
                                 'answer': {'status': 'answered', 'answer_type': 'count', 'headline': '1'}}
                 telemetry, _ = CLI.run_set(QUESTIONS, Path(tmp) / 'out', stack=Stack())
             finally:
-                os.environ.pop('AGERE_LEDGER_PATH'); os.environ.pop('AGERE_TRAINING_DIR')
+                request_lineage.ACTIVE.reset(lineage)
+                os.environ.pop('AGERE_LEDGER_PATH', None); os.environ.pop('AGERE_TRAINING_DIR', None)
         card = S.scorecard(telemetry, question_set='fixed')
         self.assertEqual(card['questions'], 48)
         self.assertGreater(card['answered_no_llm'], 0.5)

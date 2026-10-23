@@ -209,7 +209,7 @@ class Families(unittest.TestCase):
             cs = [r[0] for r in db.execute("SELECT d.icd10 FROM payer_claim_diagnosis d JOIN payer_claim c USING (payer_claim_id) "
                                            "WHERE d.patient_id = ? AND c.final_status = 'paid' AND c.service_from LIKE '2029%'", (pid,))]
             from datetime import date
-            age = max(0, ra.age_on(date.fromisoformat(birth), date(2030, 2, 1)))
+            age = ra.scoring_age(birth, date(2030, 2, 1))  # a newborn after the age date scores in the youngest band
             n += bool(ra.score('V28', age, 2 if sex == 'F' else 1, cs)['hccs'])
         db.close()
         self.assertEqual(answer(Q_HCC, self.root)[1], n)
