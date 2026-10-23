@@ -22,6 +22,7 @@ import time
 import uuid
 from collections import Counter
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 VERSION = 'cost-telemetry/1'
 ROOT = Path(__file__).resolve().parents[3]
@@ -222,8 +223,35 @@ def start(question, **kw):
     return Probe(question, **kw).start()
 
 
+def receipt(telemetry, result=None, *, failed=False):
+    """What one request cost, in one place: paid calls and USD across every provider the ledger saw (Claude, Jev,
+    Perplexity), the split, and the background work the answer started. usd is None, never 0, when it cannot be known.
+
+    The ledger window (telemetry) is the authority; the planner's own count (result['new_paid_api_calls'], or the planner
+    receipt's on a failure) is a cross-check: when the planner reports more calls than the ledger attributed to this
+    question, the ledger missed some and the USD is unknown. Attempts attributed by time window only (another question
+    ran at the same time) are counted in 'windowed_attempts' so a concurrent run's figure can be read with that in mind."""
+    t = telemetry or {}
+    planner = result if isinstance(result, dict) else {}
+    reported = planner.get('new_paid_api_calls')
+    calls = t.get('api_calls')
+    consistent = calls is not None and (reported is None or not isinstance(reported, int) or reported <= calls)
+    usd = t.get('api_usd') if consistent and t.get('usd_known') else None
+    interp = ((planner.get('planner_receipt') or {}).get('interpretation') or {}) if not failed else {}
+    timing = ((planner.get('planner_receipt') or {}).get('answer_timing') or planner.get('answer_timing') or {})
+    background = timing.get('background_continuation') or ((interp.get('answer_timing') or {}).get('background_continuation'))
+    return {'version': 'cost-receipt/1', 'paid_calls': calls if consistent else (reported if isinstance(reported, int) else None),
+            'usd': usd, 'usd_known': usd is not None or (consistent and calls == 0), 'claude_calls': t.get('claude_calls'),
+            'system_one_calls': t.get('system_one_calls'), 'calls_by_model': t.get('calls_by_model'),
+            'windowed_attempts': sum(1 for a in t.get('attempts') or [] if a.get('attribution') == 'window'),
+            'ledger_consistent': consistent, 'planner_reported_calls': reported,
+            'background': background if background is not None else None,
+            'question_id': t.get('question_id')}
+
+
 def record(path, telemetry):
     """answers.sqlite3 answer_costs row (one per question). Never raises."""
+    if _evaluating(): return False
     try:
         db = sqlite3.connect(Path(path) / 'answers.sqlite3', timeout=30)
         try:

@@ -32,6 +32,7 @@ import re
 import sqlite3
 import time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 from . import concepts
 
@@ -278,6 +279,7 @@ def saved(store, label=None):
 
 
 def save(store, label, result, question=None):
+    if _evaluating(): return
     path = store_path(store)
     db = _db(path)
     try:
@@ -296,6 +298,7 @@ def save(store, label, result, question=None):
 
 def save_narrowing(store, label, kind, narrowing):
     """Record a granularity decision on an already saved mapping (one saved before narrowing existed)."""
+    if _evaluating(): return
     db = _db(store_path(store))
     try:
         db.execute('UPDATE mapping SET narrowing = ? WHERE label = ? AND kind = ?', (json.dumps(narrowing), _norm(label), kind))

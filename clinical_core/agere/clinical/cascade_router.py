@@ -25,6 +25,7 @@ import re
 import sqlite3
 import time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 VERSION = 'cascade-router/1'
 ROOT = Path(__file__).resolve().parents[3]
@@ -318,6 +319,7 @@ def reorder(stack, question, order, *, model=None, front=None):
 # -- traces (labels by outcome, going forward) -------------------------------------------------------------------------
 def record_trace(question, result, verified, directory=None):
     """Append the cascade's proposer log with the accepted tier and whether its answer was verified."""
+    if _evaluating(): return None
     from .learning_hooks import training_dir, interpretation_of, proposer_of
     interp = interpretation_of(result)
     log = interp.get('proposers') or []

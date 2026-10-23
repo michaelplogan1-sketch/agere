@@ -19,6 +19,7 @@ import sys
 from contextlib import contextmanager
 
 from . import request_language, request_plan, sql_query
+from .evaluation import active as _evaluating
 from .question_input import QuestionNotUnderstood, validate_question
 
 VERSION = 'shared-warehouse-planner/5'
@@ -878,6 +879,7 @@ def request_keys(stack, catalog, question, population, planning, memory_identity
 
 def store_request(cache_path, key, stable_key, question, contract, interpretation):
     """Save an accepted typed contract for exact replay and paraphrase reuse (replays and checked graphs are never saved here)."""
+    if _evaluating(): return False  # evaluation mode: no plan or paraphrase-reuse entry is saved
     if not (interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer')
             and contract.get('kind') != 'checked_graph' and (contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation))):
         return False
@@ -894,6 +896,7 @@ def store_request(cache_path, key, stable_key, question, contract, interpretatio
 def save_accepted(stack, question, contract, interpretation, *, population=None, planning='auto', memory_identity=None):
     """store_request for a contract accepted outside plan() (a background continuation after the answer deadline), under the keys
     plan() would compute, so the next identical question replays it and the next rewording reuses it."""
+    if _evaluating(): return False
     catalog = request_plan.Catalog.load(stack.path)
     from . import procedural_memory as memory
     if memory_identity is None:
@@ -979,11 +982,12 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                           'carry_forward': 'Verified interpretation saved under an earlier code release; recompiled and '
                                            're-executed under the current code.'}
         replay = {k: v for k, v in saved.items() if k in ('program', 'analysis', 'request')}
-        with sqlite3.connect(cache_path) as db:
-            db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
-                       (key, json.dumps({'question': question, 'stable_key': stable_key, **replay,
-                                         'interpretation': {k: v for k, v in interpretation.items()
-                                                            if k != 'exact_contract_cache_hit'}}, default=str)))
+        if not _evaluating():  # evaluation mode: the carried-forward plan is used, not re-saved
+            with sqlite3.connect(cache_path) as db:
+                db.execute('INSERT OR REPLACE INTO shared_requests VALUES (?,?)',
+                           (key, json.dumps({'question': question, 'stable_key': stable_key, **replay,
+                                             'interpretation': {k: v for k, v in interpretation.items()
+                                                                if k != 'exact_contract_cache_hit'}}, default=str)))
     if not hit and grammar:
         contract, interpretation = grammar
     elif not hit:

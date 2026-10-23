@@ -6,6 +6,7 @@ into new grammar rules or bottled-model training examples.
 """
 import json, os, re, sqlite3, time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 VERSION = 'learning-store/2'
 
@@ -84,6 +85,7 @@ def context(path):
 
 
 def record_verified(path, question, plan_kind, plan, signature, route, models, agreement):
+    if _evaluating(): return  # evaluation mode: nothing is learned from a measured run (evaluation.py)
     db = _db(path)
     try:
         db.execute('INSERT OR REPLACE INTO verified(question, plan_kind, plan, signature, route, models, agreement, created, context) '
@@ -106,7 +108,7 @@ def lookup(path, question):
     target = Path(path) / 'learning.sqlite3'
     if not target.exists() or os.environ.get('AGERE_LEARNED', 'on') == 'off': return None
     if corrected(path, question): return None
-    _db(path).close()  # migrate older stores
+    if not _evaluating(): _db(path).close()  # migrate older stores (a write; never during an evaluation)
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
         row = db.execute('SELECT plan_kind, plan, agreement FROM verified WHERE lower(trim(question)) = lower(trim(?)) AND context = ? '
@@ -117,6 +119,7 @@ def lookup(path, question):
 
 
 def record_outcome(path, question, route, status, reason=None, paid_calls=0, usd=0.0):
+    if _evaluating(): return
     db = _db(path)
     try:
         db.execute('INSERT INTO outcomes VALUES (?,?,?,?,?,?,?)',
@@ -128,7 +131,7 @@ def record_outcome(path, question, route, status, reason=None, paid_calls=0, usd
 
 def record_routing(path, question, info, executed):
     """The operator router's decision for a question (training data for the learned router; never benchmark truth)."""
-    if not info or not info.get('decision'): return
+    if _evaluating() or not info or not info.get('decision'): return
     choice = info.get('choice') or {}
     chooser = info.get('chosen_by') or 'paid_router'
     db = _db(path)
@@ -157,6 +160,7 @@ def capture_verified(path, question, planner_receipt, answer):
     not split into two defensible readings (FM-19: an ambiguous question has no single verified plan). Anything else is
     written to the 'quarantined' table with the reasons, for audit, and never reused or trained on.
     Returns {'recorded': bool, 'reasons': [...]}."""
+    if _evaluating(): return {'recorded': False, 'reasons': ['evaluation mode: nothing is captured']}
     pr = planner_receipt or {}
     hosted = pr.get('hosted_sql') or {}
     cap = hosted.get('capture') or pr.get('capture')
@@ -193,13 +197,14 @@ def quarantine(path, question, answer):
     corrections (exact reuse, meaning cache, training-data promotion) already excludes it; the answer itself is unchanged."""
     hits = sorted({c['control'] for c in (answer or {}).get('quality_checks') or []
                    if c.get('severity') == 'warning' and c.get('control') in QUARANTINE_CONTROLS})
-    if hits: record_correction(path, question, 'quarantine: ' + ', '.join(hits))
+    if hits and not _evaluating(): record_correction(path, question, 'quarantine: ' + ', '.join(hits))
     return hits
 
 
 def record_correction(path, question, note, expected=None, rule=None):
     if not isinstance(question, str) or not question.strip() or not isinstance(note, str) or not note.strip():
         raise ValueError('Correction needs a nonempty original question and explanation')
+    if _evaluating(): raise PermissionError('Evaluation mode never records a correction')
     from .request_shapes import invalidate
     db = _db(path)
     try:

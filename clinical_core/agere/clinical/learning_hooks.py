@@ -27,6 +27,8 @@ import sqlite3
 import time
 from pathlib import Path
 
+from .evaluation import active as _evaluating
+
 VERSION = 'learning-hooks/1'
 ROOT = Path(__file__).resolve().parents[3]
 REPLAYS = {'paraphrase_reuse', 'local_normalizer', 'semantic_cache', 'learned_verified_sql'}  # never saved under new wording
@@ -185,6 +187,7 @@ def router_outcome_row(question, result, proposer, paid):
 
 
 def append(name, row):
+    if _evaluating(): return None  # evaluation mode: no training-traffic, gap or corpus file is written
     d = training_dir(); d.mkdir(parents=True, exist_ok=True)
     path = d / f'{name}-{time.strftime("%Y%m%d")}.jsonl'
     with path.open('a') as f: f.write(json.dumps(row, separators=(',', ':'), default=str) + '\n')
@@ -222,6 +225,13 @@ def components(stack, question, result, body):
 def after_answer(stack, question, result, *, body=None):
     """Learn from one finished answer. -> receipt; never raises."""
     receipt = {'version': VERSION, 'verified': False, 'saved_pair': None, 'corpus': None, 'quarantine': [], 'components': {}, 'errors': []}
+    if _evaluating():  # a measured run learns nothing: no pair, corpus row, gap, trace, stability row, correction or learning task
+        receipt['evaluation'] = True
+        try:
+            receipt['verified'], receipt['reasons'] = verified(stack, question, result)
+        except Exception as exc:  # noqa: BLE001
+            receipt['errors'].append(f'{type(exc).__name__}: {exc}'[:300])
+        return receipt
     try:
         ok, reasons = verified(stack, question, result)
         receipt['verified'], receipt['reasons'] = ok, reasons
@@ -269,6 +279,7 @@ def after_answer(stack, question, result, *, body=None):
 
 def after_failure(stack, question, exc):
     """A question nobody could answer: record it as a gap for grammar growth and training negatives. Never raises."""
+    if _evaluating(): return None
     try:
         usage = getattr(exc, 'planner_receipt', {}) or {}
         return append('gaps', {'question': question, 'status': 'error', 'error': f'{type(exc).__name__}: {exc}'[:500],

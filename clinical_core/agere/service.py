@@ -35,6 +35,14 @@ def _pack_status():
     except Exception as exc:return {'error':str(exc)[:120]}
 
 
+def _failure_receipts(exc):
+    """What a refused /api/stack/compose says about cost and isolation (handle_compose attaches both to the exception)."""
+    out={}
+    if getattr(exc,'cost_receipt',None):out['cost_receipt']=exc.cost_receipt
+    if getattr(exc,'cost_telemetry',None):out['cost_telemetry']=exc.cost_telemetry
+    if getattr(exc,'evaluation',None):out['evaluation']=exc.evaluation
+    return out
+
 def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_stack=False,recovery=None):
     if recovery and allow_live_stack:raise ValueError('Restored installations have hosted inference disabled')
     from .local_release import READ_POSTS,recovery_routes,check_local_request
@@ -298,8 +306,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     result=open_pathway(connected_stack.path,body)
                 elif path=='/api/stack/compose':
                     # {question}, {question, planning} and, for follow-ups, either plus conversation_id.
-                    from .clinical import conversation
-                    result=conversation.handle_compose(connected_stack,body)
+                    from .clinical import conversation, evaluation
+                    # X-Agere-Evaluation: 1 answers the question with every learning write off (benchmarks, sealed banks)
+                    with evaluation.request_scope(self.headers,connected_stack.path):
+                        result=conversation.handle_compose(connected_stack,body)
                 elif path=='/api/stack/correct':
                     from .clinical import learning
                     if set(body)-{'question','note','expected','rule'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
@@ -761,8 +771,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 from .clinical.program_work import WorkConflict
                 from .clinical.question_input import failure
                 details = failure(exc) if path=='/api/stack/compose' else {'error':str(exc)[:400]}
-                raw=json.dumps(details).encode();status=409 if isinstance(exc,WorkConflict) else 400
-            except RuntimeError as exc:raw=json.dumps({'error':str(exc)[:400]}).encode();status=502
+                if path=='/api/stack/compose': details = {**details, **_failure_receipts(exc)}
+                raw=json.dumps(details,default=str).encode();status=409 if isinstance(exc,WorkConflict) else 400
+            except RuntimeError as exc:
+                raw=json.dumps({'error':str(exc)[:400],**(_failure_receipts(exc) if path=='/api/stack/compose' else {})},default=str).encode();status=502
             finally:
                 try:
                     if execution:

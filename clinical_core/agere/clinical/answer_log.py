@@ -5,12 +5,14 @@ Agere answers without any model call, what each rung costs, and how fast it is.
 """
 import hashlib, json, sqlite3, time
 from pathlib import Path
+from .evaluation import active as _evaluating
 
 DDL = """CREATE TABLE IF NOT EXISTS answers(at REAL, question_sha TEXT, question TEXT, route TEXT, status TEXT, answer_type TEXT,
   api_calls INTEGER, api_usd REAL, seconds REAL, error TEXT)"""
 
 
 def record(path, question, result=None, error=None, seconds=0.0, question_id=None):
+    if _evaluating(): return
     db = sqlite3.connect(Path(path) / 'answers.sqlite3')
     try:
         db.execute(DDL)
