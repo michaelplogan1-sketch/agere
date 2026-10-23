@@ -316,6 +316,21 @@ class Validation(Base):
         stored = next(iter(contract['note_predicates'].values()))
         self.assertEqual((stored['window']['start'], stored['window']['end']), ('2029-05-28', AS_OF))
 
+    def test_a_concept_quote_wider_than_the_concept_is_refit_to_the_grammars_own_reading(self):
+        q = 'Patients with a statin fill in the last year, how many?'
+        spec = {'source': {'table': 'patient', 'quote': 'Patients'}, 'select': [{'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'n', 'quote': 'how many'}],
+                'where': {'op': 'concept', 'kind': 'drug_fill', 'names': ['statin'], 'version': 1, 'period': {'start': '2029-05-28', 'end': AS_OF},
+                          'quote': 'a statin fill in the last year'}, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
+        contract = F.validate(self.w.catalog, q, spec)
+        leaf = contract['request']['where']
+        self.assertEqual(leaf['op'], 'exists')  # the grammar's own form of "a statin fill in the last year"
+        self.assertIn('statin', json.dumps(leaf))
+        self.assertIn('within_last_months', json.dumps(leaf))
+        wrong = copy.deepcopy(spec)
+        wrong['where']['names'] = ['arb']  # a different drug is never swapped in
+        with self.assertRaises(F.SpecInvalid):
+            F.validate(self.w.catalog, q, wrong)
+
     def test_a_subject_must_be_a_patient_in_the_warehouse(self):
         q = 'What is the latest HbA1c for SYN-A?'
         spec = {'source': {'table': 'patient', 'quote': 'SYN-A'}, 'select': [{'kind': 'field', 'field': 'patient.sex_reported', 'alias': 'sex', 'quote': 'HbA1c'}],

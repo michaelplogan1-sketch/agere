@@ -22,6 +22,7 @@ grammar wins, else the spec System One verifies better (spec_verify), else both 
 seconds, calls, cost, and what each filler did.
 """
 import contextvars
+import copy
 import json
 import os
 import re
@@ -106,6 +107,71 @@ def normalize_windows(plan, question, as_of):
     return plan
 
 
+def refit_concepts(catalog, question, plan):
+    """A concept leaf is compiled only when the grammar reads its own quote as exactly that concept (request_vocabulary.concept_sql), and the grammar
+    reads a fill or a condition together with its lead word ("have no SGLT2 inhibitor fill in the last year"). A filler often quotes more or less than that.
+    Replace a concept leaf (or a negated one) by the grammar's own reading of the longest span of the question around its quote that is the same concept
+    (same kind, same names, same polarity): the grammar states the window and the form itself, nothing the filler meant is changed."""
+    def spans_of(quote):
+        at = question.find(quote)
+        if at < 0: return []
+        lead = [m for m in re.finditer(r"[^\s]+", question[:at])][-3:]
+        starts = [m.start() for m in lead] + [at]
+        found = [m for m in re.finditer(r"[^\s]+", question[at:at + len(quote)])]
+        out = []
+        for i, start in enumerate(starts):
+            for j in range(len(found), 0, -1):
+                end = at + found[j - 1].end()
+                out.append(question[start:end])
+        for i in range(len(found)):
+            for j in range(len(found), i, -1):
+                out.append(quote[found[i].start():found[j - 1].end()])
+        return sorted(dict.fromkeys(out), key=lambda t: (-len(t), t))
+
+    def concept_of(node):
+        negated = False
+        while isinstance(node, dict) and node.get('op') == 'not':
+            negated, node = not negated, node.get('arg')
+        return (node, negated) if isinstance(node, dict) and node.get('op') == 'concept' else (None, False)
+
+    def polarity(got):
+        negated = False
+        while isinstance(got, dict) and got.get('op') == 'not':
+            negated, got = not negated, got.get('arg')
+        return got, negated
+
+    def fit(node):
+        leaf, negated = concept_of(node)
+        if leaf is None: return node
+        quote = request_plan.quote_text(node.get('quote') or '')
+        if node is not leaf: quote = request_plan.quote_text(node.get('quote') or '') if False else request_plan.quote_text(leaf.get('quote') or '')
+        if not quote or quote not in question: return node
+        names = [n.partition('@')[0] for n in leaf.get('names') or []]
+        for span in spans_of(quote):
+            try:
+                got, tail = request_language.Parser(catalog, span).expression(span)
+            except (request_plan.PlanError, KeyError, TypeError, ValueError):
+                continue
+            if not isinstance(got, dict) or tail.strip(): continue
+            core, got_negated = polarity(got)
+            if got_negated != negated or not isinstance(core, dict): continue
+            same = core.get('op') == 'concept' and core.get('kind') == leaf.get('kind') and set(core.get('names') or []) == set(leaf.get('names') or [])
+            fill = leaf.get('kind') == 'drug_fill' and core.get('op') == 'exists' and all(n in json.dumps(core) for n in names)
+            if same or fill: return got
+        return node
+
+    def visit(node):
+        if isinstance(node, list): return [visit(x) for x in node]
+        if isinstance(node, dict):
+            leaf, _ = concept_of(node)
+            if leaf is not None: return fit(node)
+            return {k: visit(v) if isinstance(v, (list, dict)) else v for k, v in node.items()}
+        return node
+    out = dict(plan)
+    if isinstance(plan.get('where'), dict): out['where'] = visit(plan['where'])
+    return out
+
+
 def window_findings(question, plan, contract, as_of):
     """A window the question names must reach the compiled spec: the 12 months ending at the as-of date, or the calendar year (unless an engine
     owns the period)."""
@@ -139,7 +205,13 @@ def validate(catalog, question, plan, *, population=None, as_of=None):
     try:
         plan = request_plan.normalize_wire(catalog, question, plan)
         plan = normalize_windows(plan, question, as_of)
-        contract = request_plan.compile_request(catalog, question, plan, population=population)
+        try:
+            contract = request_plan.compile_request(catalog, question, plan, population=population)
+        except request_plan.PlanError:
+            refit = refit_concepts(catalog, question, plan)
+            if refit == plan: raise
+            plan = refit
+            contract = request_plan.compile_request(catalog, question, plan, population=population)
     except request_plan.AmbiguousRequest as exc:
         raise SpecInvalid(f'ambiguous: {exc}') from exc
     except (request_plan.PlanError, KeyError, TypeError, ValueError, AttributeError) as exc:
@@ -531,8 +603,7 @@ def run_filler(name, fn, ctx):
         plan, notes = fn(ctx)
         cand['notes'] = notes
         contract = validate(ctx.catalog, ctx.question, plan, population=ctx.population, as_of=ctx.as_of)
-        cand.update(status='valid', plan=request_plan.normalize_wire(ctx.catalog, ctx.question, plan), contract=contract)
-        cand['plan'] = normalize_windows(cand['plan'], ctx.question, ctx.as_of)
+        cand.update(status='valid', plan=copy.deepcopy(contract['request']), contract=contract)
     except SpecInvalid as exc:
         cand.update(status='invalid', error=str(exc)[:500])
         if exc.held is not None: cand['held'] = exc.held
