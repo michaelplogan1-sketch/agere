@@ -216,6 +216,12 @@ class Api(unittest.TestCase):
                 self.assertEqual(self.stack.calls[-1], (question, 'auto'))
                 self.assertFalse(result['conversation']['follow_up'])
 
+    def test_seeming_verb_keeps_the_pronoun_local(self):  # CLN-06 was refused as a follow-up
+        self.assertFalse(C.requires_saved_cohort("Which patients look like they have kidney disease from their eGFR but aren't diagnosed?"))
+        self.assertFalse(C.requires_saved_cohort('Which members seem to be missing their statin?'))
+        self.assertTrue(C.requires_saved_cohort('Which patients do they see most?'))
+        self.assertTrue(C.requires_saved_cohort('Count claims for those patients'))
+
     def test_missing_external_references_cannot_query_whole_warehouse(self):
         from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
         for question in ('List them', 'Count those patients', 'Group these patients by PCP',

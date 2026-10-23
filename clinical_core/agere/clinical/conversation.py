@@ -396,6 +396,9 @@ def requires_saved_cohort(question, catalog=None):
     if antecedent is None:
         return True
     link = text[antecedent.end():reference.start()]
+    # "Which patients look like they have ...": a seeming verb between the population and the pronoun keeps it local.
+    if reference.group() in ('they', 'their', 'them') and re.match(r'\s*(?:look|looks|seem|seems|appear|appears)\b', link):
+        return False
     if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned)\b', link):
         return False
     # A noun alone is insufficient: "count claims for those patients" still
