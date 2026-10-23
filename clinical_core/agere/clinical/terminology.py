@@ -663,3 +663,40 @@ def tier(stack, catalog, question, population=None, ledger=None, *, decider=None
     contract, interpretation = interpret(catalog, question, population=population)
     return contract, {**interpretation, 'interpreter': 'terminology_mapping', 'terminology': receipts, 'terminology_usage': usage,
                       'review': 'terminology_mapping_then_fully_consumed_grammar'}
+
+
+# ------------------------------------------------------------------------------------------------ one-time pass over a store
+def renarrow_saved(stack_path, *, ledger=None, dry_run=True, decider=None, as_of=None):
+    """Run the granularity decision (narrow()) over every saved condition mapping that was never decided: its concept spans more than
+    one ICD-10-CM category, the term is not the concept's own name and no narrowed / whole decision is saved. dry_run=True lists them
+    without calling System One; dry_run=False asks and saves narrowed / whole results (unverified stays unsaved).
+    -> [{'term', 'concept', 'result', 'codes', 'p'}]"""
+    store = store_path(stack_path)
+    titles = category_titles(store)
+    summary = []
+    for term, row in sorted(saved(store).items()):
+        concept = row['concept']
+        if row['kind'] != 'condition' or len(concept_categories(concept)) < 2 or is_own_name(term, concept) \
+                or (row.get('narrowing') or {}).get('granularity') in DECIDED:
+            continue
+        item = {'term': term, 'concept': concept, 'result': 'pending', 'codes': None, 'p': None}
+        if not dry_run:
+            n = narrow(term, concept, titles=titles, question=f'How many patients have {term}?', as_of=as_of, ledger=ledger, allow_live=True,
+                       decider=decider)
+            item.update(result=n['granularity'], codes=n.get('codes'), p=n.get('probability'))
+            if n['granularity'] in DECIDED:
+                save_narrowing(store, term, 'condition', _granularity_view(n))
+        summary.append(item)
+    return summary
+
+
+if __name__ == '__main__':
+    import argparse
+    ap = argparse.ArgumentParser(description='Decide the granularity of saved condition mappings (opioid use disorder -> F11).')
+    ap.add_argument('--renarrow', required=True, metavar='STACK', help='stack directory holding terminology-map.sqlite3')
+    ap.add_argument('--write', action='store_true', help='ask System One and save narrowed / whole decisions (default: list only)')
+    args = ap.parse_args()
+    if args.write:
+        import run_integrated_stack
+        run_integrated_stack.keys()
+    for r in renarrow_saved(args.renarrow, dry_run=not args.write): print(json.dumps(r))

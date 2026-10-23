@@ -304,6 +304,32 @@ class Granularity(unittest.TestCase):
         self.assertFalse(concepts.valid_scope("substance_use_disorder@F11'; DROP TABLE x"))
         self.assertEqual(concepts.split_scope('a@F11+F12'), ('a', ('F11', 'F12')))
 
+    def test_renarrow_saved_decides_legacy_rows_once(self):
+        db = sqlite3.connect(self.store)
+        db.execute('CREATE TABLE mapping(label TEXT, kind TEXT, concept TEXT, classes TEXT, method TEXT, provider TEXT, probability REAL, '
+                   'cost_usd REAL, request_hash TEXT, question TEXT, candidates TEXT, created TEXT, version TEXT, PRIMARY KEY(label, kind))')
+        for label, concept in (('opioid use disorder', 'substance_use_disorder'), ('cannabis use disorder', 'substance_use_disorder'),
+                               ('substance use disorder', 'substance_use_disorder'), ('hf', 'heart_failure'), ('latest hba1c', 'hba1c')):
+            db.execute("INSERT INTO mapping VALUES (?,?,?,NULL,'system_one','jev',0.9,0,'h',NULL,'[]','2026-10-22','terminology-map/1')",
+                       (label, 'lab' if concept == 'hba1c' else 'condition', concept))
+        db.commit(); db.close()
+        calls = []
+
+        def fake(question, options, evidence, *, as_of, threshold, task_key, ledger, allow_live):
+            lab, p = ('F11', 0.93) if 'opioid' in question else ('F12', 0.5)
+            calls.append(question)
+            return {'label': lab, 'probabilities': {lab: p}, 'calibrated_probabilities': {lab: p}, 'decided_by': 'jev' if p >= threshold else None,
+                    'cost_usd': 0.0002, 'request_hash': 'x', 'steps': [{'status': 'answered', 'cache_hit': False}]}
+        dry = T.renarrow_saved(self.stack)  # lists, never asks
+        self.assertEqual(sorted(r['term'] for r in dry), ['cannabis use disorder', 'opioid use disorder'])  # 'hf' is an alias; a lab is not a condition
+        self.assertEqual((calls, {r['result'] for r in dry}), ([], {'pending'}))
+        done = {r['term']: r for r in T.renarrow_saved(self.stack, dry_run=False, decider=fake)}
+        self.assertEqual((done['opioid use disorder']['result'], done['opioid use disorder']['codes']), ('narrowed', ['F11']))
+        self.assertEqual(done['cannabis use disorder']['result'], 'unverified')  # not confident: not saved
+        self.assertEqual(T.saved(self.store, 'opioid use disorder')['narrowing']['codes'], ['F11'])
+        self.assertIsNone(T.saved(self.store, 'cannabis use disorder')['narrowing'])
+        self.assertNotIn('opioid use disorder', [r['term'] for r in T.renarrow_saved(self.stack)])  # a decided row is not asked again
+
     def test_a_stale_saved_plan_is_detected(self):
         self.run_tier(('F11', 0.6))
         before = T.grammar_terms(self.Q, self.store)['used']
