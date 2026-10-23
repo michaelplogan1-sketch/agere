@@ -720,6 +720,10 @@ def _compose_plan(stack, question, *, planning='auto', program_kind=None):
 
 def compose_together(stack, question, *, planning='auto', answer_type=None):
     from .shared_planner import compose
+    # A plan request (answer_type 'plan', or a question asking to create a plan / enroll / route patients) computes its
+    # cohort through this same entry point and routes it deterministically (_compose_plan).
+    if answer_type == 'plan' or (answer_type is None and _is_plan_request(question)):
+        return _compose_plan(stack, question, planning=planning)
     return compose(stack, question)
 
 

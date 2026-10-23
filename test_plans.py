@@ -70,10 +70,10 @@ def build_fixture(path):
                    'coverage_end, termination_reason, attribution_practice_id, attribution_npi, available_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', spans)
     db.executemany('INSERT INTO condition VALUES (?,?,?,?)',
                    [(f'CN-{p}', p, 'I50.22', '2027-03-01') for p in ('HF1', 'HF2', 'HF3', 'HF4', 'HF5', 'HF6', 'HF7')])
-    fills = [  # HF1: ACEi + evidence-based BB in the 120-day window; an old MRA fill outside it
+    fills = [  # HF1: ACEi + evidence-based BB in the 12-month window; an old MRA fill outside it
         (1, 'HF1', '2030-04-01', 30, '2030-04-30', 'ace_inhibitor', 'lisinopril 20 MG', 'FR-1'),
         (2, 'HF1', '2030-03-15', 90, '2030-06-12', 'hf_evidence_based_beta_blocker', 'carvedilol 25 MG', 'FR-2'),
-        (3, 'HF1', '2029-06-01', 30, '2029-06-30', 'mra', 'spironolactone 25 MG', 'FR-3'),
+        (3, 'HF1', '2029-03-01', 30, '2029-03-30', 'mra', 'spironolactone 25 MG', 'FR-3'),
         # HF5: all four pillars filled
         (4, 'HF5', '2030-05-01', 30, '2030-05-30', 'arni', 'sacubitril valsartan', 'FR-4'),
         (5, 'HF5', '2030-05-01', 30, '2030-05-30', 'hf_evidence_based_beta_blocker', '24 HR metoprolol succinate', 'FR-5'),
@@ -190,7 +190,7 @@ class GapTests(FixtureCase):
     def test_gdmt_pillar_gaps_from_fills(self):
         r = self.row(self.gdmt, 'HF1')
         g = r['gap']
-        self.assertEqual(sorted(g['missing_pillars']['value']), ['mra', 'sglt2i'])  # old MRA fill is outside 120 days
+        self.assertEqual(sorted(g['missing_pillars']['value']), ['mra', 'sglt2i'])  # old MRA fill is outside the 12-month lookback
         self.assertEqual(sorted(g['present_pillars']['value']), ['beta_blocker', 'rasi'])
         self.assertEqual(g['pillars']['rasi']['on_therapy']['sources'], ['fill:FR-1'])
         self.assertEqual(r['route'], 'enroll')
