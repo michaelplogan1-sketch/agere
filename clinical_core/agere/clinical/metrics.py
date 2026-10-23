@@ -33,7 +33,7 @@ ROOT = Path(__file__).resolve().parents[3]
 METRICS_DIR = ROOT / 'config' / 'agere' / 'metrics'
 DEFINITIONS_FILE = ROOT / 'config' / 'agere' / 'definitions.json'
 GRAINS = ('patient', 'visit', 'stay', 'discharge', 'claim', 'adjudication', 'member_month', 'appointment', 'account',
-          'referral', 'allocation', 'lab_row', 'index_event')
+          'referral', 'allocation', 'lab_row', 'index_event', 'record')  # record: one row of a semantic-layer table (generated_metrics.py)
 ANCHOR_MODES = ('period', 'trailing', 'snapshot', 'any_time')
 DEFAULT_WINDOWS = ('as_of_year', 'trailing', 'as_of', 'all', 'measure_year')
 VERSIONING = ('latest_version_table', 'latest_per_key', 'net_all_versions', 'distinct_key', 'any_version', 'none')

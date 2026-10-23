@@ -696,6 +696,7 @@ WAVE1_MODULES = [  # (module, family, wiring, role) — wave-1 modules that chec
     ('engine_suite', 'infrastructure', 'planner_menu', 'Registry for wave-1 decision engines.'),
     ('foundation_engines', 'infrastructure', 'planner_menu', 'Registry for data-foundation engines.'),
     ('hcc_suspecting', 'engine', 'cascade_tier:hcc_suspecting', 'Retrieve-then-rank HCC suspecting confirmed by System One.'),
+    ('generated_metrics', 'metric_or_measure', 'inside:s1_metric_router', 'Generated governed metrics (count / share / by-column per categorical column of the semantic layer, origin generated, cached per semantic digest) offered to System One beside the authored ones; below authored certification.'),
     ('exact_fit', 'check', 'inside:metric_router', 'Exact-fit gate: sex/age/payer/condition/window qualifiers must be carried by the metric definition or slots; misfit falls through.'),
     ('answer_verifier', 'check', 'inside:answer_checks_hook', 'Learned answer verifier: p_wrong from verified vs quarantined answers.'),
     ('candidate_selector', 'check', 'inside:checked_proposer_cascade', 'Pairwise reward-model selector among System One fallback candidates.'),

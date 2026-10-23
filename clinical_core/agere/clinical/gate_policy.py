@@ -45,6 +45,7 @@ GATES = {
     'learned_reuse.answer': ('route', 1.0, 'the delivered answer was wrong'),
     'bottled.answer': ('route', 1.0, 'the delivered answer was wrong'),
     'metric_router.answer': ('route', 1.0, 'the delivered answer was wrong'),
+    'metric_router.generated_answer': ('route', 1.0, 'the delivered answer from a generated (not authored) metric definition was wrong'),
     'operator_router.answer': ('route', 1.0, 'the delivered answer was wrong'),
     'freeform_sql.verified': ('flag', 1.0, 'an answer the free-form acceptance check marked verified was wrong'),
     'typed_route.answer': ('route', 1.0, 'the delivered answer was wrong'),
@@ -60,6 +61,7 @@ ROUTE_CODE = {
     'learned_reuse.answer': ('learning.py', 'verify.py', 'semantic_cache.py'),
     'bottled.answer': ('bottled.py', 'verify.py'),
     'metric_router.answer': ('metric_router.py', 'metrics.py', 'answer_checks.py'),
+    'metric_router.generated_answer': ('metric_router.py', 'metrics.py', 'answer_checks.py', 'generated_metrics.py'),
     'operator_router.choice': ('operator_router.py', 'learned_router.py'),
     'operator_router.answer': ('operator_router.py', 'analysis_graph.py', 'cohorts.py', 'concepts.py'),
     'freeform_sql.verified': ('nl2sql.py', 'verification_v2.py', 'metric_router.py', 'metrics.py', 'oracles.py'),
@@ -133,7 +135,8 @@ def path_gates(receipt):
     if route == 'bottled_sql':
         return [{'gate': 'bottled.answer', 'score': 1.0, 'passed': True}]
     if route == 'metric_router':
-        return [{'gate': 'metric_router.answer', 'score': 1.0, 'passed': True}]
+        generated = ((receipt.get('metric_router') or {}).get('resolution') or {}).get('origin') == 'generated'
+        return [{'gate': 'metric_router.generated_answer' if generated else 'metric_router.answer', 'score': 1.0, 'passed': True}]
     if route == 'operator_router':
         info = ((receipt.get('local_compiler_declined') or {}).get('operator_router') or {})
         out = []

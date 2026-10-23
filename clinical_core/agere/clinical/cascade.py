@@ -267,6 +267,9 @@ def route_tier(receipt):
         route = receipt.get('original_route')
     if route == 'local_model_rewrite_compiled':
         return None  # the local rewrite rung is not a calibrated specialist here (off on live stacks)
+    inner = receipt.get('prior_planning_receipt') if receipt.get('route') == 'exact_question_cache' and isinstance(receipt.get('prior_planning_receipt'), dict) else receipt
+    if route == 'metric_router' and (((inner.get('metric_router') or {}).get('resolution') or {}).get('origin') == 'generated'):
+        return None  # a generated metric definition (generated_metrics.py) is outside the authored-metric calibration: no tier certificate
     return route if route in ROUTE_TIERS else None
 
 

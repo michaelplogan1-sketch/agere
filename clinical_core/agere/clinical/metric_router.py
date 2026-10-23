@@ -378,6 +378,7 @@ def resolution(mid, m, slots, node):
     return {'metric': mid, 'version': m['version'], 'slots': slots, 'operation': node['operation'],
             'query': (node['parameters'] or {}).get('query'), 'returns': (node['parameters'] or {}).get('returns'),
             'statement': computed_as(mid, m, slots, node), 'definition': node.get('definition') or m['summary'], 'layer': VERSION,
+            **({'origin': m['origin'], 'certification': m.get('certification')} if m.get('origin') else {}),
             **({'variant': node['variant'], 'anchor': node.get('anchor')} if node.get('variant') else {})}
 
 
@@ -458,13 +459,14 @@ def shape_misfit(question, mid, node, slots=None):
     return None
 
 
-def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory=None):
+def route(question, as_of, ledger=None, out=None, path=None, ask=None, directory=None, lib=None):
     """-> (graph | None, info). info['decision'] is 'metric', 'readings', 'no_metric' or 'fill_failed'.
 
     ask(question, as_of, tools=..., forced=..., feedback=...) -> (choice {'name','input'}, receipt) replaces the paid call
-    (tests, offline replay). With path, the two readings of an ambiguous choice are executed (read-only) and compared."""
+    (tests, offline replay). With path, the two readings of an ambiguous choice are executed (read-only) and compared.
+    lib replaces the routable library (s1_governed offers the generated metrics of generated_metrics.py beside the authored ones)."""
     start = time.perf_counter()
-    lib = routable(directory)
+    lib = routable(directory) if lib is None else lib
     index = _tool_index(lib)
     info = {'router': VERSION, 'calls': []}
 
@@ -633,12 +635,15 @@ def finalize_answer(answer, receipt, encoder=None):
         res = mr['resolution']
         out['computed_as'] = {'metric': res['metric'], 'version': res['version'], 'layer': VERSION, 'definition': res['definition'],
                               'slots': res['slots'], 'statement': res['statement'], 'conforms': True,
+                              **({'origin': res['origin'], 'certification': res.get('certification')} if res.get('origin') else {}),
                               **({'anchor': res['anchor']} if res.get('anchor') else {}),
                               **({'evidence': out['computed_as']['evidence']} if isinstance(out.get('computed_as'), dict)
                                  and out['computed_as'].get('evidence') else {})}
         out['computed'] = res['statement']
         basis = f"computed deterministically as metric {res['metric']}@v{res['version']}"
-        if legacy: set_confidence(out, 'verified', basis, source='governed_metric')
+        if res.get('origin') == 'generated':  # a definition generated from the semantic layer's structure is never certified as authored
+            _certified_confidence(out, receipt, encoder, basis + ' (generated definition, not authored)', source='generated_metric')
+        elif legacy: set_confidence(out, 'verified', basis, source='governed_metric')
         else: _certified_confidence(out, receipt, encoder, basis, source='governed_metric')
         _add(out, 'QC-METRIC', 'FM-05', res['statement'][:300].capitalize(), 'info', metric=res['metric'], metric_version=res['version'])
         if mr.get('readings'):
