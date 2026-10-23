@@ -77,6 +77,9 @@ def _key(job):
 def enqueue(cascade):
     """Queue the cascade's deferred tiers for the background worker. -> receipt {'queued', 'reason', 'depth', 'tiers'}."""
     tiers = [d['tier'] for d in cascade.deferred]
+    if os.environ.get('AGERE_BACKGROUND_CLAUDE', 'off') != 'on':  # token economics: background work is free / System One only unless asked
+        from .proposers import STAGES, stage_of
+        tiers = [t for t in tiers if stage_of(t) != len(STAGES) - 1]
     if not enabled(): return {'queued': False, 'reason': 'AGERE_BACKGROUND_CONTINUE=off', 'tiers': tiers}
     if not tiers: return {'queued': False, 'reason': 'nothing deferred', 'tiers': tiers}
     job = {'stack': cascade.stack, 'catalog': cascade.catalog, 'question': cascade.question, 'population': cascade.population,

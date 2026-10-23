@@ -18,7 +18,7 @@ FILE = 'tier-timings.json'
 WINDOW = 15       # most recent measurements kept per tier
 MIN_SAMPLES = 3
 DEFAULTS = {'local_normalizer': 20.0, 'qwen_rewrite_compiler': 20.0, 'bottled_sql': 20.0, 'qwen_typed_interpreter': 20.0,
-            'local_free_sql': 20.0, 'atomic_system_one': 30.0, 'evidence_retrieval': 10.0, 'evidence_review': 10.0}
+            'local_free_sql': 20.0, 'atomic_system_one': 20.0, 'evidence_retrieval': 10.0, 'evidence_review': 10.0}
 DEFAULT_OTHER = 2.0
 _lock = threading.Lock()
 _cache = {}  # path -> (mtime_ns, {tier: [seconds]})

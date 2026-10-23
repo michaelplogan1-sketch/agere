@@ -83,7 +83,7 @@ class Production(Fixture):
 
     def test_a_heavy_tier_is_skipped_when_its_expected_cost_exceeds_the_remaining_budget(self):
         # 20 s spent before the heavy tiers: 10 s left; the 20 s local models and the 30 s atomic tier do not fit, 2 s tiers still run
-        est = {n: 20.0 for n in P.COSTLY if n != 'atomic_system_one'} | {'atomic_system_one': 30.0}
+        est = {n: 20.0 for n in P.COSTLY if n != 'atomic_system_one'} | {'atomic_system_one': 20.0}
         self.fake_tiers(costs={'local_compiler': 20.0}, expected=est)
         c = self.cascade()
         with self.assertRaises(QuestionNotUnderstood) as ctx:
@@ -129,7 +129,7 @@ class Estimates(Fixture):
     def test_tier_medians_update_and_seed_with_conservative_defaults(self):
         path = self.dir.name
         self.assertEqual(TT.estimate(path, 'bottled_sql'), 20.0)
-        self.assertEqual(TT.estimate(path, 'atomic_system_one'), 30.0)
+        self.assertEqual(TT.estimate(path, 'atomic_system_one'), 20.0)
         self.assertEqual(TT.estimate(path, 'evidence_review'), 10.0)
         self.assertEqual(TT.estimate(path, 'semantic_cache'), 2.0)
         TT.record(path, {'bottled_sql': [4.0]})
@@ -306,3 +306,16 @@ class Background(Fixture):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class BackgroundIsFreeByDefault(unittest.TestCase):
+    def test_claude_tiers_are_not_queued_unless_asked(self):  # token economics: misses never start paid Claude work on their own
+        from types import SimpleNamespace
+        from clinical_core.agere.clinical import background_continuation as BC
+        c = SimpleNamespace(deferred=[{'tier': 'atomic_system_one'}, {'tier': 'hosted_typed_interpreter'}, {'tier': 'metric_router'}])
+        with patch.dict(os.environ, {'AGERE_BACKGROUND_CONTINUE': 'off'}, clear=False):
+            os.environ.pop('AGERE_BACKGROUND_CLAUDE', None)
+            self.assertEqual(BC.enqueue(c)['tiers'], ['atomic_system_one'])
+            os.environ['AGERE_BACKGROUND_CLAUDE'] = 'on'
+            self.assertEqual(BC.enqueue(c)['tiers'], ['atomic_system_one', 'hosted_typed_interpreter', 'metric_router'])
+            os.environ.pop('AGERE_BACKGROUND_CLAUDE', None)
