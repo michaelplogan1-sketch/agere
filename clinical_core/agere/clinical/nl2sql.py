@@ -18,7 +18,7 @@ from . import concepts, source_profile, sql_query
 VERSION = 'local-nl2sql/1'
 MODEL_DIR = Path(__file__).resolve().parents[3] / 'models' / 'qwen3-4b'
 TABLES = """patient(patient_id, age_reported, sex_reported ['F','M'], coverage_type ['commercial','medicare','medicaid','uninsured'], coverage_source, coverage_status, pcp_clinician_id, pcp_practice_id, birth_date, race, ethnicity, preferred_language, interpreter_needed, marital_status, zip, county, state, line_of_business, payer_id)  -- use age_at(birth_date, (SELECT value FROM meta WHERE key='as_of')); demographics: race/ethnicity/preferred_language (NULL or '' = missing); coverage_source says where coverage_type came from
-condition(record_id, patient_id, concept, label, icd10, snomed, event_date, available_date, organization_id, is_diagnosis, icd10_category, chapter, chronic, normalized_label)  -- is_diagnosis=0 for assessment topics/tolerability/review rows  -- one row per (record, concept)
+condition(record_id, patient_id, concept, label, icd10, snomed, event_date, available_date, organization_id, is_diagnosis, icd10_category, chapter, chronic, normalized_label)  -- is_diagnosis=0 for assessment topics/tolerability/review rows  -- one row per (record, concept)  -- EHR condition records ONLY: no payer claim diagnoses, encounter diagnoses or problem-list entries, so a patient count by ICD-10 code from condition alone undercounts; count documented diagnoses by code from diagnosis_any, by concept from concept_patient
 measurement(record_id, patient_id, source_table ['labs','vitals',...], concept, name, value, unit, value_canonical, unit_canonical, result_status, event_date, available_date, organization_id, loinc, component, lab_category, event_time)  -- labs AND vitals: 'lab results' = source_table='labs', vital signs = source_table='vitals'; concept for governed labs, loinc/component for every other test  -- labs and vitals (plus PHQ-9 / PHQ-2 scores from mood questionnaires); compare value_canonical
 visit(encounter_id, patient_id, type, type_concept, setting, start_time, end_time, status, event_date, end_date, available_date, first_available_date, organization_id, attending_clinician_id, disposition, in_person, is_practice, awv)  -- one row per encounter; count visits here; awv = 1 for an annual wellness visit
 -- wellness_visit is a separate table of annual wellness visits (one row each); visit.awv = 1 marks the same visits
@@ -51,7 +51,8 @@ cancer_screening(record_id, patient_id, test, result_status, event_date, result_
 procedure_line(record_id, patient_id, source ['claim_line','payer_claim_line'], claim_id, line_number, service_date, code_system, code, cpt, hcpcs, revenue_code, units, place_of_service, claim_status, counts_in_metrics, duplicate_of_record_id)  -- EVERY procedure line (provider billing + payer claims); use for any "had procedure/CPT/HCPCS X" question WHERE counts_in_metrics = 1
 encounter_diagnosis(encounter_id, patient_id, rank, icd10, type, record_id, source ['ehr','hl7_adt','payer_claim'], event_date)  -- ICD-10 dx on encounters of every source; ED dx: JOIN encounter e USING(encounter_id) WHERE e.type_concept = 'emergency_visit'
 death(patient_id, death_date, death_source, cclf8_death_date, payer_death_date, epic_death_date, athena_death_date, ecw_death_date, fhir_death_date, demographic_update_death_date, enrollment_death_term_date, sources, sources_disagree, first_reported_date, record_ids)  -- one row per patient with a reported death; "alive at X" = no death_date <= X
-concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept
+diagnosis_any(patient_id, icd10, source ['condition','payer_claim','encounter','problem_list'], source_detail, event_date, record_ref)  -- EVERY documented ICD-10 diagnosis of every source (EHR condition records, PAID payer claim diagnoses, EHR/ADT encounter diagnoses, problem-list entries), one row per source record; the table for "patients with a diagnosis code / code range" (icd10 LIKE 'F11%'): count(DISTINCT patient_id)
+concept_patient(concept, kind, patient_id, records, first_date, last_date)  -- who has each concept (governed, every source; concept-level, no codes): the table for "patients with <named condition concept>"
 link(record_id, stream, field, target_record_id)  -- every *_record_id reference between records
 record(record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)  -- every received record; other fields via json_extract(payload,'$.field')"""
 RULES = """Write ONE SQLite SELECT that answers the question. Rules:
@@ -60,6 +61,7 @@ RULES = """Write ONE SQLite SELECT that answers the question. Rules:
 - Appointments: use appointment (one row each, statuses resolved). Claims: use claim (one row per claim_id; net paid after reversals).
 - Age: age_at(patient.birth_date, the supplied as-of date). Length of stay: stay.los_days. Social needs: social_need (both screening instruments).
 - Clinical conditions, labs, vitals and encounter types: use the concept columns (they cover ICD-10, SNOMED and label variants).
+- Patients with a diagnosis named by ICD-10 code or code range (every documented diagnosis: paid payer claim, problem list, EHR condition, encounter diagnosis): diagnosis_any WHERE icd10 LIKE 'F11%', count(DISTINCT patient_id). condition holds EHR condition records only and undercounts; a library concept is counted from concept_patient.
 - Stream fields not in a typed table: json_extract(payload,'$.field') on record WHERE stream='<stream>'. Booleans compare to 1/0.
 - Day differences: julianday(a) - julianday(b). Year: substr(date,1,4). Percent: 100.0 * part / whole.
 - Lab and vital values: ALWAYS the measurement table (both vitals layouts are merged there); never json_extract on vitals/labs.
@@ -73,6 +75,8 @@ EXAMPLES = [  # generic semantic-layer patterns; retrieved per question (not ben
      "SELECT count(DISTINCT c.patient_id) FROM condition c JOIN measurement m ON m.patient_id = c.patient_id WHERE c.concept = 'diabetes' AND m.concept = 'hba1c' AND m.value_canonical > 9"),
     ("Which patients with COPD have ever had oxygen saturation below 88?",
      "SELECT DISTINCT c.patient_id FROM condition c JOIN measurement m ON m.patient_id = c.patient_id WHERE c.concept = 'copd' AND m.concept = 'spo2' AND m.value_canonical < 88"),
+    ("How many patients have a documented opioid use disorder (ICD-10 F11)?",
+     "SELECT count(DISTINCT patient_id) FROM diagnosis_any WHERE icd10 LIKE 'F11%'"),
     ("How many asthma patients have no spirometry result at all?",
      "SELECT count(DISTINCT patient_id) FROM concept_patient WHERE concept = 'asthma' AND patient_id NOT IN (SELECT patient_id FROM record WHERE stream = 'diagnostic_test_reports')"),
     ("How many patients with hypertension but no chronic kidney disease are there?",
@@ -258,7 +262,8 @@ def concept_line(profile):
     enc = (profile['streams'].get('encounters') or {}).get('fields', {}).get('type', {}).get('values') or {}
     if enc: concept_line += '; visit.type raw values (labels and codes not in type_concept are still queryable): ' + ', '.join(sorted(enc, key=lambda v: -enc[v])[:30])
     concept_line += ('; condition labels outside the concept list are queryable via condition.label/icd10 '
-                     '(e.g. label LIKE \'%bipolar%\' or icd10 LIKE \'F31%\').')
+                     '(e.g. label LIKE \'%bipolar%\'); a condition named by ICD-10 code or range is counted from diagnosis_any '
+                     '(e.g. icd10 LIKE \'F31%\'), which also holds paid payer claim, encounter and problem-list diagnoses.')
     return concept_line
 
 
