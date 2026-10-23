@@ -116,6 +116,9 @@ def find(target, text):
         if norm in seen:
             continue
         hits = idx['patients'].get(norm)
+        if hits and len(hits) > 1:  # several ids share these letters and digits: an exact spelling of one of them still names it
+            exact = [h for h in hits if h.upper() == quote.upper()]
+            hits = exact if len(exact) == 1 else hits
         if hits:
             seen.add(norm)
             if len(hits) == 1:

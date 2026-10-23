@@ -62,6 +62,7 @@ MODULES = {
     'cql_measure': 'cql_measures',                  # governed CQL -> ELM measure logic: rate, eligibility trace, parity with the measure library
     'policy_evaluation': 'off_policy',              # doubly robust off-policy evaluation of outreach policies from logged outcomes
     'guideline_conformance': 'guideline_conformance',  # OCEL 2.0 object-centric log + guideline pathway conformance
+    'chart_reader': 'chart_reader_op',               # one named patient's chart: every structured source + note frames (chart_reader.tier is the rung)
     'acquisition_policy': 'acquisition_policy',     # learned where-to-spend-effort policy from recorded outcomes (cost, success, no-further-computation)
 }
 ROUTE_ORDER = ('identity_resolution', 'cql_measure', 'saved_monitors', 'change_attribution', 'social_needs', 'guideline_conformance',

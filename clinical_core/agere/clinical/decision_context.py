@@ -85,6 +85,15 @@ problem_list_entry procedure_line returned_fill smoking_status social_need stay 
 utilization_event visit visit_group wellness_visit'''.split())
 
 
+_COHORT_WORDS = re.compile(r'\b(?:patients|members|people|persons|cohort|population|everyone|similar|like|lookalikes?)\b', re.I)
+
+
+def NAMED_PATIENT_QUESTION(question):
+    """A question about ONE named patient (an id of the warehouse's formats, no cohort wording): the living default does not apply."""
+    from .patient_ids import names_a_patient
+    return names_a_patient(question) and not _COHORT_WORDS.search(question or '')
+
+
 def asks_deceased(question):
     return bool(DECEASED_ASK.search(question or ''))
 
@@ -94,6 +103,8 @@ def population(question):
     q = question or ''
     if asks_deceased(q):
         return {'living_only': False, 'reason': 'the question asks for the deceased (or death / mortality / all patients ever)'}
+    if NAMED_PATIENT_QUESTION(q):
+        return {'living_only': False, 'reason': 'a named patient is never excluded for being deceased (a deceased patient\'s answer says so)'}
     if NON_PATIENT_GRAIN.search(q) and not PATIENT_WORDS.search(q):
         return {'living_only': False, 'reason': 'a membership or money question, not a count of patients'}
     if LIVING_ASK.search(q):

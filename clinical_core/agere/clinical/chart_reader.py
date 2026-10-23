@@ -27,6 +27,7 @@ import time
 from pathlib import Path
 
 from . import chart_intents as CI
+from . import chart_notes as CN
 from . import chart_queries as Q
 from . import chart_summary as CS
 from . import decision_context as DC
@@ -81,8 +82,13 @@ def lexicon_of(stack, db):
 
 # -- subject ------------------------------------------------------------------------------------------------------------------
 def subject_status(stack, text, prior=None):
-    """patient_ids.resolve with the request's prior subject (set by the conversation hook) as the default for pronouns."""
-    return PI.resolve(semantic_path(stack), text, prior or PI.current_prior())
+    """patient_ids.resolve with the request's prior subject (set by the conversation hook) as the default for pronouns. An elliptical
+    follow-up ("and the one before that?") with no patient and no pronoun also binds the prior subject."""
+    prior = prior or PI.current_prior()
+    r = PI.resolve(semantic_path(stack), text, prior)
+    if r['status'] == 'none' and prior and prior.get('patient_id') and _elliptical(text):
+        return {**r, 'status': 'found', 'patient_id': prior['patient_id'], 'quote': None, 'how': 'prior_turn'}
+    return r
 
 
 def resolve_subject(stack, text):
@@ -158,14 +164,22 @@ def fill_gaps(it, question, as_of, *, decide=None, allow_live=False, spend=None)
     gaps = list(it.get('gaps') or [])
     stem = f'Patient chart question: {question}'
     if 'domain' in gaps:
+        gaps = list(gaps)
         options = {**{k: v for k, v in CI.DOMAINS.items()}, 'summary': 'A brief of the whole chart', NOTE_DOMAIN: NOTE_FRAME_HINT}
         label = _so_choice(f'{stem}\nWhich part of the patient chart does the question ask about?', options, as_of=as_of, task_key='chart_reader_domain',
                            decide=decide, allow_live=allow_live, spend=spend)
         if label:
             it['domain'] = label
             it['source'] = 'system_one'
-            gaps.remove('domain')
-    if 'intent' in gaps and it.get('domain') and it['domain'] != NOTE_DOMAIN:
+            if label not in ('summary', NOTE_DOMAIN):
+                it = CI.complete(it)
+                gaps = list(it['gaps'])
+            else:
+                gaps.remove('domain')
+                if label == 'summary':
+                    it['intent'] = 'summary'
+                    gaps = [g for g in gaps if g != 'intent']
+    if 'intent' in gaps and it.get('domain') and it['domain'] not in (NOTE_DOMAIN, 'summary'):
         label = _so_choice(f'{stem}\nWhat kind of answer does the question want?', INTENT_OPTIONS, as_of=as_of, task_key='chart_reader_intent',
                            decide=decide, allow_live=allow_live, spend=spend)
         if label:
@@ -184,169 +198,6 @@ def fill_gaps(it, question, as_of, *, decide=None, allow_live=False, spend=None)
                 gaps.remove('concept')
     it['gaps'] = gaps
     return it
-
-
-# -- note questions ------------------------------------------------------------------------------------------------------------------
-STRONG_NOTE = re.compile(
-    r"\b(?:in (?:the |his |her |their )?notes?|the notes?|notes? (?:say|show|record|mention|document|list)|note (?:says|stopped|stated)|chart (?:say|show|mention)s?|"
-    r"discussed|discussion|conversation|goals[- ]of[- ]care|code status|dnr|dni|resuscitat\w*|chest compressions|breathing tube|intubat\w*|"
-    r"advance directive|polst|molst|living will|health ?care proxy|why was|why did|why is|reason (?:for|why|\w+ (?:was|were))|accept(?:ed)?|declin\w+|refus\w+|"
-    r"(?:report|reports|reported|says|said)\s+(?:taking|using|having)|discharge summary|impression|x-?ray|radiolog\w+|ruled out|rule[- ]out|stress test|"
-    r"memory concern|trouble|barriers?|intoleran\w+|falls?|fell|raised|later notes?|anywhere|mentioned|documented in|recommended|"
-    r"outside (?:report|record|chest)|scanned|did the patient|does the patient|patient (?:choose|chose|want|wants|prefer))\b", re.I)
-STRUCTURED_FIRST = re.compile(r"\b(?:ed visits?|admissions?|claims?|fills?|pick(?:ed)? up|prescribed|prescriptions?|mammogra\w+|flu shot|vaccin\w+|a1c|egfr|ldl|"
-                              r"blood pressure|practice|attributed|allergies|medication list|active medications?)\b", re.I)
-FRAME_CUES = [  # (frame, pattern); the first match wins, more specific first
-    ('care_process', r"goals[- ]of[- ]care|code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*|advance directive|polst|molst|living will|health ?care proxy|counsel\w*|referr\w+|hospice|palliative"),
-    ('preference_refusal', r"\baccept\w*|\bdeclin\w*|\brefus\w*|\bprefer\w*|\bwants?\b|\bchoose\b|\bchose\b|\bdecid\w*|\bagree\w*"),
-    ('medication_event', r"\bstopped\b|\bdiscontinu\w*|\bheld\b|\bswitch\w*|\bstarted\b|\bstarting\b|\bdose\b|\btaking\b|\btakes\b|\bstill list\w*|\blist\w* (?:it|them)\b|\brestart\w*|\bwhy was\b.*\b(?:stopped|held)\b|\bmedication\b"),
-    ('adverse_event', r"intoleran\w+|allerg\w+|side effects?|adverse|reaction|angioedema|\bfalls?\b|\bfell\b"),
-    ('function_cognition', r"memory|cognit\w*|mobility|gait|balance|\badl\b|vision|hearing|home safety|dementia|\bfalls?\b"),
-    ('social_need', r"social|financial|barriers?|transport\w*|getting to|food|housing|afford\w*|isolat\w*|utilit\w*|trouble"),
-    ('procedure_test', r"x-?ray|imaging|\bct\b|\bmri\b|stress test|biopsy|colonoscop\w*|echo\w*|impression|radiolog\w*|ultrasound|\bekg\b|\becg\b|\btest\b|report"),
-    ('plan_followup', r"follow[- ]?up|recommend\w*|return|disposition|discharged to|\bplan\b"),
-    ('finding_value', r"smoking status|tobacco|score|\bvalue\b|reading|measure\w*"),
-    ('condition', r"ruled out|rule[- ]out|diagnos\w+|history of|syndrome|disease"),
-    ('symptom', r"symptom|complain\w*|reports? (?:pain|dyspnea|nausea)|\bpain\b"),
-]
-CONCEPT_PHRASES = [  # (cue pattern, canonical concept term) for notes concepts that are not a drug
-    (r"goals[- ]of[- ]care", 'goals-of-care conversation'), (r"code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*", 'code status'),
-    (r"advance directive|polst|molst|living will|health ?care proxy", 'advance directive'),
-    (r"social or financial|financial barriers?|social barriers?|financial|afford\w*", 'social or financial barrier'),
-    (r"trouble getting to appointments|transport\w*|getting to appointments", 'transportation to appointments'),
-    (r"\bfalls?\b|\bfell\b", 'falls'), (r"memory (?:concern|problem|loss)|cognit\w*", 'memory concern'),
-    (r"smoking status|tobacco", 'smoking status'), (r"drug intolerance|intoleran\w+", 'medication intolerance'),
-    (r"chest x-?ray", 'chest x-ray'), (r"stress test", 'stress test'), (r"acute coronary syndrome|\bacs\b", 'acute coronary syndrome'),
-    (r"discharge summary|follow[- ]?up", 'discharge follow-up'), (r"discharged to|disposition", 'discharge disposition'),
-]
-RETURN_CUES = [  # (cue, frame, detail field to show)
-    (r"\bwhy\b|\breason", 'medication_event', 'reason'), (r"\bwhy\b|\breason", 'preference_refusal', 'reason'),
-    (r"what was done|done about|response", 'social_need', 'response'), (r"what did the patient (?:choose|decide)|\bchoose\b|\bchose\b", 'care_process', 'outcome'),
-    (r"\bdecision\b|accept|declin", 'preference_refusal', 'decision'), (r"how many|\bcount\b|number of", 'function_cognition', 'count'),
-    (r"how many|number of", 'adverse_event', 'count'), (r"impression|result", 'procedure_test', 'result_text'),
-    (r"discharged to|disposition|where", 'plan_followup', 'disposition'), (r"follow[- ]?up|recommend", 'plan_followup', 'item'),
-]
-
-
-def is_note_question(question, intent):
-    q = question or ''
-    if intent.get('domain') == NOTE_DOMAIN:
-        return True
-    if not STRONG_NOTE.search(q):
-        return False
-    if intent.get('domain') is None:
-        return True
-    # a crisp structured request wins unless the wording is about what a note says
-    if STRUCTURED_FIRST.search(q) and not re.search(r'\bnotes?\b|\bdiscussed\b|\bchart say|\bdocument\w* in\b', q, re.I):
-        return False
-    return True
-
-
-def _note_frames(question):
-    q = question or ''
-    found = []
-    for frame, pat in FRAME_CUES:
-        if re.search(pat, q, re.I) and frame not in found:
-            found.append(frame)
-    return found
-
-
-def note_predicates(question, as_of, *, lexicon=None, prior=None, decide=None, allow_live=False, spend=None):
-    """-> [predicate dict] from the grammar, System One choosing frame and concept from closed lists where the cues are silent."""
-    spend = spend or Spend()
-    q = question or ''
-    window = CI.window_of(q, as_of)
-    later = re.search(r'\b(?:a |the |an )?((?:19|20)\d\d-\d\d-\d\d)\b.*\blater notes?\b|\blater notes?\b.*\b((?:19|20)\d\d-\d\d-\d\d)\b', q, re.I)
-    after = re.search(r'((?:19|20)\d\d-\d\d-\d\d)', q) if re.search(r'\blater\b|\bafter\b|\bsince\b', q, re.I) else None
-    if after and not window:
-        from datetime import date, timedelta
-        start = (date.fromisoformat(after.group(1)) + timedelta(days=1)).isoformat()
-        window = {'kind': 'after_date', 'start': start, 'end': str(as_of)[:10], 'start_exclusive': False, 'phrase': after.group(0)}
-    frames = _note_frames(q)
-    if not frames:
-        from . import note_frames as NF
-        label = _so_choice(f'Patient chart question: {q}\nWhich kind of note statement does the question ask about?',
-                           {k: v['label'] for k, v in NF.FRAMES.items() if k != 'note_contradiction'}, as_of=as_of, task_key='chart_reader_note_frame',
-                           decide=decide, allow_live=allow_live, spend=spend)
-        frames = [label] if label else []
-    if not frames:
-        return []
-    drug = CI._drug(q, lexicon)
-    concept_term = None
-    for pat, term in CONCEPT_PHRASES:
-        if re.search(pat, q, re.I):
-            concept_term = term
-            break
-    preds = []
-    primary = frames[:1] if len(frames) == 1 else frames[:2]
-    # a drug named in a medication/preference/adverse question is the concept of that frame; otherwise the canonical phrase
-    for frame in primary:
-        term, quote = None, None
-        if drug and frame in ('medication_event', 'preference_refusal', 'adverse_event'):
-            term, quote = drug['value'].replace('_', ' '), drug.get('term') or drug['value']
-        elif concept_term:
-            term, quote = concept_term, concept_term
-        elif drug:
-            term, quote = drug['value'].replace('_', ' '), drug.get('term') or drug['value']
-        if not term:
-            m = re.search(r"\b(?:about|of|for|on|regarding|re:?)\s+(?:the\s+|a\s+|an\s+)?([a-z][a-z -]{3,40}?)(?:\s+(?:in|for|at|during|when|and|from)\b|[?.,]|$)", q, re.I)
-            term = quote = (m.group(1).strip() if m else None)
-        if not term:
-            continue
-        statuses = ['denied'] if re.search(r'\bruled out\b|\bnot (?:present|taking)\b|\bdenies\b', q, re.I) and frame == 'condition' else ['documented']
-        detail = {}
-        if frame == 'medication_event':
-            if re.search(r'\bstopped\b|\bdiscontinu\w*', q, re.I):
-                detail['event'] = 'stopped'
-            elif re.search(r'\bstarted\b|\bstarting\b|\bnew\b', q, re.I):
-                detail['event'] = 'started'
-        ret = [fld for cue, fr, fld in RETURN_CUES if fr == frame and re.search(cue, q, re.I)]
-        pred = {'op': 'note', 'frame': frame, 'concept': {'term': term, 'codes': [], 'quote': quote}, 'statuses': statuses, 'quote': q[:300]}
-        if detail:
-            pred['detail'] = detail
-        if ret:
-            pred['return_detail'] = list(dict.fromkeys(ret))
-        if window:
-            pred['window'] = {'start': window['start'], 'end': window['end'], 'quote': window.get('phrase') or ''}
-        preds.append(pred)
-    return preds
-
-
-def note_core(stack, predicates, patient_id, as_of, *, ledger=None, nf=None):
-    """Run each note predicate through note_frames.answer_patient and merge into one chart-reader core."""
-    if nf is None:
-        from . import note_frames as nf  # builder A's module (spec: answer_patient)
-    parts, sources, rows = [], [], []
-    status_all = []
-    for pred in predicates:
-        try:
-            pred = nf.validate_predicate(pred) if hasattr(nf, 'validate_predicate') else pred
-        except ValueError:
-            pred = {k: v for k, v in pred.items() if k not in ('detail', 'return_detail')}
-        res = nf.answer_patient(stack, pred, patient_id, as_of=as_of, ledger=ledger)
-        status = res.get('status', 'unknown')
-        status_all.append(status)
-        detail = res.get('detail') or {}
-        shown = {k: v for k, v in detail.items() if not pred.get('return_detail') or k in pred['return_detail']} or detail
-        ev = res.get('evidence') or []
-        label = pred['frame'].replace('_', ' ')
-        term = pred['concept']['term']
-        words = {'documented': 'Documented', 'denied': 'Denied in the notes', 'possible': 'Possible (not confirmed)', 'planned_not_done': 'Planned, not shown as done',
-                 'historical': 'Documented as history', 'other_person': 'About another person', 'not_mentioned': 'Not mentioned in the notes',
-                 'unknown': 'Undecided: the evidence does not settle it'}
-        line = f"{words.get(status, status)}: {label} - {term}"
-        if shown:
-            line += ' (' + '; '.join(f"{k}: {', '.join(map(str, v)) if isinstance(v, (list, tuple)) else v}" for k, v in shown.items() if v not in (None, [], '')) + ')'
-        for e in ev[:3]:
-            line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}: \"{str(e.get('quote') or '')[:200]}\""
-        parts.append(line)
-        rows.append({'frame': pred['frame'], 'concept': term, 'status': status, 'detail': detail, 'p': res.get('p')})
-        sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in ev)
-    positive = any(s in ('documented', 'possible', 'planned_not_done', 'historical') for s in status_all)
-    headline = ' || '.join(parts) if parts else 'No note predicate could be built from the question'
-    kind = 'note'
-    return Q.core(kind, headline, value=headline, table=rows, sources=sources, facts={'statuses': status_all, 'positive': positive},
-                  notes=['note frames: System One reads retrieved passages; code reduces them to one patient value; an undecided patient is never read as "no"'])
 
 
 # -- the answer ---------------------------------------------------------------------------------------------------------------------
@@ -439,16 +290,23 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
             state.note('named_patient', {'patient_id': pid, 'rule': 'a named patient is never excluded for being deceased'})
             ch = Q.Chart(db, pid, as_of, lexicon_of(stack, db))
             note_preds = spec.get('note')
+            prior_frame = (prior or {}).get('frame') or {}
+            choose = lambda text, options, key: _so_choice(text, options, as_of=as_of, task_key=key, decide=decide, allow_live=allow_live, spend=spend)  # noqa: E731
             it = _intent_from_spec(spec)
+            if it is None and not note_preds and prior_frame.get('note') and CN.is_elliptical(question):
+                note_preds = CN.build(question, as_of, lexicon=ch.lexicon, prior_predicates=prior_frame['note'], choose=choose)
+                it = {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': ['inherited_from_prior'], 'question': question}
             if it is None and not note_preds:
                 it = build_intent(stack, question, as_of, db, quotes=[subject.get('quote')], prior=prior, decide=decide, allow_live=allow_live, spend=spend)
-                if is_note_question(question, it):
-                    note_preds = note_predicates(it.get('question') or question, as_of, lexicon=ch.lexicon, prior=prior, decide=decide, allow_live=allow_live, spend=spend)
-                    it = {**it, 'domain': NOTE_DOMAIN, 'intent': it.get('intent') or 'status'}
+                if CN.is_note_question(question, it):
+                    note_preds = CN.build(question, as_of, lexicon=ch.lexicon, choose=choose)
+                    it = {**it, 'domain': NOTE_DOMAIN, 'intent': it.get('intent') or 'status', 'gaps': []}
             if note_preds:
                 it = it or {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': [], 'question': question}
                 it = {**it, 'domain': NOTE_DOMAIN}
-                core = note_core(stack, note_preds, pid, as_of, ledger=ledger, nf=nf)
+                core = CN.render(stack, note_preds, pid, as_of, ledger=ledger, nf=nf, yes_no=bool(CI.STATUS_LEAD.match(question or '')))
+            elif it is not None and it.get('domain') == NOTE_DOMAIN:
+                return unsupported('The question reads as a note question but no note predicate could be built from it.', question, started, spend, pid=pid, intent=it)
             elif it.get('gaps'):
                 missing = it['gaps']
                 return unsupported(f'The question could not be typed: {", ".join(missing)} left open (System One did not settle them).', question, started, spend, pid=pid,
@@ -495,6 +353,8 @@ def finish(core, pid, subject, it, as_of, question, receipt, death, note_preds, 
         deceased = {'deceased': True, 'death_date': death['death_date'], 'source': death['death_source']}
         headline = f"{headline} [{pid} is deceased (death date {death['death_date']}); a named patient is answered even though the living-patient default would exclude them]"
     intent_clean = _clean_intent(it)
+    if note_preds:
+        intent_clean = {**(intent_clean or {}), 'note': [{k: v for k, v in p.items() if k != '_anchor'} for p in note_preds]}
     subj = PI.make_subject(pid, subject.get('quote'), intent_clean)
     status = 'answered'
     value, count = core.get('value'), core.get('count')
@@ -523,15 +383,14 @@ def ask(stack, question, *, conversation_id=None, prior=None, as_of=None, ledger
     if prior is None and conversation_id:
         prior = PI.recall(semantic_path(stack).parent, conversation_id)
     sub = subject_status(stack, question, prior)
-    if sub['status'] == 'none' and prior and prior.get('patient_id') and _elliptical(question):
-        sub = {'status': 'found', 'patient_id': prior['patient_id'], 'quote': None, 'how': 'prior_turn', 'message': None}
     if sub['status'] != 'found':
         msg = sub['message'] or 'No patient is named in the question.'
         out = unsupported(msg, question, started, spend)
         out['status'] = 'needs_clarification' if sub['status'] in ('ambiguous', 'unknown', 'multiple') else 'unsupported'
         out['clarification'] = msg
         return out
-    spec = {'subject': {'kind': 'patient', 'patient_id': sub['patient_id'], 'quote': sub['quote'] or sub['patient_id']}, 'question': question}
+    spelled = sub['how'] in ('patient_id', 'member_id')
+    spec = {'subject': {'kind': 'patient', 'patient_id': sub['patient_id'], 'quote': (sub['quote'] if spelled else None)}, 'question': question}
     out = answer(stack, spec, as_of=as_of, ledger=ledger, decide=decide, question=question, prior=prior, allow_live=allow_live, nf=nf, narrative_model=narrative_model)
     if conversation_id and out.get('subject'):
         PI.remember(conversation_id, out['subject'])
@@ -540,7 +399,10 @@ def ask(stack, question, *, conversation_id=None, prior=None, as_of=None, ledger
 
 def _elliptical(question):
     q = (question or '').strip().lower()
-    return len(q.split()) <= 10 and bool(re.match(r"^(?:and|what about|how about|also|then|so|the one|which|when was|when did|is it|was it)\b", q))
+    refers = re.match(r"^(?:and|what about|how about|also|then|the one|the previous|the prior)\b", q) or re.search(
+        r"\b(?:most recent|latest|last|previous|prior|first|earlier|next) one\b|\bthat one\b|\bthose\b", q)
+    return (len(q.split()) <= 12 and bool(refers)
+            and not re.search(r'\b(?:patients|members|practice|practices|cohort|population|everyone|by (?:practice|payer|pcp)|group)\b', q))
 
 
 # -- cascade rung ---------------------------------------------------------------------------------------------------------------------
@@ -562,9 +424,11 @@ def tier(stack, question, population=None, *, ledger=None, decide=None):
     try:
         as_of = as_of_of(stack, db)
         prior = PI.current_prior()
-        it = build_intent(stack, question, as_of, db, quotes=[sub['quote']], prior=prior, decide=decide, allow_live=allow_live, spend=spend)
-        note = is_note_question(question, it)
-        preds = note_predicates(it.get('question') or question, as_of, lexicon=lexicon_of(stack, db), decide=decide, allow_live=allow_live, spend=spend) if note else None
+        it = build_intent(stack, question, as_of, db, quotes=[sub['quote'] if sub['how'] in ('patient_id', 'member_id') else None], prior=prior,
+                          decide=decide, allow_live=allow_live, spend=spend)
+        note = CN.is_note_question(question, it)
+        choose = lambda text, options, key: _so_choice(text, options, as_of=as_of, task_key=key, decide=decide, allow_live=allow_live, spend=spend)  # noqa: E731
+        preds = CN.build(question, as_of, lexicon=lexicon_of(stack, db), choose=choose) if note else None
     finally:
         db.close()
     if note and not preds:

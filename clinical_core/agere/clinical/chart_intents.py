@@ -263,7 +263,7 @@ def _norm_q(question, quotes):
     q = str(question or '')
     for quote in quotes or []:
         if quote:
-            q = q.replace(quote, ' ')
+            q = re.sub(re.escape(quote), ' ', q, flags=re.I)
     return re.sub(r'\s+', ' ', q).strip()
 
 
@@ -335,6 +335,26 @@ def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
     if out['domain'] == 'condition' and out['intent'] == 'status' and not out['concept']:
         out['gaps'].append('concept')
     return out
+
+
+def complete(it):
+    """Recompute `gaps` from the slots now filled (after System One chose a domain, the intent and concept may follow by default)."""
+    domain = it.get('domain')
+    if domain and not it.get('intent') and domain not in ('summary', 'notes'):
+        it['intent'] = _intent(domain, it.get('question', ''), it.get('question', '').lower(), it, None)
+    gaps = []
+    if not domain:
+        gaps.append('domain')
+    if not it.get('intent'):
+        gaps.append('intent')
+    if domain == 'lab' and not it.get('concept'):
+        gaps.append('concept')
+    if domain in ('immunization', 'screening') and it.get('intent') != 'list' and not it.get('concept'):
+        gaps.append('concept')
+    if domain in ('medication', 'condition') and it.get('intent') == 'status' and not it.get('concept'):
+        gaps.append('concept')
+    it['gaps'] = gaps
+    return it
 
 
 def _specific_domain(low, lexicon):
@@ -498,7 +518,7 @@ def _intent(domain, q, low, out, prior):
                   'prescription'):
         if count:
             return 'count_in_window'
-        if status and not when and not re.search(r'\bwhat\b|\bwhich\b', low):
+        if status and (not when or re.search(r'\bif so\b|\bif yes\b|\band when\b', low)) and not re.search(r'\bwhat\b|\bwhich\b', low):
             return 'status'
         if when or last:
             return 'last_event'

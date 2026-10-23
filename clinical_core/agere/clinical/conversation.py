@@ -558,6 +558,9 @@ def record(path, conversation_id, question, resolution, plan_summary=None, answe
     from .question_input import validate_question
     validate_question(question)
     validate_question(resolution['standalone'])
+    if answer_summary and answer_summary.get('subject'):
+        from . import patient_ids
+        patient_ids.remember(conversation_id, answer_summary['subject'])  # in-process, so evaluation mode (no stored turn) still binds "he" / "her"
     if _evaluating(): return 0  # evaluation mode: no conversation turn is stored
     db = _db(path)
     try:
@@ -583,6 +586,7 @@ def summaries(result):
     a = result.get('answer') or {}
     answer = {'status': a.get('status'), 'answer_type': a.get('answer_type'), 'headline': (a.get('headline') or '')[:400],
               'action_context': result.get('action_context'),
+              'subject': a.get('subject'),
               'rows': len(a['table']) if isinstance(a.get('table'), list) else None,
               'patients': len(a['patient_ids']) if isinstance(a.get('patient_ids'), list) else None}
     return plan, answer
@@ -702,6 +706,8 @@ def handle_compose(stack, body, hosted_factory=None):
     probe = cost_telemetry.start(question)
     try:
         question, planning, conv = compose_shape(body)
+        from . import patient_ids  # chart reader: "his last fill" -> the prior turn's patient id; sets patient_ids.current_prior()
+        question = patient_ids.rebind(stack.path, conv or None, question)
         from .question_input import QuestionNotUnderstood
         from ..deliverables import answer_context
         refers = requires_saved_cohort(question)
