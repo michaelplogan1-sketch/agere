@@ -1,0 +1,44 @@
+soci-001|not_mentioned||
+soci-002|planned_not_done|domain=food_insecurity,transportation_insecurity;response=referral_made|Care coordinator will contact the family about food resources, transport
+soci-003|documented|domain=medical_cost_burden|could not afford the refill
+soci-004|not_mentioned||
+soci-005|historical|domain=medical_cost_burden|cost and pillbox burden cited
+soci-006|documented|domain=transportation_insecurity|Transport difficulty reported: True
+soci-007|not_mentioned||
+soci-008|not_mentioned||
+soci-009|not_mentioned||
+soci-010|not_mentioned||
+soci-011|planned_not_done|domain=transportation_insecurity;response=referral_made|Care coordinator will contact the family about transport
+soci-012|not_mentioned||
+soci-013|not_mentioned||
+soci-014|documented|domain=food_insecurity,transportation_insecurity,financial_strain|Reports trouble affording groceries at times. Has difficulty getting rides to appointments
+soci-015|not_mentioned||
+soci-016|not_mentioned||
+soci-017|not_mentioned||
+soci-018|not_mentioned||
+soci-019|not_mentioned||
+soci-020|documented|domain=medical_cost_burden|could not afford the refill
+soci-021|planned_not_done|domain=transportation_insecurity;response=referral_made|Care coordinator will contact the family about transport
+soci-022|not_mentioned||
+soci-023|not_mentioned||
+soci-024|documented|domain=transportation_insecurity|Transportation barriers
+soci-025|not_mentioned||
+soci-026|documented|domain=medical_cost_burden|could not afford the refill
+soci-027|documented|domain=food_insecurity,financial_strain|Reports trouble affording groceries at times
+soci-028|denied||transportation assistance: False
+soci-029|not_mentioned||
+soci-030|not_mentioned||
+soci-031|not_mentioned||
+soci-032|not_mentioned||
+soci-033|planned_not_done|domain=transportation_insecurity;response=referral_made|Care coordinator will contact the family about transport
+soci-034|not_mentioned||
+soci-035|not_mentioned||
+soci-036|documented|domain=food_insecurity,financial_strain|Reports trouble affording groceries at times
+soci-037|planned_not_done|domain=caregiver_strain;response=resources_provided|caregiver resources
+soci-038|not_mentioned||
+soci-039|planned_not_done|domain=food_insecurity;response=referral_made|Care coordinator will contact the family about food resources
+soci-040|not_mentioned||
+soci-041|not_mentioned||
+soci-042|documented|domain=medical_cost_burden|could not afford the refill
+soci-043|not_mentioned||
+soci-044|not_mentioned||

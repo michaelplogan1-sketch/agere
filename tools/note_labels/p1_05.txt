@@ -1,0 +1,44 @@
+adve-001|denied||Reports no known drug allergies
+adve-002|not_mentioned||
+adve-003|documented|kind=side_effect|Stop 40 mg due to hyperkalemia
+adve-004|not_mentioned||
+adve-005|documented|kind=other|Itchy rash on arms for 5 days
+adve-006|not_mentioned||
+adve-007|not_mentioned||
+adve-008|not_mentioned||
+adve-009|documented|kind=side_effect|Stop irbesartan 75 mg due to hyperkalemia
+adve-010|not_mentioned||
+adve-011|documented|kind=other|rash
+adve-012|not_mentioned||
+adve-013|not_mentioned||
+adve-014|historical|kind=allergy|Allergic disposition (finding)
+adve-015|documented|kind=side_effect|Stop losartan 50 mg due to hyperkalemia
+adve-016|not_mentioned||
+adve-017|documented|kind=other|Itchy rash on arms for 5 days
+adve-018|not_mentioned||
+adve-019|documented|kind=allergy|amoxicillin (rash), shellfish
+adve-020|not_mentioned||
+adve-021|not_mentioned||
+adve-022|documented|kind=other|Itchy rash on arms for 7 days
+adve-023|denied||No visible GI bleeding
+adve-024|denied||Reports no known drug allergies
+adve-025|not_mentioned||
+adve-026|not_mentioned||
+adve-027|documented|kind=other|Itchy rash on arms for 2 days
+adve-028|denied||No visible GI bleeding
+adve-029|denied||Allergies: NKDA
+adve-030|historical|kind=allergy|Allergic disposition (finding)
+adve-031|not_mentioned||
+adve-032|denied||no dysphagia, weight loss or bleeding
+adve-033|not_mentioned||
+adve-034|historical|kind=allergy|Allergic disposition (finding)
+adve-035|not_mentioned||
+adve-036|denied||no dysphagia, weight loss or bleeding
+adve-037|denied||Reports no known drug allergies
+adve-038|not_mentioned||
+adve-039|not_mentioned||
+adve-040|not_mentioned||
+adve-041|denied||Reports no known drug allergies
+adve-042|not_mentioned||
+adve-043|not_mentioned||
+adve-044|documented|kind=allergy|penicillin (rash), statins (myalgias)

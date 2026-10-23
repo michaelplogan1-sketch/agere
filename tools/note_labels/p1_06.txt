@@ -1,0 +1,44 @@
+care-001|documented|kind=palliative_hospice|Encounter for palliative care
+care-002|historical|kind=referral;outcome=ordered_or_referred|TMS evaluation referral
+care-003|not_mentioned||
+care-004|historical|kind=education_counseling;outcome=completed|Stress-dose education reinforced
+care-005|historical|kind=palliative_hospice;outcome=ordered_or_referred|hospice referral pending
+care-006|planned_not_done|kind=education_counseling|pneumococcal and influenza vaccination reviewed
+care-007|not_mentioned||
+care-008|documented|kind=advance_directive|Conditional treatment wishes were supplied
+care-009|documented|kind=code_status|CPR in cardiac/respiratory arrest: attempt
+care-010|documented|kind=referral;outcome=ordered_or_referred|Discussed the specific referrals recorded today
+care-011|documented|kind=education_counseling;outcome=completed|diabetes education completed
+care-012|historical|kind=home_health|Transition from acute care to home-health care
+care-013|planned_not_done|kind=rehabilitation;outcome=ordered_or_referred|Refer for graded rehabilitation
+care-014|documented|kind=palliative_hospice|Encounter for palliative care
+care-015|documented|kind=code_status;outcome=completed|would want attempted resuscitation if the heart stops
+care-016|documented|kind=referral|Left a callback request about the referral
+care-017|not_mentioned||
+care-018|documented|kind=home_health|HOME HEALTH PLAN OF CARE
+care-019|documented|kind=palliative_hospice;outcome=ordered_or_referred|Hospice referral placed
+care-020|documented|kind=goals_of_care_discussion;outcome=completed|Goals-of-care discussion with patient and family
+care-021|documented|kind=advance_directive|MOLST copy
+care-022|historical|kind=referral;outcome=ordered_or_referred|Vascular surgery referral
+care-023|planned_not_done|kind=discharge_instruction|Stable for discharge with primary care follow up
+care-024|not_mentioned||
+care-025|historical|kind=home_health|Transition from acute care to home-health care
+care-026|planned_not_done|kind=education_counseling|pneumococcal and influenza vaccination reviewed
+care-027|not_mentioned||
+care-028|documented|kind=palliative_hospice|Encounter for palliative care
+care-029|documented|kind=goals_of_care_discussion;outcome=completed|would want attempted resuscitation if the heart stops
+care-030|documented|kind=code_status;outcome=completed|DNR/POLST completed
+care-031|documented|kind=referral;outcome=ordered_or_referred|Referral for audiology
+care-032|not_mentioned||
+care-033|historical|kind=education_counseling;outcome=completed|Stress-dose education reinforced
+care-034|planned_not_done|kind=home_health;outcome=ordered_or_referred|Home-health PT assessment and treatment requested
+care-035|historical|kind=goals_of_care_discussion;outcome=completed|Family meeting 3 days ago
+care-036|documented|kind=referral|Discussed the specific referrals recorded today
+care-037|not_mentioned||
+care-038|historical|kind=education_counseling;outcome=completed|Stress-dose education reinforced
+care-039|documented|kind=advance_directive|Patient signature: present_as_transcribed
+care-040|denied|kind=code_status|do not state a current resuscitation order
+care-041|historical|kind=referral|Patient referral for dental care
+care-042|planned_not_done|kind=education_counseling;outcome=ordered_or_referred|diabetes education referral
+care-043|historical|kind=home_health|Transition from acute care to home-health care
+care-044|planned_not_done|kind=rehabilitation;outcome=ordered_or_referred|Refer for graded rehabilitation
