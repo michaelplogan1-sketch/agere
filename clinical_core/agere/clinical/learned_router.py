@@ -16,12 +16,15 @@ import numpy as np
 from .capability_registry import PRODUCT
 
 VERSION = 'learned-router/1'
-LABELS = [*PRODUCT, 'literal_lookup', 'not_answerable']
+# Engines that are never a routing target for a population question (a named patient goes to the chart reader before any
+# router runs); adding one to PRODUCT must not invalidate the shipped model.
+NOT_ROUTED = frozenset({'chart_reader'})
+LABELS = [*(op for op in PRODUCT if op not in NOT_ROUTED), 'literal_lookup', 'not_answerable']
 MODEL_FILE = Path(__file__).with_name('learned_router_model.json')
 LEXICAL_SCALE = 0.5  # lexical cues are binary; the embedding is unit length
 # The local router may skip the paid choose step only for these outcomes. 'not_answerable' always goes to the paid
 # router (its answer carries the list of missing data, and a false 'not answerable' would hide an engine).
-SHORTCUT = frozenset([*PRODUCT, 'literal_lookup'])
+SHORTCUT = frozenset([*(op for op in PRODUCT if op not in NOT_ROUTED), 'literal_lookup'])
 
 
 def _cues():
