@@ -59,6 +59,7 @@ def substitute(sql, bound):
 def holds(predicate, reading):
     """True / False / None for one patient's reading against the predicate: status in statuses, details not contradicted."""
     if not isinstance(reading, dict): return None
+    if reading.get('holds') is not None or 'holds' in reading: return reading['holds']  # the note reader's own verdict (True / False / None = undecided)
     status = reading.get('status')
     if status in UNDECIDED: return None
     if status not in predicate.get('statuses', []): return False

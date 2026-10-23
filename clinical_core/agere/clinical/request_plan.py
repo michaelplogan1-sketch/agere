@@ -14,6 +14,7 @@ import copy
 import math
 import re
 import sqlite3
+import sys
 
 VERSION = 'warehouse-request/1'
 STOP_WORDS = set('a an the please me our we us there are is was were be of for to from show give find get tell what which who how many number list count total sum average mean by per with where among patients patient that have has had whose in on at and or but not without excluding exclude only all any every each than then also do does it them those these their overall s plus did see saw just'.split())  # 's' is the contraction in what's
@@ -72,7 +73,8 @@ def note_catalog():
         for name, spec in frames.items():
             fields = spec.get('detail', spec.get('details')) if isinstance(spec, dict) else None
             if isinstance(fields, dict):
-                details[name] = {k: tuple(v) for k, v in fields.items() if isinstance(v, (list, tuple, set))}
+                details[name] = {k: tuple(v['options'] if isinstance(v, dict) and 'options' in v else v) for k, v in fields.items()
+                                 if isinstance(v, (list, tuple, set)) or (isinstance(v, dict) and isinstance(v.get('options'), (list, tuple)))}
     def pick(attr, default):
         value = getattr(N, attr, None)
         return tuple(value) if isinstance(value, (list, tuple, set, dict)) and value else default
@@ -372,6 +374,10 @@ class Compiler:
             if window.get('quote') is not None: self.bind({'quote': window['quote']}, path + '.window', 'predicate')
         if self.base is None or 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base not in scope:
             raise PlanError('A note predicate needs a patient-keyed source')
+        validate = getattr(sys.modules.get(__package__ + '.note_frames'), 'validate_predicate', None)
+        if validate is not None:  # the note reader's own contract check (builder A)
+            try: validate(expr)
+            except ValueError as exc: raise PlanError(f'Note predicate rejected by the note reader: {exc}') from exc
         self.serial += 1
         ident = 'n' + str(self.serial)
         self.note_predicates[ident] = copy.deepcopy(dict(expr))

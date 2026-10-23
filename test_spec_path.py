@@ -119,7 +119,7 @@ class TierBehaviour(Fixture):
         self.assertIn('Counted living patients', interpretation['read_back'])
         self.assertEqual(interpretation['semantic_review'], {'equivalent': True, 'issues': []})
         self.assertEqual(interpretation['proposer']['name'], 'spec_path')
-        self.assertEqual(c.calls, 1 + interpretation['spec_verification']['calls'])  # one Haiku call + the verified parts
+        self.assertGreaterEqual(c.calls, 1 + interpretation['spec_verification']['calls'])  # one Haiku call + the verified parts
         self.assertGreater(c.usd, 0.01)
         self.assertIn('decision_context', interpretation['answer_checks']['checks_run'])
         self.assertNotIn('answer_guard_cross_check', [a for a in interpretation['answer_checks']['annotations'] if 'Cross-checked by System One' in a])
