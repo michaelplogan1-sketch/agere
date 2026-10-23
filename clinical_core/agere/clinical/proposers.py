@@ -68,7 +68,37 @@ TIERS = {
     'local_free_sql': ('free (Qwen3-4B)', 'FAILED calibration: precision too low; proposes only', 'graph'),
     'legacy_cost_ladder': ('free locally; its paid rungs only when live', 'pre-2026-10-19 ladder + together semantics, last resort; uncalibrated', 'graph'),
 }
-ORDER = tuple(TIERS)
+# The cascade runs in five stages (CTO, 2026-10-23); a tier never runs before an earlier stage's tiers, whatever the learned
+# routers prefer (they reorder within a stage only). A: reuse and certified free tiers. B: System One typed choice (~$0.0002).
+# C: free but uncalibrated planners (local compiler, local models) whose answers System One must confirm. D: System One on record
+# evidence (per patient). E: Claude, cheapest first; legacy ladder last. The learned and System One routers may reorder B-D for a
+# question (e.g. chart evidence first) but never move anything ahead of A or a Claude tier ahead of B-D. 'system_one_*' tiers -> B.
+STAGES = (
+    ('reuse_certified', ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
+                         'specialist_families_early', 'cohort_family_early', 'scoped_review_compiler', 'undelivered_input')),
+    ('system_one_choice', ('typed_decider', 'terminology_mapping', 'hcc_suspecting')),
+    ('free_planners', ('local_compiler', 'qwen_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql',
+                       'local_free_sql', 'specialist_families_late', 'cohort_family_late')),
+    ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
+    ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'semantic_analyst',
+                'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')),
+)
+STAGE_OF = {t: i for i, (_, tiers) in enumerate(STAGES) for t in tiers}
+
+
+def stage_of(tier):
+    if tier in STAGE_OF: return STAGE_OF[tier]
+    return 1 if tier.startswith('system_one_') else len(STAGES) - 1
+
+
+def staged(order):
+    """Hard boundaries only: reuse/certified tiers first, Claude last; the routers' order is kept inside, so a System One router
+    may send a chart-evidence question to the evidence readers before the free planners (a stable sort: nothing dropped)."""
+    last = len(STAGES) - 1
+    return tuple(sorted(order, key=lambda t: 0 if stage_of(t) == 0 else 2 if stage_of(t) == last else 1))
+
+
+ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
 PAID = {'typed_decider', 'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
         'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'atomic_system_one'}
 # Tiers whose cost is minutes, not seconds: the free local compiler (when its plan already passes the literal check) is tried before them, and
@@ -198,7 +228,7 @@ class Cascade:
             order, self.tier_routing = reorder(self.stack, self.question, order)
         except Exception:  # noqa: BLE001 - no promoted model / encoder: keep the order
             pass
-        return self.free_first(order)
+        return self.free_first(staged(order))
 
     def free_first(self, order):
         """local_compiler (free; arbitrated engine route) ahead of the heavy tiers when its plan already passes the literal check.

@@ -1045,7 +1045,7 @@ def _certificates(receipt, state, verdict):
     return status
 
 
-def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None, claude_ok=True):
+def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None, profile=None, hosted=None, claude_ok=True, tier=None):
     """Every answer check on one executed proposal. result = analysis_graph execute result (result['answer']).
     ledger: BudgetLedger for the paid cross-check (live only); catalog: request_plan.Catalog (its semantic target);
     profile: source profile (default source_profile.load(stack.path)); hosted: answer_guard.hosted_sql replacement (tests).
@@ -1106,12 +1106,14 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     if verdict['accept']:
         run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict,
                                                              result, claude_ok))
-    def local_sql_confirmed():  # SQL a local model wrote is the riskiest path: it ships only when System One confirms it
-        if _route(receipt) != 'local_model_sql' or state.get('certified') or not verdict['accept']: return None
+    def local_sql_confirmed():  # free uncalibrated planners (cascade stage C) and local-model SQL ship only when System One confirms
+        from .proposers import STAGES, stage_of
+        planner = _route(receipt) == 'local_model_sql' or (tier is not None and STAGES[stage_of(tier)][0] == 'free_planners')
+        if not planner or state.get('certified') or not verdict['accept']: return None
         s1 = verdict.get('system_one_cross_check') or {}
         if s1.get('verdict') != 'confirmed':
             verdict['accept'] = False
-            verdict['reasons'].append('local-model SQL is shipped only when System One confirms it answers the question; '
+            verdict['reasons'].append('an uncalibrated free planner\'s answer is shipped only when System One confirms it answers the question; '
                                       f"cross-check {s1.get('verdict') or 'did not run'}; the next proposer tries")
         return s1.get('verdict')
     run('local_sql_confirmation', local_sql_confirmed)
@@ -1140,7 +1142,7 @@ def gate(cascade, name, graph, receipt, result):
     live = getattr(cascade.stack, 'allow_live', False)
     verdict = check(cascade.stack, cascade.question, graph, receipt, result, ledger=cascade.ledger if live else None,
                     catalog=cascade.catalog if getattr(cascade.catalog, 'target', None) else None,
-                    claude_ok=not getattr(cascade, 'claude_down', None))
+                    claude_ok=not getattr(cascade, 'claude_down', None), tier=name)
     if verdict['cost']['new_paid_api_calls'] or verdict['cost']['usd']:
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
     summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one',

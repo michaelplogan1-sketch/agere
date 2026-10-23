@@ -220,7 +220,7 @@ class LocalSqlConfirmation(Base):
             v = A.check(self.stack, 'How many duplicate patient charts are there?', sql_graph('SELECT 1'), {'route': 'local_model_sql'},
                         count(1329), profile={'streams': {}})
         self.assertFalse(v['accept'])
-        self.assertIn('local-model SQL', ' '.join(v['reasons']))
+        self.assertIn('System One confirms', ' '.join(v['reasons']))
         with patch.object(A, 'zero_result_probe', return_value=None), patch.object(A, '_guard'):
             v = self.check('How many duplicate patient charts are there?', 'SELECT 1', count(1329))  # the compiler route is not held to it
         self.assertTrue(v['accept'])

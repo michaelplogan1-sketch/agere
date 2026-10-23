@@ -161,3 +161,17 @@ class DataCurrencyClause(unittest.TestCase):
         plan = '"query": "SELECT count(DISTINCT patient_id) FROM concept_patient WHERE concept = \'diabetes\'"'
         self.assertEqual(R.gaps('How many patients have diabetes? Use data received as of 2030-05-27.', plan), [])
         self.assertTrue(R.gaps('How many patients with diabetes as of 2029-12-31?', plan))  # a point-in-time limit stays required
+
+
+class Stages(unittest.TestCase):
+    def test_routers_reorder_only_inside_the_stage_boundaries(self):
+        order = tuple(reversed(P.ORDER))  # a router that wants Claude first and reuse last
+        s = P.staged(order)
+        self.assertEqual(sorted(s), sorted(P.ORDER))  # nothing dropped
+        last = len(P.STAGES) - 1
+        kinds = [0 if P.stage_of(t) == 0 else 2 if P.stage_of(t) == last else 1 for t in s]
+        self.assertEqual(kinds, sorted(kinds))  # reuse/certified first, Claude last
+        self.assertEqual(P.staged(P.ORDER), P.ORDER)
+        self.assertEqual(P.ORDER[:3], ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache'))
+        self.assertLess(P.ORDER.index('local_compiler'), P.ORDER.index('atomic_system_one'))
+        self.assertLess(P.ORDER.index('atomic_system_one'), P.ORDER.index('metric_router'))

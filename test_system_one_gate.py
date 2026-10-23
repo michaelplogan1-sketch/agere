@@ -181,7 +181,10 @@ class CascadeOrder(unittest.TestCase):
             c = cascade(q='what does the last note say about dyspnea')
             with self.assertRaises(QuestionNotUnderstood) as ctx:
                 c.run()
-        self.assertEqual(reached[:3], ['exact_local_plan', 'evidence_retrieval', 'evidence_review'])
+        first = [t for t in reached if P.stage_of(t) != 0]  # reuse/certified tiers always run first (cascade stages)
+        self.assertEqual(first[:2], ['evidence_retrieval', 'evidence_review'])  # then the System One route: evidence before free planners
+        self.assertLess(reached.index('evidence_review'), reached.index('local_compiler'))
+        self.assertTrue(all(P.stage_of(t) == len(P.STAGES) - 1 for t in reached[-9:]))  # Claude tiers last
         self.assertEqual(sorted(reached), sorted(P.ORDER))  # never removes a tier
         self.assertEqual(ctx.exception.planner_receipt['new_paid_api_calls'], 1)
         self.assertAlmostEqual(ctx.exception.planner_receipt['known_api_estimate_usd'], 0.0002)
