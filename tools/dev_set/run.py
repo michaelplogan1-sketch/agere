@@ -278,10 +278,81 @@ def score_note(q, resp, text, low, a):
     elif kind == 'value':
         ok = float(key['answer']) in numbers_in(text)
     else:
-        ok = all(re.search(g, text, re.I) for g in key.get('key_groups', []))
+        ok = all(re.search(g, ocr_norm(text), re.I) for g in key.get('key_groups', []))
     cited = [e['record_id'] for e in q['evidence']]
-    has_cite = (not cited) or any(r in text for r in cited)
-    return ok and has_cite, {'answer_match': ok, 'cited_supporting_record': has_cite}
+    allowed = list(dict.fromkeys(cited + list(key.get('scope_records') or [])))  # any record the key lists as in scope may be the one cited
+    has_cite = (not cited) or any(r in text for r in allowed)
+    supported, why = (True, None) if not cited else passage_supports(q, resp)
+    return ok and has_cite and supported, {'answer_match': ok, 'cited_supporting_record': has_cite, 'passage_supports_claim': supported, **({'passage_check': why} if why else {})}
+
+
+# --- passage entailment (shared by every contestant) ----------------------------------------------------------------------
+QUOTE_KEYS = ('quote', 'excerpt', 'passage', 'snippet', 'evidence_quote', 'text')
+RECORD_KEYS = ('record_id', 'source_record_id', 'note_id', 'id')
+STOP = frozenset('that this with from were have been which their there about after before when what into than then them they also only more some such will would could should does done'.split())
+
+
+def ocr_norm(text):
+    """A scanned passage's digit-for-letter swaps undone ("1owerlobe" -> "lowerlobe") before a pattern is matched against it."""
+    out = re.sub(r'(?<=[a-z])(?<!\ba)1(?=[a-z])|\b1(?=[a-z]{3,})', 'l', str(text or ''))
+    return re.sub(r'(?<=[a-z])0(?=[a-z])|\b0(?=[a-z]{3,})', 'o', out)
+
+
+def quoted_passages(resp, ids):
+    """-> {record_id: [quoted text]} for the allowed record ids, from the passages the response itself quotes: a source / grounding object that
+    carries a record id and a quote, or `RECORD_ID ...: "quote"` in the answer's text. A bare record id carries no quote."""
+    out = {i: [] for i in ids}
+
+    def walk(o):
+        if isinstance(o, dict):
+            rid = next((o[k] for k in RECORD_KEYS if isinstance(o.get(k), str) and o[k] in out), None)
+            if rid:
+                out[rid] += [v for k in QUOTE_KEYS for v in [o.get(k)] if isinstance(v, str) and v.strip()]
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, (list, tuple)):
+            for v in o:
+                walk(v)
+    walk(resp)
+    flat = visible_text(resp).replace('\\"', '"').replace('\\n', '\n')
+    for i in ids:
+        for m in re.finditer(re.escape(i) + r'[^"]{0,120}?"([^"]{3,600})"', flat):
+            out[i].append(m.group(1))
+    return out
+
+
+def _content_tokens(text):
+    return {w for w in re.findall(r'[a-z0-9]{4,}', ocr_norm(str(text).lower())) if w not in STOP}
+
+
+def passage_supports(q, resp):
+    """Does a QUOTED passage of a record the answer cites (a key evidence record or a scope record) itself contain the key's evidence?
+    key_groups: every group must match in the pooled quotes of the cited, quoted records (a key can need two passages); a key with no groups
+    (yes/no, value): a cited quoted passage must carry half of the content words of a key evidence quote, or the question's own subject word. A cited record with no quoted
+    passage proves nothing. Deterministic; the same for every contestant. -> (bool, why)"""
+    key = q['key']
+    ids = list(dict.fromkeys([e['record_id'] for e in q.get('evidence') or []] + list(key.get('scope_records') or [])))
+    quotes = {i: v for i, v in quoted_passages(resp, ids).items() if v}
+    if not quotes:
+        return False, 'no cited record carries a quoted passage'
+    groups = key.get('key_groups') or []
+    if groups and key.get('kind') not in ('yes_no', 'not_documented', 'value'):
+        pooled = ocr_norm(' '.join(' '.join(v) for v in quotes.values()).lower())
+        miss = [g for g in groups if not re.search(g, pooled, re.I)]
+        return not miss, (f'quoted passages lack: {miss}' if miss else None)
+    want = [_content_tokens(e.get('quote')) for e in q.get('evidence') or [] if e.get('quote')]
+    want = [w for w in want if w]
+    if not want:
+        return True, None
+    # the subject of the question (its content words that the key evidence quote also uses: "morphine", "appointments") must be in the passage
+    asked = _content_tokens(f"{q.get('question') or ''} {key.get('standalone') or ''}")
+    anchors = set().union(*want) & asked
+    for vs in quotes.values():
+        for v in vs:
+            have = _content_tokens(v)
+            if any(len(w & have) / len(w) >= 0.5 for w in want) or (anchors and anchors & have):
+                return True, None
+    return False, 'no cited quoted passage carries the key evidence'
 
 
 def _pat_in(text, pats):
