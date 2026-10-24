@@ -998,6 +998,7 @@ class CohortSpend:
         rolling = DC.ROLLING_YEAR.search(original)
         if rolling and original[rolling.end():].strip(): return None
         t = original[:rolling.start()].rstrip() if rolling else original
+        t = re.sub(r'^(?:(?:and|also|now)\s+)+','',t,flags=re.I)
         if rolling and years_in(t): return None
         pronoun = r'(?:they|these|those)'
         share = re.match(r'^what\s+share\s+of\s+total\s+(?:(20\d\d)\s+)?(?:medical\s+)?(?:paid\s+)?spend\s+do\s+' + pronoun + r'\s+account\s+for(?:\s+in\s+(20\d\d))?$', t, re.I)

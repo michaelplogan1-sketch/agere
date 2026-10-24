@@ -17,7 +17,7 @@ class TemporalResolution(unittest.TestCase):
 
 class FollowupPeriods(Base):
     def setUp(self):
-        super().setUp()
+        Base.setUp(self)
         self.stack.compose=lambda q,**kw:S.compose(self.stack,q,model=Mock(side_effect=AssertionError('No model')),**kw)
     def ask_turn(self,q,conv):
         return C.handle_compose(self.stack,{'question':q,'conversation_id':conv})
@@ -36,6 +36,13 @@ class FollowupPeriods(Base):
         self.assertEqual(out['conversation']['question'],follow)
         self.assertEqual(out['conversation']['method'],'inherited_period')
         self.assertTrue(out['conversation']['resolved_question'].endswith('over the past 12 months'))
+    def test_discourse_prefix_does_not_hide_the_monetary_measure(self):
+        from clinical_core.agere.clinical.insight_families import CohortSpend
+        for prefix in ('','and ','now '):
+            q=prefix+'what share of total spend do they account for?'
+            self.assertTrue(C.monetary_followup(self.catalog,q))
+            self.assertTrue(CohortSpend.parse(q.rstrip('?')+' over the past 12 months',self.catalog)['params']['rolling_12_months'])
+
     def test_new_fill_measure_inherits_period_but_warehouse_scope_does_not(self):
         self.ask_turn('Count of paid prescription fills over the last 12 months?','fills')
         q='and what was the average plan-paid amount per fill?'
@@ -44,3 +51,36 @@ class FollowupPeriods(Base):
         self.assertAlmostEqual(out['answer']['value'],sum(values)/len(values))
         fresh=C.handle_compose(self.stack,{'question':q,'conversation_id':'fills','scope':'warehouse'})
         self.assertNotIn('inherited_period',fresh)
+
+
+class DateAppliesToMeasure(FollowupPeriods):
+    def test_condition_cooccurrence_does_not_inherit_a_financial_event_date(self):
+        self.ask_turn('How many living patients accumulated $50,000 or more in paid claims over the past 12 months?','conditions')
+        out=self.ask_turn('count those patients with diabetes','conditions')
+        self.assertNotIn('inherited_period',out)
+        self.assertNotIn('over the past 12 months',out['conversation']['resolved_question'])
+
+
+class NamedCohortAncestry(Base):
+    setUp=FollowupPeriods.setUp
+    ask_turn=FollowupPeriods.ask_turn
+    def test_named_population_survives_an_intervening_summary(self):
+        first=self.ask_turn('Who are the high-cost claimants for 2029, meaning $50,000 or more paid?','named')
+        root_id=first['action_context']['id']
+        self.ask_turn('what share of total 2029 spend do they account for?','named')
+        out=self.ask_turn('How many of the high-cost claimants have diabetes?','named')
+        self.assertEqual(out['answer']['count'],1)  # P01: $71k; every other living patient is below $50k in 2029.
+        self.assertEqual(out['reference_binding']['context_id'],root_id)
+        self.assertEqual(out['conversation']['question'],'How many of the high-cost claimants have diabetes?')
+        self.assertEqual(out['conversation']['method'],'named_cohort')
+    def test_known_condition_population_does_not_rebind_to_a_previous_subset(self):
+        first=self.ask_turn('How many diabetic patients have an A1c above 9?','known')
+        self.assertIsNone(C.named_cohort_reference(self.stack,'How many of the diabetic patients have CKD?',first['action_context']))
+
+    def test_partial_named_population_cannot_be_promoted_to_a_complete_reference(self):
+        from clinical_core.agere.deliverables import answer_context as A
+        root=self.ask_turn('Who are the high-cost claimants for 2029, meaning $50,000 or more paid?','partial')
+        root['answer']['status']='partial'
+        root['answer']['missing']=['Unsettled membership']
+        saved=A.capture(self.path,'Who are the high-cost claimants for 2029, meaning $50,000 or more paid?',root)
+        self.assertIsNone(C.named_cohort_reference(self.stack,'How many of the high-cost claimants have diabetes?',saved))

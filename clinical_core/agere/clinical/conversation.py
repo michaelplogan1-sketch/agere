@@ -745,6 +745,57 @@ def rescope(stack, question, saved):
     return result, base if not year else new_question, note
 
 
+def named_cohort_reference(stack, question, saved):
+    """Bind an undefined definite population name to a verified ancestor's exact membership.
+
+    Known standalone populations stay standalone. A name must occur as the
+    subject of an earlier analytical command, not merely somewhere in its text.
+    No client IDs or model-invented definitions enter this binding.
+    """
+    m=re.search(r'\bof\s+(?:the|our)\s+(?P<label>[a-z][a-z -]{1,70}?)\s+(?=(?:have|has|had|are|is|with|without|who|that)\b)',question,re.I)
+    if not m or len(m['label'].split()) < 2: return None
+    from .request_plan import Catalog,PlanError
+    from .request_language import Parser
+    catalog=Catalog.load(stack.path)
+    try:
+        if Parser(catalog,m['label']).population_phrase(m['label']) is not None: return None
+    except PlanError:
+        pass
+    from ..deliverables import answer_context as A
+    key=saved['id'];visited=set()
+    naming=re.compile(r'^\s*(?:who\s+are|which(?:\s+are)?|list|show(?:\s+me)?|find|how\s+many|number\s+of|count(?:\s+of)?)\s+(?:(?:the|our|all)\s+)?'+re.escape(m['label'])+r'\b',re.I)
+    for _ in range(32):
+        if key in visited: return None
+        visited.add(key)
+        parent=A.load(stack.path,key,current=True,follow_up=True)
+        defining=parent.get('original_question') or parent.get('question') or ''
+        if (naming.search(defining) and parent.get('result_scope_available')
+                and parent.get('answer',{}).get('status') == 'answered' and not parent['answer'].get('missing')
+                and not parent['answer'].get('unknown_count')):
+            return {'context_id':key,'label':m['label'],'defining_question':defining,
+                    'standalone':question[:m.start()]+'of those patients '+question[m.end():],
+                    'patients':len(parent['patient_ids'])}
+        key=(parent.get('cohort_transform') or {}).get('parent_context_id')
+        if not key: return None
+    return None
+
+
+def monetary_followup(catalog, question):
+    """A monetary measure has a financial clock; a condition in its input does not."""
+    from . import request_language as L
+    from .insight_families import CohortSpend
+    if CohortSpend.parse(question, catalog): return True
+    try:
+        plan=L.parse(catalog,question,bound=True)
+    except L.PlanError:
+        return False
+    def money(expr):
+        if not isinstance(expr,dict): return False
+        if str(expr.get('field','')).endswith(('paid_cents','allowed_cents','charge_cents','cost_cents','amount_cents')): return True
+        return any(money(v) for k,v in expr.items() if k != 'where' and isinstance(v,dict))
+    return any(money(m) for m in plan.get('select',[]))
+
+
 def inherited_period(question, prior, as_of):
     """A follow-up with no period keeps one literal period from its antecedent.
 
@@ -801,14 +852,21 @@ def handle_compose(stack, body, hosted_factory=None):
             saved = (prior or {}).get('action_context')
             bound = None
             shared = getattr(stack, 'shared_request_planning', False) is True
+            reference = (named_cohort_reference(stack, question, saved) if shared and saved and not explicit_context
+                         and body.get('scope') != 'warehouse' else None)
+            if reference:
+                saved={'id':reference['context_id']}
+                refers=True
             temporal = None
-            if shared and prior and body.get('scope') != 'warehouse' and not explicit_context:
+            if shared and prior and saved and is_followup(question) and body.get('scope') != 'warehouse' and not explicit_context:
                 from .request_plan import Catalog
-                temporal = inherited_period(question, prior, Catalog.load(stack.path).identity['as_of'])
+                catalog=Catalog.load(stack.path)
+                if monetary_followup(catalog,question):
+                    temporal = inherited_period(question, prior, catalog.identity['as_of'])
                 if temporal:
                     if not saved: temporal = None
                     else: answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
-            effective_question = temporal['standalone'] if temporal else question
+            effective_question = temporal['standalone'] if temporal else reference['standalone'] if reference else question
             used_temporal = False
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
@@ -858,6 +916,13 @@ def handle_compose(stack, body, hosted_factory=None):
                     used_temporal = True
                 standalone = resolution['standalone']
                 result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
+                if reference and bound:
+                    resolution.update(standalone=effective_question,method='named_cohort',follow_up=True,
+                                      reason='Bound the population name to its verified saved definition')
+                    result['reference_binding']=reference
+                    result['answer']['limitations']=[*(result['answer'].get('limitations') or []),
+                        'Population name "'+reference['label']+'" refers to the '+str(reference['patients'])+
+                        ' saved patients from: '+reference['defining_question']]
                 if used_temporal:
                     resolution.update(standalone=effective_question, method='inherited_period', follow_up=True,
                                       reason='Kept the explicitly stated period of the previous question')
