@@ -929,13 +929,19 @@ def spec_confirmed(receipt):
     return bool(isinstance(spec, dict) and spec.get('confirmed') and spec.get('verdict') == 'confirmed')
 
 
-def audited_analyst(tier, receipt):
+def audited_analyst(tier, receipt, graph=None):
     """True for a semantic-analyst answer whose SQL passed the deterministic definitions audit (analyst_definitions: living patients, latest
     labs, canonical condition evidence, birth-date age, Medicare, event sources; arithmetic recomputed from executed numerator/denominator).
     Such an answer takes the audit as its acceptance check in place of the System One result-summary checks, which were measured not to
     separate the analyst's right answers from its wrong ones (2026-10-23/24 calibration)."""
     audit = (receipt or {}).get('definitions_audit') if isinstance(receipt, dict) else None
-    return tier == 'semantic_analyst' and isinstance(audit, dict) and audit.get('action') in ('ok', 'rewritten')
+    if not (tier == 'semantic_analyst' and isinstance(audit, dict) and audit.get('action') in ('ok', 'rewritten')): return False
+    from . import acceptance_contract as AC
+    if not AC.enforcing(): return True
+    # A definitions audit alone no longer authorizes acceptance (Codex 2026-10-24): the acceptance contract must pass over the FINAL executed sql,
+    # and the audit must have covered that same sql (after reconciliation), not only the analyst's own run.
+    contract = (receipt or {}).get('acceptance_contract')
+    return bool(isinstance(contract, dict) and contract.get('ok') and AC.audit_bound(receipt, graph))
 
 
 def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hosted, state, verdict, result=None, claude_ok=True):
@@ -1069,7 +1075,7 @@ DETERMINISTIC_READERS = frozenset({'chart_reader'})
 GOVERNED_CLAUDE_ROUTERS = frozenset({'metric_router', 'operator_router'})
 # Checks whose failure to run leaves the answer unverified (the rest annotate).
 MANDATORY_CHECKS = frozenset({'placeholder_plan', 'zero_result_probe_shared', 'filter_value_existence', 'diagnosis_source_coverage',
-                              'local_sql_confirmation', 'answer_shape_review', 'decision_context'})
+                              'local_sql_confirmation', 'answer_shape_review', 'decision_context', 'acceptance_contract'})
 
 
 _EMPTY_BY_CONSTRUCTION = re.compile(r'\bwhere\s+(?:1\s*=\s*0|0\s*=\s*1|false|0)\s*(?:$|;|\)|\border\b|\bgroup\b|\blimit\b)', re.I)
@@ -1162,6 +1168,28 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
             verdict['reasons'] += [f'decision context: {r}' for r in found['reasons']]
         return found
     run('decision_context', decision)
+    def acceptance():
+        """The ONE acceptance contract (acceptance_contract.py), over the executed proposal's final SQL / request / result shape: every part of the
+        question must be covered exactly. Mandatory; a failed contract passes the proposal to the next layer (heal, don't block)."""
+        from . import acceptance_contract as AC
+        if AC.mode() == 'off': return None
+        as_of = (getattr(catalog, 'identity', None) or {}).get('as_of') if catalog is not None else None
+        if not as_of:
+            try: as_of = stack.retriever.meta['snapshot']['as_of']
+            except (AttributeError, KeyError, TypeError): as_of = None
+        # The executed half of the contract. Its plan-time half (lexical coverage of the question's words, Cascade.contract_gaps) already ran over
+        # this same graph before it executed and is carried on the receipt; the two are merged into one receipt.
+        found = AC.evaluate(question, graph=graph, answer=answer, as_of=str(as_of)[:10] if as_of else None, route=tier, phase='executed', shape=False,
+                            lexical=False)
+        found = AC.merge((receipt or {}).get('acceptance_contract') if isinstance(receipt, dict) else None, found)
+        summary = AC.summary(found)
+        verdict['acceptance_contract'] = summary
+        if isinstance(receipt, dict): receipt['acceptance_contract'] = summary
+        if not found['ok'] and AC.enforcing():
+            verdict['accept'] = False
+            verdict['reasons'] += ['acceptance contract: ' + u for u in found['unmet']]
+        return found
+    run('acceptance_contract', acceptance)
     prof = _profile(stack, profile)
     run('answer_guard_suspicion', lambda: _guard(stack, question, graph, receipt, answer, prof, state, verdict))
     verdict['checks_run'].append('answer_guard_dense_catalog')  # inside the guard probe (AG.probe dense='auto')
@@ -1169,7 +1197,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     # they are reported in the documented order below
     run('cascade_certificates', lambda: _certificates(receipt, state, verdict))
     verdict['checks_run'].remove('cascade_certificates')
-    if verdict['accept'] and audited_analyst(tier, receipt):
+    if verdict['accept'] and audited_analyst(tier, receipt, graph):
         verdict['annotations'].append('Cross-check: replaced by the deterministic definitions audit of the analyst\'s SQL '
                                       f"({receipt['definitions_audit'].get('action')}); free-form answer.")
     elif verdict['accept'] and tier in DETERMINISTIC_READERS:
@@ -1186,7 +1214,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
         stage = STAGES[stage_of(tier)][0] if tier is not None else None
         planner = (_route(receipt) == 'local_model_sql' or stage == 'free_planners'
                    or (stage == 'claude' and tier not in GOVERNED_CLAUDE_ROUTERS))
-        if not planner or state.get('certified') or not verdict['accept'] or spec_confirmed(receipt) or audited_analyst(tier, receipt): return None
+        if not planner or state.get('certified') or not verdict['accept'] or spec_confirmed(receipt) or audited_analyst(tier, receipt, graph): return None
         s1 = verdict.get('system_one_cross_check') or {}
         if s1.get('verdict') != 'confirmed':
             verdict['accept'] = False
@@ -1200,7 +1228,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
     run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
-    if verdict['accept'] and not spec_confirmed(receipt) and not audited_analyst(tier, receipt): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
+    if verdict['accept'] and not spec_confirmed(receipt) and not audited_analyst(tier, receipt, graph): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
     run('jev_normalization_check', lambda: _norm.annotate_verdict(stack, graph, answer, verdict, ledger=ledger))
     from . import answer_verifier as _av, semantic_entropy as _se, label_choice as _lc  # learned verifier, sampled-agreement entropy, score label
@@ -1225,7 +1253,7 @@ def gate(cascade, name, graph, receipt, result):
         cascade.spend(verdict['cost']['new_paid_api_calls'], verdict['cost']['usd'])
     summary = {k: verdict[k] for k in ('version', 'accept', 'reasons', 'annotations', 'probe', 'checks_run', 'certificate', 'confidence', 'system_one',
                                        'system_one_cross_check', 'normalization_check', 'answer_verifier', 'semantic_entropy', 'label_choice', 'diagnosis_coverage',
-                                       'decision_context') if k in verdict}
+                                       'decision_context', 'acceptance_contract') if k in verdict}
     if isinstance(receipt, dict): receipt['answer_checks'] = summary
     if not verdict['accept']:
         cascade.reject(name, verdict['reasons'] or ['answer checks rejected the proposal']); return None

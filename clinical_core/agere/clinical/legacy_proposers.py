@@ -154,6 +154,20 @@ def _analyst(stack, question, ledger, against=None):
         returns = 'table'  # the answering query returns several outputs (a share with its numerator and denominator): a table
     graph = _sql_graph(question, sql, returns, _as_of(stack),
                        'Semantic analyst query (reconciled by Claude)' if rec else 'Semantic analyst query')
+    if audit:
+        # The definitions audit ran on the analyst's own run. What executes is THIS sql (after reconciliation, which can replace the answer and
+        # its query): audit the FINAL sql and bind the audit to its digest, so the audit authorizes only the proposal that actually runs
+        # (acceptance_contract.audit_bound; Codex 2026-10-24 "the analyst audit is a definitions check, not a meaning acceptance gate").
+        from . import analyst_definitions, acceptance_contract as AC
+        try:
+            final = analyst_definitions.audit_sql(question, _as_of(stack), sql, wh.columns, 'patient_set' if answer.get('answer_type') == 'patient_set' else None)
+        except Exception as exc:  # noqa: BLE001 - an audit that cannot run does not authorize
+            final = [{'rule': 'audit_error', 'detail': f'{type(exc).__name__}: {exc}'[:200], 'mechanical': False}]
+        receipt['definitions_audit']['final_sql_digest'] = AC.sql_digest(graph)
+        receipt['definitions_audit']['final_sql_findings'] = [f['rule'] for f in final]
+        if final:
+            receipt['definitions_audit'].update(action='declined', reason='the final sql departs from the decision-context definitions: ' + '; '.join(f['detail'] for f in final)[:300])
+            return {'graph': None, 'receipt': receipt, 'picked': None}
     return {'graph': graph, 'receipt': receipt, 'picked': picked}
 
 

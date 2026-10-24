@@ -433,7 +433,8 @@ class Cascade:
 
     def runnable(self, name):
         """Would this tier be asked at all (saved cohort, switches, live-only paid tiers)? Only those can be deferred."""
-        return not (self.population is not None and name not in TYPED_WITH_POPULATION) and enabled(name, self.stack)
+        from .acceptance_contract import skipped  # a tier whose proposal the acceptance contract rejected for this question is not asked again
+        return not (self.population is not None and name not in TYPED_WITH_POPULATION) and enabled(name, self.stack) and not skipped(name)
 
     def attempt(self, name, limit):
         """Ask one tier (time-limited), log what it did and absorb its failure. -> the proposal (contract, interpretation) or None."""
@@ -639,6 +640,19 @@ class Cascade:
         direction, AND/OR structure)."""
         return requirement_ledger.gaps(self.question, text)
 
+    def contract_gaps(self, *, contract=None, graph=None):
+        """The acceptance contract (acceptance_contract.py) over a proposal before it executes: every unmet part of the question, [] when it passes.
+        In observe mode the parts are only recorded."""
+        from . import acceptance_contract as AC
+        self.last_contract = None
+        if AC.mode() == 'off': return self.gaps(evidence_of(contract or {}) if contract else executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+        try:
+            as_of = str((getattr(self.catalog, 'identity', None) or {}).get('as_of') or '')[:10] or None
+            receipt = self.last_contract = AC.evaluate(self.question, contract=contract, graph=graph, as_of=as_of, phase='plan')
+        except Exception as exc:  # noqa: BLE001 - the contract failing to run never blocks: the literal check below still decides (heal, don't block)
+            return self.gaps(evidence_of(contract or {}) if contract else executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+        return receipt['unmet'] if AC.enforcing() else self.gaps(evidence_of(contract or {}) if contract else executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+
     def evidence(self, contract):
         if (contract or {}).get('kind') == 'checked_graph':
             return executable_text([n.get('parameters') for n in contract['graph'].get('nodes', [])])
@@ -735,7 +749,7 @@ class Cascade:
         """Accept a compiled typed contract only when the literal check passes over its executable parts."""
         if not found: return None
         contract, interpretation = found
-        gaps = self.gaps(evidence_of(contract))
+        gaps = self.contract_gaps(contract=contract)
         if gaps: return self.reject(name, gaps)
         return contract, {**interpretation, 'literal_check': 'passed'}
 
@@ -834,8 +848,11 @@ class Cascade:
             if name == 'undelivered_input': return decline
             self.held_decline = self.held_decline or decline
             return 'held'
-        gaps = self.gaps(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+        gaps = self.contract_gaps(graph=graph)
         if gaps: return self.reject(name, gaps)
+        if isinstance(receipt, dict) and getattr(self, 'last_contract', None):  # the plan-time half of the contract rides on the proposal to answer_checks
+            from . import acceptance_contract as AC
+            receipt['acceptance_contract'] = AC.summary(self.last_contract)
         if name in plan_fence.FENCED:  # saved work: its premises must still hold before it is reused
             fence = plan_fence.validate(self.stack, self.question, graph, receipt, tier=name)
             if isinstance(receipt, dict): receipt['plan_fence'] = fence

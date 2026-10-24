@@ -86,6 +86,14 @@ def make_ask(keys, stack_dir=None):
     return ask
 
 
+def contract_of(resp):
+    """The acceptance-contract receipt an answer carries (acceptance_contract.summary), compacted: {'ok', 'unmet', 'unverified'} or None."""
+    a = resp.get('answer') if isinstance(resp.get('answer'), dict) else {}
+    c = resp.get('acceptance_contract') or a.get('acceptance_contract') or (resp.get('answer_checks') or {}).get('acceptance_contract')
+    if not isinstance(c, dict): return None
+    return {'ok': c.get('ok'), 'unmet': c.get('unmet'), 'unverified': c.get('unverified'), 'route': c.get('route')}
+
+
 def run(qs, ask, follow_ups='conversation', quiet=False):
     rows, run_id = [], time.strftime('%H%M%S')
     for chain in dev_run.chains(qs, qs):
@@ -104,7 +112,8 @@ def run(qs, ask, follow_ups='conversation', quiet=False):
             rows.append({'id': q['id'], 'bucket': q['bucket'], 'asked': text, 'verdict': verdict, 'status': st, 'seconds': round(secs, 2),
                          'detail': detail, 'route': dev_run.route_of(resp),
                          'read_as': ((resp.get('planner_receipt') or {}).get('interpretation') or {}).get('reworded_as'),
-                         'error': str(resp.get('error') or '')[:400], 'headline': str(a.get('headline') or resp.get('error') or '')[:420]})
+                         'error': str(resp.get('error') or '')[:400], 'headline': str(a.get('headline') or resp.get('error') or '')[:420],
+                         'contract': contract_of(resp)})
             if not quiet:
                 print(f"{q['id']:>10} {verdict:8} {secs:5.1f}s {dev_run.route_of(resp)[:24]:24} {text[:70]}\n{'':11}-> {rows[-1]['headline'][:130]}", flush=True)
     return rows

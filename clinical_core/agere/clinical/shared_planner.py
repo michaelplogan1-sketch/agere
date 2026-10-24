@@ -565,8 +565,12 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
     if model is None and corrections:
         raise QuestionNotUnderstood('This request has an unresolved saved correction. Clarify or correct its warehouse definition before executing it; no language model was called.')
     force_model = force_model or bool(corrections)
+    from . import acceptance_contract as AC
+    if not force_model and model is None and AC.skipped('grammar') and AC.skipped('engine'):
+        raise QuestionNotUnderstood('The deterministic readings of this question did not satisfy the acceptance contract; the other layers read it next.')
     if not force_model:
         try:
+            if AC.skipped('grammar'): raise request_plan.PlanError('the grammar reading was rejected by the acceptance contract')
             program = request_language.parse_program(catalog,question,bound=population is not None)
             if program is not None:
                 return request_program.prepare(catalog,question,program,population=population), {
@@ -582,7 +586,7 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
         except request_plan.PlanError as exc:
             failures.append(str(exc))
         from . import population_engines  # population / insight questions the typed request cannot state as one query
-        engine = population_engines.interpret(catalog, question, population=population)
+        engine = None if AC.skipped('engine') else population_engines.interpret(catalog, question, population=population)
         if engine: return engine
     else:
         failures.append('Explicit model interpretation requested')
@@ -957,7 +961,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                     hit, carried = (payload,), ident
                     break
     from .learning import correction_context
-    if correction_context(stack.path, question): hit = None
+    from . import acceptance_contract as AC
+    if correction_context(stack.path, question) or AC.skipped('cache'): hit, carried = None, None  # a saved plan the contract rejected is re-planned
     if hit:
         saved = json.loads(hit[0])
         if not saved.get('interpretation', {}).get('execution_accepted'): hit = None
@@ -1023,7 +1028,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         from . import general_analysis
         reused = (lookup(stack.path, catalog, question, code, population)
                   or general_analysis.lookup_shape(stack.path, catalog, question, code, population)) if (
-                      memory_identity == request_plan.fingerprint([])) else None
+                      memory_identity == request_plan.fingerprint([]) and not AC.skipped('reuse')) else None
         if reused and reused[1].get('spec_slot_reuse'):
             reused = confirm_spec_reuse(stack, catalog, question, reused)  # System One confirms the slot mapping of a reworded question (None: refused)
         if reused:
@@ -1127,7 +1132,41 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
         return decision_context.finalize(stack.path, result, state)
 
 
+def _as_of_of(stack):
+    try: return str(stack.retriever.meta['snapshot']['as_of'])[:10]
+    except (AttributeError, KeyError, TypeError): return None
+
+
 def _compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):
+    """One answer under the acceptance contract (acceptance_contract.py). A route whose executed proposal leaves a requirement of the question
+    unmet is passed to the NEXT layer (the contract-failed route is skipped on the re-plan: saved plan, grammar, engines, shape reuse, the
+    cascade tier); only when no layer is left does the question decline, naming the unmet part."""
+    from . import acceptance_contract as AC
+    rejected, last = set(), None
+    for _ in range(5):
+        token = AC.REJECTED.set(frozenset(rejected))
+        try:
+            return _compose_once(stack, question, population=population, parent=parent, model=model, planning=planning)
+        except AC.Unmet as exc:
+            from .proposers import TIERS
+            skippable = {'cache', 'grammar', 'engine', 'reuse'} | set(TIERS)  # an explicit model's own proposal has no other layer to pass to
+            if (last is not None and exc.routes <= rejected) or not (exc.routes & skippable):
+                last = exc
+                break
+            last, rejected = exc, rejected | exc.routes
+        except QuestionNotUnderstood as failed:
+            if last is None: raise
+            declined = QuestionNotUnderstood(AC.decline_message(last.receipt) + ' ' + str(failed)[:300])
+            declined.planner_receipt = {**(getattr(failed, 'planner_receipt', None) or {}), 'acceptance_contract': AC.summary(last.receipt)}
+            raise declined from failed
+        finally:
+            AC.REJECTED.reset(token)
+    declined = QuestionNotUnderstood(AC.decline_message(last.receipt))
+    declined.planner_receipt = {**(last.planner_receipt or {}), 'acceptance_contract': AC.summary(last.receipt)}
+    raise declined
+
+
+def _compose_once(stack, question, *, population=None, parent=None, model=None, planning='auto'):
     started = time.perf_counter()
     if population is None and parent is None:
         from . import data_domains
@@ -1153,6 +1192,23 @@ def _compose(stack, question, *, population=None, parent=None, model=None, plann
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
             from . import spec_path  # every typed answer carries its read-back; a spec-path answer its verification receipts
             spec_path.attach(result, receipt['interpretation'], receipt['request_contract'], request_plan.Catalog.load(stack.path), question)
+        from . import acceptance_contract as AC
+        if AC.mode() != 'off':
+            interp = receipt.get('interpretation') or {}
+            exact = interp.get('review') in GRAMMAR_REVIEWS or interp.get('interpreter') in ('compositional_grammar', 'compositional_grammar_program', 'population_engine')
+            cascade_checked = receipt['request_contract'].get('kind') == 'checked_graph'  # answer_checks ran the contract inside the cascade
+            carried = ((receipt['request_contract'].get('legacy_receipt') or {}).get('acceptance_contract') if cascade_checked else None)
+            try:
+                verdict = AC.evaluate(question, contract=receipt['request_contract'], answer=result.get('answer'), as_of=_as_of_of(stack),
+                                      route=interp.get('interpreter'), phase='executed', lexical=not exact)
+            except Exception as exc:  # noqa: BLE001 - a defect in the contract must not take the highest-precision routes down; it is shown on the receipt
+                verdict = {'version': AC.VERSION, 'ok': True, 'phase': 'executed', 'route': interp.get('interpreter'), 'requirements': [], 'unmet': [],
+                           'unverified': [], 'error': f'{type(exc).__name__}: {exc}'[:200]}
+            if not verdict['ok'] and AC.enforcing() and not cascade_checked:
+                raise AC.Unmet(AC.route_tokens(receipt.get('interpretation') or {}, receipt['request_contract']), verdict, receipt)
+            # the cascade's own receipt (plan-time + executed halves, answer_checks) is the one shipped for a cascade answer
+            result['acceptance_contract'] = carried if isinstance(carried, dict) else AC.summary(verdict)
+            if isinstance(result.get('answer'), dict): result['answer']['acceptance_contract'] = result['acceptance_contract']
         from .answer_format import present
         present(result, request_plan.Catalog.load(stack.path).target)
         try:  # release-diff guard: every answer path carries a QC-DRIFT warning when it reads a definition that drifted
