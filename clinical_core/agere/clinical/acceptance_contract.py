@@ -528,7 +528,7 @@ _BY_DIM = re.compile(r'\b(?:by|per|for\s+each|each|across|broken\s+down\s+by|spl
 
 def requested_output(question):
     """count | patient_set | table | value | None, read carefully: "how many ... who ..." is a count; "per claim" is not a breakdown."""
-    q = question or ''
+    q = re.sub(r'\(\s*(?:including|incl\.?|meaning|i\.e\.)\b[^)]*\)', ' ', question or '', flags=re.I)
     # Per-row measures remain scalar; explicit group comparisons and per-group
     # measures request a table even when the measure itself is an average/count.
     if re.search(r'\b(?:for\s+each|compare|versus|vs|compared\s+(?:with|to))\b',q,re.I): return 'table'
@@ -576,6 +576,9 @@ def evidence_need(question, answer, text):
     rows = []
     chart = bool(re.search(r'"op": "note"|note_predicates|chart_reader|"frame"', text) or answer.get('chart_reader') is not None)
     head0 = str(answer.get('chart_headline') or answer.get('headline') or answer.get('value') or '').strip()
+    if chart and 'unknown' in ((answer.get('facts') or {}).get('statuses') or []):
+        rows.append(_row('evidence:undecided', 'evidence', 'settled note reading', UNMET,
+                         reason='the note reader is undecided; this is not a completed answer and another layer must attempt the reading'))
     if re.search(r'\b(?:why|reason|what|how)\b', question, re.I) and 'not as asked' in head0 and not re.match(r'(?:No|Not documented)\b', head0):
         rows.append(_row('evidence:matches', 'evidence', 'what was asked', UNMET,
                          reason='a note finding was read, but not the one asked for (the reader reports it as documented but not as asked); '

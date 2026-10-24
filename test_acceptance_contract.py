@@ -388,3 +388,21 @@ class GroupedMeasureAcceptance(unittest.TestCase):
         self.assertEqual(AC.windows('Total paid in 2031','',AS_OF,[request])[0]['status'],AC.UNMET)
         request['where']['args'][1]['field']='claim.other_date'
         self.assertEqual(AC.windows('Total paid in 2029','',AS_OF,[request])[0]['status'],AC.UNMET)
+
+
+class InclusionIsNotComparison(unittest.TestCase):
+    def test_parenthetical_population_definition_stays_one_scalar(self):
+        q='What share of Medicare patients (including dual and Medigap) had a visit in the last year?'
+        self.assertEqual(AC.requested_output(q),'value')
+        self.assertIsNone(AC.output_misfit(q,{'status':'answered','answer_type':'value','value':40}))
+        self.assertEqual(AC.requested_output('What share of commercial, Medicare and Medicaid patients had a visit?'),'table')
+
+
+class UndecidedNoteEscalates(unittest.TestCase):
+    def test_unknown_note_reading_is_not_a_completed_answer(self):
+        answer={'status':'answered','answer_type':'table','chart_reader':'chart-reader/1',
+                'headline':'Undecided: preference refusal', 'facts':{'statuses':['unknown']}, 'sources':[]}
+        rows=AC.evidence_need('Did the patient accept the medication?',answer,'chart_reader')
+        self.assertTrue(any(r['id']=='evidence:undecided' and r['status']==AC.UNMET for r in rows))
+        answer['facts']['statuses']=['not_mentioned']
+        self.assertFalse(any(r['id']=='evidence:undecided' for r in AC.evidence_need('Was it documented?',answer,'chart_reader')))
