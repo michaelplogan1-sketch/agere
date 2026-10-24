@@ -6,8 +6,9 @@
 
 Every request carries X-Agere-Evaluation: 1 (the service learns nothing from it). Follow-ups: the service links a follow-up to
 the prior turn through `conversation_id` in the /api/stack/compose body (conversation.handle_compose); in evaluation mode the
-service stores NO conversation turn (conversation.record returns 0), so a chained follow-up cannot see its parent's cohort. The
-default --follow-ups conversation therefore sends the real chain (and reports what the service did); --follow-ups standalone
+service keeps the turn and the saved cohort in an evaluation scratch directory outside the stack (evaluation.scratch_dir), so a
+chained follow-up sees its parent and nothing reaches the stack's stores. The default --follow-ups conversation sends the real
+chain (conversation ids are unique per run); --follow-ups standalone
 sends the key's fully-resolved question instead (measures the answer, not the context linking).
 
 Output: per-bucket accuracy, coverage (answered / asked), precision on answered, refusals, cost (cost_receipt), latency p50/p90,

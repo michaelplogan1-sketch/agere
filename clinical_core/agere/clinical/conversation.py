@@ -517,8 +517,14 @@ DDL = '''CREATE TABLE IF NOT EXISTS turns (
   PRIMARY KEY (conversation_id, turn))'''
 
 
+def _store(path):
+    """conversations.sqlite3: in the stack, or for an evaluation request in the evaluation scratch directory (evaluation.scratch_dir)."""
+    from .evaluation import scratch_dir
+    return (scratch_dir(path) if _evaluating() else Path(path)) / 'conversations.sqlite3'
+
+
 def _db(path):
-    db = sqlite3.connect(Path(path) / 'conversations.sqlite3', timeout=10)
+    db = sqlite3.connect(_store(path), timeout=10)
     db.execute(DDL)
     return db
 
@@ -535,7 +541,7 @@ def check_id(conversation_id):
 
 
 def turns(path, conversation_id):
-    target = Path(path) / 'conversations.sqlite3'
+    target = _store(path)
     if not target.exists(): return []
     db = _db(path)
     try:
@@ -567,7 +573,7 @@ def record(path, conversation_id, question, resolution, plan_summary=None, answe
     if answer_summary and answer_summary.get('subject'):
         from . import patient_ids
         patient_ids.remember(conversation_id, answer_summary['subject'])  # in-process, so evaluation mode (no stored turn) still binds "he" / "her"
-    if _evaluating(): return 0  # evaluation mode: no conversation turn is stored
+    # evaluation mode stores the turn in the evaluation scratch directory (_store), so a chained follow-up sees its parent
     db = _db(path)
     try:
         with db:
@@ -868,11 +874,12 @@ def handle_compose(stack, body, hosted_factory=None):
         if result.get('program_results') and not _evaluating():
             from . import request_program
             request_program.materialize(stack, result)
-        # evaluation mode saves no cohort / action context (a store write the measured answer does not need)
-        action_context = None if _evaluating() else answer_context.capture(
+        # evaluation mode saves the cohort in the evaluation scratch directory (answer_context.root), so a follow-up can use it
+        action_context = answer_context.capture(
             stack.path, resolution['standalone'] if resolution else question, result, original_question=question)
         if action_context:
             result = {**result, 'action_context': action_context}
+        if action_context and not _evaluating():  # evaluation mode: no workflow / program materialization into the stack
             if result.get('workflow') and result.get('program_results'):
                 from ..deliverables.workflow import save_program_workflow
                 save_program_workflow(stack.path, action_context['id'], result['workflow'])

@@ -36,7 +36,8 @@ def now():
 
 
 def root(path):
-    return Path(path) / 'answer-workspaces'
+    from ..clinical import evaluation  # evaluation mode: saved cohorts live in the evaluation scratch directory, outside the stack
+    return (evaluation.scratch_dir(path) if evaluation.active() else Path(path)) / 'answer-workspaces'
 
 
 def source_identity(path):

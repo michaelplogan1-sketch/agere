@@ -46,6 +46,16 @@ def active():
     return _STATE.get() is not None or _env_on()
 
 
+def scratch_dir(stack_path):
+    """Where an evaluation request keeps its conversation turns and saved cohorts (follow-ups need their parent): a directory OUTSIDE the
+    stack, per stack, so a benchmark chain works like a real conversation while nothing reaches the stack's stores or learning."""
+    import hashlib, tempfile
+    base = Path(os.environ.get('AGERE_EVALUATION_SCRATCH') or Path(tempfile.gettempdir()) / 'agere-evaluation')
+    d = base / hashlib.sha1(str(Path(stack_path).resolve()).encode()).hexdigest()[:12]
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
 def frozen_snapshot():
     state = _STATE.get()
     return (state or {}).get('frozen_learning') or os.environ.get('AGERE_FROZEN_LEARNING') or None
