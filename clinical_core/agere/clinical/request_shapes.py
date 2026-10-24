@@ -135,7 +135,7 @@ def save(path, catalog, contract, interpretation, policy):
     from .learning import correction_context
     if correction_context(path, contract['original_question']): return None
     audit = interpretation.get('semantic_review') or {}
-    if (interpretation.get('review') != 'checked_hosted_interpretation' or not interpretation.get('execution_accepted')
+    if (interpretation.get('review') not in ('checked_hosted_interpretation', 'spec_verified') or not interpretation.get('execution_accepted')
             or audit != {'equivalent': True, 'issues': []} or contract['request']['unresolved']):
         return None
     if interpretation.get('request_shape_id'): return interpretation['request_shape_id']
@@ -146,6 +146,7 @@ def save(path, catalog, contract, interpretation, policy):
                  tables=catalog.tables, stream_fields=catalog.stream_fields,
                  source_identity=catalog.identity, population=contract['population'],
                  parent_contract=contract['id'], created=time.time(),
+                 spec_verified=interpretation.get('review') == 'spec_verified',
                  qualification='Executed and model-checked; not independently adjudicated',
                  acceptance='Only typed-literal substitutions; full compiler validation required')
     ident = fingerprint({k: v for k, v in shape.items() if k != 'created'})
@@ -171,9 +172,10 @@ def lookup(path, catalog, question, policy, population=None):
 
 
 def _match(catalog, question, population, rows, carried=False):
-    matches = []
+    matches, shape_of = [], {}
     for ident, payload in rows:
         shape = json.loads(payload)
+        shape_of[ident] = shape
         if shape['tables'] != catalog.tables or shape['stream_fields'] != catalog.stream_fields: continue
         if shape['source_identity'] != catalog.identity or shape['population'] != (sorted(population) if population is not None else None): continue
         try:
@@ -187,7 +189,7 @@ def _match(catalog, question, population, rows, carried=False):
     if not matches or len({fingerprint(c['request']) for _, c in matches}) != 1: return None
     ident, contract = matches[0]
     return contract, {'interpreter': 'checked_request_shape', 'review': 'typed_slot_recompile',
-                      'request_shape_id': ident, 'execution_accepted': True, 'attempts': [],
+                      'request_shape_id': ident, 'execution_accepted': True, 'attempts': [], 'spec_slot_reuse': bool(shape_of.get(ident, {}).get('spec_verified')),
                       'qualified_interpretation': False,
                       'acceptance_scope': 'Reuse of model-checked structure; not independent adjudication',
                       **({'carry_forward': 'Shape saved under an earlier code release; recompiled under the current code.'}

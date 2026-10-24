@@ -662,6 +662,10 @@ WIRED = {
     'tensor_train_model': ('inside:outcome_forecast_models', 'clinical_core.agere.tensor_train', 'fit_tensor'),
 }
 WAVE1_MODULES = [  # (module, family, wiring, role) — wave-1 modules that check, route, learn or measure on the question path
+    ('spec_fill', 'infrastructure', 'inside:spec_path', 'Fills a question spec three ways in parallel (grammar, System One slot choices, one Haiku spec call) and chooses by the disagreement rules.'),
+    ('spec_verify', 'check', 'inside:spec_path', 'System One checks the spec part by part against the question; replaces the result-summary cross-check for spec-path answers.'),
+    ('spec_readback', 'infrastructure', 'inside:spec_path', 'Deterministic plain-English read-back of a spec (answer["read_back"]) and the per-part sentences System One verifies.'),
+    ('spec_exec', 'infrastructure', 'inside:execute_contract', 'Fills note predicates (System One readings) and runs the single-patient note answer before the compiled SQL runs.'),
     ('route_arbiter', 'infrastructure', 'inside:local_compiler', 'Collects every engine route claim plus the native plan and picks one on example similarity, cues and the learned router; receipt in the plan info.'),
     ('judge', 'check', 'inside:claim_verification', 'Cross-family, position-swapped System One judge between disagreeing answers.'),
     ('claim_verification', 'check', 'spine:cascade_run', 'An uncertified first claim is verified by an independent family; disagreements go to the judge.'),

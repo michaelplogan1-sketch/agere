@@ -5671,6 +5671,71 @@
    "cost": "free",
    "calibration": null,
    "flag": null
+  },
+  {
+   "id": "spec_path",
+   "name": "spec_path cascade tier",
+   "family": "proposer",
+   "module": "clinical_core.agere.clinical.proposers",
+   "symbol": "Cascade.tier_spec_path",
+   "role_on_question_path": "Cascade tier proposing a typed answer, checked before it ships.",
+   "current_wiring": "cascade_tier:spec_path",
+   "evidence": "proposers.TIERS",
+   "cost": "grammar free; System One slot choices ~$0.0002; ONE Haiku spec call (~$0.01) + one repair, Sonnet only after two failed validations; System One ~$0.0002 per verified part",
+   "calibration": "question spec filled three ways in parallel, compiled, literal-checked, decision-context-checked and verified part by part by System One; uncalibrated",
+   "flag": null
+  },
+  {
+   "id": "spec_fill",
+   "name": "spec fill",
+   "family": "infrastructure",
+   "module": "clinical_core.agere.clinical.spec_fill",
+   "symbol": "SpecInvalid",
+   "role_on_question_path": "Fills a question spec three ways in parallel (grammar, System One slot choices, one Haiku spec call) and chooses by the disagreement rules.",
+   "current_wiring": "inside:spec_path",
+   "evidence": "wave-1 build 2026-10-22",
+   "cost": "free",
+   "calibration": null,
+   "flag": null
+  },
+  {
+   "id": "spec_verify",
+   "name": "spec verify",
+   "family": "check",
+   "module": "clinical_core.agere.clinical.spec_verify",
+   "symbol": "accept_p",
+   "role_on_question_path": "System One checks the spec part by part against the question; replaces the result-summary cross-check for spec-path answers.",
+   "current_wiring": "inside:spec_path",
+   "evidence": "wave-1 build 2026-10-22",
+   "cost": "free",
+   "calibration": null,
+   "flag": null
+  },
+  {
+   "id": "spec_readback",
+   "name": "spec readback",
+   "family": "infrastructure",
+   "module": "clinical_core.agere.clinical.spec_readback",
+   "symbol": "words",
+   "role_on_question_path": "Deterministic plain-English read-back of a spec (answer[\"read_back\"]) and the per-part sentences System One verifies.",
+   "current_wiring": "inside:spec_path",
+   "evidence": "wave-1 build 2026-10-22",
+   "cost": "free",
+   "calibration": null,
+   "flag": null
+  },
+  {
+   "id": "spec_exec",
+   "name": "spec exec",
+   "family": "infrastructure",
+   "module": "clinical_core.agere.clinical.spec_exec",
+   "symbol": "ledger_for",
+   "role_on_question_path": "Fills note predicates (System One readings) and runs the single-patient note answer before the compiled SQL runs.",
+   "current_wiring": "inside:execute_contract",
+   "evidence": "wave-1 build 2026-10-22",
+   "cost": "free",
+   "calibration": null,
+   "flag": null
   }
  ]
 }
