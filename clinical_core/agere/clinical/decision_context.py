@@ -64,6 +64,8 @@ def counted_predicate(has_segment=True):
 
 # --- labs ----------------------------------------------------------------------------------------------------------------------
 ANY_LAB = re.compile(r"\b(?:ever|at any (?:time|point|visit)|any (?:time|result|value|reading|draw|measurement)|history of|had a history|"
+                     r"any (?:hb)?a1c|any (?:ldl|hdl|egfr|gfr|creatinine|potassium|sodium|glucose|tsh|bnp|nt-?probnp|hemoglobin|hgb|platelets?|wbc|uacr|"
+                     r"triglycerides?|cholesterol|blood pressure|bp|systolic|diastolic|weight|bmi|ferritin|troponin|phq-?9|inr|alt|ast|albumin)\b|"
                      r"at least (?:once|twice)\b|at least (?:two|2|\d+)(?:\s+\w+){0,2}?\s+(?:results?|readings?|draws?|tests?|measurements?|values?|times|occasions)\b|twice|two or more|more than once|repeated|consecutive|once|highest|lowest|peak|maximum|"
                      r"minimum|max|min|worst|best|trend(?:s|ing)?|over time|on any draw|every result|all results)\b"
                      r"(?!\s+(?:share|percent|percentage|proportion|fraction|rate|number|count|volume|cost|spend|spending|paid|amount|total|payers?|"
