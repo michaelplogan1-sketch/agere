@@ -16,16 +16,18 @@ Q = 'How many patients have heart failure?'
 
 
 class Order(unittest.TestCase):
-    def test_the_spec_path_follows_reuse_and_precedes_everything_else(self):
+    def test_the_spec_path_follows_reuse_the_system_one_choosers_and_the_free_planners(self):  # cascade v2 (2026-10-24)
         order = list(P.ORDER)
-        reuse = [t for t in order if P.STAGES[P.stage_of(t)][0] == 'reuse_certified']
-        self.assertEqual(order[:len(reuse)], reuse)
-        self.assertEqual(order[len(reuse)], 'spec_path')
+        before = [t for t in order if P.STAGES[P.stage_of(t)][0] in ('reuse_certified', 'system_one_choice', 'free_planners')]
+        self.assertEqual(order[:len(before)], before)
+        self.assertEqual(order[len(before)], 'spec_path')
         self.assertEqual(P.stage_of('spec_path'), P.STAGE_INDEX['spec_path'])
 
     def test_governed_engines_and_routers_follow_the_spec_path_and_free_form_writers_are_last(self):
         order = list(P.ORDER)
-        for governed in ('s1_metric_router', 's1_operator_router', 'metric_router', 'operator_router'):
+        for governed in ('s1_metric_router', 's1_operator_router'):  # System One choosers before the spec path's Claude call
+            self.assertLess(order.index(governed), order.index('spec_path'), governed)
+        for governed in ('metric_router', 'operator_router'):
             self.assertGreater(order.index(governed), order.index('spec_path'), governed)
         non_free = [order.index(t) for t in order if t not in P.FREE_FORM]
         free = [order.index(t) for t in P.FREE_FORM]
@@ -40,12 +42,14 @@ class Order(unittest.TestCase):
         self.assertEqual(sorted(P.ORDER), sorted(P.TIERS))
         self.assertTrue(callable(getattr(P.Cascade, 'tier_spec_path')))
 
-    def test_routers_cannot_move_a_tier_ahead_of_the_spec_path(self):
+    def test_routers_cannot_move_a_tier_ahead_of_its_stage(self):
         shuffled = tuple(reversed(P.ORDER))
         staged = list(P.staged(shuffled))
-        self.assertEqual(staged[staged.index('spec_path') - 1] in P.STAGES[0][1], True)
-        reuse = [t for t in staged if P.stage_of(t) == 0]
-        self.assertEqual(staged.index('spec_path'), len(reuse))
+        early = [t for t in staged if P.STAGES[P.stage_of(t)][0] in ('reuse_certified', 'system_one_choice', 'free_planners')]
+        self.assertEqual(staged.index('spec_path'), len(early))
+        self.assertTrue(all(P.stage_of(t) == 0 for t in staged[:len([t for t in staged if P.stage_of(t) == 0])]))
+        claude = [i for i, t in enumerate(staged) if P.stage_of(t) == len(P.STAGES) - 1]
+        self.assertEqual(claude, list(range(len(staged) - len(claude), len(staged))))
 
     def test_the_spec_path_runs_without_live_calls_and_is_not_a_paid_tier(self):
         self.assertNotIn('spec_path', P.PAID)

@@ -134,7 +134,7 @@ class PopulationForms:
         self.base = 'patient'
         self.bind_parent_quotes(pred)
         if population: self.bind_parent_quotes(population)
-        measured = lab_leaves(pred)
+        measured = lab_leaves(pred, conjunctive=True)  # only labs every numerator patient must have; a lab under OR / NOT cannot narrow the denominator
         denominator = {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': head_quote}
         notes = []
         if getattr(self, 'bp_quote', None):  # blood pressure control is defined on adults 18-85 (config/agere/measures/cbp.json)
@@ -232,8 +232,9 @@ class PopulationForms:
         return combine(joiner, leaves, quote), text[m.end():]
 
 
-def lab_leaves(node):
-    """The latest-result lab comparisons inside a predicate tree: [{'atoms': [...], 'quote': str}] (one per measurement_latest EXISTS)."""
+def lab_leaves(node, conjunctive=False):
+    """The latest-result lab comparisons inside a predicate tree: [{'atoms': [...], 'quote': str}] (one per measurement_latest EXISTS).
+    conjunctive=True keeps only those reached through AND nodes alone, so every patient matching the tree has all of them."""
     found = []
 
     def walk(n):
@@ -250,6 +251,7 @@ def lab_leaves(node):
             leaves(n.get('where'))
             if atoms: found.append({'atoms': atoms[:1], 'quote': atoms[0]['quote']})
             return
+        if conjunctive and n.get('op') != 'and': return
         for v in n.values():
             if isinstance(v, list):
                 for x in v: walk(x)

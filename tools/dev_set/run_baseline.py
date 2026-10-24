@@ -54,12 +54,16 @@ def main(argv=None):
     if a.rescore:
         saved = json.loads(a.rescore.read_text())
         keys = {json.loads(l)['id']: json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'questions.jsonl')}
-        by = {}
+        by, skipped = {}, []
         for r in saved['rows']:
-            if 'response' not in r: continue
+            if 'response' not in r:
+                skipped.append(r.get('id'))
+                continue
             ok, _ = RUN.score(keys[r['id']], r['response'])
             by.setdefault(r['bucket'], []).append(bool(ok))
         for b, v in by.items(): print(f'{b}: {sum(v)}/{len(v)} = {sum(v) / len(v):.1%}')
+        print(f'rescored {sum(len(v) for v in by.values())} rows; SKIPPED (no saved raw response) {len(skipped)}'
+              + (f': {skipped[:20]}{" ..." if len(skipped) > 20 else ""}' if skipped else ''))
         return
     qs = [json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'questions.jsonl')]
     sel = [q for q in qs if (a.split == 'all' or q['split'] == a.split) and (not a.bucket or q['bucket'] == a.bucket)
@@ -86,9 +90,10 @@ def main(argv=None):
     print('\n=== baseline per bucket ===')
     for b, rs in by.items():
         n, c, ans = len(rs), sum(1 for r in rs if r['correct']), sum(1 for r in rs if r['answered'])
+        c_ans = sum(1 for r in rs if r['answered'] and r['correct'] is True)  # correct abstentions are not precision
         usd = sum(r['usd'] or 0 for r in rs)
         lat = sorted(r['seconds'] for r in rs)
-        print(f"{b}\n  n={n} accuracy={c / n:.1%} answered={ans / n:.1%} precision_on_answered={(c / ans if ans else 0):.1%} "
+        print(f"{b}\n  n={n} accuracy={c / n:.1%} answered={ans / n:.1%} precision_on_answered={(c_ans / ans if ans else 0):.1%} "
               f"usd={usd:.2f} p50={lat[len(lat) // 2]:.0f}s")
     n, c = len(rows), sum(1 for r in rows if r['correct'])
     print(f"OVERALL n={n} accuracy={(c / n if n else 0):.1%} usd={sum(r['usd'] or 0 for r in rows):.2f}")

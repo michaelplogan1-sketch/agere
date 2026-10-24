@@ -929,6 +929,15 @@ def spec_confirmed(receipt):
     return bool(isinstance(spec, dict) and spec.get('confirmed') and spec.get('verdict') == 'confirmed')
 
 
+def audited_analyst(tier, receipt):
+    """True for a semantic-analyst answer whose SQL passed the deterministic definitions audit (analyst_definitions: living patients, latest
+    labs, canonical condition evidence, birth-date age, Medicare, event sources; arithmetic recomputed from executed numerator/denominator).
+    Such an answer takes the audit as its acceptance check in place of the System One result-summary checks, which were measured not to
+    separate the analyst's right answers from its wrong ones (2026-10-23/24 calibration)."""
+    audit = (receipt or {}).get('definitions_audit') if isinstance(receipt, dict) else None
+    return tier == 'semantic_analyst' and isinstance(audit, dict) and audit.get('action') in ('ok', 'rewritten')
+
+
 def _cross_check(stack, question, graph, receipt, answer, profile, ledger, hosted, state, verdict, result=None, claude_ok=True):
     """answer_guard_cross_check for an uncertified answer, live stacks only. System One first (system_one_cross_check: Jev and
     Perplexity each judge it): both confirm -> cross-checked, no Claude call; both refute -> concrete contradiction; the families
@@ -1160,7 +1169,10 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     # they are reported in the documented order below
     run('cascade_certificates', lambda: _certificates(receipt, state, verdict))
     verdict['checks_run'].remove('cascade_certificates')
-    if verdict['accept'] and tier in DETERMINISTIC_READERS:
+    if verdict['accept'] and audited_analyst(tier, receipt):
+        verdict['annotations'].append('Cross-check: replaced by the deterministic definitions audit of the analyst\'s SQL '
+                                      f"({receipt['definitions_audit'].get('action')}); free-form answer.")
+    elif verdict['accept'] and tier in DETERMINISTIC_READERS:
         # The chart reader answers from deterministic SQL and calibrated, quote-backed note readings: a System One reading of its
         # result summary is the weak check (Codex review 2026-10-23) and refuted correct note answers; its own checks stand.
         verdict['annotations'].append(f'Cross-check: not applied to {tier} (deterministic SQL and calibrated note readings with quotes).')
@@ -1174,7 +1186,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
         stage = STAGES[stage_of(tier)][0] if tier is not None else None
         planner = (_route(receipt) == 'local_model_sql' or stage == 'free_planners'
                    or (stage == 'claude' and tier not in GOVERNED_CLAUDE_ROUTERS))
-        if not planner or state.get('certified') or not verdict['accept'] or spec_confirmed(receipt): return None
+        if not planner or state.get('certified') or not verdict['accept'] or spec_confirmed(receipt) or audited_analyst(tier, receipt): return None
         s1 = verdict.get('system_one_cross_check') or {}
         if s1.get('verdict') != 'confirmed':
             verdict['accept'] = False
@@ -1188,7 +1200,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
     run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
-    if verdict['accept'] and not spec_confirmed(receipt): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
+    if verdict['accept'] and not spec_confirmed(receipt) and not audited_analyst(tier, receipt): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
     run('jev_normalization_check', lambda: _norm.annotate_verdict(stack, graph, answer, verdict, ledger=ledger))
     from . import answer_verifier as _av, semantic_entropy as _se, label_choice as _lc  # learned verifier, sampled-agreement entropy, score label

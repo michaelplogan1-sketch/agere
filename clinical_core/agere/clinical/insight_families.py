@@ -88,7 +88,10 @@ class PracticeGap:
         if not group or not measure: return None
         rank = span(t, r'biggest|largest|greatest|worst|weakest|lowest|highest|most|fewest')
         if not rank: return None
-        return {'params': {'group': group[1], 'measure': measure[1]}, 'quotes': [group[0], measure[0], rank]}
+        # worst / biggest / "gap" rank the worse end first; an explicit highest / most or lowest / fewest ranks by the value itself
+        direction = 'worst' if re.search(r'gap', measure[0], re.I) or rank.lower() in ('biggest', 'largest', 'greatest', 'worst', 'weakest') else \
+            'high' if rank.lower() in ('highest', 'most') else 'low'
+        return {'params': {'group': group[1], 'measure': measure[1], 'direction': direction}, 'quotes': [group[0], measure[0], rank]}
 
     @classmethod
     def run(cls, ctx, params):
@@ -96,18 +99,20 @@ class PracticeGap:
         gx = {'practice': ctx.practice, 'lob': ctx.lob, 'payer': 'p.payer_id'}[params['group']]
         gname = {'practice': 'practice', 'lob': 'line of business', 'payer': 'payer'}[params['group']]
         facts, tables = [], {}
+        direction = params.get('direction', 'worst')
+        order = ('desc' if m['worse'] == 'high' else 'asc') if direction == 'worst' else 'desc' if direction == 'high' else 'asc'
         if m.get('per1000'):
             rows = ctx.rows(
                 f"WITH g AS (SELECT p.patient_id, {gx} AS grp FROM patient p WHERE {ctx.living}), "
                 f"e AS (SELECT u.patient_id, COUNT(*) AS visits FROM utilization_event u WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} GROUP BY u.patient_id) "
                 f"SELECT grp, COUNT(*) AS n, COALESCE(SUM(e.visits), 0) AS k, 1000.0 * COALESCE(SUM(e.visits), 0) / COUNT(*) AS rate "
-                f"FROM g LEFT JOIN e USING (patient_id) WHERE grp IS NOT NULL GROUP BY grp HAVING COUNT(*) >= {m['minimum']} ORDER BY rate DESC, grp")
+                f"FROM g LEFT JOIN e USING (patient_id) WHERE grp IS NOT NULL GROUP BY grp HAVING COUNT(*) >= {m['minimum']} ORDER BY rate {order.upper()}, grp")
             overall = ctx.rows(
                 f"WITH g AS (SELECT p.patient_id FROM patient p WHERE {ctx.living}), "
                 f"e AS (SELECT u.patient_id, COUNT(*) AS visits FROM utilization_event u WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} GROUP BY u.patient_id) "
                 f"SELECT COUNT(*) AS n, COALESCE(SUM(e.visits), 0) AS k FROM g LEFT JOIN e USING (patient_id)")[0]
             top = rows[:3]
-            facts.append(fact('rank', f"{gname.capitalize()}s with the most ED visits per 1,000 patients (last 12 months, {gname}s with at least {m['minimum']} patients), highest first: "
+            facts.append(fact('rank', f"{gname.capitalize()}s with the {'most' if order == 'desc' else 'fewest'} ED visits per 1,000 patients (last 12 months, {gname}s with at least {m['minimum']} patients), {'highest' if order == 'desc' else 'lowest'} first: "
                               + ', '.join(f"{r['grp']} ({r['rate']:.1f})" for r in top) + '.', value=[r['grp'] for r in top]))
             if top:
                 facts.append(fact('top', f"{top[0]['grp']}: {top[0]['rate']:.1f} ED visits per 1,000 patients ({top[0]['k']:,} visits among {top[0]['n']:,} patients).",
@@ -115,27 +120,27 @@ class PracticeGap:
             facts.append(fact('overall', f"Across all {gname}s: {1000.0 * overall['k'] / overall['n']:.1f} ED visits per 1,000 patients ({overall['k']:,} visits, {overall['n']:,} patients).",
                               value=round(1000.0 * overall['k'] / overall['n'], 1), numerator=overall['k'], denominator=overall['n'], unit='per 1,000'))
             tables['ranking'] = [{gname: r['grp'], 'patients': r['n'], 'ed_visits': r['k'], 'ed_visits_per_1000': round(r['rate'], 1)} for r in rows]
-            headline = (f"{top[0]['grp']} has the most ED visits per 1,000 patients ({top[0]['rate']:.1f})" if top else 'No group meets the minimum size')
+            headline = (f"{top[0]['grp']} has the {'most' if order == 'desc' else 'fewest'} ED visits per 1,000 patients ({top[0]['rate']:.1f})" if top else 'No group meets the minimum size')
             return dict(headline=headline, facts=facts, table=tables['ranking'], tables=tables,
                         read_back=f"Ranking {gname}s by ED visits per 1,000 living patients, last 12 months to {ctx.as_of}, groups of at least {m['minimum']} patients; "
                                   "living patients; all-source ED visits.", notes=['ED visits are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated).'])
-        order = 'desc' if m['worse'] == 'high' else 'asc'
         rows = ctx.rates(gx, m['population'], m['numerator'], minimum=m['minimum'], order=order)
         overall = ctx.overall(m['population'], m['numerator'])
         if m.get('count_ranked'):
-            rows = sorted(rows, key=lambda r: (-r['k'], str(r['grp'])))
+            rows = sorted(rows, key=lambda r: (-r['k'] if order == 'desc' else r['k'], str(r['grp'])))
         top = rows[:3]
         word = 'patients' if m.get('count_ranked') else 'share'
+        end_word = 'worst' if direction == 'worst' else 'highest' if direction == 'high' else 'lowest'  # which end of the ranking comes first
         if m.get('count_ranked'):
-            facts.append(fact('rank', f"{gname.capitalize()}s with the most {m['label']}, most first: " + ', '.join(f"{r['grp']} ({r['k']})" for r in top) + '.',
+            facts.append(fact('rank', f"{gname.capitalize()}s with the {'most' if order == 'desc' else 'fewest'} {m['label']}, {'most' if order == 'desc' else 'fewest'} first: " + ', '.join(f"{r['grp']} ({r['k']})" for r in top) + '.',
                               value=[r['grp'] for r in top]))
             if top:
-                facts.append(fact('top', f"{top[0]['grp']} has the most {m['label']}: {top[0]['k']} patients ({top[0]['k']} of {top[0]['n']} {m['noun']}).",
+                facts.append(fact('top', f"{top[0]['grp']} has the {'most' if order == 'desc' else 'fewest'} {m['label']}: {top[0]['k']} patients ({top[0]['k']} of {top[0]['n']} {m['noun']}).",
                                   value=top[0]['k'], numerator=top[0]['k'], denominator=top[0]['n'], unit='patients'))
             facts.append(fact('overall', f"Across all {gname}s: {overall['k']:,} of {overall['n']:,} {m['noun']} ({pct(overall['rate'])}%).",
                               value=pct(overall['rate']), numerator=overall['k'], denominator=overall['n'], unit='%'))
         else:
-            facts.append(fact('rank', f"{gname.capitalize()}s ranked worst first on {m['label']} ({gname}s with at least {m['minimum']} patients): "
+            facts.append(fact('rank', f"{gname.capitalize()}s ranked {end_word} first on {m['label']} ({gname}s with at least {m['minimum']} patients): "
                               + ', '.join(f"{r['grp']} ({pct(r['rate'], 0):.0f}%)" for r in top) + '.', value=[r['grp'] for r in top]))
             for i, r in enumerate(top[:3]):
                 facts.append(fact(f'w{i + 1}', f"{r['grp']}: {pct(r['rate'])}% ({r['k']} of {r['n']} {m['noun']}) = {r['rate']:.4f}.", value=pct(r['rate']),
@@ -143,7 +148,7 @@ class PracticeGap:
             facts.append(fact('overall', f"Across all {gname}s: {pct(overall['rate'])}% ({overall['k']:,} of {overall['n']:,} {m['noun']}) = {overall['rate']:.4f}.",
                               value=pct(overall['rate']), numerator=overall['k'], denominator=overall['n'], unit='%'))
         tables['ranking'] = [{gname: r['grp'], 'patients': r['n'], 'meeting': r['k'], 'share': round(r['rate'], 4), 'percent': pct(r['rate'])} for r in rows]
-        headline = (f"{top[0]['grp']} is worst on {m['label']}: " + (f"{top[0]['k']} patients" if m.get('count_ranked') else f"{pct(top[0]['rate'])}%")) if top else 'No group meets the minimum size'
+        headline = (f"{top[0]['grp']} is {end_word} on {m['label']}: " + (f"{top[0]['k']} patients" if m.get('count_ranked') else f"{pct(top[0]['rate'])}%")) if top else 'No group meets the minimum size'
         return dict(headline=headline, facts=facts, table=tables['ranking'], tables=tables,
                     read_back=f"Ranking {gname}s on {m['label']}; population: {m['noun']} (living, latest results); {gname}s of at least {m['minimum']} patients"
                               + (' (a patient\'s practice is the PCP practice, else the practice attributed on the latest enrollment).' if gname == 'practice' else '.'),
@@ -925,11 +930,12 @@ class PmpmBy:
     @classmethod
     def parse(cls, text, catalog):
         t = text.strip().rstrip('?.')
-        ranked = re.match(r'^which\s+(' + '|'.join(p for p, _, _ in PMPM_GROUPS) + r')\s+(?:have|has)\s+the\s+(?:highest|lowest|greatest|largest|most|least)\s+', t, re.I)
+        ranked = re.match(r'^which\s+(' + '|'.join(p for p, _, _ in PMPM_GROUPS) + r')\s+(?:have|has)\s+the\s+(highest|lowest|greatest|largest|most|least)\s+', t, re.I)
         if ranked and span(t, r'pmpm|per\s+member\s+per\s+month'):
             group = next((span(ranked.group(1), p), c, label) for p, c, label in PMPM_GROUPS if re.fullmatch(p, ranked.group(1), re.I))
             basis = 'allowed' if span(t, r'allowed') else 'paid'
-            return {'params': {'group': group[1], 'label': group[2], 'basis': basis, 'year': (years_in(t) or [None])[-1]},
+            direction = 'asc' if ranked.group(2).lower() in ('lowest', 'least') else 'desc'
+            return {'params': {'group': group[1], 'label': group[2], 'basis': basis, 'year': (years_in(t) or [None])[-1], 'direction': direction},
                     'quotes': [ranked.group(), span(t, r'pmpm|per\s+member\s+per\s+month'), span(t, r'medical(?:\s+claims)?') or '', span(t, r'paid|allowed') or '', *[str(y) for y in years_in(t)]]}
         if not re.match(r"^(?:what(?:'s|\s+is|\s+was|\s+were)|show(?:\s+me)?|give\s+me)\b", t, re.I): return None
         metric = span(t, r'pmpm|per\s+member\s+per\s+month')
@@ -952,11 +958,11 @@ class PmpmBy:
             f"paid AS (SELECT m.{col} AS grp, SUM(c.{amount}) AS cents FROM payer_claim c JOIN member_month m ON m.patient_id = c.patient_id AND m.month = substr(c.service_from, 1, 7) "
             f"WHERE c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))} GROUP BY m.{col}) "
             f"SELECT mm.grp AS grp, mm.member_months AS member_months, COALESCE(paid.cents, 0) AS cents, COALESCE(paid.cents, 0) / 100.0 / mm.member_months AS pmpm "
-            f"FROM mm LEFT JOIN paid USING (grp) WHERE mm.grp IS NOT NULL ORDER BY pmpm DESC, grp")
+            f"FROM mm LEFT JOIN paid USING (grp) WHERE mm.grp IS NOT NULL ORDER BY pmpm {'ASC' if params.get('direction') == 'asc' else 'DESC'}, grp")
         total = ctx.rows(f"SELECT COUNT(*) AS member_months FROM member_month m WHERE substr(m.month, 1, 4) = {q(str(y))}")[0]['member_months']
         facts = [fact(f"g_{r['grp']}", f"{r['grp']}: ${r['pmpm']:,.2f} {params['basis']} PMPM in {y} (${r['cents'] / 100:,.0f} over {r['member_months']:,} member months).", value=round(r['pmpm'], 2),
                       numerator=round(r['cents'] / 100, 2), denominator=r['member_months'], unit='USD per member month') for r in rows]
-        return dict(headline=f"{params['basis'].capitalize()} medical PMPM in {y} by {params['label']}: highest {rows[0]['grp']} (${rows[0]['pmpm']:,.0f})", facts=facts,
+        return dict(headline=f"{params['basis'].capitalize()} medical PMPM in {y} by {params['label']}: {'lowest' if params.get('direction') == 'asc' else 'highest'} {rows[0]['grp']} (${rows[0]['pmpm']:,.0f})", facts=facts,
                     table=[{params['label']: r['grp'], 'member_months': r['member_months'], f"{params['basis']}_dollars": round(r['cents'] / 100, 2), 'pmpm_dollars': round(r['pmpm'], 2)} for r in rows],
                     read_back=f"{params['basis'].capitalize()} medical PMPM for {y} by {params['label']}: counted payer-adjudicated claims in an enrolled member month, grouped by that month's {params['label']}, over the group's member months.",
                     notes=notes + ['A claim counts in the group of the member month it was incurred in; PMPM = dollars / member months of the group (the governed rule).'])

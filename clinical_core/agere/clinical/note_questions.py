@@ -304,8 +304,25 @@ def _num(x):
         return None
 
 
-def combine(predicate, readings):
-    """Reduce passage readings to one patient value. -> {status, detail, evidence, p, holds, undecided, combine}."""
+def _partial(out, shown, found):
+    """The passages read are only part of what matched (retrieval caps), so a claim that needs the whole set -- absence, "no", the earliest or
+    latest occurrence, "no contradiction", "every" -- is not established: the value becomes `unknown` (holds None) with `partial` saying why.
+    A claim a single passage proves stays: an `any` hit, a `conflict` found, an `all` counterexample."""
+    out = {**out, 'truncated': True, 'partial': f'only {shown} of {found} matching passages were read'}
+    proven = (out['holds'] is True and out['combine'] in ('any', 'conflict')) or (out['holds'] is False and out['combine'] == 'all')
+    if out['holds'] is None or proven:
+        return out
+    return {**out, 'status': 'unknown', 'holds': None, 'p': None, 'detail': {}}
+
+
+def combine(predicate, readings, truncated=False, shown=None, candidates=None):
+    """Reduce passage readings to one patient value. -> {status, detail, evidence, p, holds, undecided, combine}. `truncated` (from
+    note_evidence.Passages) marks that the readings are a capped subset of the matching passages: see _partial."""
+    out = _combine(predicate, readings)
+    return _partial(out, shown, candidates) if truncated else out
+
+
+def _combine(predicate, readings):
     rule = predicate['combine']
     statuses = predicate['statuses']
     undecided = [r for r in readings if r.get('undecided')]
@@ -427,7 +444,8 @@ def read_open_passage(predicate, passage, *, as_of, ledger, allow_live, decide=N
 
 
 def _norm_text(text):
-    return re.sub(r'\s+', ' ', re.sub(r'\d+', '#', text.lower())).strip()
+    # digits stay: "2 falls" and "8 falls" are different readings, and a clone copies the extracted details (counts, values, dates)
+    return re.sub(r'\s+', ' ', text.lower()).strip()
 
 
 def _clone(reading, passage):
@@ -442,7 +460,12 @@ def _open_ev(r, f):
             'start': r['start'], 'end': r['end']}
 
 
-def combine_open(predicate, readings):
+def combine_open(predicate, readings, truncated=False, shown=None, candidates=None):
+    out = _combine_open(predicate, readings)
+    return _partial(out, shown, candidates) if truncated and not out.get('findings') else out
+
+
+def _combine_open(predicate, readings):
     """Reduce the readings of an open concept to the FINDINGS the notes support: one per distinct named concept, each with its best status,
     details, first and last dates and every supporting record with its quote. A reading below its threshold is an undecided finding (never
     counted, never dropped); a reading whose status is not one the question asks for is not a finding. -> the combine() shape plus
@@ -491,15 +514,16 @@ def combine_open(predicate, readings):
 
 
 def evaluate_open(db, predicate, patient_ids, *, as_of, ledger_path, workers, allow_live, decide, cal, max_passages=None):
-    """Retrieve by the frame's cue lexicon and read each passage; passages whose text is identical apart from digits are read once and the
+    """Retrieve by the frame's cue lexicon and read each passage; passages whose text is identical are read once and the
     reading is copied to the others (a templated note repeated at every visit costs one read, and still lists every record and date)."""
     c = predicate['concept']
     pats = note_open.patterns(predicate['frame'], c['class'])
-    jobs, clones = [], []
+    jobs, clones, trunc = [], [], {}
     for pid in patient_ids:
         ps = note_evidence.retrieve(db, pid, c, window=predicate.get('window'), sources=predicate.get('sources'), as_of=as_of, patterns=pats,
                                     max_passages=max_passages or (OPEN_MAX_RESPONSE if c['class'] == 'response' else OPEN_MAX_PASSAGES), note_types=predicate.get('note_types'),
                                     prefer_records=predicate.get('near_records'))
+        trunc[pid] = (getattr(ps, 'truncated', False), len(ps), getattr(ps, 'candidates', len(ps)))
         rep = {}
         for p in sorted(ps, key=lambda p: (p['date'] or '', p['record_id'], p['start'])):
             k = (pid, _norm_text(p['text']))
@@ -526,7 +550,7 @@ def evaluate_open(db, predicate, patient_ids, *, as_of, ledger_path, workers, al
         by[pid].extend(_clone(r, p) for r in read_by_passage.get(repr_p['passage_id'], []))
     out = {}
     for pid in patient_ids:
-        c_out = combine_open(predicate, by[pid])
+        c_out = combine_open(predicate, by[pid], *trunc[pid])
         c_out['cost_usd'] = round(sum(r['cost_usd'] for r in by[pid]), 6)
         c_out['retrieved'] = len({r['passage_id'] for r in by[pid]})
         out[pid] = c_out
@@ -555,11 +579,12 @@ def evaluate(stack, predicate, patient_ids, *, as_of, ledger=None, workers=4, al
     patterns = note_evidence.concept_patterns(predicate['concept'])
     window = predicate.get('window')
     base = predicate
-    jobs = []
+    jobs, trunc = [], {}
     for pid in patient_ids:
         ps = note_evidence.retrieve(db, pid, predicate['concept'], window=window, sources=predicate.get('sources'), as_of=as_of,
                                     patterns=patterns, note_types=predicate.get('note_types'), prefer_records=predicate.get('near_records'),
                                     **({'max_passages': max_passages} if max_passages else {}))
+        trunc[pid] = (getattr(ps, 'truncated', False), len(ps), getattr(ps, 'candidates', len(ps)))
         jobs += [(pid, p) for p in ps]
     db.close()
 
@@ -578,7 +603,7 @@ def evaluate(stack, predicate, patient_ids, *, as_of, ledger=None, workers=4, al
         by[pid].append(r)
     out = {}
     for pid in patient_ids:
-        c = combine(predicate, by[pid])
+        c = combine(predicate, by[pid], *trunc[pid])
         c['cost_usd'] = round(sum(r['cost_usd'] for r in by[pid]), 6)
         c['retrieved'] = len(by[pid])
         out[pid] = c

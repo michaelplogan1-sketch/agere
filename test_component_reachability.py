@@ -58,17 +58,17 @@ class Cascade(unittest.TestCase):
         return reached
 
     def test_every_tier_is_attempted_in_order_when_live(self):
-        self.assertEqual(self.run_all_declining(True), list(P.ORDER))
+        self.assertEqual(self.run_all_declining(True), [n for n in P.ORDER if n not in P.OFF_DEFAULT])  # off-default tiers: registered, switched off
 
     def test_free_tiers_run_without_live_calls(self):
-        self.assertEqual(self.run_all_declining(False), [n for n in P.ORDER if n not in P.PAID])
+        self.assertEqual(self.run_all_declining(False), [n for n in P.ORDER if n not in P.PAID and n not in P.OFF_DEFAULT])
 
     def test_every_tier_has_a_method_and_is_on_by_default(self):
         live = SimpleNamespace(allow_live=True)
         with clean_env():
             for name in P.ORDER:
                 self.assertTrue(callable(getattr(P.Cascade, 'tier_' + name, None)), name)
-                self.assertTrue(P.enabled(name, live), f'{name} is off by default')
+                self.assertEqual(P.enabled(name, live), name not in P.OFF_DEFAULT, f'{name}: on by default unless listed in OFF_DEFAULT')
 
     def test_graph_tiers_call_existing_ladder_methods(self):
         from clinical_core.agere.clinical.economical_planner import Ladder

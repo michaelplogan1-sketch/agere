@@ -35,6 +35,7 @@ from tools.dev_set.keys import BUCKETS, read
 DEFAULT_URL = 'http://localhost:8885/api/stack/compose'
 HEADERS = {'Content-Type': 'application/json', 'X-Agere-Evaluation': '1'}
 ANSWERED = {'answered', 'partial', 'low_confidence'}
+ABSENCE_STATUSES = {'not_available', 'unsupported'}  # the data is stated absent (supported absence)
 TEXT_KEYS = ('answer', 'narrative', 'summary', 'explanation', 'insight', 'insights', 'report', 'findings', 'text', 'message', 'table',
              'rows', 'program_results', 'workflow', 'grounding', 'missing')
 NUM = re.compile(r'(?<![\w.])-?\d[\d,]*\.?\d*')
@@ -106,6 +107,39 @@ def route_of(resp):
     return (interp.get('proposer') or {}).get('name') or interp.get('interpreter') or pr.get('route') or 'none'
 
 
+def _receipt_sources(resp):
+    pr = resp.get('planner_receipt') if isinstance(resp.get('planner_receipt'), dict) else {}
+    interp = pr.get('interpretation') if isinstance(pr.get('interpretation'), dict) else {}
+    return [pr, interp, resp]
+
+
+def _first(resp, key):
+    for src in _receipt_sources(resp):
+        if src.get(key):
+            return src[key]
+    return None
+
+
+def trace_of(resp):
+    """Compact per-row trace of a service response: answer_timing, per-tier log [{tier, outcome, seconds}], cost_receipt and
+    claude_calls_by_model. Every field is optional (a response may carry none of them)."""
+    tiers = []
+    log = _first(resp, 'proposers')
+    if isinstance(log, list):
+        for e in log:
+            if isinstance(e, dict):
+                tiers.append({'tier': e.get('proposer'), 'outcome': e.get('outcome'), 'seconds': e.get('seconds'),
+                              **({'rung': e['rung']} if e.get('rung') else {})})
+    else:  # failures expose only the stage diagnostics' failed events (no seconds)
+        sd = _first(resp, 'stage_diagnostics')
+        for e in (sd.get('events') or []) if isinstance(sd, dict) else []:
+            tiers.append({'tier': e.get('proposer'), 'outcome': e.get('outcome'), 'seconds': None})
+    cr = resp.get('cost_receipt') if isinstance(resp.get('cost_receipt'), dict) else None
+    tel = resp.get('cost_telemetry') if isinstance(resp.get('cost_telemetry'), dict) else {}
+    models = (cr or {}).get('claude_calls_by_model') or tel.get('claude_calls_by_model')
+    return {'answer_timing': _first(resp, 'answer_timing'), 'tiers': tiers, 'cost_receipt': cr, 'claude_calls_by_model': models}
+
+
 def close(x, y, tol):
     tol = tol or {}
     if 'rel' in tol and abs(x - y) <= tol['rel'] * abs(y):
@@ -124,8 +158,10 @@ def score(q, resp):
     low = text.lower()
     tol = key.get('tolerance')
     if t == 'absent':
-        refused = (not answered) or st == 'unsupported' or a.get('answer_type') == 'unsupported'
-        return refused, {'expected': 'refusal: ' + key.get('reason', ''), 'status': st}
+        # only a returned answer that states the data is absent counts; an error, a timeout or a generic refusal (not_understood,
+        # internal_error, ...) does not (2026-10-24: an error/timeout used to count as correct here)
+        stated = st in ABSENCE_STATUSES or a.get('answer_type') == 'unsupported'
+        return stated, {'expected': 'refusal: ' + key.get('reason', ''), 'status': st, 'stated_absent': stated}
     if not answered:
         return None, {'status': st}
     if t in ('count', 'value'):
@@ -338,7 +374,8 @@ def run_chain(chain, args, run_id):
                      'answered': status_of(resp) in ANSWERED, 'correct': correct, 'detail': detail, 'seconds': round(r['seconds'], 2),
                      'usd': cr.get('usd'), 'paid_calls': cr.get('paid_calls', resp.get('new_paid_api_calls')), 'route': route_of(resp),
                      'followup_context': (resp.get('conversation') or {}).get('method') if is_follow else None,
-                     'error': (resp.get('error') or '')[:300] if status_of(resp) not in ANSWERED else None})
+                     'error': (resp.get('error') or '')[:300] if status_of(resp) not in ANSWERED else None,
+                     'trace': trace_of(resp)})
         print(f"{q['id']:>6} {q['bucket'][:14]:14} {str(rows[-1]['status'])[:14]:14} correct={correct} {r['seconds']:.0f}s route={rows[-1]['route']}", flush=True)
     return rows
 
@@ -377,7 +414,11 @@ def main(argv=None):
     ap.add_argument('--jobs', type=int, default=1, help='parallel chains (the live service is shared: keep 1 unless told otherwise)')
     ap.add_argument('--follow-ups', choices=('conversation', 'standalone'), default='conversation')
     ap.add_argument('--out', help='write per-question rows as JSON')
+    ap.add_argument('--report-card', metavar='RUN_JSON', help='print the per-tier report card of a saved run and exit (no service calls)')
     args = ap.parse_args(argv)
+    if args.report_card:
+        from tools.dev_set import report_card
+        return report_card.main([args.report_card])
     qs = select(args)
     run_id = time.strftime('%Y%m%dT%H%M%S')
     cs = chains(qs, read())

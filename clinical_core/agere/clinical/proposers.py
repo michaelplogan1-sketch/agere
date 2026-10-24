@@ -87,9 +87,11 @@ TIERS = {
 STAGES = (
     ('reuse_certified', ('exact_local_plan', 'chart_reader', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
                          'specialist_families_early', 'cohort_family_early', 'scoped_review_compiler', 'undelivered_input')),
-    ('spec_path', ('spec_path',)),
     ('system_one_choice', ('s1_metric_router', 's1_operator_router', 'typed_decider', 'terminology_mapping', 'hcc_suspecting')),
     ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late')),
+    # the spec path follows the System One choosers and the free planners (Mike 2026-10-24: System One before Claude); its Haiku spec call
+    # was started in parallel when the grammar declined (spec_path.prefetch), so waiting for it here costs no time
+    ('spec_path', ('spec_path',)),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
     ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler',
                 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
@@ -121,13 +123,15 @@ def cheap(tier):
     return STAGES[stage_of(tier)][0] in CHEAP_STAGES
 
 
-def staged(order):
+def staged(order, routed=()):
     """Hard boundaries only: reuse/certified tiers first, then the spec path, Claude and the free-form writers last; the routers' order is kept
     inside, so a System One router may send a chart-evidence question to the evidence readers before the free planners (a stable sort: nothing
     dropped)."""
-    last = len(STAGES) - 1
-    spec = STAGE_INDEX['spec_path']
-    return tuple(sorted(order, key=lambda t: 0 if stage_of(t) == 0 else 1 if stage_of(t) == spec else 3 if stage_of(t) == last else 2))
+    last, spec, evidence = len(STAGES) - 1, STAGE_INDEX['spec_path'], STAGE_INDEX['system_one_evidence']
+    # System One choosers and free planners, then the spec path, then System One on record evidence; a tier the System One question router
+    # routed to (routed: e.g. the evidence readers for a chart-evidence question) keeps its routed place among the choosers and planners
+    return tuple(sorted(order, key=lambda t: (0 if stage_of(t) == 0 else 4 if stage_of(t) == last else 1 if t in routed
+                                              else 2 if stage_of(t) == spec else 3 if stage_of(t) == evidence else 1)))
 
 
 ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
@@ -179,9 +183,15 @@ NOT_PROPOSERS = {
 }
 
 
+# Registered but off the default path (2026-10-24): held-out calibration 13/13 and 19/19 wrong, precision too low, and no accepted correct answer
+# on the 100 dev questions. AGERE_PROPOSER_ON=metric_router,... puts one back.
+OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql')
+
+
 def enabled(name, stack):
     skip = {s.strip() for s in os.environ.get('AGERE_PROPOSER_SKIP', '').split(',') if s.strip()}
     if name in skip or os.environ.get('AGERE_PROPOSERS', 'on') == 'off': return False
+    if name in OFF_DEFAULT and name not in {s.strip() for s in os.environ.get('AGERE_PROPOSER_ON', '').split(',')}: return False
     if name in PAID and not getattr(stack, 'allow_live', False): return False
     return True
 
@@ -290,7 +300,11 @@ class Cascade:
             order, self.tier_routing = reorder(self.stack, self.question, order)
         except Exception:  # noqa: BLE001 - no promoted model / encoder: keep the order
             pass
-        return self.heavy_last(self.free_first(staged(order)))
+        routed = ()
+        if (self.routing or {}).get('applied'):
+            from .system_one_gate import ROUTES
+            routed = tuple(t for t in ROUTES.get(self.routing.get('label'), ()) if stage_of(t) != len(STAGES) - 1)
+        return self.heavy_last(self.free_first(staged(order, routed)))
 
     def heavy_last(self, order):
         """A permutation: the costly tiers (COSTLY) run only after the cheap ones (stages A-B and local_compiler), and among themselves
@@ -485,7 +499,8 @@ class Cascade:
 
     def _run(self):
         from .answer_budget import start as start_budget
-        budget = self.budget = start_budget()
+        # a rewording's free-stage attempt gets a short budget of its own: the question as typed then runs with the full answer budget
+        budget = self.budget = start_budget(float(os.environ.get('AGERE_REWORDING_BUDGET_SECONDS', '8')) if FREE_ONLY.get() else None)
         try:
             order = self.order_used = self.order()
             free_only = FREE_ONLY.get()

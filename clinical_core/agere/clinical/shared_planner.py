@@ -1039,6 +1039,7 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                 # Every other component proposes, cheapest and best-calibrated first; each proposal is checked against
                 # the original question before anything executes (proposers.py). None passing -> not understood.
                 from .proposers import Cascade
+                start_spec_early(stack, catalog, question, population)
                 try:
                     contract, interpretation = Cascade(stack, catalog, question, population=population, ledger=ledger,
                                                        hosted_model=hosted_model, memory_identity=memory_identity).run()
@@ -1077,6 +1078,22 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                    'feedback_identity': interpretation.get('feedback_identity', request_plan.fingerprint([])), 'request_contract': contract,
                    'interpretation': interpretation, **usage, 'steps': proposed.get('steps', []),
                    'frontier_called': usage['new_paid_api_calls'] > 0}
+
+
+def start_spec_early(stack, catalog, question, population):
+    """The grammar declined: the spec path's paid fillers (System One slots, the Haiku spec writer) start now, in parallel with the cascade's
+    earlier stages (spec_fill.start_early). Not for a rewording (free stages only), a question naming one patient (the chart reader answers
+    those) or without Claude."""
+    from . import spec_path, spec_fill, patient_ids
+    from .proposers import FREE_ONLY, claude_available
+    if FREE_ONLY.get() or not getattr(stack, 'allow_live', False) or not spec_path.enabled(stack) or not claude_available(): return
+    if model_policy_escalating() or patient_ids.names_a_patient(question): return
+    spec_fill.start_early(stack, catalog, question, population=population)
+
+
+def model_policy_escalating():
+    from .. import model_policy
+    return model_policy.escalating()
 
 
 def compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):
