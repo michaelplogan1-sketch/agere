@@ -194,6 +194,14 @@ def score(answer, truth, denominator):
     return row
 
 
+def summary_line(rows):
+    """Exact membership matches are reported apart from count-only matches (no patient_ids returned, only the count agreed)."""
+    answered = [r for r in rows if r['status'] == 'answered']
+    exact = sum(1 for r in answered if r.get('match') and not r.get('count_only'))
+    count_only = sum(1 for r in answered if r.get('match') and r.get('count_only'))
+    return f"answered {len(answered)}/{len(rows)}; exact match {exact}; count-only {count_only}; matched total {exact + count_only}"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--url', default=None, help='send each question to this service (default http://localhost:8885 unless --inprocess)')
@@ -225,7 +233,7 @@ def main():
     for r in rows:
         print(f"| {r['n']} | {r['question']} | {r['oracle']} | {r.get('got', '')} | {r.get('match', '')} | {r.get('fp', '')} | {r.get('fn', '')} | "
               f"{r['status']} | {r.get('tier')} | {r['seconds']} | {r.get('usd')} |")
-    print(f"answered {len(answered)}/{len(rows)}; exact match {sum(1 for r in answered if r.get('match'))}")
+    print(summary_line(rows))
     if a.out: a.out.write_text(json.dumps(rows, indent=1, default=str))
 
 
