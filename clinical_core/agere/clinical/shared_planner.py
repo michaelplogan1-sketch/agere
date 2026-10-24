@@ -1087,21 +1087,29 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
     except (AttributeError, KeyError, TypeError): as_of = None  # a stand-in stack without a snapshot
     # The question in the wording the grammar and every check were written against (phrasing.py: abbreviations, synonyms, alternative
     # constructions; every number, patient id and negation kept) is tried first; if the stack cannot read it, the question as typed is.
+    # A rewording gets the free readers only: if they cannot read it, the question as typed runs with the full fallback (a rewording
+    # never reaches a language model; 2026-10-24 regression diff).
     from . import phrasing
-    reworded = phrasing.variants(question)
-    tries = [*reworded, question]
-    for n, text in enumerate(tries):
+    for text in phrasing.variants(question):
         try:
             with decision_context.scope(text, as_of) as state:
-                result = _compose(stack, text, population=population, parent=parent, model=model, planning=planning)
+                result = _compose(stack, text, population=population, parent=parent, model=_no_language_model, planning=planning)
                 result = decision_context.finalize(stack.path, result, state)
-        except QuestionNotUnderstood:
-            if n == len(tries) - 1:
-                raise
+        except (QuestionNotUnderstood, _RewordingNeedsModel):
             continue
-        if text != question:
-            phrasing.disclose(result, question, text)
+        phrasing.disclose(result, question, text)
         return result
+    with decision_context.scope(question, as_of) as state:
+        result = _compose(stack, question, population=population, parent=parent, model=model, planning=planning)
+        return decision_context.finalize(stack.path, result, state)
+
+
+class _RewordingNeedsModel(Exception):
+    """A reworded question reached the language fallback: the question as typed is tried instead."""
+
+
+def _no_language_model(*args, **kwargs):
+    raise _RewordingNeedsModel()
 
 
 def _compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):

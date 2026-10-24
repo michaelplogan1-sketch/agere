@@ -60,7 +60,8 @@ WORDS = [
     (r'emergency\s+(?:department|room)', 'ED'), (r'er', 'ED'),
     (r'utili[sz]ers', 'users'),
     (r'hospitali[sz]ations?', 'hospital admissions'),
-    (r'no\s+shows?|no-shows?|missed\s+appointments?|missed\s+visits?', 'no-shows'),
+    (r'(?:no[\s-]shows?|missed\s+appointments?|missed\s+visits?)\s+rates?', 'no-show rate'),  # the measure keeps its singular name
+    (r'(?:no\s+shows?|no-shows?|missed\s+appointments?|missed\s+visits?)(?!\s+rates?\b)', 'no-shows'),
     (r'p\.?m\.?p\.?m\.?|per\s+member\s+per\s+month', 'PMPM'),
     (r'(?:split|broken\s+down|grouped|segmented|sliced|broken\s+out|cut)\s+(?:up\s+)?by', 'by'),
     (r'spending', 'spend'), (r'generics', 'generic'), (r'mean', 'average'), (r'worst[- ]performing', 'worst'),
