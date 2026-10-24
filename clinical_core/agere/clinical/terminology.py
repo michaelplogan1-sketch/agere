@@ -27,6 +27,7 @@ Codes: conditions -> ICD-10-CM prefixes (+ SNOMED where the received data carrie
 drug classes with RxNorm ingredient naming. Synthetic data only.
 """
 import functools
+import contextvars
 import json
 import re
 import sqlite3
@@ -260,9 +261,27 @@ def _db(path):
     return db
 
 
+_SESSION = contextvars.ContextVar('agere_terminology_session', default=None)
+
+
+def use_session(rows):
+    """Mappings System One decided for THIS question's context only (spec_fill's slot filler): read by saved() like saved rows, never written to the
+    store. Evaluation mode writes nothing, so without this the compile's own re-read of a mapped term could not see it. Set in a copied context."""
+    _SESSION.set(dict(rows or {}))
+
+
 def saved(store, label=None):
     """Saved mappings -> {label: row} (all) or the row for one normalized label (any kind). A condition row carries 'narrowing'
     (the saved granularity decision; None when it was never assessed)."""
+    session = _SESSION.get() or {}
+    if session:
+        rest = saved_rows(store)
+        merged = {**rest, **session}
+        return merged if label is None else merged.get(_norm(label))
+    return saved_rows(store, label)
+
+
+def saved_rows(store, label=None):
     path = store_path(store) if store else None
     if not path or not path.exists(): return {} if label is None else None
     try:

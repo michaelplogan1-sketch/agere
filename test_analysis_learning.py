@@ -147,6 +147,7 @@ class AnalysisLearning(unittest.TestCase):
         self.assertIn('unknown', audit['source_coverage']['medication_observations']['meaning'])
 
     def test_correction_invalidates_saved_work_authority_and_recheck_gets_new_context(self):
+        import os as _os; from unittest.mock import patch as _patch; _spec_off = _patch.dict(_os.environ, {'AGERE_SPEC_PATH': 'off'}); _spec_off.start(); self.addCleanup(_spec_off.stop)  # these tests exercise the hosted interpreter tier, not the spec path
         from clinical_core.agere.deliverables import answer_context as A
         self.stack.allow_live = True
         self.stack.receipts = self.path

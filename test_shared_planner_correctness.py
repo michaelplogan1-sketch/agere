@@ -21,6 +21,7 @@ from clinical_core.agere.clinical import (
 class Correctness(unittest.TestCase):
     def setUp(self):
         fixtures.SharedPlanner.setUp(self)
+        import os as _os; from unittest.mock import patch as _patch; _spec_off = _patch.dict(_os.environ, {'AGERE_SPEC_PATH': 'off'}); _spec_off.start(); self.addCleanup(_spec_off.stop)  # these tests exercise the hosted interpreter tier, not the spec path
         with sqlite3.connect(self.path/'semantic.sqlite3') as db:
             db.executescript("""
                 ALTER TABLE patient ADD COLUMN age_latest;

@@ -137,7 +137,8 @@ def policy_identity():
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
                      'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
-                     'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py')}})
+                     'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py',
+                     'spec_fill.py', 'spec_verify.py', 'spec_readback.py', 'spec_path.py', 'spec_exec.py')}})
 
 # Rule text in named parts: the hosted planner sends them all (SYSTEM); the local shaper (local_prompt.py) sends the core and only
 # the parts a question needs.
@@ -910,6 +911,21 @@ def save_accepted(stack, question, contract, interpretation, *, population=None,
     return store_request(Path(stack.path)/'question-plans.sqlite3', key, stable_key, question, contract, interpretation)
 
 
+def confirm_spec_reuse(stack, catalog, question, reused):
+    """A verified spec reused for a reworded question (request_shapes): System One checks the spec against THIS wording part by part. -> reused
+    (with the verification), or None when a part is refused (the cascade, with its spec path, then answers)."""
+    from . import spec_path, spec_exec, spec_verify
+    contract, interpretation = reused
+    if not getattr(stack, 'allow_live', False): return reused
+    with spec_exec.ledger_for(stack) as ledger:
+        check = spec_path.confirm_reuse(stack, catalog, question, contract, ledger=ledger)
+    if check is None: return reused
+    if check['failed']: return None
+    usage = {'new_paid_api_calls': check['calls'], 'known_api_estimate_usd': check['cost_usd'], 'api_cost_known': True}
+    return contract, {**interpretation, 'spec_verification': spec_verify.summary(check), 'slot_mapping_confirmed': check['confirmed'],
+                      **({'cascade_usage': usage} if check['calls'] else {})}
+
+
 def plan(stack, question, ledger=None, frontier=None, *, population=None, model=None, planning='auto'):
     validate_question(question)
     if planning not in ('auto', 'frontier'):
@@ -1003,6 +1019,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         reused = (lookup(stack.path, catalog, question, code, population)
                   or general_analysis.lookup_shape(stack.path, catalog, question, code, population)) if (
                       memory_identity == request_plan.fingerprint([])) else None
+        if reused and reused[1].get('spec_slot_reuse'):
+            reused = confirm_spec_reuse(stack, catalog, question, reused)  # System One confirms the slot mapping of a reworded question (None: refused)
         if reused:
             contract, interpretation = reused
         elif model is not None:
@@ -1086,6 +1104,8 @@ def _compose(stack, question, *, population=None, parent=None, model=None, plann
                                             started=started, economics=economics)
         else:
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
+            from . import spec_path  # every typed answer carries its read-back; a spec-path answer its verification receipts
+            spec_path.attach(result, receipt['interpretation'], receipt['request_contract'], request_plan.Catalog.load(stack.path), question)
         from .answer_format import present
         present(result, request_plan.Catalog.load(stack.path).target)
         try:  # release-diff guard: every answer path carries a QC-DRIFT warning when it reads a definition that drifted
@@ -1153,14 +1173,27 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     if current.identity != contract['source_identity']:
         raise request_plan.PlanError('Warehouse changed during planning; recompute against the new snapshot')
     target = current.target
+    if contract['returns'] == 'note_answer':  # one named patient's note answer: the chart reader answers, nothing is computed in SQL
+        return _note_answer_result(stack, question, graph, receipt, contract, started=started, execution_snapshot=execution_snapshot)
     analytical = bool(contract['request'].get('analyses'))
     graph_result = stack.run_graph(graph, question=question) if analytical else None
-    report = sql_query.execute(stack.path, {'query': contract['query'], 'returns': contract['returns']}, patient_ids=population, target=target)
+    if contract.get('subject'):  # a named patient is answered whether or not they died (their answer says so): the living rule does not apply to them
+        from . import decision_context as DC
+        state = DC.current()
+        if state is not None:
+            with state.lock: state.population = {'living_only': False, 'reason': 'the question names one patient; a named patient is answered whether or not they died'}
+    run, note_bind = contract, None
+    if contract.get('note_predicates'):  # System One reads the evidence the structured part left open; SQL combines the readings
+        from . import spec_exec
+        with spec_exec.ledger_for(stack) as note_ledger:
+            note_bind = spec_exec.bind(stack, contract, population=population, target=target, ledger=note_ledger)
+        run = note_bind['contract']
+    report = sql_query.execute(stack.path, {'query': run['query'], 'returns': contract['returns']}, patient_ids=population, target=target)
     membership = None
     if contract['membership_query']:
         membership = (report if report['returns'] == 'patient_set' else
-                      sql_query.execute(stack.path, {'query': contract['membership_query'], 'returns': 'patient_set'}, patient_ids=population, target=target))
-    unknown = (sql_query.execute(stack.path, {'query': contract['unknown_membership_query'], 'returns': 'patient_set'}, patient_ids=population, target=target)
+                      sql_query.execute(stack.path, {'query': run['membership_query'], 'returns': 'patient_set'}, patient_ids=population, target=target))
+    unknown = (sql_query.execute(stack.path, {'query': run['unknown_membership_query'], 'returns': 'patient_set'}, patient_ids=population, target=target)
                if contract.get('unknown_membership_query') else None)
     partial = report['truncated'] or bool(membership and membership['truncated']) or bool(unknown and unknown['truncated'])
     limitations = ['Results describe received records. No matching record does not establish absent care.',
@@ -1171,6 +1204,11 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     unknown_ids = sorted(set(unknown['patient_ids']) - set((membership or {}).get('patient_ids', []))) if unknown else []
     if unknown_ids:
         limitations.append(f'{len(unknown_ids)} patients have unresolved null-valued predicates and are outside the matching cohort.')
+    if contract.get('subject'):
+        limitations += _subject_limitations(stack, contract['subject']['patient_id'])
+    if note_bind:
+        limitations.append('Note predicates were read by System One from the evidence passages; each reading cites its record, date and quote.')
+        if unknown_ids: partial = True
     if 'age_at(' in contract['query']:
         from .clinical_definitions import AGE
         limitations.append(AGE['disclosure'] if re.search(r'\bdeath\b', contract['query'], re.I) else
@@ -1224,6 +1262,9 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
                                      'outside_ehr': sum(r['events'] for r in coverage['rows'] if not r['in_ehr'])}
         answer['limitations'].append('ED source coverage: '+', '.join(
             f"{r['sources']}: {r['events']}" for r in coverage['rows'])+'. Events are deduplicated across ADT, EHR and claims.')
+    if note_bind:
+        answer['note_evidence'] = spec_exec.evidence_of(note_bind['readings'], ids)
+        answer['note_reading'] = note_bind['receipt']
     if report['returns'] in ('count', 'value'):
         answer['count' if report['returns'] == 'count' else 'value'] = report['value']
         answer['headline'] = str(report['value'])+' — '+contract['request']['select'][0]['alias'].replace('_', ' ')
@@ -1233,6 +1274,7 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     else:
         answer['table'] = report['rows']
         answer['headline'] = f'{len(report["rows"])} rows · '+', '.join(report['columns'])
+    if note_bind: spec_exec.range_note(answer, unknown_ids, note_bind['receipt'])
     result = {'schema': VERSION, 'synthetic': True, 'question': question, 'route': 'shared_planner',
               'graph': graph, 'results': [{'node': graph['nodes'][0], 'result': report}], 'answer': answer,
               'request_contract': contract, 'planner_receipt': receipt, 'new_paid_api_calls': receipt['new_paid_api_calls'],
@@ -1280,6 +1322,34 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
         shape_id = save(stack.path, current, contract, interpretation, receipt.get('policy_identity') or policy_identity())
         if shape_id: result['learned_request_shape'] = shape_id
     return result
+
+
+def _subject_limitations(stack, patient_id):
+    """A named patient is answered whether or not they died; the answer says so (docs/agere/QUESTION_SPEC.md, Addition 2)."""
+    try:
+        with sqlite3.connect(f'file:{request_plan.Catalog.load(stack.path).target}?mode=ro', uri=True) as db:
+            row = db.execute('SELECT MIN(death_date) FROM death WHERE patient_id = ?', (patient_id,)).fetchone()
+    except sqlite3.Error:
+        return []
+    return [f'Patient {patient_id} is deceased (death recorded {row[0]}); the living-patient rule does not exclude a named patient.'] if row and row[0] else []
+
+
+def _note_answer_result(stack, question, graph, receipt, contract, *, started, execution_snapshot):
+    from . import spec_exec
+    with spec_exec.ledger_for(stack) as ledger:
+        answer = spec_exec.note_answer(stack, contract, ledger=ledger)
+    answer = dict(answer)
+    answer.setdefault('missing', [])
+    answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *_subject_limitations(stack, contract['subject']['patient_id']),
+                                                'Read by the chart reader from the patient\'s own evidence passages; quotes cite their records.']))
+    answer.setdefault('request_id', contract['id'])
+    answer.setdefault('patient_ids', [contract['subject']['patient_id']])
+    answer.setdefault('actionable_cohort', False)
+    if answer.get('headline') is None: answer['headline'] = 'Note answer for patient ' + contract['subject']['patient_id']
+    return {'schema': VERSION, 'synthetic': True, 'question': question, 'route': 'shared_planner', 'graph': graph, 'results': [], 'answer': answer,
+            'request_contract': contract, 'planner_receipt': receipt, 'new_paid_api_calls': receipt['new_paid_api_calls'],
+            'planning_economics': economics(receipt), 'elapsed_seconds': time.perf_counter() - started,
+            'clinical_execution_authorized': False, 'execution_snapshot': execution_snapshot, 'workflow': []}
 
 
 def economics(receipt=None):

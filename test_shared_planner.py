@@ -29,6 +29,7 @@ def authored_review_fixture(catalog, question, model, *, population=None):
 
 class SharedPlanner(unittest.TestCase):
     def setUp(self):
+        import os as _os; from unittest.mock import patch as _patch; _spec_off = _patch.dict(_os.environ, {'AGERE_SPEC_PATH': 'off'}); _spec_off.start(); self.addCleanup(_spec_off.stop)  # these tests exercise the hosted interpreter tier, not the spec path
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = Path(self.tmp.name)
