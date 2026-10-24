@@ -300,6 +300,8 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
               'sections': sections, 'missing': missing, 'limitations': [], 'patient_ids': shared,
               'actionable_cohort': False, 'data_absence_established': False}
     if shared: answer['membership_role'] = 'shared_selection'
+    row = scalar_row(sections, contract)
+    if row and complete: answer['table'] = [row]  # independent single-number outputs read side by side: one row, one column per output
     child_calls = sum((p['result'] or {}).get('new_paid_api_calls', 0) for p in parts)
     economics = S.economics(receipt)
     if child_calls:
@@ -310,6 +312,22 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
             'new_paid_api_calls': receipt['new_paid_api_calls'] + child_calls, 'planning_economics': economics,
             'elapsed_seconds': time.perf_counter() - started, 'workflow': [],
             'clinical_execution_authorized': False}
+
+
+def scalar_row(sections, contract):
+    """{name: number} when every output of the program is one answered number (a count, a value or a share), else None. Names are the outputs'
+    own measure aliases, made unique with the output id."""
+    if len(sections) < 2: return None
+    nodes = {n['id']: n for n in contract['nodes']}
+    row = {}
+    for s in sections:
+        a = s['answer']
+        value = next((a[k] for k in ('count', 'value') if isinstance(a.get(k), (int, float)) and not isinstance(a.get(k), bool)), None)
+        if a.get('status') != 'answered' or value is None: return None
+        select = (((nodes.get(s['id']) or {}).get('contract') or {}).get('request') or {}).get('select') or [{}]
+        name = str(select[0].get('alias') or s['id'])
+        row[name if name not in row else f"{name}_{s['id']}"] = value
+    return row
 
 
 def materialize(stack, result):

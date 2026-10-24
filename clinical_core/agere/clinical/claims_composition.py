@@ -23,7 +23,7 @@ CLAIM_WORDS = re.compile(r'\bclaims?\b|\bspend(?:ing)?\b|\bpaid\b|\bpayments?\b|
 MONEY_PHRASES = [
     (r'(?:patient|member)s?\s+(?:responsibility|pay(?:ment)?s?|owe[ds]?)|owe[ds]?\s+out[- ]of[- ]pocket|out[- ]of[- ]pocket(?:\s+(?:cost|spend|amount|dollars))?|patients?\s+pay',
      {'payer_claim': 'patient_responsibility_cents', 'payer_pharmacy_claim': 'patient_pay_cents'}),
-    (r'plan[- ]paid(?:\s+(?:amount|dollars|spend|cost))?|(?:does|do|did)\s+the\s+plan\s+pay|the\s+plan\s+pays?|cost(?:s|ing)?\s+the\s+plan',
+    (r'plan[- ]paid(?:\s+(?:(?:pharmacy|medical)\s+)?(?:amount|dollars|spend|cost))?|(?:does|do|did)\s+the\s+plan\s+pay|the\s+plan\s+pays?|cost(?:s|ing)?\s+the\s+plan',
      {'payer_pharmacy_claim': 'plan_paid_cents', 'payer_claim': 'paid_cents'}),
     (r'allowed(?:\s+(?:amount|dollars))?', {'payer_claim': 'allowed_cents'}),
     (r'billed(?:\s+(?:amount|dollars))?|charges?', {'payer_claim': 'charge_cents'}),
@@ -46,8 +46,70 @@ EXTRA_PREDICATES = {
 POS = re.compile(r'\(?\s*place\s+of\s+service\s+(\d{2})\s*\)?', re.I)
 
 
+MONEY_AMOUNT = re.compile(
+    r'^(?:(?:have|has|had)\s+)?(?:accumulated|incurred|totaled|totalled|racked\s+up|spent|reached)?\s*(?:(?P<pre>at\s+least|over|more\s+than|above)\s+)?'
+    r'(?P<amt>\$\s?\d[\d,]*(?:\.\d+)?)(?P<k>\s*[kK])?(?P<cmp>\s*\+|-plus|\s+or\s+(?:more|higher|above)|\s+and\s+(?:up|above))?'
+    r'\s*(?:(?:in|of|on)\s+)?(?:(?P<basis>paid|allowed|billed)\s+)?(?:medical\s+)?(?P<noun>claims?|spend(?:ing)?|dollars)?', re.I)
+COST_PER = re.compile(r'^how\s+much\s+(?:did|does|do|will)\s+the\s+average\s+(?P<living>living\s+)?(?P<pop>[a-z][a-z -]*?)\s+cost\s+(?:us|the\s+plan)\s+in\s+'
+                      r'(?P<what>(?:medical\s+|pharmacy\s+)?(?:paid\s+)?claims?)(?P<win>\s+(?:in|during|over|for)\s+.+)?$', re.I)
+ADJECTIVE_CONDITIONS = {'diabetic': 'diabetes', 'hypertensive': 'hypertension', 'asthmatic': 'asthma'}
+
+
 class ClaimFrames:
     """Mixed into request_language.Parser."""
+
+    def money_threshold(self, text):
+        """'accumulated $50,000 or more in paid claims over the past 12 months' -> the patient's summed claim dollars reach the amount."""
+        from .request_language import atom, combine
+        if self.base != 'patient' or 'payer_claim' not in self.catalog.tables: return None
+        m = MONEY_AMOUNT.match(text)
+        if not m or not (m['pre'] or m['cmp']) or not (m['basis'] or m['noun']): return None
+        amount = float(m['amt'].replace('$', '').replace(',', '').strip()) * (1000 if m['k'] else 1)
+        amount = int(amount) if amount == int(amount) else amount
+        field = {'paid': 'paid_cents', 'allowed': 'allowed_cents', 'billed': 'charge_cents'}[(m['basis'] or 'paid').lower()]
+        if field not in self.catalog.tables['payer_claim']: return None
+        tail = text[m.end():]
+        atoms, quotes, years = self.claim_period('payer_claim', tail) if tail.strip() else ([], [], [])
+        consumed = ''
+        if atoms:
+            lead = re.match(r'^\s*(?:(?:in|during|over|within|for|of)\s+)?(?:the\s+)?(?:calendar\s+)?(?:(?:last|past|previous)\s+(?:\d+|\w+)\s+(?:months?|years?)|(?:last|past)\s+year|(?:19|20)\d\d)\b', tail, re.I)
+            if not lead or len(years) > 1: return None
+            tail = tail[lead.end():]
+        quote = text[:len(text) - len(tail)].strip()
+        where = [atom('payer_claim.counts_in_metrics', '=', 1, quote)] if 'counts_in_metrics' in self.catalog.tables['payer_claim'] else []
+        where += [{**a, 'quote': quote} for a in atoms]
+        leaf = {'op': 'sum_at_least', 'table': 'payer_claim', 'field': f'{field}', 'where': combine('and', where, quote) if where else None,
+                'amount': amount, 'scale': 0.01, 'quote': quote}
+        if m['pre'] and m['pre'].lower() in ('over', 'more than', 'above'): leaf['cmp'] = '>'
+        if leaf['where'] is None: return None
+        return leaf, tail
+
+    def cost_per_patient(self, text):
+        """'How much did the average living diabetic cost us in medical paid claims in 2029?' -> the patients' total claim dollars over those patients
+        (patients with no claim stay in the denominator)."""
+        from .request_language import atom, combine
+        t = text.strip().rstrip('?.').strip()
+        m = COST_PER.match(t)
+        if not m or 'payer_claim' not in self.catalog.tables: return None
+        pop = m['pop'].strip()
+        concept = self.prefix(pop, {**self.conditions, **ADJECTIVE_CONDITIONS})
+        if not concept or concept[2].strip(): return None
+        table = 'payer_pharmacy_claim' if re.search(r'pharmacy', m['what'], re.I) and 'payer_pharmacy_claim' in self.catalog.tables else 'payer_claim'
+        field = 'plan_paid_cents' if table == 'payer_pharmacy_claim' else 'paid_cents'
+        atoms, quotes, years = self.claim_period(table, m['win'] or '') if m['win'] else ([], [], [])
+        if m['win'] and (not atoms or len(years) > 1): return None
+        what_quote = m['what'].strip()
+        base = ([atom('payer_claim.counts_in_metrics', '=', 1, what_quote)] if table == 'payer_claim' else
+                [atom('payer_pharmacy_claim.counts_as_fill', '=', 1, what_quote)] if 'counts_as_fill' in self.catalog.tables[table] else [])
+        self.base = 'patient'
+        head = t[:m.start('pop')].strip()
+        cost_words = t[m.end('pop'):m.start('what')].strip()
+        events = {'kind': 'sum_related', 'alias': 'total', 'table': table, 'field': field, 'quote': [cost_words, what_quote], 'where': combine('and', [*base, *atoms], what_quote)}
+        denominator = {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': [head]}
+        ratio = {'kind': 'ratio', 'alias': 'avg_' + field, 'quote': [head], 'scale': 1, 'round': 2, 'numerator': events, 'denominator': denominator}
+        where = self.condition(concept[1], pop)
+        return {'source': {'table': 'patient', 'quote': pop}, 'select': [ratio], 'where': where, 'group_by': [], 'order_by': [], 'limit': None,
+                'unresolved': [], 'notes': ['The average over the living patients of the group, including those with no claim (their total is zero).']}
 
     def claim_rolling_atoms(self, table, text):
         """-> (atoms, quote) for a rolling window ("over the last 12 months", "in the past year"), else ([], None)."""
@@ -144,6 +206,12 @@ class ClaimFrames:
         from .request_language import atom, combine
         t = text.strip().rstrip('?.').strip()
         t = re.sub(r'^(?:(?:and|now|also)\s+)+', '', t, flags=re.I)
+        from .claims_language import ROW_RATES
+        for pat, tbl, numer, denom, label in ROW_RATES:  # a named rate of rows ("denial rate", "claim denial rate", "rejected-claim rate")
+            rate = re.search(r'(?<![\w-])(?:' + pat + r')\s+rate\b', t, re.I)
+            if rate and tbl in ('payer_claim', 'payer_pharmacy_claim') and tbl in self.catalog.tables and not (tbl == 'payer_claim' and PHARMACY_WORDS.search(t)):
+                self.base = tbl
+                return self.row_rate((tbl, numer, denom, label), rate.group().strip(), t, t)
         table = ('payer_pharmacy_claim' if PHARMACY_WORDS.search(t) else 'payer_claim' if CLAIM_WORDS.search(t) else None)
         if not table or table not in self.catalog.tables: return None
         if re.search(r'\bper\s+member\s+per\s+month\b|\bpmpm\b|\bper\s+(?:1,?000|100)\b', t, re.I): return None  # governed rates keep their own engines

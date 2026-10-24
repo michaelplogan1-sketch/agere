@@ -280,6 +280,24 @@ class Compiler:
             if set(expr) != {'op', 'arg', 'quote'} or not re.search(r"\b(?:not|no|without|exclude|excluding|except|neither|nor|never|missing|missed|living|alive|didn)\b|n't\b", quote_text(expr['quote']), re.I):
                 raise PlanError('Negation must be explicit in the original request')
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
+        if op == 'sum_at_least':
+            # A patient's total of one money column over a related relation reaches an amount ("accumulated $50,000 or more in paid claims").
+            if (set(expr) - {'scale', 'cmp'} != {'op', 'table', 'field', 'where', 'amount', 'quote'} or type(expr['amount']) not in (int, float)
+                    or not math.isfinite(expr['amount']) or expr['amount'] <= 0 or expr.get('cmp', '>=') not in ('>=', '>')):
+                raise PlanError('A total threshold needs a relation, a money column, a condition, a positive amount and its wording')
+            table, column = expr['table'], expr['field']
+            if table not in self.catalog.tables or 'patient_id' not in self.catalog.tables[table] or column not in self.catalog.tables[table]:
+                raise PlanError(f'Unknown relation or column: {table}.{column}')
+            if 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base not in scope: raise PlanError('A total threshold needs a patient-keyed source')
+            scale = expr.get('scale', 1)
+            if type(scale) not in (int, float) or not math.isfinite(scale) or not 0 < scale <= 1: raise PlanError('A total scale is a fraction up to 1 (cents to dollars is 0.01)')
+            self.serial += 1
+            alias = 'st' + str(self.serial)
+            nested = {**scope, table: alias}
+            cond = self.predicate(expr['where'], nested, path + '.where', depth + 1) if expr.get('where') else '1'
+            outer = self.field(self.base + '.patient_id', scope)
+            return (f'((SELECT COALESCE(SUM({alias}.{identifier(column)}), 0) FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {cond})'
+                    f' * {literal(scale)} {expr.get("cmp", ">=")} {literal(expr["amount"])})')
         if op == 'at_least_of':
             # At least N of several predicates hold for the same patient ("at least two of diabetes, CKD, heart failure").
             if (set(expr) != {'op', 'n', 'args', 'quote'} or type(expr['n']) is not int or not isinstance(expr['args'], list)
@@ -527,6 +545,7 @@ class Compiler:
             return '1'
         if kind == 'cohort_group': return self.cohort_group(expr, scope, path)
         if kind == 'count_related': return self.count_related(expr, scope, path)
+        if kind == 'sum_related': return self.sum_related(expr, scope, path)
         allowed = ({'kind', 'field', 'alias', 'quote', 'grain'} if kind == 'field' else
                    {'kind', 'alias', 'quote', 'numerator', 'denominator', 'scale', 'round'} if kind == 'ratio' else
                    {'kind', 'field', 'alias', 'quote', 'where', 'scale', 'round'})
@@ -605,6 +624,26 @@ class Compiler:
         unit = ("COUNT(DISTINCT " + " || '|' || ".join(f'{alias}.{identifier(c)}' for c in EPISODE_KEYS[table]) + ')') if table in EPISODE_KEYS else 'COUNT(*)'
         outer = self.field(self.base + '.patient_id', scope)
         rendered = f'SUM((SELECT {unit} FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {cond}))'
+        if 'scale' in expr:
+            scale = expr['scale']
+            if type(scale) not in (int, float) or not math.isfinite(scale) or not 0 < scale <= 1000: raise PlanError('Measure scale must be a finite positive number up to 1000')
+            rendered = f'({literal(scale)} * {rendered})'
+        return self.rounded(rendered, expr)
+
+    def sum_related(self, expr, scope, path):
+        """The total of a money column over the related rows of the counted patients (the total cost of a group of patients).
+        {'kind': 'sum_related', 'alias', 'quote', 'table', 'field', 'where'?, 'scale'?, 'round'?}; with a ratio it makes the average per patient."""
+        if set(expr) - {'kind', 'alias', 'quote', 'table', 'field', 'where', 'scale', 'round'} or 'table' not in expr or 'field' not in expr: raise PlanError('A related total names its table and column')
+        table, column = expr['table'], expr['field']
+        if table not in self.catalog.tables or 'patient_id' not in self.catalog.tables[table] or column not in self.catalog.tables[table]:
+            raise PlanError(f'Unknown relation or column: {table}.{column}')
+        if 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base not in scope: raise PlanError('A related total needs a patient-keyed source')
+        self.serial += 1
+        alias = 'rs' + str(self.serial)
+        nested = {**scope, table: alias}
+        cond = self.predicate(expr['where'], nested, path + '.where') if expr.get('where') else '1'
+        outer = self.field(self.base + '.patient_id', scope)
+        rendered = f'SUM(COALESCE((SELECT SUM({alias}.{identifier(column)}) FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {cond}), 0))'
         if 'scale' in expr:
             scale = expr['scale']
             if type(scale) not in (int, float) or not math.isfinite(scale) or not 0 < scale <= 1000: raise PlanError('Measure scale must be a finite positive number up to 1000')
@@ -811,6 +850,8 @@ class Compiler:
                     rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', column.replace('_', ' ')))
         rendered_numbers.update(self.rescaled)  # compiled as their 0-100 equivalent, disclosed in notes
         rendered_numbers.update(self.window_numbers)
+        for km in re.finditer(r'(?<![\w.])(\d+(?:\.\d+)?)\s*[kK]\b', self.question):  # "$50k": the thousands the SQL carries
+            if str(int(float(km[1]) * 1000)) in rendered_numbers: rendered_numbers.add(km[1])
         # a range of dates ("2028 through 2029" compiled as >= 2028-01-01 and < 2030-01-01) covers the years between its ends
         spans = sorted(int(y) for y in re.findall(r"'((?:19|20)\d\d)-\d\d-\d\d'", query))
         if len(spans) >= 2: rendered_numbers.update(str(y) for y in range(spans[0], spans[-1] + 1))

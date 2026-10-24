@@ -343,12 +343,18 @@ class ComparisonForms:
         t = tail.strip(' ,.')
         if not t: return plan
         table = plan['source']['table']
-        if table not in CLOCK: return None
         words = TRAILING_WINDOW.search(' ' + t)
         if not words or words.group().strip() != t: return None
         average = re.search(r'\bon\s+average\b', t, re.I)
         period_text = re.sub(r'\bon\s+average\b', ' ', t, flags=re.I)
-        atoms, quotes, years = self.claim_period(table, period_text) if period_text.strip() else ([], [], [])
+        if table in CLOCK:
+            atoms, quotes, years = self.claim_period(table, period_text) if period_text.strip() else ([], [], [])
+        else:  # any other dated relation: the grammar's own trailing window on that relation's clock
+            from .request_language import CLOCKS
+            if not CLOCKS.get(table) or CLOCKS[table] not in self.catalog.tables.get(table, []): return None
+            atoms, rest = self.window(' ' + period_text.strip(), table, CLOCKS[table]) if period_text.strip() else ([], '')
+            years = []
+            if rest.strip(): return None
         if period_text.strip() and not atoms: return None
         if len(years) > 1: return None
         from .request_language import combine

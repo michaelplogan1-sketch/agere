@@ -73,8 +73,8 @@ class CompositionForms:
     def composition_predicate(self, text):
         """The composition constructs of the module docstring, as (predicate, tail), else None."""
         if self.base != 'patient': return None
-        return (self.k_of_conditions(text) or self.neither_medications(text) or self.sdoh_composition(text) or self.evidence_chain(text)
-                or self.condition_construct(text))
+        return (self.k_of_conditions(text) or self.neither_medications(text) or self.sdoh_composition(text) or self.money_threshold(text)
+                or self.evidence_chain(text) or self.condition_construct(text))
 
     # -- events: "both X and Y [window]", "X in W1 but not at all in W2" ---------------------------------------------------------
     def event_part(self, text):
@@ -294,7 +294,7 @@ class FallbackForms:
         self.uncovered_words = left
         return not left
 
-    FRAMES = ('rate_per_form', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'claims_frame', 'rank_measure', 'grouping_wrapper')
+    FRAMES = ('rate_per_form', 'cost_per_patient', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'most_filled', 'rank_cost', 'rank_floor_first', 'claims_frame', 'rank_measure', 'grouping_wrapper')
 
 
 class RateForms:
@@ -346,7 +346,8 @@ class RankForms:
         r"^(?:(?:and|now|then|also|next)\s+)?(?:"
         r"(?:which|what)\s+(?:are\s+(?:the\s+)?)?(?:(?P<n>" + NUM + r")\s+)?(?P<dim>[a-z][a-z -]*?)\s+(?:has|have|had|saw|recorded|reported|show(?:ed|s)?|account(?:s|ed)?\s+for)\s+(?:the\s+)?"
         r"(?:(?P<n3>" + NUM + r")\s+)?(?P<sup>most|highest|largest|greatest|biggest|worst|fewest|lowest|least|smallest|best)\s+(?P<rest>.+)"
-        r"|(?P<top>top|bottom)\s+(?P<n2>" + NUM + r")\s+(?P<dim2>[a-z][a-z -]*?)\s+by\s+(?P<rest2>.+))$", re.I)
+        r"|(?P<top>top|bottom)\s+(?P<n2>" + NUM + r")\s+(?P<dim2>[a-z][a-z -]*?)\s+by\s+(?P<rest2>.+)"
+        r"|(?:which|what)\s+(?P<dim3>[a-z][a-z -]*?)\s+(?:is|are)\s+(?P<drive>driving)\s+(?:our\s+|the\s+)?(?P<rest3>.+))$", re.I)
     FLOOR = re.compile(r"[,;(]?\s*(?:and\s+)?(?:(?P<dim>[a-z][a-z ]*?)\s+)?(?:with|having|that\s+have)\s+at\s+least\s+(?P<m>\d[\d,]*)\s+(?P<noun>[a-z][a-z ]*?)\s*\)?\s*$", re.I)
 
     def rank_measure(self, text):
@@ -355,9 +356,9 @@ class RankForms:
         t = text.strip().rstrip('?.').strip()
         m = self.RANK_HEAD.match(t)
         if not m: return None
-        rest = m['rest'] if m['rest'] is not None else m['rest2']
-        dim_text = (m['dim'] if m['dim'] is not None else m['dim2']).strip()
-        sup = (m['sup'] or m['top']).lower()
+        rest = next(x for x in (m['rest'], m['rest2'], m['rest3']) if x is not None)
+        dim_text = next(x for x in (m['dim'], m['dim2'], m['dim3']) if x is not None).strip()
+        sup = (m['sup'] or m['top'] or 'most').lower()  # "which payers are driving our out-of-network spend": the groups, biggest first
         n_word = m['n'] or m['n3'] or m['n2']
         trailer = re.search(r',?\s*(?:and\s+)?(?:how\s+many|what\s+was\s+it|with\s+the\s+totals?)(?:\s+(?:each|of\s+them|times\s+each\s+occurred))?\s*$', rest, re.I)
         extra_quote = []
@@ -369,11 +370,22 @@ class RankForms:
         if sized and sized['noun']:
             floor = (int(sized['m'].replace(',', '')), sized.group().strip(' ,;()'))
             rest = rest[:sized.start()].rstrip(' ,;(')
-        try:
-            plan = self.parse(rest, governed=True)
-        except PlanError:
-            try: plan = self.parse(rest, governed=False)
-            except PlanError: return None
+        plan = self.rank_share_measure(rest)
+        if plan is None:
+            try:
+                plan = self.parse(rest, governed=True)
+            except PlanError:
+                try: plan = self.parse(rest, governed=False)
+                except PlanError: return None
+        head = t[:m.start('rest') if m['rest'] is not None else m.start('rest2') if m['rest2'] is not None else m.start('rest3')].strip(' ,') or t
+        out = self.build_ranking(plan, dim_text, sup, n_word, head, extra_quote, floor)
+        if out and m['drive'] and not n_word: out['limit'] = None
+        return out
+
+    def build_ranking(self, plan, dim_text, sup, n_word, head, extra_quote=(), floor=None):
+        """Group `plan`'s single measure by the dimension named in `dim_text`, order it, limit it, and drop groups under a minimum size."""
+        from .request_language import atom, combine
+        from .population_language import number_of
         if plan.get('analyses') or plan.get('group_by') or plan.get('having') or plan.get('order_by') or len(plan['select']) != 1: return None
         measure = plan['select'][0]
         if measure.get('kind') not in ('count', 'count_distinct', 'sum', 'avg', 'ratio'): return None
@@ -389,14 +401,20 @@ class RankForms:
                 joins = [{'table': 'patient', 'left': f'{table}.patient_id', 'right': 'patient.patient_id', 'kind': 'inner', 'quote': dim[0]}]
         if not dim: return None
         quote_dim, field = dim
+        extra_where = None
+        if field == 'patient.practice':  # "practices" in a ranking are our own primary-care practices (a patient's PCP practice), not the payer's attribution network
+            field, extra_where = 'patient.pcp_practice_id', atom('patient.pcp_practice_id', 'not_null', None, quote_dim)
+            plan = {**plan, 'notes': [*plan.get('notes', []), "Practices are the patients' primary-care practices (the PCP practice on the patient row); patients without one are in no practice."]}
         key = field.partition('.')[2]
-        head = t[:m.start('rest') if m['rest'] is not None else m.start('rest2')].strip(' ,') or t
         alias = measure['alias'] if measure['alias'] not in (key, 'rows') else 'value'
         select = [{'kind': 'field', 'field': field, 'alias': key, 'quote': quote_dim}, {**measure, 'alias': alias}]
         order_quote = [head, *extra_quote] if extra_quote else head
         out = {**plan, 'select': select, 'group_by': [key], 'order_by': [{'alias': alias, 'direction': self.SUP[sup], 'quote': order_quote}],
                'limit': {'value': number_of(n_word), 'quote': head} if n_word else None}
         if joins: out['joins'] = joins
+        if extra_where: out['where'] = combine('and', [plan.get('where'), extra_where], self.question)
+        elif not field.endswith('patient_id'):  # a group with no value for the dimension is not a rank item (no tier, no payer on the row)
+            out['where'] = combine('and', [plan.get('where'), atom(field, 'not_null', None, quote_dim)], self.question)
         if floor:
             out['select'].append({'kind': 'count', 'alias': 'rows', 'quote': floor[1]} if plan['source']['table'] != 'patient' else
                                  {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': floor[1]})
@@ -405,8 +423,98 @@ class RankForms:
             out['limit'] = {'value': 1, 'quote': head}
         return out
 
+    FLOOR_FIRST = re.compile(
+        r"^(?:among|of)\s+(?P<dim>[a-z][a-z -]*?)\s+with\s+at\s+least\s+(?P<m>\d[\d,]*)\s+(?P<noun>[a-z][a-z ]*?)(?P<win>(?:\s+(?:in|during|over|within|for)\s+(?:calendar\s+)?"
+        r"(?:(?:19|20)\d\d|the\s+(?:last|past|previous)\s+(?:\d+|\w+)\s+(?:months?|years?)|the\s+(?:last|past)\s+year))*)\s*,\s*which\s+(?:(?P<n>" + NUM + r")\s+)?(?:has|have)\s+the\s+"
+        r"(?P<sup>most|highest|largest|greatest|biggest|worst|fewest|lowest|least|smallest|best)\s+(?P<measure>.+)$", re.I)
 
-class GroupingForms(RankForms, FallbackForms):
+    def rank_floor_first(self, text):
+        """'Among <dimension> with at least N <rows> [window], which <n> have the <highest|lowest> <measure>?' -> the ranking, small groups dropped."""
+        from .request_language import PlanError
+        t = text.strip().rstrip('?.').strip()
+        m = self.FLOOR_FIRST.match(t)
+        if not m: return None
+        plan = self.parse_measure_for_rank(m['measure'])
+        if not plan: return None
+        win = m['win'].strip()
+        if win:
+            plan = self.apply_tail(plan, win)
+            if not plan: return None
+        floor_quote = re.sub(r'^with\s+', '', t[m.end('dim'):m.end('win')].strip(), flags=re.I)  # the measure quote may not carry the filter word "with"
+        head = t[:m.start('measure')].strip()
+        return self.build_ranking(plan, m['dim'].strip(), m['sup'].lower(), m['n'], head, floor=(int(m['m'].replace(',', '')), floor_quote))
+
+    def parse_measure_for_rank(self, text):
+        from .request_language import PlanError
+        for governed in (True, False):
+            try:
+                plan = self.parse(text, governed=governed)
+            except PlanError:
+                continue
+            if plan.get('analyses') or plan.get('group_by') or plan.get('order_by') or plan.get('having') or len(plan['select']) != 1: continue
+            return plan
+        return None
+
+    RANK_COST = re.compile(r"^(?:which|what)\s+(?:(?P<n>" + NUM + r")\s+)?(?P<dim>[a-z][a-z -]*?)\s+cost\s+(?:the\s+plan|us)\s+the\s+(?P<sup>most|least)"
+                           r"(?P<win>\s+(?:in|during|over)\s+[^(]+?)?\s*(?:\((?P<money>[^,)]+?)(?:,\s*by\s+(?P<by>[^)]+))?\))?$", re.I)
+
+    def rank_cost(self, text):
+        """'Which five drugs cost the plan the most in 2029 (plan-paid, by drug name)?' -> plan-paid dollars per group, ranked."""
+        t = text.strip().rstrip('?.').strip()
+        m = self.RANK_COST.match(t)
+        if not m or not m['money']: return None
+        plan = self.parse_measure_for_rank(m['money'].strip())
+        if not plan or plan['select'][0].get('kind') != 'sum': return None
+        if m['win']:
+            plan = self.apply_tail(plan, m['win'].strip())
+            if not plan: return None
+        dim_text = (m['by'] or m['dim']).strip()
+        head = t[:m.end('sup')].strip()
+        extra = [m['dim'].strip()] if m['by'] else []
+        return self.build_ranking(plan, dim_text, m['sup'].lower(), m['n'], head, extra_quote=extra)
+
+    MOST_FILLED = re.compile(r"^(?:what|which)\s+(?:are|is)\s+the\s+(?P<n>" + NUM + r")\s+(?P<sup>most|least)[- ](?P<verb>filled|prescribed|dispensed)\s+(?P<dim>drug\s+classes?|drugs?|medications?)"
+                             r"(?P<win>\s+(?:in|during|over|within)\s+the\s+(?:last|past|previous)\s+(?:\d+|\w+)\s+(?:months?|years?)|\s+in\s+(?:calendar\s+)?(?:19|20)\d\d)?\s*,?\s*(?P<by>by\s+(?:the\s+)?number\s+of\s+fills)?$", re.I)
+
+    def most_filled(self, text):
+        """'What are the five most-filled drug classes in the last 12 months, by number of fills?' -> fills per drug class, ranked."""
+        t = text.strip().rstrip('?.').strip()
+        m = self.MOST_FILLED.match(t)
+        if not m or 'fill' not in self.catalog.tables: return None
+        plan = self.parse_measure_for_rank('fills' if not m['by'] else t[m.start('by') + m['by'].index('fills'):m.end('by')])
+        if not plan or plan['source']['table'] != 'fill': return None
+        if m['win']:
+            plan = self.apply_tail(plan, m['win'].strip())
+            if not plan: return None
+        head = t[:m.end('dim')].strip()
+        extra = [m['by'].strip()] if m['by'] else []
+        return self.build_ranking(plan, m['dim'].strip(), m['sup'].lower() if m['sup'].lower() == 'least' else 'most', m['n'], head, extra_quote=extra)
+
+
+class ShareMeasureForms:
+    """The measure clause of a ranking that is a share: "share of its diabetics 40 to 75 on a statin", "statin share among its diabetics 40 to 75"."""
+
+    def rank_share_measure(self, rest):
+        from .request_language import PlanError
+        self.base = 'patient'
+        lead = re.match(r'^(?P<head>(?:share|percent(?:age)?|proportion|fraction|rate))\s+(?:of|among)\s+(?:its\s+|their\s+)?(?P<body>.+)$', rest, re.I)
+        try:
+            if lead:
+                got = self.share_from_rest(rest[:lead.start('body')].strip(), lead['body'])
+                return got[0] if got else None
+            drug = re.match(r'^(?P<drug>.+?)\s+(?P<head>share|percent(?:age)?|proportion|fraction|rate)\s+(?:among|of|in)\s+(?:its\s+|their\s+|the\s+|our\s+)?(?P<pop>.+)$', rest, re.I)
+            if not drug: return None
+            pred, tail = self.one(drug['drug'])
+            if pred is None or tail.strip() or pred.get('kind') != 'drug_fill': return None
+            population = self.population_phrase(drug['pop'])
+            if population is None: return None
+            plan, _, _ = self.share_plan(rest[drug.start('head'):drug.start('pop')].strip(), population or None, pred, drug['pop'])
+            return plan
+        except PlanError:
+            return None
+
+
+class GroupingForms(ShareMeasureForms, RankForms, FallbackForms):
     """Grouping wrappers: a request grouped by a dimension, optionally with named categories ("by payer type: commercial, Medicare and Medicaid",
     "split by age group: under 40, 40-64, 65+", "by payer type (commercial, Medicare, Medicaid), how many ..."). The rest of the sentence is
     parsed by the ordinary grammar (delegation on a literal slice of the question); the wrapper adds the dimension."""
@@ -433,16 +541,16 @@ class GroupingForms(RankForms, FallbackForms):
         leading = self.BREAK_LEAD.match(text)
         body = text[leading.end():] if leading else text
         best = None
-        for m in re.finditer(r'(?:^|\s)(?P<marker>' + self.GROUP_MARKER + r')\s+(?:the\s+|our\s+)?(?P<dim>' + self.DIM_WORDS + r')\s*'
+        from .comparison_composition import _WINDOW
+        for m in re.finditer(r'(?:^|\s)(?P<marker>' + self.GROUP_MARKER + r')\s+(?:the\s+|our\s+)?(?P<dim>' + self.DIM_WORDS + r')(?P<win>(?:\s+' + _WINDOW + r')*)\s*'
                              r'(?:(?::|—|–|\s-\s)\s*(?P<cats>.+?)|\((?P<cats2>[^)]*)\))?\s*$', body, re.I):
             if self.dimension_of(m['dim']):
                 best = m; break
         if not best: return None
-        head = body[:best.start()].strip()
-        if leading: head = head  # "Break hypertensive patients out by age": the head is the population noun phrase
+        head = body[:best.start()].strip()  # "Break hypertensive patients out by age": the head is the population noun phrase
         cats = best['cats'] or best['cats2']
         quote = [(leading.group().strip() if leading else ''), best['marker'].strip() + ' ' + best['dim'].strip()]
-        return self.grouped(head, best['dim'], cats, text, [q for q in quote if q])
+        return self.grouped(head, best['dim'], cats, text, [q for q in quote if q], tail=(best['win'] or '').strip())
 
     def dimension_of(self, words):
         """The dimension a phrase names: ('band', alias) for an age grouping, ('payer', alias) for payer groupings, ('field', field) for a catalog field."""
@@ -457,22 +565,47 @@ class GroupingForms(RankForms, FallbackForms):
             if got: return ('field', got[1], got[0])
         return None
 
-    def grouped(self, head, dim_words, cats, whole, quote):
+    def grouped(self, head, dim_words, cats, whole, quote, tail=''):
         """Parse `head` as the ordinary request, then group its measure(s) by the dimension (named categories -> a cohort grouping)."""
         from .request_language import PlanError
-        try:
-            plan = self.parse(head, governed=False)
-        except PlanError:
-            return None
+        if self.bound and re.fullmatch(r'(?:that|those|them|these)(?:\s+(?:group|cohort|list|patients|members))?', head.strip(), re.I):
+            # a follow-up: "break that down by practice" counts the saved cohort itself
+            self.base = 'patient'
+            plan = {'source': {'table': 'patient', 'quote': head.strip()},
+                    'select': [{'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': head.strip()}],
+                    'where': None, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
+        else:
+            try:
+                plan = self.parse(head, governed=False)
+            except PlanError:
+                return None
+        if tail:  # "... by formulary tier over the last 12 months": the period after the dimension belongs to the measure sentence
+            plan = self.apply_tail(plan, tail)
+            if not plan: return None
         if plan.get('analyses') or plan.get('group_by') or plan.get('having') or any(e.get('kind') == 'field' for e in plan['select']): return None
         dim = self.dimension_of(dim_words)
+        if cats and re.search(r'(?:and\s+so\s+on|etc\.?|and\s+others|for\s+example)\s*$', cats, re.I) and dim and dim[0] == 'field':
+            quote = [*quote, cats.strip()]  # "by product (Medicare Advantage vs FFS, marketplace, and so on)": examples, not a closed list
+            cats = None
         if cats:
             groups = self.category_groups(cats)
             if not groups: return None
             select = self.cohort_dimension(plan, dim, groups, quote, dim_words)
         elif dim[0] == 'field':
-            field = dim[1]; key = field.partition('.')[2]
+            field = dim[1]
+            extra_where = None
+            if field == 'patient.practice':  # our own primary-care practices (see rank_measure)
+                from .request_language import atom, combine
+                field = 'patient.pcp_practice_id'
+                extra_where = atom(field, 'not_null', None, quote)
+                plan = {**plan, 'where': combine('and', [plan.get('where'), extra_where], self.question)}
+            key = field.partition('.')[2]
             select = {'kind': 'field', 'field': field, 'alias': key, 'quote': quote}
+            if plan['source']['table'] in ('payer_claim', 'payer_pharmacy_claim'):  # claims with no value for the dimension are not assigned to a group (no formulary tier on the claim)
+                from .request_language import atom, combine
+                plan = {**plan, 'where': combine('and', [plan.get('where'), atom(field, 'not_null', None, quote)], self.question)}
+            if field.startswith('patient.') and plan['source']['table'] != 'patient':
+                select['_joins'] = [{'table': 'patient', 'left': f"{plan['source']['table']}.patient_id", 'right': 'patient.patient_id', 'kind': 'inner', 'quote': quote}]
         else:
             return None
         if select is None: return None
