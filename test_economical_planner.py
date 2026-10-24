@@ -98,4 +98,23 @@ class Router(unittest.TestCase):
                 self.assertIsNone(p.economics(r)['new_api_estimate_usd'])
             ledger.close()
 
+class EvaluationPlanPersistence(unittest.TestCase):
+    def test_frontier_plan_is_returned_but_not_saved_in_evaluation(self):
+        import sqlite3
+        from clinical_core.agere.clinical import evaluation
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            stack=SimpleNamespace(path=root,allow_live=True,retriever=SimpleNamespace(encoder=Encoder(),meta={
+                'source_digest':'s','snapshot':{'as_of':'2026-09-30'}}))
+            frontier=Mock(return_value=(copy.deepcopy(p.recipes()['sources']['graph']),{'new_paid_api_calls':0}))
+            with patch('clinical_core.agere.clinical.analysis_graph.catalog',return_value={}), patch('clinical_core.agere.clinical.analysis_graph.code_identity',return_value='code'):
+                with evaluation.scope('frozen',root):
+                    result=p.Ladder(stack,'Inspect source completeness',None,frontier).frontier_planner(decider=False)
+                    self.assertIsNotNone(result)
+                with sqlite3.connect(root/'question-plans.sqlite3') as db:
+                    self.assertEqual(db.execute('SELECT count(*) FROM plans').fetchone()[0],0)
+                p.Ladder(stack,'Inspect source completeness',None,frontier).frontier_planner(decider=False)
+                with sqlite3.connect(root/'question-plans.sqlite3') as db:
+                    self.assertEqual(db.execute('SELECT count(*) FROM plans').fetchone()[0],1)
+
 if __name__=='__main__':unittest.main()

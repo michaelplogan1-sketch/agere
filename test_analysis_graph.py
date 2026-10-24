@@ -113,6 +113,21 @@ class GraphExecution(unittest.TestCase):
         self.assertTrue(execute(self.stack, plan)['cache_hit'])
         self.assertEqual(r['new_paid_api_calls'], 0)
 
+    def test_evaluation_graph_executes_without_saving_a_result(self):
+        from clinical_core.agere.clinical import evaluation
+        evaluation.install_audit()
+        self.addCleanup(evaluation.uninstall_audit)
+        plan = graph([self.base])
+        with patch.dict('os.environ', {'AGERE_EVALUATION_STRICT': '1'}):
+            with evaluation.scope('strict-graph', self.root):
+                answer = execute(self.stack, plan)
+                self.assertFalse(answer['cache_hit'])
+                self.assertEqual(evaluation.receipt()['write_attempts_by_store'], {})
+        with sqlite3.connect(self.root/'stack.sqlite3') as db:
+            self.assertEqual(db.execute('SELECT count(*) FROM result_cache').fetchone()[0], 0)
+        execute(self.stack, plan)
+        self.assertTrue(execute(self.stack, plan)['cache_hit'])
+
     def test_worklist_complete_membership_cache_tracks_review_changes(self):
         from clinical_core.agere.clinical.program_work import list_items, materialize
         plan=graph([self.base,node('work','worklist',['base'],{'program':'hf_review'})])

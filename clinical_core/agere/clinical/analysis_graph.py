@@ -2109,7 +2109,8 @@ def execute(stack, plan, *, question=None):
         # Wall-time receipt per phase/operator (latency budgets read it); not part of the cache key.
         result['compute']['timings'] = {'setup_seconds': round(setup_seconds, 4), 'nodes': node_seconds,
                                         'answer_seconds': round(time.perf_counter() - answer_started, 4)}
-        if result_cache_enabled() and not any(r['result'].get('do_not_cache') for r in results):  # e.g. a System One outage
+        from .evaluation import active as evaluating
+        if result_cache_enabled() and not evaluating() and not any(r['result'].get('do_not_cache') for r in results):  # e.g. a System One outage
             with db:
                 db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False, default=_json_default)))
         return result

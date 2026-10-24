@@ -442,7 +442,8 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
                   'grounding': grounding_report, 'interpretation': grounding.interpretation(grounded),
                   'evidence_mix': mix.result(),
                   'scope': 'Complete selection over the observed snapshot. Unknowns are separate; no inferred clinical phenotype or provider attribution.'}
-        if caching:
+        from .evaluation import active as evaluating
+        if caching and not evaluating():
             with db: db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
         return result
     finally: db.close()

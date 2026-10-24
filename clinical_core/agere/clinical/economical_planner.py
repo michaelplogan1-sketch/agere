@@ -628,6 +628,7 @@ class Ladder:
         # The frontier graph planner (graph_planner.propose, Opus) over the full capability catalog; the cheap typed
         # router over curated recipes runs first when the question is an unfiltered description.
         from .analysis_graph import catalog,code_identity
+        from .evaluation import active as evaluating
         capability=catalog(self.stack.path)
         encoder_identity=getattr(getattr(self.stack.retriever,'encoder',None),'identity',None)
         key=digest([self.question.strip(),policy_identity(),code_identity(),encoder_identity,self.meta['source_digest'],self.meta['snapshot'],capability])
@@ -657,7 +658,7 @@ class Ladder:
                         graph=validate(copy.deepcopy(recipes()[selected['choice']]['graph']),self.as_of)
                         result={'route':'compact_retrieval_typed_router','model':body['model'],'recipe':selected['choice'],
                                 'new_paid_api_calls':paid,'frontier_called':False,'steps':steps,'elapsed_seconds':self.elapsed()}
-                        if cache:
+                        if cache and not evaluating():
                             with db:db.execute('INSERT OR REPLACE INTO plans VALUES (?,?)',(key,json.dumps({'question':self.question,'graph':graph,'receipt':result,'human_reviewed':False,'training_authority':'unreviewed model plan'})))
                         return graph,result
                     reason='typed_router_abstained_or_below_threshold'
@@ -675,7 +676,7 @@ class Ladder:
             result={'route':'frontier_escalation','model':PersistentGateway.MODELS['claude'],'escalation_reason':reason,
                     'local_compiler_declined':self.decline,
                     'new_paid_api_calls':paid,'frontier_called':True,'steps':steps,'elapsed_seconds':self.elapsed()}
-            if cache:
+            if cache and not evaluating():
                 with db:db.execute('INSERT OR REPLACE INTO plans VALUES (?,?)',(key,json.dumps({'question':self.question,'graph':graph,'receipt':result,'human_reviewed':False,'training_authority':'unreviewed model plan'})))
             return graph,result
         finally:db.close()
