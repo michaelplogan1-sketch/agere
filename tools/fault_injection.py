@@ -76,7 +76,10 @@ def candidate(name):
 def run_scenario(sc):
     """-> {'name', 'outcome', 'answered_by', 'log', 'violations': [...], 'healed': [...]}"""
     violations, order = [], tuple(P.ORDER)
-    with tempfile.TemporaryDirectory() as d:
+    import os
+    from unittest.mock import patch as _patch  # the scenario's healthy tier may be off the default path: switched on for the scenario
+    with _patch.dict(os.environ, {'AGERE_PROPOSER_ON': ','.join(filter(None, [os.environ.get('AGERE_PROPOSER_ON', ''), sc.get('healthy') or '']))}), \
+            tempfile.TemporaryDirectory() as d:
         stack = SimpleNamespace(allow_live=True, path=d)
         if sc.get('corrupt_file'):  # a healthy store that the fault will corrupt
             db = sqlite3.connect(Path(d) / sc['corrupt_file']); db.execute('CREATE TABLE verified(question TEXT)'); db.commit(); db.close()

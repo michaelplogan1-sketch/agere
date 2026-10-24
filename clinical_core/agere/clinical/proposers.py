@@ -188,8 +188,10 @@ NOT_PROPOSERS = {
 # semantic analyst unreached. AGERE_PROPOSER_ON=metric_router,... puts one back.
 # cohort_family_late: two end-to-end dev runs (deb4a33, fb36f0a), 0 proposals, 36 s of budget. hybrid_analysts, bottled_sql, qwen_rewrite_compiler:
 # 0 accepted answers in every end-to-end run (dev and the held-out milestone), 73 s / 0 s / 12 s of dev budget (Codex final review 2026-10-24).
+# frontier_graph_planner, legacy_cost_ladder, stack_planner_propose: with the 120 s budget they ran on every dev2 refusal (ac9bf5a): reached 20 each,
+# 0 accepted answers, ~800 s and most of the run's $3.75 between them.
 OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_verified_sql', 'cohort_family_late', 'hybrid_analysts', 'bottled_sql',
-               'qwen_rewrite_compiler')
+               'qwen_rewrite_compiler', 'frontier_graph_planner', 'legacy_cost_ladder', 'stack_planner_propose')
 # The hosted typed interpreter accepted no answer end to end but stays on: it reads recorded corrections (FEEDBACK_READERS) and procedural-memory
 # lessons, which a corrections-only switch would cut off (tried 2026-10-24: 20 correction/lesson tests regressed).
 
