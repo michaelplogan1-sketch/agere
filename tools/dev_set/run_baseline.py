@@ -49,7 +49,18 @@ def main(argv=None):
     ap.add_argument('--max-tools', type=int, default=8)
     ap.add_argument('--semantic', type=Path, default=SEMANTIC)
     ap.add_argument('--out', type=Path)
+    ap.add_argument('--rescore', type=Path, help='re-score a saved run (its saved responses) against the current keys; no calls')
     a = ap.parse_args(argv)
+    if a.rescore:
+        saved = json.loads(a.rescore.read_text())
+        keys = {json.loads(l)['id']: json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'questions.jsonl')}
+        by = {}
+        for r in saved['rows']:
+            if 'response' not in r: continue
+            ok, _ = RUN.score(keys[r['id']], r['response'])
+            by.setdefault(r['bucket'], []).append(bool(ok))
+        for b, v in by.items(): print(f'{b}: {sum(v)}/{len(v)} = {sum(v) / len(v):.1%}')
+        return
     qs = [json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'questions.jsonl')]
     sel = [q for q in qs if (a.split == 'all' or q['split'] == a.split) and (not a.bucket or q['bucket'] == a.bucket)
            and (not a.ids or q['id'] in a.ids)]
@@ -65,7 +76,8 @@ def main(argv=None):
         row = {'id': q['id'], 'bucket': q['bucket'], 'split': q['split'], 'asked': text, 'status': RUN.status_of(resp),
                'answered': RUN.status_of(resp) in RUN.ANSWERED, 'correct': correct, 'detail': detail, 'seconds': round(time.time() - t0, 2),
                'usd': result.get('estimated_cost_usd'), 'tool_calls': len(result.get('tool_calls') or []), 'model': result.get('model'),
-               'error': result.get('error')}
+               'error': result.get('error'),
+               'response': resp}  # the raw answer, so a key change is re-scored without a paid re-run (--rescore)
         rows.append(row)
         print(f"{q['id']:>6} {q['bucket'][:14]:14} {str(row['status'])[:14]:14} correct={correct} {row['seconds']:.0f}s ${row['usd'] or 0:.3f}", flush=True)
     by = {}
