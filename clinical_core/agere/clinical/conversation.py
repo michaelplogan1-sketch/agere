@@ -385,6 +385,9 @@ def requires_saved_cohort(question, catalog=None):
     reference = re.search(r'\b(?:them|those|these|they|their)\b', text)
     if not reference:
         return False
+    # "at least two of these three: A, B, C": the pronoun introduces a list that follows it (a local antecedent), not an earlier result.
+    if re.match(r'(?:these|those)\s+(?:(?:\d+|one|two|three|four|five|six|seven|eight)\s*)?(?:\w+\s*)?:', text[reference.start():]):
+        return False
     # Source vocabulary, not disease/program-specific question patterns.
     from .request_language import SOURCES
     nouns = set(SOURCES) | {source for source, _ in SOURCES.values()}

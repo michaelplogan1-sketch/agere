@@ -164,6 +164,9 @@ def predicate_text(expr, negated=False):
         return predicate_text(expr['arg'], not negated)
     if op == 'exists':
         return exists_phrase(expr, negated)
+    if op == 'at_least_of':
+        text = f'at least {expr["n"]} of: ' + '; '.join(predicate_text(a) for a in expr['args'])
+        return f'not ({text})' if negated else text
     if op == 'count_at_least':
         text = f'at least {expr["n"]} {words(expr["table"])} event(s)' + (f' where {predicate_text(expr["where"])}' if expr.get('where') else '')
         return f'not ({text})' if negated else text
@@ -200,7 +203,7 @@ def leaves(expr, negated=False, out=None):
     out = [] if out is None else out
     if not isinstance(expr, dict): return out
     op = expr.get('op')
-    if op in ('and', 'or'):
+    if op in ('and', 'or', 'at_least_of'):
         for a in expr['args']: leaves(a, negated, out)
     elif op == 'not':
         leaves(expr['arg'], not negated, out)
@@ -236,6 +239,10 @@ def measure_text(expr, spec):
         return f'{alias}: {measure_text(expr["numerator"], spec)} (numerator) out of {measure_text(expr["denominator"], spec)} (denominator), as {scale}'
     field = expr.get('field')
     cond = f', only those with {predicate_text(expr["where"])}' if expr.get('where') else ''
+    if kind == 'cohort_group':
+        return f'{alias}: the groups ' + _list([f'"{g["label"]}" ({predicate_text(g["where"])})' for g in expr['groups']], 'and')
+    if kind == 'count_related':
+        return f'the total number of {TABLE_NOUNS.get(expr["table"], words(expr["table"]))} of these patients{cond}'
     if kind == 'count_distinct' and str(field).endswith('patient_id'): return f'the number of distinct patients{cond}'
     if kind == 'count_distinct': return f'the number of distinct {field_label(field)}{cond}'
     if kind == 'count': return f'the number of {TABLE_NOUNS.get(spec["source"]["table"], "rows")}{cond}'

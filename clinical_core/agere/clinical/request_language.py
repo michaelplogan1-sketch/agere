@@ -14,6 +14,10 @@ from pathlib import Path
 from .request_plan import PlanError, AmbiguousRequest
 from .population_language import PopulationForms, RankingForms
 from .claims_language import ClaimForms, SdohForms, DefinedForms
+from .composition_language import CompositionForms, GroupingForms, RateForms
+from .claims_composition import ClaimFrames
+from .comparison_composition import ComparisonForms
+from .sdoh_composition import SdohComposition
 
 SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
@@ -69,8 +73,8 @@ LAB_NAMES = {  # phrase -> measurement concept (the received lab / vital concept
     'hba1c': 'hba1c', 'a1c': 'hba1c', 'hemoglobin a1c': 'hba1c', 'egfr': 'egfr', 'uacr': 'uacr',
     'urine albumin-creatinine ratio': 'uacr', 'urine albumin creatinine ratio': 'uacr', 'urine acr': 'uacr', 'phq-9': 'phq9', 'phq9': 'phq9',
     'ldl': 'ldl', 'ldl cholesterol': 'ldl', 'hdl': 'hdl', 'hdl cholesterol': 'hdl', 'triglycerides': 'triglycerides', 'total cholesterol': 'total_cholesterol',
-    'systolic': 'systolic_bp', 'systolic blood pressure': 'systolic_bp', 'systolic bp': 'systolic_bp',
-    'diastolic': 'diastolic_bp', 'diastolic blood pressure': 'diastolic_bp', 'diastolic bp': 'diastolic_bp',
+    'systolic': 'systolic_bp', 'systolic blood pressure': 'systolic_bp', 'systolic bp': 'systolic_bp', 'systolic pressure': 'systolic_bp',
+    'diastolic': 'diastolic_bp', 'diastolic blood pressure': 'diastolic_bp', 'diastolic bp': 'diastolic_bp', 'diastolic pressure': 'diastolic_bp',
     'creatinine': 'creatinine', 'potassium': 'potassium', 'sodium': 'sodium', 'glucose': 'glucose', 'bun': 'bun', 'platelets': 'platelets',
     'wbc': 'wbc', 'ferritin': 'ferritin', 'tsh': 'tsh', 'troponin': 'troponin', 'nt-probnp': 'nt_probnp', 'bnp': 'nt_probnp', 'spo2': 'spo2',
     'heart rate': 'heart_rate', 'weight': 'weight', 'hemoglobin': 'hemoglobin',
@@ -78,17 +82,24 @@ LAB_NAMES = {  # phrase -> measurement concept (the received lab / vital concept
 LAB_WORDS = (r'(?:(?:latest|most\s+recent|last)\s+)?(?P<lab>' + '|'.join(re.escape(k).replace(r'\ ', r'[ -]') for k in sorted(LAB_NAMES, key=len, reverse=True)) + r')')
 LAB_CONCEPTS = dict(LAB_NAMES)
 EVIDENCE = [
-    (LAB_WORDS + r'(?:\s+(?:tests?|results?|scores?|values?|readings?))?(?:\s+recorded)?', 'measurement', 'event_date', None),
+    (LAB_WORDS + r'(?:\s+(?:tests?|results?|scores?|values?|readings?))?(?:\s+(?:recorded|dated|taken|drawn|done|performed))?', 'measurement', 'event_date', None),
     (r'(?:flu|influenza)\s+(?:shots?|vaccines?|vaccinations?|immunizations?)', 'immunization', 'event_date',
      [('vaccine', 'in', ['influenza', 'influenza high-dose']), ('status', '=', 'completed')]),
     (r'pneumococcal\s+(?:vaccines?|vaccinations?|shots?)', 'immunization', 'event_date',
      [('vaccine', 'like', 'pneumococcal%'), ('status', '=', 'completed')]),
+    (r'(?:covid(?:-?19)?|sars-?cov-?2?)\s+(?:vaccines?|vaccinations?|shots?|boosters?|immunizations?)', 'immunization', 'event_date',
+     [('vaccine', 'like', 'COVID%'), ('status', '=', 'completed')]),
+    (r'(?:tdap|tetanus)\s+(?:vaccines?|vaccinations?|shots?|boosters?|immunizations?)', 'immunization', 'event_date',
+     [('vaccine', '=', 'Tdap'), ('status', '=', 'completed')]),
+    (r'(?:zoster|shingles|shingrix)\s+(?:vaccines?|vaccinations?|shots?|immunizations?)', 'immunization', 'event_date',
+     [('vaccine', 'like', 'zoster%'), ('status', '=', 'completed')]),
     (r'mammogra(?:ms?|phy(?:\s+screenings?)?)', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
     (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
     # decision context: an inpatient stay is the all-source admission (stay), an observation stay the all-source utilization_event
     (r'(?:(?:inpatient|hospital)\s+(?:admissions?|stays?))|admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
     (r'observation\s+(?:stays?|visits?|admissions?)', 'utilization_event', 'event_date', [('kind', '=', 'observation')]),
     (r'(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
+    (r'(?:the\s+)?(?:ed|er|emergency\s+(?:department|room))(?!\s+visits?)', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
     # an office visit is an in-person primary-care or specialist visit (visit.type_concept); telephone, telehealth, ED, urgent care and inpatient contacts are not
     (r'(?:office|clinic|outpatient|ambulatory)\s+(?:visits?|encounters?)', 'visit', 'event_date',
      [('encounter_id', 'not_null', None), ('type_concept', 'in', ['primary_care_visit', 'specialist_visit'])]),
@@ -108,7 +119,7 @@ SEQUENCE_EVENTS = [
     (r'(?:an?\s+)?(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
 ]
 MONTH_NAMES = {m: i for i, m in enumerate('january february march april may june july august september october november december'.split(), 1)}
-NUMBER_WORDS = {w: str(i) for i, w in enumerate('zero one two three four five six seven eight nine ten'.split()) if i}
+NUMBER_WORDS = {w: str(i) for i, w in enumerate('zero one two three four five six seven eight nine ten eleven twelve'.split()) if i}
 # Things a question can rank by frequency: (pattern, table, field, fixed predicates, wording that restates the source).
 RANK_TOPICS = [
     (r'(?:documented\s+)?symptoms?', 'note_fact', 'value', [('fact_type', '=', 'symptom'), ('negated', '=', 0)],
@@ -153,7 +164,7 @@ FIELD_SYNONYMS = {  # everyday names for received fields; the field must exist i
     'lead time': 'appointment.lead_time_days',
     'svi score': 'patient_svi.svi_overall', 'social vulnerability index': 'patient_svi.svi_overall', 'svi': 'patient_svi.svi_overall',
     'length of stay in days': 'stay.los_days', 'los': 'stay.los_days',
-    'days supply': 'fill.days_supply',
+    'days supply': 'fill.days_supply', 'county code': 'patient.county', 'county codes': 'patient.county',
     'payer type': 'patient.line_of_business', 'lob': 'patient.line_of_business', 'line of business': 'patient.line_of_business',
 }
 FIELDS = {
@@ -222,7 +233,7 @@ def syntax_text(text, *, hide_parentheses=False):
     return ''.join(chars)
 
 
-class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
+class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingForms, CompositionForms, PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
     def __init__(self, catalog, question, *, bound=False):
         self.catalog, self.question, self.bound = catalog, question, bound
         self.base = 'patient'
@@ -262,6 +273,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         self.drugs.update(DRUG_ALIASES)
         self.drugs.update({k + 's': v for k, v in list(self.drugs.items()) if not k.endswith('s')})  # "anticoagulants"
         self.drugs.update({'guideline-directed medical therapy': self.drugs['gdmt'], 'guideline directed medical therapy': self.drugs['gdmt']})
+        from .composition_language import drug_surface_forms
+        for phrase, classes in drug_surface_forms(CLASSES, GROUPS).items(): self.drugs.setdefault(phrase, classes)
         self.labs, self.terminology = {}, []
         try:  # messy clinical labels (CHF, Entresto, glycated hgb) -> library concepts: deterministic + saved mappings only
             from .terminology import grammar_terms, store_path
@@ -308,7 +321,14 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
     def prefix(self, text, options):
         for phrase in sorted(options, key=len, reverse=True):
             m = re.match(re.escape(phrase)+r'(?![\w.])', text, re.I)
-            if m: return m.group(), options[phrase], text[m.end():].lstrip()
+            if m:
+                tail = text[m.end():]
+                # "a long-acting muscarinic antagonist (LAMA)", "chronic kidney disease (CKD)": a parenthetical abbreviation of the SAME
+                # term restates it and carries no requirement of its own
+                abbr = re.match(r'^\s*\(([A-Za-z][\w/+-]{1,14})\)', tail)
+                if abbr and abbr[1].lower() in options and options[abbr[1].lower()] == options[phrase]:
+                    return text[:m.end() + abbr.end()], options[phrase], text[m.end() + abbr.end():].lstrip()
+                return m.group(), options[phrase], tail.lstrip()
         return None
 
     def field(self, text):
@@ -442,7 +462,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
     def bind_parent_quotes(self, value):
         """Parent booleans do not cover words; leaves keep their literal spans."""
         if not isinstance(value, dict): return
-        if value.get('op') in ('and', 'or', 'not', 'exists') and value.get('quote') not in self.question:
+        frags = value.get('quote') if isinstance(value.get('quote'), list) else [value.get('quote')]
+        if value.get('op') in ('and', 'or', 'not', 'exists', 'at_least_of') and any(not isinstance(f, str) or f not in self.question for f in frags):
             value['quote'] = self.question
         for child in value.values():
             if isinstance(child, list):
@@ -462,7 +483,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
     def condition(self, concept_id, quote):
         return {'op': 'concept', 'kind': 'condition', 'names': [concept_id], 'version': 1, 'period': None, 'quote': quote}
 
-    CURRENT_USE = re.compile(r'^(?:currently\s+)?(?:on|taking|receiving)\b', re.I)
+    CURRENT_USE = re.compile(r'^(?:(?:have|has|had)\s+)?(?:(?:currently|now|presently)\s+)?(?:on|taking|receiving)\b', re.I)
     EVER = re.compile(r'^\s*(?:ever|at\s+any\s+(?:time|point)|on\s+record|in\s+the\s+past|previously)\b', re.I)
 
     def current_use(self, value, tail, lead):
@@ -497,10 +518,18 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
                     r"(?:have|has)\s+not\s+been\s+seen(?:\s+in)?|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
                     r"(?:are|were|is)\s+missing|missing|without)")
     POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|whose|got|received|completed|underwent|"
+                     r"(?:(?:went|gone|go|goes|been|presented|came|come|came\s+in)\s+(?:to|through|into)|visited|used|(?:have|has)\s+(?:visited|used))(?:\s+the)?|"
                      r"(?:were|was|been)(?=\s+admitted))")
 
     def window(self, text, table, field):
         """A trailing window, calendar year, flu season or 'on record' after a piece of evidence."""
+        once = re.match(r'^\s+(?:at\s+least\s+once|at\s+least\s+one\s+time|one\s+or\s+more\s+times|once\s+or\s+more|on\s+(?:record|file)|recorded|documented)\b', text, re.I)
+        if once:  # "went to the ED at least once in 2029": any row is at least once; the window after it is the window
+            atoms, rest = self.window(text[once.end():], table, field)
+            if atoms:
+                quote = text[:len(text) - len(rest)].strip()
+                return [{**atoms[0], 'quote': quote}, *atoms[1:]], rest
+            return [], text
         m = re.match(r'^\s+(?:in|during|within)\s+the\s+(?:last|past)\s+(\d+)\s+months\b', text, re.I)
         if m: return [atom(f'{table}.{field}', 'within_last_months', int(m[1]), m.group().strip())], text[m.end():]
         m = re.match(r'^\s+(?:in|during|over)\s+the\s+(?:last|past)\s+year\b', text, re.I)
@@ -520,13 +549,13 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         m = re.match(r'^\s+(?:in|during|for)\s+the\s+(20\d\d)-(20\d\d)\s+(?:flu\s+)?season\b', text, re.I)
         if m and table == 'immunization' and 'season' in self.catalog.tables.get(table, []):
             return [atom('immunization.season', '=', f'{m[1]}-{m[2]}', m.group().strip())], text[m.end():]
-        m = re.match(r'^\s+(?:in|during)\s+(20\d\d)\b', text, re.I)
+        m = re.match(r'^\s+(?:in|during|for|of)\s+(?:the\s+)?(?:calendar\s+)?(?:year\s+)?(20\d\d)\b', text, re.I)
         if m:
             y = int(m[1]); q = m.group().strip()
             return [atom(f'{table}.{field}', '>=', f'{y}-01-01', q), atom(f'{table}.{field}', '<', f'{y+1}-01-01', q)], text[m.end():]
         m = re.match(r'^\s+(?:on|in)\s+(?:their|the|its)\s+(?:latest|most\s+recent|last)\s+(?:result|value|test|reading|measurement|lab)\b', text, re.I)
         if m and table == 'measurement_latest': return [], text[m.end():]  # the latest-result reading the decision context already applies
-        m = re.match(r'^\s+(?:on\s+(?:record|file)|ever|at\s+any\s+(?:time|point))\b', text, re.I)
+        m = re.match(r'^\s+(?:on\s+(?:record|file)|ever|at\s+any\s+(?:time|point)|on\s+any\s+(?:draw|result|reading|measurement|test|visit|date|occasion))\b', text, re.I)
         return ([], text[m.end():]) if m else ([], text)
 
     LAB_COMPARISON = re.compile(r'^\s+(?:(?:results?|values?|scores?|levels?)\s+)?(?:(?:is|was|were|of|that\s+(?:is|was)|measured|came\s+back)\s+)?'
@@ -540,7 +569,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         It reads as "has a (current) result meeting the threshold" in the stated window; the latest-result reading needs the word "latest"."""
         m = self.LAB_COMPARISON.match(text)
         cols = self.catalog.tables.get('measurement', [])
-        or_more = None if m else re.match(r'^\s+(?:(?:results?|values?|scores?|levels?)\s+)?of\s+(\d+(?:\.\d+)?)\s+or\s+(higher|more|above|greater|lower|less|below)\b', text, re.I)
+        or_more = None if m else re.match(r'^\s+(?:(?:results?|values?|scores?|levels?)\s+)?(?:of|is|was|were)\s+(\d+(?:\.\d+)?)\s+or\s+(higher|more|above|greater|lower|less|below|fewer)\b', text, re.I)
         if (not m and not or_more) or 'value_canonical' not in cols: return None
         if or_more:  # "a latest systolic of 160 or higher"
             quote = or_more.group().strip()
@@ -756,7 +785,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         noted = self.note_evidence(text)
         if noted: return noted
         start = text
-        social = re.match(r'^(?:(?:have|has|had)\s+)?((?:never|not)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
+        social = re.match(r'^(?:(?:have|has|had)\s+)?(?:ever\s+)?((?:never|not)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
         if social and 'social_need' in self.catalog.tables:
             got = self.prefix(re.sub(r'^(?:an?|the)\s+', '', text[social.end():], flags=re.I), NEEDS)
             if got:
@@ -818,7 +847,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         if not lead: lead = re.match(r'^' + self.POSITIVE_LEAD + r'\s+', text, re.I)
         found = self.thing_evidence(text[lead.end():] if lead else text)
         if not found or (not lead and not found): return None
-        if not lead: return None  # bare nouns stay with the relational grammar
+        if not lead and not (found[0] == 'measurement' and self.lab_comparison(found[4])): return None  # bare nouns stay with the relational grammar; a bare lab WITH its threshold ("diabetics' latest A1c is 10 or higher") is the lab predicate
         table, field, atoms, _, after = found
         measured = self.lab_comparison(after) if table == 'measurement' else None
         if measured: atoms, after = [*atoms, *measured[0]], measured[1]
@@ -826,7 +855,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         win, tail = self.window(after, table, field)
         quote = start[:len(start) - len(tail)].strip()
         # Verbs and 'on record' carry no constraint of their own; bind them to the evidence leaf they introduce.
-        spare = [s for s in (lead.group().strip(), after[:len(after) - len(tail)].strip() if not win else '') if s]
+        spare = [s for s in (lead.group().strip() if lead else '', after[:len(after) - len(tail)].strip() if not win else '') if s]
         atoms[0] = {**atoms[0], 'quote': [*spare, *([atoms[0]['quote']] if isinstance(atoms[0]['quote'], str) else atoms[0]['quote'])]}
         value = related(table, combine('and', atoms + win, quote), quote)
         if gap: self.gaps.append(quote)
@@ -834,7 +863,14 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
 
     def parse(self, text=None, governed=True):
         self.use_governed = governed
-        plan = self._parse(text)
+        contrast = self.contrast_first(text if text is not None else self.question)
+        if contrast:
+            plan = contrast
+        else:
+            try:
+                plan = self._parse(text)
+            except PlanError as err:
+                plan = self.composition_fallback(text if text is not None else self.question, err)
         if self.extra_notes and isinstance(plan, dict) and 'select' in plan:
             plan['notes'] = list(dict.fromkeys([*(plan.get('notes') or []), *self.extra_notes]))
         return plan
@@ -854,7 +890,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         governed = self.governed(text) if getattr(self, 'use_governed', True) else None  # a named governed measure ("denial rate in 2029") keeps its engine
         if governed is not None:
             return governed
-        claims = self.amount_form(text) or self.amount_share(text) or self.average_amount(text) or self.rank_rate(text) or self.rate_by(text) or self.row_share(text)
+        claims = (self.amount_form(text) or self.amount_share(text) or self.average_amount(text) or self.rank_rate(text) or self.rate_by(text)
+                  or self.row_share(text) or self.rate_per_form(text))
         if claims: return claims
         # A question headed by WHO is already a patient-list request. Keep its
         # original subject span rather than sending an invented patient noun to a model.
@@ -907,7 +944,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         unit = re.search(r',?\s+in\s+(cents|days)\s*$',text,re.I)
         if unit: text=text[:unit.start()].strip()
         lead = re.match(r'(?i)(?:(?:please\s+)|(?:(?:can|could|would|will)\s+you\s+)|(?:tell\s+me\s+)|(?:(?:give|show|return)(?:\s+me)?\s+both\s+)|(?:I\s+(?:want|would like)\s+(?:you\s+to|to)\s+))*'
-                        r'(how many|(?:the )?number of|(?:a )?count(?: of)?|tally(?: up)?|list|enumerate|which|show|find|' + ('who|' if self.bound else '') + r'group|break down|what (?:is|was|were) (?:the )?total|what (?:is|was) (?:the )?average|total|sum|average|mean)\s+', text)
+                        r'(how many|(?:the )?number of|(?:a )?count(?: of)?|tally(?: up)?|list|enumerate|which|show|find|' + 'who|' + r'group|break down|what (?:is|was|were) (?:the )?total|what (?:is|was) (?:the )?average|total|sum|average|mean)\s+', text)
         # Business questions often name the entity without an imperative.
         # Retain original spans; do not rewrite the question to add "count".
         named_people = self.prefix(re.sub(r'^(?:(?:all|the|our|adults?)\s+)+', '', text, flags=re.I), self.conditions)
@@ -921,6 +958,9 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
               'sum' if verb in ('total', 'sum') or verb.endswith('total') else 'count')
         field_name, source = None, None
         rest = re.sub(r'^(?:of\s+)?(?:all|the|our)\s+', '', rest, flags=re.I)
+        distinct = re.match(r'^(?:distinct|unique|different)\s+(?=(?:patients|members|people|persons|individuals)\b)', rest, re.I)
+        distinct_word = ''
+        if distinct and fn == 'count': distinct_word, rest = distinct.group().strip(), rest[distinct.end():]  # "how many distinct patients": a count of patients is a count of distinct patients
         if self.bound: rest = re.sub(r'^(?:of|among)\s+(?=(?:them|those|these)\b)', '', rest, flags=re.I)
         # Adjectives before the population noun ("living Medicaid patients") are filters on that population.
         modifiers = []
@@ -943,7 +983,12 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
                 except PlanError: continue
                 split = (rest[:m.start()], rest[m.end():], resolved)
                 break
-            if split is None:
+            if split is None and fn == 'sum' and not self.field_prefix(rest):
+                events = self.prefix(re.sub(r'^(?:the\s+|our\s+|all\s+)+', '', rest, flags=re.I), self.sources)
+                if events and events[1][0] in ('utilization_event', 'stay', 'visit', 'appointment', 'payer_pharmacy_claim', 'payer_claim', 'claim', 'fill'):
+                    fn, rest = 'count', re.sub(r'^(?:the\s+|our\s+|all\s+)+', '', rest, flags=re.I)  # "total ED visits": the number of those rows
+            if fn == 'count': pass
+            elif split is None:
                 # A catalog field supplies its relation: e.g. "average age".
                 field = self.field_prefix(rest)
                 if not field: raise PlanError('Aggregation needs a recognized field and source')
@@ -985,6 +1030,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
                                         'those patients': ('patient', None), 'these patients': ('patient', None)})
         if not source and anaphoric:
             source = (anaphoric, ('patient', None), rest)  # "Of those, which are women": the saved cohort itself is the population
+        if not source and verb == 'who' and re.match(r'^(?:has|have|had|is|are|was|were|did|do|does|took|takes)\b', rest, re.I):
+            source = (rest.split()[0], ('patient', None), rest)  # "Who has X and Y": the patients themselves (the lead word 'Who' is a stop word the compiler covers)
         if not source: raise PlanError('Explicit source or saved cohort required')
         source_quote, (self.base, default), rest = source
         if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
@@ -993,7 +1040,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         rest, group_fields, group_quote = self.grouping(rest, dimensions)
         rest = re.sub(r'^\s*(?:are|were|is|was)(?:\s+there)?(?:\s+|$)', '', rest, flags=re.I)
         rest = re.sub(r'\s+(?:are|were|is)\s+there\s*$', '', rest, flags=re.I)
-        rest = re.sub(r'^\s*(?:that\s+)?(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)\b\s*', '', rest, flags=re.I)
+        rest = re.sub(r'^\s*(?:that\s+)?(?:(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)|(?:have|has)\s+we\s+(?:had|seen|recorded|logged))\b\s*', '', rest, flags=re.I)
+        rest = re.sub(r"^[\u2019']s?\s+(?=\S)", '', rest)  # "diabetics' most recent A1c": the possessive of the population noun
         base_filter = None
         if default: base_filter = self.preset_filter(default, source_quote)
         where, tail = self.expression(rest)
@@ -1032,7 +1080,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         elif fn in ('sum', 'avg'):
             measure = {'kind': fn, 'field': field_name, 'alias': fn+'_'+field_name.split('.')[-1], 'quote': [lead.group().strip(), field_text]}
         else:
-            measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count', 'quote': measure_quote}
+            measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count',
+                       'quote': [measure_quote, distinct_word] if distinct_word else measure_quote}
             if self.base == 'patient': measure['field'] = 'patient.patient_id'
         measures.append(measure)
         if unit:
@@ -1297,7 +1346,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
     def one(self, text):
         start = text
         while True:
-            filler = re.match(r'^(?:among|for) (?:the )?(?:patients|members)\s+|^who\s+|^(?:where|for|among)\s+|^that\s+|^also\s+|^(?:are|were|is|was)\s+(?!admitted)'
+            filler = re.match(r'^(?:among|for) (?:the |our )?(?:patients|members)\s+|^who\s+|^(?:where|for|among)\s+|^that\s+|^also\s+|^(?:are|were|is|was)\s+(?!admitted)'
                               + (r'|^(?:those|ones|them|these)\s+(?:patients\s+|members\s+)?(?:who\s+|that\s+)?(?=(?:with|having|have|has|had|on|taking|without|not|over|under|aged?|in|during)\b)' if self.bound else ''), text, re.I)
             if not filler: break
             text = text[filler.end():]
@@ -1305,6 +1354,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             value, tail = self.expression(text[1:])
             if not tail.startswith(')'): raise PlanError('Unclosed predicate group')
             return value, tail[1:]
+        composed = self.composition_predicate(text)
+        if composed: return composed
         # NEITHER A NOR B negates the union, for diagnoses and medication use.
         # Each item must resolve in the governed vocabulary; arbitrary words are
         # left unconsumed for the ordinary fallback.
@@ -1354,7 +1405,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             months = n * (12 if roll[2].lower().startswith('year') else 1)
             return atom(self.base + '.' + (self.clock or CLOCKS.get(self.base)), 'within_last_months', months, roll.group()), text[roll.end():]
         # Source-specific clock, never a blanket patient-year filter.
-        m = re.match(r'^(?:(?:in|during)\s+)?(?:calendar\s+year\s+)?(\d{4})(?![\d-])', text, re.I)
+        m = re.match(r'^(?:(?:in|during|for|of)\s+)?(?:the\s+)?(?:calendar\s+)?(?:year\s+)?(\d{4})(?![\d-])', text, re.I)
         if m:
             clock = self.clock or CLOCKS.get(self.base)
             if not clock: raise PlanError('This period needs an explicit event/date field')
@@ -1440,11 +1491,16 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             value = self.condition(concept_id, quote)
             if len(names) > 1: value['names'] = list(dict.fromkeys(n for n in names))
             return self.concept_period(value, tail)
-        med = re.match(r'^(?:currently\s+)?(?:on|taking|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
+        med = re.match(r'^(?:(?:have|has|had)\s+(?:ever\s+)?)?(?:(?:currently|now|presently)\s+)?(?:on|taking|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
         if med:
             got = self.prefix(text[med.end():], self.drugs)
             if got:
                 _, drugs, tail = got
+                while True:  # "a GLP-1 or an SGLT2 inhibitor": one drug set (any of them)
+                    more_drug = re.match(r'^or\s+(?:(?:an?|any|the)\s+)?', tail, re.I)
+                    other = self.prefix(tail[more_drug.end():], self.drugs) if more_drug else None
+                    if not other: break
+                    drugs = list(dict.fromkeys([*drugs, *other[1]])); tail = other[2]
                 more = re.match(r'^\s*(?:medications?|meds?|drugs?|therapy|agents?)\b', tail, re.I)  # "GDMT medication": the class word, not a constraint
                 if more: tail = tail[more.end():]
                 if med[1]:  # "on no GDMT medication (at all)": a care gap -- no picked-up fill of any listed class
@@ -1553,9 +1609,31 @@ def parse_program(catalog, question, *, bound=False):
     if not boundaries: return None
     clauses, cursor = [], 0
     for boundary in boundaries:
-        clauses.append(question[cursor:boundary.start()].strip());cursor=boundary.end()
+        clauses.append(question[cursor:boundary.start()].strip().rstrip(',;').strip());cursor=boundary.end()
     clauses.append(question[cursor:].strip().rstrip('?.').strip())
-    requests = [parse(catalog, clause, bound=bound) for clause in clauses]
+    # Shared scope (Codex 2026-10-24 #1): an output without a population of its own inherits the fronted scope of the first ("For obese
+    # patients, how many ..., and how many ..."); a dated event output without a period inherits the trailing period of the last
+    # ("How many ED visits and how many admissions in 2029"). The node's quote is the ordered literal fragments [shared words, clause].
+    quotes = list(clauses)
+    front = re.match(r'^((?:For|Among|Of)\s+(?:the\s+|our\s+)?[^,]+,)\s*', clauses[0], re.I)
+    requests = []
+    for i, clause in enumerate(clauses):
+        try:
+            requests.append(parse(catalog, clause, bound=bound))
+        except PlanError:
+            if not (i and front): raise
+            requests.append(parse(catalog, front[1] + ' ' + clause, bound=bound))
+            quotes[i] = [front[1], clause]
+    trailing = re.search(r'\s+((?:in|during|over|within|for)\s+(?:the\s+)?(?:(?:last|past)\s+(?:\d+|\w+)\s+(?:years?|months?)|(?:last|past)\s+year|calendar\s+(?:year\s+)?(?:19|20)\d\d|(?:19|20)\d\d))\s*$', clauses[-1], re.I)
+    if trailing and len(clauses) > 1:
+        for i, clause in enumerate(clauses[:-1]):
+            table = requests[i]['source']['table']
+            if table != 'patient' and CLOCKS.get(table) and not re.search(r'\b(?:in|during|over|within|for)\s+(?:the\s+)?(?:last|past|calendar|(?:19|20)\d\d)', clause, re.I):
+                try:
+                    requests[i] = parse(catalog, clause + ' ' + trailing[1], bound=bound)
+                    quotes[i] = [clause, trailing[1]]
+                except PlanError:
+                    pass
     def fields(expr):
         if not isinstance(expr,dict):return []
         return ([expr['field']] if 'field' in expr else []) + [f for value in expr.values()
@@ -1568,5 +1646,5 @@ def parse_program(catalog, question, *, bound=False):
                 raise AmbiguousRequest('State the date scope for each dated output; it is unclear whether the period applies to '+clause)
     if len({r['source']['table'] for r in requests}) == 1 and len({bool(r['group_by']) for r in requests}) > 1:
         raise AmbiguousRequest('State whether grouping applies to both outputs or only the grouped output')
-    return {'nodes':[{'id':f'output_{i+1}','quote':clause,'inputs':[],'request':request}
-                     for i,(clause,request) in enumerate(zip(clauses,requests))], 'unresolved':[]}
+    return {'nodes':[{'id':f'output_{i+1}','quote':quote,'inputs':[],'request':request}
+                     for i,(quote,request) in enumerate(zip(quotes,requests))], 'unresolved':[]}
