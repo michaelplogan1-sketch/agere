@@ -117,6 +117,10 @@ def win_note(window):
     return f'window: {CI.describe_window(window)}'
 
 
+def condition_measures():
+    return CI.condition_measures()
+
+
 def label_of(concept):
     return CI.LAB_LABELS.get(concept, concept.replace('_', ' '))
 
@@ -155,6 +159,8 @@ def lab(ch, it):
     window = it.get('window')
     if len(concepts) == 2 and set(concepts) == {'systolic_bp', 'diastolic_bp'} and intent in ('latest_value', 'timeline', 'status', 'count_in_window'):
         return blood_pressure(ch, it)
+    if c.get('condition') and len(concepts) > 1 and intent in ('trend', 'latest_value'):
+        return condition_measures_answer(ch, it, c, concepts)
     concept = concepts[0]
     label = label_of(concept)
     if intent == 'trend':
@@ -250,6 +256,35 @@ def blood_pressure(ch, it):
                        {'measure': 'diastolic', 'value': num(d['value']) if d else None, 'unit': 'mmHg', 'date': d['event_date'] if d else None}],
                 sources=[src('measurement_latest', r['record_id'], r['event_date']) for r in (s, d) if r],
                 notes=['latest result per patient and concept (measurement_latest)'])
+
+
+def condition_measures_answer(ch, it, c, concepts):
+    """Control of a condition that several measures govern (CKD: eGFR and UACR; hypertension: systolic and diastolic): one reading per measure,
+    each stated with its own direction, in one answer that names the condition and the measures."""
+    cond = (c.get('condition') or '').replace('_', ' ')
+    labels = ' and '.join(label_of(m) for m in concepts)
+    parts, table, sources, words = [], [], [], []
+    for m in concepts:
+        if it['intent'] == 'trend':
+            r = lab_trend(ch, it, m, label_of(m))
+            words.append((r.get('facts') or {}).get('direction'))
+        else:
+            row = lab_latest(ch, m)
+            r = (core('value', f"Latest {label_of(m)}: {_censor(row)}{with_unit(row['value'], row['unit'])} on {row['event_date']}", value=num(row['value']), unit=row['unit'],
+                      table=[{'date': row['event_date'], 'value': num(row['value']), 'unit': row['unit']}], sources=[src('measurement_latest', row['record_id'], row['event_date'])])
+                 if row else no_data(f'No {label_of(m)} result on record'))
+        parts.append(r['headline'])
+        table += [{'measure': label_of(m), **t} for t in r.get('table') or []]
+        sources += r.get('sources') or []
+    directions = {w for w in words if w}
+    overall = (directions.pop() if len(directions) == 1 else 'mixed') if directions else None
+    kind = 'trend' if it['intent'] == 'trend' else 'latest'
+    head = f"{cond.capitalize()} control for {ch.pid} ({labels}, {kind}): " + ' ; '.join(parts)
+    spec = condition_measures().get(c.get('condition')) or {}
+    notes = [f"{cond} control is read from {labels}" + (f" ({spec['source']})" if spec.get('source') else ''), win_note(it.get('window'))]
+    if overall:
+        return core('label', head, value=overall, facts={'direction': overall, 'measures': list(concepts)}, table=table, sources=sources, notes=notes)
+    return core('table', head, count=len(table), table=table, sources=sources, notes=notes)
 
 
 def lab_trend(ch, it, concept, label):

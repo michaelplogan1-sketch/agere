@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "purpose": "Which warehouse measurement concepts govern the control of a library condition. A control or trend question about a condition ('is the diabetes control getting better') is answered from these measures. Keys are clinical_core/agere/clinical/concepts.CONDITIONS; measures are concepts.MEASUREMENTS keys (a measure the warehouse does not have is skipped at load, never invented).",
+  "conditions": {
+    "diabetes": {"measures": ["hba1c"], "source": "ADA Standards of Care in Diabetes, Glycemic Goals (HbA1c is the glycemic control measure); NCQA HEDIS Glycemic Status Assessment for Patients With Diabetes"},
+    "type_2_diabetes": {"measures": ["hba1c"], "source": "ADA Standards of Care in Diabetes, Glycemic Goals; NCQA HEDIS Glycemic Status Assessment"},
+    "type_1_diabetes": {"measures": ["hba1c"], "source": "ADA Standards of Care in Diabetes, Glycemic Goals; NCQA HEDIS Glycemic Status Assessment"},
+    "prediabetes": {"measures": ["hba1c"], "source": "ADA Standards of Care in Diabetes, Diagnosis and Classification (HbA1c 5.7 to 6.4 percent)"},
+    "hypertension": {"measures": ["systolic_bp", "diastolic_bp"], "source": "2017 ACC/AHA High Blood Pressure Guideline; NCQA HEDIS Controlling High Blood Pressure (systolic and diastolic)"},
+    "chronic_kidney_disease": {"measures": ["egfr", "uacr"], "source": "KDIGO 2024 Clinical Practice Guideline for CKD (GFR and albuminuria categories define stage and progression)"},
+    "heart_failure": {"measures": ["nt_probnp"], "source": "2022 AHA/ACC/HFSA Heart Failure Guideline (natriuretic peptide for monitoring and prognosis); LVEF is an imaging result, not a measurement in this warehouse"},
+    "heart_failure_reduced_ef": {"measures": ["nt_probnp"], "source": "2022 AHA/ACC/HFSA Heart Failure Guideline (natriuretic peptide); LVEF is an imaging result, not a measurement in this warehouse"},
+    "hyperlipidemia": {"measures": ["ldl"], "source": "2018 AHA/ACC Cholesterol Guideline (LDL-C response to therapy); NCQA HEDIS statin measures"},
+    "coronary_artery_disease": {"measures": ["ldl"], "source": "2018 AHA/ACC Cholesterol Guideline (LDL-C for secondary prevention)"},
+    "depression": {"measures": ["phq9"], "source": "Kroenke 2001 PHQ-9 validation; NCQA HEDIS Depression Remission or Response (PHQ-9 follow-up)"},
+    "hypothyroidism": {"measures": ["tsh"], "source": "ATA 2014 Guidelines for the Treatment of Hypothyroidism (TSH is the monitoring measure)"},
+    "anemia": {"measures": ["hemoglobin"], "source": "WHO 2011 hemoglobin concentrations for the diagnosis of anaemia"},
+    "obesity": {"measures": ["weight"], "source": "2013 AHA/ACC/TOS Guideline for the Management of Overweight and Obesity in Adults (weight change)"}
+  }
+}
