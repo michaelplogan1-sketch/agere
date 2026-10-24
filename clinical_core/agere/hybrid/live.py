@@ -3,11 +3,11 @@ measures, with the model step made by API calls instead of hand-launched subagen
 
     answer(question, as_of, semantic, send_factory) -> {'answer': {...} | None, 'decision', 'runs', 'cost_usd', ...}
 
-- RUNS independent analyst runs (AGERE_HYBRID_MODEL, default Opus) in parallel. Each sees the versioned docs
+- RUNS independent analyst runs (AGERE_HYBRID_MODEL, default Haiku: the question-path ladder, model_policy) in parallel. Each sees the versioned docs
   (docs/catalog_index.md in the system prompt, detail files through read_doc) and a read-only query_sql tool, and returns
   one analysis contract plus one SQL query. The system executes that SQL itself; the model never reports the answer.
 - evaluate() validates the contract, runs the SQL, shapes and checks the result; vote.decide() picks unanimous/majority.
-- On a split, one tie-break run (AGERE_HYBRID_ESCALATION_MODEL, default Opus) sees every run's contract, SQL and
+- On a split, one tie-break run (AGERE_HYBRID_ESCALATION_MODEL, default Sonnet; inside a question it is Sonnet only on the cascade's escalation rung) sees every run's contract, SQL and
   executed outcome and writes one contract + SQL, or abstains.
 
 send_factory() is a context manager yielding send(body) -> (response, cost_usd | None, cache_hit), one per thread (the
@@ -25,8 +25,9 @@ from . import contract as hc, execute as hx, vote as hv
 HERE = Path(__file__).resolve().parent
 DOCS = HERE / 'docs'
 RUNS = 3
-DEFAULT_MODEL = 'claude-opus-5-5'
-DEFAULT_ESCALATION_MODEL = 'claude-opus-5-5'
+from .. import model_policy
+DEFAULT_MODEL = model_policy.first('analyst')
+DEFAULT_ESCALATION_MODEL = model_policy.ladder('judge')[1]  # a tie-break is the escalation: Sonnet, never first
 MAX_TOOLS = 14  # up to 8 queries plus doc reads, as in the measured runs
 
 READ_DOC_TOOL = {'name': 'read_doc', 'description': 'Open one documentation detail file named in the catalog index '
@@ -57,11 +58,11 @@ def docs_for(semantic_path):
 
 
 def model_name():
-    return os.environ.get('AGERE_HYBRID_MODEL') or DEFAULT_MODEL
+    return model_policy.claude_model(os.environ.get('AGERE_HYBRID_MODEL') or DEFAULT_MODEL)
 
 
 def escalation_model_name():
-    return os.environ.get('AGERE_HYBRID_ESCALATION_MODEL') or DEFAULT_ESCALATION_MODEL
+    return model_policy.claude_model(os.environ.get('AGERE_HYBRID_ESCALATION_MODEL') or DEFAULT_ESCALATION_MODEL)
 
 
 def _rules():
@@ -223,7 +224,7 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
                                docs_dir=docs_dir, run=k + 1)
 
     with ThreadPoolExecutor(max_workers=runs) as pool:
-        from ..clinical.decision_context import copy_context_call  # each analyst thread keeps the question's decision context
+        from ..clinical.decision_context import copy_context_call  # each analyst thread keeps the question's decision context (and its model rung)
         outs = list(pool.map(lambda k: copy_context_call(one, k), range(runs)))
     items = {f'run{k + 1}': item for k, (item, _) in enumerate(outs)}
     results = [res for _, res in outs]
@@ -263,7 +264,7 @@ def answer(question, as_of, semantic, send_factory, *, qid='Q', answer_type=None
     unclear = final == 'clarify' or any(v.get('clarify') for v in per.values())
     all_missing = all(v.get('unsupported') for v in per.values())
     if review_enabled and ans is None and 'escalation' not in per and not all_missing:
-        review_model = os.environ.get('AGERE_HYBRID_REVIEW_MODEL') or 'claude-opus-5-5'
+        review_model = model_policy.claude_model(os.environ.get('AGERE_HYBRID_REVIEW_MODEL') or model_policy.ladder('reviewer')[1])
         prompt = escalation_prompt(q, per, items) + '\n\n' + (
             'Distinguish genuinely missing user choices from database joins or implementation work. '
             'Preserve genuine ambiguity and missing data. If you resolve a clarification, return a '

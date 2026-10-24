@@ -12,8 +12,8 @@ A spec is the typed request (request_plan) plus the note predicate and subject. 
              note criterion (grammar prefix + "and had metformin stopped because of side effects") -> frame, status, combine and detail
              chosen from the closed lists, the concept from the library, the window from the decision context.
   haiku      ONE Haiku call that writes the typed request JSON (shared_planner's rules, catalog shaping, the decision-context block and the
-             note frame catalog / subject rules), one bounded repair from validator feedback, and Sonnet only when Haiku's spec failed
-             validation twice. Never Opus (model_policy).
+             note frame catalog / subject rules), one bounded repair from validator feedback; Sonnet is the escalation rung only (model_policy):
+             it runs after Haiku's spec failed validation twice AND every other Haiku tier of the question has failed. Never Opus.
 
 A spec VALIDATES when request_plan.compile_request succeeds, the literal check finds no dropped requirement and decision_context
 passes (living patients, latest labs, the one condition-evidence rule, all-source events, the question's windows). Choice:
@@ -36,7 +36,8 @@ from .question_input import QuestionNotUnderstood
 
 VERSION = 'spec-fill/1'
 FILLERS = ('grammar', 's1_slots', 'haiku')
-HAIKU, SONNET = 'claude-haiku-5-5', 'claude-sonnet-5-5'
+from .. import model_policy
+HAIKU, SONNET = model_policy.ladder('writer')
 SPEC_TOKENS = 6000
 
 
@@ -540,7 +541,9 @@ def haiku_fill(ctx, *, previous=None, review=None, steps=None):
                         'instruction': 'System One checked each part of this spec against the question and these parts do not match. Repair exactly those parts, keep every other part, '
                                        'and preserve the whole original question. Return the complete corrected spec.'}
         notes = {'calls': []}
-        plan_calls = ('haiku', 'haiku', 'sonnet')
+        # The Haiku-first ladder (model_policy): the first pass is Haiku, Haiku again with the validator's feedback; Sonnet is the escalation
+        # rung only, and the cascade runs it after every Haiku attempt of every tier for the question has failed.
+        plan_calls = ('sonnet',) if model_policy.escalating() else ('haiku', 'haiku')
         used = 0
         attempt = 0
         last_error = None
@@ -555,6 +558,7 @@ def haiku_fill(ctx, *, previous=None, review=None, steps=None):
             started = time.perf_counter()
             raw, stats = model(system, user, max_tokens=SPEC_TOKENS)
             stats = stats if isinstance(stats, dict) else {}
+            model_policy.record(stats.get('model') or which)
             ctx.charge('haiku', 0 if stats.get('cache_hit') else 1, stats.get('api_usd') or 0.0, stats.get('api_cost_known', True))
             notes['calls'].append({'model': stats.get('model') or which, 'seconds': round(time.perf_counter() - started, 3), 'usd': stats.get('api_usd') or 0.0,
                                    'cache_hit': bool(stats.get('cache_hit'))})

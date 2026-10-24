@@ -83,7 +83,7 @@ E('model_roles_report', 'Stack.model_roles report', 'infrastructure', C + 'stack
 E('budget_ledger', 'Budget ledger', 'infrastructure', A + 'gateway', 'BudgetLedger',
   'Content-addressed paid-call ledger/cache used by every hosted tier.', 'inside:checked_proposer_cascade', 'gateway.py:18; proposers.py:95-100')
 E('hosted_model_client', 'Hosted Claude client (HostedModel)', 'infrastructure', C + 'nl2sql', 'HostedModel',
-  'Anthropic Messages client with cache_control split used by hosted tiers.', 'inside:hosted_typed_interpreter', 'nl2sql.py:307-344', cost=OPUS)
+  'Anthropic Messages client with cache_control split used by hosted tiers.', 'inside:hosted_typed_interpreter', 'nl2sql.py:307-344', cost=HAIKU)
 E('context_student_send', 'Provider transport (context_student.send)', 'infrastructure', C + 'context_student', 'send',
   'Ledgered provider send for Perplexity decisions and hosted calls; raises RequestSizeLimitError.', 'inside:typed_decider',
   'context_student.py:42-105', cost='paid:pplx-decider-v1.1-27b')
@@ -91,7 +91,7 @@ E('persistent_gateway', 'PersistentGateway (Jev/Claude/Perplexity endpoints)', '
   'Typed classify() for Jev, Perplexity Decisions and Claude; ENDPOINTS also lists perplexity_agent (v1/responses).', 'inside:jev_typesafe_review',
   'gateway.py:146-152', cost='paid:jev-1.13.0')
 E('gateway_jev_claude_cascade', 'PersistentGateway.cascade (Jev then Claude)', 'evidence_tool', A + 'gateway', 'PersistentGateway.cascade',
-  'Typed-specialist-then-frontier cascade; no caller in clinical_core.', 'not_on_path', 'gateway.py:191-198', cost='paid:jev-1.13.0 + claude-opus-5-5')
+  'Typed-specialist-then-frontier cascade; no caller in clinical_core.', 'not_on_path', 'gateway.py:191-198', cost='paid:jev-1.13.0 + claude-haiku-5-5')
 
 # ---------------------------------------------------------------- pre-cascade deterministic tiers
 E('data_domains_gate', 'Received-data-domain gate', 'check', C + 'data_domains', 'check',
@@ -155,14 +155,14 @@ T = [
   'Local Qwen interprets into a typed contract in an isolated worker; local audit + recompile + literal check. Honors saved cohorts.', 'free (Qwen3-4B, isolated worker)', 'unqualified; compiler + literal check', 'AGERE_LOCAL_TYPED, AGERE_LOCAL_INTERPRET_SECONDS'),
  ('typed_decider', 'Typed decider (MiniLM candidates + Perplexity)', 'proposer', 'economical_planner', '_typed_decider', 44, 297,
   'MiniLM retrieves curated recipes; Perplexity Decisions picks one at the 0.95 threshold.', 'paid:pplx-decider-v1.1-27b (~$0.000006/call)', 'curated unfiltered recipes only, 0.95 threshold', 'AGERE_TYPED_DECIDER_FIRST, --allow-live-stack'),
- ('hosted_typed_interpreter', 'Hosted typed interpreter (Opus)', 'proposer', 'shared_planner', 'checked_interpret', 45, 214,
-  'Opus interprets into typed request/program/analysis with discovery, audit, quote binding; partial with named gap held. Honors saved cohorts.', OPUS + ' (~$0.27/question)', '20-question dev set; compiler + quote binding + audit', 'AGERE_SHARED_INTERPRETER_MODEL, --allow-live-stack'),
+ ('hosted_typed_interpreter', 'Hosted typed interpreter (Haiku)', 'proposer', 'shared_planner', 'checked_interpret', 45, 214,
+  'Haiku (Sonnet on the escalation rung) interprets into typed request/program/analysis with discovery, audit, quote binding; partial with named gap held. Honors saved cohorts.', HAIKU + ' (Sonnet only on the escalation rung)', '20-question dev set; compiler + quote binding + audit', 'AGERE_SHARED_INTERPRETER_MODEL, --allow-live-stack'),
  ('hosted_verified_sql', 'Hosted verified SQL ladder', 'proposer', 'nl2sql', 'verified_answer', 46, 298,
-  'Haiku writes SQL, Sonnet confirms, Opus/Perplexity judge disagreements; verification_v2 + oracles decide.', 'paid:claude-haiku-5-5 -> claude-sonnet-5-5 -> claude-opus-5-5 + pplx-decider', 'two-model agreement + oracles; uncalibrated', 'AGERE_HOSTED_SQL, AGERE_PRIMARY_MODEL, AGERE_SECOND_MODEL, AGERE_JUDGE_MODEL, AGERE_DECIDER_JUDGE, AGERE_VERIFICATION_V2, AGERE_PARTITION_ORACLE'),
- ('frontier_graph_planner', 'Frontier graph planner (Opus)', 'proposer', 'graph_planner', 'propose', 47, 299,
-  'Opus proposes a typed graph over the full capability catalog; Ladder.frontier_planner also holds the free exact-question plan cache (gated as paid here).', OPUS, 'full capability catalog; uncalibrated', 'AGERE_PLAN_CACHE, --allow-live-stack'),
+  'Haiku writes SQL, a second Haiku sample confirms, Haiku/Perplexity judge disagreements; Sonnet only on the escalation rung; verification_v2 + oracles decide.', 'paid:claude-haiku-5-5 (Sonnet on the escalation rung) + pplx-decider', 'two-model agreement + oracles; uncalibrated', 'AGERE_HOSTED_SQL, AGERE_PRIMARY_MODEL, AGERE_SECOND_MODEL, AGERE_JUDGE_MODEL, AGERE_DECIDER_JUDGE, AGERE_VERIFICATION_V2, AGERE_PARTITION_ORACLE'),
+ ('frontier_graph_planner', 'Frontier graph planner (Haiku)', 'proposer', 'graph_planner', 'propose', 47, 299,
+  'Haiku (Sonnet on the escalation rung) proposes a typed graph over the full capability catalog; Ladder.frontier_planner also holds the free exact-question plan cache (gated as paid here).', HAIKU, 'full capability catalog; uncalibrated', 'AGERE_PLAN_CACHE, --allow-live-stack'),
  ('hybrid_analysts', 'Hybrid 3-analyst core', 'proposer', 'together', '_run_hybrid', 48, 307,
-  'Three independent Opus analysts query the semantic layer, vote, escalate splits; executed SQL literal-checked.', OPUS + ' x3 + vote (~$0.14/question)', '18/20 dev, 7/10 held-out, pilot 75/100', 'AGERE_HYBRID, AGERE_HYBRID_MODEL, AGERE_HYBRID_ESCALATION_MODEL'),
+  'Three independent Haiku analysts (Sonnet on the escalation rung) query the semantic layer, vote, escalate splits; executed SQL literal-checked.', HAIKU + ' x3 + vote', '18/20 dev, 7/10 held-out, pilot 75/100 (measured with Opus analysts; Haiku analysts not yet measured)', 'AGERE_HYBRID, AGERE_HYBRID_MODEL, AGERE_HYBRID_ESCALATION_MODEL'),
  ('local_compiler', 'Local question compiler', 'proposer', 'local_compiler', 'compile', 49, 301,
   'Free regex/rule compiler to graphs incl. 25+ engine ops; proposes only (failed calibration).', 'free', 'FAILED calibration: held-out 19/49 wrong; proposes only', 'AGERE_COMPILER_RULES'),
  ('metric_router', 'Governed metric router (Haiku)', 'proposer', 'metric_router', 'route', 50, 302,
@@ -241,7 +241,7 @@ E('graph_planner_contracts', 'Capability contracts (graph_planner.CONTRACTS)', '
 E('capability_registry_product', 'PRODUCT engine registry', 'knowledge', C + 'capability_registry', 'PRODUCT',
   '29 product engines with population/view/use; answer-shape contract (NATIVE_SCALARS).', 'inside:graph_planner_contracts', 'capability_registry.py:12-170')
 E('hybrid_live_answer', 'Hybrid analyst runs + escalation', 'proposer', A + 'hybrid.live', 'answer',
-  'RUNS=3 analyst tool loops over versioned docs; tie-break escalation run on a split.', 'inside:hybrid_analysts', 'hybrid/live.py:27-29,197; together.py:295', cost=OPUS + ' x3', flag='AGERE_HYBRID_MODEL, AGERE_HYBRID_ESCALATION_MODEL')
+  'RUNS=3 analyst tool loops over versioned docs; tie-break escalation run on a split.', 'inside:hybrid_analysts', 'hybrid/live.py:27-29,197; together.py:295', cost=HAIKU + ' x3', flag='AGERE_HYBRID_MODEL, AGERE_HYBRID_ESCALATION_MODEL')
 E('hybrid_vote', 'Hybrid vote', 'check', A + 'hybrid.vote', 'decide', 'Canonicalizes and votes analyst answers.', 'inside:hybrid_live_answer', 'hybrid/vote.py:40')
 E('hybrid_contract', 'Hybrid answer contract', 'check', A + 'hybrid.contract', 'validate',
   'Analyst answer contract (answer_type, grain, population, window...) and readings/missing/clarify.', 'inside:hybrid_live_answer', 'hybrid/contract.py:43-104')
@@ -268,13 +268,13 @@ E('conformal', 'Conformal prediction library', 'check', C + 'conformal', 'split_
 
 # typed-interpreter internals
 E('hosted_interpreter_audit', 'Semantic review (model audit) of typed plans', 'check', C + 'shared_planner', 'AUDIT_SYSTEM',
-  'Second hosted pass compares question vs compiled SQL; equivalence + issues gate acceptance.', 'inside:hosted_typed_interpreter', f'{SP}:191-219; {P}:228-238', cost=OPUS)
+  'Second hosted pass compares question vs compiled SQL; equivalence + issues gate acceptance.', 'inside:hosted_typed_interpreter', f'{SP}:191-219; {P}:228-238', cost=HAIKU)
 E('request_discovery', 'Request discovery (need_discovery probes)', 'retrieval', C + 'request_discovery', 'run',
   'Model-requested value search/probes over received tables before forming the typed request.', 'inside:hosted_typed_interpreter', f'request_discovery.py:92,227,315; {SP}:514-518')
 E('schema_slice', 'Planner schema slice', 'retrieval', C + 'shared_planner', 'schema_slice',
   'Lexically selected schemas, observed values, operator contracts, governed measures for the hosted prompt.', 'inside:hosted_typed_interpreter', f'{SP}:289-356')
 E('general_analysis_rescue', 'General-analysis rescue (staged model SQL)', 'proposer', C + 'general_analysis', 'prepare',
-  'Hosted interpreter may return a staged SQL analysis; prepared (relaxed) and audited.', 'inside:hosted_typed_interpreter', f'general_analysis.py:439; {SP}:559-603', cost=OPUS)
+  'Hosted interpreter may return a staged SQL analysis; prepared (relaxed) and audited.', 'inside:hosted_typed_interpreter', f'general_analysis.py:439; {SP}:559-603', cost=HAIKU)
 E('general_analysis_checks', 'General-analysis checks + uncovered words', 'check', C + 'general_analysis', 'checks',
   'Result checks and uncovered-quote detection on staged analyses.', 'inside:general_analysis_execute', 'general_analysis.py:399,612')
 E('request_program_audit', 'Request program audit validation', 'check', C + 'request_program', 'validate_audit', 'Per-node audit equivalence.', 'inside:hosted_typed_interpreter', 'request_program.py:182; proposers.py:230-231')
@@ -302,17 +302,17 @@ E('benchmark_references', 'Benchmark references on answers', 'knowledge', C + 'a
 E('answer_guard_suspicion', 'Answer guard (raw-catalog probe + zero contradictions)', 'check', C + 'answer_guard', 'zero_contradictions',
   'Full-catalog probe for zeros/empties and suspicious answers; only reachable from legacy compose and the routers.', 'not_on_path',
   'answer_guard.py:156,393,558; stack_runtime.py:129', flag='AGERE_ANSWER_GUARD, AGERE_GUARD_POLICY')
-E('answer_guard_cross_check', 'Answer guard cross-check (Sonnet + Opus judge)', 'check', C + 'answer_guard', '_review_decline',
+E('answer_guard_cross_check', 'Answer guard cross-check (Haiku, Sonnet on escalation)', 'check', C + 'answer_guard', '_review_decline',
   'Re-plans uncertified answers with a second model; off.', 'not_on_path', 'answer_guard.py:29-35,653; proposers.py:66; docs/agere/BUILD_LOG.md (step 1x: 4/22 for $3.19)',
-  cost=SONNET + ' + ' + OPUS, calib='4/22 caught for $3.19', flag='AGERE_CROSS_CHECK, AGERE_CROSS_CHECK_BUDGET_S')
+  cost=HAIKU, calib='4/22 caught for $3.19 (measured with Sonnet + Opus)', flag='AGERE_CROSS_CHECK, AGERE_CROSS_CHECK_BUDGET_S')
 E('answer_guard_dense_catalog', 'Dense catalog retrieval (UltraBERT RRF)', 'retrieval', C + 'answer_guard', 'dense_encoder',
   'Second-encoder catalog retrieval fused with lexical for the guard probe.', 'inside:answer_guard_suspicion', 'answer_guard.py:334-392', flag='AGERE_CATALOG_DENSE, AGERE_SECOND_ENCODER')
 E('unchecked_zero_guard', 'Unchecked-zero guard', 'check', C + 'together', 'decide',
   'Withholds an analyst-unconfirmed 0/empty; lives in the legacy together decision.', 'not_on_path', 'together.py:519,583-592; docs/agere/BUILD_LOG.md step 10', flag='AGERE_UNCHECKED_ZERO')
 E('legacy_compose_together', 'Together orchestration (legacy)', 'proposer', C + 'together', 'legacy_compose_together',
-  'Fast path + parallel analyst + reconcile; compose_together now just calls shared_planner.compose.', 'not_on_path', 'together.py:721-726', cost=HAIKU + ' + ' + OPUS, flag='AGERE_TOGETHER, AGERE_TOGETHER_BUDGET_S, AGERE_DEFER_FAST, AGERE_SPECIALISTS_FIRST')
-E('semantic_analyst', 'Single semantic analyst + Opus reconcile', 'proposer', C + 'semantic_analyst', 'analyze',
-  'Legacy Haiku analyst tool loop with Opus reconcile.', 'not_on_path', 'semantic_analyst.py:324,377; together.py:321', cost=HAIKU + ' + ' + OPUS, flag='AGERE_SEMANTIC_MODEL, AGERE_RECONCILE_MODEL')
+  'Fast path + parallel analyst + reconcile; compose_together now just calls shared_planner.compose.', 'not_on_path', 'together.py:721-726', cost=HAIKU, flag='AGERE_TOGETHER, AGERE_TOGETHER_BUDGET_S, AGERE_DEFER_FAST, AGERE_SPECIALISTS_FIRST')
+E('semantic_analyst', 'Single semantic analyst + Haiku reconcile', 'proposer', C + 'semantic_analyst', 'analyze',
+  'Legacy Haiku analyst tool loop with Haiku reconcile (Sonnet on the escalation rung).', 'not_on_path', 'semantic_analyst.py:324,377; together.py:321', cost=HAIKU, flag='AGERE_SEMANTIC_MODEL, AGERE_RECONCILE_MODEL')
 E('legacy_cost_ladder', 'Legacy 18-rung cost ladder', 'proposer', C + 'economical_planner', 'legacy_plan',
   'Former ordered ladder; superseded by the cascade (rungs reused through Ladder).', 'not_on_path', f'{EP}:619-651')
 E('scoped_review_compiler', 'Scoped local candidate compiler', 'proposer', C + 'scoped_review_compiler', 'compile_question',
@@ -322,7 +322,7 @@ E('intent_router', 'Workspace intent router', 'infrastructure', A + 'intent_rout
   'Workspace one-box: deliverable / simulate / question (question -> Workspace.ask -> compose_together -> shared compose, or hybrid-only pipeline).', 'named_only',
   'intent_router.py:22-50; workspace_api.py:253-258; onboarding/workspace.py:568-580')
 E('workspace_hybrid_pipeline', 'Workspace hybrid-only pipeline', 'proposer', A + 'onboarding.workspace', 'Workspace',
-  "pipeline='hybrid' answers through hybrid.live.answer alone (also fallback when 'full' fails).", 'named_only', 'onboarding/workspace.py:16-18,568-580', cost=OPUS + ' x3')
+  "pipeline='hybrid' answers through hybrid.live.answer alone (also fallback when 'full' fails).", 'named_only', 'onboarding/workspace.py:16-18,568-580', cost=HAIKU + ' x3')
 
 # ---------------------------------------------------------------- conversation / saved cohorts
 E('followup_resolver', 'Deterministic follow-up resolver', 'proposer', C + 'conversation', 'resolve',

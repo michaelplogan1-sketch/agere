@@ -14,6 +14,8 @@ rewording that reuses it has its slot mapping confirmed by System One before it 
 import os
 import time
 
+from .. import model_policy
+
 from . import request_plan, spec_fill, spec_readback, spec_verify
 from .question_input import QuestionNotUnderstood
 
@@ -70,6 +72,9 @@ def propose(c):
     ledger = c.ledger if live else None
     started = time.perf_counter()
     fillers = spec_fill.enabled_fillers() if live else ('grammar',)
+    if model_policy.escalating():  # the Sonnet rung: only the Claude spec writer runs again (the grammar and System One slot fillers already failed)
+        if 'haiku' not in fillers: return None
+        fillers = ('haiku',)
     try:
         filled = spec_fill.fill(c.stack, c.catalog, c.question, population=c.population, ledger=ledger, fillers=fillers,
                                 verify=(lambda cand: verify_spec(c, c.question, c.catalog, cand['plan'], ledger=ledger)) if live else None)

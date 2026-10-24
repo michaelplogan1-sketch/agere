@@ -91,24 +91,34 @@ class HaikuFiller(Base):
         self.assertEqual(models['sonnet'].calls, [])
         self.assertEqual(out['candidate']['notes']['attempt'], 2)
 
-    def test_sonnet_only_after_haiku_failed_validation_twice_and_never_opus(self):
+    def test_sonnet_is_only_the_escalation_rung_after_haiku_failed_validation_twice_and_never_opus(self):
+        from clinical_core.agere import model_policy
         bad = json.dumps({'source': {'table': 'patient', 'quote': 'nothing'}})
         haiku = FakeModel([bad, bad])
         sonnet = FakeModel([json.dumps(spec_count_hf(Q))], name='claude-sonnet-5-5', usd=0.03)
-        out, _ = self.fill(Q, haiku=haiku, sonnet=sonnet, fillers=('haiku',))
-        self.assertEqual((len(haiku.calls), len(sonnet.calls)), (2, 1))
-        self.assertAlmostEqual(out['receipt']['usd'], 0.05)
+        with self.assertRaises(F.SpecNotFilled) as ctx:
+            self.fill(Q, haiku=haiku, sonnet=sonnet, fillers=('haiku',))
+        self.assertEqual((len(haiku.calls), len(sonnet.calls)), (2, 0))  # the Haiku rung never reaches Sonnet
+        self.assertEqual(ctx.exception.receipt['calls'], 2)
+        with model_policy.escalation():  # the cascade runs this only after every tier's Haiku attempt failed
+            out, _ = self.fill(Q, haiku=FakeModel([]), sonnet=sonnet, fillers=('haiku',))
+        self.assertEqual(len(sonnet.calls), 1)
+        self.assertAlmostEqual(out['receipt']['usd'], 0.03)
         names = [c['model'] for c in out['candidate']['notes']['calls']]
-        self.assertEqual(names, ['claude-haiku-5-5', 'claude-haiku-5-5', 'claude-sonnet-5-5'])
+        self.assertEqual(names, ['claude-sonnet-5-5'])
         self.assertFalse(any('opus' in n for n in names))
 
-    def test_haiku_failing_three_times_leaves_no_spec_and_says_why(self):
+    def test_haiku_failing_twice_and_then_sonnet_failing_leaves_no_spec_and_says_why(self):
+        from clinical_core.agere import model_policy
         bad = json.dumps({'source': {'table': 'patient', 'quote': 'nothing'}})
         with self.assertRaises(F.SpecNotFilled) as ctx:
             self.fill(Q, haiku=FakeModel([bad, bad]), sonnet=FakeModel([bad], name='claude-sonnet-5-5'), fillers=('haiku',))
         self.assertIn('haiku', str(ctx.exception))
         self.assertEqual(ctx.exception.receipt['fillers']['haiku']['status'], 'invalid')
-        self.assertEqual(ctx.exception.receipt['calls'], 3)
+        self.assertEqual(ctx.exception.receipt['calls'], 2)
+        with model_policy.escalation(), self.assertRaises(F.SpecNotFilled) as again:
+            self.fill(Q, haiku=FakeModel([]), sonnet=FakeModel([bad], name='claude-sonnet-5-5'), fillers=('haiku',))
+        self.assertEqual(again.exception.receipt['calls'], 1)
 
     def test_an_analysis_or_program_reply_is_refused_with_feedback(self):
         haiku = FakeModel([json.dumps({'analysis': {'x': 1}}), json.dumps(spec_count_hf(Q))])
