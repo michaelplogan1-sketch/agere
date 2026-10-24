@@ -18,7 +18,7 @@ COPD = D.condition_cte('copd')
 ASTH = D.condition_cte('asthma')
 DEP = D.condition_cte('depression')
 AFIB = D.condition_cte('afib')
-ADULT = f"{D.AGE} >= 18"
+ADULT = f"{D.age_of()} >= 18"
 LOB_OF = ("lob AS (SELECT patient_id, line_of_business FROM (SELECT patient_id, line_of_business, "
           "ROW_NUMBER() OVER (PARTITION BY patient_id ORDER BY coverage_start DESC) rn FROM enrollment_span) WHERE rn = 1)")
 
@@ -33,7 +33,7 @@ def build(ctx):
                   SELECT SUM(m.value_canonical > {D.A1C_POOR_CONTROL}), COUNT(*)
                   FROM has_diabetes d JOIN patient p USING (patient_id)
                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c'
-                  WHERE p.{D.AGE} >= 18""",
+                  WHERE {D.age_of('p')} >= 18""",
           tolerance={'abs': 0.005},
           notes='denominator = living adult diabetics (EHR + problem list + counted claims + HbA1c >= 6.5) WITH a latest HbA1c; '
                 'missing A1c is a separate care gap (a1c_missing)'))
@@ -42,7 +42,7 @@ def build(ctx):
           sql=f"""WITH {LIV}, {DIA}
                   SELECT d.patient_id FROM has_diabetes d JOIN patient p USING (patient_id)
                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c'
-                  WHERE p.{D.AGE} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}"""))
+                  WHERE {D.age_of('p')} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}"""))
     add(Q(B, 'a1c_poor_by_lob', "break that down by line of business", 'table', follow_up_of='a1c_poor_list',
           standalone='For adult diabetic patients with a latest A1c above 9, how many are there in each line of business?',
           sql=f"""WITH {LIV}, {DIA}, {LOB_OF}
@@ -50,14 +50,14 @@ def build(ctx):
                   FROM has_diabetes d JOIN patient p USING (patient_id)
                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c'
                   LEFT JOIN lob l ON l.patient_id = d.patient_id
-                  WHERE p.{D.AGE} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}
+                  WHERE {D.age_of('p')} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}
                   GROUP BY 1 ORDER BY 2 DESC, 1""",
           notes='line of business of the most recent enrollment span; patients without a span are "unknown"'))
 
     add(Q(B, 'a1c_missing', "How many of our diabetics haven't had an A1c in the past year?", 'count',
           sql=f"""WITH {LIV}, {DIA}
                   SELECT COUNT(*) FROM has_diabetes d JOIN patient p USING (patient_id)
-                  WHERE p.{D.AGE} >= 18 AND d.patient_id NOT IN (SELECT patient_id FROM ({D.any_lab('hba1c')}) WHERE {D.in_last_year('event_date')})""",
+                  WHERE {D.age_of('p')} >= 18 AND d.patient_id NOT IN (SELECT patient_id FROM ({D.any_lab('hba1c')}) WHERE {D.in_last_year('event_date')})""",
           notes='adult living diabetics with no HbA1c result dated in the 12 months ending as-of'))
 
     add(Q(B, 'a1c_goal_by_practice',
@@ -68,7 +68,7 @@ def build(ctx):
                          ROUND(1.0 * SUM(m.value_canonical < {D.A1C_GOAL}) / COUNT(*), 4) AS share_under_8
                   FROM has_diabetes d JOIN patient p USING (patient_id) JOIN practice_of pr USING (patient_id)
                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c'
-                  WHERE p.{D.AGE} >= 18 AND pr.practice_id IS NOT NULL
+                  WHERE {D.age_of('p')} >= 18 AND pr.practice_id IS NOT NULL
                   GROUP BY 1 HAVING COUNT(*) >= 15 ORDER BY share_under_8, practice LIMIT 3""",
           notes='controlled = latest A1c < 8; denominator per practice = living adult diabetics with a latest A1c; '
                 'practice = pcp practice, else attributing practice of latest enrollment span'))
@@ -80,7 +80,7 @@ def build(ctx):
                   FROM has_hypertension h JOIN patient p USING (patient_id)
                   JOIN measurement_latest s ON s.patient_id = h.patient_id AND s.concept = 'systolic_bp'
                   JOIN measurement_latest d ON d.patient_id = h.patient_id AND d.concept = 'diastolic_bp'
-                  WHERE p.{D.AGE} BETWEEN 18 AND 85""",
+                  WHERE {D.age_of('p')} BETWEEN 18 AND 85""",
           notes='living hypertensives age 18-85 with a latest systolic and diastolic; controlled = <140 and <90'))
     add(Q(B, 'bp_control_by_lob', "same thing by payer type", 'table', follow_up_of='bp_control_share', tolerance={'abs': 0.005},
           standalone='What percent of patients with hypertension have their blood pressure under control, by line of business?',
@@ -91,7 +91,7 @@ def build(ctx):
                   JOIN measurement_latest s ON s.patient_id = h.patient_id AND s.concept = 'systolic_bp'
                   JOIN measurement_latest d ON d.patient_id = h.patient_id AND d.concept = 'diastolic_bp'
                   LEFT JOIN lob l ON l.patient_id = h.patient_id
-                  WHERE p.{D.AGE} BETWEEN 18 AND 85 GROUP BY 1 ORDER BY 2 DESC, 1"""))
+                  WHERE {D.age_of('p')} BETWEEN 18 AND 85 GROUP BY 1 ORDER BY 2 DESC, 1"""))
 
     pillar_sql = {k: D.filled_class_last_year(v) for k, v in D.GDMT_PILLARS.items()}
     add(Q(B, 'hf_no_betablocker', "Which of our heart failure patients aren't on an evidence-based beta blocker?", 'patient_set',
@@ -134,7 +134,7 @@ def build(ctx):
                     AND e.patient_id IN (SELECT patient_id FROM living)"""))
     add(Q(B, 'mammogram_rate', "What's our mammography screening rate for women 50 to 74 over the last two years?", 'share', tolerance={'abs': 0.005},
           sql=f"""WITH {LIV} SELECT SUM(p.patient_id IN (SELECT patient_id FROM ({D.MAMMOGRAM_EVIDENCE}) WHERE event_date > '2028-05-27' AND event_date <= '{D.AS_OF}')), COUNT(*)
-                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.sex_reported = 'F' AND p.{D.AGE} BETWEEN 50 AND 74""",
+                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.sex_reported = 'F' AND {D.age_of('p')} BETWEEN 50 AND 74""",
           notes='women 50-74 living; screened = final mammogram result OR counted screening-mammogram claim (CPT 77067) in the 24 months ending as-of'))
     add(Q(B, 'colorectal_rate', "How many patients 45-75 are up to date on colorectal screening (FIT in the last year or colonoscopy in the last ten)?",
           'share', tolerance={'abs': 0.005},
@@ -142,24 +142,24 @@ def build(ctx):
                       SELECT patient_id FROM cancer_screening WHERE test = 'FIT' AND {D.in_last_year('event_date')}
                       UNION SELECT patient_id FROM procedure_line WHERE cpt IN ('82274') AND counts_in_metrics = 1 AND {D.in_last_year('service_date')}
                       UNION SELECT patient_id FROM procedure_line WHERE cpt IN ('45378', '45380', '45385') AND counts_in_metrics = 1)), COUNT(*)
-                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.{D.AGE} BETWEEN 45 AND 75""",
+                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND {D.age_of('p')} BETWEEN 45 AND 75""",
           notes='claims history only starts 2026-09, so a colonoscopy "in the last ten years" can only be seen for the observed window; '
                 'FIT results and FIT claims (82274) in the last year count'))
     add(Q(B, 'flu_65', "What percentage of patients 65 and older got a flu shot last season?", 'share', tolerance={'abs': 0.005},
           sql=f"""WITH {LIV} SELECT SUM(p.patient_id IN (SELECT patient_id FROM immunization WHERE vaccine LIKE 'influenza%' AND status = 'completed'
                                                          AND event_date >= '2029-07-01' AND event_date <= '{D.AS_OF}')), COUNT(*)
-                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.{D.AGE} >= 65""",
+                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND {D.age_of('p')} >= 65""",
           notes='season = 2029-07-01 to as-of; any completed influenza product'))
     add(Q(B, 'awv_medicare', "How many Medicare patients completed an annual wellness visit in 2029?", 'count',
           sql=f"""WITH {LIV}, {LOB_OF}
                   SELECT COUNT(DISTINCT w.patient_id) FROM wellness_visit w JOIN lob l USING (patient_id)
-                  WHERE w.awv = 1 AND w.status = 'completed' AND substr(w.event_date, 1, 4) = '2029' AND l.line_of_business = 'medicare'
+                  WHERE w.awv = 1 AND w.status = 'completed' AND substr(w.event_date, 1, 4) = '2029' AND l.line_of_business IN ('medicare', 'dual', 'medigap')
                     AND w.patient_id IN (SELECT patient_id FROM living)""",
           notes='AWV = wellness_visit.awv = 1, completed, dated 2029; Medicare = line of business of the latest enrollment span'))
 
     add(Q(B, 'statin_diabetics', "What share of diabetics aged 40 to 75 filled a statin in the past year?", 'share', tolerance={'abs': 0.005},
           sql=f"""WITH {LIV}, {DIA} SELECT SUM(d.patient_id IN ({D.filled_class_last_year(['statin'])})), COUNT(*)
-                  FROM has_diabetes d JOIN patient p USING (patient_id) WHERE p.{D.AGE} BETWEEN 40 AND 75"""))
+                  FROM has_diabetes d JOIN patient p USING (patient_id) WHERE {D.age_of('p')} BETWEEN 40 AND 75"""))
     add(Q(B, 'cad_no_statin', "List coronary artery disease patients with no statin fill in the last 12 months.", 'patient_set',
           sql=f"""WITH {LIV}, {CAD} SELECT patient_id FROM has_cad WHERE patient_id NOT IN ({D.filled_class_last_year(['statin'])})"""))
     add(Q(B, 'ckd_no_uacr', "How many CKD patients are missing a urine albumin-creatinine ratio in the last year?", 'count',

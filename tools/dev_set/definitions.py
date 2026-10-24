@@ -79,11 +79,12 @@ def any_lab(concept: str) -> str:
 # --- conditions ---------------------------------------------------------------------------------------------------------
 # name -> ICD-10 LIKE patterns (applied to EHR rows, problem-list entries and payer-claim diagnoses alike)
 CONDITIONS = {
-    'diabetes': ['E10%', 'E11%', 'E13%'],
-    'ckd': ['N18%'],
-    'heart_failure': ['I50%'],
-    'hypertension': ['I10%'],
-    'copd': ['J44%'],
+    # code sets aligned with the product's canonical concept library (decision_context / tools/dev_oracle.py), 2026-10-23
+    'diabetes': ['E08%', 'E09%', 'E10%', 'E11%', 'E13%'],
+    'ckd': ['N18%', 'E08.2%', 'E09.2%', 'E10.2%', 'E11.2%', 'E13.2%', 'I12%', 'I13%'],
+    'heart_failure': ['I50%', 'I11.0%', 'I13.0%', 'I13.2%'],
+    'hypertension': ['I10%', 'I11%', 'I12%', 'I13%', 'I15%', 'I16%'],
+    'copd': ['J43%', 'J44%'],
     'asthma': ['J45%'],
     'depression': ['F32%', 'F33%'],
     'cad': ['I25%'],
@@ -172,7 +173,14 @@ PHARMACY_FILLS = "SELECT * FROM payer_pharmacy_claim WHERE counts_as_fill = 1"
 GENERIC_TIERS = ("generic",)  # formulary_tier values brand / generic / specialty; rows with no tier are excluded from generic-rate denominators
 
 # --- quality-measure conventions ----------------------------------------------------------------------------------------
-AGE = 'age_latest'                                   # patient.age_latest: age at the as-of date
+AGE = 'age_latest'  # DEPRECATED: a stale reported age (the product forbids it); keys use age_of() = age from birth date at AS_OF
+
+
+def age_of(alias: str = '') -> str:
+    """Age in whole years at AS_OF from patient.birth_date (the decision context's rule; never age_latest)."""
+    b = f'{alias}.birth_date' if alias else 'birth_date'
+    return (f"(CAST(strftime('%Y', '{AS_OF}') AS INT) - CAST(strftime('%Y', {b}) AS INT) - "
+            f"(strftime('%m-%d', '{AS_OF}') < strftime('%m-%d', {b})))")
 A1C_POOR_CONTROL = 9.0                               # "uncontrolled / poor control" = latest HbA1c > 9.0 %
 A1C_GOAL = 8.0                                       # "controlled" = latest HbA1c < 8.0 %
 BP_CONTROL = (140, 90)                               # controlled = latest systolic < 140 AND latest diastolic < 90

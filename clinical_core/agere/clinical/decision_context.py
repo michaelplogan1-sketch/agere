@@ -43,19 +43,20 @@ PATIENT_WORDS = re.compile(r'\b(?:patients?|people|persons?|individuals?|who|who
 NON_PATIENT_GRAIN = re.compile(r'\b(?:member[- ]months?|pmpm|per member per month|claims?|paid|allowed|billed|denials?|denied|premiums?|'
                                r'revenue|reimbursements?|spend|spending|costs?|payments?|dollars?|cents?)\b', re.I)
 LIVING_PREDICATE = 'NOT IN (SELECT patient_id FROM death)'
-# Each person counted once (OPTIONAL, off by default): a second chart of a person already on the roster (patient.data_segment = 'duplicate_chart') is out
-# with the deceased. The development-set definitions (tools/dev_set/definitions.py, 2026-10-23) count patients this way; tools/dev_oracle.py (35 questions)
-# counts a duplicate chart as a patient, so the default stays as the oracle has it. AGERE_EXCLUDE_DUPLICATE_CHARTS=1 (or EXCLUDE_DUPLICATE_CHARTS = True)
-# turns the rule on in every path at once: the SQL rewrite, the typed compiler, the population forms and the planner prompt.
+# Each person counted once (DEFAULT ON since 2026-10-23, Claude as build owner under Mike's standing approval: "patients" are people): a second chart of
+# a person already on the roster (patient.data_segment = 'duplicate_chart') is out with the deceased, in every path at once (the SQL rewrite, the typed
+# compiler, the population forms and the planner prompt). AGERE_EXCLUDE_DUPLICATE_CHARTS=0 counts charts instead.
 DUPLICATE_SEGMENT = 'duplicate_chart'
 COUNTED_PREDICATE = f"NOT IN (SELECT patient_id FROM death UNION SELECT patient_id FROM patient WHERE data_segment = '{DUPLICATE_SEGMENT}')"
 SEGMENT_MARKER = 'patient.data_segment'  # sql_query._relations adds this name when the patient relation carries the column
-EXCLUDE_DUPLICATE_CHARTS = False
+EXCLUDE_DUPLICATE_CHARTS = True
 
 
 def exclude_duplicate_charts():
     import os
-    return EXCLUDE_DUPLICATE_CHARTS or os.environ.get('AGERE_EXCLUDE_DUPLICATE_CHARTS', '').strip().lower() in ('1', 'on', 'true', 'yes')
+    env = os.environ.get('AGERE_EXCLUDE_DUPLICATE_CHARTS', '').strip().lower()
+    if env in ('0', 'off', 'false', 'no'): return False
+    return EXCLUDE_DUPLICATE_CHARTS or env in ('1', 'on', 'true', 'yes')
 
 
 def counted_predicate(has_segment=True):

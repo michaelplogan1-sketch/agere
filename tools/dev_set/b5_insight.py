@@ -94,7 +94,7 @@ def build(ctx):
                        WHERE u.kind = 'ed_visit' AND u.patient_id IN (SELECT patient_id FROM has_{cond}) AND u.event_date >= ? AND u.event_date <= ?""", rng)
 
     hf4, hf1 = cohort_ed('heart_failure', a), cohort_ed('heart_failure', b)
-    ad = lambda r: one(f"""SELECT COUNT(*) FROM ({D.ED_VISITS}) e JOIN patient p USING (patient_id) WHERE p.{D.AGE} BETWEEN 18 AND 64
+    ad = lambda r: one(f"""SELECT COUNT(*) FROM ({D.ED_VISITS}) e JOIN patient p USING (patient_id) WHERE {D.age_of('p')} BETWEEN 18 AND 64
                            AND e.event_date >= ? AND e.event_date <= ?""", r)
     ad4, ad1 = ad(a), ad(b)
     add(Q(B, 'ed_q1_2030', "Why did ED use go up in Q1 2030 compared with the quarter before?", 'rubric', answer=rubric([
@@ -151,7 +151,7 @@ def build(ctx):
     prac = ctx.rows(f"""WITH {LIV}, {D.condition_cte('diabetes')}, {D.PRACTICE_CTE}
         SELECT pr.practice_id, COUNT(*) n, SUM(m.value_canonical < {D.A1C_GOAL}) ctrl, SUM(m.value_canonical > {D.A1C_POOR_CONTROL}) poor
         FROM has_diabetes d JOIN patient p USING (patient_id) JOIN practice_of pr USING (patient_id)
-        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE p.{D.AGE} >= 18 AND pr.practice_id IS NOT NULL
+        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE {D.age_of('p')} >= 18 AND pr.practice_id IS NOT NULL
         GROUP BY 1 HAVING COUNT(*) >= 15 ORDER BY 1.0 * SUM(m.value_canonical < {D.A1C_GOAL}) / COUNT(*), 1""")
     overall_ctrl = sum(r[2] for r in prac) / sum(r[1] for r in prac)
     worst = prac[:3]
@@ -164,7 +164,7 @@ def build(ctx):
         notes='the worst three practices and their control shares are computed'))
     pc = ctx.rows(f"""WITH {LIV}, {D.condition_cte('diabetes')}, {D.PRACTICE_CTE}
         SELECT pr.practice_id, COUNT(*) FROM has_diabetes d JOIN patient p USING (patient_id) JOIN practice_of pr USING (patient_id)
-        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE p.{D.AGE} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}
+        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE {D.age_of('p')} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}
         GROUP BY 1 ORDER BY 2 DESC, 1 LIMIT 3""")
     add(Q(B, 'dm_poor_practices', "and which practice has the most patients above 9?", 'rubric', follow_up_of='dm_gap_practices', answer=rubric([
         t('top', f'{pc[0][0]} has the most diabetics with latest A1c above 9', [lit(pc[0][0])]),
@@ -175,11 +175,11 @@ def build(ctx):
 
     # 7 -- outreach: diabetes --------------------------------------------------------------------------------------------
     poor = one(f"""WITH {LIV}, {D.condition_cte('diabetes')} SELECT COUNT(*) FROM has_diabetes d JOIN patient p USING (patient_id)
-                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE p.{D.AGE} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}""")
+                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE {D.age_of('p')} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}""")
     poor_ed = one(f"""WITH {LIV}, {D.condition_cte('diabetes')} SELECT COUNT(*) FROM has_diabetes d JOIN patient p USING (patient_id)
-                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE p.{D.AGE} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}
+                   JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE {D.age_of('p')} >= 18 AND m.value_canonical > {D.A1C_POOR_CONTROL}
                    AND d.patient_id IN (SELECT patient_id FROM ({D.ED_VISITS}) WHERE {D.in_last_year('event_date')})""")
-    nolab = one(f"""WITH {LIV}, {D.condition_cte('diabetes')} SELECT COUNT(*) FROM has_diabetes d JOIN patient p USING (patient_id) WHERE p.{D.AGE} >= 18
+    nolab = one(f"""WITH {LIV}, {D.condition_cte('diabetes')} SELECT COUNT(*) FROM has_diabetes d JOIN patient p USING (patient_id) WHERE {D.age_of('p')} >= 18
                     AND d.patient_id NOT IN (SELECT patient_id FROM ({D.any_lab('hba1c')}) WHERE {D.in_last_year('event_date')})""")
     add(Q(B, 'outreach_diabetes', "Who should we prioritize for diabetes outreach?", 'rubric', answer=rubric([
         n('poor', f'{poor} adult diabetics have a latest A1c above 9', poor, abs_=0, near=[r'above 9|over 9|>\s*9|uncontrolled|poor']),
@@ -206,17 +206,17 @@ def build(ctx):
     # 9 -- preventive gaps -----------------------------------------------------------------------------------------------
     def rate_mammo():
         return ctx.rows(f"""WITH {LIV} SELECT SUM(p.patient_id IN (SELECT patient_id FROM ({D.MAMMOGRAM_EVIDENCE}) WHERE event_date > '2028-05-27' AND event_date <= '{D.AS_OF}')), COUNT(*)
-                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.sex_reported = 'F' AND p.{D.AGE} BETWEEN 50 AND 74""")[0]
+                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.sex_reported = 'F' AND {D.age_of('p')} BETWEEN 50 AND 74""")[0]
 
     def rate_flu():
         return ctx.rows(f"""WITH {LIV} SELECT SUM(p.patient_id IN (SELECT patient_id FROM immunization WHERE vaccine LIKE 'influenza%' AND status = 'completed'
-                  AND event_date >= '2029-07-01' AND event_date <= '{D.AS_OF}')), COUNT(*) FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.{D.AGE} >= 65""")[0]
+                  AND event_date >= '2029-07-01' AND event_date <= '{D.AS_OF}')), COUNT(*) FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND {D.age_of('p')} >= 65""")[0]
 
     def rate_crc():
         return ctx.rows(f"""WITH {LIV} SELECT SUM(p.patient_id IN (SELECT patient_id FROM cancer_screening WHERE test = 'FIT' AND {D.in_last_year('event_date')}
                       UNION SELECT patient_id FROM procedure_line WHERE cpt = '82274' AND counts_in_metrics = 1 AND {D.in_last_year('service_date')}
                       UNION SELECT patient_id FROM procedure_line WHERE cpt IN ('45378', '45380', '45385') AND counts_in_metrics = 1)), COUNT(*)
-                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND p.{D.AGE} BETWEEN 45 AND 75""")[0]
+                  FROM patient p WHERE p.patient_id IN (SELECT patient_id FROM living) AND {D.age_of('p')} BETWEEN 45 AND 75""")[0]
     (mn, md), (fn_, fd), (cn, cd) = rate_mammo(), rate_flu(), rate_crc()
     add(Q(B, 'preventive_gaps', "Where are our biggest preventive care gaps?", 'rubric', answer=rubric([
         share_fact('crc', f'Colorectal screening is the lowest at {cn / cd:.0%}', cn, cd, near=[r'colorectal|colon|FIT']),
@@ -363,7 +363,7 @@ def build(ctx):
         FROM has_hypertension h JOIN patient p USING (patient_id) JOIN practice_of pr USING (patient_id)
         JOIN measurement_latest s ON s.patient_id = h.patient_id AND s.concept = 'systolic_bp'
         JOIN measurement_latest d ON d.patient_id = h.patient_id AND d.concept = 'diastolic_bp'
-        WHERE p.{D.AGE} BETWEEN 18 AND 85 AND pr.practice_id IS NOT NULL GROUP BY 1 HAVING COUNT(*) >= 15 ORDER BY r, 1 LIMIT 3""")
+        WHERE {D.age_of('p')} BETWEEN 18 AND 85 AND pr.practice_id IS NOT NULL GROUP BY 1 HAVING COUNT(*) >= 15 ORDER BY r, 1 LIMIT 3""")
     add(Q(B, 'bp_weakest', "Where is blood pressure control weakest across our practices?", 'rubric', answer=rubric([
         t('worst', f'{bpw[0][0]} has the lowest BP control ({bpw[0][2]:.0%} of {bpw[0][1]} hypertensives)', [lit(bpw[0][0])]),
         share_fact('rate', f'{bpw[0][0]} controlled share {bpw[0][2]:.0%}', bpw[0][2], 1, near=[lit(bpw[0][0])]),
@@ -375,7 +375,7 @@ def build(ctx):
     sv = ctx.rows(f"""WITH {LIV}, {D.condition_cte('diabetes')}
         SELECT CASE WHEN s.svi_overall >= {D.HIGH_SVI} THEN 'high' WHEN s.svi_overall < 25 THEN 'low' END g, COUNT(*), SUM(m.value_canonical > {D.A1C_POOR_CONTROL})
         FROM has_diabetes d JOIN patient_svi s USING (patient_id) JOIN patient p USING (patient_id)
-        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE p.{D.AGE} >= 18 GROUP BY 1""")
+        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE {D.age_of('p')} >= 18 GROUP BY 1""")
     sv = {r[0]: r for r in sv if r[0]}
     hi, lo = sv['high'], sv['low']
     add(Q(B, 'svi_diabetes', "Do patients in high-vulnerability areas have worse diabetes control?", 'rubric', answer=rubric([
@@ -434,7 +434,7 @@ def build(ctx):
     def lobq(lob):
         r = ctx.rows(f"""WITH {LIV}, {D.condition_cte('diabetes')}, {LOB}
                         SELECT SUM(m.value_canonical > {D.A1C_POOR_CONTROL}), COUNT(*) FROM has_diabetes d JOIN lob l USING (patient_id) JOIN patient p USING (patient_id)
-                        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE p.{D.AGE} >= 18 AND l.line_of_business = ?""", (lob,))[0]
+                        JOIN measurement_latest m ON m.patient_id = d.patient_id AND m.concept = 'hba1c' WHERE {D.age_of('p')} >= 18 AND l.line_of_business = ?""", (lob,))[0]
         ed = ctx.rows(f"""WITH {LIV}, {LOB}
                         SELECT (SELECT COUNT(*) FROM ({D.ED_VISITS}) e WHERE {D.in_last_year('e.event_date')} AND e.patient_id IN (SELECT patient_id FROM lob WHERE line_of_business = ?)),
                                (SELECT COUNT(*) FROM lob WHERE line_of_business = ? AND patient_id IN (SELECT patient_id FROM living))""", (lob, lob))[0]

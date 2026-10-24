@@ -115,7 +115,9 @@ ASKS_DECEASED = re.compile(r'\b(?:deceased|died|dead|death|deaths|mortality|dyin
 
 def truth_sets(db, as_of, question, sql, denominator=None):
     """The exact patient set (and the share's denominator set) for one question."""
-    living = '' if ASKS_DECEASED.search(question) else ' WHERE patient_id NOT IN (SELECT patient_id FROM death)'
+    # living people: no death row, and a duplicate chart of a person already counted is not a second patient (decision context)
+    living = ('' if ASKS_DECEASED.search(question) else ' WHERE patient_id NOT IN (SELECT patient_id FROM death)'
+              " AND patient_id NOT IN (SELECT patient_id FROM patient WHERE data_segment = 'duplicate_chart')")
     wrap = lambda s: {r[0] for r in db.execute(f'SELECT DISTINCT patient_id FROM ({s}){living}', {'as_of': as_of})}
     return wrap(sql), (wrap(denominator) if denominator else None)
 
