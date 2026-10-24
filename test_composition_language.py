@@ -330,6 +330,17 @@ class WordingVariants(CompositionFixture):
         self.assertIn('different', spec_readback.predicate_text(plan['where']))
 
 
+class ShareDenominator(CompositionFixture):
+    def test_with_condition_who_clause_keeps_the_condition_in_the_denominator(self):
+        rows = self.run_q('Which practices have the lowest share of patients with diabetes who are on a statin?')
+        pct = sorted(round(r['percent'], 1) for r in rows)
+        self.assertEqual(pct, [0.0, 50.0])  # practice 1: D only (antiplatelet) 0/1; practice 0: A (statin), B 1/2 -- never over all patients
+
+    def test_share_of_hypertensives_who_also_have_diabetes(self):
+        v = self.run_q('Of the patients with hypertension, what share also have diabetes?')
+        self.assertAlmostEqual(v, 50.0, 1)  # D has both, E only hypertension
+
+
 class MoreWording(CompositionFixture):
     def test_a_comma_list_of_drugs_is_one_set(self):
         self.assertEqual(self.count('How many patients with diabetes are not on a statin, an antiplatelet or insulin?'), 0)  # A statin, B insulin, D antiplatelet
