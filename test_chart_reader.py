@@ -607,6 +607,63 @@ class Notes(Base):
         self.assertIn('later notes read from 2029-09-02', a['headline'])
 
 
+class NotesReading(Base):
+    """2026-10-24: why-stopped, anaphoric asks, fronted clauses, same-sentence response asks, OCR-garbled quotes."""
+    def test_why_was_it_stopped_reads_the_stopping_passage_not_the_latest_one(self):
+        ev = [{'record_id': 'N-3', 'date': '2030-04-28', 'note_type': 'annual', 'status': 'documented', 'detail': {'event': 'continued'}, 'supports': True, 'p': 1.0,
+               'quote': 'Medications: aspirin potassium 100 mg tablet daily;'},
+              {'record_id': 'N-2', 'date': '2030-01-10', 'note_type': 'acute', 'status': 'documented', 'detail': {'event': 'stopped', 'reason': ['side_effect']},
+               'supports': False, 'p': 0.95, 'quote': 'Stop aspirin 100 mg due to hyperkalemia; patient instructed to discontinue.'}]
+        nf = FakeNotes({('medication_event', 'aspirin'): {'status': 'documented', 'detail': {'event': 'continued'}, 'evidence': ev, 'p': 1.0, 'holds': True}})
+        for text in ('What was the reason aspirin was stopped for %s?', 'What was the reason aspirin was discontinued for %s?'):
+            a = CR.ask(self.stack, text % RICH, nf=nf)
+            self.assertIn('reason: side_effect', a['headline'], a['headline'])
+            self.assertIn('hyperkalemia', a['headline'])
+            self.assertNotIn('not as asked', a['headline'])
+            self.assertEqual(a['sources'][0]['record_id'], 'N-2')
+        # nothing stopped it: still "not as asked", never the latest passage dressed up as the answer
+        only = [dict(ev[0])]
+        nf2 = FakeNotes({('medication_event', 'aspirin'): {'status': 'documented', 'detail': {'event': 'continued'}, 'evidence': only, 'p': 1.0, 'holds': True}})
+        self.assertIn('not as asked', CR.ask(self.stack, f'What was the reason aspirin was stopped for {RICH}?', nf=nf2)['headline'])
+
+    def test_a_pointer_back_asks_the_sentence_that_names_the_finding(self):
+        p = CN.build('Do the notes record any drug intolerance for SYN-1? What is it?', AS_OF)
+        self.assertEqual((p[0]['frame'], p[0]['concept'].get('open')), ('adverse_event', True))
+
+    def test_the_main_clause_after_a_fronted_dating_clause_picks_the_frame(self):
+        p = CN.build('After SYN-1 chose comfort-focused care in a goals-of-care talk, do later notes still show new disease-directed medications started?', AS_OF)
+        self.assertEqual([x['frame'] for x in p], ['medication_event'])
+
+    def test_a_long_fronted_clause_is_still_a_yes_no_question(self):
+        q = 'After the 2029-08-05 note that stopped lisinopril for SYN-1 (angioedema concern), do the notes that follow still show lisinopril?'
+        self.assertTrue(CN.asks_yes_no(CN.asking_and_context(q)[0]))
+        self.assertFalse(CN.asks_yes_no('What was the reason aspirin was stopped?'))
+
+    def test_a_response_asked_in_the_same_sentence_is_read(self):
+        for q in ('Do the notes mention any social or financial barriers, and what was done to address them?',
+                  'Look through the notes for social or financial barriers and tell me what action was taken.'):
+            ask, ctx, response = CN.split_parts(q)
+            self.assertTrue(response, q)
+            self.assertNotIn('done', ask)
+            self.assertNotIn('action', ask)
+        self.assertFalse(CN.split_parts('What was done about the fall?')[2])
+
+    def test_is_there_a_note_saying_is_a_note_question(self):
+        text = 'Is there a note saying SYN-1 has difficulty getting to appointments?'
+        self.assertTrue(CN.is_note_question(text, CI.parse(text, AS_OF)))
+
+    def test_a_structured_drug_follow_up_after_a_note_question_continues_the_note_question(self):
+        chart = {'intent': 'list', 'domain': 'medication', 'concept': {'kind': 'drug', 'value': 'morphine'}}
+        self.assertTrue(CN.follows_note_question(chart, [{'frame': 'medication_event'}]))
+        self.assertFalse(CN.follows_note_question(chart, [{'frame': 'procedure_test'}]))
+        self.assertFalse(CN.follows_note_question({'intent': 'latest_value', 'domain': 'lab', 'concept': {'kind': 'lab'}}, [{'frame': 'medication_event'}]))
+
+    def test_ocr_digit_swaps_are_shown_beside_the_verbatim_quote(self):
+        self.assertEqual(CN.ocr_clean('IMPRESSION:Possible early right 1owerlobe infiltrate.'), 'IMPRESSION:Possible early right lowerlobe infiltrate.')
+        for safe in ('HbA1c 7.1%', 'a1c was 6.5', 'losartan 100 mg', 'B12 level', 'O2 sat 98%'):
+            self.assertEqual(CN.ocr_clean(safe), safe)
+
+
 class RealNoteFrames(Base):
     def test_predicates_validate_against_note_frames_and_run_offline(self):
         from clinical_core.agere.clinical import note_frames as NF

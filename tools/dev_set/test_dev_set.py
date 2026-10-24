@@ -244,8 +244,50 @@ class ScorerTests(unittest.TestCase):
 
     def test_note_requires_cited_record(self):
         q = {'answer_type': 'note', 'key': {'kind': 'short_text', 'key_groups': ['cost']}, 'evidence': [{'record_id': 'REC-1', 'quote': 'q'}]}
-        self.assertTrue(run.score(q, {'answer': {'status': 'answered', 'summary': 'stopped for cost', 'grounding': ['REC-1']}})[0])
+        ok = {'answer': {'status': 'answered', 'summary': 'stopped for cost', 'sources': [{'record_id': 'REC-1', 'quote': 'Stopped lisinopril due to cost.'}]}}
+        self.assertTrue(run.score(q, ok)[0])
         self.assertFalse(run.score(q, {'answer': {'status': 'answered', 'summary': 'stopped for cost'}})[0])
+
+    def test_note_cited_passage_must_itself_support_the_claim(self):
+        q = {'answer_type': 'note', 'key': {'kind': 'short_text', 'key_groups': ['hyperkal'], 'scope_records': ['REC-1', 'REC-2']},
+             'evidence': [{'record_id': 'REC-2', 'quote': 'Stop losartan due to hyperkalemia.'}]}
+        # the claim is right, a scope record is cited, but the quoted passage is a medication list that says nothing about why
+        wrong = {'answer': {'status': 'answered', 'headline': 'Hyperkalemia | 2030-04-28 note REC-1: "Medications: losartan 100 mg daily;"'}}
+        res = run.score(q, wrong)
+        self.assertFalse(res[0])
+        self.assertTrue(res[1]['answer_match'])
+        self.assertFalse(res[1]['passage_supports_claim'])
+        right = {'answer': {'status': 'answered', 'headline': 'Hyperkalemia | 2030-01-10 note REC-2: "Stop losartan 100 mg due to hyperkalemia; discontinue."'}}
+        self.assertTrue(run.score(q, right)[0])
+        # a cited record with no quoted passage proves nothing
+        self.assertFalse(run.score(q, {'answer': {'status': 'answered', 'summary': 'Hyperkalemia', 'grounding': ['REC-2']}})[0])
+
+    def test_note_groups_may_be_met_by_two_cited_passages(self):
+        q = {'answer_type': 'note', 'key': {'kind': 'short_text', 'key_groups': ['empagliflozin', 'spironolactone'], 'scope_records': ['A', 'B']},
+             'evidence': [{'record_id': 'A', 'quote': 'x'}]}
+        two = {'answer': {'status': 'answered', 'sources': [{'record_id': 'A', 'quote': 'Start empagliflozin 10 mg'}, {'record_id': 'B', 'quote': 'Start spironolactone'}]}}
+        self.assertTrue(run.score(q, two)[0])
+        one = {'answer': {'status': 'answered', 'summary': 'empagliflozin and spironolactone', 'sources': [{'record_id': 'A', 'quote': 'Start empagliflozin 10 mg'}]}}
+        self.assertFalse(run.score(q, one)[0])
+
+    def test_note_passage_with_ocr_digit_swaps_still_counts(self):
+        q = {'answer_type': 'note', 'key': {'kind': 'short_text', 'key_groups': ['infiltrate', 'right lower'], 'scope_records': ['R']},
+             'evidence': [{'record_id': 'R', 'quote': 'IMPRESSION:Possible early right 1owerlobe infiltrate.'}]}
+        resp = {'answer': {'status': 'answered', 'headline': 'Possible infiltrate | 2027 Outside Records R: "IMPRESSION:Possible early right 1owerlobe infiltrate."'}}
+        self.assertTrue(run.score(q, resp)[0])
+
+    def test_yes_no_note_needs_a_passage_with_the_key_evidence(self):
+        q = {'answer_type': 'note', 'key': {'kind': 'yes_no', 'answer': 'yes', 'scope_records': ['R1', 'R2']},
+             'evidence': [{'record_id': 'R1', 'quote': 'Getting to appointments has been difficult; discussed transportation help.'}]}
+        good = {'answer': {'status': 'answered', 'headline': 'Yes: transportation | R1: "Getting to appointments has been difficult; discussed help arranging transportation."'}}
+        self.assertTrue(run.score(q, good)[0])
+        bad = {'answer': {'status': 'answered', 'headline': 'Yes: transportation | R2: "Blood pressure 120/80, no complaints."'}}
+        self.assertFalse(run.score(q, bad)[0])
+        # another scope record about the same subject, worded differently, still counts
+        q2 = {'answer_type': 'note', 'question': 'and morphine?', 'key': {'kind': 'yes_no', 'answer': 'yes', 'scope_records': ['R1', 'R2'], 'standalone': 'Does P-5003 report taking morphine?'},
+              'evidence': [{'record_id': 'R1', 'quote': 'Morphine: reports taking this medicine. Recalls dose 2-4 mg IV, frequency q2h PRN; directions remain unverified.'}]}
+        other = {'answer': {'status': 'answered', 'headline': 'Yes: documented | R2: "Morphine: says taking. Recalls 2-4 mg IV q2h PRN;"'}}
+        self.assertTrue(run.score(q2, other)[0])
 
 
 if __name__ == '__main__':

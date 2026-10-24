@@ -66,11 +66,11 @@ class Fixture(unittest.TestCase):
 
 
 class Production(Fixture):
-    def test_default_budget_is_30_seconds(self):
+    def test_default_budget_is_120_seconds(self):  # Mike 2026-10-24: correctness first, 30 s is not a hard cap
         with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': ''}):
-            self.assertEqual(AB.default_seconds(), 30.0)
-        with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': '120'}):
-            self.assertEqual(AB.default_seconds(), 120.0)  # benchmarks keep setting it higher
+            self.assertEqual(AB.default_seconds(), 120.0)
+        with patch.dict(os.environ, {'AGERE_ANSWER_BUDGET_SECONDS': '30'}):
+            self.assertEqual(AB.default_seconds(), 30.0)  # a deployment can still set a shorter budget
 
     def test_a_cheap_tier_that_answers_stops_the_cascade(self):
         self.fake_tiers(answers={'semantic_cache': lambda: answer_contract()})
