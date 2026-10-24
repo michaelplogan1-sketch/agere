@@ -25,6 +25,7 @@ from datetime import date
 
 from . import chart_intents as CI
 from . import decision_context as DC
+from .age import age_at
 
 VERSION = 'chart-queries/1'
 MAX_SOURCES = 40
@@ -340,7 +341,8 @@ def demographics(ch, it):
     if p is None:
         return None
     a = it.get('attribute')
-    fields = {'age': ('age', p.get('age_latest'), 'years', f"age {p.get('age_latest')} at {ch.as_of}"), 'birth_date': ('date of birth', p.get('birth_date'), None, None),
+    age = age_at(p.get('birth_date'), ch.as_of)  # completed years from the birth date at the as-of date, never the feed's age_latest
+    fields = {'age': ('age', age, 'years', f"age {age} at {ch.as_of}"), 'birth_date': ('date of birth', p.get('birth_date'), None, None),
               'sex': ('sex', p.get('sex_reported'), None, None), 'race': ('race', p.get('race'), None, None), 'ethnicity': ('ethnicity', p.get('ethnicity'), None, None),
               'language': ('preferred language', p.get('preferred_language'), None, None), 'interpreter': ('interpreter needed', bool(p.get('interpreter_needed')), None, None),
               'zip': ('ZIP', p.get('zip'), None, None), 'county': ('county', p.get('county'), None, None), 'state': ('state', p.get('state'), None, None),
@@ -351,7 +353,7 @@ def demographics(ch, it):
         head = f'{name.capitalize()} of {ch.pid}: {value if value is not None else "not recorded"}{" " + unit if unit and value is not None else ""}'
         return core(t, head, value=value, unit=unit, sources=[src('patient', ch.pid)])
     table = [{'field': k, 'value': v[1]} for k, v in fields.items()]
-    return core('table', f"{ch.pid}: age {p.get('age_latest')}, {p.get('sex_reported')}, {p.get('race')}, {p.get('ethnicity')}, language {p.get('preferred_language')}",
+    return core('table', f"{ch.pid}: age {age}, {p.get('sex_reported')}, {p.get('race')}, {p.get('ethnicity')}, language {p.get('preferred_language')}",
                 table=table, sources=[src('patient', ch.pid)])
 
 
@@ -569,23 +571,29 @@ def medication(ch, it):
         fills = ch.rows(f'SELECT fill_id, fill_date, drug_name, drug_class, days_supply, record_ids FROM fill WHERE patient_id = ?{frag} AND fill_date > ? AND fill_date <= ? '
                         f'ORDER BY fill_date DESC', ch.pid, *params, start, end)
         last_any = ch.one(f'SELECT max(fill_date) AS d FROM fill WHERE patient_id = ?{frag}', ch.pid, *params)
-        on = bool(hits or fills)
+        asks_list = bool(re.search(r'\b(?:med(?:ication)?s? list|listed|on the list|prescribed|ordered|on file)\b', it.get('question') or '', re.I))
+        on = bool(fills) or (asks_list and bool(hits))  # "on" = a picked-up fill in the 12 months ending as-of; list/order status answers only a list question
         bits = []
-        if hits:
-            bits.append("active medication-list entry: " + '; '.join(h['name'] for h in hits[:4]))
         if fills:
             bits.append(f"{len(fills)} fill(s) in the 12 months ending {end}, latest {fills[0]['fill_date']}")
-        if on:
+        if hits and (asks_list or not fills):
+            bits.append("active medication-list entry: " + '; '.join(h['name'] for h in hits[:4]))
+        if fills:
             head = f"Yes: {ch.pid} is on {label} ({'; '.join(bits)})"
+        elif hits and asks_list:
+            head = f"Yes: {label} is listed as prescribed for {ch.pid} ({'; '.join(bits)}); no {label} fill in the 12 months ending {end}"
+        elif hits:
+            head = f"No: {ch.pid} has no {label} fill in the 12 months ending {end}, so is not counted as on it; {label} is listed or prescribed only ({'; '.join(bits)})"
         else:
             tail = f"; last {label} fill {last_any['d']}" if last_any and last_any['d'] else f'; no {label} fill on record'
-            head = f"No: {ch.pid} has no active {label} on the medication list and no {label} fill in the 12 months ending {end}{tail}"
+            head = f"No: {ch.pid} has no {label} fill in the 12 months ending {end} and no active {label} on the medication list{tail}"
         sources = [src('medication_list_entry', h['record_id'], h['last_listed']) for h in hits] + [src('fill', f['record_ids'].split(',')[0] if f['record_ids'] else f['fill_id'], f['fill_date']) for f in fills[:5]]
         return core('yes_no', head, value=on, count=len(hits) + len(fills),
                     table=[{'basis': 'active list', 'name': h['name'], 'last_fill_date': h['last_fill_date'], 'discrepancy': h['discrepancy']} for h in hits] +
                           [{'basis': 'fill', 'name': f['drug_name'], 'date': f['fill_date'], 'days_supply': f['days_supply']} for f in fills[:5]],
-                    sources=sources, facts={'on_list': bool(hits), 'fills_12m': len(fills), 'last_fill': last_any['d'] if last_any else None},
-                    notes=['"on" = an active medication-list entry OR a fill in the 12 months ending the as-of date', f'window: the 12 months ending {end}'])
+                    sources=sources, facts={'on_list': bool(hits), 'fills_12m': len(fills), 'last_fill': last_any['d'] if last_any else None, 'on': bool(fills)},
+                    notes=['"on" = a picked-up fill in the 12 months ending the as-of date (the decision context); a list-only or ordered drug is reported as listed/prescribed',
+                           f'window: the 12 months ending {end}'])
     if concept and intent == 'list':
         entries = [e for e in entries if entry_matches(ch, e, concept)]
     table = [{'drug': e['drug_key'], 'name': e['name'], 'last_fill_date': e['last_fill_date'], 'last_order_date': e['last_order_date'], 'note': e['discrepancy']} for e in entries]
