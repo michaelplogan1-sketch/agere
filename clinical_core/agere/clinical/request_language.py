@@ -529,7 +529,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             if atoms:
                 quote = text[:len(text) - len(rest)].strip()
                 return [{**atoms[0], 'quote': quote}, *atoms[1:]], rest
-            return [], text
+            return [], rest
         m = re.match(r'^\s+(?:in|during|within)\s+the\s+(?:last|past)\s+(\d+)\s+months\b', text, re.I)
         if m: return [atom(f'{table}.{field}', 'within_last_months', int(m[1]), m.group().strip())], text[m.end():]
         m = re.match(r'^\s+(?:in|during|over)\s+the\s+(?:last|past)\s+year\b', text, re.I)

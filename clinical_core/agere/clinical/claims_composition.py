@@ -71,7 +71,11 @@ class ClaimFrames:
         clock = CLOCK.get(table)
         if not clock or clock not in self.catalog.tables.get(table, []): return [], [], []
         rolling, rq = self.claim_rolling_atoms(table, text)
-        if rolling: return rolling, [rq], []
+        if rolling:
+            if re.search(r"\b(?:19|20)\d\d\b", text):
+                from .request_plan import AmbiguousRequest
+                raise AmbiguousRequest('A rolling window and calendar year need an explicit comparison')
+            return rolling, [rq], []
         years = re.findall(r'\b(?:in|during|for|of)?\s*(?:calendar\s+)?((?:19|20)\d\d)\b', text, re.I)
         if not years: return [], [], []
         years = sorted({int(y) for y in years})
