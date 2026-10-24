@@ -745,6 +745,25 @@ def rescope(stack, question, saved):
     return result, base if not year else new_question, note
 
 
+def inherited_period(question, prior, as_of):
+    """A follow-up with no period keeps one literal period from its antecedent.
+
+    Multiple prior periods and any new temporal instruction remain unresolved
+    here. This resolver never chooses a default period or a patient population.
+    """
+    from . import decision_context as DC
+    if not prior or not prior.get('resolved_question') or not is_followup(question): return None
+    from .request_language import MONTH_NAMES
+    if re.search(r'\b(?:'+'|'.join(MONTH_NAMES)+r')\b',question,re.I): return None
+    if DC.year_window(question, as_of) or re.search(r'\b(?:since|before|after|calendar|last|past|this|next|previous)\b|\b\d{4}\b', question,re.I): return None
+    windows=DC.year_window(prior['resolved_question'],as_of)
+    if len({(w['kind'],w['start'],w['end']) for w in windows}) != 1: return None
+    window=windows[0]
+    return {'standalone':question.rstrip('?. ').strip()+' '+window['phrase'],
+            'phrase':window['phrase'],'from_question':prior['resolved_question'],
+            'start':window['start'],'end':window['end'],'kind':window['kind']}
+
+
 def handle_compose(stack, body, hosted_factory=None):
     """Run /api/stack/compose with optional conversation context. Logging matches the single-question route."""
     from . import answer_log, learning
@@ -782,6 +801,15 @@ def handle_compose(stack, body, hosted_factory=None):
             saved = (prior or {}).get('action_context')
             bound = None
             shared = getattr(stack, 'shared_request_planning', False) is True
+            temporal = None
+            if shared and prior and body.get('scope') != 'warehouse' and not explicit_context:
+                from .request_plan import Catalog
+                temporal = inherited_period(question, prior, Catalog.load(stack.path).identity['as_of'])
+                if temporal:
+                    if not saved: temporal = None
+                    else: answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
+            effective_question = temporal['standalone'] if temporal else question
+            used_temporal = False
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
             rescoped = ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
@@ -803,7 +831,8 @@ def handle_compose(stack, body, hosted_factory=None):
                     # grouping. They operate on immutable membership, never text rewrites.
                     bound = answer_context.followup(stack.path, saved['id'], question, scope=selected_scope)
                     if bound is None:
-                        bound = stack.compose(question, population=parent['patient_ids'], parent=parent, planning=planning)
+                        bound = stack.compose(effective_question, population=parent['patient_ids'], parent=parent, planning=planning)
+                        used_temporal = temporal is not None
                     bound['cohort_transform']['scope'] = selected_scope
                 elif not shared and saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
                     bound = answer_context.followup(stack.path, saved['id'], question)
@@ -824,8 +853,18 @@ def handle_compose(stack, body, hosted_factory=None):
                 if resolution.get('hosted_receipt'):
                     r = resolution['hosted_receipt']
                     hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1
+                if shared and temporal and bound is None:
+                    resolution['standalone'] = effective_question
+                    used_temporal = True
                 standalone = resolution['standalone']
                 result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
+                if used_temporal:
+                    resolution.update(standalone=effective_question, method='inherited_period', follow_up=True,
+                                      reason='Kept the explicitly stated period of the previous question')
+                    resolution['edits'] = [*resolution['edits'], 'Kept period: '+temporal['phrase']]
+                    result['inherited_period'] = temporal
+                    result['answer']['limitations'] = [*(result['answer'].get('limitations') or []),
+                        'Time period carried from the previous question: '+temporal['phrase']+'.']
     except Exception as exc:
         logged = resolution['standalone'] if resolution else str(question)
         from .question_input import failure

@@ -993,15 +993,20 @@ class CohortSpend:
 
     @classmethod
     def parse(cls, text, catalog):
-        t = text.strip().rstrip('?.')
+        original = text.strip().rstrip('?.')
+        from . import decision_context as DC
+        rolling = DC.ROLLING_YEAR.search(original)
+        if rolling and original[rolling.end():].strip(): return None
+        t = original[:rolling.start()].rstrip() if rolling else original
+        if rolling and years_in(t): return None
         pronoun = r'(?:they|these|those)'
         share = re.match(r'^what\s+share\s+of\s+total\s+(?:(20\d\d)\s+)?(?:medical\s+)?(?:paid\s+)?spend\s+do\s+' + pronoun + r'\s+account\s+for(?:\s+in\s+(20\d\d))?$', t, re.I)
         if share:
             year = int(share[1] or share[2]) if (share[1] or share[2]) else None
-            return {'params': {'kind': 'share', 'year': year}, 'quotes': [t]}
+            return {'params': {'kind': 'share', 'year': year, **({'rolling_12_months': True} if rolling else {})}, 'quotes': [original]}
         cost = re.match(r'^how\s+much\s+(?:did|do|have)\s+' + pronoun + r'\s+(?:cost|spend|account\s+for)(?:\s+in\s+(20\d\d))?$', t, re.I)
         if cost:
-            return {'params': {'kind': 'total', 'year': int(cost[1]) if cost[1] else None}, 'quotes': [t]}
+            return {'params': {'kind': 'total', 'year': int(cost[1]) if cost[1] else None, **({'rolling_12_months': True} if rolling else {})}, 'quotes': [original]}
         return None
 
     @classmethod
@@ -1010,7 +1015,15 @@ class CohortSpend:
         y = params['year'] or last_full_year(ctx)
         notes = [] if params['year'] else [FULL_YEAR_NOTE.format(y=y, a=ctx.as_of[:4])]
         marks = ','.join(q(i) for i in ids) or "''"
-        base = f"c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))}"
+        if params.get('rolling_12_months'):
+            if params.get('year') is not None: raise Declined('State one period for the saved cohort measure')
+            from .decision_context import rolling_year
+            start,end=rolling_year(ctx.as_of)
+            base=f"c.counts_in_metrics = 1 AND c.service_from >= {q(start)} AND c.service_from <= {q(end)}"
+            y=f'the 12 months ending {end}'
+            notes=[]
+        else:
+            base = f"c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))}"
         part = ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) FROM payer_claim c WHERE {base} AND c.patient_id IN ({marks})", 0)
         total = ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) FROM payer_claim c WHERE {base}", 0)
         if params['kind'] == 'total':
