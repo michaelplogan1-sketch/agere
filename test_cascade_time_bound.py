@@ -76,7 +76,7 @@ class TimeShare(unittest.TestCase):
         self.assertEqual(entry['outcome'], 'declined')
         self.assertIn('time share exhausted', entry['detail'])
         self.assertTrue(set(P.ORDER) - {'typed_decider'} - set(P.OFF_DEFAULT) <= set(reached) | {'typed_decider'})  # every later tier still ran
-        self.assertIn('legacy_cost_ladder', reached)
+        self.assertIn([t for t in P.ORDER if P.enabled(t, SimpleNamespace(allow_live=True))][-1], reached)  # the last enabled tier still ran
         time.sleep(0.5)
         self.assertFalse([e for e in c.log if e['outcome'] == 'rejected' and e['detail'] == 'late rejection'])
 

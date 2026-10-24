@@ -175,7 +175,7 @@ def stubs(reached, behaviours=None):
 class CascadeOrder(unittest.TestCase):
     def setUp(self):
         G._ROUTE_CACHE.clear()
-        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler'})  # tiers off the default path that these tests exercise
+        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler,frontier_graph_planner,legacy_cost_ladder,stack_planner_propose'})  # tiers off the default path that these tests exercise
         env.start(); self.addCleanup(env.stop)
 
     def test_system_one_routing_reorders_and_is_charged(self):
@@ -206,7 +206,7 @@ def billing(self): raise ProviderUnavailable('provider_unavailable (billing): cr
 class Outage(unittest.TestCase):
     def setUp(self):
         G._ROUTE_CACHE.clear()
-        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler'})  # tiers off the default path that these tests exercise
+        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler,frontier_graph_planner,legacy_cost_ladder,stack_planner_propose'})  # tiers off the default path that these tests exercise
         env.start(); self.addCleanup(env.stop)
 
     def run_outage(self, fake, behaviours):
