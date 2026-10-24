@@ -164,7 +164,7 @@ class PersistentGateway:
         parser=ClaudeProvider(None) if provider=='claude' else JevProvider(None,model=self.MODELS[provider])
         if provider=='claude':
             from .model_policy import claude_model
-            parser.model=claude_model(parser.model)  # Opus only for deliverables (model_policy)
+            parser.model=claude_model(parser.model,track=True)  # Opus only for deliverables (model_policy)
         body=parser.request(task)
         parser.name=provider  # Perplexity Decisions and Jev share this typed Choice contract.
         key=digest({'provider':provider,'body':body,'contract':2})
@@ -220,15 +220,18 @@ def supported_task(subject,cutoff,records,options):
 
 
 # -- token economics: model tiers, stable cache prefixes, provider fallback ----------------------------------------------
-# Claude 5 family, most capable first. Planning drafts run Sonnet-class; Opus-class only after a failed review.
-CLAUDE_FAMILY=('claude-opus-5-5','claude-sonnet-5-5','claude-haiku-5-5')
-PLANNER_MODEL='claude-sonnet-5-5'
-ESCALATION_MODEL='claude-opus-5-5'
+# Claude 5 family, most capable first. The question path is one ladder, [Haiku, Sonnet] (model_policy.ladder): every role starts on
+# Haiku and Sonnet is the escalation after a Haiku failure (Mike 2026-10-24). Opus is deliverable-only.
+from .model_policy import HAIKU,SONNET,OPUS
+CLAUDE_FAMILY=(OPUS,SONNET,HAIKU)
+PLANNER_MODEL=HAIKU
+ESCALATION_MODEL=SONNET
 
 
 def model_tiers():
-    """{'planner','judge','escalation'} model ids. AGERE_PLANNER_MODEL drafts (default Sonnet 5.5), AGERE_SHARED_JUDGE_MODEL
-    reviews (default: the planner model), AGERE_ESCALATION_MODEL re-plans and re-reviews after a failed review (default Opus 5.5)."""
+    """{'planner','judge','escalation'} model ids. AGERE_PLANNER_MODEL drafts (default Haiku 5.5), AGERE_SHARED_JUDGE_MODEL
+    reviews (default: the planner model, so a Haiku review), AGERE_ESCALATION_MODEL re-plans and re-reviews after a failed review
+    (default Sonnet 5.5; inside a question it runs only on the cascade's escalation rung, model_policy.escalation())."""
     planner=os.environ.get('AGERE_PLANNER_MODEL') or PLANNER_MODEL
     return {'planner':planner,'judge':os.environ.get('AGERE_SHARED_JUDGE_MODEL') or planner,
             'escalation':os.environ.get('AGERE_ESCALATION_MODEL') or ESCALATION_MODEL}
@@ -284,9 +287,10 @@ def classify_provider_error(exc):
 
 
 def fallback_model(model):
-    """AGERE_FALLBACK_MODEL (alias AGERE_INTERPRETER_FALLBACK) when set and different, else the next model in the Claude 5
-    family (Opus -> Sonnet -> Haiku), never to a more expensive model: Haiku has no Claude fallback (System One takes over in
-    the cascade). None for models outside the family."""
+    """AGERE_FALLBACK_MODEL (alias AGERE_INTERPRETER_FALLBACK) when set and different, else the next CHEAPER model in the Claude 5
+    family (Opus -> Sonnet -> Haiku), never a more expensive one: Haiku has no Claude fallback, so a failed Haiku call is never moved
+    to Sonnet here. That move is the ladder's escalation (model_policy), which the cascade makes only after every Haiku attempt has
+    failed; System One takes over in the cascade otherwise. None for models outside the family."""
     chosen=os.environ.get('AGERE_FALLBACK_MODEL') or os.environ.get('AGERE_INTERPRETER_FALLBACK')
     if chosen:return chosen if chosen!=model else None
     if model not in CLAUDE_FAMILY:return None
@@ -300,6 +304,9 @@ def call_with_fallback(call,model,*,sleep=time.sleep,backoff=None,fallback=None)
     also fails a typed ProviderUnavailable is raised. Request errors propagate unchanged on the first attempt."""
     backoff=float(os.environ.get('AGERE_PROVIDER_BACKOFF_SECONDS','2')) if backoff is None else backoff
     alternate=fallback_model(model) if fallback is None else fallback
+    if alternate is not None:
+        from .model_policy import claude_model,in_question
+        if in_question() and claude_model(alternate)==claude_model(model):alternate=None  # inside a question both resolve to the same rung: a repeat, not a fallback
     attempts=[]
     for target in (model,alternate):
         if target is None:continue

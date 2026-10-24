@@ -274,7 +274,7 @@ def frontier_semantic(question, semantic, *, key=None, model=MODEL, max_tools=8,
                   'cache_read_input_tokens': 0, 'cache_creation_input_tokens': 0}
     else:
         result = _analyst.analyze(question['question'], question['as_of'], semantic, send=send, model=model,
-                                  max_tools=max_tools)
+                                  max_tools=max_tools, definitions=False)  # the competitor keeps the plain documented layer
         example_ids = result.pop('example_ids')
     result['prompt_example'] = question['id'] in example_ids
     return result

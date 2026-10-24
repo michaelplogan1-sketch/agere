@@ -8,7 +8,8 @@ during the question's window and tagged by nobody are attributed to it too (attr
 question tagged never are.
   attempts      every provider attempt (Claude, Jev, Perplexity): attempt id (the ledger request hash), provider, model,
                 status, cache hit, input/output/cache tokens, priced USD (None when unpriced: unknown, never $0), seconds,
-                and for a Claude judge reply whether its review failed (Opus after a failed Sonnet review is the policy).
+                and for a Claude judge reply whether its review failed. Per-question receipt fields: calls_by_model (every provider) and
+                claude_calls_by_model (Claude only); sonnet_before_haiku lists Sonnet calls made before any Haiku call (the ladder forbids them).
   stages        seconds per stage (compose, capture, log, learning) plus every cascade tier's seconds.
   pricing       config/agere/pricing.json checked_at + content digest: the price table every USD figure used.
 The result carries 'cost_telemetry'; answers.sqlite3 keeps one answer_costs row per question (joined to the answers
@@ -23,6 +24,7 @@ import uuid
 from collections import Counter
 from pathlib import Path
 from .evaluation import active as _evaluating
+from .. import model_policy
 
 VERSION = 'cost-telemetry/1'
 ROOT = Path(__file__).resolve().parents[3]
@@ -141,6 +143,18 @@ def opus_without_failed_sonnet(attempts):
     return bad
 
 
+def sonnet_before_haiku(attempts):
+    """Sonnet calls made before any Haiku call of this question: the ladder (model_policy) says Sonnet is only ever the escalation after a Haiku
+    attempt, so each of these is a policy violation. Cache hits are free and do not count."""
+    bad, haiku_seen = [], False
+    for a in attempts:
+        if a['cache_hit'] or a['provider'] != 'claude': continue
+        model = a['model'] or ''
+        if 'haiku' in model: haiku_seen = True
+        elif 'sonnet' in model and not haiku_seen: bad.append(a['attempt_id'])
+    return bad
+
+
 def summarize(attempts, result=None, error=None):
     interp = (((result or {}).get('planner_receipt') or {}).get('interpretation') or {})
     answered_by = interp.get('interpreter') or ((result or {}).get('planner_receipt') or {}).get('route')
@@ -149,6 +163,7 @@ def summarize(attempts, result=None, error=None):
     calls_by_model = Counter(a['model'] for a in new)
     s1 = [a for a in new if a['provider'] in SYSTEM_ONE]
     claude = [a for a in new if a['provider'] == 'claude']
+    claude_calls_by_model = Counter(a['model'] for a in claude)
     tokens = {k: sum(a.get(k) or 0 for a in new) for k in ('input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens')}
     routing = interp.get('system_one_routing') or {}
     s1_decided = []
@@ -160,10 +175,10 @@ def summarize(attempts, result=None, error=None):
     status = ((result or {}).get('answer') or {}).get('status') or ('error' if error else None)
     return {'answered_by': answered_by, 'status': status, 'api_calls': len(new),
             'api_usd': round(sum(p or 0.0 for p in priced), 6), 'usd_known': all(p is not None for p in priced),
-            'calls_by_model': dict(calls_by_model), 'claude_calls': len(claude), 'system_one_calls': len(s1),
+            'calls_by_model': dict(calls_by_model), 'claude_calls_by_model': dict(claude_calls_by_model), 'claude_calls': len(claude), 'system_one_calls': len(s1),
             'tokens': tokens, 'no_paid_call': not new, 'local_llm': answered_by in LOCAL_LLM_TIERS,
             'llm_free': not new and answered_by not in LOCAL_LLM_TIERS,
-            'system_one_decided': s1_decided, 'opus_without_failed_sonnet': opus_without_failed_sonnet(attempts),
+            'system_one_decided': s1_decided, 'opus_without_failed_sonnet': opus_without_failed_sonnet(attempts), 'sonnet_before_haiku': sonnet_before_haiku(attempts),
             'cascade_usage': interp.get('cascade_usage')}
 
 
@@ -181,6 +196,7 @@ class Probe:
         self.marks = [('start', self.started)]
         self.hw = high_water(self.ledger_path)
         self._token = CURRENT.set(self.question_id)
+        self._scope = model_policy.mark_question()  # Claude requests of this question resolve to the Haiku-first ladder (model_policy)
         return self
 
     def mark(self, stage):
@@ -199,6 +215,8 @@ class Probe:
                 CURRENT.reset(self._token); self._token = None
         except ValueError:  # finished from another context: the tag simply stops
             self._token = None
+        if getattr(self, '_scope', None) is not None:
+            model_policy.unmark_question(self._scope); self._scope = None
         try:
             attempts = attempts_since(self.ledger_path, self.hw, self.question_id)
         except (sqlite3.Error, ValueError, OSError) as exc:
@@ -243,6 +261,7 @@ def receipt(telemetry, result=None, *, failed=False):
     return {'version': 'cost-receipt/1', 'paid_calls': calls if consistent else (reported if isinstance(reported, int) else None),
             'usd': usd, 'usd_known': usd is not None or (consistent and calls == 0), 'claude_calls': t.get('claude_calls'),
             'system_one_calls': t.get('system_one_calls'), 'calls_by_model': t.get('calls_by_model'),
+            'claude_calls_by_model': t.get('claude_calls_by_model'),
             'windowed_attempts': sum(1 for a in t.get('attempts') or [] if a.get('attribution') == 'window'),
             'ledger_consistent': consistent, 'planner_reported_calls': reported,
             'background': background if background is not None else None,

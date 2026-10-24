@@ -180,6 +180,11 @@ def condition_evidence_sql(names, tables):
         dated = 'event_date' if 'event_date' in tables['condition'] else 'NULL AS event_date'
         which = []
         if whole: which.append('concept IN (' + ','.join(map(lit, whole)) + ')')
+        # a condition is its code set: an EHR row whose ICD-10 falls in the concept's codes counts whatever concept label it
+        # carries (type_2_diabetes / chronic_kidney_disease rows hold E11.x codes; 2026-10-24 oracle check)
+        coded = sorted({p for b in whole for p in CONDITIONS.get(b, {}).get('icd10', [])})
+        if coded and 'icd10' in tables['condition']:
+            which.append('(' + ' OR '.join(f"icd10 LIKE {lit(x + '%')}" for x in coded) + ')')
         if narrowed and 'icd10' not in tables['condition']:
             raise ValueError('A narrowed condition needs the condition.icd10 column')
         which += [f'(concept = {lit(b)} AND (' + ' OR '.join(f"icd10 LIKE {lit(x + '%')}" for x in c) + '))' for b, c in narrowed]
@@ -189,6 +194,8 @@ def condition_evidence_sql(names, tables):
         if lab and 'diagnosis_basis' in tables['condition']:
             parts.append("SELECT patient_id, " + dated + ", 'laboratory_evidence' AS source FROM condition WHERE concept IN ("
                          + ','.join(map(lit, lab)) + ") AND is_diagnosis IS NULL AND diagnosis_basis = 'laboratory_evidence'")
+    from .decision_context import lab_rule_sql  # diabetes / CKD by lab rule (Mike 2026-10-24)
+    parts += [r for r in (lab_rule_sql(n, tables) for n in sorted(set(whole))) if r]
     prefixes = sorted({p for b, c in parsed for p in (c or CONDITIONS.get(b, {}).get('icd10', []))})
     if prefixes and {'patient_id', 'icd10', 'service_from', 'counts_in_metrics'} <= set(tables.get('payer_claim_diagnosis', [])):
         parts.append("SELECT patient_id, service_from AS event_date, 'payer_claim_diagnosis' AS source FROM payer_claim_diagnosis "

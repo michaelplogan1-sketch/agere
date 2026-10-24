@@ -1,4 +1,4 @@
-"""Planner/judge model split: Sonnet drafts and reviews; Opus re-plans and re-reviews only after a review fails."""
+"""Planner/judge model split (Haiku-first ladder): Haiku drafts and reviews; Sonnet re-plans and re-reviews only after a review fails; Opus is never a question-path model."""
 import json
 import os
 import tempfile
@@ -15,14 +15,14 @@ CLEAR = {k: '' for k in ('AGERE_PLANNER_MODEL', 'AGERE_SHARED_JUDGE_MODEL', 'AGE
 class Tiers(unittest.TestCase):
     def test_defaults_are_economical(self):
         with patch.dict(os.environ, CLEAR):
-            self.assertEqual(G.model_tiers(), {'planner': 'claude-sonnet-5-5', 'judge': 'claude-sonnet-5-5', 'escalation': 'claude-opus-5-5'})
+            self.assertEqual(G.model_tiers(), {'planner': 'claude-haiku-5-5', 'judge': 'claude-haiku-5-5', 'escalation': 'claude-sonnet-5-5'})
         for m in G.model_tiers().values():
             self.assertIn(m, G.CLAUDE_FAMILY)
-        self.assertEqual(G.PersistentGateway.MODELS['claude'], G.ESCALATION_MODEL)
+        self.assertEqual(G.ESCALATION_MODEL, 'claude-sonnet-5-5')  # the ladder's second rung; Opus stays the deliverable model
 
     def test_env_overrides(self):
-        with patch.dict(os.environ, {**CLEAR, 'AGERE_SHARED_JUDGE_MODEL': 'claude-opus-5-5', 'AGERE_PLANNER_MODEL': 'claude-haiku-5-5'}):
-            self.assertEqual(G.model_tiers(), {'planner': 'claude-haiku-5-5', 'judge': 'claude-opus-5-5', 'escalation': 'claude-opus-5-5'})
+        with patch.dict(os.environ, {**CLEAR, 'AGERE_SHARED_JUDGE_MODEL': 'claude-sonnet-5-5', 'AGERE_PLANNER_MODEL': 'claude-haiku-5-5'}):
+            self.assertEqual(G.model_tiers(), {'planner': 'claude-haiku-5-5', 'judge': 'claude-sonnet-5-5', 'escalation': 'claude-sonnet-5-5'})
 
     def test_review_failed(self):
         self.assertFalse(nl2sql.review_failed('{"equivalent": true, "issues": []}'))
@@ -51,10 +51,10 @@ class TieredHostedModel(unittest.TestCase):
             stats = [m(system, user)[1] for system, user, _ in script]
         return used, stats, m
 
-    def test_passing_review_never_touches_opus(self):
+    def test_passing_review_never_touches_sonnet(self):
         used, stats, m = self.run_calls([(S.SYSTEM, '{"question":"q"}', '{"request":{}}'),
                                          (S.AUDIT_SYSTEM, '{"original_question":"q"}', '{"equivalent": true, "issues": []}')])
-        self.assertEqual(used, ['claude-sonnet-5-5', 'claude-sonnet-5-5'])
+        self.assertEqual(used, ['claude-haiku-5-5', 'claude-haiku-5-5'])
         self.assertEqual([s['role'] for s in stats], ['planner', 'judge']); self.assertFalse(m.escalated)
 
     def test_failed_review_escalates_replan_and_rereview(self):
@@ -62,18 +62,18 @@ class TieredHostedModel(unittest.TestCase):
                                      (request_program.AUDIT_SYSTEM, '{}', '{"equivalent": false, "issues": ["dropped 2029"]}'),
                                      (S.SYSTEM, '{"question":"q"}', '{}'),
                                      (general_analysis.AUDIT_SYSTEM, '{}', '{"equivalent": true, "issues": []}')])
-        self.assertEqual(used, ['claude-sonnet-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5', 'claude-opus-5-5'])
-        self.assertEqual(m.identity, 'claude-opus-5-5')
+        self.assertEqual(used, ['claude-haiku-5-5', 'claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-sonnet-5-5'])
+        self.assertEqual(m.identity, 'claude-sonnet-5-5')
 
     def test_review_feedback_in_the_prompt_escalates(self):
         feedback = json.dumps({'question': 'q', 'validator_feedback': {'semantic_review': {'equivalent': False, 'issues': ['x']}}})
         used, _, _ = self.run_calls([(S.SYSTEM, feedback, '{}')])
-        self.assertEqual(used, ['claude-opus-5-5'])
+        self.assertEqual(used, ['claude-sonnet-5-5'])
 
     def test_shared_judge_model_is_separate(self):
         used, _, _ = self.run_calls([(S.SYSTEM, '{}', '{}'), (S.AUDIT_SYSTEM, '{}', '{"equivalent": true, "issues": []}')],
-                                    env={'AGERE_SHARED_JUDGE_MODEL': 'claude-haiku-5-5'})
-        self.assertEqual(used, ['claude-sonnet-5-5', 'claude-haiku-5-5'])
+                                    env={'AGERE_SHARED_JUDGE_MODEL': 'claude-sonnet-5-5'})
+        self.assertEqual(used, ['claude-haiku-5-5', 'claude-sonnet-5-5'])
 
     def test_explicit_model_keeps_current_behavior(self):
         used = []
@@ -82,7 +82,7 @@ class TieredHostedModel(unittest.TestCase):
         with patch('clinical_core.agere.clinical.context_student.send', fake_send):
             m = nl2sql.HostedModel(None, Path(self.tmp.name), model='claude-opus-5-5')
             m(S.AUDIT_SYSTEM, '{}'); m(S.SYSTEM, '{}')
-        self.assertEqual(used, ['claude-opus-5-5'] * 2)
+        self.assertEqual(used, ['claude-sonnet-5-5'] * 2)  # outside the ladder an Opus request still resolves through model_policy
         self.assertEqual(nl2sql.HostedModel(None, Path(self.tmp.name)).identity, 'claude-haiku-5-5')
 
 

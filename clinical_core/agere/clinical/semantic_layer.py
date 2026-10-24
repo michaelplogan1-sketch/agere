@@ -161,10 +161,21 @@ def _condition_concept_sql(cols):
                  f"AND concept IN ({names}))") if 'diagnosis_basis' in c else '0'
         parts.append(f"SELECT patient_id, concept, {'event_date' if 'event_date' in c else 'NULL'} AS event_date FROM condition "
                      f"WHERE concept IS NOT NULL AND (is_diagnosis = 1 OR {basis})")
+        if 'icd10' in c:  # a condition is its code set: EHR diagnosis rows by code, whatever concept label they carry
+            prefixes = ' UNION ALL '.join(f"SELECT '{name}' AS concept, '{code}' AS prefix" for name, v in concepts.CONDITIONS.items() for code in v['icd10'])
+            dx = "is_diagnosis = 1" + (" OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')" if 'diagnosis_basis' in c else '')
+            parts.append(f"SELECT x.patient_id, m.concept, {'x.event_date' if 'event_date' in c else 'NULL'} FROM condition x "
+                         f"JOIN ({prefixes}) m ON x.icd10 LIKE m.prefix || '%' WHERE ({dx})")
     if {'patient_id', 'icd10', 'counts_in_metrics'} <= d:
         prefixes = ' UNION ALL '.join(f"SELECT '{name}' AS concept, '{code}' AS prefix" for name, v in concepts.CONDITIONS.items() for code in v['icd10'])
         parts.append(f"SELECT d.patient_id, m.concept, {'d.service_from' if 'service_from' in d else 'NULL'} FROM payer_claim_diagnosis d "
                      f"JOIN ({prefixes}) m ON d.icd10 LIKE m.prefix || '%' WHERE d.counts_in_metrics = 1")
+    m = cols.get('measurement', set())
+    if m:  # diabetes / CKD by lab rule (Mike 2026-10-24), as concept rows
+        from .decision_context import lab_rule_sql
+        for name in ('diabetes', 'chronic_kidney_disease'):
+            rule = lab_rule_sql(name, {'measurement': m})
+            if rule: parts.append(f"SELECT patient_id, '{name}' AS concept, event_date FROM ({rule})")
     if not parts: return None
     return ("SELECT concept, 'condition' AS kind, patient_id, count(*) AS records, min(event_date) AS first_date, max(event_date) AS last_date "
             "FROM (" + ' UNION ALL '.join(parts) + ') GROUP BY concept, patient_id')

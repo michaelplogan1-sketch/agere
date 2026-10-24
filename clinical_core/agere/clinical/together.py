@@ -2,8 +2,8 @@
 
 The compiler, caches, certified SQL families, governed metrics and analytical engines
 get the first opportunity to answer. An unclaimed question goes to the hybrid core:
-three Opus analysts write contracts and SQL, the system executes/checks/votes, and
-one Opus tie-break can settle disagreement. Genuine missing inputs and ambiguity
+three Haiku analysts write contracts and SQL (model_policy ladder: Sonnet only on the escalation rung), the system executes/checks/votes, and
+one tie-break can settle disagreement. Genuine missing inputs and ambiguity
 remain visible. The legacy single-analyst route is available with AGERE_HYBRID=off.
 
 AGERE_TOGETHER_BUDGET_S bounds analyst execution from dispatch (default 900 seconds
@@ -14,6 +14,7 @@ previous direct Stack._compose path. Model agreement is not clinical qualificati
 """
 from __future__ import annotations
 
+import contextvars
 import json
 import math
 import os
@@ -24,6 +25,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from . import semantic_analyst
+from .. import model_policy
 
 VERSION = 'agere-together/1'
 # Engines whose output the analyst cannot compute from the semantic layer (models, curves, simulations). 'demand' and
@@ -33,7 +35,7 @@ ENGINE_OPERATIONS = frozenset({'survival', 'risk_adjustment', 'target_trial', 'f
                                'demand', 'monitor'})
 DEFAULT_HYBRID_BUDGET_S = 900
 DEFAULT_SEMANTIC_MODEL = 'claude-haiku-5-5'   # semantic-analyst bake-off winner
-DEFAULT_RECONCILE_MODEL = 'claude-opus-5-5'
+DEFAULT_RECONCILE_MODEL = 'claude-haiku-5-5'   # Haiku-first ladder (model_policy): a reconcile that errors or gives no verdict is retried once on Sonnet
 DEFAULT_BUDGET_S = 90.0
 DEFAULT_RECONCILE_BUDGET_S = 60.0
 SEND_TIMEOUT_S = 180
@@ -480,20 +482,36 @@ def _reconcile(stack, question, as_of, fast, analyst, semantic_path):
     """One reconcile turn in a worker thread, bounded by AGERE_RECONCILE_BUDGET_S. -> dict (picked, reason, answer, ...)."""
     model = reconcile_model()
 
-    def run():
+    def run(use=model):
         receipts, started = [], time.perf_counter()
         wh = warehouse(semantic_path)
         with _own_ledger(stack) as ledger:
             out = semantic_analyst.reconcile(question, as_of or wh.as_of, _fast_row(fast),
                                              {'answer': analyst.get('answer'), 'tool_calls': analyst.get('tool_calls')},
-                                             wh, send=_ledgered_send(stack, ledger, receipts), model=model,
+                                             wh, send=_ledgered_send(stack, ledger, receipts), model=use,
                                              seed_key=f'together:{question}', labels=('fast', 'analyst'))
         out.update(receipts=receipts, seconds=round(time.perf_counter() - started, 3))
         out['result']['seconds'] = out['seconds']
         return out
 
+    def run_escalated():
+        # Sonnet is the escalation rung only: used after the Haiku reconcile errored or returned no verdict
+        with model_policy.escalation():
+            return run(model_policy.ladder('reconcile')[1])
+
+    def ladder_run():
+        out = run()
+        if (out.get('reconcile_error') or out.get('picked') in (None, 'None')) and model_policy.escalation_enabled() \
+                and model == model_policy.first('reconcile'):
+            first = out
+            out = run_escalated()
+            out['escalated_from'] = {'model': model, 'error': first.get('reconcile_error'), 'picked': first.get('picked'),
+                                     'receipts': first.get('receipts')}
+            out['receipts'] = list(first.get('receipts') or []) + list(out.get('receipts') or [])
+        return out
+
     budget = reconcile_budget_s()
-    state, value = _wait(_pool().submit(run), time.perf_counter() + budget)
+    state, value = _wait(_pool().submit(contextvars.copy_context().run, ladder_run), time.perf_counter() + budget)
     if state == 'done':
         return value
     return {'picked': 'abstain', 'reason': 'reconcile timed out' if state == 'timed_out' else value, 'answer': None,
@@ -749,7 +767,7 @@ def legacy_compose_together(stack, question, *, planning='auto', answer_type=Non
     first = specialists_first() and semantic_path.is_file() and not engine and deferral_on()
     if semantic_path.is_file() and not engine and not first:
         deadline = time.perf_counter() + budget_s()
-        future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
+        future = _pool().submit(contextvars.copy_context().run, _run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     try:
         # The fast path keeps its free and governed rungs and skips the paid hosted ladder while the analysts may answer.
         with defer_to_analyst((future is not None or first) and deferral_on()):
@@ -770,7 +788,7 @@ def legacy_compose_together(stack, question, *, planning='auto', answer_type=Non
         # No specialist claimed the question: now (and only now) the independent analysts answer it.
         # The specialist's work does not consume the analyst's execution window.
         deadline = time.perf_counter() + budget_s()
-        future = _pool().submit(_run_analyst, stack, question, as_of, semantic_path, model, answer_type)
+        future = _pool().submit(contextvars.copy_context().run, _run_analyst, stack, question, as_of, semantic_path, model, answer_type)
     with _released(stack):
         if future is None:
             state, analyst = ('skipped_engine' if engine else 'skipped_specialist' if claimed else 'unavailable'), None

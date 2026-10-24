@@ -37,9 +37,11 @@ EVIDENCE = ("SELECT patient_id, icd10, event_date FROM condition WHERE is_diagno
 def HAS(*prefixes, lab=()):
     sql = f"SELECT patient_id FROM ({EVIDENCE}) WHERE {DX(*prefixes)} AND (event_date IS NULL OR event_date <= :as_of)"
     if lab:  # a subselect: compound operators associate left to right, so the UNION must not leak into INTERSECT / EXCEPT
-        names = ','.join(f"'{n}'" for n in lab)
-        sql = (f"SELECT patient_id FROM ({sql} UNION SELECT patient_id FROM condition WHERE concept IN ({names}) AND is_diagnosis IS NULL "
-               "AND diagnosis_basis = 'laboratory_evidence')")
+        # the lab rule (Mike 2026-10-24) from the independent dev-set definitions: diabetes = any HbA1c >= 6.5 %; CKD = two eGFR < 60 90+ days apart
+        from tools.dev_set.definitions import LAB_EVIDENCE
+        # an HbA1c cannot tell type 1 from type 2: the rule adds to "diabetes", never to a typed diabetes concept
+        rule = LAB_EVIDENCE['diabetes'] if 'diabetes' in lab else (LAB_EVIDENCE['ckd'] if any('kidney' in n or 'ckd' in n for n in lab) else None)
+        if rule: sql = f"SELECT patient_id FROM ({sql} UNION SELECT patient_id FROM ({rule}))"
     return sql
 
 

@@ -3,6 +3,7 @@ from pathlib import Path
 import hashlib,json,os,sqlite3,time
 from ...contracts import digest
 from ..gateway import BudgetLedger, default_ledger_path
+from .. import model_policy
 from .warehouse_retrieval import Retriever
 from .analytic_registry import execute,CATALOG
 from .stack_planner import validate,propose,review
@@ -134,7 +135,8 @@ class Stack:
                 'typed_with_population':sorted(P.TYPED_WITH_POPULATION),
                 'proposers_on':env('AGERE_PROPOSERS')!='off',
                 'skipped_by_env':sorted(s.strip() for s in env('AGERE_PROPOSER_SKIP','').split(',') if s.strip()),
-                'frontier_model':os.environ.get('AGERE_SHARED_INTERPRETER_MODEL',PersistentGateway.MODELS['claude']),
+                'frontier_model':os.environ.get('AGERE_SHARED_INTERPRETER_MODEL') or 'tiered',
+                'model_ladder':{'ladder':model_policy.ladder('planner'),'rule':'Haiku first; Sonnet only as the escalation after every Haiku attempt failed; Opus deliverables only'},
                 'question_interpretation_llm_enabled':live,'deterministic_first':True,'hosted_enabled':live,
                 'qwen3_4b_available':qwen_on,'qwen3_4b_active':any(v for k,v in qwen.items() if k not in ('model_installed','role')),
                 'qwen_status':qwen,'component_ledger':ledger,

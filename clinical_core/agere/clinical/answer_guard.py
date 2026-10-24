@@ -54,6 +54,7 @@ Synthetic data only. AGERE_ANSWER_GUARD=off disables 1-3.
 import inspect, json, math, os, re, sqlite3, threading, time
 from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeout
 from collections import defaultdict
+from .. import model_policy
 
 VERSION = 'answer-guard/1'
 
@@ -872,9 +873,9 @@ def used_sources(graph, answer, streams):
 def _models(stack, ledger):
     from .nl2sql import HostedModel, Decider
     from ..gateway import BudgetLedger
-    primary = HostedModel(ledger, stack.receipts, model=os.environ.get('AGERE_PRIMARY_MODEL', 'claude-haiku-5-5'))
-    second = HostedModel(BudgetLedger(ledger.path), stack.receipts, model=os.environ.get('AGERE_SECOND_MODEL', 'claude-sonnet-5-5'))
-    judge = HostedModel(ledger, stack.receipts, model=os.environ.get('AGERE_JUDGE_MODEL', 'claude-opus-5-5'))
+    primary = HostedModel(ledger, stack.receipts, model=os.environ.get('AGERE_PRIMARY_MODEL', model_policy.first('writer')))
+    second = HostedModel(BudgetLedger(ledger.path), stack.receipts, model=os.environ.get('AGERE_SECOND_MODEL', model_policy.first('writer')))
+    judge = HostedModel(ledger, stack.receipts, model=os.environ.get('AGERE_JUDGE_MODEL', model_policy.first('judge')))
     decider = Decider(ledger, stack.receipts) if os.environ.get('AGERE_DECIDER_JUDGE', 'on') != 'off' else None
     return primary, second, judge, decider
 
