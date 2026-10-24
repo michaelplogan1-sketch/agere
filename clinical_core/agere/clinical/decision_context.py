@@ -87,7 +87,7 @@ CONDITION_EVIDENCE = {
     'by_code': 'diagnosis_any = the same evidence by ICD-10 code (EHR condition rows, counted payer-claim diagnoses, laboratory-evidence '
                'rows of diabetes and CKD); count DISTINCT patient_id',
 }
-LAB_EVIDENCE_CONDITIONS = ('diabetes', 'type_1_diabetes', 'type_2_diabetes', 'chronic_kidney_disease')
+LAB_EVIDENCE_CONDITIONS = ('diabetes', 'chronic_kidney_disease')  # generic concepts only (see concepts.LAB_EVIDENCE_CONDITIONS)
 
 # --- events --------------------------------------------------------------------------------------------------------------------
 EVENT_RELATIONS = {
@@ -173,7 +173,9 @@ def year_window(question, as_of):
 
 # Lab rule (Mike 2026-10-24): diabetes also = ANY current HbA1c result >= 6.5 %; chronic kidney disease also = two current eGFR results
 # < 60 at least 90 days apart. Same rows as the development keys (tools/dev_set/definitions.py LAB_EVIDENCE).
-_ANY_RESULT = ("SELECT patient_id, event_date, value_canonical AS value FROM measurement WHERE concept = '{c}' AND value_canonical IS NOT NULL "
+# the alias LAB_RULE_READ marks this read of every result: the latest-lab rewrite (enforce_sql) leaves it alone
+LAB_RULE_READ = 'lab_rule_result'
+_ANY_RESULT = ("SELECT patient_id, event_date, value_canonical AS value FROM measurement AS " + LAB_RULE_READ + " WHERE concept = '{c}' AND value_canonical IS NOT NULL "
                "AND result_current = 1 AND excluded_reason IS NULL AND source_table NOT IN ('claim_line', 'payer_claim_line')")
 LAB_RULES = {
     'diabetes': "SELECT patient_id, MIN(event_date) AS event_date, 'lab_rule' AS source FROM (" + _ANY_RESULT.format(c='hba1c')
@@ -339,7 +341,8 @@ def _substitute(sql, living, latest, predicate=LIVING_PREDICATE):
         else:
             tail = ''
         if table in ctes or table not in PATIENT_TABLES: return m.group()
-        is_measurement = table == 'measurement' and latest
+        # the lab rule reads ANY result by definition (oracle Q13 / Q25 / Q28: rewritten to the latest, it lost patients)
+        is_measurement = table == 'measurement' and latest and (alias or '').lower() != LAB_RULE_READ
         if not living and not is_measurement: return m.group()
         if is_measurement:
             inner = '(SELECT * FROM measurement WHERE record_id IN (SELECT record_id FROM measurement_latest)'
