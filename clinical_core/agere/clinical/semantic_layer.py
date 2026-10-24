@@ -238,6 +238,22 @@ def ensure_diagnosis_view(db):
         return None
 
 
+def ensure_sdoh_latest_view(db):
+    """sdoh_latest: each patient's latest MATCHED purchased-SDOH delivery (match_status exact or partial_address; unmatched rows carry no
+    scores). A TEMP VIEW over sdoh_vendor in the connection's own temp store, so the stack file stays untouched. -> 'view' | None."""
+    try:
+        names = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")}
+        if 'sdoh_vendor' not in names or 'sdoh_latest' in names: return None
+        cols = [r[1] for r in db.execute('PRAGMA table_info(sdoh_vendor)')]
+        if not {'patient_id', 'delivery_date', 'match_status', 'record_id'} <= set(cols): return None
+        db.execute('CREATE TEMP VIEW IF NOT EXISTS sdoh_latest AS SELECT ' + ', '.join(cols) + ' FROM (SELECT v.*, ROW_NUMBER() OVER '
+                   "(PARTITION BY patient_id ORDER BY delivery_date DESC, record_id DESC) AS rn FROM sdoh_vendor v "
+                   "WHERE match_status IN ('exact', 'partial_address')) WHERE rn = 1")
+        return 'view'
+    except sqlite3.Error:
+        return None
+
+
 def upgrade_diagnosis_any(path, *, force=False):
     """Add diagnosis_any to an existing semantic.sqlite3 (a stack dir or the file). Idempotent: a database already at
     DIAGNOSIS_ANY_VERSION is left alone unless force. Writes the database: never run it while a benchmark reads the stack.

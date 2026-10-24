@@ -46,8 +46,10 @@ LIVING_PREDICATE = 'NOT IN (SELECT patient_id FROM death)'
 
 # --- labs ----------------------------------------------------------------------------------------------------------------------
 ANY_LAB = re.compile(r"\b(?:ever|at any (?:time|point|visit)|any (?:time|result|value|reading|draw|measurement)|history of|had a history|"
-                     r"at least (?:once|twice|two|2|\d+)|twice|two or more|more than once|repeated|consecutive|once|highest|lowest|peak|maximum|"
-                     r"minimum|max|min|worst|best|trend(?:s|ing)?|over time|on any draw|every result|all results)\b", re.I)
+                     r"at least (?:once|twice)\b|at least (?:two|2|\d+)(?:\s+\w+){0,2}?\s+(?:results?|readings?|draws?|tests?|measurements?|values?|times|occasions)\b|twice|two or more|more than once|repeated|consecutive|once|highest|lowest|peak|maximum|"
+                     r"minimum|max|min|worst|best|trend(?:s|ing)?|over time|on any draw|every result|all results)\b"
+                     r"(?!\s+(?:share|percent|percentage|proportion|fraction|rate|number|count|volume|cost|spend|spending|paid|amount|total|payers?|"
+                     r"practices?|providers?|clinics?|groups?|segments?|average|ranking|performing)\b)", re.I)  # "the lowest share of ..." ranks groups, it is not a lab extreme
 
 # --- windows -------------------------------------------------------------------------------------------------------------------
 ROLLING_YEAR = re.compile(r"\b(?:in |during |within |over |for )?the (?:last|past|previous|trailing) (?:year|12 months|twelve months|365 days)\b|"

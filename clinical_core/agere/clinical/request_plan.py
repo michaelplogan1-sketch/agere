@@ -96,6 +96,10 @@ class Catalog:
             identity = warehouse_metadata(target, db)
         if 'birth_date' in tables.get('patient', []):
             tables['patient'].append('age')
+        if 'sdoh_vendor' in tables and 'sdoh_latest' not in tables:
+            tables['sdoh_latest'] = list(tables['sdoh_vendor'])  # the TEMP VIEW sql_query registers (semantic_layer.ensure_sdoh_latest_view)
+        if {'pcp_practice_id'} <= set(tables.get('patient', [])) and {'patient_id', 'attribution_practice_id', 'coverage_start'} <= set(tables.get('enrollment_span', [])):
+            tables['patient'].append('practice')  # virtual: the PCP practice, else the practice attributed on the latest enrollment span
         profile_path = path/'source-profile.json'
         profile = json.loads(profile_path.read_text()) if profile_path.exists() else {}
         streams = ({s: list(v.get('fields', {})) for s, v in profile.get('streams', {}).items()}
@@ -128,6 +132,7 @@ class Compiler:
         self.outputs = {}
         self.json_streams = {}
         self.notes, self.rescaled = [], set()
+        self.ratio_parts = {}  # select path -> (numerator SQL, denominator SQL) of each ratio measure
         self.conditions = {}  # measure path -> its conditional (numerator) predicate
 
     def bind(self, obj, path, kind):
@@ -158,6 +163,10 @@ class Compiler:
                 reference = (f'COALESCE((SELECT MIN(age_death.death_date) FROM death AS age_death WHERE age_death.patient_id = {pid} '
                              f'AND age_death.death_date <= {literal(cutoff)}), {literal(cutoff)})')
             return f'age_at({self.field("patient.birth_date", scope)}, {reference})'
+        if name == 'patient.practice':
+            pid = self.field('patient.patient_id', scope)
+            return (f'COALESCE({self.field("patient.pcp_practice_id", scope)}, (SELECT e_att.attribution_practice_id FROM enrollment_span AS e_att '
+                    f'WHERE e_att.patient_id = {pid} AND e_att.attribution_practice_id IS NOT NULL ORDER BY e_att.coverage_start DESC LIMIT 1))')
         if name.startswith('result.') and 'result' in scope:
             alias = name.partition('.')[2]
             if alias not in self.outputs: raise PlanError('Unknown aggregate output: '+alias)
@@ -196,7 +205,7 @@ class Compiler:
                 raise PlanError('An OR requires its original disjunction')
             return '(' + (' AND ' if op == 'and' else ' OR ').join(self.predicate(x, scope, f'{path}.args.{i}', depth+1) for i, x in enumerate(expr['args'])) + ')'
         if op == 'not':
-            if set(expr) != {'op', 'arg', 'quote'} or not re.search(r'\b(not|no|without|exclude|excluding|except|neither|nor|never|missing|missed|living|alive|didn)\b', quote_text(expr['quote']), re.I):
+            if set(expr) != {'op', 'arg', 'quote'} or not re.search(r"\b(?:not|no|without|exclude|excluding|except|neither|nor|never|missing|missed|living|alive|didn)\b|n't\b", quote_text(expr['quote']), re.I):
                 raise PlanError('Negation must be explicit in the original request')
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
         if op == 'sequence':
@@ -362,14 +371,16 @@ class Compiler:
         self.bind(expr, path, 'measure')
         kind = expr.get('kind')
         allowed = ({'kind', 'field', 'alias', 'quote', 'grain'} if kind == 'field' else
-                   {'kind', 'alias', 'quote', 'numerator', 'denominator', 'scale'} if kind == 'ratio' else
-                   {'kind', 'field', 'alias', 'quote', 'where', 'scale'})
+                   {'kind', 'alias', 'quote', 'numerator', 'denominator', 'scale', 'round'} if kind == 'ratio' else
+                   {'kind', 'field', 'alias', 'quote', 'where', 'scale', 'round'})
         if set(expr) - allowed: raise PlanError('Unknown measure fields')
         if kind == 'ratio':
             if expr.get('scale', 1) not in (1, 100, 1000): raise PlanError('Ratio scale must be 1, 100 or 1000')
             n = self.measure(expr['numerator'], scope, path+'.numerator')
             d = self.measure(expr['denominator'], scope, path+'.denominator')
-            return f'({expr.get("scale", 1)}.0 * ({n}) / NULLIF(({d}), 0))'
+            self.ratio_parts[path] = (n, d)
+            ratio = f'({expr.get("scale", 1)}.0 * ({n}) / NULLIF(({d}), 0))'
+            return self.rounded(ratio, expr)
         field = self.field(expr['field'], scope) if expr.get('field') else '*'
         if kind == 'field':
             if field == '*': raise PlanError('Projection needs a field')
@@ -394,7 +405,13 @@ class Compiler:
             if type(scale) not in (int, float) or not math.isfinite(scale) or not 0 < scale <= 1000:
                 raise PlanError('Measure scale must be a finite positive number up to 1000')
             rendered = f'({literal(scale)} * {rendered})'
-        return rendered
+        return self.rounded(rendered, expr)
+
+    def rounded(self, rendered, expr):
+        """ROUND(x, n) when the measure states a rounding (money to cents, shares to a decimal): display only, never a threshold."""
+        if 'round' not in expr: return rendered
+        if type(expr['round']) is not int or not 0 <= expr['round'] <= 6: raise PlanError('Rounding is 0..6 decimal places')
+        return f'ROUND({rendered}, {expr["round"]})'
 
     def living_filter(self, plan, where):
         """The decision context's living-patient rule in the compiled SQL (decision_context.py): a request that counts or lists patients
@@ -413,7 +430,7 @@ class Compiler:
 
     def compile(self, plan):
         required = {'source', 'select', 'where', 'group_by', 'order_by', 'limit', 'unresolved'}
-        if not isinstance(plan, dict) or set(plan) - {'analyses', 'joins', 'having', 'workflow'} != required: raise PlanError('Complete typed request fields required')
+        if not isinstance(plan, dict) or set(plan) - {'analyses', 'joins', 'having', 'workflow', 'notes'} != required: raise PlanError('Complete typed request fields required')
         if not isinstance(plan['source'], dict) or set(plan['source']) - {'stream'} != {'table', 'quote'}: raise PlanError('Explicit source relation required')
         self.base = plan['source']['table']
         if self.base not in self.catalog.tables: raise PlanError(f'Unknown source: {self.base}')
@@ -445,6 +462,9 @@ class Compiler:
             rendered = f'{join["kind"].upper()} JOIN {identifier(table)} AS {alias} ON {scope[lt]}.{identifier(lc)} = {alias}.{identifier(rc)}'
             scope[table] = alias
             self.joins[table] = rendered
+        if plan.get('notes') is not None:  # definition notes the grammar attaches (shown with the answer's limitations)
+            if not isinstance(plan['notes'], list) or any(not isinstance(n, str) or len(n) > 400 for n in plan['notes']): raise PlanError('Notes are short text')
+            self.notes.extend(plan['notes'])
         if not isinstance(plan['select'], list) or not 1 <= len(plan['select']) <= 24: raise PlanError('1..24 projections required')
         aliases, selections, projections = [], [], {}
         for i, expr in enumerate(plan['select']):
@@ -541,7 +561,9 @@ class Compiler:
         if uncovered: raise PlanError('Unaccounted original request text: ' + ', '.join(uncovered))
         # Never accept a numeric/time literal that vanished during interpretation.
         # A number joined to letters by a hyphen is part of a name or code (PHQ-9, COVID-19), not a constraint.
-        numeric = set(re.findall(r'(?<!\w)(?<![A-Za-z]-)\d+(?:\.\d+)?', self.question))
+        grouped = re.findall(r'(?<![\w,.])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\w])', self.question)  # 50,000 is one number, written with thousands separators
+        numeric = set(re.findall(r'(?<!\w)(?<![A-Za-z]-)\d+(?:\.\d+)?', re.sub(r'(?<![\w,.])\d{1,3}(?:,\d{3})+(?:\.\d+)?(?![\w])', ' ', self.question)))
+        numeric |= {g.replace(',', '') for g in grouped}
         rendered_numbers = set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', query + json.dumps([a['parameters'] for a in analyses])))
         # Analytical contracts commonly express quoted percentages as fractions
         # (2% -> 0.02). Only numeric parameter values in that same bound analysis
@@ -593,17 +615,43 @@ class Compiler:
             key = f'select.{i}' + ('.numerator' if e['kind'] == 'ratio' else '')
             if key in self.conditions and (e['kind'] != 'ratio' or e['numerator'].get('kind') in ('count', 'count_distinct')):
                 membership = f'SELECT DISTINCT b.patient_id AS patient_id{relation} AND ({self.conditions[key]})'
+        parts_query = None
+        ratios = [(i, e) for i, e in enumerate(plan['select']) if e['kind'] == 'ratio' and f'select.{i}' in self.ratio_parts]
+        if len(ratios) == 1:
+            n_sql, d_sql = self.ratio_parts[f'select.{ratios[0][0]}']
+            cols = ''.join(projections[g] + ' AS ' + identifier(g) + ', ' for g in groups)
+            parts_query = ('SELECT ' + cols + f'{n_sql} AS numerator, {d_sql} AS denominator' + relation
+                           + (' GROUP BY ' + ','.join(projections[g] for g in groups) if groups else ''))
         payload = {'version': VERSION, 'original_question': self.question, 'request': plan,
                    'source_identity': self.catalog.identity, 'bindings': self.bindings,
                    'query': query, 'membership_query': membership, 'returns': returns,
                    'unknown_membership_query': (f'SELECT DISTINCT b.patient_id AS patient_id{from_clause} WHERE ({where}) IS NULL'
                                                 if 'patient_id' in self.catalog.tables[self.base] else None),
                    'population': sorted(self.population) if self.population is not None else None}
+        if parts_query: payload['parts_query'] = parts_query
         if self.notes: payload['notes'] = list(dict.fromkeys(self.notes))
         if self.base == 'utilization_event':
             payload['coverage_query'] = ('SELECT b.sources, b.in_ehr, count(*) AS events' + relation +
                                          ' GROUP BY b.sources,b.in_ehr')
         return {**payload, 'id': fingerprint(payload)}
+
+
+def reads_picked_up_fills_only(request):
+    """True when every medication read in the request is a governed drug_fill concept (picked-up fills with a stated or defaulted window)
+    and none is a bare medication-table mention (ordered / listed / reported), so the answer is current fill evidence, not mentions."""
+    found = {'concept': False, 'mention': False}
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get('op') == 'concept' and node.get('kind') == 'drug_fill':
+                found['concept'] = True
+            if node.get('op') == 'exists' and node.get('table') == 'medication':
+                found['mention'] = True
+            for v in node.values(): walk(v)
+        elif isinstance(node, list):
+            for v in node: walk(v)
+    walk(request)
+    return found['concept'] and not found['mention']
 
 
 def compile_request(catalog, question, plan, *, population=None):

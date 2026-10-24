@@ -386,7 +386,8 @@ def requires_saved_cohort(question, catalog=None):
     nouns.update(('patient', 'member', 'beneficiary', 'beneficiaries', 'population', 'cohort',
                   'clinician', 'clinicians', 'physician', 'physicians', 'provider', 'providers',
                   'practice', 'practices', 'hospital', 'hospitals', 'facility', 'facilities',
-                  'payer', 'payers', 'contract', 'contracts'))
+                  'payer', 'payers', 'contract', 'contracts', 'user', 'users', 'claimant', 'claimants', 'enrollee', 'enrollees',
+                  'people', 'persons', 'individuals'))
     if catalog is not None:
         # New warehouse entities can introduce a local antecedent too. This
         # selects context only; the unchanged request still requires review.

@@ -44,7 +44,7 @@ class SharedPlanner(unittest.TestCase):
                 CREATE TABLE condition(patient_id,concept,is_diagnosis);
                 INSERT INTO condition VALUES('A','diabetes',1),('A','diabetes',1),('B','diabetes',1),
                   ('C','diabetes',1),('C','chronic_kidney_disease',1),('D','diabetes',0),('OUTSIDE','chronic_kidney_disease',1);
-                CREATE TABLE medication(patient_id,drug_class,evidence DEFAULT 'dispensed',status DEFAULT 'dispensed',fill_reversed DEFAULT 0,event_date DEFAULT '2029-04-05');
+                CREATE TABLE medication(patient_id,drug_class,evidence DEFAULT 'dispensed',status DEFAULT 'dispensed',fill_reversed DEFAULT 0,event_date DEFAULT '2029-09-05');
                 INSERT INTO medication(patient_id,drug_class) VALUES('A','statin'),('A','statin'),('B','statin'),('B','arb'),('C','ace_inhibitor');
                 CREATE TABLE visit(patient_id,type_concept,event_date);
                 INSERT INTO visit VALUES('A','emergency_visit','2029-01-02'),('A','emergency_visit','2029-03-03'),
@@ -478,10 +478,22 @@ class SharedPlanner(unittest.TestCase):
         with self.assertRaisesRegex(R.PlanError, 'measure fields'): R.compile_request(self.catalog, q, p)
 
     def test_partial_medication_state_cannot_create_actionable_cohort(self):
-        a = self.ask('List diabetics on a statin but not on an ACE inhibitor or ARB')['answer']
+        # a medication that is only ordered or listed ("prescribed") is a received mention: current use stays unresolved
+        a = self.ask('List diabetics prescribed a statin but not prescribed an ACE inhibitor or ARB')['answer']
         self.assertEqual(a['status'], 'partial')
         self.assertFalse(a['actionable_cohort'])
         self.assertIn('current use', ' '.join(a['missing']))
+
+    def test_on_a_medication_means_a_picked_up_fill_in_the_last_twelve_months(self):
+        # decision context 2026-10-23: "on" / "taking" a medication is current use -- a picked-up fill in the 12 months to the as-of date
+        a = self.ask('List diabetics on a statin but not on an ACE inhibitor or ARB')['answer']
+        self.assertEqual(a['status'], 'answered')
+        self.assertEqual(a['patient_ids'], ['A'])
+        self.assertTrue(any('picked-up fill dated 2029-05-28 through 2030-05-27' in x for x in a['limitations']))
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.execute("UPDATE medication SET event_date = '2028-04-05'")
+        self.assertEqual(self.ask('List diabetics on a statin')['answer']['patient_ids'], [])        # filled long ago: not on it now
+        self.assertEqual(self.ask('List diabetics who filled a statin')['answer']['patient_ids'], ['A', 'B'])  # "filled" alone asks whether any fill is on record
 
     def test_raw_received_stream_fields_do_not_require_new_code(self):
         with sqlite3.connect(self.catalog.target) as db:

@@ -12,6 +12,8 @@ import sqlite3
 import time
 from pathlib import Path
 from .request_plan import PlanError, AmbiguousRequest
+from .population_language import PopulationForms, RankingForms
+from .claims_language import ClaimForms, SdohForms, DefinedForms
 
 SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
@@ -45,25 +47,47 @@ SOURCES = {
     'women': ('patient', ('sex_reported', 'F')), 'men': ('patient', ('sex_reported', 'M')),
     'members': ('patient', None), 'attributed members': ('patient', None), 'attributed lives': ('patient', None),
     'female patients': ('patient', ('sex_reported', 'F')), 'male patients': ('patient', ('sex_reported', 'M')),
+    # condition adjectives and plurals ("our diabetic patients", "hypertensive patients"): the patients with that condition
+    'diabetic patients': ('patient', ('condition', 'diabetes')), 'diabetic members': ('patient', ('condition', 'diabetes')),
+    'hypertensive patients': ('patient', ('condition', 'hypertension')), 'hypertensives': ('patient', ('condition', 'hypertension')),
+    'hypertensive members': ('patient', ('condition', 'hypertension')),
+    'asthmatic patients': ('patient', ('condition', 'asthma')), 'asthmatics': ('patient', ('condition', 'asthma')),
+    # prescriptions the pharmacy returned to stock
+    'prescriptions returned to stock': ('returned_fill', ('reason', 'return_to_stock')), 'prescriptions were returned to stock': ('returned_fill', ('reason', 'return_to_stock')),
+    'fills returned to stock': ('returned_fill', ('reason', 'return_to_stock')), 'fills were returned to stock': ('returned_fill', ('reason', 'return_to_stock')),
+    # an outcome named alone ("no-shows") is the appointments with that final status
+    'no-shows': ('appointment', ('final_status', 'no_show')), 'no shows': ('appointment', ('final_status', 'no_show')),
+    'no-show appointments': ('appointment', ('final_status', 'no_show')), 'no show appointments': ('appointment', ('final_status', 'no_show')),
 }
 # Received evidence a patient can have or lack: (pattern, table, date field, fixed predicates). Values are the
 # warehouse's own codes; each pattern names one kind of record, never a whole question.
-LAB_WORDS = r'(?P<lab>hba1c|a1c|hemoglobin a1c|egfr|uacr|urine albumin[- ]creatinine ratio|urine acr|phq-?9|ldl)'
-LAB_CONCEPTS = {'hba1c': 'hba1c', 'a1c': 'hba1c', 'hemoglobin a1c': 'hba1c', 'egfr': 'egfr', 'uacr': 'uacr',
-                'urine albumin-creatinine ratio': 'uacr', 'urine albumin creatinine ratio': 'uacr', 'urine acr': 'uacr',
-                'phq-9': 'phq9', 'phq9': 'phq9', 'ldl': 'ldl'}
+LAB_NAMES = {  # phrase -> measurement concept (the received lab / vital concepts of the semantic layer)
+    'hba1c': 'hba1c', 'a1c': 'hba1c', 'hemoglobin a1c': 'hba1c', 'glycated hemoglobin': 'hba1c', 'egfr': 'egfr', 'uacr': 'uacr',
+    'urine albumin-creatinine ratio': 'uacr', 'urine albumin creatinine ratio': 'uacr', 'urine acr': 'uacr', 'phq-9': 'phq9', 'phq9': 'phq9',
+    'ldl': 'ldl', 'ldl cholesterol': 'ldl', 'hdl': 'hdl', 'hdl cholesterol': 'hdl', 'triglycerides': 'triglycerides', 'total cholesterol': 'total_cholesterol',
+    'systolic': 'systolic_bp', 'systolic blood pressure': 'systolic_bp', 'systolic bp': 'systolic_bp',
+    'diastolic': 'diastolic_bp', 'diastolic blood pressure': 'diastolic_bp', 'diastolic bp': 'diastolic_bp',
+    'creatinine': 'creatinine', 'potassium': 'potassium', 'sodium': 'sodium', 'glucose': 'glucose', 'bun': 'bun', 'platelets': 'platelets',
+    'wbc': 'wbc', 'ferritin': 'ferritin', 'tsh': 'tsh', 'troponin': 'troponin', 'nt-probnp': 'nt_probnp', 'bnp': 'nt_probnp', 'spo2': 'spo2',
+    'heart rate': 'heart_rate', 'weight': 'weight', 'hemoglobin': 'hemoglobin',
+}
+LAB_WORDS = (r'(?:(?:latest|most\s+recent|last)\s+)?(?P<lab>' + '|'.join(re.escape(k).replace(r'\ ', r'[ -]') for k in sorted(LAB_NAMES, key=len, reverse=True)) + r')')
+LAB_CONCEPTS = dict(LAB_NAMES)
 EVIDENCE = [
     (LAB_WORDS + r'(?:\s+(?:tests?|results?|scores?|values?|readings?))?(?:\s+recorded)?', 'measurement', 'event_date', None),
     (r'(?:flu|influenza)\s+(?:shots?|vaccines?|vaccinations?|immunizations?)', 'immunization', 'event_date',
      [('vaccine', 'in', ['influenza', 'influenza high-dose']), ('status', '=', 'completed')]),
     (r'pneumococcal\s+(?:vaccines?|vaccinations?|shots?)', 'immunization', 'event_date',
      [('vaccine', 'like', 'pneumococcal%'), ('status', '=', 'completed')]),
-    (r'mammograms?', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
+    (r'mammogra(?:ms?|phy(?:\s+screenings?)?)', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
     (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
     # decision context: an inpatient stay is the all-source admission (stay), an observation stay the all-source utilization_event
     (r'(?:(?:inpatient|hospital)\s+(?:admissions?|stays?))|admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
     (r'observation\s+(?:stays?|visits?|admissions?)', 'utilization_event', 'event_date', [('kind', '=', 'observation')]),
     (r'(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
+    # an office visit is an in-person primary-care or specialist visit (visit.type_concept); telephone, telehealth, ED, urgent care and inpatient contacts are not
+    (r'(?:office|clinic|outpatient|ambulatory)\s+(?:visits?|encounters?)', 'visit', 'event_date',
+     [('encounter_id', 'not_null', None), ('type_concept', 'in', ['primary_care_visit', 'specialist_visit'])]),
     (r'(?:(?:office|clinic|outpatient)\s+)?(?:visits?|encounters?)', 'visit', 'event_date', [('encounter_id', 'not_null', None)]),
 ]
 # Dated events that can anchor or follow in a sequence: (pattern, table, date field, fixed predicates).
@@ -126,6 +150,7 @@ FIELD_SYNONYMS = {  # everyday names for received fields; the field must exist i
     'svi score': 'patient_svi.svi_overall', 'social vulnerability index': 'patient_svi.svi_overall', 'svi': 'patient_svi.svi_overall',
     'length of stay in days': 'stay.los_days', 'los': 'stay.los_days',
     'days supply': 'fill.days_supply',
+    'payer type': 'patient.line_of_business', 'lob': 'patient.line_of_business', 'line of business': 'patient.line_of_business',
 }
 FIELDS = {
     'age': 'patient.age', 'sex': 'patient.sex_reported',
@@ -141,7 +166,7 @@ CLOCKS = {'utilization_event': 'event_date', 'visit': 'event_date', 'stay': 'adm
           'prescription': 'ordered_date', 'fill': 'fill_date',
           'appointment': 'scheduled_date', 'medication': 'event_date',
           'measurement': 'event_date', 'condition': 'event_date', 'record': 'event_date',
-          'claim_adjudication': 'event_date', 'member_month': 'month'}
+          'claim_adjudication': 'event_date', 'member_month': 'month', 'returned_fill': 'event_date', 'social_need': 'event_date'}
 CONDITION_ALIASES = {'coronary disease': 'coronary_artery_disease', 'cad': 'coronary_artery_disease',
                      'a prior heart attack': 'myocardial_infarction', 'prior heart attack': 'myocardial_infarction',
                      'a heart attack': 'myocardial_infarction', 'heart attack': 'myocardial_infarction',
@@ -193,11 +218,13 @@ def syntax_text(text, *, hide_parentheses=False):
     return ''.join(chars)
 
 
-class Parser:
+class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
     def __init__(self, catalog, question, *, bound=False):
         self.catalog, self.question, self.bound = catalog, question, bound
         self.base = 'patient'
         self.value_bindings = {}
+        self.extra_notes = []  # definition notes the parse adds to the plan (shown as limitations)
+        self.marker_lab = 'hba1c' if re.search(r'\b(?:diabetes|diabetic|glycemic|a1c)\s+control\b', question, re.I) else None  # a bare threshold after the population is this lab
         self.gaps = []  # quotes of care-gap clauses (lacking received evidence)
         self.clock = None  # a source phrase can name its own clock ("discharges in 2029" -> discharge_date)
         self.sources = dict(SOURCES)
@@ -221,6 +248,8 @@ class Parser:
         self.drugs = {k.replace('_', ' '): [k] for k in CLASSES}
         self.drugs.update({k.replace('_', ' '): list(v) for k, v in GROUPS.items()})
         self.drugs.update(DRUG_ALIASES)
+        self.drugs.update({k + 's': v for k, v in list(self.drugs.items()) if not k.endswith('s')})  # "anticoagulants"
+        self.drugs.update({'guideline-directed medical therapy': self.drugs['gdmt'], 'guideline directed medical therapy': self.drugs['gdmt']})
         self.labs, self.terminology = {}, []
         try:  # messy clinical labels (CHF, Entresto, glycated hgb) -> library concepts: deterministic + saved mappings only
             from .terminology import grammar_terms, store_path
@@ -255,6 +284,9 @@ class Parser:
         for phrase, name in FIELD_SYNONYMS.items():
             table, _, column = name.partition('.')
             if column in self.catalog.tables.get(table, []): fields.setdefault(phrase, name)
+        # A practice is where the row happened for appointments and visits (organization_id); for every other row it is the patient's practice.
+        if self.base in ('appointment', 'visit') and 'organization_id' in self.catalog.tables.get(self.base, []):
+            fields['practice'] = f'{self.base}.organization_id'
         for short, candidates in clock_aliases.items():
             if short in fields:candidates.add(fields[short])
             if len(candidates)==1:fields[short]=next(iter(candidates))
@@ -299,7 +331,7 @@ class Parser:
         _, phrase, field = best[0]
         return phrase, field, text[size:].lstrip()
 
-    STATUS_COLUMNS = ('outcome', 'final_status', 'claim_status', 'status', 'fill_status')
+    STATUS_COLUMNS = ('final_status', 'outcome', 'claim_status', 'status', 'fill_status')  # final_status first: the latest status, not the history-based outcome
 
     def observed_values(self, table, column, limit=40):
         """Distinct short text values of a categorical column (bounded probe; empty when absent or too many)."""
@@ -324,8 +356,9 @@ class Parser:
         word = m[1].lower().replace('-', '_')
         for column in self.STATUS_COLUMNS:
             values = {v.lower(): v for v in self.observed_values(self.base, column)}
-            if word in values:
-                return atom(f'{self.base}.{column}', '=', values[word], m.group()), text[m.end():]
+            for candidate in (word, word[:-1] if word.endswith('s') else word):  # "no-shows" names the no_show status
+                if candidate in values:
+                    return atom(f'{self.base}.{column}', '=', values[candidate], m.group()), text[m.end():]
         return None
 
     SEX_COLUMNS = ('sex_reported', 'sex', 'gender')
@@ -407,7 +440,27 @@ class Parser:
     def condition(self, concept_id, quote):
         return {'op': 'concept', 'kind': 'condition', 'names': [concept_id], 'version': 1, 'period': None, 'quote': quote}
 
+    CURRENT_USE = re.compile(r'^(?:on|taking|receiving)\b', re.I)
+    EVER = re.compile(r'^\s*(?:ever|at\s+any\s+(?:time|point)|on\s+record|in\s+the\s+past|previously)\b', re.I)
+
+    def current_use(self, value, tail, lead):
+        """Decision context: "on" / "taking" a medication is current use -- a picked-up fill in the 12 months ending at the as-of date --
+        unless the question states its own period or asks for it ever. A bare "filled X" keeps asking whether any fill is on record."""
+        if (value.get('period') is None and self.CURRENT_USE.match(lead.strip()) and not self.EVER.match(tail)
+                and self.base == 'patient' and self.catalog.identity.get('as_of') and 'event_date' in self.catalog.tables.get('medication', [])):
+            from . import decision_context
+            start, end = decision_context.rolling_year(self.catalog.identity['as_of'])
+            value['period'] = {'start': start, 'end': end}
+        return value, tail
+
     def concept_period(self, value, tail):
+        rolling = re.match(r'^\s*(?:in|during|over|within)\s+the\s+(?:last|past)\s+(?:year|12\s+months|twelve\s+months)\b', tail, re.I)
+        if rolling and value.get('kind') == 'drug_fill' and self.base == 'patient' and self.catalog.identity.get('as_of'):
+            from . import decision_context  # the one 12-month rule: the day after date(as_of, '-12 months') through as_of
+            start, end = decision_context.rolling_year(self.catalog.identity['as_of'])
+            value['period'] = {'start': start, 'end': end}
+            value['quote'] = [value['quote'], rolling.group().strip()] if isinstance(value['quote'], str) else [*value['quote'], rolling.group().strip()]
+            return value, tail[rolling.end():]
         match = re.match(r'^\s*(?:in|during)\s+(20\d\d)\b', tail, re.I)
         if match and self.base == 'patient':
             year = int(match[1])
@@ -416,18 +469,32 @@ class Parser:
             tail = tail[match.end():]
         return value, tail
 
-    NEGATED_LEAD = (r"(?:(?:have|has|had)\s+(?:had\s+)?no|with\s+no|no|(?:did|do|does)\s+not\s+(?:get|have|receive)|didn't\s+(?:get|have|receive)|"
-                    r"(?:have|has)\s+not\s+had|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
+    NEGATED_LEAD = (r"(?:(?:have|has|had)\s+(?:had\s+)?no|with\s+no|no|(?:did|do|does)\s+not\s+(?:get|have|receive|fill)|didn't\s+(?:get|have|receive|fill)|"
+                    r"(?:do|does)n't\s+(?:get|have|receive|fill)|(?:have|has)n't\s+(?:had|got|gotten|received|filled)|"
+                    r"(?:have|has)\s+not\s+(?:had|got|gotten|received|filled)|(?:have|has)n't\s+been\s+seen(?:\s+in)?|"
+                    r"(?:have|has)\s+not\s+been\s+seen(?:\s+in)?|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
                     r"(?:are|were|is)\s+missing|missing|without)")
-    POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|got|received|"
+    POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|got|received|completed|underwent|"
                      r"(?:were|was|been)(?=\s+admitted))")
 
     def window(self, text, table, field):
         """A trailing window, calendar year, flu season or 'on record' after a piece of evidence."""
         m = re.match(r'^\s+(?:in|during|within)\s+the\s+(?:last|past)\s+(\d+)\s+months\b', text, re.I)
         if m: return [atom(f'{table}.{field}', 'within_last_months', int(m[1]), m.group().strip())], text[m.end():]
-        m = re.match(r'^\s+in\s+the\s+(?:last|past)\s+year\b', text, re.I)
+        m = re.match(r'^\s+(?:in|during|over)\s+the\s+(?:last|past)\s+year\b', text, re.I)
         if m: return [atom(f'{table}.{field}', 'within_last_months', 12, m.group().strip())], text[m.end():]
+        # "in the last two years", "over the past 3 years": whole years are 12-month multiples of the same trailing window
+        m = re.match(r'^\s+(?:in|during|over|within)\s+the\s+(?:last|past)\s+(\d+|' + '|'.join(NUMBER_WORDS) + r')\s+(years?|months?)\b', text, re.I)
+        if m:
+            n = int(m[1]) if m[1].isdigit() else int(NUMBER_WORDS[m[1].lower()])
+            return [atom(f'{table}.{field}', 'within_last_months', n * (12 if m[2].lower().startswith('year') else 1), m.group().strip())], text[m.end():]
+        # the most recent flu season (July 1 through the as-of date); a season is a July-June year
+        m = re.match(r'^\s+(?:(?:in|during|for)\s+the\s+|(?:in|during|for)\s+)?(?:last|past|most\s+recent|latest|current|this)\s+(?:flu\s+)?season\b', text, re.I)
+        if m and table == 'immunization' and self.catalog.identity.get('as_of'):
+            as_of = str(self.catalog.identity['as_of'])[:10]
+            year = int(as_of[:4]) - (0 if as_of[5:7] >= '07' else 1)
+            q = m.group().strip()
+            return [atom(f'{table}.{field}', '>=', f'{year}-07-01', q), atom(f'{table}.{field}', '<=', as_of, q)], text[m.end():]
         m = re.match(r'^\s+(?:in|during|for)\s+the\s+(20\d\d)-(20\d\d)\s+(?:flu\s+)?season\b', text, re.I)
         if m and table == 'immunization' and 'season' in self.catalog.tables.get(table, []):
             return [atom('immunization.season', '=', f'{m[1]}-{m[2]}', m.group().strip())], text[m.end():]
@@ -435,6 +502,8 @@ class Parser:
         if m:
             y = int(m[1]); q = m.group().strip()
             return [atom(f'{table}.{field}', '>=', f'{y}-01-01', q), atom(f'{table}.{field}', '<', f'{y+1}-01-01', q)], text[m.end():]
+        m = re.match(r'^\s+(?:on|in)\s+(?:their|the|its)\s+(?:latest|most\s+recent|last)\s+(?:result|value|test|reading|measurement|lab)\b', text, re.I)
+        if m and table == 'measurement_latest': return [], text[m.end():]  # the latest-result reading the decision context already applies
         m = re.match(r'^\s+(?:on\s+(?:record|file)|ever|at\s+any\s+(?:time|point))\b', text, re.I)
         return ([], text[m.end():]) if m else ([], text)
 
@@ -449,12 +518,28 @@ class Parser:
         It reads as "has a (current) result meeting the threshold" in the stated window; the latest-result reading needs the word "latest"."""
         m = self.LAB_COMPARISON.match(text)
         cols = self.catalog.tables.get('measurement', [])
-        if not m or 'value_canonical' not in cols: return None
+        or_more = None if m else re.match(r'^\s+(?:(?:results?|values?|scores?|levels?)\s+)?of\s+(\d+(?:\.\d+)?)\s+or\s+(higher|more|above|greater|lower|less|below)\b', text, re.I)
+        if (not m and not or_more) or 'value_canonical' not in cols: return None
+        if or_more:  # "a latest systolic of 160 or higher"
+            quote = or_more.group().strip()
+            number = float(or_more[1]) if '.' in or_more[1] else int(or_more[1])
+            op = '>=' if or_more[2].lower() in ('higher', 'more', 'above', 'greater') else '<='
+            atoms = [atom('measurement.value_canonical', op, number, quote)]
+            if 'result_current' in cols: atoms.append(atom('measurement.result_current', '=', 1, quote))
+            return atoms, text[or_more.end():]
         quote = m.group().strip()
         number = float(m[2]) if '.' in m[2] else int(m[2])
         atoms = [atom('measurement.value_canonical', self.LAB_OPS[m[1].lower()], number, quote)]
         if 'result_current' in cols: atoms.append(atom('measurement.result_current', '=', 1, quote))
         return atoms, text[m.end():]
+
+    def usable_result(self, atoms, quote):
+        """Having a lab means having a usable RESULT: a current, non-excluded row with a value. A billed test line without a result is not one
+        (decision context: labs are results, never billing lines)."""
+        cols = self.catalog.tables.get('measurement', [])
+        extra = [atom('measurement.' + c, op, v, quote) for c, op, v in
+                 (('value_canonical', 'not_null', None), ('result_current', '=', 1), ('excluded_reason', 'is_null', None)) if c in cols]
+        return [*atoms, *extra]
 
     def latest_lab(self, table, atoms):
         """Decision context (Mike, 2026-10-23): a lab result threshold reads the LATEST result per patient and concept (measurement_latest)
@@ -463,8 +548,10 @@ class Parser:
         cols = self.catalog.tables.get('measurement_latest', [])
         if decision_context.lab_mode(self.question) != 'latest' or not {'concept', 'value_canonical', 'event_date'} <= set(cols):
             return table, atoms
+        kept = set(cols)
         moved = [{**a, 'field': a['field'].replace('measurement.', 'measurement_latest.', 1)} if str(a.get('field', '')).startswith('measurement.') else a
-                 for a in atoms if a.get('field') != 'measurement.result_current']  # latest rows are current results already
+                 for a in atoms if a.get('field') != 'measurement.result_current'  # latest rows are current results already
+                 and (not str(a.get('field', '')).startswith('measurement.') or a['field'].partition('.')[2] in kept)]
         return 'measurement_latest', moved
 
     def thing(self, text):
@@ -482,7 +569,7 @@ class Parser:
             quote = m.group()
             atoms = [atom(f'{table}.{c}', op, v, quote) for c, op, v in (fixed or [])]
             if table == 'measurement':
-                key = re.sub(r'\s+', ' ', m.group('lab').lower())
+                key = re.sub(r'[\s-]+', ' ', m.group('lab').lower()).replace('phq 9', 'phq-9').replace('nt probnp', 'nt-probnp').replace('albumin creatinine', 'albumin-creatinine')
                 atoms = [atom('measurement.concept', '=', LAB_CONCEPTS.get(key, LAB_CONCEPTS.get(key.replace('-', ''))), quote)]
             return table, field, atoms, quote, text[m.end():]
         drug = re.match(r'^(.+?)\s+(?:fills?|filled|prescription fills?)\b', text, re.I)
@@ -491,6 +578,14 @@ class Parser:
             if got and not got[2].strip():
                 return 'fill', 'fill_date', [atom('fill.drug_class', 'in', got[1], drug.group())], drug.group(), text[drug.end():]
         return None
+
+    def thing_evidence(self, text):
+        """thing() for having / lacking evidence: a lab means a usable result (current, with a value), never a billed test line."""
+        found = self.thing(text)
+        if found and found[0] == 'measurement':
+            table, field, atoms, quote, tail = found
+            found = (table, field, self.usable_result(atoms, quote), quote, tail)
+        return found
 
     def sequence_event(self, text, *, started=False):
         """(table, date, atoms, tail, quote) for a named dated event; a drug name after 'started' is a new start.
@@ -653,9 +748,9 @@ class Parser:
                 return ({'op': 'not', 'arg': value, 'quote': quote} if social[1] else value), tail
         neither = re.match(r'^(?:(?:have|has|had)\s+)?neither\s+', text, re.I)
         if neither:
-            first = self.thing(text[neither.end():])
+            first = self.thing_evidence(text[neither.end():])
             nor = re.match(r'^\s+nor\s+', first[4]) if first else None
-            second = self.thing(first[4][nor.end():]) if nor else None
+            second = self.thing_evidence(first[4][nor.end():]) if nor else None
             if second:
                 win1, tail = self.window(second[4], first[0], first[1])
                 win2, _ = self.window(second[4], second[0], second[1])
@@ -669,7 +764,7 @@ class Parser:
         many = re.match(r'^(?:(?:have|has|had|with)\s+)?(?:(?:at\s+least)\s+(\d+|' + '|'.join(NUMBER_WORDS) + r')|(\d+|' + '|'.join(NUMBER_WORDS)
                         + r')\s*(?:\+|or\s+more))\s+', text, re.I)
         if many:
-            found = self.thing(text[many.end():]) or self.counted_event(text[many.end():])
+            found = self.thing_evidence(text[many.end():]) or self.counted_event(text[many.end():])
             if found:
                 table, field, atoms, _, after = found
                 win, tail = self.window(after, table, field)
@@ -688,15 +783,18 @@ class Parser:
                 atoms.append(atom('member_month.attribution_practice_id', 'not_null', None, month[1]))
             return related('member_month', combine('and', atoms, quote), quote), text[month.end():]
         times = re.match(r'^(?:have\s+|has\s+)?no[- ]showed\s+(\d+|' + '|'.join(NUMBER_WORDS) + r')\s+or\s+more\s+times', text, re.I)
-        if times and 'outcome' in self.catalog.tables.get('appointment', []):
+        status_col = next((c for c in ('final_status', 'outcome') if c in self.catalog.tables.get('appointment', [])), None)
+        if times and status_col:
             quote = times.group(); word = times[1].lower()
-            return {'op': 'count_at_least', 'table': 'appointment', 'where': atom('appointment.outcome', '=', 'no_show', quote),
-                    'n': int(word) if word.isdigit() else int(NUMBER_WORDS[word]), 'quote': quote}, text[times.end():]
+            win, rest_ = self.window(text[times.end():], 'appointment', 'scheduled_date')
+            if win: quote = text[:len(text) - len(rest_)].strip()
+            return {'op': 'count_at_least', 'table': 'appointment', 'where': combine('and', [atom(f'appointment.{status_col}', '=', 'no_show', quote), *win], quote),
+                    'n': int(word) if word.isdigit() else int(NUMBER_WORDS[word]), 'quote': quote}, (rest_ if win else text[times.end():])
         lead = re.match(r'^' + self.NEGATED_LEAD + r'\s+', text, re.I)
         negated = bool(lead)
         gap = negated and not re.search(r'\bnever\b', lead.group(), re.I)
         if not lead: lead = re.match(r'^' + self.POSITIVE_LEAD + r'\s+', text, re.I)
-        found = self.thing(text[lead.end():] if lead else text)
+        found = self.thing_evidence(text[lead.end():] if lead else text)
         if not found or (not lead and not found): return None
         if not lead: return None  # bare nouns stay with the relational grammar
         table, field, atoms, _, after = found
@@ -712,13 +810,29 @@ class Parser:
         if gap: self.gaps.append(quote)
         return ({'op': 'not', 'arg': value, 'quote': quote} if negated else value), tail
 
-    def parse(self):
-        text = self.question.strip().rstrip('?.').strip()
+    def parse(self, text=None):
+        plan = self._parse(text)
+        if self.extra_notes and isinstance(plan, dict) and 'select' in plan:
+            plan['notes'] = list(dict.fromkeys([*(plan.get('notes') or []), *self.extra_notes]))
+        return plan
+
+    def _parse(self, text=None):
+        text = (text if text is not None else self.question).strip().rstrip('?.').strip()
         just_count = re.search(r'[?.]\s*just (?:the|a) (?:count|number)$', text, re.I) if self.bound else None
         if just_count: text = text[:just_count.start()].strip()
-        governed = self.governed(text)
+        two = re.match(r'^(?P<a>[^?]+\?)\s+(?P<b>(?:show|list|give|find|rank)\b.+)$', text, re.I)
+        if two:  # "Which practices have the weakest diabetes control? Show the three lowest share of diabetics under 8, ...": the second sentence is the request
+            plan = self.parse(two['b'])
+            target = plan['order_by'][0] if plan.get('order_by') else plan['select'][0]
+            target['quote'] = [*([target['quote']] if isinstance(target['quote'], str) else target['quote']), two['a'].rstrip('?')]
+            return plan
+        defined = self.high_cost_form(text) or self.defined_term_form(text)
+        if defined: return defined
+        governed = self.governed(text)  # a named governed measure ("denial rate in 2029") keeps its engine
         if governed is not None:
             return governed
+        claims = self.amount_form(text) or self.amount_share(text) or self.average_amount(text) or self.rank_rate(text) or self.row_share(text)
+        if claims: return claims
         anaphoric = False  # the quote of the words that refer to the saved cohort, once the request leads with them
         if self.bound:
             # A follow-up narrows the saved cohort: "And of those, which are women?", "Who among them has diabetes?". The leader is
@@ -745,22 +859,28 @@ class Parser:
             text=front[2]; self.base=front_source[1][0]
         ranked = self.ranking(text)
         if ranked: return ranked
-        of = re.match(r'^Of\s+(?:the\s+|our\s+)?(.+?),\s*(how many|what\s+(?:percent(?:age)?|share|proportion|fraction))\s+(.+)$', text, re.I)
+        of = re.match(r'^(?:Of|Among)\s+(?:the\s+|our\s+)?(.+?),\s*(how many|what\s+(?:percent(?:age)?|share|proportion|fraction))\s+(.+)$', text, re.I)
         if of:
             return self.of_scope(of)
+        shared = self.rank_share(text) or self.share_form(text) or self.rate_form(text) or self.rank_count(text)
+        if shared: return shared
         # "What share of patients with heart failure had an ED visit in 2029?" is "Of patients with heart failure, what share had ...":
         # the same population and condition, asked in one clause (a population ends at the verb, never at a relative "who have").
         direct = re.match(r'^(what\s+(?:percent(?:age)?|share|proportion|fraction))\s+of\s+((?:the\s+|our\s+)?(?:patients|members|people)\s+(?:with|who)\s+.+?)'
                           r'(?<!\bwho)(?<!\bthat)\s+((?:had|have|has|filled|received|got)\s+.+)$', text, re.I)
         if direct:
             return self.of_scope([direct.group(0), direct[2], direct[1], direct[3]])
+        trailing = re.search(r'\s*(?:\u2014|\u2013|--|-|,|:)\s*how\s+many(?:\s+of\s+them)?\s*$', text, re.I)  # "Asthma patients with no ICS fill in the past year -- how many?"
+        if trailing and not re.match(r'(?:how many|what)\b', text, re.I): text = text[:trailing.start()].strip()
         unit = re.search(r',?\s+in\s+(cents|days)\s*$',text,re.I)
         if unit: text=text[:unit.start()].strip()
         lead = re.match(r'(?i)(?:(?:please\s+)|(?:(?:can|could|would|will)\s+you\s+)|(?:tell\s+me\s+)|(?:(?:give|show|return)(?:\s+me)?\s+both\s+)|(?:I\s+(?:want|would like)\s+(?:you\s+to|to)\s+))*'
                         r'(how many|(?:the )?number of|(?:a )?count(?: of)?|tally(?: up)?|list|enumerate|which|show|find|' + ('who|' if self.bound else '') + r'group|break down|what (?:is|was|were) (?:the )?total|what (?:is|was) (?:the )?average|total|sum|average|mean)\s+', text)
         # Business questions often name the entity without an imperative.
         # Retain original spans; do not rewrite the question to add "count".
-        if not lead and not self.prefix(text, self.sources) and not anaphoric:
+        named_people = self.prefix(re.sub(r'^(?:(?:all|the|our|adults?)\s+)+', '', text, flags=re.I), self.conditions)
+        named_people = named_people and re.match(r'^(?:patients|members)\b', named_people[2], re.I)
+        if not lead and not self.prefix(re.sub(r'^(?:(?:all|the|our|adults?)\s+)+', '', text, flags=re.I), self.sources) and not named_people and not anaphoric:
             raise PlanError('Specify the requested calculation and warehouse source')
         verb = lead.group(1).lower() if lead else 'list' if anaphoric else 'count'
         rest = text[lead.end():] if lead else text
@@ -773,7 +893,7 @@ class Parser:
         # Adjectives before the population noun ("living Medicaid patients") are filters on that population.
         modifiers = []
         while fn not in ('sum', 'avg'):
-            m = re.match(r'^(living|alive|deceased|medicaid|medicare|commercial)\s+', rest, re.I)
+            m = re.match(r'^(living|alive|deceased|medicaid|medicare|commercial|adults?)\s+', rest, re.I)
             if not m: break
             modifiers.append(m[1]); rest = rest[m.end():]
         if fn in ('sum', 'avg'):
@@ -856,6 +976,9 @@ class Parser:
             if value is None or left.strip(): raise PlanError('A leading year needs a dated population')
             where = combine('and', [value, where], self.question)
         for word in modifiers:
+            if word.lower().startswith('adult'):
+                where = combine('and', [atom('patient.age', '>=', 18, word), where], self.question)
+                continue
             value, left = self.one(word)
             if value is None or left.strip(): raise PlanError('Unrecognized population adjective: ' + word)
             where = combine('and', [value, where], self.question)
@@ -924,6 +1047,9 @@ class Parser:
             atoms = [atom(f'{table}.{c}', op, v, topic) for c, op, v in fixed]
             own = re.match(r'^\s*' + restated + r'\b', tail, re.I)
             if own: atoms[0] = {**atoms[0], 'quote': [topic, own.group().strip()]}; tail = tail[own.end():]
+            each = re.match(r'^\s*,?\s*and\s+how\s+many(?:\s+(?:claims|times|rows|records|patients))?\s+each\b', tail, re.I)  # "... and how many claims each"
+            each_quote = each.group().strip(' ,') if each else None
+            if each: tail = tail[each.end():]
             paren = re.match(r'^\s*\((affirmed(?:,?\s*not\s+negated)?|not\s+negated)\)', tail, re.I)
             if paren and any(c == 'negated' for c, _, _ in fixed):
                 i = next(k for k, (c, _, _) in enumerate(fixed) if c == 'negated')
@@ -935,7 +1061,7 @@ class Parser:
             quote = head.group().strip()
             return {'source': {'table': table, 'quote': topic},
                     'select': [{'kind': 'field', 'field': f'{table}.{field}', 'alias': field, 'quote': topic},
-                               {'kind': 'count', 'alias': 'count', 'quote': quote}],
+                               {'kind': 'count', 'alias': 'count', 'quote': [quote, each_quote] if each_quote else quote}],
                     'where': combine('and', [*atoms, where], self.question), 'group_by': [field],
                     'order_by': [{'alias': 'count', 'direction': 'desc', 'quote': quote}],
                     'limit': {'value': limit, 'quote': quote}, 'unresolved': []}
@@ -1130,6 +1256,12 @@ class Parser:
             return value, tail[1:]
         seq = self.sequence(text)
         if seq: return seq
+        bp = self.blood_pressure(text)
+        if bp: return bp
+        marker = self.marker_threshold(text)
+        if marker: return marker
+        sdoh = self.sdoh_predicate(text)
+        if sdoh: return sdoh
         evidence = self.evidence(text)
         if evidence: return evidence
         neg = re.match(r"^(?:not|without|excluding|exclude|(?:do|does)\s+not|don't|doesn't)\s+", text, re.I)
@@ -1137,6 +1269,12 @@ class Parser:
             child, tail = self.one(text[neg.end():])
             if child is None: raise PlanError('Missing negated predicate')
             return {'op': 'not', 'arg': child, 'quote': start[:len(start)-len(tail)].strip()}, tail
+        # A trailing window on a dated source ("no-shows in the last year", "ED visits in the past 6 months"): its own clock, ending at the as-of date.
+        roll = re.match(r'^(?:in|during|over|within)\s+the\s+(?:last|past)\s+(?:(\d+|' + '|'.join(NUMBER_WORDS) + r')\s+)?(years?|months?)\b', text, re.I)
+        if roll and self.base != 'patient' and (self.clock or CLOCKS.get(self.base)):
+            n = 1 if not roll[1] else int(roll[1]) if roll[1].isdigit() else int(NUMBER_WORDS[roll[1].lower()])
+            months = n * (12 if roll[2].lower().startswith('year') else 1)
+            return atom(self.base + '.' + (self.clock or CLOCKS.get(self.base)), 'within_last_months', months, roll.group()), text[roll.end():]
         # Source-specific clock, never a blanket patient-year filter.
         m = re.match(r'^(?:(?:in|during)\s+)?(?:calendar\s+year\s+)?(\d{4})(?![\d-])', text, re.I)
         if m:
@@ -1178,6 +1316,11 @@ class Parser:
         if ranged and explicit:
             quote = ranged.group()
             return combine('and', [atom('patient.age', '>=', int(ranged[1]), quote), atom('patient.age', '<=', int(ranged[2]), quote)], quote), text[ranged.end():]
+        if not ranged and explicit and self.base == 'patient':  # "women 50 to 74": a range right after the patient noun
+            ranged = re.match(r'^(\d+)\s*(?:to|-|\u2013|through)\s*(\d+)\b(?!\s*(?:%|percent|mg|ml|days?|months?|visits?|times))', text, re.I)
+            if ranged:
+                quote = ranged.group()
+                return combine('and', [atom('patient.age', '>=', int(ranged[1]), quote), atom('patient.age', '<=', int(ranged[2]), quote)], quote), text[ranged.end():]
         older = re.match(r'^(?:aged?\s+)?(\d+)\s*(?:\+|(?:and|or)\s+(?:older|over|above))', text, re.I)
         if older and explicit:
             return atom('patient.age', '>=', int(older[1]), older.group()), text[older.end():]
@@ -1213,18 +1356,34 @@ class Parser:
             value = self.condition(concept_id, quote)
             if len(names) > 1: value['names'] = list(dict.fromkeys(n for n in names))
             return self.concept_period(value, tail)
-        med = re.match(r'^(?:on|taking|receiving|prescribed|filled|dispensed)\s+', text, re.I)
+        med = re.match(r'^(?:on|taking|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
         if med:
             got = self.prefix(text[med.end():], self.drugs)
             if got:
                 _, drugs, tail = got
+                more = re.match(r'^\s*(?:medications?|meds?|drugs?|therapy|agents?)\b', tail, re.I)  # "GDMT medication": the class word, not a constraint
+                if more: tail = tail[more.end():]
+                if med[1]:  # "on no GDMT medication (at all)": a care gap -- no picked-up fill of any listed class
+                    at_all = re.match(r'^\s*at\s+all\b', tail, re.I)
+                    if at_all: tail = tail[at_all.end():]
+                    drug_span = text[med.end():len(text)-len(tail)].strip()
+                    if at_all: drug_span = drug_span[:len(drug_span)-len(at_all.group().strip())].strip()
+                    quote = text[:len(text)-len(tail)].strip()
+                    concept = {'op': 'concept', 'kind': 'drug_fill', 'names': drugs, 'version': 1, 'period': None,
+                               'quote': [text[:med.start(1)].strip(), drug_span]}
+                    value, tail = self.concept_period(concept, tail)
+                    value, tail = self.current_use(value, tail, med.group())
+                    quote = text[:len(text)-len(tail)].strip()
+                    self.gaps.append(quote)
+                    return {'op': 'not', 'arg': value, 'quote': quote}, tail
                 quote = text[:len(text)-len(tail)].strip()
-                if med.group().strip().lower() == 'prescribed':
+                if med.group().split()[0].lower() == 'prescribed':
                     return related('medication', combine('and', [
                         atom('medication.drug_class', 'in', drugs, quote),
                         atom('medication.evidence', '=', 'ordered', quote)], quote), quote), tail
-                return self.concept_period({'op': 'concept', 'kind': 'drug_fill', 'names': drugs,
-                                            'version': 1, 'period': None, 'quote': quote}, tail)
+                value, tail = self.concept_period({'op': 'concept', 'kind': 'drug_fill', 'names': drugs,
+                                                   'version': 1, 'period': None, 'quote': quote}, tail)
+                return self.current_use(value, tail, med.group())
         # Presence of another source: same-patient semijoin, not a duplicating join.
         event = re.match(r'^(?:with|having|have|has|had)\s+(?:an?\s+)?', text, re.I)
         if event:
@@ -1306,7 +1465,7 @@ def parse_program(catalog, question, *, bound=False):
     cannot be established from the wording requires clarification.
     """
     mask = syntax_text(question, hide_parentheses=True)
-    boundaries = list(re.finditer(r'(?:\s+and\s+|;\s*)(?=(?:the\s+)?(?:number of|count(?: of)?|how many|average|mean|total|sum|list|show|find)\s+)', mask, re.I))
+    boundaries = list(re.finditer(r'(?:\s+and\s+|;\s*)(?!how\s+many(?:\s+\w+)?\s+each\b)(?=(?:the\s+)?(?:number of|count(?: of)?|how many|average|mean|total|sum|list|show|find)\s+)', mask, re.I))
     if not boundaries: return None
     clauses, cursor = [], 0
     for boundary in boundaries:

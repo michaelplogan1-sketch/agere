@@ -18,6 +18,7 @@ def register(db):
     from .clinical_inputs import register as register_clinical_inputs
     semantic_layer.ensure_diagnosis_view(db)  # a semantic.sqlite3 built before diagnosis_any gets it as a temp view
     semantic_layer.ensure_concept_view(db)  # ... and the condition rows of concept_patient at the same evidence definition
+    semantic_layer.ensure_sdoh_latest_view(db)  # the latest matched purchased-SDOH delivery per patient
     return register_clinical_inputs(register_dose(register_age(db)))
 
 VERSION = 'semantic-sql/1'

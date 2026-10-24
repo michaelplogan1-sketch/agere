@@ -85,7 +85,9 @@ CLASSES = {
     'vitamin_b12': r'\b(?:cyanocobalamin|hydroxocobalamin|vitamin b12)\b',
     'acetaminophen': r'\bacetaminophen\b',
 }
-GROUPS = {'antihypertensive': ['ace_inhibitor', 'arb', 'arni', 'beta_blocker', 'calcium_channel_blocker', 'thiazide_diuretic', 'mra'],
+GROUPS = {# Guideline-directed medical therapy for heart failure: the four pillars (evidence-based beta-blocker, RAAS inhibitor incl. ARNI, MRA, SGLT2 inhibitor)
+          'gdmt': ['hf_evidence_based_beta_blocker', 'ace_inhibitor', 'arb', 'arni', 'mra', 'sglt2_inhibitor'],
+          'antihypertensive': ['ace_inhibitor', 'arb', 'arni', 'beta_blocker', 'calcium_channel_blocker', 'thiazide_diuretic', 'mra'],
           'raas_inhibitor': ['ace_inhibitor', 'arb', 'arni'],
           'diabetes_medication': ['metformin', 'insulin', 'sulfonylurea', 'dpp4_inhibitor', 'sglt2_inhibitor', 'glp1_agonist', 'thiazolidinedione'],
           'beers_high_risk': ['first_generation_antihistamine', 'benzodiazepine', 'skeletal_muscle_relaxant', 'sedative_hypnotic', 'antipsychotic'],

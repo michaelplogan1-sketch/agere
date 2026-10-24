@@ -580,6 +580,9 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
             raise QuestionNotUnderstood(str(exc)) from exc
         except request_plan.PlanError as exc:
             failures.append(str(exc))
+        from . import population_engines  # population / insight questions the typed request cannot state as one query
+        engine = population_engines.interpret(catalog, question, population=population)
+        if engine: return engine
     else:
         failures.append('Explicit model interpretation requested')
     if model is None:
@@ -817,7 +820,7 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
     raise exc
 
 
-GRAMMAR_REVIEWS = ('fully_consumed_grammar', 'fully_consumed_grammar_program')
+GRAMMAR_REVIEWS = ('fully_consumed_grammar', 'fully_consumed_grammar_program', 'fully_consumed_engine_form')
 
 
 def reuse_normalizer(catalog, question, population, memory_identity):
@@ -883,7 +886,7 @@ def store_request(cache_path, key, stable_key, question, contract, interpretatio
     """Save an accepted typed contract for exact replay and paraphrase reuse (replays and checked graphs are never saved here)."""
     if _evaluating(): return False  # evaluation mode: no plan or paraphrase-reuse entry is saved
     if not (interpretation.get('execution_accepted') and interpretation.get('interpreter') not in ('paraphrase_reuse', 'local_normalizer')
-            and contract.get('kind') != 'checked_graph' and (contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation))):
+            and contract.get('kind') not in ('checked_graph', 'engine_form') and (contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation))):
         return False
     from .decision_context import VERSION as DEFINITIONS
     interpretation = {**interpretation, 'definitions_version': DEFINITIONS}  # a saved plan replays only under the same definitions
@@ -1042,6 +1045,9 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
     elif contract.get('kind') == 'general_analysis':
         from . import general_analysis
         graph = general_analysis.graph_for(contract)
+    elif contract.get('kind') == 'engine_form':
+        from . import population_engines
+        graph = population_engines.graph_for(contract)
     else:
         graph = graph_for(contract)
     # A proposer's plan keeps its own route and rung evidence (bottled agreement, declines, missing-data checks) on the receipt.
@@ -1084,6 +1090,10 @@ def _compose(stack, question, *, population=None, parent=None, model=None, plann
             from . import general_analysis
             result = general_analysis.execute(stack, question, graph, receipt, population=population, parent=parent,
                                             started=started, economics=economics)
+        elif receipt['request_contract'].get('kind') == 'engine_form':
+            from . import population_engines
+            result = population_engines.execute(stack, question, graph, receipt, population=population, parent=parent,
+                                                started=started, economics=economics)
         else:
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
         from .answer_format import present
@@ -1195,7 +1205,8 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     if not interpretation.get('execution_accepted'):
         partial = True
         issues.append('This interpreter is a development candidate; its answer is not activated for synthetic work.')
-    if re.search(r'\b(on|taking|receiving|prescribed)\b', question, re.I) and re.search(r'\bmedication\b', contract['query']):
+    if (re.search(r'\b(on|taking|receiving|prescribed)\b', question, re.I) and re.search(r'\bmedication\b', contract['query'])
+            and not request_plan.reads_picked_up_fills_only(contract['request'])):
         partial = True
         issues.append('Medication matches are received mentions, not reconciled current use. A current-treatment assessment remains unresolved.')
     if parent:
@@ -1240,6 +1251,10 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
               'clinical_execution_authorized': False, 'execution_snapshot': execution_snapshot}
     result['workflow'] = [{'index': i, **s, 'status': 'needs_definition' if s['unresolved'] else 'planned'}
                           for i, s in enumerate(contract['request'].get('workflow', []))]
+    if contract.get('parts_query') or contract['request']['select']:  # a share carries its numerator and denominator; every answer reads back
+        from . import population_answer
+        population_answer.parts(stack.path, contract, answer, population=population, target=target)
+        answer['read_back'] = population_answer.read_back(contract, answer, question, current.identity.get('as_of'))
     if graph_result:
         computed = engine_answer(graph, graph_result, ids)
         ids = computed['patient_ids']
