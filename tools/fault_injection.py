@@ -123,7 +123,9 @@ def run_scenario(sc):
                 if not entry or entry[0]['outcome'] not in ('error', 'declined', 'skipped'): violations.append(f'fault on {tier} ({kind}) missing from the receipt')
         # (3) one outage per question, later Claude tiers skipped
         if cascade.claude_down:
-            later = [n for n in order[order.index(next(t for t, k in faults.items() if k.startswith('outage:') and t in P.CLAUDE_TIERS)) + 1:] if n in P.CLAUDE_TIERS]
+            # the first faulted Claude tier the cascade actually asked (an off-default tier is never asked)
+            first = next(t for t in order if t in reached and t in P.CLAUDE_TIERS and str(faults.get(t, '')).startswith('outage:'))
+            later = [n for n in order[order.index(first) + 1:] if n in P.CLAUDE_TIERS]
             hit = [n for n in later if n in reached]
             if hit: violations.append(f'Claude tiers ran after the outage: {hit}')
         # (4) healthy tier reached

@@ -499,7 +499,8 @@ class Cascade:
 
     def _run(self):
         from .answer_budget import start as start_budget
-        budget = self.budget = start_budget()
+        # a rewording's free-stage attempt gets a short budget of its own: the question as typed then runs with the full answer budget
+        budget = self.budget = start_budget(float(os.environ.get('AGERE_REWORDING_BUDGET_SECONDS', '8')) if FREE_ONLY.get() else None)
         try:
             order = self.order_used = self.order()
             free_only = FREE_ONLY.get()
