@@ -554,14 +554,24 @@ class Compiler:
         if self.subject is not None: return None  # a named patient is answered whether or not they died (their answer says so)
         if self.population is not None or 'death' not in self.catalog.tables: return None
         if 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base == 'death': return None
-        if not decision_context.population(self.question)['living_only'] or decision_context.references_death(where): return None
+        if not decision_context.population(self.question)['living_only']: return None
+        # a request that already reads `death` (the care-gap clause, "living") states the living half itself; each person still counts once
+        # (b3-04: the care-gap clause alone left second charts in, 211 vs 206)
+        own_death = decision_context.references_death(where)
         ends = lambda e: str(e.get('field') or '').endswith('.patient_id') or str(e.get('field') or '') == 'patient_id'
         kinds = [e for e in plan['select'] if isinstance(e, dict)]
-        patients = self.base == 'patient' or any(
+        # an event relation counted for a population (appointments, visits, stays) is a patient-level reading too: the answer's own
+        # defaults say "living patients", so the rows of a deceased patient are not counted (b3-29: no-shows by practice)
+        patients = self.base == 'patient' or self.base in decision_context.EVENT_GRAIN_TABLES or any(
             (e.get('kind') in ('field', 'count_distinct') and ends(e)) or (e.get('kind') == 'ratio' and any(
                 isinstance(x, dict) and x.get('kind') == 'count_distinct' and ends(x) for x in (e.get('numerator'), e.get('denominator'))))
             for e in kinds)
-        return f'b.patient_id {decision_context.counted_predicate("data_segment" in self.catalog.tables.get("patient", []))}' if patients else None
+        if not patients: return None
+        has_segment = 'data_segment' in self.catalog.tables.get('patient', [])
+        if own_death:
+            return (f"b.patient_id NOT IN (SELECT patient_id FROM patient WHERE data_segment = '{decision_context.DUPLICATE_SEGMENT}')"
+                    if has_segment and decision_context.exclude_duplicate_charts() else None)
+        return f'b.patient_id {decision_context.counted_predicate(has_segment)}'
 
     def compile(self, plan):
         required = {'source', 'select', 'where', 'group_by', 'order_by', 'limit', 'unresolved'}
@@ -640,6 +650,9 @@ class Compiler:
                 raise PlanError('Ordering must use an output alias and asc/desc')
             self.bind(order, f'order_by.{i}', 'ordering')
             orders.append(identifier(order['alias']) + ' ' + order['direction'].upper())
+        if orders and aggregate:  # ties break by the grouping dimensions, so a top-N cut at a tie is the same rows every run
+            ordered = {order['alias'] for order in plan['order_by']}
+            orders += [identifier(g) + ' ASC' for g in groups if g not in ordered]
         if orders: query += ' ORDER BY ' + ','.join(orders)
         limit = plan['limit']
         if limit is not None:

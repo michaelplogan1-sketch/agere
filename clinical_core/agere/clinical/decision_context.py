@@ -106,6 +106,12 @@ patient_svi payer_adjudication payer_claim payer_claim_diagnosis payer_claim_lin
 problem_list_entry procedure_line returned_fill smoking_status social_need stay therapy_barrier therapy_barrier_candidate
 utilization_event visit visit_group wellness_visit'''.split())
 
+# the patient-keyed relations whose rows are clinical or operational events: counted for a population they read living patients like a
+# patient count does. Money and membership relations are out (NON_PATIENT_GRAIN decides those by the question's own words), and so are the
+# encounter / stay / visit relations that sequence questions ("discharges followed within 7 days") read, which count a deceased patient's
+# events by design (test_sequence_language).
+EVENT_GRAIN_TABLES = frozenset('''adt_visit appointment cancer_screening fill immunization utilization_event wellness_visit'''.split())
+
 
 _COHORT_WORDS = re.compile(r'\b(?:patients|members|people|persons|cohort|population|everyone|similar|like|lookalikes?)\b', re.I)
 

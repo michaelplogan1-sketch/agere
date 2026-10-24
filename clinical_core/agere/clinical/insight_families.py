@@ -313,8 +313,9 @@ class CareGaps:
         out = []
         with sqlite3.connect(f'file:{ctx.target}?mode=ro', uri=True) as db:
             lib = M.library()
-            for mid, label in (('bcs', 'Breast cancer screening (women 50-74, mammogram in the 27 months)'), ('col', 'Colorectal cancer screening (adults 45-75)')):
+            for mid, name in (('bcs', 'Breast cancer screening'), ('col', 'Colorectal cancer screening')):
                 if mid not in lib: continue
+                label = measure_label(lib[mid], name)
                 rep = M.evaluate_db(db, lib[mid], *ctx_period(ctx), ctx.as_of)
                 overall = rep.get('overall') or {}
                 if rep.get('declined') or overall.get('rate') is None: continue
@@ -333,6 +334,19 @@ class CareGaps:
                     table=[{'measure': r['measure'], 'rate_percent': pct(r['rate']), 'numerator': r['numerator'], 'denominator': r['denominator']} for r in out],
                     read_back='Preventive screening and vaccination rates (governed HEDIS-style measures for breast and colorectal screening; flu = a completed influenza vaccine in the most recent season), lowest first.',
                     notes=['Breast and colorectal screening come from the governed measure library (approximations of the HEDIS measures); flu vaccination counts a completed influenza dose since July 1 of the latest season.'])
+
+
+def measure_label(m, name):
+    """A governed measure's name with the population and look-back it is DEFINED with (age band at period end, sex, a single-criterion window),
+    so the label never claims a band the measure does not read (the HEDIS-style library reads women 42-74, not 50-74)."""
+    den = m.get('denominator') or {}
+    age = den.get('age') or {}
+    who = 'women' if (den.get('sex') or '').upper().startswith('F') else 'adults'
+    parts = [f"{who} {age['min']}-{age['max']} at period end" if 'min' in age and 'max' in age else who]
+    criteria = (m.get('numerator') or {}).get('criteria') or []
+    if len(criteria) == 1 and criteria[0].get('label'):
+        parts.append(str(criteria[0]['label'])[:1].lower() + str(criteria[0]['label'])[1:])
+    return f"{name} ({', '.join(parts)})"
 
 
 def ctx_period(ctx):
