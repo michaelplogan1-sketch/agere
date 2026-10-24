@@ -168,9 +168,14 @@ def _names(gap, r):
 PATIENT_ID = re.compile(r'\b(?:SYN-[0-9A-F]{8}-[0-9A-F]{3}|WHP-[0-9A-F]{12}|P-[A-Z0-9]{2,8})\b', re.I)
 
 
+ISO_DATE = re.compile(r'\b\d{4}-\d{2}-\d{2}\b')
+
+
 def _covered_ids(question, text):
+    """Patient ids and ISO dates the plan carries verbatim are covered as whole references (their digits are not thresholds)."""
     low = (text or '').lower()
-    return PATIENT_ID.sub(lambda m: 'the patient' if m.group().lower() in low else m.group(), question)
+    question = PATIENT_ID.sub(lambda m: 'the patient' if m.group().lower() in low else m.group(), question)
+    return ISO_DATE.sub(lambda m: 'that date' if m.group() in low else m.group(), question)
 
 
 def gaps(question, text):

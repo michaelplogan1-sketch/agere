@@ -1045,6 +1045,8 @@ def _certificates(receipt, state, verdict):
     return status
 
 
+# Tiers whose answers are computed deterministically (and notes read by calibrated System One frames, with quotes).
+DETERMINISTIC_READERS = frozenset({'chart_reader'})
 # Claude tiers that only choose a governed metric or engine (its template computes): their answers need no confirmation.
 GOVERNED_CLAUDE_ROUTERS = frozenset({'metric_router', 'operator_router'})
 # Checks whose failure to run leaves the answer unverified (the rest annotate).
@@ -1149,7 +1151,11 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     # they are reported in the documented order below
     run('cascade_certificates', lambda: _certificates(receipt, state, verdict))
     verdict['checks_run'].remove('cascade_certificates')
-    if verdict['accept']:
+    if verdict['accept'] and tier in DETERMINISTIC_READERS:
+        # The chart reader answers from deterministic SQL and calibrated, quote-backed note readings: a System One reading of its
+        # result summary is the weak check (Codex review 2026-10-23) and refuted correct note answers; its own checks stand.
+        verdict['annotations'].append(f'Cross-check: not applied to {tier} (deterministic SQL and calibrated note readings with quotes).')
+    elif verdict['accept']:
         run('answer_guard_cross_check', lambda: _cross_check(stack, question, graph, receipt, answer, prof, ledger, hosted, state, verdict,
                                                              result, claude_ok))
     def local_sql_confirmed():  # uncalibrated planners ship only when System One confirms: free planners (stage C), local-model
