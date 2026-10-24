@@ -81,7 +81,7 @@ class ComparisonForms:
         from .request_language import PlanError
         try:
             value, tail = self.one(core)
-            if value is not None and not tail.strip(' ,'): return value
+            if value is not None and (not tail.strip(' ,') or re.fullmatch(r'\s*(?:patients?|members?|people)\s*', tail, re.I)): return value
         except PlanError:
             pass
         try:
@@ -138,7 +138,7 @@ class ComparisonForms:
         t = text.strip().rstrip('?.').strip()
         t = re.sub(r'^(?:(?:and|now|also)\s+)+', '', t, flags=re.I)
         two = SENTENCE_SPLIT.match(text.strip().rstrip('.'))
-        for handler in (self.compare_on, self.compare_how, self.compare_do, self.compare_likely, self.compare_which_group, self.compare_in_areas,
+        for handler in (self.compare_on, self.compare_between, self.compare_how, self.compare_do, self.compare_likely, self.compare_which_group, self.compare_in_areas,
                         self.share_categories, self.compare_contrast):
             try:
                 plan = handler(t, two)
@@ -233,6 +233,12 @@ class ComparisonForms:
         head_quote = t[t.lower().index('what') if re.search(r'\bwhat\b', t, re.I) else 0:m.start('cats')].strip()
         plan, _, _ = self.share_plan(head_quote, population or None, pred, m['pop'] or t)
         return self.attach_groups(plan, groups, [m['head']])
+
+    def compare_between(self, t, two):
+        """Imperative counterpart of 'How do ... compare between A and B'."""
+        m = re.match(r'^compare\s+(?:the\s+)?(?P<measure>.+?)\s+between\s+(?P<cats>.+)$', t, re.I)
+        if not m: return None
+        return self.contrast_with(m['measure'], m['cats'], ['Compare', 'between'])
 
     def compare_how(self, t, two):
         """'How do <measure> compare between|across <groups>' -> the measure per group."""

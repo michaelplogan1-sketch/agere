@@ -191,6 +191,16 @@ class GroupingComposition(CompositionFixture):
         self.assertAlmostEqual(by['copd']['rate'], 1000 * 3 / 3, 1)  # A 2 + B 1 + G 0
         self.assertAlmostEqual(by['heart_failure']['rate'], 1000 * 3 / 2, 1)  # A 2 + C 1
 
+    def test_imperative_comparison_keeps_explicit_area_thresholds_and_zero_event_patients(self):
+        for question in (
+            'Compare ED visits per 1,000 patients in the last year between high-SVI (75+) and low-SVI (under 25) patients.',
+            'How do ED visits per 1,000 patients in the last year compare between high-SVI (75+) patients and low-SVI (under 25) patients?'):
+            rows=self.run_q(question)
+            by={r['patients']:r['rate'] for r in rows}
+            self.assertAlmostEqual(by[4],1000)  # A2+C1+D1+G0, four high-SVI patients
+            self.assertAlmostEqual(by[2],500)   # B1+E0, two low-SVI patients
+        self.declines('Compare ED visits per 1,000 patients between high-SVI and low-SVI patients.')
+
     def test_cohort_group_needs_two_to_twelve_groups(self):
         q = 'Break hypertensive patients out by age: under 40, 40 to 64, and 65 and older.'
         plan = L.parse(self.catalog, q)
