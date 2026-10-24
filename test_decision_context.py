@@ -110,7 +110,7 @@ class Definitions(Fixture):
     def test_the_prompt_block_tells_planners_every_definition(self):
         block = DC.prompt_block()
         for text in (DC.VERSION, 'LIVING patients', 'NOT IN (SELECT patient_id FROM death)', 'measurement_latest', 'counts_in_metrics = 1',
-                     'diagnosis_any', 'laboratory-evidence', 'utilization_event', "date(:as_of, '-12 months')", 'calendar year'):
+                     'diagnosis_any', 'HbA1c >= 6.5', 'eGFR < 60', 'utilization_event', "date(:as_of, '-12 months')", 'calendar year'):
             self.assertIn(text, block)
         self.assertNotIn('{', block)  # planners format their systems with str.format
 

@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/1'
+VERSION = 'decision-context/2'  # 2 (2026-10-24): diabetes / CKD by lab rule, duplicate charts once, on-medication = 12-month fill
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23'
 
 # --- patients ------------------------------------------------------------------------------------------------------------------
@@ -169,6 +169,26 @@ def year_window(question, as_of):
     return out
 
 
+# Lab rule (Mike 2026-10-24): diabetes also = ANY current HbA1c result >= 6.5 %; chronic kidney disease also = two current eGFR results
+# < 60 at least 90 days apart. Same rows as the development keys (tools/dev_set/definitions.py LAB_EVIDENCE).
+_ANY_RESULT = ("SELECT patient_id, event_date, value_canonical AS value FROM measurement WHERE concept = '{c}' AND value_canonical IS NOT NULL "
+               "AND result_current = 1 AND excluded_reason IS NULL AND source_table NOT IN ('claim_line', 'payer_claim_line')")
+LAB_RULES = {
+    'diabetes': "SELECT patient_id, MIN(event_date) AS event_date, 'lab_rule' AS source FROM (" + _ANY_RESULT.format(c='hba1c')
+                + ") WHERE value >= 6.5 GROUP BY patient_id",
+    'chronic_kidney_disease': "SELECT patient_id, MIN(event_date) AS event_date, 'lab_rule' AS source FROM (" + _ANY_RESULT.format(c='egfr')
+                              + ") WHERE value < 60 GROUP BY patient_id HAVING julianday(MAX(event_date)) - julianday(MIN(event_date)) >= 90",
+}
+
+
+def lab_rule_sql(name, tables):
+    """(patient_id, event_date, source) rows meeting the condition's lab rule, or None (no rule / no measurement table)."""
+    m = tables.get('measurement') if isinstance(tables, dict) else None
+    if name not in LAB_RULES or not m or not {'concept', 'value_canonical', 'result_current', 'excluded_reason', 'source_table'} <= set(m):
+        return None
+    return LAB_RULES[name]
+
+
 def condition_evidence_sql(names, tables):
     """The one governed condition-evidence subquery (patient_id, event_date, source); see concepts.condition_evidence_sql."""
     from .concepts import condition_evidence_sql as governed
@@ -185,8 +205,8 @@ def prompt_block():
         '2. Labs: the LATEST result per patient and concept (measurement_latest). Use measurement (every result) only when the question says ever, '
         'any, at any time, history of, at least once, highest, lowest or asks for a trend.\n'
         '3. A condition is documented by ONE evidence rule: an EHR diagnosis (condition with is_diagnosis = 1, plus problem-list rows whose flag is '
-        'unknown) or a counted payer-claim diagnosis (payer_claim_diagnosis.counts_in_metrics = 1); diabetes and CKD also count laboratory-evidence '
-        'condition rows; rule-outs never count. By ICD-10 code use diagnosis_any (the same evidence); by library concept use concept_patient. '
+        'unknown) or a counted payer-claim diagnosis (payer_claim_diagnosis.counts_in_metrics = 1); diabetes also counts any current HbA1c >= 6.5 % '
+        'and CKD two current eGFR < 60 at least 90 days apart (measurement); rule-outs never count. By ICD-10 code use diagnosis_any (the same evidence); by library concept use concept_patient. '
         'Claims-only members count.\n'
         "4. ED visits, inpatient stays and observation stays are utilization_event rows (kind ed_visit | inpatient | observation: EHR, ADT and claims "
         'together), never visit or encounter alone.\n'
