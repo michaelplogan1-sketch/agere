@@ -280,7 +280,9 @@ class Structured(Base):
         statin = self.ask('Is {P} on a statin?')
         self.assertIs(statin['value'], True)  # fills in the last 12 months, though the list entry is discontinued
         self.assertTrue(statin['facts']['fills_12m'] >= 1)
-        self.assertIs(self.ask('Is {P} taking warfarin?')['value'], True)
+        warfarin = self.ask('Is {P} taking warfarin?')  # listed active but never picked up: listed/prescribed, not current use
+        self.assertIs(warfarin['value'], False)
+        self.assertTrue(warfarin['facts']['on_list'])
         self.assertIs(self.ask('Is {P} on metformin?')['value'], False)
         last = self.ask('When did {P} last pick up a statin?')
         self.assertEqual((last['answer_type'], last['value']), ('date', '2030-03-01'))

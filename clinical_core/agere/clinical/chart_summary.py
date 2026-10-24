@@ -60,8 +60,9 @@ def summary(ch, it, path=None):
 
     p = ch.patient or {}
     d = ch.death
-    ident = f"{ch.pid}: age {p.get('age_latest')}, {p.get('sex_reported')}" + (f", deceased {d['death_date']}" if d else '')
-    sections.append({'section': 'identity', 'headline': ident, 'table': [], 'facts': {'age': p.get('age_latest'), 'sex': p.get('sex_reported'), 'deceased': bool(d)}})
+    age = Q.age_at(p.get('birth_date'), ch.as_of)
+    ident = f"{ch.pid}: age {age}, {p.get('sex_reported')}" + (f", deceased {d['death_date']}" if d else '')
+    sections.append({'section': 'identity', 'headline': ident, 'table': [], 'facts': {'age': age,'sex': p.get('sex_reported'), 'deceased': bool(d)}})
     lines.append(ident)
     cov = Q.coverage(ch, _sub(ch, 'coverage'))
     add('coverage', cov, cov['headline'] if cov else None)
