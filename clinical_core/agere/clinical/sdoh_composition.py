@@ -13,7 +13,7 @@ from .claims_language import SDOH_SOURCE
 
 NUM = r'(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)'
 SVI = re.compile(
-    r'^(?:(?:who\s+)?(?:live|lives|living|reside|resides|residing)\s+in\s+|(?:are|is)\s+in\s+|in\s+)?(?:an?\s+)?(?:(?P<lvl>high|low)[- ])?'
+    r'^(?:(?:who\s+)?(?:live|lives|living|reside|resides|residing)\s+in\s+|(?:are|is)\s+in\s+|in\s+)?(?:an?\s+)?(?:(?:areas?|neighborhoods?|tracts?|counties|zip\s+codes?)\s+(?:with|where|having)\s+(?:an?\s+)?)?(?:(?P<lvl>high|low)[- ])?'
     r'(?:svi|social\s+vulnerability(?:\s+index)?|vulnerability)\b(?:\s+(?:areas?|neighborhoods?|tracts?|counties|zip\s+codes?))?'
     r'\s*(?:\(\s*|\s+)(?:(?:svi|score)\s+)?(?:of\s+)?(?:(?P<op>under|below|less\s+than|over|above|at\s+least|<=|>=|<|>)\s*)?(?P<n>\d{1,3})\s*'
     r'(?P<suf>\+|or\s+(?:above|higher|more|over|greater)|or\s+(?:below|lower|less|under))?\s*\)?(?:\s+(?:areas?|neighborhoods?|tracts?))?', re.I)

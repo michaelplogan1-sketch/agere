@@ -36,7 +36,7 @@ RATE_ASKED = re.compile(r'%|\b(?:percent(?:age)?|share|proportion|(?<!ejection )
 RATE_DONE = re.compile(r'/|\bratio\b|\brate\b|percent|\bshare\b|proportion|pmpm|per_1000|denominator|avg\(|\bmean\b|\bpct\b', re.I)
 AVERAGE_ASKED = re.compile(r'\b(?:average|mean|median|typical)\b', re.I)
 AVERAGE_DONE = re.compile(r'avg\(|\bmean\b|median|percentile|/|"statistic"\s*:\s*"(?:mean|median|avg)', re.I)
-SUPERLATIVE = re.compile(r'\b(?:most|highest|lowest|least|top|largest|smallest|biggest|fewest|best|worst|leading)\b', re.I)
+SUPERLATIVE = re.compile(r'\b(?:most|highest|lowest|(?<!at\s)least|top|largest|smallest|biggest|fewest|best|worst|leading)\b', re.I)  # "at least once" is a threshold
 ORDERED = re.compile(r'order by|max\(|min\(|\blimit\b|\brank|"order_by"\s*:\s*\[\s*\{|\btop\b|"sort', re.I)
 RELATIVE_TIME = re.compile(r'\b(?:last|past|previous|prior|since|within|recent(?:ly)?|this)\s+(?:\d+\s+|one\s+|two\s+|three\s+|six\s+|twelve\s+)?'
                            r'(?:day|week|month|quarter|year)s?\b', re.I)

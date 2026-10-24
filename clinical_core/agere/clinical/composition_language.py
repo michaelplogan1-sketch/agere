@@ -219,8 +219,8 @@ class CompositionForms:
     def k_of_conditions(self, text):
         """'(have) at least two of these three: A, B, C' -> at_least_of over the listed conditions."""
         m = re.match(r'^(?:(?:with|having|have|has|had)\s+)?((?:at\s+least|any|a\s+minimum\s+of)\s+(?:\d+|' + '|'.join(NUMBER_WORDS) +
-                     r')\s+(?:of|from)\s+(?:the\s+following|these(?:\s+(?:\d+|' + '|'.join(NUMBER_WORDS) + r'))?|those(?:\s+(?:\d+|' +
-                     '|'.join(NUMBER_WORDS) + r'))?|the)(?:\s+(?:conditions|diagnoses|diseases))?)\s*:?\s*', text, re.I)
+                     r')\s+(?:of|from)(?:\s+(?:the\s+following|these(?:\s+(?:\d+|' + '|'.join(NUMBER_WORDS) + r'))?|those(?:\s+(?:\d+|' +
+                     '|'.join(NUMBER_WORDS) + r'))?|the)(?:\s+(?:conditions|diagnoses|diseases))?)?)\s*:?\s*', text, re.I)
         if not m: return None
         number = re.search(r'\d+|' + '|'.join(NUMBER_WORDS), m[1].split(' of ')[0] if ' of ' in m[1] else m[1], re.I)
         k = int(number.group()) if number.group().isdigit() else NUMBER_WORDS[number.group().lower()]
@@ -268,6 +268,38 @@ class FallbackForms:
                 plan = None
             if plan and self.plan_covers(text, plan): return plan
         raise error
+
+    def accepted(self, text, plan):
+        """Would the compiler accept this plan for this text? (cheap approximate coverage first, then the real compile; anything unexpected counts as accepted)"""
+        t = text.strip().rstrip('?.').strip()
+        if 'analyses' in plan or self.plan_covers(t, plan): return True
+        from .request_plan import compile_request, PlanError
+        try:
+            compile_request(self.catalog, text, plan)
+            return True
+        except PlanError:
+            return False
+        except Exception:  # noqa: BLE001 - not a coverage verdict
+            return True
+
+    def composition_alternative(self, text):
+        """The first composition frame whose plan covers every content word of the text, else None (the ordinary plan stands)."""
+        from .request_language import PlanError
+        for frame in self.FRAMES:
+            try:
+                plan = getattr(self, frame)(text)
+            except PlanError:
+                plan = None
+            if plan and self.plan_covers(text, plan):
+                from .request_plan import compile_request
+                try:
+                    compile_request(self.catalog, text, plan)
+                except PlanError:
+                    continue
+                except Exception:  # noqa: BLE001
+                    pass
+                return plan
+        return None
 
     def plan_covers(self, text, plan):
         """Do the plan's quotes account for every content word of the text? (the compiler's coverage rule, so a frame that reads only part of a
@@ -584,6 +616,10 @@ class GroupingForms(ShareMeasureForms, RankForms, FallbackForms):
             if not plan: return None
         if plan.get('analyses') or plan.get('group_by') or plan.get('having') or any(e.get('kind') == 'field' for e in plan['select']): return None
         dim = self.dimension_of(dim_words)
+        if not cats and dim and dim[0] == 'payer':  # "by payer type" without a named list: the patient's payer column as stored
+            self.base = plan['source']['table'] if plan['source']['table'] == 'patient' else 'patient'
+            alt = self.dimension(re.sub(r'\s+', ' ', dim_words.strip().lower()))
+            if alt: dim = ('field', alt[1], alt[0])
         if cats and re.search(r'(?:and\s+so\s+on|etc\.?|and\s+others|for\s+example)\s*$', cats, re.I) and dim and dim[0] == 'field':
             quote = [*quote, cats.strip()]  # "by product (Medicare Advantage vs FFS, marketplace, and so on)": examples, not a closed list
             cats = None

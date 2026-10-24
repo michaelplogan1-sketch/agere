@@ -215,7 +215,7 @@ class Compiler:
                     r'\b(with|without|where|whose|who|excluding|exclude|unless)\b', quote, re.I):
                 raise PlanError(f'{path}: bind filter wording to its own predicate, not a broad source or measure quote')
             logic_only = (kind == 'predicate' and obj.get('op') in ('and', 'or', 'not', 'at_least_of') and
-                          all(w.lower() in LOGIC_WORDS or w.lower() in STOP_WORDS for w in re.findall(r'\w+', quote)))
+                          all(w.lower() in LOGIC_WORDS or w.lower() in STOP_WORDS or w.isdigit() for w in re.findall(r'\w+', quote)))
             self.bindings.append({'path': path, 'kind': kind, 'quote': quote,
                                   'covers': logic_only or not (kind == 'predicate' and obj.get('op') in ('and', 'or', 'not', 'exists', 'at_least_of') and
                                                  (obj.get('where') is not None or obj.get('args') or obj.get('arg'))),
@@ -311,7 +311,7 @@ class Compiler:
             return self.sequence(expr, scope, path, depth)
         if op == 'count_at_least':
             # At least N related events for the same patient (episodes for relations whose rows are observations).
-            if set(expr) - {'distinct'} != {'op', 'table', 'where', 'n', 'quote'} or type(expr['n']) is not int or not 1 <= expr['n'] <= 10000:
+            if set(expr) - {'distinct', 'strict'} != {'op', 'table', 'where', 'n', 'quote'} or type(expr['n']) is not int or not 1 <= expr['n'] <= 10000:
                 raise PlanError('An event-count threshold needs a relation, a condition and a whole-number N')
             table = expr['table']
             if table not in self.catalog.tables or 'patient_id' not in self.catalog.tables[table]: raise PlanError(f'Unknown relation: {table}')
@@ -324,7 +324,7 @@ class Compiler:
                 if expr['distinct'] not in self.catalog.tables[table]: raise PlanError(f'Unknown column: {expr["distinct"]}')
                 unit = f'DISTINCT {alias}.{identifier(expr["distinct"])}'
             outer = self.field(self.base + '.patient_id', scope)
-            return f'((SELECT COUNT({unit}) FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {condition}) >= {expr["n"]})'
+            return f'((SELECT COUNT({unit}) FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {condition}) {">" if expr.get("strict") else ">="} {expr["n"]})'
         if op == 'exists':
             if set(expr) - {'op', 'table', 'where', 'quote', 'link', 'stream'}: raise PlanError('Unknown related-record fields')
             table = expr.get('table')

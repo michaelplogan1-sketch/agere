@@ -266,6 +266,45 @@ class ClaimsComposition(CompositionFixture):
         self.assertEqual([(r['payer_id'], r.get('value', r.get('paid_cents'))) for r in rows], [('P1', 40000), ('P2', 20000)])  # D's claim is not counted
 
 
+class DeclinedAndInherited(CompositionFixture):
+    def test_two_values_of_one_column_joined_by_and_are_declined(self):
+        plan_text = 'How many patients are women and men?'
+        with self.assertRaises(R.PlanError): L.parse(self.catalog, plan_text)
+
+    def test_named_groups_on_a_share_read_as_a_comparison(self):
+        rows = self.run_q('What share of women and men have diabetes?')
+        got = {r['sex_reported']: r['percent'] for r in rows}
+        self.assertEqual(got, {'F': 100 * 1 / 4, 'M': 100 * 2 / 3})  # women A C E G (A has diabetes), men B D F (B and D)
+
+    def test_more_than_one_is_strict(self):
+        self.assertEqual(self.count('How many patients had more than one ED visit in the last year?'), 1)  # A (2); B has one inside the window, C and D one each
+
+    def test_at_least_n_of_a_bare_list(self):
+        self.assertEqual(self.count('How many patients have at least 2 of: diabetes, CKD, heart failure?'), 3)
+
+    def test_a_rate_by_a_column_with_a_trailing_period(self):
+        rows = self.run_q('ED visits per 1000 patients by sex in the last year')
+        self.assertEqual({r['sex_reported'] for r in rows}, {'F', 'M'})
+
+    def test_compare_between_two_groups(self):
+        rows = self.run_q('Compare ED visits per 1,000 patients between Medicare and Medicaid in 2029')
+        by = {r['group']: r for r in rows}
+        self.assertEqual(set(by), {'medicare', 'medicaid'})
+        self.assertEqual(by['medicaid']['patients'], 1)  # D: one ED visit in 2029
+        self.assertAlmostEqual(by['medicaid']['rate'], 1000.0, 1)
+
+    def test_a_follow_up_keeps_the_previous_period(self):
+        from clinical_core.agere.clinical import conversation
+        question, note = conversation.inherit_window({'resolved_question': 'Count of paid prescription fills over the last 12 months?'},
+                                                     'and what was the average plan-paid amount per fill?')
+        self.assertEqual(question, 'and what was the average plan-paid amount per fill over the last 12 months?')
+        self.assertIn('kept', note)
+        same, none = conversation.inherit_window({'resolved_question': 'How many patients have diabetes?'}, 'and what was the average plan-paid amount per fill?')
+        self.assertIsNone(none)
+        stated, none = conversation.inherit_window({'resolved_question': 'fills in 2029?'}, 'and what was the average plan-paid per fill in 2028?')
+        self.assertIsNone(none)
+
+
 class MoneyComposition(CompositionFixture):
     def test_a_patient_total_reaches_an_amount(self):
         self.assertEqual(self.count('How many living patients accumulated $400 or more in paid claims over the past 12 months?'), 1)  # A 100 + 300; B 200
