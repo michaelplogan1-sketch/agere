@@ -190,10 +190,8 @@ def condition_evidence_sql(names, tables):
         which += [f'(concept = {lit(b)} AND (' + ' OR '.join(f"icd10 LIKE {lit(x + '%')}" for x in c) + '))' for b, c in narrowed]
         where = which[0] if len(which) == 1 else '(' + ' OR '.join(which) + ')'
         parts.append("SELECT patient_id, " + dated + ", 'ehr_diagnosis' AS source FROM condition WHERE " + where + ' AND (' + diagnosis + ')')
-        lab = sorted(set(whole) & LAB_EVIDENCE_CONDITIONS)
-        if lab and 'diagnosis_basis' in tables['condition']:
-            parts.append("SELECT patient_id, " + dated + ", 'laboratory_evidence' AS source FROM condition WHERE concept IN ("
-                         + ','.join(map(lit, lab)) + ") AND is_diagnosis IS NULL AND diagnosis_basis = 'laboratory_evidence'")
+        # stored laboratory_evidence condition rows do not count: the lab rule below is the decision's lab evidence (Mike 2026-10-24),
+        # and those rows carry typed labels (type_2_diabetes) an HbA1c cannot support (2026-10-24 oracle Q7: +5)
     from .decision_context import lab_rule_sql  # diabetes / CKD by lab rule (Mike 2026-10-24)
     parts += [r for r in (lab_rule_sql(n, tables) for n in sorted(set(whole))) if r]
     prefixes = sorted({p for b, c in parsed for p in (c or CONDITIONS.get(b, {}).get('icd10', []))})
