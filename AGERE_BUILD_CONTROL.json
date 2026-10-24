@@ -365,10 +365,11 @@
     "user_behavior_delta": "Release ce310b5 expands shared clinical/claims/SDOH composition, preserves ratio/event/temporal scope and offers common per-route acceptance that advances incomplete proposals to the next layer; chart booleans, note counts and summary input provenance repaired. Established practice attribution preserved.",
     "measured_failure_reduction": "Broad regression105 modules7 failures vs102/9, zero new failure names; final-scope17/1 vs17/1 zero new.15 grouped dev regressions caught and repaired before landing. Live pharmacy composite and SVI comparison both key-correct at0 calls/$0. Earlier full paid dev87/100 at$0.192139175; targeted earlier-release replay4/13 failures recovered at$1.436317484. Frozen09 freecompose91/130; new full paid run in progress.",
     "evidence": [
-      "docs/agere/DEV_GENERALIZATION_2026-10-24.md"
+      "docs/agere/DEV_GENERALIZATION_2026-10-24.md",
+      "artifacts/agere-generalization-d4de3ef/implementation-receipt.json"
     ],
     "remaining_gap": "95% target unmet; broad composition, conversational antecedents, multi-part claims and independent qualification remain open. All ten acceptance areas retained; G3 active, G5 incomplete.",
-    "next_action": "Finish and report controlled4c84e34 live100dev accuracy/spend/isolation. Measure dev-only chart semantic candidates and land only after latest-main regression diff. Then competitorheldoutonce andAgereheldoutonce, aggregatesonly, with pinned version and dataset; noheldout tuning. >95%/99% unmet. G3active/G5incomplete/fullacceptancefalse.",
+    "next_action": "Finish competitorheldoutonce thenAgereheldoutonce on pinned d4de3ef/frozen synthetic data; inspect aggregatesonly and report accuracy/provider spend aftereach. Preserve all standing definitions and exact populations; noheldout tuning. Restore normal live service aftercomparison, record final receipt. >95%/99% unmet; continue dev-only fixes. G3active/G5incomplete/fullacceptancefalse.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
@@ -444,7 +445,7 @@
         "completion": "Independent appropriate qualification remains separate from deterministic engineering acceptance; do not use protected evaluations or credits as a prerequisite for local build work."
       }
     ],
-    "latest_progress": "4c84e34 shipped evaluation cache-write repair after aligned regression comparisons/0new product failures;28focused tests; strict no-provider100dev92/100 at$0 and0store-write attempts. Invalid priorstrict diagnostic$1.062034214 excluded fromaccuracy. Controlled live100dev restarted on frozen code/data withHaikufirst and freshledger. Freeparaphrases229/295; additional dev-only chart fixes underreview."
+    "latest_progress": "d4de3ef shipped; corrected regression65/63modules14same failures/0new,36focusedtests; freeparaphrases237/295(+8,no correctlost). Final live100dev94/100 at$0.069335508,19Haiku/noSonnet;100auditreceipts0writes,source/banksunchanged. Competitorheldout runningonce; Agereheldout pendingonce."
   },
   "decisions": [
     {

@@ -75,3 +75,20 @@ The initial0c65f5a strict live diagnostic was stopped after the first basic char
 Regression evidence:145modules on candidate and main; each initially reported21failures, with one exchanged UI failure. Reproduction found cross-worktree races on identical temporary JavaScript filenames. The two UI modules each passed on both versions with isolated TMPDIRs; all other20failure names were identical. A separate aligned52-module cache/evaluation comparison had18same existing failures and0new failure names (baseline economical-planner module evaluated separately because the new test changed regex module selection). No assertions were weakened.
 
 Pushed4c84e34 and restarted :8885 on the detached release against the isolated source/learned-state copy. Controlled100dev is in progress with strict audit and separate ledger; next competitorheldoutonce thenAgereheldoutonce remain pending. Additional dev-only chart paraphrase fixes are isolated candidates, not changes to this runtime.
+
+
+## Shipped d4de3ef: final dev result and held-out milestone
+
+Pushed main and restarted :8885 on detached d4de3ef with frozen synthetic data, pinned active-definition overlay, process/request evaluation and strict audit. Final live100dev:94correct/6wrong/0unresolved, with2correct supported-absence answers (98answered). Structured20/20; notes20/20; quality18/20; claims18/20; insight18/20. Recorded attributed provider estimate$0.069335508:235Jev,118Perplexity,19Haiku, noSonnet;4failed calls lack reported usage. Every returned priced response was priced. This remains an estimate, not an invoice. The one-point note improvement is a repeated-reading result, not proof that a specific parser change caused it.
+
+All100evaluation receipts show0store-write attempts. Source fingerprints are unchanged; no bank files changed. Fingerprinting ignores newly created empty WAL sidecars, which hold no data. HTTP success and failure tests also preserved every row in all four operational/learning stores at$0. The complete request envelope now includes dispatch-journal start and finish within evaluation scratch. Tracing the prior4c84 run established its physical differences were empty WAL creation and dispatch-journal events, not changed clinical source or learned plans; the new run removes that exception.
+
+Chart paraphrase semantics preserve numeric words, plural lab names, evidential “going by”, sourced scalar labels and monetary intent; fronted yes/no questions retain a boolean reading. Frozen a0b614b free paraphrases:237/295(80.3%) versus229/295,9wrong/49refused;8recoveries and0previously correct answers lost. Structured paraphrases59/60. Both comparative runs use the same committed definitions; the live active overlay is separately pinned in its manifest.
+
+The corrected regression runner records nonzero process exits instead of silently treating native crashes as passes.65candidate modules versus63main modules have14exactly identical failure names, including existing native crashes in test_metric_first and test_request_lineage;0new failures.36focused tests pass. The earlier narrower chart comparison had22candidate/21main modules with0failures. Assertions were not weakened.
+
+A client attempt before service readiness made no model calls/$0, was excluded and preserved separately. The harness now requires ready health and aborts on transport/endpoint or audit failures.
+
+Competitor held-out run started once after final live dev, on the same frozen semantic database with unchanged Opus5.5/8-tool documented protocol. Its outputs remain opaque; only aggregates will be inspected. Agere held-out will run once afterward. No held-out question text or individual outcomes have been inspected for development. The six remaining scored dev failures retain unresolved population/attribution/window/measure-definition questions; no keys or standing definitions were changed to increase the score. >95%/99% remains unmet. G3 stays active, G5 incomplete and full acceptance false.
+
+Implementation evidence: artifacts/agere-generalization-d4de3ef/implementation-receipt.json (implementation verified, comparison measurements in progress).
