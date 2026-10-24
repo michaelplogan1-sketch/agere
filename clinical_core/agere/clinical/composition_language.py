@@ -73,7 +73,7 @@ class CompositionForms:
     def composition_predicate(self, text):
         """The composition constructs of the module docstring, as (predicate, tail), else None."""
         if self.base != 'patient': return None
-        return (self.k_of_conditions(text) or self.neither_medications(text) or self.evidence_chain(text)
+        return (self.k_of_conditions(text) or self.neither_medications(text) or self.sdoh_composition(text) or self.evidence_chain(text)
                 or self.condition_construct(text))
 
     # -- events: "both X and Y [window]", "X in W1 but not at all in W2" ---------------------------------------------------------
@@ -236,7 +236,7 @@ class CompositionForms:
     def neither_medications(self, text):
         """'(are) on|taking neither X nor Y' -> no picked-up fill of X and none of Y (current use = the 12 months ending at the as-of date)."""
         m = re.match(r'^(?:(?:who|that)\s+)?(?:(?:are|is|were|was)\s+)?(?:currently\s+)?(on|taking|receiving)\s+neither\s+' + ARTICLE, text, re.I)
-        if not m or 'fill' not in self.catalog.tables: return None
+        if not m or 'medication' not in self.catalog.tables: return None
         first = self.prefix(text[m.end():], self.drugs)
         if not first: return None
         nor = re.match(r'^nor\s+' + ARTICLE, first[2], re.I)
@@ -266,10 +266,35 @@ class FallbackForms:
                 plan = getattr(self, frame)(text)
             except PlanError:
                 plan = None
-            if plan: return plan
+            if plan and self.plan_covers(text, plan): return plan
         raise error
 
-    FRAMES = ('rate_per_form', 'rank_measure', 'grouping_wrapper')
+    def plan_covers(self, text, plan):
+        """Do the plan's quotes account for every content word of the text? (the compiler's coverage rule, so a frame that reads only part of a
+        sentence yields to the next frame instead of failing at compile time)"""
+        from .request_plan import STOP_WORDS, LOGIC_WORDS
+        covered = [False] * len(text)
+        def mark(q):
+            for frag in ([q] if isinstance(q, str) else q if isinstance(q, list) else []):
+                if isinstance(frag, str) and frag.strip():
+                    for m in re.finditer(re.escape(frag), text): covered[m.start():m.end()] = [True] * (m.end() - m.start())
+        def walk(node):
+            if isinstance(node, list):
+                for x in node: walk(x)
+            elif isinstance(node, dict):
+                quote = node.get('quote')
+                parent = node.get('op') in ('and', 'or', 'not', 'exists', 'at_least_of') and (node.get('args') or node.get('arg') or node.get('where') is not None)
+                if quote is not None:
+                    frags = [quote] if isinstance(quote, str) else quote if isinstance(quote, list) else []
+                    if not parent or all(w.lower() in LOGIC_WORDS or w.lower() in STOP_WORDS for f in frags if isinstance(f, str) for w in re.findall(r'\w+', f)): mark(frags)
+                for key, v in node.items():
+                    if key != 'quote' and isinstance(v, (list, dict)): walk(v)
+        walk(plan)
+        left = [m.group() for m in re.finditer(r'[\w%]+', text) if not all(covered[m.start():m.end()]) and m.group().lower() not in STOP_WORDS]
+        self.uncovered_words = left
+        return not left
+
+    FRAMES = ('rate_per_form', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'claims_frame', 'rank_measure', 'grouping_wrapper')
 
 
 class RateForms:
@@ -334,7 +359,11 @@ class RankForms:
         dim_text = (m['dim'] if m['dim'] is not None else m['dim2']).strip()
         sup = (m['sup'] or m['top']).lower()
         n_word = m['n'] or m['n3'] or m['n2']
-        rest = re.sub(r',?\s*(?:and\s+)?(?:how\s+many|what\s+was\s+it|with\s+the\s+totals?)(?:\s+(?:each|of\s+them|times\s+each\s+occurred))?\s*$', '', rest, flags=re.I).strip()
+        trailer = re.search(r',?\s*(?:and\s+)?(?:how\s+many|what\s+was\s+it|with\s+the\s+totals?)(?:\s+(?:each|of\s+them|times\s+each\s+occurred))?\s*$', rest, re.I)
+        extra_quote = []
+        if trailer:
+            extra_quote = [trailer.group().strip(' ,')]  # "with the totals": the output the ranking already carries; its words sit in the ordering quote
+            rest = rest[:trailer.start()].strip()
         floor = None
         sized = self.FLOOR.search(rest)
         if sized and sized['noun']:
@@ -364,7 +393,8 @@ class RankForms:
         head = t[:m.start('rest') if m['rest'] is not None else m.start('rest2')].strip(' ,') or t
         alias = measure['alias'] if measure['alias'] not in (key, 'rows') else 'value'
         select = [{'kind': 'field', 'field': field, 'alias': key, 'quote': quote_dim}, {**measure, 'alias': alias}]
-        out = {**plan, 'select': select, 'group_by': [key], 'order_by': [{'alias': alias, 'direction': self.SUP[sup], 'quote': head}],
+        order_quote = [head, *extra_quote] if extra_quote else head
+        out = {**plan, 'select': select, 'group_by': [key], 'order_by': [{'alias': alias, 'direction': self.SUP[sup], 'quote': order_quote}],
                'limit': {'value': number_of(n_word), 'quote': head} if n_word else None}
         if joins: out['joins'] = joins
         if floor:

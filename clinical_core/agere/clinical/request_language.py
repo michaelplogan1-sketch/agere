@@ -15,6 +15,9 @@ from .request_plan import PlanError, AmbiguousRequest
 from .population_language import PopulationForms, RankingForms
 from .claims_language import ClaimForms, SdohForms, DefinedForms
 from .composition_language import CompositionForms, GroupingForms, RateForms
+from .claims_composition import ClaimFrames
+from .comparison_composition import ComparisonForms
+from .sdoh_composition import SdohComposition
 
 SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
@@ -161,7 +164,7 @@ FIELD_SYNONYMS = {  # everyday names for received fields; the field must exist i
     'lead time': 'appointment.lead_time_days',
     'svi score': 'patient_svi.svi_overall', 'social vulnerability index': 'patient_svi.svi_overall', 'svi': 'patient_svi.svi_overall',
     'length of stay in days': 'stay.los_days', 'los': 'stay.los_days',
-    'days supply': 'fill.days_supply',
+    'days supply': 'fill.days_supply', 'county code': 'patient.county', 'county codes': 'patient.county',
     'payer type': 'patient.line_of_business', 'lob': 'patient.line_of_business', 'line of business': 'patient.line_of_business',
 }
 FIELDS = {
@@ -230,7 +233,7 @@ def syntax_text(text, *, hide_parentheses=False):
     return ''.join(chars)
 
 
-class Parser(RateForms, GroupingForms, CompositionForms, PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
+class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingForms, CompositionForms, PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
     def __init__(self, catalog, question, *, bound=False):
         self.catalog, self.question, self.bound = catalog, question, bound
         self.base = 'patient'
@@ -774,7 +777,7 @@ class Parser(RateForms, GroupingForms, CompositionForms, PopulationForms, Rankin
         noted = self.note_evidence(text)
         if noted: return noted
         start = text
-        social = re.match(r'^(?:(?:have|has|had)\s+)?((?:never|not)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
+        social = re.match(r'^(?:(?:have|has|had)\s+)?(?:ever\s+)?((?:never|not)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
         if social and 'social_need' in self.catalog.tables:
             got = self.prefix(re.sub(r'^(?:an?|the)\s+', '', text[social.end():], flags=re.I), NEEDS)
             if got:
@@ -852,10 +855,14 @@ class Parser(RateForms, GroupingForms, CompositionForms, PopulationForms, Rankin
 
     def parse(self, text=None, governed=True):
         self.use_governed = governed
-        try:
-            plan = self._parse(text)
-        except PlanError as err:
-            plan = self.composition_fallback(text if text is not None else self.question, err)
+        contrast = self.contrast_first(text if text is not None else self.question)
+        if contrast:
+            plan = contrast
+        else:
+            try:
+                plan = self._parse(text)
+            except PlanError as err:
+                plan = self.composition_fallback(text if text is not None else self.question, err)
         if self.extra_notes and isinstance(plan, dict) and 'select' in plan:
             plan['notes'] = list(dict.fromkeys([*(plan.get('notes') or []), *self.extra_notes]))
         return plan
@@ -1007,7 +1014,7 @@ class Parser(RateForms, GroupingForms, CompositionForms, PopulationForms, Rankin
         if not source and anaphoric:
             source = (anaphoric, ('patient', None), rest)  # "Of those, which are women": the saved cohort itself is the population
         if not source and verb == 'who' and re.match(r'^(?:has|have|had|is|are|was|were|did|do|does|took|takes)\b', rest, re.I):
-            source = (lead.group().strip(), ('patient', None), rest)  # "Who has X and Y": the patients themselves
+            source = (rest.split()[0], ('patient', None), rest)  # "Who has X and Y": the patients themselves (the lead word 'Who' is a stop word the compiler covers)
         if not source: raise PlanError('Explicit source or saved cohort required')
         source_quote, (self.base, default), rest = source
         if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'

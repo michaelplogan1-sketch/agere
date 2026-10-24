@@ -293,7 +293,7 @@ class Compiler:
             return self.sequence(expr, scope, path, depth)
         if op == 'count_at_least':
             # At least N related events for the same patient (episodes for relations whose rows are observations).
-            if set(expr) != {'op', 'table', 'where', 'n', 'quote'} or type(expr['n']) is not int or not 1 <= expr['n'] <= 10000:
+            if set(expr) - {'distinct'} != {'op', 'table', 'where', 'n', 'quote'} or type(expr['n']) is not int or not 1 <= expr['n'] <= 10000:
                 raise PlanError('An event-count threshold needs a relation, a condition and a whole-number N')
             table = expr['table']
             if table not in self.catalog.tables or 'patient_id' not in self.catalog.tables[table]: raise PlanError(f'Unknown relation: {table}')
@@ -302,6 +302,9 @@ class Compiler:
             nested = {**scope, table: alias}
             condition = self.predicate(expr['where'], nested, path + '.where', depth + 1) if expr.get('where') else '1'
             unit = ("DISTINCT " + " || '|' || ".join(f'{alias}.{identifier(c)}' for c in EPISODE_KEYS[table])) if table in EPISODE_KEYS else '*'
+            if expr.get('distinct'):  # "two or more DIFFERENT needs": distinct values of one column
+                if expr['distinct'] not in self.catalog.tables[table]: raise PlanError(f'Unknown column: {expr["distinct"]}')
+                unit = f'DISTINCT {alias}.{identifier(expr["distinct"])}'
             outer = self.field(self.base + '.patient_id', scope)
             return f'((SELECT COUNT({unit}) FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {condition}) >= {expr["n"]})'
         if op == 'exists':
@@ -808,6 +811,9 @@ class Compiler:
                     rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', column.replace('_', ' ')))
         rendered_numbers.update(self.rescaled)  # compiled as their 0-100 equivalent, disclosed in notes
         rendered_numbers.update(self.window_numbers)
+        # a range of dates ("2028 through 2029" compiled as >= 2028-01-01 and < 2030-01-01) covers the years between its ends
+        spans = sorted(int(y) for y in re.findall(r"'((?:19|20)\d\d)-\d\d-\d\d'", query))
+        if len(spans) >= 2: rendered_numbers.update(str(y) for y in range(spans[0], spans[-1] + 1))
         unresolved_text = ' '.join(quote_text(x['quote']) for x in [*plan['unresolved'], *[s for s in plan.get('workflow', []) if s['unresolved']]])
         missing_numbers = numeric - rendered_numbers - set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', unresolved_text))
         if missing_numbers: raise PlanError('Numeric constraints were not compiled: ' + ', '.join(sorted(missing_numbers)))

@@ -24,7 +24,7 @@ BP_AGE = (18, 85)  # the CBP measure's eligible ages (config/agere/measures/cbp.
 SHARE_HEAD = re.compile(r'^(?:what|which)\s+(?:is\s+|was\s+|are\s+|were\s+)?(?:the\s+|our\s+)?(?:overall\s+)?'
                         r'(?:share|percent(?:age)?|proportion|fraction|rate)\s+of\s+', re.I)
 PREDICATE_VERBS = re.compile(r"(?<!\bwho )(?<!\bthat )(?<!\bwhose )\b(?:have|has|had|are|is|were|was|filled|got|received|completed|underwent|"
-                             r"did|do|does|ever|haven't|hasn't|aren't|isn't|didn't|don't|doesn't|screened)\b", re.I)
+                             r"did|do|does|ever|haven't|hasn't|aren't|isn't|didn't|don't|doesn't|screened|missed|visited|went|used|came|presented)\b", re.I)
 ADJECTIVES = {'adult': ('patient.age', '>=', 18), 'adults': ('patient.age', '>=', 18)}
 
 
