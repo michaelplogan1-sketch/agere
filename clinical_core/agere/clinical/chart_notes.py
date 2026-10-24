@@ -341,6 +341,10 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     if preds and CI.HOW_MANY.search(ask):
         preds = preds[:1]
         preds[0]['_count'] = True
+        # Reported counts belong to the dated note, even when its events are
+        # historical. An unqualified event-count question keeps its own scope.
+        if re.search(r'\breport(?:s|ed|ing)?\b', ask, re.I):
+            preds[0]['statuses'] = list(dict.fromkeys([*preds[0]['statuses'], 'historical']))
         preds[0]['return_detail'] = list(dict.fromkeys([*(preds[0].get('return_detail') or []), *(['count'] if preds[0]['frame'] in COUNT_FRAMES else [])]))
         if not preds[0]['concept'].get('open'):
             preds[0]['combine'] = 'any'  # every documented occurrence in the window, not only the latest
@@ -489,7 +493,7 @@ def count_events(res, is_open=False):
             return {'n': n, 'basis': f"at least: distinct findings the readers settled; {res.get('partial')}"}
         return {'n': n, 'basis': 'distinct findings the readers settled' if n else 'none documented'}
     evs = [e for e in (res.get('evidence') or []) if e.get('supports')]
-    stated = sorted(((e.get('date') or '', _whole((e.get('detail') or {}).get('count')), e) for e in evs if (_whole((e.get('detail') or {}).get('count')) or 0) > 0),
+    stated = sorted(((e.get('date') or '', _whole((e.get('detail') or {}).get('count')), e) for e in evs if _whole((e.get('detail') or {}).get('count')) is not None),
                     key=lambda t: t[0])
     if stated:
         d, n, e = stated[-1]
