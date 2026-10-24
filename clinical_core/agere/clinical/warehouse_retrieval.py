@@ -405,5 +405,7 @@ class Retriever:
                 'analysis_window':window,'cohort_patient_count':len(members) if scoped else None,
                 'scope_applied_before_ranking':scoped,
                 'scope':'Ranked passages for inspection, not a complete cohort or clinical answer. Scores are relevance, not correctness probabilities.'}
-        with self.db:self.db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)',(key,json.dumps(result,allow_nan=False)))
+        from .evaluation import active as evaluating
+        if not evaluating():
+            with self.db:self.db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)',(key,json.dumps(result,allow_nan=False)))
         return result

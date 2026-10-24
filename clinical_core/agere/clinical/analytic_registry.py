@@ -291,7 +291,9 @@ def execute(path,operator,*,patient=None,drug_class=None,view='all',limit=10,coh
                     row=timeline(p,selected,meta['snapshot']['as_of'],[r for r in records if r['record_id'] in unknown],reference_records=records)
                 else:row=patient_operator(operator,p,selected,meta['snapshot']['as_of'],drug_class,reference_records=records)
                 row['record_scope']=scope;rows.append(row)
-                db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)',(pkey,json.dumps(row,allow_nan=False)))
+                from .evaluation import active as evaluating
+                if not evaluating():
+                    db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)',(pkey,json.dumps(row,allow_nan=False)))
                 patient_computations+=1
             if operator=='medication_evidence':summary={'patients':len(rows),'explicit_dispense_date_supply_documented':sum(r['supply']['status']=='supply_documented' for r in rows),
                      'with_order_records':sum(bool(r['supply']['order_evidence']) for r in rows),
@@ -324,6 +326,8 @@ def execute(path,operator,*,patient=None,drug_class=None,view='all',limit=10,coh
                            'aggregate_result_replayed':False},
                 'new_paid_api_calls':0,'care_gap_established':False,'clinical_execution_authorized':False,'cache_hit':False}
         if operator in ('source_volume_monitor','claims_runout'):result['calculation']=calculation
-        with db:db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)',(cache_key,json.dumps(result,allow_nan=False)))
+        from .evaluation import active as evaluating
+        if not evaluating():
+            with db:db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)',(cache_key,json.dumps(result,allow_nan=False)))
         return result
     finally:db.close()

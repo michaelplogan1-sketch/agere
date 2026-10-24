@@ -443,5 +443,7 @@ class PassageIndex:
                       'analysis_window': window, 'cohort_patient_count': members, 'scope_applied_before_ranking': bool(scope_join),
                       'index': {**stats, 'embedded_this_query': lazily},
                       'scope': 'Ranked passages for inspection, not a complete cohort or clinical answer. Scores are relevance, not correctness probabilities.'}
-            with self.db: self.db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
+            from .evaluation import active as evaluating
+            if not evaluating():
+                with self.db: self.db.execute('INSERT OR REPLACE INTO result_cache VALUES (?,?)', (key, json.dumps(result, allow_nan=False)))
             return result
