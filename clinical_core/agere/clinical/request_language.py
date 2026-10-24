@@ -248,6 +248,14 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         from . import concepts
         self.conditions = dict(CONDITION_ALIASES)
         self.conditions.update({k.replace('_', ' '): k for k in concepts.CONDITIONS})
+        # A source adjective and the same concept as a predicate use one vocabulary
+        # (e.g. hypertensive patients / hypertensive). The compiler reparses these
+        # exact leaves rather than maintaining a second, narrower synonym list.
+        for phrase, (_, preset) in self.sources.items():
+            if preset and preset[0] == 'condition':
+                self.conditions.setdefault(phrase, preset[1])
+                adjective = re.sub(r'\s+(?:patients|members)$', '', phrase)
+                self.conditions.setdefault(adjective, preset[1])
         from .drug_classes import CLASSES, GROUPS
         self.drugs = {k.replace('_', ' '): [k] for k in CLASSES}
         self.drugs.update({k.replace('_', ' '): list(v) for k, v in GROUPS.items()})
@@ -454,7 +462,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
     def condition(self, concept_id, quote):
         return {'op': 'concept', 'kind': 'condition', 'names': [concept_id], 'version': 1, 'period': None, 'quote': quote}
 
-    CURRENT_USE = re.compile(r'^(?:on|taking|receiving)\b', re.I)
+    CURRENT_USE = re.compile(r'^(?:currently\s+)?(?:on|taking|receiving)\b', re.I)
     EVER = re.compile(r'^\s*(?:ever|at\s+any\s+(?:time|point)|on\s+record|in\s+the\s+past|previously)\b', re.I)
 
     def current_use(self, value, tail, lead):
@@ -763,7 +771,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         neither = re.match(r'^(?:(?:have|has|had)\s+)?neither\s+', text, re.I)
         if neither:
             first = self.thing_evidence(text[neither.end():])
-            nor = re.match(r'^\s+nor\s+', first[4]) if first else None
+            nor = re.match(r'^\s*nor\s+', first[4]) if first else None
             second = self.thing_evidence(first[4][nor.end():]) if nor else None
             if second:
                 win1, tail = self.window(second[4], first[0], first[1])
@@ -848,6 +856,15 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             return governed
         claims = self.amount_form(text) or self.amount_share(text) or self.average_amount(text) or self.rank_rate(text) or self.rate_by(text) or self.row_share(text)
         if claims: return claims
+        # A question headed by WHO is already a patient-list request. Keep its
+        # original subject span rather than sending an invented patient noun to a model.
+        who = re.match(r'^who\s+(?:has|have|is|are)\b', text, re.I)
+        if who and not self.bound:
+            where, tail = self.expression(text[who.end():].strip())
+            if where is not None and not tail.strip():
+                return {'source': {'table': 'patient', 'quote': text[:3]},
+                        'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': text[:3]}],
+                        'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
         anaphoric = False  # the quote of the words that refer to the saved cohort, once the request leads with them
         if self.bound:
             # A follow-up narrows the saved cohort: "And of those, which are women?", "Who among them has diabetes?". The leader is
@@ -1267,7 +1284,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
     def conjunction(self, text):
         values, tail = [], text.strip()
         while tail and not tail.startswith(')') and not re.match(r'^or\b', tail, re.I):
-            join = re.match(r'^(?:and|but|plus)\s+', tail, re.I)
+            join = re.match(r'^(?:(?:and|but|plus)\s+|,\s*(?:and\s+)?)', tail, re.I)
             if join: tail = tail[join.end():]
             value, remaining = self.one(tail)
             if value is None:
@@ -1288,6 +1305,33 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             value, tail = self.expression(text[1:])
             if not tail.startswith(')'): raise PlanError('Unclosed predicate group')
             return value, tail[1:]
+        # NEITHER A NOR B negates the union, for diagnoses and medication use.
+        # Each item must resolve in the governed vocabulary; arbitrary words are
+        # left unconsumed for the ordinary fallback.
+        neither = re.match(r'^(?:(on|taking|using)\s+|(?:have|has|with)\s+)?neither\s+(?:an?\s+)?', text, re.I)
+        if neither:
+            vocab = self.drugs if neither[1] else self.conditions
+            left = self.prefix(text[neither.end():], vocab)
+            sep = re.match(r'^\s*nor\s+(?:an?\s+)?', left[2], re.I) if left else None
+            right = self.prefix(left[2][sep.end():], vocab) if sep else None
+            if right:
+                tail = right[2]
+                suffix = re.match(r'^\s*(?:on record|documented|diagnoses?)\b', tail, re.I)
+                if suffix: tail = tail[suffix.end():]
+                quote = text[:len(text)-len(tail)].strip()
+                values = []
+                for item in (left, right):
+                    if neither[1]:
+                        value = {'op': 'concept', 'kind': 'drug_fill', 'names': item[1], 'version': 1,
+                                 'period': None, 'quote': [neither[1], item[0]]}
+                        value, _ = self.current_use(value, '', neither[1])
+                    else:
+                        value = self.condition(item[1], item[0])
+                    values.append({'op': 'not', 'arg': value, 'quote': quote})
+                # A suffix is explanatory diagnosis wording, never another filter.
+                if suffix and not neither[1]:
+                    values[-1]['arg']['quote'] = [right[0], suffix.group().strip()]
+                return combine('and', values, quote), tail
         seq = self.sequence(text)
         if seq: return seq
         bp = self.blood_pressure(text)
@@ -1298,7 +1342,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         if sdoh: return sdoh
         evidence = self.evidence(text)
         if evidence: return evidence
-        neg = re.match(r"^(?:not|without|excluding|exclude|(?:do|does)\s+not|don't|doesn't)\s+", text, re.I)
+        neg = re.match(r"^(?:not|without|excluding|exclude|(?:have|has|with)\s+no|no|(?:do|does)\s+not|don't|doesn't)\s+", text, re.I)
         if neg:
             child, tail = self.one(text[neg.end():])
             if child is None: raise PlanError('Missing negated predicate')
@@ -1370,8 +1414,10 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             return atom('prescription.fill_status', '=', 'not_filled', unfilled.group()), text[unfilled.end():]
         status = self.status_word(text)
         if status: return status
-        m = re.match(r'^(?:with |having |have |has )(?:both\s+)?', text, re.I)
+        m = re.match(r'^(?:(?:with|having|have|has|carry|carries|flagged with)\s+)(?:both\s+)?', text, re.I)
         concept_text = text[m.end():] if m else text
+        article = re.match(r'^(?:an?\s+)', concept_text, re.I)
+        if article: concept_text = concept_text[article.end():]
         concept = self.prefix(concept_text, self.conditions)
         if not concept and m:  # "have a history of diabetes", "with a diagnosis of CKD": the article words carry no constraint
             article = re.match(r'^(?:(?:an?|any|the)\s+)?(?:(?:history|diagnosis|record)\s+of\s+)?(?:(?:prior|known)\s+)?', concept_text, re.I)
@@ -1386,11 +1432,15 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
                 other = self.prefix(tail[more.end():], self.conditions) if more else None
                 if not other: break
                 names.append(other[1]); tail = other[2]
+            suffix = re.match(r'^\s*(?:diagnos(?:is|es)|on record|all at once)\b', tail, re.I)
+            if suffix: tail = tail[suffix.end():]
+            either = re.match(r'^\s*\(either one\)', tail, re.I)
+            if either and len(names) > 1: tail = tail[either.end():]
             quote = text[:len(text)-len(tail)].strip()
             value = self.condition(concept_id, quote)
             if len(names) > 1: value['names'] = list(dict.fromkeys(n for n in names))
             return self.concept_period(value, tail)
-        med = re.match(r'^(?:on|taking|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
+        med = re.match(r'^(?:currently\s+)?(?:on|taking|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
         if med:
             got = self.prefix(text[med.end():], self.drugs)
             if got:

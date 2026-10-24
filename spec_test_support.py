@@ -102,7 +102,7 @@ class FakeModel:
         return text, {'model': self.name, 'api_usd': self.usd, 'cache_hit': False, 'api_cost_known': True, 'seconds': 0.01}
 
 
-FQ = 'Patients, heart failure, how many?'  # a wording the grammar does not read but a spec can: the paid fillers' territory
+FQ = 'Patients — heart failure — how many?'  # a wording the grammar does not read but a spec can: the paid fillers' territory
 
 
 def spec_count_hf(question, source='patients', measure='How many'):
