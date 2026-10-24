@@ -168,6 +168,8 @@ FRAMES = [
     ('lab_threshold_on', r'\b(?P<op>above|over|below|under|at\s+least|greater\s+than|less\s+than)\s+(?P<n>\d+(?:\.\d+)?)\s+on\s+(?P<lab><LAB>)\b', 'with {lab} {op} {n}'),
     ('flu_rate', r'^(?:what(?:\'s|\s+is|\s+was)\s+)?(?:the\s+|our\s+)?(?:flu|influenza)\s+(?:vaccination|vaccine|immunization|shot)\s+rate\s+(?:for|among|in)\s+(?P<pop>.+?)(?P<w>\s+(?:in\s+the\s+)?(?:last|past|this)\s+(?:flu\s+)?season)?$', 'What share of {pop} got a flu shot {w}'),
     # blood pressure control, lab on the latest result
+    ('whose_lab', r'\bwhose\s+(?:most\s+recent|latest|last)\s+(?P<lab><LAB>)\s+(?:is|was)\s+(?P<op>greater\s+than|more\s+than|higher\s+than|less\s+than|lower\s+than|above|over|below|under|at\s+least|at\s+most)\s+(?P<n>\d+(?:\.\d+)?)',
+     'have a latest {lab} {op} {n}'),
     ('whose_bp', r'\bwhose\s+blood\s+pressure\s+(?:is|are)\s+(?P<s>controlled|under\s+control|uncontrolled|not\s+controlled)', 'have blood pressure {s}'),
     ('not_controlled', r'\bblood\s+pressure\s+not\s+controlled\b', 'blood pressure not under control'),
     ('lab_on_latest', r'\b(?:are|is|were|was)\s+(?P<op>above|over|below|under|at\s+least|greater\s+than|less\s+than|higher\s+than|lower\s+than)\s+(?P<n>\d+(?:\.\d+)?)\s+on\s+(?:their\s+)?(?P<w>latest|most\s+recent|last)\s+(?P<lab><LAB>)\b',
