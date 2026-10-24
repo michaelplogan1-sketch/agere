@@ -144,7 +144,11 @@ def _analyst(stack, question, ledger, against=None):
         return {'graph': _decline_graph(question, answer.get('missing'), _as_of(stack)), 'receipt': receipt, 'picked': picked}
     if not (answer and answer.get('status') in ('answered', 'partial') and sql):
         return {'graph': None, 'receipt': receipt, 'picked': None}
-    graph = _sql_graph(question, sql, _returns(answer.get('answer_type'), question), _as_of(stack),
+    returns = _returns(answer.get('answer_type'), question)
+    shown = (rows or {}).get('rows') if isinstance(rows, dict) else None
+    if returns in ('count', 'value') and shown is not None and (len(shown) != 1 or len(shown[0]) != 1):
+        returns = 'table'  # the answering query returns several outputs (a share with its numerator and denominator): a table
+    graph = _sql_graph(question, sql, returns, _as_of(stack),
                        'Semantic analyst query (reconciled by Opus)' if rec else 'Semantic analyst query')
     return {'graph': graph, 'receipt': receipt, 'picked': picked}
 
