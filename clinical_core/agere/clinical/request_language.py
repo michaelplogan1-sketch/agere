@@ -515,7 +515,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                     r"(?:have|has)\s+not\s+been\s+seen(?:\s+in)?|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
                     r"(?:are|were|is)\s+missing|missing|without)")
     POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|whose|got|received|completed|underwent|"
-                     r"(?:(?:went|gone|go|goes|been|presented|came|come|came\s+in)\s+(?:to|through|into)|visited|used|(?:have|has)\s+(?:visited|used))(?:\s+the)?|"
+                     r"(?:(?:went|gone|go|goes|been|presented|came|come|came\s+in)\s+(?:to|through|into)|(?:(?:were|was|been|got)\s+)?seen\s+(?:in|at)|visited|used|(?:have|has)\s+(?:visited|used))(?:\s+the)?|"
                      r"(?:were|was|been)(?=\s+admitted))")
 
     def window(self, text, table, field):
@@ -1050,7 +1050,9 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         rest, group_fields, group_quote = self.grouping(rest, dimensions)
         rest = re.sub(r'^\s*(?:are|were|is|was)(?!\s+admitted)(?:\s+there)?(?:\s+|$)', '', rest, flags=re.I)
         rest = re.sub(r'\s+(?:are|were|is)\s+there\s*$', '', rest, flags=re.I)
-        rest = re.sub(r'^\s*(?:that\s+)?(?:(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)|(?:have|has)\s+we\s+(?:had|seen|recorded|logged))\b\s*', '', rest, flags=re.I)
+        event_verb = re.match(r'^\s*(?:happened|occurred|took\s+place|were\s+(?:recorded|logged))\b', rest, re.I)  # "ED visits happened in 2029": the verb says nothing more than "were there"
+        event_word = event_verb.group().strip() if event_verb else ''
+        rest = re.sub(r'^\s*(?:that\s+)?(?:(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)|(?:have|has)\s+we\s+(?:had|seen|recorded|logged)|(?:happened|occurred|took\s+place|were\s+(?:recorded|logged)))\b\s*', '', rest, flags=re.I)
         rest = re.sub(r"^[\u2019']s?\s+(?=\S)", '', rest)  # "diabetics' most recent A1c": the possessive of the population noun
         base_filter = None
         if default: base_filter = self.preset_filter(default, source_quote)
@@ -1091,7 +1093,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             measure = {'kind': fn, 'field': field_name, 'alias': fn+'_'+field_name.split('.')[-1], 'quote': [lead.group().strip(), field_text]}
         else:
             measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count',
-                       'quote': [measure_quote, distinct_word] if distinct_word else measure_quote}
+                       'quote': [measure_quote, *[w for w in (distinct_word, event_word) if w]] if (distinct_word or event_word) else measure_quote}
             if self.base == 'patient': measure['field'] = 'patient.patient_id'
         measures.append(measure)
         if unit:
@@ -1477,7 +1479,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             value = self.condition(concept_id, quote)
             if len(names) > 1: value['names'] = list(dict.fromkeys(n for n in names))
             return self.concept_period(value, tail)
-        med = re.match(r'^(?:(?:have|has|had)\s+(?:ever\s+)?)?(?:(?:currently|now|presently)\s+)?(?:on|taking|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
+        med = re.match(r'^(?:(?:have|has|had)\s+(?:ever\s+)?)?(?:(?:currently|now|presently)\s+)?(?:on|taking|takes?|took|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
         if med:
             got = self.prefix(text[med.end():], self.drugs)
             if got:

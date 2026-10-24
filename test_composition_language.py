@@ -305,6 +305,31 @@ class DeclinedAndInherited(CompositionFixture):
         self.assertIsNone(none)
 
 
+class WordingVariants(CompositionFixture):
+    def test_seen_in_the_ed(self):
+        self.assertEqual(self.count('How many patients were seen in the ED in the last 12 months?'), 4)  # A B C D
+
+    def test_events_that_happened(self):
+        self.assertEqual(self.count('How many ED visits happened in 2029?'), 3)  # A 2029-08-01, B 2029-03-01, D 2029-07-01
+
+    def test_take_a_drug(self):
+        self.assertEqual(self.count('How many patients with diabetes take an antiplatelet?'), 1)  # D
+
+    def test_either_or_but_not(self):
+        self.assertEqual(self.count('How many patients have either heart failure or asthma but not CKD?'), 3)  # A (hf), F, G (asthma); C has hf and ckd
+
+    def test_a_need_and_the_lack_of_another(self):
+        self.assertEqual(self.count('How many patients have a transportation barrier but no food insecurity?'), 0)  # A and D have both
+
+    def test_a_dimension_in_the_middle_of_the_question(self):
+        rows = self.run_q('How many patients in each sex had an ED visit in the last 12 months?')
+        self.assertEqual({r['sex_reported']: r['patients'] for r in rows}, {'F': 2, 'M': 2})  # A C | B D
+
+    def test_the_distinct_needs_read_back_says_different(self):
+        plan = L.parse(self.catalog, 'How many patients screened positive for two or more social needs?')
+        self.assertIn('different', spec_readback.predicate_text(plan['where']))
+
+
 class MoneyComposition(CompositionFixture):
     def test_a_patient_total_reaches_an_amount(self):
         self.assertEqual(self.count('How many living patients accumulated $400 or more in paid claims over the past 12 months?'), 1)  # A 100 + 300; B 200

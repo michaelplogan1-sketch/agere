@@ -168,13 +168,14 @@ class CompositionForms:
         # exclusive: "A or B but not both"
         excl = re.match(r'^\s*,?\s*(?:but|and|though)\s+not\s+both\b', after, re.I)
         and_quote = [q for q in ([quant.group().strip()] if quant and quant[1].lower() == 'both' else []) + logic if q]
+        quant_word = [quant.group().strip()] if quant and quant[1].lower() in ('either', 'any') and kind == 'or' else []
         if kind == 'or':
             if len(items) > 1 or content:
-                value = self.condition(items[0][0], self.leaf_quote(lead_words, items[0][1], *content) if len(items) == 1 else
-                                       [q for q in [lead_words, text_span(body, items[0][1], items[-1][1]), *content] if q])
+                value = self.condition(items[0][0], self.leaf_quote(lead_words, *quant_word, items[0][1], *content) if len(items) == 1 else
+                                       [q for q in [lead_words, *quant_word, text_span(body, items[0][1], items[-1][1]), *content] if q])
                 if len(items) > 1:
                     value['names'] = list(dict.fromkeys(c for c, _ in items))
-                    value['quote'] = [q for q in [lead_words, text_span(body, items[0][1], items[-1][1]), *content] if q]
+                    value['quote'] = [q for q in [lead_words, *quant_word, text_span(body, items[0][1], items[-1][1]), *content] if q]
                     if len(value['quote']) == 1: value['quote'] = value['quote'][0]
             else:
                 value = leaves[0]
@@ -569,7 +570,13 @@ class GroupingForms(ShareMeasureForms, RankForms, FallbackForms):
             rest = fronted['q']
             cats = fronted['cats'] or fronted['cats2']
             clause = text[:fronted.start('q')].strip(' ,:')
-            return self.grouped(rest, fronted['dim'], cats, text, [fronted['marker'] + ' ' + fronted['dim']] + ([cats] if False else []))
+            return self.grouped(rest, fronted['dim'], cats, text, [fronted['marker'] + ' ' + fronted['dim']])
+        middle = re.match(r'^(?P<lead>(?:how\s+many|what\s+(?:is|are)\s+the\s+number\s+of)\s+[a-z][a-z -]*?)\s+(?P<marker>in\s+each|for\s+each|per)\s+(?P<dim>' + self.DIM_WORDS + r')\s+'
+                          r'(?P<rest>(?:had|have|has|with|who|that|were|was|visited|filled|received|screened|missed)\b.+)$', text, re.I)
+        if middle and self.dimension_of(middle['dim']):
+            from .request_language import PlanError
+            head = middle['lead'] + ' ' + middle['rest']  # the literal words of the question around the dimension phrase
+            return self.grouped(head, middle['dim'], None, text, [middle['marker'] + ' ' + middle['dim']])
         leading = self.BREAK_LEAD.match(text)
         body = text[leading.end():] if leading else text
         best = None

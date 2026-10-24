@@ -172,7 +172,7 @@ def predicate_text(expr, negated=False):
         text = f'at least {expr["n"]} of: ' + '; '.join(predicate_text(a) for a in expr['args'])
         return f'not ({text})' if negated else text
     if op == 'count_at_least':
-        text = f'{"more than" if expr.get("strict") else "at least"} {expr["n"]} {words(expr["table"])} event(s)' + (f' where {predicate_text(expr["where"])}' if expr.get('where') else '')
+        text = f'{"more than" if expr.get("strict") else "at least"} {expr["n"]} {"different " + words(expr["distinct"]) + " value(s) among the " if expr.get("distinct") else ""}{words(expr["table"])} event(s)' + (f' where {predicate_text(expr["where"])}' if expr.get('where') else '')
         return f'not ({text})' if negated else text
     if op == 'sequence':
         low, high = expr['days']

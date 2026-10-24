@@ -371,7 +371,7 @@ class ComparisonForms:
             from .request_language import CLOCKS, combine
             events = rate['numerator']
             clock = CLOCKS.get(events['table'])
-            if not clock or clock not in self.catalog.tables.get(events['table'], []) or events.get('where') is None and False: return None
+            if not clock or clock not in self.catalog.tables.get(events['table'], []): return None
             atoms, rest = self.window(' ' + t, events['table'], clock)
             if not atoms or rest.strip(): return None
             plan = {**plan, 'select': [*plan['select'][:-1], {**rate, 'numerator': {**events, 'where': combine('and', [events.get('where'), *atoms], self.question)}}]}
