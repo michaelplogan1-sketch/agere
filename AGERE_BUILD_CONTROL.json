@@ -368,7 +368,7 @@
       "docs/agere/DEV_GENERALIZATION_2026-10-24.md"
     ],
     "remaining_gap": "95% target unmet; broad composition, conversational antecedents, multi-part claims and independent qualification remain open. All ten acceptance areas retained; G3 active, G5 incomplete.",
-    "next_action": "Finish and report frozen09b239f paid100 dev accuracy and recorded spend; finish free paraphrase measurement. Continue dev-only generalization/refusal/source-time fixes, preserve established definitions and original populations. Land each change only after latest-main regression comparison. Target>95% unmet; all ten areas, G3 active, independent G5 qualification incomplete. Legacy oracle inspection exposure disclosed; current held-out bank/reserved directory/generator untouched, no held-out tuning.",
+    "next_action": "Finish controlled0c65f5a live100dev; report accuracy and attributed provider spend plus isolation. Then competitorheldoutonce, thenAgereheldoutonce, aggregates only. Continue dev-only generalization toward>95%/99%; no held-out tuning. Preserve established definitions and exact populations; land only after latest-main regression diff. G3 active/G5 incomplete/full acceptance false.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
@@ -443,7 +443,8 @@
         "gap": "Local tests do not qualify model interpretation, clinical correctness or real-world use.",
         "completion": "Independent appropriate qualification remains separate from deterministic engineering acceptance; do not use protected evaluations or credits as a prerequisite for local build work."
       }
-    ]
+    ],
+    "latest_progress": "Context cohort/time/measure recovery shipped, regression comparisons passed. Frozen09 paid dev91/100 at$1.217704837; paraphrases229/295. Livef529 diagnostic93/100 at$0.052285666 but operational/source writes compromised isolation.0c65f5a fixes private operational previews (26focused tests,59regression modules/0new failures); frozen-source controlled live dev now running."
   },
   "decisions": [
     {
