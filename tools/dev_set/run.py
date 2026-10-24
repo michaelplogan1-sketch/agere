@@ -290,19 +290,35 @@ def select(args):
 
 
 def chains(qs, all_qs):
-    """Group the selected questions into chains (a follow-up with its ancestors that were selected), in order."""
+    """Group the selected questions into chains, in order: each chain is a root (its ancestors included) followed by every
+    selected follow-up under it, so a follow-up is always asked in the same conversation right after its parent. (Before
+    2026-10-23 a parent seen first became a chain of one and its follow-up was asked in a fresh conversation.)"""
     by_id = {q['id']: q for q in all_qs}
-    out, seen = [], set()
+    selected = {q['id'] for q in qs}
+
+    def root(q):
+        while q.get('follow_up_of') and q['follow_up_of'] in by_id:
+            q = by_id[q['follow_up_of']]
+        return q['id']
+
+    def lineage(q):
+        out = []
+        while q:
+            out.insert(0, q)
+            q = by_id.get(q.get('follow_up_of'))
+        return out
+
+    out, done = [], set()
     for q in qs:
-        if q['id'] in seen:
-            continue
-        chain, cur = [], q
-        while cur:
-            chain.insert(0, cur)
-            cur = by_id.get(cur['follow_up_of'])
-        chain = [c for c in chain if c['id'] not in seen]
-        for c in chain:
-            seen.add(c['id'])
+        r = root(q)
+        if r in done: continue
+        done.add(r)
+        members = [x for x in qs if root(x) == r]
+        chain, seen = [], set()
+        for m in members:
+            for c in lineage(m):  # ancestors first (asked for context even when not selected), each once
+                if c['id'] not in seen:
+                    seen.add(c['id']); chain.append(c)
         out.append(chain)
     return out
 
