@@ -164,6 +164,10 @@ def predicate_text(expr, negated=False):
         return predicate_text(expr['arg'], not negated)
     if op == 'exists':
         return exists_phrase(expr, negated)
+    if op == 'sum_at_least':
+        text = f'a total of {words(expr["field"])} {expr.get("cmp", ">=")} {value_text(expr["amount"])} over {TABLE_NOUNS.get(expr["table"], words(expr["table"]))}' + (
+            f' where {predicate_text(expr["where"])}' if expr.get('where') else '')
+        return f'not ({text})' if negated else text
     if op == 'at_least_of':
         text = f'at least {expr["n"]} of: ' + '; '.join(predicate_text(a) for a in expr['args'])
         return f'not ({text})' if negated else text
@@ -241,6 +245,8 @@ def measure_text(expr, spec):
     cond = f', only those with {predicate_text(expr["where"])}' if expr.get('where') else ''
     if kind == 'cohort_group':
         return f'{alias}: the groups ' + _list([f'"{g["label"]}" ({predicate_text(g["where"])})' for g in expr['groups']], 'and')
+    if kind == 'sum_related':
+        return f'the total {words(expr["field"])} of these patients over {TABLE_NOUNS.get(expr["table"], words(expr["table"]))}{cond}'
     if kind == 'count_related':
         return f'the total number of {TABLE_NOUNS.get(expr["table"], words(expr["table"]))} of these patients{cond}'
     if kind == 'count_distinct' and str(field).endswith('patient_id'): return f'the number of distinct patients{cond}'

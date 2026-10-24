@@ -59,6 +59,9 @@ class CompositionFixture(unittest.TestCase):
               ('A','retail_pharmacy','paid',1,2000,'generic','2029-10-01',30), ('A','mail_order_pharmacy','paid',1,90000,'brand','2029-11-01',90),
               ('B','retail_pharmacy','rejected',0,0,'generic','2029-10-05',30), ('B','retail_pharmacy','paid',1,3000,'generic','2029-12-05',30),
               ('C','mail_order_pharmacy','rejected',0,0,'brand','2029-10-07',30);
+            CREATE TABLE fill(patient_id TEXT, drug_class TEXT, fill_date TEXT);
+            INSERT INTO fill VALUES ('A','statin','2029-08-01'),('A','statin','2029-09-01'),('A','statin','2029-10-01'),('B','insulin','2029-09-01'),
+              ('D','antiplatelet','2029-09-01'),('D','antiplatelet','2029-10-01'),('E','statin','2028-01-01');
             CREATE TABLE patient_svi(patient_id TEXT, svi_overall REAL);
             INSERT INTO patient_svi VALUES ('A',80),('B',10),('C',90),('D',76),('E',20),('F',50),('G',75),('H',99);
             CREATE TABLE social_need(patient_id TEXT, need TEXT, positive INTEGER, event_date TEXT);
@@ -261,6 +264,43 @@ class ClaimsComposition(CompositionFixture):
     def test_top_payers_by_paid(self):
         rows = self.run_q('Top two payers by 2029 paid amount, with the totals.')
         self.assertEqual([(r['payer_id'], r.get('value', r.get('paid_cents'))) for r in rows], [('P1', 40000), ('P2', 20000)])  # D's claim is not counted
+
+
+class MoneyComposition(CompositionFixture):
+    def test_a_patient_total_reaches_an_amount(self):
+        self.assertEqual(self.count('How many living patients accumulated $400 or more in paid claims over the past 12 months?'), 1)  # A 100 + 300; B 200
+
+    def test_the_total_threshold_needs_a_positive_amount(self):
+        q = 'How many living patients accumulated $400 or more in paid claims over the past 12 months?'
+        plan = L.parse(self.catalog, q)
+        leaf = next(a for a in plan['where']['args'] if a.get('op') == 'sum_at_least')
+        leaf['amount'] = -5
+        with self.assertRaises(R.PlanError): R.compile_request(self.catalog, q, plan)
+
+    def test_average_cost_counts_patients_without_claims(self):
+        v = self.run_q('How much did the average living diabetic cost us in medical paid claims in 2029?')
+        self.assertAlmostEqual(v, 60000 / 3, 1)  # diabetics A B D; A 40000, B 20000, D none counted
+
+    def test_rank_what_costs_the_plan_most(self):
+        rows = self.run_q('Which two formulary tiers cost the plan the most in 2029 (plan-paid, by formulary tier)?')
+        self.assertEqual([r['formulary_tier'] for r in rows], ['brand', 'generic'])
+
+    def test_drivers_are_the_groups_biggest_first(self):
+        rows = self.run_q('Which payers are driving our out-of-network spend?')
+        self.assertEqual([r['payer_id'] for r in rows], ['P2', 'P1'])  # P2 50000 (2028), P1 30000
+
+    def test_illustrative_categories_group_by_the_column(self):
+        rows = self.run_q('Break 2029 medical paid down by claim type (professional, institutional, and so on).')
+        self.assertEqual({r['claim_type']: r['paid_cents'] for r in rows}, {'professional': 40000, 'institutional': 20000})
+
+    def test_floor_first_ranking(self):
+        rows = self.run_q('Of payers with at least 2 claims in 2029, which one has the lowest denial rate?')
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]['payer_id'], 'P1')  # P1 2 claims, none denied; P2 2 claims, 1 denied
+
+    def test_most_filled_classes(self):
+        rows = self.run_q('What are the two most-filled drug classes in the last 12 months, by number of fills?')
+        self.assertEqual([(r['drug_class'], r['count']) for r in rows], [('statin', 3), ('antiplatelet', 2)])
 
 
 class SocialComposition(CompositionFixture):

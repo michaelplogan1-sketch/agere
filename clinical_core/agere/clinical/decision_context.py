@@ -133,7 +133,7 @@ def population(question):
         return {'living_only': False, 'reason': 'the question asks for the deceased (or death / mortality / all patients ever)'}
     if NAMED_PATIENT_QUESTION(q):
         return {'living_only': False, 'reason': 'a named patient is never excluded for being deceased (a deceased patient\'s answer says so)'}
-    if NON_PATIENT_GRAIN.search(q) and not PATIENT_WORDS.search(q):
+    if NON_PATIENT_GRAIN.search(q) and not PATIENT_WORDS.search(q) and not LIVING_ASK.search(q):  # "the average living diabetic cost us ..." names living patients itself
         return {'living_only': False, 'reason': 'a membership or money question, not a count of patients'}
     if LIVING_ASK.search(q):
         return {'living_only': True, 'reason': 'the question asks for living patients'}

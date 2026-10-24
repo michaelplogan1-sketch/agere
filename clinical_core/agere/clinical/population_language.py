@@ -106,6 +106,8 @@ class PopulationForms:
             starts.append(adverb.start() if adverb else verb.start())
         if not verbs:
             starts = [v.start() for v in re.finditer(r'\bwith\b', body, re.I)]
+        if not verbs:
+            starts += [v.start() for v in re.finditer(r'\b(?:on|taking|receiving)\s+(?:an?\s+|any\s+|the\s+)?[A-Za-z]', body, re.I)]
         if getattr(self, 'marker_lab', None):
             starts += [v.start() for v in re.finditer(r'\b(?:over|under|above|below|less than|greater than|at least|at most)\s+\d', body, re.I)]
         for at in starts:
@@ -307,7 +309,8 @@ class RankingForms:
         """-> (quote, field) when the whole text names one grouping dimension of the current base ("practices", "payers"), else None."""
         words = text.strip().split()
         if not words or len(words) > 4: return None
-        singular = lambda w: re.sub(r'ies$', 'y', w, flags=re.I) if w.lower().endswith('ies') else re.sub(r'(?<!s)s$', '', w, flags=re.I)
+        singular = lambda w: (re.sub(r'ies$', 'y', w, flags=re.I) if w.lower().endswith('ies') else re.sub(r'sses$', 'ss', w, flags=re.I) if w.lower().endswith('sses')
+                              else re.sub(r'(?<!s)s$', '', w, flags=re.I))
         for candidate in (text.strip(), ' '.join(words[:-1] + [singular(words[-1])])):
             got = self.field_prefix(candidate)
             if got and not got[2]: return text.strip(), got[1]

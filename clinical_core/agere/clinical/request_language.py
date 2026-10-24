@@ -457,7 +457,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                 raise PlanError('Missing grouping dimension after comma')
             cursor = next_cursor
         quoted = text[marker.start():cursor]
-        return text[:marker.start()]+' '+text[cursor:], groups, quoted
+        return text[:marker.start()].rstrip(' ,')+' '+text[cursor:], groups, quoted  # a comma before the clause ("..., by practice") goes with it
 
     def bind_parent_quotes(self, value):
         """Parent booleans do not cover words; leaves keep their literal spans."""
@@ -1112,8 +1112,9 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
 
     def ranking(self, text):
         """'What is the most common <thing> [in <its source>]' / 'What are the top N <things> ...': counts by value."""
-        head = re.match(r'^(?:what|which)\s+(?:is|are|was|were)\s+(?:the\s+|our\s+)?'
+        head = re.match(r'^(?:(?:what|which)\s+(?:is|are|was|were)\s+)?(?:the\s+|our\s+)?'
                         r'(most\s+(?:common(?:ly\s+\w+)?|frequent(?:ly\s+\w+)?)|top\s+(\d+|' + '|'.join(NUMBER_WORDS) + r'))\s+', text, re.I)
+        if head and not re.match(r'^(?:what|which)\b', text, re.I) and not head[2]: head = None  # without "what is", only "top N" opens a ranking
         if not head: return None
         body = text[head.end():]
         for pattern, table, field, fixed, restated in RANK_TOPICS:
@@ -1132,6 +1133,8 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             if paren and any(c == 'negated' for c, _, _ in fixed):
                 i = next(k for k, (c, _, _) in enumerate(fixed) if c == 'negated')
                 atoms[i] = {**atoms[i], 'quote': [topic, paren.group().strip()]}; tail = tail[paren.end():]
+            after_each = re.search(r'\s*,?\s*and\s+how\s+many(?:\s+(?:claims|times|rows|records|patients))?\s+each(?:\s+(?:occurred|occur|happened|appeared))?\s*$', tail, re.I) if not each else None
+            if after_each: each_quote, tail = after_each.group().strip(' ,'), tail[:after_each.start()]  # "... in 2029 and how many times each occurred"
             where, rest = self.expression(tail.strip())
             if rest.strip(): raise PlanError('Unconsumed request: ' + rest)
             n = head[2]
@@ -1503,6 +1506,8 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                     drugs = list(dict.fromkeys([*drugs, *other[1]])); tail = other[2]
                 more = re.match(r'^\s*(?:medications?|meds?|drugs?|therapy|agents?)\b', tail, re.I)  # "GDMT medication": the class word, not a constraint
                 if more: tail = tail[more.end():]
+                restated = re.match(r'^\s*\(\s*(?:a\s+)?(?:picked[- ]up\s+)?fills?\s+in\s+the\s+(?:last|past)\s+(?:12\s+months|year)\s*\)', tail, re.I)
+                if restated: tail = tail[restated.end():]  # "on a statin (a fill in the last 12 months)": the parenthetical restates the current-use rule
                 if med[1]:  # "on no GDMT medication (at all)": a care gap -- no picked-up fill of any listed class
                     at_all = re.match(r'^\s*at\s+all\b', tail, re.I)
                     if at_all: tail = tail[at_all.end():]
@@ -1524,6 +1529,10 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                 value, tail = self.concept_period({'op': 'concept', 'kind': 'drug_fill', 'names': drugs,
                                                    'version': 1, 'period': None, 'quote': quote}, tail)
                 return self.current_use(value, tail, med.group())
+        bare = self.prefix(text, self.drugs) if self.base == 'patient' and 'medication' in self.catalog.tables else None
+        if bare and not bare[2].strip():  # a drug named alone ("statin share among diabetics"): on it, a picked-up fill in the 12 months ending at the as-of date
+            value, _ = self.current_use({'op': 'concept', 'kind': 'drug_fill', 'names': bare[1], 'version': 1, 'period': None, 'quote': text.strip()}, '', 'on')
+            return value, ''
         # Presence of another source: same-patient semijoin, not a duplicating join.
         event = re.match(r'^(?:with|having|have|has|had)\s+(?:an?\s+)?', text, re.I)
         if event:
@@ -1618,6 +1627,8 @@ def parse_program(catalog, question, *, bound=False):
     front = re.match(r'^((?:For|Among|Of)\s+(?:the\s+|our\s+)?[^,]+,)\s*', clauses[0], re.I)
     requests = []
     for i, clause in enumerate(clauses):
+        if i and not bound and re.search(r'\b(?:was|were|is|are)\s+(?:that|those|these|it|they)\s*$|\bof\s+(?:them|those|these)\b|\bamong\s+(?:them|those|these)\b', clause, re.I):
+            raise AmbiguousRequest('State the population "' + clause.split()[-1] + '" refers to; an output cannot point back at another output')
         try:
             requests.append(parse(catalog, clause, bound=bound))
         except PlanError:
