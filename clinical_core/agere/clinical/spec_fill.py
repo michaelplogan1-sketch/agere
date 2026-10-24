@@ -664,6 +664,43 @@ def choose(ctx, valid, verify=None):
     raise error
 
 
+# -- the early start: the paid fillers begin as soon as the grammar declines (Mike 2026-10-24: the Haiku spec writer runs in parallel), while the
+# cascade's earlier stages (reuse, chart reader, System One choosers, free planners) run; the spec_path tier then takes the finished candidates.
+_EARLY, _EARLY_LOCK, EARLY_TTL = {}, threading.Lock(), 180.0
+
+
+def _early_key(stack, question, population):
+    return (str(getattr(stack, 'path', '') or id(stack)), ' '.join(str(question or '').split()), tuple(population) if population is not None else None)
+
+
+def start_early(stack, catalog, question, *, population=None, ledger=None, names=('s1_slots', 'haiku')):
+    """Start the paid fillers for this question in the background (once per question). Never raises."""
+    try:
+        key = _early_key(stack, question, population)
+        now = time.monotonic()
+        with _EARLY_LOCK:
+            for k in [k for k, v in _EARLY.items() if now - v[2] > EARLY_TTL]: _EARLY.pop(k, None)
+            if key in _EARLY: return
+            names = tuple(n for n in names if n in enabled_fillers())
+            if not names: return
+            ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, decide=PROVIDERS['decide'], models=PROVIDERS['models'],
+                      deadline=now + env_float('AGERE_SPEC_EARLY_SECONDS', 30.0))
+            fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
+            pool = ThreadPoolExecutor(max_workers=len(names), thread_name_prefix='spec-early')
+            futures = {n: pool.submit(contextvars.copy_context().run, run_filler, n, fns[n], ctx) for n in names}
+            pool.shutdown(wait=False)
+            _EARLY[key] = (ctx, futures, now)
+    except Exception:  # noqa: BLE001 - an early start is an optimisation; the tier runs its fillers itself without it
+        return
+
+
+def take_early(stack, question, population):
+    """-> {name: Future} started for this question (removed from the registry), or {}."""
+    with _EARLY_LOCK:
+        entry = _EARLY.pop(_early_key(stack, question, population), None)
+    return entry[1] if entry else {}
+
+
 def fill(stack, catalog, question, *, population=None, ledger=None, decide=None, models=None, as_of=None, verify=None, fillers=None, grace=None,
          seconds=None, ctx_hook=None):
     """Run the fillers and choose. -> {'winner', 'plan', 'contract', 'agreement', 'readings', 'receipt'}; raises SpecNotFilled.
@@ -684,11 +721,13 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
     if 'grammar' in names:
         candidates['grammar'] = run_filler('grammar', grammar_fill, ctx)
     paid = [n for n in names if n != 'grammar']
+    if candidates.get('grammar', {}).get('status') == 'valid': take_early(stack, question, population)  # the grammar's spec wins; drop the early start
     if candidates.get('grammar', {}).get('status') != 'valid' and paid:
         limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 8.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 12.0)}
         fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
+        early = take_early(stack, question, population) if decide is PROVIDERS['decide'] and models is PROVIDERS['models'] else {}
         pool = ThreadPoolExecutor(max_workers=len(paid), thread_name_prefix='spec-fill')
-        futures = {pool.submit(contextvars.copy_context().run, run_filler, n, fns[n], ctx): n for n in paid}
+        futures = {(early[n] if n in early else pool.submit(contextvars.copy_context().run, run_filler, n, fns[n], ctx)): n for n in paid}
         due = {n: time.monotonic() + limits.get(n, 20.0) for n in paid}
         pending, first_valid = set(futures), None
         try:

@@ -139,7 +139,11 @@ def _analyst(stack, question, ledger, against=None):
                'analyst_error': run.get('error'),
                'reconcile': ({k: rec.get(k) for k in ('picked', 'reason', 'reconcile_error', 'reconcile_sql')} if rec else None),
                'version': VERSION, 'elapsed_seconds': round(time.perf_counter() - started, 3)}
+    audit = run.get('definitions_audit') if isinstance(run.get('definitions_audit'), dict) else None
+    if audit: receipt['definitions_audit'] = {k: audit.get(k) for k in ('version', 'action', 'rewrites', 'arithmetic')}
     if picked in ('against', 'abstain'): return {'graph': None, 'receipt': receipt, 'picked': picked}
+    if audit and audit.get('action') == 'declined':  # a failed definitions audit passes the question on; it is not a "data absent" answer
+        return {'graph': None, 'receipt': receipt, 'picked': None}
     if answer and answer.get('status') == 'unsupported':
         return {'graph': _decline_graph(question, answer.get('missing'), _as_of(stack)), 'receipt': receipt, 'picked': picked}
     if not (answer and answer.get('status') in ('answered', 'partial') and sql):
