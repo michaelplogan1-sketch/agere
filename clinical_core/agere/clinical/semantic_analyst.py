@@ -11,8 +11,8 @@ Shared by two callers, which send byte-identical prompts:
 - the bench's frontier_semantic baseline and reconcile script (bench/adapters.py, bench/common.py, bench/reconcile.py
   re-export these names).
 
-This module imports only the standard library and semantic_docs (no other product module), so the bench can use it
-without loading the product. Model calls go through a caller-supplied send(body) -> (response, cost_usd|None, cache_hit):
+At import time this module imports only the standard library and semantic_docs (analyst_definitions, decision_context and concepts
+load lazily when Agere's analyst runs with definitions=True), so the bench competitor can use it without loading the product. Model calls go through a caller-supplied send(body) -> (response, cost_usd|None, cache_hit):
 the bench posts directly; the product uses the ledgered context_student.send.
 """
 from __future__ import annotations
@@ -64,11 +64,17 @@ class SemanticWarehouse:
     views: the semantic layer is ONE snapshot (meta.as_of) built by the product from the received store, with superseded
     corrections already removed. Every table is readable.
 
+    define(as_of) (Agere's analyst only; the bench competitor never calls it) additionally creates the decision-context
+    definition views (analyst_definitions: living_patient, condition_member, latest_lab, last_12_months, medicare_member) as
+    TEMP views on this thread's connection. They live in the connection's temp schema, never in the stack file, and are the
+    only temp objects the authorizer lets a query read.
+
     Each thread gets its own read-only connection (`db` is per-thread): the product's analyst and reconcile workers and the
     bench's concurrent cases never share a sqlite connection or its progress handler. close() closes all of them.
     """
     DENIED_FUNCTIONS = {'load_extension', 'readfile', 'writefile', 'eval', 'fts3_tokenizer'}
     MISSING = 'Semantic layer not found'
+    DEFINITION_VIEWS = frozenset(('living_patient', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member'))
 
     def __init__(self, path, timeout_s=30):
         if path is None or not Path(path).is_file():
@@ -115,11 +121,34 @@ class SemanticWarehouse:
         if action in (sqlite3.SQLITE_SELECT, sqlite3.SQLITE_RECURSIVE):
             return sqlite3.SQLITE_OK
         if action == sqlite3.SQLITE_READ:
-            # Reads of main tables, CTEs/subqueries (database None) and json_each/json_tree; never the temp schema.
+            # Reads of main tables, CTEs/subqueries (database None) and json_each/json_tree; the temp schema only for the
+            # definition views define() created (their own reads of main tables are authorized as above).
+            if database == 'temp' and arg1 in cls.DEFINITION_VIEWS: return sqlite3.SQLITE_OK
             return sqlite3.SQLITE_OK if database in (None, 'main') else sqlite3.SQLITE_DENY
         if action == sqlite3.SQLITE_FUNCTION:
             return sqlite3.SQLITE_DENY if str(arg2).lower() in cls.DENIED_FUNCTIONS else sqlite3.SQLITE_OK
         return sqlite3.SQLITE_DENY
+
+    def define(self, as_of=None):
+        """(Re)create the definition views on this thread's connection for as_of (default: the snapshot date).
+        -> the names of the views created. Idempotent per thread and date; the connection is read-only again afterwards."""
+        from . import analyst_definitions
+        day = str(as_of or self.as_of)[:10]
+        db = self.db
+        if getattr(self._local, 'defined', None) == day: return self._local.defined_names
+        views = analyst_definitions.build_views(self.columns, day)
+        db.set_authorizer(None)
+        db.execute('PRAGMA query_only=OFF')
+        try:
+            for name in analyst_definitions.VIEW_NAMES:
+                db.execute(f'DROP VIEW IF EXISTS temp.{name}')
+            for name in analyst_definitions.VIEW_NAMES:  # dependency order: living_patient before medicare_member
+                if name in views: db.execute(f'CREATE TEMP VIEW {name} AS {views[name]}')
+        finally:
+            db.execute('PRAGMA query_only=ON')
+            db.set_authorizer(self._authorize)
+        self._local.defined, self._local.defined_names = day, [n for n in analyst_definitions.VIEW_NAMES if n in views]
+        return self._local.defined_names
 
     def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
         if not isinstance(sql, str) or not sql.strip() or len(sql) > 30000:
@@ -323,21 +352,34 @@ def _sql_executor(semantic, as_of, max_rows, max_chars):
     return execute
 
 
-def analyze(question, as_of, semantic, *, send, model, max_tools=8, format_retries=0):
+def analyze(question, as_of, semantic, *, send, model, max_tools=8, format_retries=0, definitions=True):
     """One semantic-analyst answer: cached documentation system block, one read-only SQL tool, the shared answer contract.
     -> the tool-loop result plus semantic_snapshot_as_of, context_chars, tool_call_count, cache token counts and
-    example_ids (the verified-example source IDs in the prompt)."""
+    example_ids (the verified-example source IDs in the prompt).
+
+    definitions=True (Agere's analyst, the default): the decision-context definition views are created on the connection and
+    documented first (analyst_definitions), the answer contract carries numerator / denominator, and the finished answer goes
+    through the arithmetic and the deterministic SQL definitions audit. definitions=False is the competitor baseline: the plain
+    documented layer, byte for byte what it always sent (the bench passes it explicitly)."""
     if not 1 <= max_tools <= 20:
         raise ValueError('Tool limit must be 1..20')
     docs, example_ids = semantic_context(semantic)
+    rules = SEMANTIC_RULES + CONTRACT
+    if definitions:
+        from . import analyst_definitions
+        semantic.define(as_of)
+        docs, example_ids = analyst_definitions.agere_context(semantic, (docs, example_ids))
+        rules += analyst_definitions.CONTRACT_SUFFIX
     # The documentation block is identical for every question of a build: one explicit breakpoint caches tools + system;
     # top-level automatic caching carries the growing tool-loop conversation forward within the question.
-    system = [{'type': 'text', 'text': SEMANTIC_RULES + CONTRACT},
+    system = [{'type': 'text', 'text': rules},
               {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     user = json.dumps({'question': question, 'as_of': as_of, 'semantic_snapshot_as_of': semantic.as_of})
     result = tool_loop(user, system, [SEMANTIC_SQL_TOOL], _sql_executor(semantic, as_of, 2000, 60000), send=send,
                        model=model, max_tools=max_tools, extra={'cache_control': {'type': 'ephemeral'}},
                        format_retries=format_retries)
+    if definitions:
+        analyst_definitions.finalize(question, as_of or semantic.as_of, semantic, result)
     usage = result['usage']
     result.update(semantic_snapshot_as_of=semantic.as_of, context_chars=len(docs), tool_call_count=len(result['tool_calls']),
                   cache_read_input_tokens=sum(u.get('cache_read_input_tokens') or 0 for u in usage),
@@ -376,7 +418,7 @@ def candidate(row):
     return out
 
 
-def reconcile(question, as_of, first, second, semantic, *, send, model, seed_key, labels=('agere', 'llm')):
+def reconcile(question, as_of, first, second, semantic, *, send, model, seed_key, labels=('agere', 'llm'), definitions=True):
     """One reconciliation turn between two disagreeing candidates (rows with 'answer' and optional 'tool_calls').
 
     Blind order (seeded by seed_key), both candidates with their SQL, the semantic-layer docs, at most 4 read-only SQL
@@ -386,7 +428,12 @@ def reconcile(question, as_of, first, second, semantic, *, send, model, seed_key
     order = [(labels[0], first), (labels[1], second)]
     random.Random(seed_key).shuffle(order)
     docs, _ = semantic_context(semantic)
-    system = [{'type': 'text', 'text': SEMANTIC_RULES + RECONCILE_RULES + CONTRACT},
+    rules = SEMANTIC_RULES + RECONCILE_RULES + CONTRACT
+    if definitions:  # Agere's reconcile turn checks with the same definition views (the bench passes definitions=False)
+        from . import analyst_definitions
+        semantic.define(as_of)
+        docs, _ = analyst_definitions.agere_context(semantic, (docs, frozenset()))
+    system = [{'type': 'text', 'text': rules},
               {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     user = json.dumps({'question': question, 'as_of': as_of,
                        'semantic_snapshot_as_of': semantic.as_of,

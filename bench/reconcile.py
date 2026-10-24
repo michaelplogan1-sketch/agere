@@ -36,7 +36,8 @@ def reconcile(question, a_row, b_row, semantic, *, seed=0, model=MODEL):
         return {'picked': 'None', 'reason': None, 'answer': None, 'reconcile_cost_usd': 0.0,
                 'reconcile_error': type(exc).__name__ + ': ' + str(exc), 'reconcile_sql': []}
     out = _analyst.reconcile(question['question'], question['as_of'], a_row, b_row, semantic, send=send, model=model,
-                             seed_key=f"{seed}:{question['id']}", labels=('agere', 'llm'))
+                             seed_key=f"{seed}:{question['id']}", labels=('agere', 'llm'),
+                             definitions=False)  # bench measurements keep the plain documented layer
     out.pop('result')
     return out
 
