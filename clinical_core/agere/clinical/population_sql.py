@@ -11,7 +11,7 @@ import sqlite3
 
 from . import concepts, decision_context, sql_query
 
-LIVING = "p.patient_id NOT IN (SELECT patient_id FROM death)"
+LIVING = "p.patient_id NOT IN (SELECT patient_id FROM death)"  # without the duplicate-chart rule (a warehouse with no data_segment column)
 
 
 def q(value):
@@ -28,6 +28,8 @@ class Ctx:
             names = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")}
             self.tables = {t: [r[1] for r in db.execute(f'PRAGMA table_info("{t}")')]
                            for t in ('condition', 'payer_claim_diagnosis', 'problem_list_entry', 'enrollment_span') if t in names}
+            has_segment = 'patient' in names and any(r[1] == 'data_segment' for r in db.execute('PRAGMA table_info(patient)'))
+        self.living = 'p.patient_id ' + decision_context.counted_predicate(has_segment)  # living, and each person once
         self.queries = []  # every statement run, for the answer's evidence
 
     # -- running ---------------------------------------------------------------------------------------------------------
@@ -104,7 +106,7 @@ class Ctx:
         return "COALESCE(p.line_of_business, 'unknown')"
 
     def patients(self, *predicates, columns='p.patient_id'):
-        where = ' AND '.join([LIVING, *[x for x in predicates if x]])
+        where = ' AND '.join([self.living, *[x for x in predicates if x]])
         return f"SELECT {columns} FROM patient p WHERE {where}"
 
     def ids(self, *predicates):
@@ -118,12 +120,12 @@ class Ctx:
         """Rows [{group, n, k, rate}] of the patients of `population` that meet `numerator`, per group (largest-rate first for desc)."""
         sql = (f"SELECT {group_expr} AS grp, COUNT(*) AS n, SUM(CASE WHEN {numerator} THEN 1 ELSE 0 END) AS k, "
                f"1.0 * SUM(CASE WHEN {numerator} THEN 1 ELSE 0 END) / COUNT(*) AS rate{extra_columns} "
-               f"FROM patient p WHERE {LIVING} AND {population} GROUP BY grp HAVING grp IS NOT NULL AND COUNT(*) >= {int(minimum)} "
+               f"FROM patient p WHERE {self.living} AND {population} GROUP BY grp HAVING grp IS NOT NULL AND COUNT(*) >= {int(minimum)} "
                f"ORDER BY rate {'ASC' if order == 'asc' else 'DESC'}, grp")
         return self.rows(sql)
 
     def overall(self, population, numerator):
-        row = self.rows(f"SELECT COUNT(*) AS n, SUM(CASE WHEN {numerator} THEN 1 ELSE 0 END) AS k FROM patient p WHERE {LIVING} AND {population}")[0]
+        row = self.rows(f"SELECT COUNT(*) AS n, SUM(CASE WHEN {numerator} THEN 1 ELSE 0 END) AS k FROM patient p WHERE {self.living} AND {population}")[0]
         row['rate'] = (row['k'] / row['n']) if row['n'] else None
         return row
 

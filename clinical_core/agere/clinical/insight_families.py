@@ -17,7 +17,7 @@ with population_sql.Ctx (decision-context definitions) and states each fact with
 import re
 
 from .population_engines import Declined, family, fact
-from .population_sql import Ctx, LIVING, pct, q, usd
+from .population_sql import Ctx, pct, q, usd
 
 NUMBER_WORDS = {'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5}
 MIN_PRACTICE_PATIENTS = 15  # a rate over fewer patients than this is not ranked as a practice result (stated in the answer)
@@ -94,12 +94,12 @@ class PracticeGap:
         facts, tables = [], {}
         if m.get('per1000'):
             rows = ctx.rows(
-                f"WITH g AS (SELECT p.patient_id, {gx} AS grp FROM patient p WHERE {LIVING}), "
+                f"WITH g AS (SELECT p.patient_id, {gx} AS grp FROM patient p WHERE {ctx.living}), "
                 f"e AS (SELECT u.patient_id, COUNT(*) AS visits FROM utilization_event u WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} GROUP BY u.patient_id) "
                 f"SELECT grp, COUNT(*) AS n, COALESCE(SUM(e.visits), 0) AS k, 1000.0 * COALESCE(SUM(e.visits), 0) / COUNT(*) AS rate "
                 f"FROM g LEFT JOIN e USING (patient_id) WHERE grp IS NOT NULL GROUP BY grp HAVING COUNT(*) >= {m['minimum']} ORDER BY rate DESC, grp")
             overall = ctx.rows(
-                f"WITH g AS (SELECT p.patient_id FROM patient p WHERE {LIVING}), "
+                f"WITH g AS (SELECT p.patient_id FROM patient p WHERE {ctx.living}), "
                 f"e AS (SELECT u.patient_id, COUNT(*) AS visits FROM utilization_event u WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} GROUP BY u.patient_id) "
                 f"SELECT COUNT(*) AS n, COALESCE(SUM(e.visits), 0) AS k FROM g LEFT JOIN e USING (patient_id)")[0]
             top = rows[:3]
@@ -160,17 +160,17 @@ def conditions_gaps(ctx):
         'diabetes': dict(label='adult diabetics', population=f"{ctx.cond('diabetes')} AND {ctx.age(18)}",
                          gaps=[('poor', 'a latest A1c above 9', ctx.lab('hba1c', '>', 9)),
                                ('nolab', 'no A1c result in the last 12 months', f"NOT {ctx.lab_in_window('hba1c')}")],
-                         escalators=[('ed', 'an ED visit in the last 12 months', ctx.events('ed_visit'))],
+                         escalators=[('ed', 'had an ED visit in the last 12 months', ctx.events('ed_visit'))],
                          tiers=[('poor_ed', ['poor', 'ed'], 'highest priority'), ('poor', ['poor'], 'next'), ('nolab', ['nolab'], 'then')]),
         'heart_failure': dict(label='heart failure patients', population=ctx.cond('heart_failure'),
-                              gaps=[('nogdmt', 'no fill of any GDMT pillar class (evidence-based beta-blocker, ACEI/ARB/ARNI, MRA, SGLT2 inhibitor) in the last 12 months',
+                              gaps=[('nogdmt', 'no GDMT medication fill (none of the four pillars: evidence-based beta-blocker, ACEI/ARB/ARNI, MRA, SGLT2 inhibitor) in the last 12 months',
                                      f"NOT {ctx.fill(GDMT)}")],
-                              escalators=[('adm', 'an inpatient admission in the last 12 months', ctx.events('inpatient'))],
+                              escalators=[('adm', 'were admitted to the hospital in the last 12 months', ctx.events('inpatient'))],
                               tiers=[('nogdmt_adm', ['nogdmt', 'adm'], 'call first'), ('nogdmt', ['nogdmt'], 'next')]),
         'hypertension': dict(label='adult hypertensives (18-85)', population=f"{ctx.cond('hypertension')} AND {ctx.age(18, 85)}",
                              gaps=[('uncontrolled', 'a latest blood pressure of 140/90 or higher',
                                     f"({ctx.lab('systolic_bp', '>=', 140)} OR {ctx.lab('diastolic_bp', '>=', 90)})")],
-                             escalators=[('ed', 'an ED visit in the last 12 months', ctx.events('ed_visit'))],
+                             escalators=[('ed', 'had an ED visit in the last 12 months', ctx.events('ed_visit'))],
                              tiers=[('uncontrolled_ed', ['uncontrolled', 'ed'], 'highest priority'), ('uncontrolled', ['uncontrolled'], 'next')]),
         'chronic_kidney_disease': dict(label='CKD patients', population=ctx.cond('chronic_kidney_disease'),
                                        gaps=[('nouacr', 'no UACR result in the last 12 months', f"NOT {ctx.lab_in_window('uacr')}"),
@@ -224,21 +224,23 @@ class Prioritize:
                 ids = set(masks[part]) if part in masks else esc[part]
                 members = ids if members is None else members & ids
             members = sorted(members - set(listed))
-            label = ' and '.join(next(l for g, l, _ in (*spec['gaps'], *spec['escalators']) if g == part) for part in parts)
+            gap_label = next(l for g, l, _ in spec['gaps'] if g in parts)
+            esc_label = next((l for g, l, _ in spec['escalators'] if g in parts), None)
+            label = gap_label + (f' and also {esc_label}' if esc_label else '')
             rows.append({'tier': len(rows) + 1, 'priority': why, 'criteria': label, 'patients': len(members)})
             if len(parts) > 1:
-                facts.append(fact(tid, f"{len(members):,} of the {len(masks[parts[0]]):,} with {spec['gaps'][0][1]} also have {next(l for g, l, _ in spec['escalators'] if g == parts[1])} "
-                                       f"({why}).", value=len(members), numerator=len(members), denominator=len(masks[parts[0]]), unit='patients'))
+                facts.append(fact(tid, f"{len(members):,} of the {len(masks[parts[0]]):,} with {gap_label} also {esc_label} ({why}).",
+                                  value=len(members), numerator=len(members), denominator=len(masks[parts[0]]), unit='patients'))
             listed += members
         if not spec['tiers']:
             worst = max(spec['gaps'], key=lambda g: len(masks[g[0]]))
             facts.append(fact('biggest', f"The largest gap is {worst[1]}: {len(masks[worst[0]]):,} of {n:,} ({pct(len(masks[worst[0]]) / n)}%).", value=worst[0]))
         tables['tiers'] = rows or [{'gap': l, 'patients': len(masks[g]), 'share': round(len(masks[g]) / n, 4)} for g, l, _ in spec['gaps']]
-        head = (f"{rows[0]['patients']:,} {spec['label']} are {rows[0]['priority']}: {rows[0]['criteria']}" if rows else f"Largest gap: {worst[1]}")
+        head = (f"{rows[0]['patients']:,} {spec['label']} with {rows[0]['criteria']} are the {rows[0]['priority']}" if rows else f"Largest gap: {worst[1]}")
         return dict(headline=head, facts=facts, table=tables['tiers'], tables=tables, patient_ids=listed or sorted({i for v in masks.values() for i in v}),
                     cohort_role='prioritized',
                     read_back=f"Priority for {spec['label']} (living; canonical condition evidence; latest labs; fills and visits in the 12 months to {ctx.as_of}): "
-                              + '; '.join(f"{l}" for _, l, _ in spec['gaps']) + (' - ordered by ' + ' / '.join(l for _, l, _ in spec['escalators']) if spec['escalators'] else '') + '.',
+                              + '; '.join(f"{l}" for _, l, _ in spec['gaps']) + (' - ordered by whether they ' + ' / '.join(l for _, l, _ in spec['escalators']) if spec['escalators'] else '') + '.',
                     notes=['Priority order is by the gaps and recent acute use named above; it is a work list, not a risk score.'])
 
     @classmethod
@@ -337,7 +339,7 @@ def decision_period(ctx):
 # spend
 # ============================================================================================================================
 SEGMENTS = [  # phrase -> (label, column on the claim / member-month row, values)
-    (r'medicare\s+advantage|\bma\b(?:\s+members)?', 'Medicare Advantage', 'product', ['medicare_advantage', 'dual_ma']),
+    (r'medicare\s+advantage|\bma\b(?:\s+members)?', 'Medicare Advantage', 'product', ['medicare_advantage']),  # the product label as received; dual-eligible MA plans carry their own dual_ma product
     (r'dual[- ]eligibles?(?:\s+members)?|duals?', 'dual-eligible', 'line_of_business', ['dual']),
     (r'medicaid(?:\s+members)?', 'Medicaid', 'line_of_business', ['medicaid']),
     (r'commercial(?:\s+members)?', 'commercial', 'line_of_business', ['commercial']),
@@ -492,7 +494,7 @@ class SpendConcentration:
         notes = [] if params['years'] else [FULL_YEAR_NOTE.format(y=y, a=ctx.as_of[:4])]
         rows = ctx.rows(
             f"SELECT c.patient_id AS patient_id, SUM(c.paid_cents) AS paid_cents FROM payer_claim c JOIN patient p ON p.patient_id = c.patient_id "
-            f"WHERE c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))} AND {LIVING} GROUP BY c.patient_id ORDER BY paid_cents DESC, c.patient_id")
+            f"WHERE c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))} AND {ctx.living} GROUP BY c.patient_id ORDER BY paid_cents DESC, c.patient_id")
         n = len(rows)
         total = sum(r['paid_cents'] for r in rows)
         facts, table = [fact('base', f"{n:,} living patients had counted medical claims in {y}, with {usd(total / 100)} paid in total.", value=n, unit='patients')], []
@@ -580,6 +582,7 @@ class YoyTrend:
 @family
 class DenialDrivers:
     NAME = 'denial_drivers'
+    MIN_CLAIMS = 500  # a payer is ranked on its denial rate only above this many counted claims in the year
     WORDS = set('''why is our denial rate so high with worst payer'''.split())
 
     @classmethod
@@ -597,12 +600,15 @@ class DenialDrivers:
         denied = "c.final_status IN ('denied','denied_upheld')"
         base = f"c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))}"
         payers = ctx.rows(f"SELECT c.payer_id AS payer, COUNT(*) AS claims, SUM(CASE WHEN {denied} THEN 1 ELSE 0 END) AS denials, 1.0 * SUM(CASE WHEN {denied} THEN 1 ELSE 0 END) / COUNT(*) AS rate "
-                          f"FROM payer_claim c WHERE {base} GROUP BY c.payer_id HAVING COUNT(*) >= 500 ORDER BY rate DESC, payer LIMIT 5")
+                          f"FROM payer_claim c WHERE {base} GROUP BY c.payer_id HAVING COUNT(*) >= {cls.MIN_CLAIMS} ORDER BY rate DESC, payer LIMIT 5")
         overall = ctx.rows(f"SELECT COUNT(*) AS claims, SUM(CASE WHEN {denied} THEN 1 ELSE 0 END) AS denials FROM payer_claim c WHERE {base}")[0]
+        if not payers:
+            return dict(headline=f'No payer has {cls.MIN_CLAIMS} counted claims in {y}', facts=[fact('none', f'No payer has at least {cls.MIN_CLAIMS} counted claims in {y}, so no payer is ranked on denial rate.')],
+                        read_back='', notes=notes)
         worst = payers[0]
         reasons = ctx.rows(f"SELECT c.carc AS reason, COUNT(*) AS denials FROM payer_claim c WHERE {base} AND c.payer_id = {q(worst['payer'])} AND {denied} GROUP BY c.carc ORDER BY denials DESC, reason")
         orate = overall['denials'] / overall['claims']
-        facts = [fact('payer', f"The payer with the highest denial rate in {y} (payers with at least 500 claims) is {worst['payer']}.", value=worst['payer']),
+        facts = [fact('payer', f"The payer with the highest denial rate in {y} (payers with at least {cls.MIN_CLAIMS} claims) is {worst['payer']}.", value=worst['payer']),
                  fact('rate', f"{worst['payer']} denies {pct(worst['rate'])}% of claims ({worst['denials']:,} of {worst['claims']:,}) = {worst['rate']:.4f} versus {pct(orate)}% overall ({overall['denials']:,} of {overall['claims']:,}).",
                       value=pct(worst['rate']), numerator=worst['denials'], denominator=worst['claims'], unit='%')]
         total = sum(r['denials'] for r in reasons)
@@ -613,7 +619,7 @@ class DenialDrivers:
             facts.append(fact('mix', f"Denial reason codes at {worst['payer']} by count: " + ', '.join(f"{r['reason']} ({r['denials']})" for r in reasons[:5]) + '.', value=[r['reason'] for r in reasons[:5]]))
         return dict(headline=f"{worst['payer']} has the highest denial rate ({pct(worst['rate'])}% vs {pct(orate)}% overall); top reason {reasons[0]['reason'] if reasons else 'n/a'}",
                     facts=facts, table=[{'reason_code': r['reason'], 'denials': r['denials'], 'share_of_payer_denials': round(r['denials'] / total, 4)} for r in reasons], tables={'payers': payers},
-                    read_back=f"Denial rate by payer for {y} (payers with at least 500 counted claims), the worst payer, and the mix of its denial reason codes.", notes=notes)
+                    read_back=f"Denial rate by payer for {y} (payers with at least {cls.MIN_CLAIMS} counted claims), the worst payer, and the mix of its denial reason codes.", notes=notes)
 
 
 # ============================================================================================================================
@@ -654,8 +660,8 @@ class Association:
             needs = [r['need'] for r in ctx.rows("SELECT DISTINCT need FROM social_need WHERE positive = 1 ORDER BY need")]
             rows = []
             for need in needs:
-                pos = ctx.rows(noshow_rate_sql(f"{window} AND {LIVING} AND {ctx.social_need(need)}"))[0]
-                neg = ctx.rows(noshow_rate_sql(f"{window} AND {LIVING} AND NOT {ctx.social_need(need)}"))[0]
+                pos = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND {ctx.social_need(need)}"))[0]
+                neg = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND NOT {ctx.social_need(need)}"))[0]
                 if not pos['resolved'] or not neg['resolved']: continue
                 rows.append({'need': need, 'positive_rate': pos['missed'] / pos['resolved'], 'positive': pos, 'others_rate': neg['missed'] / neg['resolved'], 'others': neg})
             rows.sort(key=lambda r: -(r['positive_rate'] - r['others_rate']))
@@ -675,7 +681,7 @@ class Association:
         buckets = [('booked within a week (0-7 days ahead)', 'a.lead_time_days <= 7'), ('booked 8-30 days ahead', 'a.lead_time_days BETWEEN 8 AND 30'), ('booked 31 or more days ahead', 'a.lead_time_days >= 31')]
         rows = []
         for label, cond in buckets:
-            r = ctx.rows(noshow_rate_sql(f"{window} AND {LIVING} AND a.lead_time_days IS NOT NULL AND {cond}"))[0]
+            r = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND a.lead_time_days IS NOT NULL AND {cond}"))[0]
             rows.append({'bucket': label, 'missed': r['missed'], 'resolved': r['resolved'], 'rate': r['missed'] / r['resolved'] if r['resolved'] else None})
         facts = [fact(f'b{i}', f"{r['bucket'].capitalize()}: {pct(r['rate'])}% no-show ({r['missed']} of {r['resolved']} appointments).", value=pct(r['rate']),
                       numerator=r['missed'], denominator=r['resolved'], unit='%') for i, r in enumerate(rows)]
@@ -692,28 +698,49 @@ SEGMENT_MEASURES = [(r'diabetes\s+control|a1c|glycemic', 'diabetes'), (r'\bed\s+
                     (r'blood\s+pressure|bp\s+control|hypertension\s+control', 'bp'), (r'admissions?', 'admissions')]
 
 
+HIGH_SVI, LOW_SVI = 75, 25  # social vulnerability percentile (0-100): "high" is 75 or more, "low" is under 25 unless the question states its own cut
+
+
+def patient_segment_in(text):
+    """The first patient segment named in the text -> (quote, label, SQL over alias p) or None. Segments: social vulnerability bands, lines of business."""
+    m = re.search(r'(?<![\w-])high[- ]svi(?:\s*\(\s*(\d+)\s*\+?\s*\))?', text, re.I)
+    if m:
+        cut = int(m[1]) if m[1] else HIGH_SVI
+        return m.group(), f'high-SVI ({cut}+)', f"EXISTS (SELECT 1 FROM patient_svi s WHERE s.patient_id = p.patient_id AND s.svi_overall >= {cut})"
+    m = re.search(r'(?<![\w-])low[- ]svi(?:\s*\(\s*(?:under|below|<)\s*(\d+)\s*\))?', text, re.I)
+    if m:
+        cut = int(m[1]) if m[1] else LOW_SVI
+        return m.group(), f'low-SVI (under {cut})', f"EXISTS (SELECT 1 FROM patient_svi s WHERE s.patient_id = p.patient_id AND s.svi_overall < {cut})"
+    seg = segment_in(text)
+    if seg: return seg[0], seg[1], seg_in_patient(seg[2], seg[3])
+    return None
+
+
 @family
 class SegmentCompare:
     NAME = 'segment_compare'
-    WORDS = set('''how does do compare with and on use control versus vs'''.split())
+    WORDS = set('''how does do compare with and on use control versus vs between per patients last year in the'''.split())
 
     @classmethod
     def parse(cls, text, catalog):
         t = text.strip().rstrip('?.')
         m = re.match(r'^how\s+(?:does|do)\s+(?P<a>.+?)\s+compare\s+(?:with|to|against)\s+(?P<b>.+?)\s+on\s+(?P<m>.+)$', t, re.I)
-        if not m: return None
-        sa, sb = segment_in(m['a']), segment_in(m['b'])
+        if not m:
+            m = re.match(r'^compare\s+(?P<m>.+?)\s+between\s+(?P<a>.+?)\s+and\s+(?P<b>.+)$', t, re.I)
+            if not m: return None
+        sa, sb = patient_segment_in(m['a']), patient_segment_in(m['b'])
         if not sa or not sb: return None
         ms = [(span(m['m'], p), k) for p, k in SEGMENT_MEASURES if span(m['m'], p)]
         if not ms: return None
-        return {'params': {'a': list(sa[1:]), 'b': list(sb[1:]), 'measures': [k for _, k in ms]}, 'quotes': [sa[0], sb[0], *[x for x, _ in ms], 'compare']}
+        extra = [w for w in (span(m['m'], r'per\s+1,?000(?:\s+patients)?'), span(m['m'], r'in\s+the\s+last\s+year')) if w]
+        return {'params': {'a': [sa[1], sa[2]], 'b': [sb[1], sb[2]], 'measures': [k for _, k in ms]},
+                'quotes': [sa[0], sb[0], *[x for x, _ in ms], 'compare', *extra]}
 
     @classmethod
     def run(cls, ctx, params):
         facts, rows = [], []
         segs = [params['a'], params['b']]
-        for label, column, values in segs:
-            cond = seg_in_patient(column, values)
+        for label, cond in segs:
             for mk in params['measures']:
                 if mk == 'diabetes':
                     pop = f"{ctx.cond('diabetes')} AND {ctx.age(18)} AND {ctx.has_lab('hba1c')} AND {cond}"
@@ -732,14 +759,14 @@ class SegmentCompare:
                     kind = 'ed_visit' if mk == 'ed' else 'inpatient'
                     noun = 'ED visits' if mk == 'ed' else 'hospital admissions'
                     r = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM((SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND u.kind = {q(kind)} AND {ctx.in_window('u.event_date')})), 0) AS k "
-                                 f"FROM patient p WHERE {LIVING} AND {cond}")[0]
-                    rate = 1000.0 * r['k'] / r['n']
+                                 f"FROM patient p WHERE {ctx.living} AND {cond}")[0]
+                    rate = 1000.0 * r['k'] / r['n'] if r['n'] else None
                     facts.append(fact(f'{label}_{mk}', f"{label} {noun} per 1,000 patients (last 12 months): {rate:.0f} ({r['k']:,} {noun} among {r['n']:,} patients) = {rate:.1f}.",
                                       value=round(rate, 1), numerator=r['k'], denominator=r['n'], unit='per 1,000'))
-                    rows.append({'segment': label, 'measure': f'{noun} per 1,000 patients', 'value': round(rate, 1), 'numerator': r['k'], 'denominator': r['n']})
+                    rows.append({'segment': label, 'measure': f'{noun} per 1,000 patients', 'value': round(rate, 1), 'patients': r['n'], 'events': r['k']})
         return dict(headline=f"{segs[0][0]} versus {segs[1][0]} on " + ', '.join(params['measures']), facts=facts, table=rows,
-                    read_back=f"{segs[0][0]} compared with {segs[1][0]} (patients by line of business, living) on {', '.join(params['measures'])}; labs are latest results, utilization is the last 12 months.",
-                    notes=['Segments are the patient\'s line of business; diabetics are adults with a latest A1c; utilization is all-source ED visits / inpatient admissions in the last 12 months.'])
+                    read_back=f"{segs[0][0]} compared with {segs[1][0]} (living patients) on {', '.join(params['measures'])}; labs are latest results, utilization is the last 12 months.",
+                    notes=["Segments are the patient's line of business or social-vulnerability band; diabetics are adults with a latest A1c; utilization is all-source ED visits / inpatient admissions in the last 12 months."])
 
 
 def seg_in_patient(column, values):
@@ -764,11 +791,11 @@ class FrequentUsers:
     def run(cls, ctx, params):
         n = params['minimum']
         ids = ctx.ids(ctx.events('ed_visit', n))
-        total = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {LIVING}", 0)
-        mine = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {LIVING} "
+        total = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {ctx.living}", 0)
+        mine = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {ctx.living} "
                        f"AND {ctx.events('ed_visit', n)}", 0)
         hf = ctx.count(ctx.events('ed_visit', n), ctx.cond('heart_failure'))
-        lobs = ctx.rows(f"SELECT {ctx.lob} AS lob, COUNT(*) AS patients FROM patient p WHERE {LIVING} AND {ctx.events('ed_visit', n)} GROUP BY lob ORDER BY patients DESC, lob")
+        lobs = ctx.rows(f"SELECT {ctx.lob} AS lob, COUNT(*) AS patients FROM patient p WHERE {ctx.living} AND {ctx.events('ed_visit', n)} GROUP BY lob ORDER BY patients DESC, lob")
         facts = [fact('n', f"{len(ids)} patients had {n} or more ED visits in the last 12 months.", value=len(ids), unit='patients'),
                  fact('visits', f"They account for {mine:,} of {total:,} ED visits ({pct(mine / total, 0):.0f}%) = {mine / total:.4f}.", value=pct(mine / total), numerator=mine, denominator=total, unit='%'),
                  fact('hf', f"{hf} of them have heart failure.", value=hf, unit='patients'),
@@ -825,3 +852,101 @@ class PdcShare:
                     read_back=f"PQA proportion of days covered >= {params['threshold']} for {label}, {start} to {end}: living patients with at least 2 fills on distinct dates and a treatment period of at least 91 days; "
                               'days covered from the first fill to the period end, overlapping supply shifted forward.',
                     notes=[dd.DEFINITIONS['pdc_adherence']['basis']])
+
+
+# ============================================================================================================================
+# high-cost claimants
+# ============================================================================================================================
+@family
+class HighCostClaimants:
+    NAME = 'high_cost_claimants'
+    WORDS = set('''what share of total spend do the high cost claimants account for how many of have in or more paid medical'''.split())
+    AMOUNT = r'\(?\$\s?[\d,]+(?:\.\d+)?\s*(?:or\s+more|or\s+higher|\+)?\s*paid(?:\s+in\s+20\d\d)?\)?'
+
+    @classmethod
+    def parse(cls, text, catalog):
+        t = text.strip().rstrip('?.')
+        amount = re.search(cls.AMOUNT, t, re.I)
+        claimants = span(t, r'high[- ]cost\s+claimants')
+        if not amount or not claimants: return None
+        threshold = float(re.search(r'\$\s?([\d,]+(?:\.\d+)?)', amount.group()).group(1).replace(',', ''))
+        yrs = years_in(t)
+        share = re.match(r'^what\s+share\s+of\s+total\s+(?:20\d\d\s+)?(?:medical\s+)?(?:paid\s+)?spend\s+do\s+the\s+', t, re.I) and span(t, r'account\s+for')
+        if share:
+            return {'params': {'kind': 'share', 'threshold': threshold, 'year': yrs[0]}, 'quotes': [share.group() if hasattr(share, 'group') else share, claimants, amount.group(), *[str(y) for y in yrs], span(t, r'account\s+for') or '']}
+        has = re.match(r'^how\s+many\s+of\s+the\s+(?:20\d\d\s+)?high[- ]cost\s+claimants\s*(?:' + cls.AMOUNT + r')?\s*have\s+(.+)$', t, re.I)
+        if has:
+            tail = re.sub(r'\s*' + cls.AMOUNT, '', has.group(1), flags=re.I)
+            cond = next(((span(has.group(1), p), c) for p, c in CONDITION_WORDS if span(has.group(1), p)), None)
+            if not cond: return None
+            return {'params': {'kind': 'with', 'threshold': threshold, 'year': yrs[0], 'condition': cond[1]},
+                    'quotes': [span(t, r'how\s+many\s+of\s+the'), claimants, amount.group(), cond[0], 'have', *[str(y) for y in yrs]]}
+        return None
+
+    @classmethod
+    def run(cls, ctx, params):
+        y, cents = params['year'], int(params['threshold'] * 100)
+        claim = f"c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))}"
+        claimants = (f"SELECT c.patient_id FROM payer_claim c JOIN patient p ON p.patient_id = c.patient_id WHERE {claim} AND {ctx.living} "
+                     f"GROUP BY c.patient_id HAVING SUM(c.paid_cents) >= {cents}")
+        notes = [f'High-cost claimants: living patients whose summed paid dollars on counted medical claims in {y} reach ${params["threshold"]:,.0f}.']
+        if params['kind'] == 'share':
+            part = ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) FROM payer_claim c WHERE {claim} AND c.patient_id IN ({claimants})", 0)
+            total = ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) FROM payer_claim c WHERE {claim}", 0)
+            n = ctx.one(f"SELECT COUNT(*) FROM ({claimants})", 0)
+            facts = [fact('share', f"The {n} high-cost claimants account for {pct(part / total)}% of total {y} medical paid spend ({usd(part / 100)} of {usd(total / 100)}) = {part / total:.4f}.",
+                          value=pct(part / total), numerator=part / 100, denominator=total / 100, unit='%', claimants=n)]
+            return dict(headline=f"{n} high-cost claimants account for {pct(part / total)}% of {y} medical paid spend", facts=facts, value=pct(part / total),
+                        table=[{'high_cost_claimants': n, 'paid_dollars': round(part / 100, 2), 'total_paid_dollars': round(total / 100, 2), 'share_percent': pct(part / total)}],
+                        read_back=f"Share of total {y} counted medical paid spend that comes from patients with ${params['threshold']:,.0f} or more paid in {y}.", notes=notes)
+        k = ctx.count(f"p.patient_id IN ({claimants})", ctx.cond(params['condition']))
+        n = ctx.one(f"SELECT COUNT(*) FROM ({claimants})", 0)
+        facts = [fact('count', f"{k} of the {n} high-cost claimants in {y} have {params['condition'].replace('_', ' ')}.", value=k, numerator=k, denominator=n, unit='patients')]
+        return dict(headline=f"{k} of {n} high-cost claimants have {params['condition'].replace('_', ' ')}", facts=facts, count=k,
+                    read_back=f"High-cost claimants ({y}, ${params['threshold']:,.0f} or more paid) who have {params['condition'].replace('_', ' ')} (canonical condition evidence).", notes=notes)
+
+
+# ============================================================================================================================
+# PMPM by a member attribute
+# ============================================================================================================================
+PMPM_GROUPS = [(r'lines?\s+of\s+business|payer\s+types?|\blob\b', 'line_of_business', 'line of business'), (r'products?', 'product', 'product'),
+               (r'payers?', 'payer_id', 'payer'), (r'practices?', 'attribution_practice_id', 'attributed practice')]
+
+
+@family
+class PmpmBy:
+    NAME = 'pmpm_by'
+    WORDS = set('''what was is were the medical claims paid allowed pmpm per member month in by'''.split())
+
+    @classmethod
+    def parse(cls, text, catalog):
+        t = text.strip().rstrip('?.')
+        if not re.match(r"^(?:what(?:'s|\s+is|\s+was|\s+were)|show(?:\s+me)?|give\s+me)\b", t, re.I): return None
+        metric = span(t, r'pmpm|per\s+member\s+per\s+month')
+        if not metric: return None
+        group = next(((span(t, p), c, label) for p, c, label in PMPM_GROUPS if re.search(r'\bby\s+(?:' + p + r')', t, re.I)), None)
+        if not group: return None
+        basis = 'allowed' if span(t, r'allowed') else 'paid'
+        by = re.search(r'\bby\s+' + group[0], t, re.I)
+        return {'params': {'group': group[1], 'label': group[2], 'basis': basis, 'year': (years_in(t) or [None])[-1]},
+                'quotes': [metric, by.group() if by else group[0], span(t, r'medical(?:\s+claims)?') or '', span(t, r'paid|allowed') or '', *[str(y) for y in years_in(t)]]}
+
+    @classmethod
+    def run(cls, ctx, params):
+        y = params['year'] or last_full_year(ctx)
+        notes = [] if params['year'] else [FULL_YEAR_NOTE.format(y=y, a=ctx.as_of[:4])]
+        col = params['group']
+        amount = 'paid_cents' if params['basis'] == 'paid' else 'allowed_cents'
+        rows = ctx.rows(
+            f"WITH mm AS (SELECT m.{col} AS grp, COUNT(*) AS member_months FROM member_month m WHERE substr(m.month, 1, 4) = {q(str(y))} GROUP BY m.{col}), "
+            f"paid AS (SELECT m.{col} AS grp, SUM(c.{amount}) AS cents FROM payer_claim c JOIN member_month m ON m.patient_id = c.patient_id AND m.month = substr(c.service_from, 1, 7) "
+            f"WHERE c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))} GROUP BY m.{col}) "
+            f"SELECT mm.grp AS grp, mm.member_months AS member_months, COALESCE(paid.cents, 0) AS cents, COALESCE(paid.cents, 0) / 100.0 / mm.member_months AS pmpm "
+            f"FROM mm LEFT JOIN paid USING (grp) WHERE mm.grp IS NOT NULL ORDER BY pmpm DESC, grp")
+        total = ctx.rows(f"SELECT COUNT(*) AS member_months FROM member_month m WHERE substr(m.month, 1, 4) = {q(str(y))}")[0]['member_months']
+        facts = [fact(f"g_{r['grp']}", f"{r['grp']}: ${r['pmpm']:,.2f} {params['basis']} PMPM in {y} (${r['cents'] / 100:,.0f} over {r['member_months']:,} member months).", value=round(r['pmpm'], 2),
+                      numerator=round(r['cents'] / 100, 2), denominator=r['member_months'], unit='USD per member month') for r in rows]
+        return dict(headline=f"{params['basis'].capitalize()} medical PMPM in {y} by {params['label']}: highest {rows[0]['grp']} (${rows[0]['pmpm']:,.0f})", facts=facts,
+                    table=[{params['label']: r['grp'], 'member_months': r['member_months'], f"{params['basis']}_dollars": round(r['cents'] / 100, 2), 'pmpm_dollars': round(r['pmpm'], 2)} for r in rows],
+                    read_back=f"{params['basis'].capitalize()} medical PMPM for {y} by {params['label']}: counted payer-adjudicated claims in an enrolled member month, grouped by that month's {params['label']}, over the group's member months.",
+                    notes=notes + ['A claim counts in the group of the member month it was incurred in; PMPM = dollars / member months of the group (the governed rule).'])

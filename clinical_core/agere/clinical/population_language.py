@@ -91,6 +91,7 @@ class PopulationForms:
             pop_text, pred_text = body[:at].strip(), body[at:].strip()
             if not pop_text: continue
             gaps = list(self.gaps)
+            self.bp_quote = None
             try:
                 population = self.population_phrase(pop_text)
                 if population is None: self.gaps[:] = gaps; continue
@@ -138,6 +139,11 @@ class PopulationForms:
         measured = lab_leaves(pred)
         denominator = {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': head_quote}
         notes = []
+        if getattr(self, 'bp_quote', None):  # blood pressure control is defined on adults 18-85 (config/agere/measures/cbp.json)
+            from .request_language import atom
+            ages = [atom('patient.age', '>=', BP_AGE[0], self.bp_quote), atom('patient.age', '<=', BP_AGE[1], self.bp_quote)]
+            population = combine('and', [population, *ages] if population else ages, self.bp_quote)
+            notes.append('Blood pressure control is measured on patients 18 to 85 with a latest systolic and diastolic reading (under 140 and under 90).')
         if measured:
             # the share of patients "with a result": the denominator is the population patients that have the lab's latest result
             leaves = [related('measurement_latest', combine('and', [atom(a['field'], a['op'], a['value'], a['quote']) for a in leaf['atoms']], leaf['quote']),
@@ -225,8 +231,8 @@ class PopulationForms:
         leaves = [related('measurement_latest', combine('and', [atom('measurement_latest.concept', '=', c, quote),
                                                                 atom('measurement_latest.value_canonical', op, v, quote)], quote), quote)
                   for c, op, v in spec]
-        plain = leaves
-        return combine(joiner, plain, quote), text[m.end():]
+        self.bp_quote = quote
+        return combine(joiner, leaves, quote), text[m.end():]
 
 
 def lab_leaves(node):

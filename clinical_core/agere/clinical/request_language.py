@@ -474,7 +474,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
                     r"(?:have|has)\s+not\s+(?:had|got|gotten|received|filled)|(?:have|has)n't\s+been\s+seen(?:\s+in)?|"
                     r"(?:have|has)\s+not\s+been\s+seen(?:\s+in)?|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
                     r"(?:are|were|is)\s+missing|missing|without)")
-    POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|got|received|completed|underwent|"
+    POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|whose|got|received|completed|underwent|"
                      r"(?:were|was|been)(?=\s+admitted))")
 
     def window(self, text, table, field):
@@ -859,7 +859,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             text=front[2]; self.base=front_source[1][0]
         ranked = self.ranking(text)
         if ranked: return ranked
-        of = re.match(r'^(?:Of|Among)\s+(?:the\s+|our\s+)?(.+?),\s*(how many|what\s+(?:percent(?:age)?|share|proportion|fraction))\s+(.+)$', text, re.I)
+        of = re.match(r'^(?:Of|Among|For)\s+(?:the\s+|our\s+)?(.+?),\s*(how many|what\s+(?:percent(?:age)?|share|proportion|fraction))\s+(.+)$', text, re.I)
         if of:
             return self.of_scope(of)
         shared = self.rank_share(text) or self.share_form(text) or self.rate_form(text) or self.rank_count(text)
@@ -1073,13 +1073,33 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         pronoun = re.fullmatch(r'(?:those|them|these)(?:\s+(?:patients|members))?', of[1].strip(), re.I)
         if self.bound and pronoun:
             source = (of[1].strip(), ('patient', None), '')  # the saved cohort the conversation is editing
-        if not source: raise PlanError('Fronted scope needs a recognized source')
-        source_quote, (self.base, default), scope_text = source
-        if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
-        first, tail = self.expression(scope_text)
+        phrase = None
+        if source and source[2].strip():  # a noun plus modifiers the table vocabulary alone does not take ("adult diabetic patients with ...")
+            phrase = self.population_phrase(of[1])
+        if not source or phrase is not None:
+            phrase = phrase if phrase is not None else self.population_phrase(of[1])
+            if phrase is None: raise PlanError('Fronted scope needs a recognized source')
+            from .population_language import source_quote_of
+            source = (source_quote_of(self, of[1]), ('patient', None), '')
+            self.base = 'patient'
+            first, tail, default = (phrase or None), '', None
+            source_quote, scope_text = source[0], ''
+        else:
+            source_quote, (self.base, default), scope_text = source
+            if self.base == 'stay' and re.search(r'discharge', source_quote, re.I): self.clock = 'discharge_date'
+            first, tail = self.expression(scope_text)
         if tail.strip(): raise PlanError('Unconsumed scope: ' + tail)
         share = not of[2].lower().startswith('how many')
+        of = [of[0], of[1], of[2], of[3]]
+        group_fields = []
+        grouped = re.search(r'(?:\s*(?:are|is)\s+there)?\s+(?:in|for|within|per)\s+each\s+([a-z][a-z ]*?)\s*$', of[3], re.I)
+        if grouped and not share:  # "how many are there in each line of business"
+            dim = self.dimension(grouped[1])
+            if dim:
+                group_fields = [(grouped.group().strip(), dim[1])]
+                of[3] = of[3][:grouped.start()]
         second_text = re.sub(r'^(?:of\s+them\s+)?(?:were|was|are|is)\s+(?!admitted)', '', of[3], flags=re.I).strip()
+        if not second_text and group_fields: second_text = ''
         inherited = re.fullmatch(r'(?:had\s+|have\s+)?screened\s+positive', second_text, re.I)
         if inherited and isinstance(first, dict) and first.get('table') == 'social_need':
             # "Of patients screened for transport, what percent screened positive": the same screen, positive.
@@ -1088,6 +1108,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
                       'where': combine('and', [{**copy.deepcopy(first['where']), 'quote': first['where']['quote']},
                                                atom('social_need.positive', '=', 1, q)], q)}
             tail = ''
+        elif not second_text and group_fields:
+            second, tail = None, ''
         else:
             second, tail = self.expression(second_text)
         if tail.strip(): raise PlanError('Unconsumed request: ' + tail)
@@ -1109,8 +1131,9 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         self.bind_parent_quotes(where)
         measure = ({'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': of[2]} if self.base == 'patient'
                    else {'kind': 'count', 'alias': 'count', 'quote': of[2]})
-        return {'source': {'table': self.base, 'quote': source_quote}, 'select': [measure], 'where': where,
-                'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
+        fields = [{'kind': 'field', 'field': f, 'alias': f.partition('.')[2], 'quote': quote} for quote, f in group_fields]
+        return {'source': {'table': self.base, 'quote': source_quote}, 'select': [*fields, measure], 'where': where,
+                'group_by': [x['alias'] for x in fields], 'order_by': [], 'limit': None, 'unresolved': []}
 
     def governed(self, text):
         """One metric name plus independently consumed scope/period/group slots."""

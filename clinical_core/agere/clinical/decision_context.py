@@ -43,6 +43,23 @@ PATIENT_WORDS = re.compile(r'\b(?:patients?|people|persons?|individuals?|who|who
 NON_PATIENT_GRAIN = re.compile(r'\b(?:member[- ]months?|pmpm|per member per month|claims?|paid|allowed|billed|denials?|denied|premiums?|'
                                r'revenue|reimbursements?|spend|spending|costs?|payments?|dollars?|cents?)\b', re.I)
 LIVING_PREDICATE = 'NOT IN (SELECT patient_id FROM death)'
+# Each person counted once (OPTIONAL, off by default): a second chart of a person already on the roster (patient.data_segment = 'duplicate_chart') is out
+# with the deceased. The development-set definitions (tools/dev_set/definitions.py, 2026-10-23) count patients this way; tools/dev_oracle.py (35 questions)
+# counts a duplicate chart as a patient, so the default stays as the oracle has it. AGERE_EXCLUDE_DUPLICATE_CHARTS=1 (or EXCLUDE_DUPLICATE_CHARTS = True)
+# turns the rule on in every path at once: the SQL rewrite, the typed compiler, the population forms and the planner prompt.
+DUPLICATE_SEGMENT = 'duplicate_chart'
+COUNTED_PREDICATE = f"NOT IN (SELECT patient_id FROM death UNION SELECT patient_id FROM patient WHERE data_segment = '{DUPLICATE_SEGMENT}')"
+SEGMENT_MARKER = 'patient.data_segment'  # sql_query._relations adds this name when the patient relation carries the column
+EXCLUDE_DUPLICATE_CHARTS = False
+
+
+def exclude_duplicate_charts():
+    import os
+    return EXCLUDE_DUPLICATE_CHARTS or os.environ.get('AGERE_EXCLUDE_DUPLICATE_CHARTS', '').strip().lower() in ('1', 'on', 'true', 'yes')
+
+
+def counted_predicate(has_segment=True):
+    return COUNTED_PREDICATE if has_segment and exclude_duplicate_charts() else LIVING_PREDICATE
 
 # --- labs ----------------------------------------------------------------------------------------------------------------------
 ANY_LAB = re.compile(r"\b(?:ever|at any (?:time|point|visit)|any (?:time|result|value|reading|draw|measurement)|history of|had a history|"
@@ -175,7 +192,9 @@ def prompt_block():
         "5. 'last year', 'past year', 'last 12 months' = the 12 months ending at the as-of date: date > date(:as_of, '-12 months') AND date <= :as_of. "
         "A calendar year word ('in 2029') is that calendar year (date >= '2029-01-01' AND date <= '2029-12-31').\n"
         "6. 'Medicare' means coverage_type IN ('medicare', 'dual', 'medigap') (dual-eligible and Medigap members have Medicare); "
-        "'traditional', 'original', 'fee-for-service' or 'Medicare only' means coverage_type = 'medicare'.")
+        "'traditional', 'original', 'fee-for-service' or 'Medicare only' means coverage_type = 'medicare'.\n"
+        "7. 'On' / 'taking' a medication is current use: a picked-up fill (fill table) in the 12 months ending at the as-of date, unless the question gives its "
+        "own period or asks 'ever'. A drug that was only ordered or listed ('prescribed') is a received mention, not current use.")
 
 
 # --- the scope an answer runs in -------------------------------------------------------------------------------------------------
@@ -282,7 +301,7 @@ def _cte_names(masked):
     return {m.group(1).lower() for m in re.finditer(r'(?i)(?:\bwith\s+(?:recursive\s+)?|,\s*)([A-Za-z_]\w*)\s*(?:\([^)]*\))?\s+as\s*\(', masked)}
 
 
-def _substitute(sql, living, latest):
+def _substitute(sql, living, latest, predicate=LIVING_PREDICATE):
     """-> (rewritten SQL, {'living': [tables], 'latest': bool}). Each FROM/JOIN of a patient-keyed relation becomes a filtered subquery
     that keeps the relation's name or alias, so every qualified reference still resolves. One pass: inserted text is not rescanned."""
     masked, held = _mask(sql)
@@ -301,9 +320,9 @@ def _substitute(sql, living, latest):
         if not living and not is_measurement: return m.group()
         if is_measurement:
             inner = '(SELECT * FROM measurement WHERE record_id IN (SELECT record_id FROM measurement_latest)'
-            inner += (f' AND patient_id {LIVING_PREDICATE})' if living else ')')
+            inner += (f' AND patient_id {predicate})' if living else ')')
         else:
-            inner = f'(SELECT * FROM {table} WHERE patient_id {LIVING_PREDICATE})'
+            inner = f'(SELECT * FROM {table} WHERE patient_id {predicate})'
         if is_measurement: done['latest'] = True
         if living and table not in done['living']: done['living'].append(table)
         label = alias or f'{quote}{name}{quote}'
@@ -330,7 +349,7 @@ def enforce_sql(sql, returns=None, tables=None):
                         and not re.search(r'(?i)\bhaving\b|\bover\s*\(', masked))  # per-patient result counts and windows need every result
     latest = state.lab_mode == 'latest' and uses_measurement and (tables is None or 'measurement_latest' in tables)
     if not living and not latest: return sql, None
-    rewritten, done = _substitute(sql, living, latest)
+    rewritten, done = _substitute(sql, living, latest, counted_predicate(tables is not None and SEGMENT_MARKER in tables))
     with state.lock: state.checked += 1
     receipt = {'living': done['living'] if living else [], 'latest_labs': done['latest'], 'rewritten': rewritten != sql}
     if living and not done['living'] and not re.search(r'(?i)\bpopulation\b', masked):

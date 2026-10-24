@@ -12,6 +12,7 @@ Families (insight_families.py): practice_gap, prioritize, care_gaps, spend_drive
 association, segment_compare, frequent_users; plus pdc_share (adherence through the governed default_definition engine).
 """
 import re
+import sqlite3
 import time
 
 from . import decision_context, population_sql
@@ -45,6 +46,11 @@ def interpret(catalog, question, *, population=None):
         from .general_analysis import uncovered
         left = uncovered(text, [*spec['quotes'], *cls.WORDS])
         if left: continue  # a word of the question no recognised phrase accounts for: this form does not answer it
+        import json as _json
+        numbers = set(re.findall(r'(?<![\w.])\d[\d,]*(?:\.\d+)?', text))
+        carried = set(re.findall(r'\d[\d,]*(?:\.\d+)?', _json.dumps(spec['params'], default=str)))
+        have = {float(c.replace(',', '')) for c in carried}
+        if any(float(n.replace(',', '')) not in have for n in numbers): continue  # a number the form did not compile is a requirement dropped
         body = {'version': VERSION, 'kind': 'engine_form', 'family': cls.NAME, 'params': spec['params'], 'original_question': question,
                 'source_identity': catalog.identity, 'quotes': spec['quotes']}
         contract = {**body, 'id': fingerprint(body),
@@ -75,7 +81,10 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     if current.identity != contract['source_identity']:
         raise PlanError('Warehouse changed during planning; recompute against the new snapshot')
     ctx = population_sql.Ctx(stack.path, current.target, current.identity['as_of'], question)
-    result = cls.run(ctx, contract['params'])
+    try:
+        result = cls.run(ctx, contract['params'])
+    except (sqlite3.Error, ValueError, KeyError) as exc:  # a relation or column this warehouse does not carry: say so, never a partial number
+        raise PlanError(f"{cls.NAME} cannot be computed from the received data ({type(exc).__name__}: {str(exc)[:160]}); no reduced question was executed") from exc
     answer = assemble(cls, ctx, contract, result, question)
     out = {'schema': VERSION, 'synthetic': True, 'question': question, 'route': 'shared_planner', 'graph': graph,
            'results': [{'node': graph['nodes'][0], 'result': {'queries': ctx.queries, 'row_count': len(result.get('table') or [])}}],
@@ -104,7 +113,7 @@ def assemble(cls, ctx, contract, r, question):
               'request_id': contract['id'], 'data_absence_established': False,
               'scope': 'Observed warehouse query; clinical execution is not authorized.',
               'read_back': r['read_back']}
-    if table: answer['table'] = table
+    if table is not None: answer['table'] = table
     if ids: answer['count'] = len(ids)
     if r.get('count') is not None: answer['count'] = r['count']
     if r.get('value') is not None: answer['value'] = r['value']

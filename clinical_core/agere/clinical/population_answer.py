@@ -58,15 +58,16 @@ def read_back(contract, answer, question, as_of):
             what += f" ({answer['numerator']:,} of {answer['denominator']:,})"
     elif selects:
         kind = selects[0]['kind']
-        what = {'count_distinct': f'Count of {noun}', 'count': f'Count of {noun}', 'sum': f"Sum of {selects[0].get('field', '').split('.')[-1].replace('_', ' ')}",
-                'avg': f"Average of {selects[0].get('field', '').split('.')[-1].replace('_', ' ')}"}.get(kind, f'{kind} of {noun}')
+        what = {'count_distinct': f'Count of {noun}', 'count': f'Count of {noun}', 'sum': f"Sum of {selects[0].get('field', '').split('.')[-1].replace('_', ' ').replace(' cents', ' dollars')}",
+                'avg': f"Average of {selects[0].get('field', '').split('.')[-1].replace('_', ' ').replace(' cents', ' dollars')}"}.get(kind, f'{kind} of {noun}')
     else:
         what = f'List of {noun}'
     if groups: what += ' by ' + ', '.join(g['alias'].replace('_', ' ') for g in groups)
     given = criteria(contract, question)
     parts_ = [what + (': ' + '; '.join(given) if given else '')]
     defs = []
-    if re.search(r'NOT IN \(SELECT patient_id FROM death\)|NOT EXISTS \(SELECT 1 FROM "death"', query): defs.append('living patients only')
+    if re.search(r'NOT IN \(SELECT patient_id FROM death\b|NOT EXISTS \(SELECT 1 FROM "death"', query):
+        defs.append('living patients only, each counted once (second charts excluded)' if 'duplicate_chart' in query else 'living patients only')
     if 'measurement_latest' in query: defs.append('labs read the latest result per patient')
     if 'picked-up fill' in ' '.join(contract.get('notes', [])): defs.append('"on" a medication = a picked-up fill in the 12 months to the as-of date')
     if "'ehr_diagnosis'" in query: defs.append('conditions = EHR diagnoses, problem list, counted claim diagnoses (diabetes and CKD also by lab evidence)')

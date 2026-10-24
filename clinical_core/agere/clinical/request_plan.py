@@ -426,7 +426,7 @@ class Compiler:
             (e.get('kind') in ('field', 'count_distinct') and ends(e)) or (e.get('kind') == 'ratio' and any(
                 isinstance(x, dict) and x.get('kind') == 'count_distinct' and ends(x) for x in (e.get('numerator'), e.get('denominator'))))
             for e in kinds)
-        return f'b.patient_id {decision_context.LIVING_PREDICATE}' if patients else None
+        return f'b.patient_id {decision_context.counted_predicate("data_segment" in self.catalog.tables.get("patient", []))}' if patients else None
 
     def compile(self, plan):
         required = {'source', 'select', 'where', 'group_by', 'order_by', 'limit', 'unresolved'}

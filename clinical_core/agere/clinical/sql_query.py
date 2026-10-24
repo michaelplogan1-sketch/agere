@@ -33,6 +33,11 @@ if _RECURSIVE is not None: _ALLOWED.add(_RECURSIVE)
 _RELATIONS = {}
 
 
+def decision_context_marker():
+    from .decision_context import SEGMENT_MARKER
+    return SEGMENT_MARKER
+
+
 def _relations(target):
     """The table names of a semantic database (cached per file and modification time)."""
     import os
@@ -43,7 +48,10 @@ def _relations(target):
     if key not in _RELATIONS:
         try:
             with sqlite3.connect(f'file:{target}?mode=ro', uri=True) as db:
-                _RELATIONS[key] = frozenset(r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')"))
+                names = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")}
+                if 'patient' in names and any(r[1] == 'data_segment' for r in db.execute('PRAGMA table_info(patient)')):
+                    names.add(decision_context_marker())  # the patient relation can tell a duplicate chart
+                _RELATIONS[key] = frozenset(names)
         except sqlite3.Error:
             return None
     return _RELATIONS[key]
