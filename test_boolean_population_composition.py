@@ -28,6 +28,9 @@ class BooleanPopulation(unittest.TestCase):
         self.assertEqual(self.members('How many patients carry both diabetes and a heart failure diagnosis?'),{'SYN-A','SYN-C'})
         self.assertEqual(self.members('Patients have diabetes, hypertension and heart failure all at once'),{'SYN-A'})
         self.assertEqual(self.members('Patients have diabetes or heart failure (either one)'),{'SYN-A','SYN-B','SYN-C','SYN-D'})
+    def test_comma_linked_population_question_is_now_grammar_supported(self):
+        self.assertEqual(self.members('Patients, heart failure, how many?'),{'SYN-A','SYN-C','SYN-D'})
+
     def test_adjectival_concepts_reparse_in_model_specs(self):
         q='Number of hypertensive patients who have no diabetes?'
         plan=L.parse(self.w.catalog,q)
