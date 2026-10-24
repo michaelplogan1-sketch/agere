@@ -25,6 +25,7 @@ import time
 from pathlib import Path
 
 from . import request_plan
+from .. import model_policy
 from .literal_check import VERSION as CHECK_VERSION, executable_text, missing, shape_misfit
 from .question_input import QuestionNotUnderstood
 from .answer_checks import gate as answer_gate
@@ -42,7 +43,10 @@ TIERS = {
     'specialist_families_early': ('free', 'DQ/VBC families certified, bounds 2.45% / 2.5%', 'graph'),
     'cohort_family_early': ('free (Haiku slot filler only when slots are missing)', 'certified 0.71, 752 cases / 0 errors', 'graph'),
     'undelivered_input': ('free', 'deterministic delivered-field check; declines only', 'decline'),
-    'paraphrase_reuse': ('free (MiniLM)', 'verified interpretation of a slot-identical rewording', 'typed'),
+    'paraphrase_reuse': ('free (MiniLM); System One confirms the slot mapping of a reused spec', 'verified interpretation of a slot-identical rewording', 'typed'),
+    'spec_path': ('grammar free; System One slot choices ~$0.0002; ONE Haiku spec call (~$0.01) + one repair; Sonnet only on the escalation rung (after every Haiku attempt failed); '
+                  'System One ~$0.0002 per verified part', 'question spec filled three ways in parallel, compiled, literal-checked, decision-context-checked and '
+                  'verified part by part by System One; uncalibrated', 'typed'),
     'terminology_mapping': ('free (saved/deterministic); Jev/Perplexity ~$0.0002 for an unmapped term, live only', 'retrieve-then-classify clinical term (System One p>=0.8 or abstain), then the fully consumed grammar; uncalibrated', 'typed'),
     'semantic_cache': ('free (MiniLM)', 'certified, 0/94 test errors', 'graph'),
     'template_decoding': ('free (MiniLM; local model only to fill slots)', 'TeCoD: verified query structure kept, only typed value slots refilled; literal-bound; uncalibrated', 'graph'),
@@ -60,48 +64,64 @@ TIERS = {
     's1_metric_router': ('Jev/Perplexity ~$0.0002 per typed choice (one metric choice + up to 3 slot choices)', 'uncalibrated; exact-fit, shape, number-accounting and answer checks gate it; declines to the Claude metric router', 'graph'),
     's1_operator_router': ('Jev/Perplexity ~$0.0002 per typed choice (one engine choice + up to 3 parameter choices)', 'uncalibrated; validators and the literal check gate it; declines to the Claude operator router', 'graph'),
     'typed_decider': ('Perplexity, ~$0.000006/call', 'curated unfiltered recipes only, 0.95 threshold', 'graph'),
-    'hosted_typed_interpreter': ('Opus 5.5, ~$0.27/question', '20-question dev set; compiler + quote binding + audit', 'typed'),
-    'hosted_verified_sql': ('Haiku -> Sonnet -> Opus judge + Perplexity decider', 'two-model agreement + oracles; uncalibrated', 'graph'),
-    'semantic_analyst': ('Haiku tool loop + Opus reconcile on disagreement', 'legacy single analyst; uncalibrated', 'graph'),
-    'frontier_graph_planner': ('Opus 5.5', 'full capability catalog; uncalibrated', 'graph'),
-    'stack_planner_propose': ('Opus 5.5, one call', 'older registry plan proposer; uncalibrated', 'graph'),
-    'hybrid_analysts': ('3x Opus 5.5 + vote, ~$0.14/question', '18/20 dev, 7/10 held-out, pilot 75/100', 'answer'),
+    'hosted_typed_interpreter': ('Haiku 5.5 plan + Haiku review; Sonnet 5.5 only on the escalation rung', '20-question dev set; compiler + quote binding + audit', 'typed'),
+    'hosted_verified_sql': ('Haiku writer + second Haiku sample, Haiku judge + Perplexity decider; Sonnet only on the escalation rung', 'two-model agreement + oracles; uncalibrated', 'graph'),
+    'semantic_analyst': ('Haiku tool loop + Haiku reconcile on disagreement; Sonnet only on the escalation rung', 'legacy single analyst; uncalibrated', 'graph'),
+    'frontier_graph_planner': ('Haiku 5.5, Sonnet 5.5 on the escalation rung', 'full capability catalog; uncalibrated', 'graph'),
+    'stack_planner_propose': ('Haiku 5.5, one call; Sonnet 5.5 on the escalation rung', 'older registry plan proposer; uncalibrated', 'graph'),
+    'hybrid_analysts': ('3x Haiku 5.5 + vote, tie-break Haiku; Sonnet 5.5 on the escalation rung', '18/20 dev, 7/10 held-out, pilot 75/100', 'answer'),
     'local_compiler': ('free', 'FAILED calibration: held-out 19/49 wrong; proposes only', 'graph'),
     'metric_router': ('Haiku', 'FAILED calibration: held-out 13/13 wrong; proposes only', 'graph'),
     'operator_router': ('Haiku', 'FAILED calibration: held-out 19/19 wrong; proposes only', 'graph'),
     'local_free_sql': ('free (Qwen3-4B)', 'FAILED calibration: precision too low; proposes only', 'graph'),
     'legacy_cost_ladder': ('free locally; its paid rungs only when live', 'pre-2026-10-19 ladder + together semantics, last resort; uncalibrated', 'graph'),
 }
-# The cascade runs in five stages (CTO, 2026-10-23); a tier never runs before an earlier stage's tiers, whatever the learned
-# routers prefer (they reorder within a stage only). A: reuse and certified free tiers. B: System One typed choice (~$0.0002).
-# C: free but uncalibrated planners (local compiler, local models) whose answers System One must confirm. D: System One on record
-# evidence (per patient). E: Claude, cheapest first; legacy ladder last. The learned and System One routers may reorder B-D for a
-# question (e.g. chart evidence first) but never move anything ahead of A or a Claude tier ahead of B-D. 'system_one_*' tiers -> B.
+# The cascade runs in six stages (CTO, 2026-10-23; Mike, 2026-10-23: the spec path is the main path); a tier never runs before an earlier
+# stage's tiers, whatever the learned routers prefer (they reorder within a stage only). A: reuse and certified free tiers. SPEC: the question
+# spec (docs/agere/QUESTION_SPEC.md) filled by the grammar, System One slot choices and one Haiku spec call in parallel, compiled, checked and
+# verified part by part by System One. B: governed engines and metric routers by System One typed choice (~$0.0002). C: free deterministic
+# planners (local compiler, the families). D: System One on record evidence (per patient). E: the Claude routers, then the FREE-FORM writers
+# (FREE_FORM: Claude SQL / plan writers and the local Qwen tiers), last, marked free-form, each answer needing System One's confirmation.
+# The learned and System One routers may reorder B-D for a question (e.g. chart evidence first) but never move anything ahead of A or the
+# spec path, nor a Claude tier ahead of B-D. 'system_one_*' tiers -> B.
 STAGES = (
     ('reuse_certified', ('exact_local_plan', 'chart_reader', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'template_decoding',
                          'specialist_families_early', 'cohort_family_early', 'scoped_review_compiler', 'undelivered_input')),
+    ('spec_path', ('spec_path',)),
     ('system_one_choice', ('s1_metric_router', 's1_operator_router', 'typed_decider', 'terminology_mapping', 'hcc_suspecting')),
-    ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late', 'qwen_typed_interpreter', 'local_normalizer',
-                       'qwen_rewrite_compiler', 'bottled_sql', 'local_free_sql')),
+    ('free_planners', ('local_compiler', 'specialist_families_late', 'cohort_family_late')),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
-    ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'semantic_analyst',
-                'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')),
+    ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler',
+                'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
+                'stack_planner_propose', 'legacy_cost_ladder')),
 )
 STAGE_OF = {t: i for i, (_, tiers) in enumerate(STAGES) for t in tiers}
+STAGE_INDEX = {name: i for i, (name, _) in enumerate(STAGES)}
+CHEAP_STAGES = frozenset({'reuse_certified', 'spec_path', 'system_one_choice'})  # the stages the costly (local-model, per-patient) tiers wait for
+# Free-form writers: they write SQL or a plan with no verified spec behind it. They run last; their answers are marked free-form and ship only after
+# System One confirms them (answer_checks.local_sql_confirmed).
+FREE_FORM = frozenset({'hosted_verified_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder',
+                       'local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql'})
 # Rejection reasons that mean "not yet confirmed", not "shown wrong" (answer_checks): the System One fallback may pick these.
 FALLBACK_SOFT_REASONS = ("an uncalibrated free planner's answer is shipped only when", 'certificate:')
 
 
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
-    return 1 if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
+    return STAGE_INDEX['system_one_choice'] if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
+
+
+def cheap(tier):
+    return STAGES[stage_of(tier)][0] in CHEAP_STAGES
 
 
 def staged(order):
-    """Hard boundaries only: reuse/certified tiers first, Claude last; the routers' order is kept inside, so a System One router
-    may send a chart-evidence question to the evidence readers before the free planners (a stable sort: nothing dropped)."""
+    """Hard boundaries only: reuse/certified tiers first, then the spec path, Claude and the free-form writers last; the routers' order is kept
+    inside, so a System One router may send a chart-evidence question to the evidence readers before the free planners (a stable sort: nothing
+    dropped)."""
     last = len(STAGES) - 1
-    return tuple(sorted(order, key=lambda t: 0 if stage_of(t) == 0 else 2 if stage_of(t) == last else 1))
+    spec = STAGE_INDEX['spec_path']
+    return tuple(sorted(order, key=lambda t: 0 if stage_of(t) == 0 else 1 if stage_of(t) == spec else 3 if stage_of(t) == last else 2))
 
 
 ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
@@ -120,6 +140,12 @@ COSTLY = ('local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_type
 # planner never ran. They still run after those (and in background continuation), so nothing is removed.
 LOCAL_QWEN = ('local_normalizer', 'qwen_rewrite_compiler', 'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql')
 QUICK_CLAUDE = ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter')
+# The Haiku-first ladder (model_policy, Mike 2026-10-24). The Claude stage runs on the Haiku rung: the spec writer and the Haiku routers
+# before any SQL writer. Only when every one of them has failed for the question does escalate() run the tiers that spent a Haiku attempt
+# again on the Sonnet rung, in cascade order. A Sonnet call therefore never precedes another tier's Haiku attempt, and a tier that spent no
+# Claude call (declined before asking, skipped, held) is not run again.
+ESCALATABLE = ('spec_path', 'hosted_typed_interpreter', 'metric_router', 'operator_router', 'hosted_verified_sql', 'semantic_analyst',
+               'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')
 
 
 def claude_available():
@@ -132,7 +158,7 @@ LOCAL_MODEL_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bot
 # cohort_family_early/late are not listed: they usually run no model, so they take LOCAL_MODEL_LOCK only around the bottled slot fill itself (bottled_cohort_hook)
 from .foreground_priority import LOCAL_MODEL_LOCK  # a priority lock: a foreground local tier is served before a queued background one
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
-TYPED_WITH_POPULATION = {'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
+TYPED_WITH_POPULATION = {'spec_path', 'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
@@ -162,6 +188,7 @@ def evidence_of(contract):
 
 class Cascade:
     foreground_wait = 0.0  # seconds a background continuation waited for foreground questions (foreground_priority)
+    claude_models, escalated = None, None  # per-question ladder state (set in __init__; class defaults keep bare instances usable)
     started, deferred, background, budget = None, (), None, None  # per-question state is set in __init__ / run (class defaults keep bare instances usable)
     def __init__(self, stack, catalog, question, *, population=None, ledger=None, hosted_model=None, memory_identity=None):
         self.stack, self.catalog, self.question, self.population = stack, catalog, question, population
@@ -171,6 +198,8 @@ class Cascade:
         self.log, self.usd, self.calls, self.cost_known = [], 0.0, 0, True
         self.held_decline = None
         self.provider_error = None
+        self.claude_models = {}  # tier -> models of its Claude requests on the Haiku rung (the escalation rung runs only tiers listed here)
+        self.escalated = []  # [{'tier', 'from', 'outcome'}] tiers re-run on the Sonnet rung
         self.claude_down = None  # outage kind once a Claude tier failed on the provider: Claude tiers are skipped after that
         self.candidates = []  # executed proposals a check rejected: the System One fallback chooses among them on an outage
         self.routing = None
@@ -263,13 +292,13 @@ class Cascade:
         order = list(order)
         costly = [t for t in order if t in COSTLY]
         if not costly: return tuple(order)
-        anchors = [i for i, t in enumerate(order) if t not in COSTLY and (t == 'local_compiler' or stage_of(t) <= 1)]
+        anchors = [i for i, t in enumerate(order) if t not in COSTLY and (t == 'local_compiler' or cheap(t))]
         if anchors:
             after = max(anchors)
             early = [t for i, t in enumerate(order) if t in COSTLY and i < after]  # a route asked for a local model first: it waits
             if early:
                 order = [t for t in order if t not in early]
-                at = max(i for i, t in enumerate(order) if t == 'local_compiler' or (t not in COSTLY and stage_of(t) <= 1)) + 1
+                at = max(i for i, t in enumerate(order) if t == 'local_compiler' or (t not in COSTLY and cheap(t))) + 1
                 order[at:at] = early
         learned = self.learned_routing or {}
         predicted, movable = learned.get('predicted') or {}, set(learned.get('movable') or ())  # base rates alone never reorder the cascade
@@ -279,7 +308,19 @@ class Cascade:
         for slots in by_stage.values():
             members = sorted((order[i] for i in slots), key=lambda t: (-predicted.get(t, 0.0), order.index(t)))
             for i, t in zip(slots, members): order[i] = t
-        return tuple(self.qwen_after_quick_claude(order))
+        return tuple(self.analyst_first(self.qwen_after_quick_claude(order)))
+
+    def analyst_first(self, order):
+        """A permutation (AGERE_ANALYST_FIRST=on): the semantic analyst (one Claude tool loop over the documented semantic layer,
+        3-13 s) leads the Claude stage, so a population question reaches it inside the answer budget; it ran last and was
+        almost never reached (2026-10-23). Its answers stay free-form and need System One confirmation."""
+        order = list(order)
+        if os.environ.get('AGERE_ANALYST_FIRST', 'off') != 'on' or 'semantic_analyst' not in order or not claude_available(): return order
+        claude = [i for i, t in enumerate(order) if STAGES[stage_of(t)][0] == 'claude']
+        if not claude: return order
+        order.remove('semantic_analyst')
+        at = min(i for i, t in enumerate(order) if STAGES[stage_of(t)][0] == 'claude')
+        return order[:at] + ['semantic_analyst'] + order[at:]
 
     def qwen_after_quick_claude(self, order):
         """A permutation: with Claude available, the local Qwen planners follow the quick Claude planners (QUICK_CLAUDE)."""
@@ -367,7 +408,13 @@ class Cascade:
         if self.claude_down and name in CLAUDE_TIERS:  # one outage per question: no repeated failing Claude calls
             self.note(name, 'skipped', f'Claude unavailable ({self.claude_down}) earlier in this question', started); return None
         try:
-            found = self.call_tier(name, limit)
+            with model_policy.tracking() as requested:
+                try:
+                    found = self.call_tier(name, limit)
+                finally:
+                    if not model_policy.escalating() and requested:
+                        if self.claude_models is None: self.claude_models = {}
+                        self.claude_models.setdefault(name, []).extend(requested)
         except QuestionNotUnderstood as exc:
             self.note(name, 'declined', str(exc), started)
             cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
@@ -427,7 +474,7 @@ class Cascade:
 
     def run(self):
         from .foreground_priority import foreground
-        with foreground():  # the background worker starts no tier while this question is in flight
+        with foreground(), model_policy.question_path():  # the background worker starts no tier while this question is in flight
             return self._run()
 
     def _run(self):
@@ -447,6 +494,8 @@ class Cascade:
                 found = self.attempt(name, self.tier_seconds(name, budget))
                 if found is None: continue
                 return self.accept(order, name, found)
+            found = self.escalate(order, budget)  # every Haiku attempt failed: the Sonnet rung, tier by tier
+            if found is not None: return found
             if budget.best() and (budget.expired() or self.deferred):
                 contract, interpretation = budget.best()  # time ran out: the best executed candidate, marked partial
                 self.queue_background()
@@ -478,6 +527,36 @@ class Cascade:
             self.flush_timings()
             self.close()
 
+    def escalatable(self, name):
+        """Did this tier spend a Haiku attempt that failed (declined, rejected, errored) and is Claude still reachable?"""
+        if name not in ESCALATABLE or not (self.claude_models or {}).get(name) or self.claude_down: return False
+        last = next((e for e in reversed(self.log) if e['proposer'] == name and e.get('rung') != 'escalation'), None)
+        return last is not None and last['outcome'] in ('no proposal', 'declined', 'rejected', 'error') and self.runnable(name)
+
+    def escalate(self, order, budget):
+        """The ladder's second rung. Runs only after the whole cascade (every Haiku attempt of every tier) found nothing: each tier that spent a
+        Haiku attempt is run again on Sonnet (model_policy.escalation), in cascade order, inside the answer budget. -> accept() result or None."""
+        if not model_policy.escalation_enabled() or self.claude_down: return None
+        for name in order:
+            if not self.escalatable(name): continue
+            if budget.expired():
+                self.note(name, 'skipped', 'escalation to Sonnet skipped: answer budget used up', time.perf_counter()); break
+            est = self.expected(name)
+            if not budget.allows(est):
+                self.note(name, 'skipped', f'escalation to Sonnet skipped: {budget.remaining():.0f}s left (expected ~{est:g}s)', time.perf_counter()); continue
+            with model_policy.escalation():
+                found = self.attempt(name, self.tier_seconds(name, budget))
+            if self.escalated is None: self.escalated = []
+            self.escalated.append({'tier': name, 'from': sorted(set(self.claude_models.get(name) or ())),
+                                   'outcome': 'accepted' if found is not None else self.log[-1]['outcome'] if self.log else None})
+            if found is not None: return self.accept(order, name, found)
+        return None
+
+    def ladder_receipt(self):
+        """Which models each tier's Haiku-rung requests used, and which tiers were re-run on Sonnet (model_policy ladder)."""
+        return {'ladder': model_policy.ladder('planner'), 'first_rung_models': {k: sorted(set(v)) for k, v in (self.claude_models or {}).items()},
+                'escalated': list(self.escalated or [])}
+
     def continue_run(self, tiers, seconds):
         """Background continuation: ask the deferred tiers in order, each time-limited, within its own budget (no expected-cost gate:
         nobody waits). -> the accepted (contract, interpretation) or None. Never queues another continuation."""
@@ -485,14 +564,14 @@ class Cascade:
         from . import foreground_priority as fp
         budget = self.budget = start_budget(seconds)
         self.foreground_wait = 0.0
-        with fp.background_run():  # local-model lock acquisitions in here yield to any foreground waiter
+        with fp.background_run(), model_policy.question_path():  # local-model lock acquisitions in here yield to any foreground waiter
             for name in tiers:
                 if budget.expired(): break
                 if not self.runnable(name): continue
                 self.foreground_wait += fp.wait_for_foreground()  # foreground first: no new tier starts while a question is waited on
                 found = self.attempt(name, self.tier_seconds(name, budget))
                 if found is not None: return self.accept(getattr(self, 'order_used', None) or tuple(tiers), name, found)
-        return None
+            return self.escalate(getattr(self, 'order_used', None) or tuple(tiers), budget)
 
     def queue_background(self):
         """Hand the deferred tiers to the server's one background worker (AGERE_BACKGROUND_CONTINUE=off disables); records what happened."""
@@ -516,11 +595,12 @@ class Cascade:
 
     def note(self, name, outcome, detail, started):
         self.log.append({'proposer': name, 'outcome': outcome, 'detail': detail,
-                         'seconds': round(time.perf_counter() - started, 3)})
+                         'seconds': round(time.perf_counter() - started, 3), **({'rung': 'escalation'} if model_policy.escalating() else {})})
 
     def reject(self, name, reasons):
         if cancelled(): return None  # an abandoned tier records nothing
-        self.log.append({'proposer': name, 'outcome': 'rejected', 'detail': '; '.join(reasons), 'seconds': None})
+        self.log.append({'proposer': name, 'outcome': 'rejected', 'detail': '; '.join(reasons), 'seconds': None,
+                         **({'rung': 'escalation'} if model_policy.escalating() else {})})
         return None
 
     def keep(self, name, pair, reasons=None):
@@ -590,9 +670,10 @@ class Cascade:
             interpretation = {**interpretation, 'feedback_identity': feedback_identity(self.stack.path, self.question),
                               'feedback_consumed': name in FEEDBACK_READERS}
         return {**interpretation, 'interpreter': interpretation.get('interpreter') or name,
+                **({'free_form': True} if name in FREE_FORM else {}),
                 'proposer': {'name': name, 'cost': cost, 'calibration': calibration, 'kind': kind,
                              'check': CHECK_VERSION, 'cascade': VERSION},
-                'proposers': self.log, 'cascade_usage': self.usage(), 'system_one_routing': self.routing, 'answer_timing': self.timing(),
+                'proposers': self.log, 'cascade_usage': self.usage(), 'model_ladder': self.ladder_receipt(), 'system_one_routing': self.routing, 'answer_timing': self.timing(),
                 'stage_diagnostics': stage_diagnostics.attribute(self.log, answered_by=name),
                 'cascade_routing': {'system_one': self.routing, 'learned': self.learned_routing,
                                     'tier_router': getattr(self, 'tier_routing', None),
@@ -609,8 +690,22 @@ class Cascade:
 
     def tier_paraphrase_reuse(self):
         from .shared_planner import reuse_paraphrase
-        return self.typed('paraphrase_reuse', reuse_paraphrase(self.stack, self.catalog, self.question, self.population,
-                                                                self.memory_identity))
+        found = reuse_paraphrase(self.stack, self.catalog, self.question, self.population, self.memory_identity)
+        if found and found[1].get('review') in ('spec_verified', 'spec_partly_verified') and getattr(self.stack, 'allow_live', False):
+            # a reworded question reusing a verified spec: System One confirms the slot mapping against THIS wording, part by part
+            from . import spec_path
+            check = spec_path.confirm_reuse(self.stack, self.catalog, self.question, found[0], ledger=self.ledger)
+            if check is not None:
+                self.spend(check['calls'], check['cost_usd'])
+                if check['failed']:
+                    return self.reject('paraphrase_reuse', ['spec slot mapping: System One refused ' + '; '.join(f'{p["id"]} ({p["label"]})' for p in check['parts'] if p['status'] == 'fail')])
+                found = (found[0], {**found[1], 'spec_verification': spec_path.spec_verify.summary(check), 'slot_mapping_confirmed': check['confirmed']})
+        return self.typed('paraphrase_reuse', found)
+
+    def tier_spec_path(self):
+        from . import spec_path
+        if not spec_path.enabled(self.stack): return None
+        return spec_path.propose(self)
 
     def tier_terminology_mapping(self):
         from .terminology import tier
@@ -861,7 +956,10 @@ def execute(stack, question, graph, receipt, *, started):
     answer.setdefault('missing', [])
     answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []),
         f"Proposed by {receipt['interpretation']['interpreter']} ({receipt['interpretation']['proposer']['calibration']}); "
-        'accepted after the literal-question and output checks. Not clinical qualification.']))
+        'accepted after the literal-question and output checks. Not clinical qualification.',
+        *(['Free-form answer: no verified question spec stands behind it; it was shipped because System One confirmed it answers the question.']
+          if receipt['interpretation'].get('free_form') else [])]))
+    if receipt['interpretation'].get('free_form'): answer['free_form'] = True
     if answer.get('headline') is None:
         value = answer.get('count', answer.get('value'))
         answer['headline'] = str(value) if value is not None else f"{len(answer.get('table') or [])} rows"

@@ -5,12 +5,12 @@ plan that stack.run_graph executes; the receipt carries 'route', 'new_paid_api_c
 economical_planner.economics prices. Nothing here answers on its own: the cascade (proposers.Cascade.graph) literal-checks
 the plan, executes it read-only and checks the requested output, so a wrong proposal is rejected and the next proposer
 tries (heal, don't block).
-  * semantic_analyst_tier: the single Haiku semantic analyst (tool loop over the semantic layer) with the Opus reconcile
+  * semantic_analyst_tier: the single Haiku semantic analyst (tool loop over the semantic layer) with the Haiku reconcile (Sonnet on the escalation rung)
     turn when its stated answer disagrees with what its own SQL returned, or with a second candidate; paid.
   * scoped_review_tier: the exact documentary source-review command grammar (scoped_review_compiler); free.
-  * stack_planner_tier: the older registry plan proposer (stack_planner.propose, one Opus call), converted to a graph.
+  * stack_planner_tier: the older registry plan proposer (stack_planner.propose, one Haiku call; Sonnet on the escalation rung), converted to a graph.
   * legacy_ladder_tier: economical_planner.legacy_plan end to end with the legacy together semantics (fast path deferred
-    to the analyst, analyst vs fast comparison, Opus reconcile on disagreement); last resort.
+    to the analyst, analyst vs fast comparison, Haiku reconcile on disagreement); last resort.
 Helpers: learned_router_hint / router_order (MiniLM logistic engine lean) and vbc_context (VBC knowledge snippets for
 the hosted interpreter's planning context).
 """
@@ -144,13 +144,17 @@ def _analyst(stack, question, ledger, against=None):
         return {'graph': _decline_graph(question, answer.get('missing'), _as_of(stack)), 'receipt': receipt, 'picked': picked}
     if not (answer and answer.get('status') in ('answered', 'partial') and sql):
         return {'graph': None, 'receipt': receipt, 'picked': None}
-    graph = _sql_graph(question, sql, _returns(answer.get('answer_type'), question), _as_of(stack),
-                       'Semantic analyst query (reconciled by Opus)' if rec else 'Semantic analyst query')
+    returns = _returns(answer.get('answer_type'), question)
+    shown = (rows or {}).get('rows') if isinstance(rows, dict) else None
+    if returns in ('count', 'value') and shown is not None and (len(shown) != 1 or len(shown[0]) != 1):
+        returns = 'table'  # the answering query returns several outputs (a share with its numerator and denominator): a table
+    graph = _sql_graph(question, sql, returns, _as_of(stack),
+                       'Semantic analyst query (reconciled by Claude)' if rec else 'Semantic analyst query')
     return {'graph': graph, 'receipt': receipt, 'picked': picked}
 
 
 def semantic_analyst_tier(stack, question, ledger, against=None):
-    """The legacy single semantic analyst (Haiku tool loop) with the Opus reconcile turn. -> (graph, receipt) or None.
+    """The legacy single semantic analyst (Haiku tool loop) with the reconcile turn (Haiku; Sonnet on the escalation rung). -> (graph, receipt) or None.
     against: an optional second candidate row ({'answer', 'tool_calls'}); a disagreement goes to the reconciler."""
     out = _analyst(stack, question, ledger, against)
     if not out or out['graph'] is None: return None
@@ -200,7 +204,7 @@ def plan_to_graph(plan, as_of):
 
 
 def stack_planner_tier(stack, question, ledger):
-    """The older registry plan proposer (stack_planner.propose, one Opus call). -> (graph, receipt) or None."""
+    """The older registry plan proposer (stack_planner.propose, one Haiku call; Sonnet on the escalation rung). -> (graph, receipt) or None."""
     if not _live(stack, ledger): return None
     from .stack_planner import propose
     import json
@@ -209,8 +213,8 @@ def stack_planner_tier(stack, question, ledger):
     values = json.loads((path/'cohort-values.json').read_text()) if (path/'cohort-values.json').exists() else None
     plan, receipt = propose(question, stack.receipts, ledger, snapshot=stack.retriever.meta['snapshot'], observed_values=values)
     graph = plan_to_graph(plan, _as_of(stack))
-    from ..gateway import PersistentGateway
-    return graph, {'route': 'stack_planner', 'model': PersistentGateway.MODELS['claude'],
+    from .. import model_policy
+    return graph, {'route': 'stack_planner', 'model': model_policy.model_for('planner'),
                    'new_paid_api_calls': 0 if receipt.get('cache_hit') else 1, 'frontier_called': False,
                    'stack_plan': {k: plan[k] for k in ('interpretation', 'coverage', 'unmet_requirements')},
                    'steps': [{'stage': 'stack_planner', 'receipt': receipt}], 'version': VERSION,
@@ -231,7 +235,7 @@ def _merge(receipt, extra_steps, extra_calls, **detail):
 def legacy_ladder_tier(stack, question, ledger, frontier):
     """economical_planner.legacy_plan end to end (the pre-2026-10-19 ladder order, first plan wins) under the legacy
     together semantics: with a semantic layer and live models the fast path defers its paid rungs to the analyst; the
-    analyst's answer is compared with the fast plan's executed answer and Opus reconciles a disagreement; a deferred fast
+    analyst's answer is compared with the fast plan's executed answer and Haiku reconciles a disagreement; a deferred fast
     path whose analyst produced nothing re-runs the full ladder. -> (graph, receipt) or None."""
     from .economical_planner import legacy_plan, defer_to_analyst
     from .question_input import QuestionNotUnderstood

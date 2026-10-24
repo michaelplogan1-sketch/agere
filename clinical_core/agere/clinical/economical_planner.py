@@ -9,6 +9,7 @@ import copy,hashlib,json,math,os,re,sqlite3,time
 import numpy as np
 from ...contracts import digest
 from ..gateway import PersistentGateway
+from .. import model_policy
 from .context_student import send
 from .cohorts import empty
 from .analysis_graph import validate
@@ -570,16 +571,16 @@ class Ladder:
     def typed_decider(self):
         return _typed_decider(self.stack,self.question,self.ledger,self.available,validate,self.meta,self.start)
     def hosted_sql(self):
-        # Hosted small-model SQL over the cached schema: Haiku writes, Sonnet confirms, Opus/Perplexity judge
-        # disagreements; independent candidates and oracles decide whether agreement counts (verification_v2).
+        # Hosted small-model SQL over the cached schema (Haiku-first ladder, model_policy): Haiku writes, a second Haiku sample confirms, Haiku/Perplexity judge
+        # disagreements; the whole tier moves to Sonnet only on the cascade's escalation rung; independent candidates and oracles decide whether agreement counts (verification_v2).
         if self.profile is None or not self.stack.allow_live or os.environ.get('AGERE_HOSTED_SQL','on')=='off':return None
         from . import metric_router
         try:
             from .nl2sql import verified_answer, HostedModel, Decider
             from ..gateway import BudgetLedger
-            hosted=HostedModel(self.ledger,self.stack.receipts,model=os.environ.get('AGERE_PRIMARY_MODEL','claude-haiku-5-5'))
-            second=HostedModel(BudgetLedger(self.ledger.path),self.stack.receipts,model=os.environ.get('AGERE_SECOND_MODEL','claude-sonnet-5-5'))
-            judge=HostedModel(self.ledger,self.stack.receipts,model=os.environ.get('AGERE_JUDGE_MODEL','claude-opus-5-5'))
+            hosted=HostedModel(self.ledger,self.stack.receipts,model=os.environ.get('AGERE_PRIMARY_MODEL',model_policy.first('writer')))
+            second=HostedModel(BudgetLedger(self.ledger.path),self.stack.receipts,model=os.environ.get('AGERE_SECOND_MODEL',model_policy.first('writer')))
+            judge=HostedModel(self.ledger,self.stack.receipts,model=os.environ.get('AGERE_JUDGE_MODEL',model_policy.first('judge')))
             decider=Decider(self.ledger,self.stack.receipts) if os.environ.get('AGERE_DECIDER_JUDGE','on')!='off' else None
             independent=oracle=None
             if os.environ.get('AGERE_VERIFICATION_V2','on')!='off':

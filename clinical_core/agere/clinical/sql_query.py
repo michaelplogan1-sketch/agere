@@ -78,6 +78,8 @@ def _authorizer(action, *_):
 def execute(path, params, patient_ids=None, target=None, time_limit=None):
     """target: an existing semantic.sqlite3 to read as-is (never rebuilt; used to replay against a read-only build)."""
     p = validate(params)
+    from .answer_budget import tier_remaining  # a query inside a cascade tier never outlives the tier's time share (a runaway candidate SQL held a question for 19 minutes)
+    limit = tier_remaining(time_limit or TIME_LIMIT_SECONDS)
     from . import decision_context  # the question's decision context: living patients and latest labs in the SQL that runs
     target = target or semantic_layer.ensure(path)
     run_sql, dc_receipt = decision_context.enforce_sql(p['query'], p['returns'], _relations(target) if decision_context.current() else None)
@@ -87,7 +89,7 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
     engine_receipt = None
     if duckdb_engine.engine() == 'duckdb':
         started = time.perf_counter()
-        columns, rows, engine_receipt = duckdb_engine.serve(target, p['query'], patient_ids, time_limit=time_limit or TIME_LIMIT_SECONDS,
+        columns, rows, engine_receipt = duckdb_engine.serve(target, p['query'], patient_ids, time_limit=limit,
                                                             max_rows=MAX_ROWS)
         if columns is not None: return _result(p, columns, rows, started, engine_receipt, shown, dc_receipt)
     from . import plan_optimizer  # repeated sub-selects run once (fused CTE); an unfusable form is re-run as planned
@@ -100,7 +102,7 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
         query, unfused = add(query), add(unfused)
         args['population'] = json.dumps(sorted(patient_ids))
     db = register(sqlite3.connect(f'file:{target}?mode=ro', uri=True))
-    deadline = time.perf_counter() + (time_limit or TIME_LIMIT_SECONDS)
+    deadline = time.perf_counter() + limit
     db.set_progress_handler(lambda: 1 if time.perf_counter() > deadline else 0, 10000)
     db.set_authorizer(_authorizer)
     started = time.perf_counter()

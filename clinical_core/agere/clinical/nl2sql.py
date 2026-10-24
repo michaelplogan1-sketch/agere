@@ -316,9 +316,11 @@ class LocalModel:
 class HostedModel:
     """Hosted Claude rung (default Claude Haiku 5.5): one call, low effort, no exploration, provider ledger for accounting
     and dedupe. Prompt cache: the system prompt and the question-independent catalog prefix are stable cached blocks
-    (1h TTL); question-specific content follows uncached. model='tiered' drafts on the planner model (Sonnet 5.5), reviews
-    on AGERE_SHARED_JUDGE_MODEL, and moves planning and review to the escalation model (Opus 5.5) only after a review
-    fails. Provider outages retry once, then fall back to the next family model (gateway.call_with_fallback)."""
+    (1h TTL); question-specific content follows uncached. model='tiered' drafts on the planner model (Haiku 5.5), reviews
+    on AGERE_SHARED_JUDGE_MODEL (Haiku), and moves planning and review to the escalation model (Sonnet 5.5) after a review
+    fails; inside a question that move happens only on the cascade's escalation rung (model_policy.escalation), so the
+    re-plan after a failed Haiku review is a Haiku repair first. Every request goes through model_policy.claude_model, so the
+    receipt names the model that was actually called. A provider outage retries once (gateway.call_with_fallback)."""
     single = True
     hosted = True
 
@@ -353,8 +355,9 @@ class HostedModel:
     def __call__(self, system, user, max_tokens=700, temperature=0.0, seed=None):
         from .context_student import send
         from ..gateway import call_with_fallback
+        from ..model_policy import claude_model
         role = self.role(system, user)
-        model = self.choose(role, user)
+        model = claude_model(self.choose(role, user))  # the ladder's current rung: what is called is what the receipt names
         body = {'max_tokens': max_tokens, 'system': hosted_system(system), 'output_config': {'effort': 'low'},
                 'messages': [{'role': 'user', 'content': hosted_user_blocks(user)}]}
         start = time.perf_counter()
@@ -583,6 +586,12 @@ def harvested_examples(question, k=4):
     return [(q, sql) for score, q, sql in scored[:k] if score >= 0.2]
 
 
+# Haiku-first ladder (model_policy): the second analyst and the judge are the same rung as the primary, so the second analyst's request
+# must differ from the primary's (an identical body is one ledger key: the repeat would be a cache hit, not a second opinion).
+SECOND_ANALYST_NOTE = ('\n\nYou are the second of two analysts who write this query independently. Derive the query from the schema and the question '
+                       'yourself; prefer the most direct formulation of what the question literally asks.')
+
+
 def verified_answer(path, question, as_of, primary, second, judge, decider=None, extra_streams=(), independent=None, oracle=None):
     """Run the ladder; a 'missing data' claim is checked against the full data dictionary first: when other
     received streams match what was called missing, the question is re-asked with those streams in view.
@@ -680,6 +689,7 @@ def _verified_answer(path, question, as_of, primary, second, judge, decider=None
         return {'query': sql, 'returns': returns}, result, warn
 
     def attempt(model, label, extra=''):
+        if label == 'second' and not extra: extra = SECOND_ANALYST_NOTE  # the ladder's second analyst is another Haiku sample, not a repeat of the first
         text, stats = model(system, user + extra)
         if re.match(r'\s*(?:--\s*)?MISSING:', text):
             receipt['attempts'].append({'role': label, 'missing': text.strip()[:300], **stats})

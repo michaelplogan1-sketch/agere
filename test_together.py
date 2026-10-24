@@ -192,10 +192,10 @@ class TogetherTests(unittest.TestCase):
         self.assertEqual(a['count'], 1)
         self.assertEqual(a['confidence'], 'unverified')
         self.assertEqual(result['together']['winner'], 'analyst')
-        self.assertEqual(result['together']['reconcile']['model'], 'claude-opus-5-5')
+        self.assertEqual(result['together']['reconcile']['model'], 'claude-haiku-5-5')
         rec = provider.calls('reconcile')
         self.assertEqual(len(rec), 1)
-        self.assertEqual(rec[0]['model'], 'claude-sonnet-5-5')  # model_policy: no Opus on the question path
+        self.assertEqual(rec[0]['model'], 'claude-haiku-5-5')  # model_policy ladder: Haiku first, Sonnet only if the Haiku reconcile errors
         user = json.loads(rec[0]['messages'][0]['content'])
         self.assertEqual({user['candidate_1']['answer']['count'], user['candidate_2']['answer']['count']}, {1, 5})
         fast_candidate = next(user[k] for k in ('candidate_1', 'candidate_2') if user[k]['answer']['count'] == 5)
@@ -211,6 +211,23 @@ class TogetherTests(unittest.TestCase):
         self.assertEqual(result['answer']['count'], 5)
         self.assertEqual(result['answer']['status'], 'answered')
         self.assertEqual(result['together']['winner'], 'fast')
+
+    def test_reconcile_goes_to_sonnet_only_when_the_haiku_reconcile_gave_no_verdict(self):
+        stack = FakeStack(self.temp.name, fast_result(answer(count=5)))
+
+        def reconciler(body):
+            if body['model'] == 'claude-haiku-5-5': return {'reason': 'no choice field in this reply'}
+            return choose(1)(body)
+        provider = FakeProvider(lambda body: answer(count=1), reconciler)
+        result = self.run_together(stack, provider)
+        self.assertEqual([b['model'] for b in provider.calls('reconcile')], ['claude-haiku-5-5', 'claude-sonnet-5-5'])
+        self.assertEqual(result['answer']['count'], 1)
+
+    def test_a_reconcile_verdict_from_haiku_never_calls_sonnet(self):
+        stack = FakeStack(self.temp.name, fast_result(answer(count=5)))
+        provider = FakeProvider(lambda body: answer(count=1), choose(1))
+        self.run_together(stack, provider)
+        self.assertEqual([b['model'] for b in provider.calls('reconcile')], ['claude-haiku-5-5'])
 
     def test_reconcile_abstain_is_partial_low_with_both_readings(self):
         stack = FakeStack(self.temp.name, fast_result(answer(count=5)))
@@ -334,7 +351,7 @@ class TogetherTests(unittest.TestCase):
         self.assertEqual(provider.bodies, [])
 
     def test_model_defaults_and_overrides(self):
-        self.assertEqual((together.semantic_model(), together.reconcile_model()), ('claude-haiku-5-5', 'claude-opus-5-5'))
+        self.assertEqual((together.semantic_model(), together.reconcile_model()), ('claude-haiku-5-5', 'claude-haiku-5-5'))
         self.assertEqual((together.budget_s(), together.reconcile_budget_s()), (20.0, 20.0))
         with patch.dict(os.environ, {'AGERE_SEMANTIC_MODEL': 'claude-sonnet-5-5', 'AGERE_TOGETHER_BUDGET_S': 'nan'}):
             self.assertEqual(together.semantic_model(), 'claude-sonnet-5-5')
