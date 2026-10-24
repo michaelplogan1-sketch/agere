@@ -177,6 +177,62 @@ class ScorerTests(unittest.TestCase):
         self.assertTrue(run.score(self.q(t='absent', key={'answer': None, 'reason': 'x'}), r)[0])
         self.assertFalse(run.score(self.q(t='absent', key={'answer': None, 'reason': 'x'}), self.resp(count=3))[0])
 
+    def test_absent_needs_a_stated_absence(self):
+        k = self.q(t='absent', key={'answer': None, 'reason': 'x'})
+        self.assertTrue(run.score(k, {'status': 'not_available', 'answer': {'status': 'not_available'}})[0])
+        self.assertTrue(run.score(k, {'status': 'not_available'})[0])
+        for bad in ({'status': 'error', 'error': 'timed out'}, {'status': 'not_understood'},
+                    {'answer': {'status': 'not_understood'}}, {'status': 'internal_error'}, {}):
+            self.assertFalse(run.score(k, bad)[0], bad)
+
+    def test_trace_and_report_card(self):
+        from tools.dev_set import report_card
+        resp = {'answer': {'status': 'answered'}, 'cost_receipt': {'usd': 0.02, 'claude_calls_by_model': {'haiku': 2}},
+                'planner_receipt': {'interpretation': {'answer_timing': {'total_seconds': 3.0}, 'proposers': [
+                    {'proposer': 'exact_local_plan', 'outcome': 'no proposal', 'seconds': 0.1},
+                    {'proposer': 'haiku_plan', 'outcome': 'rejected', 'seconds': None},
+                    {'proposer': 'sonnet_plan', 'outcome': 'accepted', 'seconds': 2.5, 'rung': 'escalation'}]}}}
+        tr = run.trace_of(resp)
+        self.assertEqual(tr['answer_timing']['total_seconds'], 3.0)
+        self.assertEqual([t['tier'] for t in tr['tiers']], ['exact_local_plan', 'haiku_plan', 'sonnet_plan'])
+        self.assertEqual(tr['claude_calls_by_model'], {'haiku': 2})
+        self.assertEqual(run.trace_of({'status': 'error'}), {'answer_timing': None, 'tiers': [], 'cost_receipt': None, 'claude_calls_by_model': None})
+        failed = run.trace_of({'stage_diagnostics': {'events': [{'proposer': 'x', 'outcome': 'declined'}]}})
+        self.assertEqual(failed['tiers'][0]['tier'], 'x')
+        rows = [{'answered': True, 'correct': True, 'seconds': 3.0, 'usd': 0.02, 'route': 'sonnet_plan', 'trace': tr},
+                {'answered': True, 'correct': False, 'seconds': 1.0, 'usd': 0.0, 'route': 'sonnet_plan', 'trace': tr},
+                {'answered': True, 'correct': True, 'seconds': 0.5, 'usd': None, 'route': 'old_route'},  # older run: no trace
+                {'answered': False, 'correct': None, 'seconds': 9.0, 'usd': None, 'route': 'none'}]
+        c = report_card.card(rows)
+        self.assertEqual((c['sonnet_plan']['reached'], c['sonnet_plan']['proposed'], c['sonnet_plan']['accepted'], c['sonnet_plan']['correct']), (2, 2, 2, 1))
+        self.assertEqual(c['haiku_plan']['proposed'], 2)
+        self.assertEqual(c['haiku_plan']['accepted'], 0)
+        self.assertEqual(c['old_route']['accepted'], 1)
+        text = report_card.render(rows)
+        self.assertIn('50.0%', text)
+        self.assertIn('p50', text)
+        self.assertIn('rows with trace: 2/4', text)
+        self.assertIn('unknown', report_card.render([{'answered': False, 'seconds': 1.0}]))
+
+    def test_baseline_precision_and_rescore_skips(self):
+        import io, tempfile, contextlib, pathlib
+        from tools.dev_set import run_baseline
+        f = pathlib.Path(tempfile.mkdtemp()) / 'saved.json'
+        f.write_text(json.dumps({'rows': [{'id': 'x1', 'bucket': 'b'}, {'id': 'x2', 'bucket': 'b'}]}))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            run_baseline.main(['--rescore', str(f)])
+        self.assertIn('SKIPPED (no saved raw response) 2', buf.getvalue())
+
+    def test_oracle_summary_separates_count_only(self):
+        from tools import dev_oracle
+        rows = [{'status': 'answered', 'match': True}, {'status': 'answered', 'match': True, 'count_only': True},
+                {'status': 'answered', 'match': False}, {'status': 'refused'}]
+        line = dev_oracle.summary_line(rows)
+        self.assertIn('exact match 1', line)
+        self.assertIn('count-only 1', line)
+        self.assertIn('answered 3/4', line)
+
     def test_rubric(self):
         rub = {'required_facts': [{'id': 'a', 'kind': 'number', 'value': 339, 'tolerance': {'abs': 0}},
                                   {'id': 'b', 'kind': 'terms', 'patterns': [r'\bfell\b'], 'mode': 'any'}], 'forbidden': []}
