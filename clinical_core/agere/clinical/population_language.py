@@ -82,7 +82,16 @@ class PopulationForms:
         """Split "<population> <predicate>" at the verb that starts the predicate -> (population where, predicate, population text) or None."""
         from .request_language import PlanError
         # a verb starts the predicate ("... have an A1c above 9"); failing that, the preposition "with" does ("diabetics with an A1c under 8")
-        starts = [v.start() for v in PREDICATE_VERBS.finditer(body)] + [v.start() for v in re.finditer(r'\bwith\b', body, re.I)]
+        verbs = list(PREDICATE_VERBS.finditer(body))
+        starts = []
+        for verb in verbs:
+            # ALSO belongs with the predicate, not the population noun phrase.
+            # A later WITH split would otherwise move the cohort condition into
+            # the numerator and silently widen its denominator.
+            adverb = re.search(r'\balso\s+$', body[:verb.start()], re.I)
+            starts.append(adverb.start() if adverb else verb.start())
+        if not verbs:
+            starts = [v.start() for v in re.finditer(r'\bwith\b', body, re.I)]
         if getattr(self, 'marker_lab', None):
             starts += [v.start() for v in re.finditer(r'\b(?:over|under|above|below|less than|greater than|at least|at most)\s+\d', body, re.I)]
         for at in starts:

@@ -19,6 +19,7 @@ _UNINDEXED_TOKENS = {'id', 'ids', 'mrn', 'ssn', 'npi', 'tin', 'email', 'phone', 
                      'name', 'first', 'last', 'dob', 'birth', 'date', 'time', 'at', 'cents', 'payload',
                      'text', 'sentence', 'excerpt', 'comment', 'detail', 'value'}
 _VALUE_CACHE = {}
+_PARTIAL_VALUE_CACHE = {}
 
 
 def tokens(text):
@@ -53,6 +54,14 @@ def relation_values(catalog, *, seconds=1.0, total_seconds=30.0):
             raise PlanError('Warehouse identity changed before value discovery')
         if key in _VALUE_CACHE:
             return _VALUE_CACHE[key]
+        # Preserve completed column scans even if another column timed out. The
+        # old all-or-nothing cache repeated a whole-warehouse scan on every
+        # question whenever any one column was slow, consuming the spec budget.
+        # Incomplete columns are still retried and never represented as absent.
+        prior = _PARTIAL_VALUE_CACHE.get(key, {})
+        complete = set(prior.get('complete', ()))
+        out['fields'].update(prior.get('fields', {}))
+        out['high_cardinality'].extend(prior.get('high_cardinality', ()))
         started = time.monotonic()
         for table in sorted(catalog.tables):
             declared = {r[1]: (r[2] or '').upper() for r in db.execute('PRAGMA table_info(' + identifier(table) + ')')}
@@ -60,6 +69,8 @@ def relation_values(catalog, *, seconds=1.0, total_seconds=30.0):
                 if column not in declared or not _indexable(column, declared[column]):
                     continue  # virtual (computed) or non-categorical field
                 name = table + '.' + column
+                if name in complete:
+                    continue
                 if time.monotonic() - started > total_seconds:
                     out['incomplete'].append(name)
                     continue
@@ -74,6 +85,7 @@ def relation_values(catalog, *, seconds=1.0, total_seconds=30.0):
                     continue
                 finally:
                     db.set_progress_handler(None, 0)
+                complete.add(name)
                 if len(found) > VALUE_LIMIT:
                     out['high_cardinality'].append(name)
                     continue
@@ -82,7 +94,13 @@ def relation_values(catalog, *, seconds=1.0, total_seconds=30.0):
                     out['fields'][name] = kept
     finally:
         db.close()
-    if not out['incomplete']:  # a transient slow scan is retried, never frozen as the identity's scope
+    if out['incomplete']:
+        if len(_PARTIAL_VALUE_CACHE) >= 4 and key not in _PARTIAL_VALUE_CACHE:
+            _PARTIAL_VALUE_CACHE.pop(next(iter(_PARTIAL_VALUE_CACHE)))
+        _PARTIAL_VALUE_CACHE[key] = {'fields': dict(out['fields']),
+                                     'high_cardinality': list(out['high_cardinality']), 'complete': complete}
+    else:  # only a complete scan is promoted; failures are retried on the next call
+        _PARTIAL_VALUE_CACHE.pop(key, None)
         if len(_VALUE_CACHE) >= 4:
             _VALUE_CACHE.pop(next(iter(_VALUE_CACHE)))
         _VALUE_CACHE[key] = out

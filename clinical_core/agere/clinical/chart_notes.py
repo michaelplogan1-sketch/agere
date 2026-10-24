@@ -216,7 +216,8 @@ FRAME_LABELS = {'condition': 'Condition or diagnosis', 'symptom': 'Symptom or co
                 'care_process': 'Care process or service', 'social_need': 'Social need or barrier', 'function_cognition': 'Function, cognition or safety',
                 'preference_refusal': 'Preference, refusal or decision', 'plan_followup': 'Plan, follow-up or disposition'}
 NOT_DRUGS = frozenset('the a an any new it them that this these those his her their patient later earlier notes note chart still again also not never because'.split())
-MED_WORD = [re.compile(r"\b([a-z][a-z-]{3,})\s+(?:was|were|has been|had been|is|are)\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
+MED_WORD = [re.compile(r"\b(?:was|were|is|are)\s+([a-z][a-z-]{3,})\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
+            re.compile(r"\b([a-z][a-z-]{3,})\s+(?:was|were|has been|had been|is|are)\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
             re.compile(r"\b(?:stopped|started|holding|held|discontinued|restarted|taking|takes|using|list|lists|listed|show|shows|accept(?:ed)?|declined|refused)\s+(?:the\s+|on\s+)?([a-z][a-z-]{3,})\b", re.I),
             re.compile(r"\breason\s+([a-z][a-z-]{3,})\s+was\b", re.I)]
 
@@ -325,6 +326,12 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             pred['_ask_detail'] = detail  # judged here against the fields answer_patient returns; never sent as a constraint
         if ret:
             pred['return_detail'] = list(dict.fromkeys(ret))
+        if frame == 'medication_event' and 'reason' in ret and detail.get('event'):
+            # A reason belongs to the requested event, not the latest medication
+            # mention. A later continuation must not replace a documented stop.
+            # ANY matching event retains its own reason and supporting passage.
+            pred['detail'] = dict(detail)
+            pred['combine'] = 'any'
         if frame == 'procedure_test' and {'result', 'result_text'} & set(ret) and not (window and window.get('kind') == 'day'):
             pred['combine'] = 'any'  # "the impression on the report" with no date: every matching report's result, not only the latest
         if window:

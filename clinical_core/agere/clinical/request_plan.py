@@ -204,7 +204,7 @@ class Compiler:
         for quote in quotes:
             if not isinstance(quote, str) or not quote.strip() or quote not in self.question:
                 raise PlanError(f'{path}: a literal fragment of the original question is required')
-            if kind in ('population', 'measure') and re.search(
+            if kind in ('population', 'measure') and quote.strip().lower() != 'who' and re.search(
                     r'\b(with|without|where|whose|who|excluding|exclude|unless)\b', quote, re.I):
                 raise PlanError(f'{path}: bind filter wording to its own predicate, not a broad source or measure quote')
             self.bindings.append({'path': path, 'kind': kind, 'quote': quote,
@@ -266,10 +266,24 @@ class Compiler:
                 raise PlanError('Boolean operations need 2..24 explicit operands')
             if op == 'or' and not re.search(r'\bor\b|/', quote_text(expr['quote']), re.I):
                 raise PlanError('An OR requires its original disjunction')
+            # Bind only the connective's own words. Child condition/field
+            # predicates still have to account for every substantive requirement.
+            cue = r'\bboth\b|\ball at once\b' if op == 'and' else r'\beither one\b'
+            for fragment in (expr['quote'] if isinstance(expr['quote'], list) else [expr['quote']]):
+                for match in re.finditer(cue, fragment, re.I):
+                    self.bindings.append({'path': path, 'kind': 'operator', 'quote': match.group(),
+                                          'covers': True, 'disposition': 'applied'})
             return '(' + (' AND ' if op == 'and' else ' OR ').join(self.predicate(x, scope, f'{path}.args.{i}', depth+1) for i, x in enumerate(expr['args'])) + ')'
         if op == 'not':
             if set(expr) != {'op', 'arg', 'quote'} or not re.search(r"\b(?:not|no|without|exclude|excluding|except|neither|nor|never|missing|missed|living|alive|didn)\b|n't\b", quote_text(expr['quote']), re.I):
                 raise PlanError('Negation must be explicit in the original request')
+            # Boolean parents cannot cover their children's filter wording. The
+            # explicit NOT operator can, however, account for its own polarity
+            # tokens (NO and NEITHER/NOR are not optional filler words).
+            for fragment in (expr['quote'] if isinstance(expr['quote'], list) else [expr['quote']]):
+                for match in re.finditer(r"\b(?:not|no|without|exclude|excluding|except|neither|nor|never|missing)\b|n't\b", fragment, re.I):
+                    self.bindings.append({'path': path, 'kind': 'operator', 'quote': match.group(),
+                                          'covers': True, 'disposition': 'applied'})
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
         if op == 'sequence':
             return self.sequence(expr, scope, path, depth)
