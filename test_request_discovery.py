@@ -199,8 +199,12 @@ class RequestDiscovery(unittest.TestCase):
             # Production hosted interpretation requires deterministic decline
             # and hosted capability enabled on the server.
             from test_shared_planner import authored_review_fixture
+            # the patched interpreter calls the fixture model whatever model it is given, so the free-stage rewording attempt
+            # (phrasing: "Count" -> "How many") would spend the scripted replies; this fixture covers the question as typed
+            from clinical_core.agere.clinical import phrasing
             with patch.object(S,'checked_interpret',side_effect=lambda c,q,**kw:
-                    authored_review_fixture(c,q,model,population=kw.get('population'))):
+                    authored_review_fixture(c,q,model,population=kw.get('population'))), \
+                 patch.object(phrasing,'variants',return_value=[]):
                 result = S.compose(self.stack, q, population=['A','B','C'])
             self.assertEqual(result['answer']['status'], 'answered')
             self.assertEqual(result['answer']['patient_ids'], expected)

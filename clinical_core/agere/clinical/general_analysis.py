@@ -416,13 +416,25 @@ def _patient_listing_quote(question, quote):
     return False
 
 
-def uncovered(question, quotes):
+def _stem(word):
+    """A word's inflection folded away (plural, past, -ing): gaps~gap, needs~need, discharged~discharge, calling~call. Names and numbers are kept."""
+    if len(word) <= 3 or not word.isalpha():
+        return word
+    for suffix in ('ies', 'ing', 'es', 'ed', 's'):
+        if word.endswith(suffix) and len(word) - len(suffix) >= 3:
+            base = word[:-len(suffix)] + ('y' if suffix == 'ies' else '')
+            return base[:-1] if base.endswith('e') and suffix != 'ies' else base
+    return word[:-1] if word.endswith('e') else word
+
+
+def uncovered(question, quotes, *, stem=False):
     from .request_plan import without_request_scaffolding
+    fold = _stem if stem else (lambda w: w)
     covered = set()
     for q in quotes:
-        covered |= set(_words(q))
+        covered |= {fold(w) for w in _words(q)}
     return sorted({w for w in _words(without_request_scaffolding(question))
-                   if w not in _FUNCTION_WORDS and len(w) > 1 and w not in covered})
+                   if w not in _FUNCTION_WORDS and len(w) > 1 and fold(w) not in covered})
 
 
 def _inspect(catalog, query, population, *, trace=None):

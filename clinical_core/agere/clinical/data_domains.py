@@ -21,6 +21,12 @@ DOMAINS = [  # (label, question pattern, catalog name hints that would hold it)
      ('genetic', 'genomic', 'variant', 'gene')),
     ('ED throughput timestamps', r'\bdoor[- ]to[- ](?:provider|doctor|doc|needle|balloon)\b|\b(?:ed|er) wait times?\b|\blength of (?:ed|er) wait\b',
      ('triage_time', 'provider_seen', 'door_to', 'arrival_time', 'wait_minutes')),
+    ('premium revenue, medical loss ratio and risk-adjustment revenue',
+     r'\b(?:medical loss ratios?|mlr|premium revenues?|premium income|capitation revenue|risk[- ]adjust\w*\s+(?:revenue|payments?|dollars|money)|'
+     r'(?:hcc|raf)\w*[^.?]{0,60}\b(?:revenue|dollars|money|payments?)|(?:revenue|dollars|money)[^.?]{0,60}\b(?:hcc|raf|risk[- ]adjust\w*))\b',
+     ('premium_revenue', 'capitation_payment', 'mlr', 'medical_loss')),
+    ('manufacturer rebates and net drug cost', r'\b(?:manufacturer rebates?|drug rebates?|net drug (?:cost|spend)|net of rebates)\b',
+     ('rebate', 'net_drug_cost')),
     ('cost-accounting (internal cost) data', r'\b(?:cost accounting|cost to serve|direct costs?|cost per case|activity[- ]based cost)\b',
      ('cost_accounting', 'direct_cost', 'cost_per_case')),
 ]

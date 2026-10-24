@@ -1085,6 +1085,24 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
     from . import decision_context
     try: as_of = stack.retriever.meta['snapshot']['as_of']
     except (AttributeError, KeyError, TypeError): as_of = None  # a stand-in stack without a snapshot
+    # The question in the wording the grammar and every check were written against (phrasing.py: abbreviations, synonyms, alternative
+    # constructions; every number, patient id and negation kept) is tried first; if the stack cannot read it, the question as typed is.
+    # A rewording gets the free stages only (proposers.FREE_ONLY: no spec writer, no Claude, no escalation or background work); if they
+    # cannot read it, the question as typed runs the whole cascade (2026-10-24 regression diff). An explicit model is the caller's own path.
+    from . import phrasing
+    from .proposers import FREE_ONLY
+    for text in (phrasing.variants(question) if model is None else []):
+        token = FREE_ONLY.set(True)
+        try:
+            with decision_context.scope(text, as_of) as state:
+                result = _compose(stack, text, population=population, parent=parent, model=None, planning=planning)
+                result = decision_context.finalize(stack.path, result, state)
+        except QuestionNotUnderstood:
+            continue
+        finally:
+            FREE_ONLY.reset(token)
+        phrasing.disclose(result, question, text)
+        return result
     with decision_context.scope(question, as_of) as state:
         result = _compose(stack, question, population=population, parent=parent, model=model, planning=planning)
         return decision_context.finalize(stack.path, result, state)
