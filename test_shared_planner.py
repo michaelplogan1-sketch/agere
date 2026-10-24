@@ -278,7 +278,7 @@ class SharedPlanner(unittest.TestCase):
     def test_hosted_fallback_follows_authored_decline_and_verified_result_is_reused(self):
         # Routing/cache development fixture. The grammar miss and model review
         # are authored; this does not qualify language or clinical accuracy.
-        q='Count patients who are older than 65'
+        q='How many patients are older than 65'  # canonical wording: a reworded question would be answered (and cached) by the free stages first
         plan=L.parse(self.catalog,q)
         model=Mock(side_effect=[(json.dumps(plan),{'api_usd':.02,'api_cost_known':True}),
             (json.dumps({'equivalent':True,'issues':[]}),{'api_usd':.01,'api_cost_known':True})])
