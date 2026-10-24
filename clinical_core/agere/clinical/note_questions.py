@@ -462,7 +462,14 @@ def _open_ev(r, f):
 
 def combine_open(predicate, readings, truncated=False, shown=None, candidates=None):
     out = _combine_open(predicate, readings)
-    return _partial(out, shown, candidates) if truncated and not out.get('findings') else out
+    if not truncated:
+        return out
+    if not out.get('findings'):
+        return _partial(out, shown, candidates)
+    # a finding stands (one passage proves it), but its first/last dates, record count and the list of findings come from the capped subset
+    findings = [{**g, 'bounds_partial': True} for g in out['findings']]
+    return {**out, 'findings': findings, 'truncated': True, 'bounds_partial': True,
+            'partial': f'only {shown} of {candidates} matching passages were read'}
 
 
 def _combine_open(predicate, readings):

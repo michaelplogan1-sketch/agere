@@ -425,7 +425,9 @@ def render_open(pred, res):
         ev = g['evidence']
         span = g['first_date'] if g['first_date'] == g['last_date'] else f"{g['first_date']} to {g['last_date']}"
         ids = ', '.join(dict.fromkeys(e['record_id'] for e in ev))
-        text = f"({i}) {g['concept']}: {WORDS.get(g['status'], g['status'])}{_detail_text(g.get('detail'))}; {span}; {g['n_records']} record(s): {ids}"
+        n_rec = f"at least {g['n_records']}" if g.get('bounds_partial') else g['n_records']  # a capped read bounds the dates and the count
+        span = f'{span} (among the passages read, not first/last overall)' if g.get('bounds_partial') else span
+        text = f"({i}) {g['concept']}: {WORDS.get(g['status'], g['status'])}{_detail_text(g.get('detail'))}; {span}; {n_rec} record(s): {ids}"
         shown = []
         for e in ev[:1] + ev[-1:]:
             if e not in shown:
@@ -476,6 +478,8 @@ def count_events(res, is_open=False):
         return None
     if is_open:
         n = len(res.get('findings') or [])
+        if res.get('truncated') and n:
+            return {'n': n, 'basis': f"at least: distinct findings the readers settled; {res.get('partial')}"}
         return {'n': n, 'basis': 'distinct findings the readers settled' if n else 'none documented'}
     evs = [e for e in (res.get('evidence') or []) if e.get('supports')]
     stated = sorted(((e.get('date') or '', _whole((e.get('detail') or {}).get('count')), e) for e in evs if (_whole((e.get('detail') or {}).get('count')) or 0) > 0),
@@ -550,12 +554,15 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
                 start = (date.fromisoformat(dates[-1][:10]) + timedelta(days=1)).isoformat()
                 pred['window'] = {'start': start, 'end': str(as_of)[:10], 'quote': f"after {anchor['concept']['term']} on {dates[-1][:10]}"}
                 anchor_note = f"anchor: {anchor['concept']['term']} documented {dates[-1][:10]}; later notes read from {start}"
+                if a.get('truncated'):  # capped anchor search: the latest date seen need not be the latest documented
+                    anchor_note += (f" (partial anchor: {a.get('partial')}; {dates[-1][:10]} is the latest date among the passages read, "
+                                    'a later one may exist, so the window and the answer are partial)')
             else:
                 # no date to start from: reading every note would answer a different question ("ever", not "after"), so nothing is read
                 unresolved = (f"anchor: {anchor['concept']['term']} has no dated documentation ({a.get('status')}); "
                               'the later notes were not read because there is no date to read them from')
                 anchor_note = unresolved
-            sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote'), anchor=True) for e in (a.get('evidence') or [])[:2])
+            sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote'), anchor=True) for e in ([e for e in (a.get('evidence') or []) if e.get('supports')] or (a.get('evidence') or []))[:2])
         if unresolved:
             res = {'status': 'unknown', 'holds': None, 'detail': {}, 'evidence': [], 'p': None}
         else:
@@ -607,7 +614,8 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
                 line += ' (' + '; '.join(f'{k}: {_val(v)}' for k, v in shown.items()) + ')'
             if pred.get('sources') or pred.get('note_types'):
                 line += ' [read only: ' + ', '.join([*(pred.get('note_types') or []), *(pred.get('sources') or [])]) + ']'
-            top = sorted(ev, key=lambda e: not e.get('supports'))[:6 if pred.get('combine') == 'any' else 4]
+            cited = [e for e in ev if e.get('supports')] or ev  # a positive answer cites the passages that produced it, not every record read
+            top = sorted(cited, key=lambda e: not e.get('supports'))[:6 if pred.get('combine') == 'any' else 4]
             multi = pred.get('combine') == 'any' and len([e for e in top if e.get('supports')]) > 1
             for e in top:
                 own = ''
@@ -621,7 +629,7 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             lines.append(line)
             rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
                          **({'count': counted[-1]['n']} if counted[-1] is not None else {})})
-            sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in ev)
+            sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in cited)
         if res.get('truncated'):  # retrieval caps: absence, earliest, latest and "no contradiction" are not established from part of the notes
             lines[-1] += f" | partial: {res.get('partial')}; the rest were not read, so a negative or earliest/latest answer is undecided"
         if want_response:
