@@ -71,12 +71,18 @@ class EarlyStart(unittest.TestCase):
 
 class AnalystGate(unittest.TestCase):
     def test_only_an_audited_analyst_answer_takes_the_audit_as_its_check(self):
-        ok = {'definitions_audit': {'action': 'ok'}}
-        self.assertTrue(answer_checks.audited_analyst('semantic_analyst', ok))
-        self.assertTrue(answer_checks.audited_analyst('semantic_analyst', {'definitions_audit': {'action': 'rewritten'}}))
-        self.assertFalse(answer_checks.audited_analyst('semantic_analyst', {'definitions_audit': {'action': 'declined'}}))
-        self.assertFalse(answer_checks.audited_analyst('semantic_analyst', {}))
-        self.assertFalse(answer_checks.audited_analyst('hosted_verified_sql', ok))
+        from clinical_core.agere.clinical import acceptance_contract as AC
+        graph = {'nodes': [{'id': 'answer', 'operation': 'sql', 'parameters': {'query': 'SELECT COUNT(*) FROM living_patient', 'returns': 'count'}}]}
+        bound = {'final_sql_digest': AC.sql_digest(graph), 'final_sql_findings': []}  # the audit covered the sql that executes
+        # the audit alone no longer authorizes: the acceptance contract over the final executed sql must also pass (acceptance_contract.py)
+        ok = {'definitions_audit': {'action': 'ok', **bound}, 'acceptance_contract': {'ok': True}}
+        self.assertTrue(answer_checks.audited_analyst('semantic_analyst', ok, graph))
+        self.assertFalse(answer_checks.audited_analyst('semantic_analyst', {'definitions_audit': {'action': 'ok', **bound}}, graph))
+        self.assertFalse(answer_checks.audited_analyst('semantic_analyst', {**ok, 'acceptance_contract': {'ok': False}}, graph))
+        self.assertTrue(answer_checks.audited_analyst('semantic_analyst', {**ok, 'definitions_audit': {'action': 'rewritten', **bound}}, graph))
+        self.assertFalse(answer_checks.audited_analyst('semantic_analyst', {**ok, 'definitions_audit': {'action': 'declined', **bound}}, graph))
+        self.assertFalse(answer_checks.audited_analyst('semantic_analyst', {}, graph))
+        self.assertFalse(answer_checks.audited_analyst('hosted_verified_sql', ok, graph))
 
 
 if __name__ == '__main__':
