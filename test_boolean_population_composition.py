@@ -113,3 +113,29 @@ class IncrementalCategoryDiscovery(unittest.TestCase):
         self.assertEqual(len(seen)-n,1)
         self.assertIn('diabetes',second['fields']['condition.concept'])
         D._VALUE_CACHE.clear();D._PARTIAL_VALUE_CACHE.clear()
+
+class InterpretationRevision(unittest.TestCase):
+    def test_old_but_still_compilable_ratio_is_replanned_and_preserved_on_disk(self):
+        import json
+        from unittest.mock import patch
+        from clinical_core.agere.clinical import shared_planner as S
+        w=Warehouse();self.addCleanup(w.close)
+        with sqlite3.connect(w.catalog.target) as db:
+            db.executemany('INSERT INTO condition VALUES(?,?,1)', [('SYN-A','hypertension'),('SYN-B','hypertension'),('SYN-D','hypertension')])
+        q='What share of patients with hypertension also have diabetes?'
+        p=L.parse(w.catalog,q);old=copy.deepcopy(p)
+        old['select'][0]['numerator']['where']={'op':'and','args':[old['where'],old['select'][0]['numerator']['where']],'quote':q}
+        old['where']=None
+        contract=R.compile_request(w.catalog,q,old)
+        cache=w.path/'question-plans.sqlite3'
+        S.store_request(cache,'old-key','stable',q,contract,{'execution_accepted':True,'interpreter':'grammar'})
+        with sqlite3.connect(cache) as db:
+            payload=json.loads(db.execute('SELECT payload FROM shared_requests').fetchone()[0])
+            payload['interpretation']['meaning_revision']='previous-revision'
+            db.execute('UPDATE shared_requests SET payload=?',(json.dumps(payload),))
+        with patch.object(S,'request_keys',return_value=('current-key','stable')):
+            result=S.compose(w.stack,q)
+        self.assertAlmostEqual(result['answer']['value'],200/3)
+        with sqlite3.connect(cache) as db:
+            preserved=json.loads(db.execute('SELECT payload FROM shared_requests WHERE id=?',('old-key',)).fetchone()[0])
+        self.assertEqual(preserved['interpretation']['meaning_revision'],'previous-revision')

@@ -13,7 +13,7 @@ import sqlite3
 import time
 from .evaluation import active as _evaluating
 
-from .request_plan import compile_request, fingerprint, PlanError
+from .request_plan import compile_request, fingerprint, PlanError, MEANING_REVISION
 
 VERSION = 'checked-request-shape/1'
 TOKEN = re.compile(r'"[^"\n]*"|\'[^\'\n]*\'|(?<![\w.-])\d{4}-\d{2}-\d{2}(?![\w.-])|(?<![\w.])\d+(?:\.\d+)?(?![\w.])')
@@ -142,7 +142,7 @@ def save(path, catalog, contract, interpretation, policy):
     shape = make(contract['original_question'], contract['request'])
     if not shape: return None
     if instantiate(shape, contract['original_question']) != contract['request']: return None
-    shape.update(schema=VERSION, original_question=contract['original_question'], policy=policy,
+    shape.update(schema=VERSION, meaning_revision=MEANING_REVISION, original_question=contract['original_question'], policy=policy,
                  tables=catalog.tables, stream_fields=catalog.stream_fields,
                  source_identity=catalog.identity, population=contract['population'],
                  parent_contract=contract['id'], created=time.time(),
@@ -175,6 +175,7 @@ def _match(catalog, question, population, rows, carried=False):
     matches, shape_of = [], {}
     for ident, payload in rows:
         shape = json.loads(payload)
+        if shape.get('meaning_revision') != MEANING_REVISION: continue
         shape_of[ident] = shape
         if shape['tables'] != catalog.tables or shape['stream_fields'] != catalog.stream_fields: continue
         if shape['source_identity'] != catalog.identity or shape['population'] != (sorted(population) if population is not None else None): continue
