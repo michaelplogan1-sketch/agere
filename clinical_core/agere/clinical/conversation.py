@@ -365,6 +365,10 @@ def is_followup(text):
     return bool(FOLLOWUP_MARKERS.search(low)) or len(_words(low)) <= 4
 
 
+ANAPHORIC_FOLLOWUP = re.compile(r"^(?:and\s+)?(?:(?:the\s+)?same(?:\s+thing)?\s+(?:but\s+)?(?:by|per|for\s+each)\b|(?:break|split)\s+(?:that|this|it)(?:\s+(?:down|out))?\s+(?:by|per)\b|"
+                                r"what(?:'s|\s+is|\s+was)\s+(?:that|it|this)\s+(?:per\s+member\s+per\s+month|pmpm)\b)")
+
+
 def requires_saved_cohort(question, catalog=None):
     """Detect an external reference, not every occurrence of a pronoun.
 
@@ -374,6 +378,7 @@ def requires_saved_cohort(question, catalog=None):
     Explicit references to earlier results always require saved context.
     """
     text = ' '.join(question.lower().split())
+    if ANAPHORIC_FOLLOWUP.match(text): return True
     if re.search(r'\b(?:previous|prior|earlier|last|saved|same)\s+'
                  r'(?:answer|result|analysis|cohort|population|list|patients?|members?)\b', text):
         return True
@@ -634,6 +639,41 @@ RESCOPE = [re.compile(p, re.I) for p in (
 EVERYONE_ELSE = re.compile(r'^(?:everyone|everybody|all)\s+else|the\s+rest|(?:the\s+)?others?|(?:all\s+)?other\s+patients$', re.I)
 
 
+REGROUP = re.compile(r"^(?:and\s+)?(?:(?:the\s+)?same(?:\s+thing)?\s+(?:but\s+)?|(?:break|split)\s+(?:that|this|it)(?:\s+(?:down|out))?\s+)(?:by|per|for\s+each)\s+(?P<dim>[a-z][a-z ]*?)\s*\??$", re.I)
+PMPM_OF_THAT = re.compile(r"^(?:and\s+)?what(?:'s|\s+is|\s+was)\s+(?:that|it|this)\s+(?:per\s+member\s+per\s+month|pmpm)\s*\??$", re.I)
+
+
+def regroup(stack, question, saved):
+    """Re-ask the previous MEASURE grouped another way, or as PMPM: (result, standalone, note) or None.
+
+    "Same thing by payer type" / "break that down by practice" re-asks the previous question with the grouping added, when the previous
+    answer was a measure (a count, share, rate or amount). "What's that per member per month?" turns a previous medical-claims amount
+    into the paid PMPM for the same year and grouping. The re-asked question goes through the ordinary planner; nothing is guessed."""
+    group, pmpm = REGROUP.match(question.strip()), PMPM_OF_THAT.match(question.strip())
+    if not (group or pmpm): return None
+    from ..deliverables import answer_context
+    parent = answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
+    answer = parent.get('answer') or {}
+    base = ((answer.get('rescope') or {}).get('base_question') or parent.get('original_question') or parent.get('question') or '').strip().rstrip('?.')
+    if not base: return None
+    cohort_list = answer.get('answer_type') in ('patient_set',) or ((parent.get('cohort_transform') or {}).get('operations') and answer.get('table') is not None
+                                                                   and not any(k in answer for k in ('value', 'numerator')))
+    if group:
+        if cohort_list or re.search(r'\b(?:by|per|for each)\s+[a-z]', base, re.I): return None  # a list is grouped over its saved members; an already grouped question is not regrouped
+        standalone = f"{base}, by {group['dim'].strip()}"
+        note = f'Follow-up: re-asked "{base}" grouped by {group["dim"].strip()}.'
+    else:
+        year = re.search(r'\b(20\d\d)\b', base)
+        by = re.search(r'\bby\s+([a-z][a-z ]*?)$', base, re.I)
+        if not re.search(r'\b(?:pay|paid|spend|spent|cost)\b', base, re.I) or not year: return None
+        standalone = f"What was the medical claims paid PMPM in {year[1]}" + (f" by {by[1]}" if by else '')
+        note = f'Follow-up: the {year[1]} medical claims paid per member per month' + (f' by {by[1]}' if by else '') + ' (from the previous amount).'
+    result = stack.compose(standalone)
+    result['answer']['rescope'] = {'base_question': standalone}
+    result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), note]
+    return result, standalone, note
+
+
 def rescope(stack, question, saved):
     """Re-run the previous measure for another group or year: (result, standalone, note) or None.
 
@@ -733,7 +773,7 @@ def handle_compose(stack, body, hosted_factory=None):
             shared = getattr(stack, 'shared_request_planning', False) is True
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
-            rescoped = (rescope(stack, question, saved) if shared and saved and not explicit_context
+            rescoped = ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
                         and body.get('scope') != 'warehouse' else None)
             if rescoped:
                 result, standalone, note = rescoped

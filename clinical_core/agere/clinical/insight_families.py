@@ -33,6 +33,10 @@ def years_in(text):
     return [int(y) for y in re.findall(r'\b(20\d\d)\b', text)]
 
 
+def cap(text):
+    return text[:1].upper() + text[1:]
+
+
 def span(text, pattern):
     m = re.search(pattern, text, re.I)
     return m.group() if m else None
@@ -202,7 +206,7 @@ class Prioritize:
         cond = next(((span(t, p), c) for p, c in CONDITION_WORDS if span(t, p)), None)
         if not cond: return None
         extra = [w for w in (span(t, r'outreach'), span(t, r'care\s+team')) if w]
-        return {'params': {'kind': 'condition', 'condition': cond[1]}, 'quotes': [cond[0], action, *extra]}
+        return {'params': {'kind': 'condition', 'condition': cond[1], 'ranking': 'tiers: highest priority first'}, 'quotes': [cond[0], action, *extra]}
 
     @classmethod
     def run(cls, ctx, params):
@@ -273,10 +277,10 @@ class CareGaps:
         t = text.strip().rstrip('?.')
         if not re.match(r"^(?:where|what)(?:'s|\s+is|\s+are)?\b", t, re.I) or not span(t, r'\bgaps?\b'): return None
         if span(t, r'preventive'):
-            return {'params': {'topic': 'preventive'}, 'quotes': [span(t, r'preventive'), span(t, r'\bgaps?\b'), span(t, r'biggest|largest|worst') or '']}
+            return {'params': {'topic': 'preventive', 'ranking': 'largest gap first (lowest rate first)'}, 'quotes': [span(t, r'preventive'), span(t, r'\bgaps?\b'), span(t, r'biggest|largest|worst') or '']}
         cond = next(((span(t, p), c) for p, c in CONDITION_WORDS if span(t, p)), None)
         if not cond: return None
-        return {'params': {'topic': 'condition', 'condition': cond[1]}, 'quotes': [cond[0], span(t, r'\bgaps?\b'), span(t, r'biggest|largest|worst') or '']}
+        return {'params': {'topic': 'condition', 'condition': cond[1], 'ranking': 'largest gap first'}, 'quotes': [cond[0], span(t, r'\bgaps?\b'), span(t, r'biggest|largest|worst') or '']}
 
     @classmethod
     def run(cls, ctx, params):
@@ -528,7 +532,7 @@ class YoyTrend:
         direction = span(t, r'up\s+or\s+down|trending|going\s+up|go\s+up|increas\w+|decreas\w+')
         if not metric or len(yrs) < 2 or not direction: return None
         movers = span(t, r'which\s+drugs?\s+moved\s+it\s+most')
-        return {'params': {'metric': metric[1], 'y0': yrs[0], 'y1': yrs[1], 'movers': bool(movers)},
+        return {'params': {'metric': metric[1], 'y0': yrs[0], 'y1': yrs[1], 'movers': bool(movers), 'ranking': 'largest change first'},
                 'quotes': [metric[0], direction, str(yrs[0]), str(yrs[1]), movers or '', span(t, r'trending') or '']}
 
     @classmethod
@@ -542,7 +546,7 @@ class YoyTrend:
             for y in (y0, y1):
                 vals[y] = ctx.one(f"SELECT COUNT(*) FROM utilization_event WHERE kind = {q(kind)} AND substr(event_date, 1, 4) = {q(str(y))}", 0)
             unit = 'events'
-            notes.append(f"{noun.capitalize()} are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated), counted by event year.")
+            notes.append(f"{cap(noun)} are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated), counted by event year.")
         elif metric == 'pharmacy':
             noun, unit = 'pharmacy spend', 'USD'
             vals = {y: (ctx.one(f"SELECT COALESCE(SUM(plan_paid_cents), 0) FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND substr(fill_date, 1, 4) = {q(str(y))}", 0) or 0) / 100.0
@@ -558,9 +562,9 @@ class YoyTrend:
         word = 'down' if d < 0 else 'up' if d > 0 else 'flat'
         money = unit == 'USD'
         f = (lambda v: usd(v)) if money else (lambda v: f'{v:,.0f}')
-        facts.append(fact('y0', f"{noun.capitalize()} in {y0}: {f(vals[y0])}.", value=vals[y0], unit=unit))
-        facts.append(fact('y1', f"{noun.capitalize()} in {y1}: {f(vals[y1])}.", value=vals[y1], unit=unit))
-        facts.append(fact('direction', f"{noun.capitalize()} went {word} from {y0} to {y1}: {'+' if d > 0 else ''}{f(d) if not money else ('-' if d < 0 else '') + usd(abs(d))}"
+        facts.append(fact('y0', f"{cap(noun)} in {y0}: {f(vals[y0])}.", value=vals[y0], unit=unit))
+        facts.append(fact('y1', f"{cap(noun)} in {y1}: {f(vals[y1])}.", value=vals[y1], unit=unit))
+        facts.append(fact('direction', f"{cap(noun)} went {word} from {y0} to {y1}: {'+' if d > 0 else ''}{f(d) if not money else ('-' if d < 0 else '') + usd(abs(d))}"
                                        + (f" ({'+' if d > 0 else ''}{pc * 100:.1f}%)." if pc is not None else '.'), value=word, change=d, change_percent=round(pc * 100, 1) if pc is not None else None))
         table = [{'year': y0, noun: vals[y0]}, {'year': y1, noun: vals[y1]}]
         if metric == 'pharmacy' and params['movers']:
@@ -575,8 +579,8 @@ class YoyTrend:
             facts.append(fact('movers_down', 'Largest decreases: ' + '; '.join(f"{r['drug_name']} (-{usd(abs(r['change']))})" for r in downs if r['change'] < 0) + '.', value=[r['drug_name'] for r in downs]))
             tables['drug_movers'] = [{'drug': r['drug_name'], f'spend_{y0}': round(r[f'spend_{y0}'], 2), f'spend_{y1}': round(r[f'spend_{y1}'], 2), 'change': r['change']} for r in ups + downs]
             table = tables['drug_movers']
-        return dict(headline=f"{noun.capitalize()} went {word} from {y0} to {y1} ({f(vals[y0])} to {f(vals[y1])})", facts=facts, table=table, tables=tables,
-                    read_back=f"{noun.capitalize()} {y0} versus {y1}" + (' and the drugs whose spend moved most' if params['movers'] else '') + '.', notes=notes)
+        return dict(headline=f"{cap(noun)} went {word} from {y0} to {y1} ({f(vals[y0])} to {f(vals[y1])})", facts=facts, table=table, tables=tables,
+                    read_back=f"{cap(noun)} {y0} versus {y1}" + (' and the drugs whose spend moved most' if params['movers'] else '') + '.', notes=notes)
 
 
 @family
@@ -694,8 +698,8 @@ class Association:
                     read_back='No-show rate by how far ahead the appointment was booked (lead_time_days), appointments of the last 12 months with a known outcome.', notes=notes)
 
 
-SEGMENT_MEASURES = [(r'diabetes\s+control|a1c|glycemic', 'diabetes'), (r'\bed\s+(?:use|visits|utilization)|emergency', 'ed'),
-                    (r'blood\s+pressure|bp\s+control|hypertension\s+control', 'bp'), (r'admissions?', 'admissions')]
+SEGMENT_MEASURES = [(r'diabetes\s+control|a1c|glycemic', 'diabetes'), (r'\bed\s+(?:use|visits|utilization)|emergency(?:\s+(?:department|room))?(?:\s+(?:use|visits))?', 'ed'),
+                    (r'blood\s+pressure|bp\s+control|hypertension\s+control', 'bp'), (r'(?:hospital\s+|inpatient\s+)?admissions?', 'admissions')]
 
 
 HIGH_SVI, LOW_SVI = 75, 25  # social vulnerability percentile (0-100): "high" is 75 or more, "low" is under 25 unless the question states its own cut
@@ -847,7 +851,7 @@ class PdcShare:
         label = ', '.join(params['classes'])
         facts = [fact('rate', f"{pct(rate)}% of patients on {label} with at least two fills in {start[:4] if y else 'the last 12 months'} have a PDC of {params['threshold']} or higher "
                               f"({len(num):,} of {len(den):,}) = {rate:.4f}.", value=pct(rate), numerator=len(num), denominator=len(den), unit='%')]
-        return dict(headline=f"{pct(rate)}% adherent (PDC >= {params['threshold']}): {len(num):,} of {len(den):,} patients on {label}", facts=facts, value=pct(rate),
+        return dict(headline=f"{pct(rate)}% adherent (PDC >= {params['threshold']}): {len(num):,} of {len(den):,} patients on {label}", facts=facts, value=pct(rate), answer_type='value',
                     table=[{'drug_classes': label, 'period_start': start, 'period_end': end, 'patients': len(den), 'adherent': len(num), 'percent_adherent': pct(rate)}],
                     read_back=f"PQA proportion of days covered >= {params['threshold']} for {label}, {start} to {end}: living patients with at least 2 fills on distinct dates and a treatment period of at least 91 days; "
                               'days covered from the first fill to the period end, overlapping supply shifted forward.',
@@ -896,13 +900,13 @@ class HighCostClaimants:
             n = ctx.one(f"SELECT COUNT(*) FROM ({claimants})", 0)
             facts = [fact('share', f"The {n} high-cost claimants account for {pct(part / total)}% of total {y} medical paid spend ({usd(part / 100)} of {usd(total / 100)}) = {part / total:.4f}.",
                           value=pct(part / total), numerator=part / 100, denominator=total / 100, unit='%', claimants=n)]
-            return dict(headline=f"{n} high-cost claimants account for {pct(part / total)}% of {y} medical paid spend", facts=facts, value=pct(part / total),
+            return dict(headline=f"{n} high-cost claimants account for {pct(part / total)}% of {y} medical paid spend", facts=facts, value=pct(part / total), answer_type='value',
                         table=[{'high_cost_claimants': n, 'paid_dollars': round(part / 100, 2), 'total_paid_dollars': round(total / 100, 2), 'share_percent': pct(part / total)}],
                         read_back=f"Share of total {y} counted medical paid spend that comes from patients with ${params['threshold']:,.0f} or more paid in {y}.", notes=notes)
         k = ctx.count(f"p.patient_id IN ({claimants})", ctx.cond(params['condition']))
         n = ctx.one(f"SELECT COUNT(*) FROM ({claimants})", 0)
         facts = [fact('count', f"{k} of the {n} high-cost claimants in {y} have {params['condition'].replace('_', ' ')}.", value=k, numerator=k, denominator=n, unit='patients')]
-        return dict(headline=f"{k} of {n} high-cost claimants have {params['condition'].replace('_', ' ')}", facts=facts, count=k,
+        return dict(headline=f"{k} of {n} high-cost claimants have {params['condition'].replace('_', ' ')}", facts=facts, count=k, answer_type='count',
                     read_back=f"High-cost claimants ({y}, ${params['threshold']:,.0f} or more paid) who have {params['condition'].replace('_', ' ')} (canonical condition evidence).", notes=notes)
 
 
@@ -916,11 +920,17 @@ PMPM_GROUPS = [(r'lines?\s+of\s+business|payer\s+types?|\blob\b', 'line_of_busin
 @family
 class PmpmBy:
     NAME = 'pmpm_by'
-    WORDS = set('''what was is were the medical claims paid allowed pmpm per member month in by'''.split())
+    WORDS = set('''what was is were the medical claims paid allowed pmpm per member month in by which have has highest lowest'''.split())
 
     @classmethod
     def parse(cls, text, catalog):
         t = text.strip().rstrip('?.')
+        ranked = re.match(r'^which\s+(' + '|'.join(p for p, _, _ in PMPM_GROUPS) + r')\s+(?:have|has)\s+the\s+(?:highest|lowest|greatest|largest|most|least)\s+', t, re.I)
+        if ranked and span(t, r'pmpm|per\s+member\s+per\s+month'):
+            group = next((span(ranked.group(1), p), c, label) for p, c, label in PMPM_GROUPS if re.fullmatch(p, ranked.group(1), re.I))
+            basis = 'allowed' if span(t, r'allowed') else 'paid'
+            return {'params': {'group': group[1], 'label': group[2], 'basis': basis, 'year': (years_in(t) or [None])[-1]},
+                    'quotes': [ranked.group(), span(t, r'pmpm|per\s+member\s+per\s+month'), span(t, r'medical(?:\s+claims)?') or '', span(t, r'paid|allowed') or '', *[str(y) for y in years_in(t)]]}
         if not re.match(r"^(?:what(?:'s|\s+is|\s+was|\s+were)|show(?:\s+me)?|give\s+me)\b", t, re.I): return None
         metric = span(t, r'pmpm|per\s+member\s+per\s+month')
         if not metric: return None

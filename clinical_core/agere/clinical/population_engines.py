@@ -105,7 +105,7 @@ def assemble(cls, ctx, contract, r, question):
     limitations = ['Results describe received records. No matching record does not establish absent care.',
                    'Computed from the governed definitions of the decision context; every fact below carries its numerator and denominator.',
                    *r.get('notes', [])]
-    answer = {'status': 'answered', 'answer_type': 'table' if table else 'insight', 'headline': r['headline'],
+    answer = {'status': 'answered', 'answer_type': r.get('answer_type') or 'composite', 'headline': r['headline'],
               'narrative': lines, 'insight': {'family': cls.NAME, 'facts': facts, 'tables': r.get('tables', {})},
               'missing': [], 'limitations': list(dict.fromkeys(limitations)), 'patient_ids': ids,
               'actionable_cohort': bool(ids) and bool(r.get('cohort_role')), 'unknown_patient_ids': [], 'unknown_count': 0,

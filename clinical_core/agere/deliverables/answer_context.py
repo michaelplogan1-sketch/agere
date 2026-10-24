@@ -393,8 +393,8 @@ def followup(path, key, question, *, scope='result'):
     request into an unbound whole-warehouse question.
     """
     text = ' '.join(question.lower().strip(' ?.!').split())
-    listing = re.fullmatch(r'(?:list|show|count)(?: me)? (?:them|those patients|these patients)', text)
-    grouping = re.fullmatch(r'(?:group|break down|split)(?: them| those patients| these patients)? by (pcp|practice|payer)', text)
+    listing = re.fullmatch(r'(?:(?:give|show|send|get)(?: me)?(?: the)?(?: list of)?|list|show|count)(?: me)?(?: the)?(?: list of)? (?:them|those patients|these patients|those|these|the patients)', text)
+    grouping = re.fullmatch(r'(?:group|break down|break (?:that|this|it|them|those) down|split(?: that| it| this| them)?(?: out)?)(?: them| those patients| these patients| that| it| this)? by (pcp|practice|payer|line of business|payer type|coverage)', text)
     exclusion = re.fullmatch(r'(?:exclude|excluding|remove)(?: the)? (?:patients|ones|those|them)(?: who have| who| that have)? (?:died|are deceased|deceased)', text)
     if not (listing or grouping or exclusion):
         return None
@@ -415,7 +415,8 @@ def followup(path, key, question, *, scope='result'):
             evidence.append({'query': query, 'parameters': [c['source']['as_of']], 'rows': deaths,
                              'limitation': 'No death record does not confirm that a patient is alive.'})
         if grouping:
-            field = {'pcp': 'pcp_clinician_id', 'practice': 'pcp_practice_id', 'payer': 'payer_id'}[grouping.group(1)]
+            field = {'pcp': 'pcp_clinician_id', 'practice': 'pcp_practice_id', 'payer': 'payer_id', 'line of business': 'line_of_business',
+                     'payer type': 'line_of_business', 'coverage': 'coverage_type'}[grouping.group(1)]
             query = f'SELECT patient_id,{field} FROM patient'
             people = {r['patient_id']: r[field] for r in db.execute(query) if r['patient_id'] in ids}
             counts = Counter(people.get(pid) or 'Unknown' for pid in ids)

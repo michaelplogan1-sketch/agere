@@ -95,9 +95,10 @@ class ClaimForms:
         out.sort(key=lambda x: x[0])
         return out
 
-    def base_claim_atoms(self, table, quote):
+    def base_claim_atoms(self, table, quote, amounts=False):
+        """The rows a claim question counts: counted medical claims; for pharmacy money, the claims that count as fills (paid, not rejected or reversed)."""
         from .request_language import atom
-        col = DEFAULT_CLAIM_FILTER.get(table)
+        col = DEFAULT_CLAIM_FILTER.get(table) or (('counts_as_fill', '=', 1) if amounts and table == 'payer_pharmacy_claim' else None)
         return [atom(f'{table}.{col[0]}', col[1], col[2], quote)] if col and col[0] in self.catalog.tables[table] else []
 
     def cut_group(self, text, table):
@@ -111,7 +112,9 @@ class ClaimForms:
         return rest, groups, quote
 
     # -- amounts ---------------------------------------------------------------------------------------------------------
-    AMOUNT_LEAD = re.compile(r"^(?:" + HEAD + r")\s+(?:did|do|have|has)\s+we\s+(?:pay|paid|spend|spent)(?:\s+out)?\b", re.I)
+    AMOUNT_LEAD = re.compile(r"^(?:(?:" + HEAD + r")\s+(?:did|do|have|has)\s+we\s+(?:pay|paid|spend|spent)(?:\s+out)?\b|"
+                             r"(?:what(?:'s|\s+is|\s+was|\s+are)|how\s+much\s+(?:is|was|are))\s+(?:the\s+|our\s+)?total\s+(?:(?:paid|allowed|billed|plan[- ]paid)\s+)?"
+                             r"(?:amount\s+|dollars\s+|spend\s+)?(?:on|for|of|in)\b)", re.I)
 
     def amount_form(self, text):
         """"What did we pay out in medical claims in 2029 by line of business?" -> paid dollars, optionally grouped."""
@@ -127,9 +130,13 @@ class ClaimForms:
         year_atoms, year_quote = self.year_atoms(table, rest)
         preds = self.claim_predicates(table, rest)
         src_quote = source.group() if source else lead.group().strip()
-        where = [*self.base_claim_atoms(table, src_quote), *year_atoms]
+        where = [*self.base_claim_atoms(table, src_quote, amounts=True), *year_atoms]
         for _, atoms_, q in preds: where.append(combine('and', atoms_, q))
         field, alias = MONEY[table]
+        basis = re.search(r'\b(allowed|billed)\b', lead.group(), re.I)
+        if basis and table == 'payer_claim':
+            field = {'allowed': 'allowed_cents', 'billed': 'charge_cents'}[basis[1].lower()]
+            alias = field
         measure = {'kind': 'sum', 'field': f'{table}.{field}', 'alias': alias,
                    'quote': [lead.group().strip(), *([source.group()] if source else [])]}
         select = [{'kind': 'field', 'field': f, 'alias': f.partition('.')[2], 'quote': w} for w, f in groups]
@@ -254,6 +261,34 @@ class ClaimForms:
         return {'source': {'table': table, 'quote': src_quote}, 'select': [ratio], 'where': combine('and', [*base, *year_atoms], self.question),
                 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': [],
                 'notes': [f'{label.capitalize()}: rows meeting the condition over the rows the rate is defined on (denominator stated in the counts).']}
+
+    RATE_BY = re.compile(r"^(?:what(?:'s|\s+is|\s+was)\s+)?(?:the\s+|our\s+)?(?P<rate>[a-z][a-z -]*?)\s+rate\s+(?:in\s+(?P<y1>20\d\d)\s+)?by\s+(?P<dim>[a-z][a-z ]*?)(?:\s+(?:in|for|during)\s+(?P<y2>20\d\d))?$", re.I)
+
+    def rate_by(self, text):
+        """"What's the denial rate by payer in 2029?" -> the rate of claims per group (the claim's own payer / line of business), not the patient's."""
+        from .request_language import combine, atom
+        m = self.RATE_BY.match(text)
+        if not m: return None
+        spec = next(((t, n, d, label) for pat, t, n, d, label in ROW_RATES if re.fullmatch(pat, m['rate'].strip(), re.I) and t in self.catalog.tables), None)
+        if not spec: return None
+        table, numer, denom, label = spec
+        self.base = table
+        dim = self.dimension(m['dim'])
+        if not dim: return None
+        quote_dim, field = dim
+        key = field.partition('.')[2]
+        year_text = ' '.join(x for x in (m['y1'], m['y2']) if x)
+        year_atoms, _ = self.year_atoms(table, year_text) if year_text and table in CLOCK else ([], None)
+        head = text[:m.start('dim')].strip()
+        cond = lambda s_, q: [atom(f'{table}.{c}', op, v, q) for c, op, v in s_ if c in self.catalog.tables[table]]
+        den_where = combine('and', cond(denom, head), head) if denom else None
+        part = {'kind': 'count', 'alias': 'meeting', 'quote': head, 'where': combine('and', cond(numer, head) + cond(denom, head), head)}
+        whole = {'kind': 'count', 'alias': 'group', 'quote': head, **({'where': den_where} if den_where else {})}
+        ratio = lambda alias, scale: {'kind': 'ratio', 'alias': alias, 'quote': head, 'scale': scale, 'round': 4 if scale == 1 else 2, 'numerator': part, 'denominator': whole}
+        return {'source': {'table': table, 'quote': head}, 'select': [{'kind': 'field', 'field': field, 'alias': key, 'quote': quote_dim}, ratio('percent', 100), ratio('proportion', 1),
+                                                                      {**whole, 'alias': 'rows'}],
+                'where': combine('and', [*self.base_claim_atoms(table, head), *year_atoms], self.question), 'group_by': [key],
+                'order_by': [], 'limit': None, 'unresolved': [], 'having': atom('result.rows', '>=', 1, head)}
 
     def row_share(self, text):
         """"What share of pharmacy claims were rejected in 2029?" / "What's our generic dispensing rate on pharmacy claims in 2029?"."""

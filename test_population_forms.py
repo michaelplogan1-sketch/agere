@@ -344,6 +344,30 @@ class GrammarForms(Base):
         self.assertTrue(rows and 'percent' in rows[0])
 
 
+    def test_rate_by_a_claim_attribute_groups_the_claims_not_the_patients(self):
+        counted = [c for c in CLAIMS if c[14] == 1 and c[7].startswith('2029')]
+        rows = self.table("What's the denial rate by payer in 2029?")
+        by = {}
+        for c in counted: by.setdefault(c[2], []).append(c[9] == 'denied')
+        self.assertEqual({r['payer_id']: (r['rows'], r['proportion']) for r in rows}, {k: (len(v), round(sum(v) / len(v), 4)) for k, v in by.items()})
+        self.assertEqual({r['payer_id']: r['percent'] for r in rows}, {k: round(100.0 * sum(v) / len(v), 2) for k, v in by.items()})
+
+    def test_pharmacy_spend_counts_fills_only_and_denied_claims_are_a_source(self):
+        a = self.answer('What is the total paid on pharmacy claims in 2029?')
+        self.assertAlmostEqual(a['value'] if a.get('value') is not None else a['table'][0][next(iter(a['table'][0]))],
+                               sum(x[5] for x in PHARMACY if x[1].startswith('2029') and x[4] == 1) / 100.0, places=2)
+        denied = [c for c in CLAIMS if c[14] == 1 and c[9] == 'denied']
+        top = self.table('Which payer had the most claim denials?')
+        by = {}
+        for c in denied: by[c[2]] = by.get(c[2], 0) + 1
+        self.assertEqual((top[0]['payer_id'], top[0]['count']), max(by.items(), key=lambda kv: kv[1]))
+
+    def test_a_ranking_never_lists_a_group_with_nobody_to_measure(self):
+        rows = self.table('Which practices have the lowest share of patients with hypertension who have their blood pressure under control?')
+        self.assertTrue(rows and all(r['patients'] >= 1 for r in rows))
+        self.assertTrue(all(r['percent'] is not None for r in rows))
+
+
 class EngineForms(Base):
     def facts(self, q):
         a = self.answer(q)
@@ -483,6 +507,15 @@ class EngineForms(Base):
         self.assertEqual((spec['family'], spec['params']['classes'], spec['params']['threshold'], spec['params']['year']), ('pdc_share', ['ace_inhibitor'], 0.8, 2029))
         with self.assertRaisesRegex(R.PlanError, 'cannot be computed from the received data'):
             self.ask(q)
+
+    def test_pmpm_ranking_and_the_composite_answer_shape(self):
+        a = self.answer('Which payers have the highest PMPM?')
+        self.assertEqual(a['answer_type'], 'composite')
+        self.assertEqual(a['insight']['family'], 'pmpm_by')
+        top = a['table'][0]
+        self.assertGreaterEqual(top['pmpm_dollars'], a['table'][-1]['pmpm_dollars'])
+        # every engine answer states how the question was read and carries its definitions
+        self.assertTrue(a['read_back'] and a['limitations'])
 
     def test_a_word_no_family_accounts_for_is_not_silently_dropped(self):
         for q in ('Which practices have the biggest diabetes control gap among women?', 'Which 3 practices have the biggest diabetes control gap?'):

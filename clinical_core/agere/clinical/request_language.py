@@ -52,6 +52,10 @@ SOURCES = {
     'hypertensive patients': ('patient', ('condition', 'hypertension')), 'hypertensives': ('patient', ('condition', 'hypertension')),
     'hypertensive members': ('patient', ('condition', 'hypertension')),
     'asthmatic patients': ('patient', ('condition', 'asthma')), 'asthmatics': ('patient', ('condition', 'asthma')),
+    # denied claims: counted claims whose final status is a denial
+    'claim denials': ('payer_claim', (('counts_in_metrics', 1), ('final_status', ['denied', 'denied_upheld']))),
+    'denied claims': ('payer_claim', (('counts_in_metrics', 1), ('final_status', ['denied', 'denied_upheld']))),
+    'denials': ('payer_claim', (('counts_in_metrics', 1), ('final_status', ['denied', 'denied_upheld']))),
     # prescriptions the pharmacy returned to stock
     'prescriptions returned to stock': ('returned_fill', ('reason', 'return_to_stock')), 'prescriptions were returned to stock': ('returned_fill', ('reason', 'return_to_stock')),
     'fills returned to stock': ('returned_fill', ('reason', 'return_to_stock')), 'fills were returned to stock': ('returned_fill', ('reason', 'return_to_stock')),
@@ -62,7 +66,7 @@ SOURCES = {
 # Received evidence a patient can have or lack: (pattern, table, date field, fixed predicates). Values are the
 # warehouse's own codes; each pattern names one kind of record, never a whole question.
 LAB_NAMES = {  # phrase -> measurement concept (the received lab / vital concepts of the semantic layer)
-    'hba1c': 'hba1c', 'a1c': 'hba1c', 'hemoglobin a1c': 'hba1c', 'glycated hemoglobin': 'hba1c', 'egfr': 'egfr', 'uacr': 'uacr',
+    'hba1c': 'hba1c', 'a1c': 'hba1c', 'hemoglobin a1c': 'hba1c', 'egfr': 'egfr', 'uacr': 'uacr',
     'urine albumin-creatinine ratio': 'uacr', 'urine albumin creatinine ratio': 'uacr', 'urine acr': 'uacr', 'phq-9': 'phq9', 'phq9': 'phq9',
     'ldl': 'ldl', 'ldl cholesterol': 'ldl', 'hdl': 'hdl', 'hdl cholesterol': 'hdl', 'triglycerides': 'triglycerides', 'total cholesterol': 'total_cholesterol',
     'systolic': 'systolic_bp', 'systolic blood pressure': 'systolic_bp', 'systolic bp': 'systolic_bp',
@@ -437,6 +441,16 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
                 for item in child: self.bind_parent_quotes(item)
             elif isinstance(child, dict): self.bind_parent_quotes(child)
 
+    def preset_filter(self, default, quote):
+        """The filter a source noun carries ("diabetics", "claims", "denied claims"): one (field, value) preset or a tuple of them; a list value is IN."""
+        pairs = default if isinstance(default[0], tuple) else (default,)
+        found = []
+        for field, value in pairs:
+            if field == 'condition': found.append(self.condition(value, quote))
+            elif isinstance(value, list): found.append(atom(f'{self.base}.{field}', 'in', value, quote))
+            else: found.append(atom(f'{self.base}.{field}', '=', value, quote))
+        return combine('and', found, quote)
+
     def condition(self, concept_id, quote):
         return {'op': 'concept', 'kind': 'condition', 'names': [concept_id], 'version': 1, 'period': None, 'quote': quote}
 
@@ -810,7 +824,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         if gap: self.gaps.append(quote)
         return ({'op': 'not', 'arg': value, 'quote': quote} if negated else value), tail
 
-    def parse(self, text=None):
+    def parse(self, text=None, governed=True):
+        self.use_governed = governed
         plan = self._parse(text)
         if self.extra_notes and isinstance(plan, dict) and 'select' in plan:
             plan['notes'] = list(dict.fromkeys([*(plan.get('notes') or []), *self.extra_notes]))
@@ -828,10 +843,10 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             return plan
         defined = self.high_cost_form(text) or self.defined_term_form(text)
         if defined: return defined
-        governed = self.governed(text)  # a named governed measure ("denial rate in 2029") keeps its engine
+        governed = self.governed(text) if getattr(self, 'use_governed', True) else None  # a named governed measure ("denial rate in 2029") keeps its engine
         if governed is not None:
             return governed
-        claims = self.amount_form(text) or self.amount_share(text) or self.average_amount(text) or self.rank_rate(text) or self.row_share(text)
+        claims = self.amount_form(text) or self.amount_share(text) or self.average_amount(text) or self.rank_rate(text) or self.rate_by(text) or self.row_share(text)
         if claims: return claims
         anaphoric = False  # the quote of the words that refer to the saved cohort, once the request leads with them
         if self.bound:
@@ -963,10 +978,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
         rest = re.sub(r'\s+(?:are|were|is)\s+there\s*$', '', rest, flags=re.I)
         rest = re.sub(r'^\s*(?:that\s+)?(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)\b\s*', '', rest, flags=re.I)
         base_filter = None
-        if default:
-            field, value = default
-            base_filter = (self.condition(value, source_quote)
-                           if field == 'condition' else atom(self.base+'.'+field, '=', value, source_quote))
+        if default: base_filter = self.preset_filter(default, source_quote)
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         if modifiers and self.base != 'patient': raise PlanError('Population adjectives apply to patients: ' + ' '.join(modifiers))
@@ -1114,10 +1126,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             second, tail = self.expression(second_text)
         if tail.strip(): raise PlanError('Unconsumed request: ' + tail)
         base_filter = None
-        if default:
-            field, value = default
-            base_filter = (self.condition(value, source_quote) if field == 'condition'
-                           else atom(self.base + '.' + field, '=', value, source_quote))
+        if default: base_filter = self.preset_filter(default, source_quote)
         if share:
             if self.base != 'patient' or second is None: raise PlanError('A share of a group needs a patient condition to count')
             where = combine('and', [base_filter, first], self.question)
@@ -1182,6 +1191,8 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             rest, group_fields, group_quote = self.grouping(rest, {k: k for k in V.GROUPS})
         except PlanError:
             return None  # a grouping the governed measure cannot apply ("by month"): the relational grammar may
+        if group_fields and definition.get('grain', {}).get('entity') == 'claim':
+            return None  # the governed grouping is by the PATIENT's attribute; a claim measure grouped by payer / line of business groups the claims themselves (relational forms)
         groups, quotes = [field for _, field in group_fields], list(measure_quote) if isinstance(measure_quote, list) else [measure_quote]
         if group_quote: quotes.append(group_quote)
         # A single explicit period belongs to the measure, never to patient DOB.

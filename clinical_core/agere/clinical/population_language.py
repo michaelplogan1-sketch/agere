@@ -56,9 +56,7 @@ class PopulationForms:
         if not source or source[1][0] != 'patient': return None
         quote, (self.base, default), rest = source
         where = []
-        if default:
-            field, value = default
-            where.append(self.condition(value, quote) if field == 'condition' else atom('patient.' + field, '=', value, quote))
+        if default: where.append(self.preset_filter(default, quote))
         for word in modifiers:
             if word.lower().startswith('adult'):
                 where.append(atom('patient.age', '>=', 18, word))
@@ -301,7 +299,7 @@ class RankingForms:
         if not m: return None
         rest = re.sub(r',?\s*and\s+how\s+many(?:\s+each|\s+of\s+them)?\s*$', '', m['rest'], flags=re.I).strip()
         try:
-            plan = self.parse(rest)
+            plan = self.parse(rest, governed=False)
         except PlanError:
             return None
         if plan.get('group_by') or any(e.get('kind') not in ('count', 'count_distinct') for e in plan['select']): return None
@@ -363,4 +361,6 @@ class RankingForms:
         if n: plan['limit'] = {'value': n, 'quote': head}
         if floor:
             plan['having'] = atom('result.patients', '>=', floor[0], floor[1])
+        else:  # a group with nobody to measure has no share to rank
+            plan['having'] = atom('result.patients', '>=', 1, head)
         return plan
