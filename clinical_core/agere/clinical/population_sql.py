@@ -27,7 +27,7 @@ class Ctx:
         with sqlite3.connect(f'file:{target}?mode=ro', uri=True) as db:
             names = {r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table', 'view')")}
             self.tables = {t: [r[1] for r in db.execute(f'PRAGMA table_info("{t}")')]
-                           for t in ('condition', 'payer_claim_diagnosis', 'problem_list_entry', 'enrollment_span') if t in names}
+                           for t in ('condition', 'payer_claim_diagnosis', 'problem_list_entry', 'enrollment_span', 'measurement') if t in names}  # measurement: the diabetes / CKD lab rule
             has_segment = 'patient' in names and any(r[1] == 'data_segment' for r in db.execute('PRAGMA table_info(patient)'))
         self.living = 'p.patient_id ' + decision_context.counted_predicate(has_segment)  # living, and each person once
         self.queries = []  # every statement run, for the answer's evidence

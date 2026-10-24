@@ -78,6 +78,15 @@ def visible_text(resp):
     return '\n'.join(parts)
 
 
+ANSWER_KEYS = ('headline', 'value', 'table', 'facts', 'answer', 'count')
+
+
+def answer_text(a):
+    """The answer's own statement (headline, value, table, facts): not the echoed question (interpretation / read_as), which repeats the
+    user's words ("better or worse") and would match every label (2026-10-24, b1-03)."""
+    return json.dumps({k: a.get(k) for k in ANSWER_KEYS if a.get(k) not in (None, [], {})}, ensure_ascii=False, default=str)
+
+
 def numbers_in(text):
     out = []
     for m in NUM.findall(text):
@@ -192,7 +201,10 @@ def score(q, resp):
                 if i in used:
                     continue
                 vals = list(r.values())
-                if all(any((isinstance(v, (int, float)) and isinstance(ev, (int, float)) and not isinstance(v, bool) and close(float(v), float(ev), tol))
+                # a share key stored as a fraction matches the same share stated as a percent (as the scalar branches already allow)
+                pct = lambda v, ev: abs(float(ev)) <= 1.0 and close(float(v), float(ev) * 100, {**(tol or {}), 'abs': (tol or {}).get('abs', 0) * 100})
+                if all(any((isinstance(v, (int, float)) and isinstance(ev, (int, float)) and not isinstance(v, bool)
+                            and (close(float(v), float(ev), tol) or (isinstance(ev, float) and pct(v, ev))))
                            or (isinstance(v, str) and isinstance(ev, str) and v.strip().lower() == ev.strip().lower()) for v in vals) for ev in er.values()):
                     used.add(i); hits += 1; order.append(i)
                     break
@@ -224,7 +236,8 @@ def score(q, resp):
         accept = key.get('accept')
         if accept:
             pats = {lab: [re.compile(r'\b' + p, re.I) for p in ps] for lab, ps in accept.items()}
-            seen = {lab for lab, ps in pats.items() if any(p.search(text) for p in ps)}
+            said = answer_text(a) if a else text
+            seen = {lab for lab, ps in pats.items() if any(p.search(said) for p in ps)}
             return seen == {exp}, {'expected': exp, 'matched_labels': sorted(seen)}
         alts = {exp.lower(), exp.lower().replace('_', ' '), str(key.get('display_name') or '').lower()} - {''}
         return any(x in low.replace('_', ' ') or x in low for x in alts), {'expected': exp}
