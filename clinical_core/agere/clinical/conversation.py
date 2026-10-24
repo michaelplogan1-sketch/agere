@@ -820,11 +820,12 @@ def measure_reference(stack, question, saved):
     except (R.PlanError,ValueError,KeyError):
         return None
     if actual != expected: return None
-    if R.Catalog.load(stack.path).identity != catalog.identity: raise R.PlanError('Warehouse changed while resolving the prior measure')
+    if R.Catalog.load(stack.path).identity != catalog.identity or A.source_identity(stack.path) != parent['source']:
+        raise R.PlanError('Warehouse changed while resolving the prior measure')
     return {'context_id':saved['id'],'measure':ident,'descriptor':noun,'population':len(actual),
             'population_fingerprint':R.fingerprint(sorted(actual)),
             'proof':{'descriptor_query':compiled['membership_query'],'governed_query':ctx.queries[-1],
-                     'source_digest':catalog.identity['source_digest'],'as_of':catalog.identity['as_of']},
+                     'source_identity':parent['source'],'as_of':catalog.identity['as_of']},
             'standalone':question[:m.start('who')]+noun+question[m.end('who'):],
             'defining_question':parent.get('original_question') or parent['question']}
 
