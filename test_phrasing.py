@@ -19,7 +19,7 @@ class Rules(unittest.TestCase):
 
     def test_share_leads(self):
         self.assertEqual(one('Percent of adult patients with diabetes whose latest A1c is over 9?'),
-                         'What share of adult patients with diabetes whose latest A1c is over 9?')
+                         'What share of adult patients with diabetes have a latest A1c over 9?')  # "whose latest ..." reads as the latest-result rule
         self.assertEqual(one('What proportion of patients with COPD had an ED visit in 2029?'),
                          'What share of patients with COPD had an ED visit in 2029?')
 
