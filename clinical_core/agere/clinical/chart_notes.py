@@ -25,7 +25,8 @@ STRONG = re.compile(
     r"discussed|discussion|conversation|goals[- ]of[- ]care|code status|dnr|dni|resuscitat\w*|chest compressions|breathing tube|intubat\w*|"
     r"advance directive|polst|molst|living will|health ?care proxy|why was|why did|why is|reason (?:for|why|\w+ (?:was|were))|accept(?:ed)?|declin\w+|refus\w+|"
     r"(?:report|reports|reported)\s+(?:taking|using|having)|discharge summary|impression|x-?ray|radiolog\w+|ruled out|rule[- ]out|stress test|"
-    r"memory concern|intoleran\w+|outside (?:report|record|chest)|scanned|did the patient|does the patient|patient (?:choose|chose|want|wants|prefer))\b", re.I)
+    r"memory concern|intoleran\w+|outside (?:report|record|chest)|scanned|did the patient|does the patient|patient (?:choose|chose|want|wants|prefer)|"
+    r"counsel(?:ed|ing|led|ling)|(?:do|does|did|are|is)\s+(?:the\s+)?(?:later|subsequent)\s+(?:notes?|records?|visits?))\b", re.I)
 WEAK = re.compile(r"\b(?:falls?|fell|raised|trouble|barriers?|symptoms?|complaints?|recommended|mentioned|anywhere|documented|noted)\b", re.I)
 STRUCTURED_FIRST = re.compile(r"\b(?:ed visits?|admissions?|claims?|fills?|pick(?:ed)? up|prescribed|prescriptions?|mammogra\w+|flu shot|vaccin\w+|a1c|egfr|ldl|"
                               r"blood pressure|practice|attributed|allergies|medication list|active medications?|appointments?|no-shows?)\b", re.I)
@@ -72,7 +73,10 @@ RETURN_CUES = [  # (cue, frame, detail field to show)
 MONTHS = ('january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december')
 MONTH_YEAR = re.compile(r"\b(" + '|'.join(MONTHS) + r")\s+((?:19|20)\d\d)\b", re.I)
 ISO = re.compile(r'\b((?:19|20)\d\d-\d\d-\d\d)\b')
-LATER = re.compile(r'\b(?:later|after|since|subsequent)\b', re.I)
+LATER = re.compile(r'\b(?:later|after|afterwards?|since|subsequent(?:ly)?|thereafter)\b', re.I)
+PERSIST = re.compile(r"\bstill\b|\bremain(?:s|ed)?\b|\bcontinu(?:e|es|ed|ing)\b|\bany ?more\b|\bany longer\b|\bno longer\b", re.I)
+INACTIVE_EVENTS = ('stopped', 'held', 'switched')  # a medication event that ends the drug: not "still listed"
+STOP_WORDS = re.compile(r"\bstopp\w+|\bdiscontinu\w+|\bheld\b|\bhold\w*|\bcancel\w+|\bended\b", re.I)
 POSITIVE = ('documented', 'possible', 'planned_not_done', 'historical')
 PATIENT_TOKEN = re.compile(r"(?<![A-Za-z0-9])(?:SYN[-_]?[0-9A-F]{8}[-_]?[0-9A-F]{3}|WHP[-_]?[0-9A-F]{12}|P[-_](?=[A-Z0-9]*[0-9])[A-Z0-9]{2,8})(?:'s)?(?![A-Za-z0-9])", re.I)
 
@@ -226,6 +230,25 @@ def _med_word(text):
     return None
 
 
+COUNT_FRAMES = ('function_cognition', 'adverse_event')  # frames whose reading has a stated `count` detail
+
+
+def _persistence(pred, question, ask, context):
+    """A medication event followed by "do later notes still list it": the later notes are read for the drug as ACTIVE / listed (any later passage
+    that lists it without stopping it), anchored on the dated note (or the stopping event) so the answer cites both."""
+    p = {k: v for k, v in pred.items() if k != '_ask_detail'}
+    p.update({'_persist': True, 'statuses': ['documented'], 'combine': 'any',
+              'return_detail': list(dict.fromkeys([*(p.get('return_detail') or []), 'event', 'adherence']))})
+    dates = note_dates(question)
+    anchor = {'op': 'note', 'frame': 'medication_event', 'concept': dict(p['concept']), 'statuses': ['documented'], 'combine': 'any',
+              'quote': (context or question)[:300], '_event': 'stopped' if STOP_WORDS.search(f'{context} {question}') else None}
+    if dates:
+        anchor['window'] = {'start': dates[0], 'end': dates[0], 'quote': dates[0]}
+        anchor['_keep_window'] = True
+    p['_anchor'] = anchor
+    return p
+
+
 def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     """-> [predicate dict]. `choose(question, options, task_key)` -> label | None is the System One closed-list choice (frame, when the cues are silent)."""
     question = PATIENT_TOKEN.sub(' ', question or '').strip()
@@ -307,6 +330,18 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
         if window:
             pred['window'] = {'start': window['start'], 'end': window['end'], 'quote': window.get('phrase') or ''}
         preds.append(pred)
+    # a question that asks HOW MANY is answered by one count over its first frame (a second frame would be a second answer)
+    if preds and CI.HOW_MANY.search(ask):
+        preds = preds[:1]
+        preds[0]['_count'] = True
+        preds[0]['return_detail'] = list(dict.fromkeys([*(preds[0].get('return_detail') or []), *(['count'] if preds[0]['frame'] in COUNT_FRAMES else [])]))
+        if not preds[0]['concept'].get('open'):
+            preds[0]['combine'] = 'any'  # every documented occurrence in the window, not only the latest
+    # persistence after a dated event: "a 2029-08-05 note stopped X. Do later notes still list X?", "after <event>, is X still on the list?"
+    if (preds and preds[0]['frame'] == 'medication_event' and drug and PERSIST.search(ask) and (LATER.search(ask) or note_dates(question))
+            and not re.search(r'\bstarted\b|\bbeing started\b|\bstarting\b|\bnew\b', ask, re.I)):
+        preds[0] = _persistence(preds[0], question, ask, context)
+        return preds[:1]
     # multi-hop: "later notes" with no date in the question -> run the context event first and use its date
     if preds and LATER.search(ask) and not note_dates(question) and context:
         anchor_frames = frames_of(context)
@@ -426,21 +461,92 @@ def response_predicates(pred, res, as_of):
     return [{**base, 'frame': 'care_process'}, {**base, 'frame': 'plan_followup'}], dates[0][:10]
 
 
+def _whole(x):
+    try:
+        v = float(str(x).replace(',', ''))
+    except (TypeError, ValueError):
+        return None
+    return int(v) if v == int(v) and v >= 0 else None
+
+
+def count_events(res, is_open=False):
+    """HOW MANY, from one patient's reading: the number a note states (the latest stating note decides), else the number of distinct
+    documented occurrences in the window (one per note date). -> {'n', 'basis'} or None when the reading is undecided (never a guessed 0)."""
+    if res.get('status') == 'unknown':
+        return None
+    if is_open:
+        n = len(res.get('findings') or [])
+        return {'n': n, 'basis': 'distinct findings the readers settled' if n else 'none documented'}
+    evs = [e for e in (res.get('evidence') or []) if e.get('supports')]
+    stated = sorted(((e.get('date') or '', _whole((e.get('detail') or {}).get('count')), e) for e in evs if (_whole((e.get('detail') or {}).get('count')) or 0) > 0),
+                    key=lambda t: t[0])
+    if stated:
+        d, n, e = stated[-1]
+        return {'n': n, 'basis': f"stated in the {d or 'undated'} {e.get('note_type') or 'note'} {e.get('record_id') or ''}".strip()}
+    days = {e.get('date') or e.get('record_id') for e in evs}
+    return {'n': len(days), 'basis': 'distinct documented occurrences, one per note date' if days else 'none documented'}
+
+
+def persistence_verdict(res):
+    """"Do later notes still list X?": the later passages that list the drug as ACTIVE (a documented medication event that does not stop, hold
+    or switch it and is not 'not taking') versus those that end it. -> (status, holds, active, ended)."""
+    docs = [e for e in (res.get('evidence') or []) if e.get('status') == 'documented']
+    docs.sort(key=lambda e: (e.get('date') or '', e.get('record_id') or ''))
+    active = [e for e in docs if (e.get('detail') or {}).get('event') not in INACTIVE_EVENTS and (e.get('detail') or {}).get('adherence') != 'not_taking']
+    ended = [e for e in docs if e not in active]
+    if active:
+        return 'documented', True, active, ended
+    if res.get('status') == 'unknown':
+        return 'unknown', None, [], ended
+    return 'denied', False, [], ended
+
+
+def render_persistence(pred, status, active, ended):
+    term, frm = pred['concept']['term'], (pred.get('window') or {}).get('start') or 'the anchor'
+
+    def show(es):
+        return ' | '.join(f"{_where(e)}{_detail_text({k: v for k, v in (e.get('detail') or {}).items() if k in ('event', 'adherence')})}: \"{focus_quote(e.get('quote'), pred)}\"" for e in es[:4])
+    if active:
+        line = f"medication event '{term}': still listed in later notes (from {frm}): {len(active)} later record(s) list it as active, latest {active[-1].get('date')} | {show(active)}"
+    elif status == 'unknown':
+        line = f"medication event '{term}': undecided whether later notes (from {frm}) still list it: the evidence does not settle it"
+    elif ended:
+        line = f"medication event '{term}': not listed as active in later notes (from {frm}); later records that end or hold it | {show(ended)}"
+    else:
+        line = f"medication event '{term}': no later note (from {frm}) lists it"
+    sources = [Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in [*active, *ended]]
+    return line, sources
+
+
 def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no=False, allow_live=None):
     """Run each predicate through note_frames.answer_patient and merge into one core answer."""
     if nf is None:
         from . import note_frames as nf  # builder A's module (spec: answer_patient)
-    lines, sources, rows, statuses, matches = [], [], [], [], []
+    lines, sources, rows, statuses, matches, counted = [], [], [], [], [], []
     for pred in predicates:
         anchor_note = None
         pred = dict(pred)
         anchor = pred.pop('_anchor', None)
         ask_detail = pred.pop('_ask_detail', None)
         want_response = pred.pop('_response', False)
+        persist = pred.pop('_persist', False)
+        count_asked = pred.pop('_count', False)
         if anchor:
+            anchor = dict(anchor)
+            keep_window, wanted_event = anchor.pop('_keep_window', False), anchor.pop('_event', None)
             a = _read(nf, stack, _valid(nf, anchor), patient_id, as_of, ledger, allow_live)
-            dates = sorted(e.get('date') for e in (a.get('evidence') or []) if e.get('date'))
-            if a.get('status') in POSITIVE and dates:
+            aev = [e for e in (a.get('evidence') or []) if e.get('date')]
+            stopped = []
+            if wanted_event:  # the stopping note itself, when the readings say which passages stopped it
+                stopped = [e for e in aev if (e.get('detail') or {}).get('event') == wanted_event and e.get('status') == 'documented']
+                aev = stopped or aev
+            dates = sorted(e['date'] for e in aev)
+            if keep_window:  # the question dated the note: later notes are read from the day after it, and the anchor note itself is cited
+                said = stopped if wanted_event else (aev if a.get('status') in POSITIVE else [])
+                day, from_day = anchor['window']['start'], (pred.get('window') or {}).get('start')
+                anchor_note = (f"anchor: {anchor['concept']['term']} {wanted_event or 'documented'} in the {day} note ({', '.join(dict.fromkeys(e['record_id'] for e in said))}); later notes read from {from_day}"
+                               if said else f"anchor: the {day} note was read for {anchor['concept']['term']} ({a.get('status')}); later notes read from {from_day}")
+            elif a.get('status') in POSITIVE and dates:
                 start = (date.fromisoformat(dates[-1][:10]) + timedelta(days=1)).isoformat()
                 pred['window'] = {'start': start, 'end': str(as_of)[:10], 'quote': f"after {anchor['concept']['term']} on {dates[-1][:10]}"}
                 anchor_note = f"anchor: {anchor['concept']['term']} documented {dates[-1][:10]}; later notes read from {start}"
@@ -454,10 +560,22 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
         is_open = bool(pred['concept'].get('open'))
         if ok and ask_detail:
             ok = detail_matches(ask_detail, detail)
+        active = ended = None
+        if persist and not is_open:
+            status, ok, active, ended = persistence_verdict(res)
+        counted.append(count_events(res, is_open) if count_asked else None)
         statuses.append(status)
         matches.append(ok)
         ev = res.get('evidence') or []
-        if is_open:
+        if persist and not is_open:
+            line, psources = render_persistence(pred, status, active, ended)
+            if anchor_note:
+                line += f' | {anchor_note}'
+            lines.append(line)
+            rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
+                         'records': [e['record_id'] for e in active + ended]})
+            sources.extend(psources)
+        elif is_open:
             line, open_sources = render_open(pred, res)
             if pred.get('sources') or pred.get('note_types'):
                 line += ' | read only: ' + ', '.join([*(pred.get('note_types') or []), *(pred.get('sources') or [])])
@@ -490,8 +608,11 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
                 line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}{own}: \"{focus_quote(e.get('quote'), pred)}\""
             if anchor_note:
                 line += f' | {anchor_note}'
+            if counted[-1] is not None:
+                line = f"{counted[-1]['n']} {pred['concept']['term']} documented in the notes ({counted[-1]['basis']}) | {line}"
             lines.append(line)
-            rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok})
+            rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
+                         **({'count': counted[-1]['n']} if counted[-1] is not None else {})})
             sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in ev)
         if want_response:
             rline, rrows, rsources, rstatuses = _response_part(nf, stack, pred, res, patient_id, as_of, ledger, allow_live)
@@ -511,6 +632,10 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
     else:
         lead = None
     headline = (f'{lead}: ' if lead else '') + ' || '.join(lines) if lines else 'No note predicate could be built from the question'
+    if len(counted) == 1 and counted[0] is not None:  # the question asked HOW MANY: a count, with the value the reader computed
+        n = counted[0]['n']
+        return Q.core('count', headline, value=n, count=n, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': None, 'count_basis': counted[0]['basis']},
+                      notes=['note frames: System One reads retrieved passages; the count is a number the note states, else the distinct documented occurrences in the window'])
     return Q.core('note', headline, value=headline, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': lead},
                   notes=['note frames: System One reads retrieved passages; code reduces them to one patient value; an undecided patient is never read as "no"'])
 

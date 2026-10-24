@@ -16,8 +16,10 @@ returns an Intent with `gaps`; chart_reader fills the gaps from closed lists (Sy
 """
 from __future__ import annotations
 
+import json
 import re
 from datetime import date, timedelta
+from pathlib import Path
 
 from . import decision_context as DC
 
@@ -273,6 +275,58 @@ def _norm_q(question, quotes):
     return re.sub(r'\s+', ' ', q).strip()
 
 
+# -- condition control: a condition mapped to the measures that govern it (data: config/agere/condition_measures.json) ------------------
+CONDITION_MEASURES_PATH = Path(__file__).resolve().parents[3] / 'config' / 'agere' / 'condition_measures.json'
+CONTROL = re.compile(r"\bcontrol(?:led)?\b|\bgetting (?:better|worse)\b|\bbetter or worse\b|\bimprov\w+|\bworsen\w*|\bdeteriorat\w*|\bprogress(?:ing|ion)?\b|"
+                     r"\bat goal\b|\bwell[- ]managed\b|\btrending\b|\bstable\b|\bunder control\b|\bdoing (?:better|worse)\b|\btrend\w*", re.I)
+CONTROL_DIRECTION = re.compile(r'\b(?:better|worse|improv\w+|worsen\w*|deteriorat\w*|trend\w*|over time|chang\w+|compar\w+|progress\w*|direction|rising|falling|increas\w+|decreas\w+|going (?:up|down))\b', re.I)
+_CM = {}
+
+
+def condition_measures():
+    """-> {condition: {'measures': [measurement concepts the warehouse has], 'source': citation}} from the data file."""
+    if not _CM:
+        try:
+            raw = json.loads(CONDITION_MEASURES_PATH.read_text()).get('conditions') or {}
+        except (OSError, ValueError):
+            raw = {}
+        try:
+            from .concepts import MEASUREMENTS
+        except Exception:  # noqa: BLE001
+            MEASUREMENTS = {}
+        _CM['v'] = {c: {'measures': [m for m in v.get('measures', []) if not MEASUREMENTS or m in MEASUREMENTS], 'source': v.get('source')} for c, v in raw.items()}
+    return _CM['v']
+
+
+def _condition_phrase(low, cond):
+    """The words of the question that named the condition (kept in the typed concept so the plan carries what was asked)."""
+    try:
+        from .concepts import CONDITIONS
+    except Exception:  # noqa: BLE001
+        return cond.replace('_', ' ')
+    for p in (CONDITION_ALIASES.get(cond), CONDITIONS.get(cond, {}).get('text')):
+        m = re.search(p, low, re.I) if p else None
+        if m:
+            return m.group().strip()
+    return cond.replace('_', ' ')
+
+
+def condition_control(q, low, domain, concept):
+    """A question about the control or direction of a CONDITION ("is the diabetes control getting better or worse") is a question about the
+    measures that govern it (diabetes: HbA1c; hypertension: systolic and diastolic pressure; CKD: eGFR and UACR ...). The typed concept carries
+    both the condition and its measures. A lab question that merely names its condition also keeps the condition. -> (domain, concept, controlled)."""
+    cond = _find_condition(low)
+    spec = condition_measures().get(cond) if cond else None
+    if not spec or not spec['measures']:
+        return domain, concept, False
+    if domain == 'lab' and isinstance(concept, dict) and concept.get('kind') == 'lab':
+        return domain, {**concept, 'condition': cond, 'condition_quote': _condition_phrase(low, cond)}, False
+    if domain in (None, 'condition') and CONTROL.search(low):
+        ms = spec['measures']
+        return 'lab', {'kind': 'lab', 'value': ms[0], 'concepts': list(ms), 'condition': cond, 'condition_quote': _condition_phrase(low, cond)}, True
+    return domain, concept, False
+
+
 def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
     """The grammar. -> Intent dict (always; `gaps` lists what it could not fill). `prior` is the previous turn's Intent for an
     elliptical follow-up ("and the one before that?")."""
@@ -292,6 +346,7 @@ def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
         return out
 
     domain, concept = _domain_and_concept(q, low, lexicon)
+    domain, concept, controlled = condition_control(q, low, domain, concept)
     note_like = bool(NOTE_CUES.search(q))
     out['note_cues'] = note_like
     inherited = False
@@ -317,6 +372,9 @@ def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
         out['ordinal'] = 1
     out['attribute'] = _attribute(domain, low)
     out['intent'] = _intent(domain, q, low, out, prior if inherited else None)
+    if controlled:
+        out['flags'].append('condition_control')
+        out['intent'] = 'trend' if CONTROL_DIRECTION.search(q) and not out.get('ordinal') else 'latest_value'
     if domain == 'fill' and re.search(r'\b(?:pdc|proportion of days|days covered|adherence|adherent)\b', low):
         out['attribute'], out['intent'] = 'pdc', 'latest_value'
     if domain == 'prescription' and NEVER_FILLED.search(q):

@@ -42,6 +42,10 @@ def numbers(text):
     """The set of numeric constraints in a question (digits and number words; 2029-30 is 2029 and 2030)."""
     t = text.lower().replace(',', '')
     found = set()
+    # A full ISO date (2029-08-05) is a date, not the year range 2029-08: its year, month and day are the numbers (2029, 8, 5).
+    for y, mo, d in re.findall(r'(?<![\d-])((?:19|20)\d\d)-(\d{2})-(\d{2})(?![\d-])', t):
+        found |= {y, str(float(mo)).rstrip('0').rstrip('.'), str(float(d)).rstrip('0').rstrip('.')}
+        t = t.replace(f'{y}-{mo}-{d}', ' ')
     for a, b in re.findall(r'\b(20\d\d)\s*[-/–]\s*(\d{2,4})\b', t):
         found |= {a, b if len(b) == 4 else a[:2] + b}
         t = t.replace(f'{a}-{b}', ' ')

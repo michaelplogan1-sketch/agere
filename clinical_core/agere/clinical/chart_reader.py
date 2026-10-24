@@ -227,7 +227,10 @@ def read_back(it, pid, as_of, *, note_predicates_=None, deceased=None):
         return f"What the notes say for {pid}: " + '; '.join(parts) + (f" ({win['start']} to {win['end']})" if win else ' (all notes)') + f', as of {as_of}.'
     c = it.get('concept') or {}
     what = {
-        'lab': lambda: (CI.LAB_LABELS.get(c.get('value'), (c.get('value') or 'laboratory result').replace('_', ' ')) if c.get('kind') == 'lab' else 'latest laboratory results'),
+        'lab': lambda: ((f"{c['condition'].replace('_', ' ')} control (" + ' and '.join(CI.LAB_LABELS.get(m, m.replace('_', ' ')) for m in c['concepts']) + ')'
+                         if c.get('condition') and len(c.get('concepts') or []) > 1 else
+                         CI.LAB_LABELS.get(c.get('value'), (c.get('value') or 'laboratory result').replace('_', ' ')))
+                        if c.get('kind') == 'lab' else 'latest laboratory results'),
         'medication': lambda: f"{Q.concept_label(c) if c else 'active medications'}", 'fill': lambda: f"{Q.concept_label(c) if c else 'medication'} fills",
         'prescription': lambda: 'prescriptions', 'ed_visit': lambda: 'ED visits', 'inpatient': lambda: 'hospital admissions', 'observation': lambda: 'observation stays',
         'readmission': lambda: '30-day readmissions', 'claims': lambda: 'plan-paid claims', 'condition': lambda: (c.get('value') or 'conditions').replace('_', ' '),
@@ -409,7 +412,7 @@ def _elliptical(question):
 
 
 # -- cascade rung ---------------------------------------------------------------------------------------------------------------------
-def typed_chart(it, preds=None):
+def typed_chart(it, preds=None, question=None):
     """The typed chart request the graph executes, so the literal check reads what was understood (concept, intent, window,
     ordering, note predicates) instead of only the restated question (the same admission rule as every other plan)."""
     def plain(v):
@@ -420,12 +423,16 @@ def typed_chart(it, preds=None):
            'concept': plain({k: v for k, v in concept.items() if v is not None}) if isinstance(concept, dict) else plain(concept),
            'flags': list(it.get('flags') or [])}
     if it.get('domain') == 'readmission':  # the chart reader's readmission is stay.readmitted_30d: say so, so another window is caught
-        out['measure'] = {'field': 'stay.readmitted_30d', 'within_days': 30, 'after': 'discharge_date'}
+        out['measure'] = {'field': 'stay.readmitted_30d', 'within_days': 30, 'window': '30 days after discharge_date', 'after': 'discharge_date'}
     if it.get('mode') in ('latest', 'first') or it.get('ordinal') or it.get('intent') in ('latest_value', 'last_event'):
         out['order_by'] = [{'field': 'event_date', 'direction': 'asc' if it.get('mode') == 'first' else 'desc'}]
         out['limit'] = 1 + (int(it['ordinal']) if isinstance(it.get('ordinal'), int) else 0)
         if isinstance(it.get('ordinal'), int) and it['ordinal'] > 1:
             out['offset'] = it['ordinal'] - 1  # "the one before that": skip the latest 1
+    if it.get('intent') == 'trend' and it.get('domain') == 'lab' and not it.get('window') and 'delta' not in (it.get('flags') or []):
+        # the direction is read from the two most recent results (chart_queries.lab_trend): say so, so "compare the last two" is carried
+        out['order_by'] = [{'field': 'event_date', 'direction': 'desc'}]
+        out['limit'] = 2
     if preds:
         out['note_predicates'] = plain(preds)
         # what the wording restricted the reading to, stated at the top level so the literal check sees it without digging
@@ -440,6 +447,14 @@ def typed_chart(it, preds=None):
             out['note_types'] = types
         if days:
             out['note_dates'] = days
+        # every date the wording gives (the dated note a later question is anchored on, an event date): the window may start the day after it
+        given = CN.note_dates(question or it.get('question') or '')
+        if given:
+            out['anchor_dates'] = given
+        if any(p.get('_persist') for p in preds):
+            out['asks_persistence'] = True
+        if any(p.get('_count') for p in preds):
+            out['asks_count'] = True
         if opens:
             out['open_concepts'] = opens
         if any(p.get('_response') for p in preds):
@@ -479,7 +494,7 @@ def tier(stack, question, population=None, *, ledger=None, decide=None):
     # remembered here, in the request's own thread, so the next turn's "she" / "and the one before that" binds this patient
     PI.remember_current(PI.make_subject(sub['patient_id'], sub['quote'], frame=_clean_intent(it) if not note else None))
     params = {'patient_id': sub['patient_id'], 'question': question[:2000], 'subject_quote': sub['quote'] or sub['patient_id'], 'how': sub['how'],
-              'chart': typed_chart(it, preds if note else None)}
+              'chart': typed_chart(it, preds if note else None, question)}
     from .engine_suite import plan
     graph, info = plan(OP, params, f"Read one patient's chart: {sub['patient_id']}", question,
                        [f"patient {sub['patient_id']} ({sub['how']})", *( [f"intent {it.get('intent')} over {it.get('domain')}"] if not note else ['note frames'])])
