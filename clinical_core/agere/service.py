@@ -177,6 +177,11 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 path=urlsplit(self.path).path
                 if local_operations:check_local_request(path,body)
                 held.enter_context(request_locks.for_route(path,body))  # per-resource locks (request_locks.py), never one global lock
+                # Cover dispatch-journal start, provider events and finish as well
+                # as composition; evaluation operational records stay in scratch.
+                from .clinical import evaluation
+                if path == '/api/stack/compose':
+                    held.enter_context(evaluation.request_scope(self.headers, connected_stack.path))
                 from . import request_lineage
                 execution=None if recovery and path in READ_POSTS else request_lineage.begin(connected_stack.path,path,body)
                 if execution:held.enter_context(execution)  # activates the lineage scope; closed with the request, even on error
@@ -306,10 +311,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     result=open_pathway(connected_stack.path,body)
                 elif path=='/api/stack/compose':
                     # {question}, {question, planning} and, for follow-ups, either plus conversation_id.
-                    from .clinical import conversation, evaluation
-                    # X-Agere-Evaluation: 1 answers the question with every learning write off (benchmarks, sealed banks)
-                    with evaluation.request_scope(self.headers,connected_stack.path):
-                        result=conversation.handle_compose(connected_stack,body)
+                    from .clinical import conversation
+                    result=conversation.handle_compose(connected_stack,body)
                 elif path=='/api/stack/correct':
                     from .clinical import learning
                     if set(body)-{'question','note','expected','rule'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
