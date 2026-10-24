@@ -87,7 +87,7 @@ CONDITION_EVIDENCE = {
     'by_code': 'diagnosis_any = the same evidence by ICD-10 code (EHR condition rows, counted payer-claim diagnoses, laboratory-evidence '
                'rows of diabetes and CKD); count DISTINCT patient_id',
 }
-LAB_EVIDENCE_CONDITIONS = ('diabetes', 'type_1_diabetes', 'type_2_diabetes', 'chronic_kidney_disease')
+LAB_EVIDENCE_CONDITIONS = ('diabetes', 'chronic_kidney_disease')  # generic concepts only (see concepts.LAB_EVIDENCE_CONDITIONS)
 
 # --- events --------------------------------------------------------------------------------------------------------------------
 EVENT_RELATIONS = {
