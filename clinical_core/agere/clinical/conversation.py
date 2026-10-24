@@ -780,6 +780,55 @@ def named_cohort_reference(stack, question, saved):
     return None
 
 
+def measure_reference(stack, question, saved):
+    """Resolve a bare numeric patient threshold from one verified prior measure.
+
+    The declared population descriptor must compile to exactly the population
+    of the executed measure. Multiple laboratory concepts, explicit new
+    concepts, and selected input subsets are never guessed away.
+    """
+    if not saved: return None
+    m=re.search(r'\b(?P<who>patients|members|people)\s+(?P<op>above|over|under|below|at\s+least|at\s+most)\s+(?P<n>\d+(?:\.\d+)?)\b',question,re.I)
+    if not m or question[m.end():].lstrip().startswith('%'): return None
+    lead=re.search(r'([a-z]+)\s*$',question[:m.start()],re.I)
+    if lead and lead[1].lower() not in ('most','fewest','more','fewer','many','count','our','the'): return None
+    from . import request_language as L,request_plan as R,sql_query,decision_context as DC
+    def labs(text):
+        return {concept for alias,concept in L.LAB_NAMES.items() if re.search(r'(?<!\w)'+re.escape(alias)+r'(?!\w)',text,re.I)}
+    if labs(question): return None
+    from ..deliverables import answer_context as A
+    parent=A.load(stack.path,saved['id'],current=True,follow_up=True)
+    contract=(parent.get('planner_receipt') or {}).get('request_contract') or {}
+    answer=parent.get('answer') or {}
+    if (contract.get('kind') != 'engine_form' or contract.get('family') != 'practice_gap'
+            or parent.get('input_patient_ids') is not None or answer.get('status') != 'answered'
+            or answer.get('missing') or answer.get('unknown_count')): return None
+    from .population_sql import Ctx
+    from .insight_families import measures
+    catalog=R.Catalog.load(stack.path)
+    ctx=Ctx(stack.path,catalog.target,catalog.identity['as_of'])
+    ident=contract['params'].get('measure')
+    measure=measures(ctx).get(ident) or {}
+    noun=measure.get('noun','')
+    if len(labs(noun)) != 1 or not measure.get('population'): return None
+    descriptor='List '+noun
+    try:
+        with DC.scope(descriptor,catalog.identity['as_of']):
+            compiled=R.compile_request(catalog,descriptor,L.parse(catalog,descriptor))
+            actual=set(sql_query.execute(stack.path,{'query':compiled['membership_query'],'returns':'patient_set'},target=catalog.target)['patient_ids'])
+        expected=set(ctx.ids(measure['population']))
+    except (R.PlanError,ValueError,KeyError):
+        return None
+    if actual != expected: return None
+    if R.Catalog.load(stack.path).identity != catalog.identity: raise R.PlanError('Warehouse changed while resolving the prior measure')
+    return {'context_id':saved['id'],'measure':ident,'descriptor':noun,'population':len(actual),
+            'population_fingerprint':R.fingerprint(sorted(actual)),
+            'proof':{'descriptor_query':compiled['membership_query'],'governed_query':ctx.queries[-1],
+                     'source_digest':catalog.identity['source_digest'],'as_of':catalog.identity['as_of']},
+            'standalone':question[:m.start('who')]+noun+question[m.end('who'):],
+            'defining_question':parent.get('original_question') or parent['question']}
+
+
 def monetary_followup(catalog, question):
     """A monetary measure has a financial clock; a condition in its input does not."""
     from . import request_language as L
@@ -857,6 +906,8 @@ def handle_compose(stack, body, hosted_factory=None):
             if reference:
                 saved={'id':reference['context_id']}
                 refers=True
+            measurement = (measure_reference(stack,question,saved) if shared and saved and not refers and not explicit_context
+                           and body.get('scope') != 'warehouse' and is_followup(question) else None)
             temporal = None
             if shared and prior and saved and is_followup(question) and body.get('scope') != 'warehouse' and not explicit_context:
                 from .request_plan import Catalog
@@ -866,7 +917,7 @@ def handle_compose(stack, body, hosted_factory=None):
                 if temporal:
                     if not saved: temporal = None
                     else: answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
-            effective_question = temporal['standalone'] if temporal else reference['standalone'] if reference else question
+            effective_question = temporal['standalone'] if temporal else reference['standalone'] if reference else measurement['standalone'] if measurement else question
             used_temporal = False
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
@@ -911,11 +962,17 @@ def handle_compose(stack, body, hosted_factory=None):
                 if resolution.get('hosted_receipt'):
                     r = resolution['hosted_receipt']
                     hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1
-                if shared and temporal and bound is None:
+                if shared and (temporal or measurement) and bound is None:
                     resolution['standalone'] = effective_question
-                    used_temporal = True
+                    used_temporal = temporal is not None
                 standalone = resolution['standalone']
                 result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
+                if measurement and bound is None:
+                    resolution.update(standalone=effective_question,method='inherited_measure',follow_up=True,
+                                      reason='Kept the single measured concept and verified population of the previous answer')
+                    result['measure_binding']=measurement
+                    result['answer']['limitations']=[*(result['answer'].get('limitations') or []),
+                        'Measure and population carried from the prior answer: '+measurement['descriptor']+'.']
                 if reference and bound:
                     resolution.update(standalone=effective_question,method='named_cohort',follow_up=True,
                                       reason='Bound the population name to its verified saved definition')
