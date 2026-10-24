@@ -64,6 +64,29 @@ class FakeNoteFrames:
         return {'status': 'unknown', 'detail': {}, 'evidence': [], 'p': None}
 
 
+def gates(stack, text, prior, out):
+    """What the service checks AFTER the chart reader answers: the requirement ledger over the plan's executable text (the typed chart:
+    literal numbers, concepts, windows) and the requested answer shape. -> {'gaps': [...], 'shape_misfit': str | None}."""
+    from clinical_core.agere.clinical import chart_reader_op, patient_ids as PI, requirement_ledger
+    from clinical_core.agere.clinical.answer_shape import final
+    from clinical_core.agere.clinical.literal_check import executable_text, shape_misfit
+    PI._PRIOR.set(prior)
+    try:
+        found = chart_reader.tier(stack, text)
+    except Exception as exc:  # noqa: BLE001
+        return {'gaps': [f'tier error {type(exc).__name__}: {exc}'[:200]], 'shape_misfit': None}
+    if not found:
+        return {'gaps': ['tier declined'], 'shape_misfit': None}
+    graph, _ = found
+    gaps = requirement_ledger.gaps(text, executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+    misfit = None
+    if out.get('status') == 'answered':
+        merged = chart_reader_op.answer({'answer_contract': out, 'patient_ids': out.get('patient_ids') or []}, {'coverage': 'supported_observation'}, text)
+        res = final(text, graph, {}, {'answer': merged})
+        misfit = shape_misfit(text, res['answer'])
+    return {'gaps': gaps, 'shape_misfit': misfit}
+
+
 def run(args):
     qs = read_dev(args.bucket or BUCKETS)
     by_id = {q['id']: q for q in qs}
@@ -94,10 +117,13 @@ def run(args):
         lead_ok = None
         if q['answer_type'] == 'note' and out.get('status') == 'answered':
             lead_ok, _ = dev_run.score(q, {'status': out.get('status'), 'answer': out.get('headline') or ''})
+        gate = gates(stack, text, prior, out) if args.gates else None
         verdict = 'correct' if correct is True else 'refused' if correct is None else 'WRONG'
         rows.append({'id': q['id'], 'bucket': q['bucket'], 'asked': text, 'verdict': verdict, 'lead_verdict': lead_ok, 'status': out.get('status'), 'seconds': round(secs, 2),
                      'paid_calls': cost.get('new_paid_api_calls', 0), 'usd': cost.get('system_one_usd', 0.0), 'detail': detail,
-                     'headline': (out.get('headline') or out.get('error') or '')[:240], 'intent': out.get('intent')})
+                     'headline': (out.get('headline') or out.get('error') or '')[:240], 'intent': out.get('intent'), 'gates': gate})
+        if gate and (gate['gaps'] or gate['shape_misfit']):
+            print(f"         GATE gaps={gate['gaps']} shape={gate['shape_misfit']}", flush=True)
         print(f"{q['id']:>6} {verdict:8} lead={lead_ok!s:5} {secs:5.2f}s ${cost.get('system_one_usd', 0.0):.4f}  {text[:70]}\n         -> {(out.get('headline') or out.get('error') or '')[:150]}", flush=True)
     print('\n=== per bucket ===')
     for b in BUCKETS:
@@ -112,6 +138,9 @@ def run(args):
         print(f"{b}: headline-lead scoring correct={lead} ({100 * lead / n:.1f}%)")
         print(f"{b}: n={n} correct={c} ({100 * c / n:.1f}%) wrong={w} refused={f} seconds_total={sum(r['seconds'] for r in rs):.1f} "
               f"paid_calls={sum(r['paid_calls'] for r in rs)} usd={sum(r['usd'] for r in rs):.4f}")
+    if args.gates:
+        bad = [r for r in rows if r['gates'] and (r['gates']['gaps'] or r['gates']['shape_misfit'])]
+        print(f"gate failures: {len(bad)} of {len(rows)}: " + ', '.join(r['id'] for r in bad))
     if args.out:
         Path(args.out).write_text(json.dumps(rows, indent=1, default=str))
     return rows
@@ -123,6 +152,7 @@ def main(argv=None):
     ap.add_argument('--stack', default=str(STACK))
     ap.add_argument('--follow-ups', choices=('conversation', 'standalone'), default='conversation')
     ap.add_argument('--live', action='store_true', help='allow System One calls (needs TYPESAFE_API_KEY / PERPLEXITY_API_KEY in the environment)')
+    ap.add_argument('--gates', action='store_true', help='also run the service-side literal (requirement ledger) and answer-shape checks on each answer')
     ap.add_argument('--fake-notes', action='store_true')
     ap.add_argument('--out')
     run(ap.parse_args(argv))
