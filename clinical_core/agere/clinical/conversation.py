@@ -406,7 +406,7 @@ def requires_saved_cohort(question, catalog=None):
     # "Which patients look like they have ...": a seeming verb between the population and the pronoun keeps it local.
     if reference.group() in ('they', 'their', 'them') and re.match(r'\s*(?:look|looks|seem|seems|appear|appears)\b', link):
         return False
-    if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned)\b', link):
+    if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned|completed|received|got|had|filled|went|visited|underwent)\b', link):
         return False
     # A noun alone is insufficient: "count claims for those patients" still
     # refers outside this question. Only recognize an explicit clause link.
@@ -752,10 +752,12 @@ def handle_compose(stack, body, hosted_factory=None):
         from .question_input import QuestionNotUnderstood
         from ..deliverables import answer_context
         # A question that names a patient ("Does P-5003 want CPR if their heart stops?") refers to that patient, not a saved cohort.
-        refers = requires_saved_cohort(question) and not patient_ids.names_a_patient(question)
+        from . import phrasing  # follow-up routing reads the question in its canonical wording ("By line of business, how much ..." is not an edit)
+        routing = (phrasing.variants(question) or [question])[0]
+        refers = requires_saved_cohort(routing) and not patient_ids.names_a_patient(question)
         if refers and getattr(stack, 'shared_request_planning', False) is True:
             from .request_plan import Catalog
-            refers = requires_saved_cohort(question, Catalog.load(stack.path))
+            refers = requires_saved_cohort(routing, Catalog.load(stack.path))
         if conv is False:
             if refers:
                 raise QuestionNotUnderstood('This question refers to a previous cohort. Open that conversation or ask a complete question; no whole-population substitution was run.')
@@ -781,7 +783,7 @@ def handle_compose(stack, body, hosted_factory=None):
                               'edits': [note], 'reason': note, 'hosted_receipt': None}
             else:
                 shared_edit = bool(explicit_context) or (body.get('scope') != 'warehouse' and
-                    (refers or bool(re.match(r'^(?:only|exclude|excluding|remove|group by|by)\b', question, re.I))))
+                    (refers or bool(re.match(r'^(?:only|exclude|excluding|remove|group by|by)\b', routing, re.I))))
                 if shared and shared_edit:
                     if not saved:
                         raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')

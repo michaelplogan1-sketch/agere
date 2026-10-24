@@ -1067,9 +1067,23 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
     from . import decision_context
     try: as_of = stack.retriever.meta['snapshot']['as_of']
     except (AttributeError, KeyError, TypeError): as_of = None  # a stand-in stack without a snapshot
-    with decision_context.scope(question, as_of) as state:
-        result = _compose(stack, question, population=population, parent=parent, model=model, planning=planning)
-        return decision_context.finalize(stack.path, result, state)
+    # The question in the wording the grammar and every check were written against (phrasing.py: abbreviations, synonyms, alternative
+    # constructions; every number, patient id and negation kept) is tried first; if the stack cannot read it, the question as typed is.
+    from . import phrasing
+    reworded = phrasing.variants(question)
+    tries = [*reworded, question]
+    for n, text in enumerate(tries):
+        try:
+            with decision_context.scope(text, as_of) as state:
+                result = _compose(stack, text, population=population, parent=parent, model=model, planning=planning)
+                result = decision_context.finalize(stack.path, result, state)
+        except QuestionNotUnderstood:
+            if n == len(tries) - 1:
+                raise
+            continue
+        if text != question:
+            phrasing.disclose(result, question, text)
+        return result
 
 
 def _compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):

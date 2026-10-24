@@ -44,7 +44,7 @@ def interpret(catalog, question, *, population=None):
             continue
         if not spec: continue
         from .general_analysis import uncovered
-        left = uncovered(text, [*spec['quotes'], *cls.WORDS])
+        left = uncovered(text, [*spec['quotes'], *cls.WORDS], stem=True)
         if left: continue  # a word of the question no recognised phrase accounts for: this form does not answer it
         import json as _json
         numbers = set(re.findall(r'(?<![\w.])\d[\d,]*(?:\.\d+)?', text))
