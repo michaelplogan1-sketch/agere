@@ -315,18 +315,32 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
 
 
 def scalar_row(sections, contract):
-    """{name: number} when every output of the program is one answered number (a count, a value or a share), else None. Names are the outputs'
-    own measure aliases, made unique with the output id."""
+    """One summary row for scalar outputs and explicitly requested single-row rankings.
+
+    Keep child sections and their evidence intact. Multi-row outputs never get
+    joined by position or silently reduced to their first row.
+    """
     if len(sections) < 2: return None
     nodes = {n['id']: n for n in contract['nodes']}
     row = {}
-    for s in sections:
-        a = s['answer']
-        value = next((a[k] for k in ('count', 'value') if isinstance(a.get(k), (int, float)) and not isinstance(a.get(k), bool)), None)
-        if a.get('status') != 'answered' or value is None: return None
-        select = (((nodes.get(s['id']) or {}).get('contract') or {}).get('request') or {}).get('select') or [{}]
-        name = str(select[0].get('alias') or s['id'])
-        row[name if name not in row else f"{name}_{s['id']}"] = value
+    for section in sections:
+        answer = section['answer']
+        if answer.get('status') != 'answered': return None
+        request = (((nodes.get(section['id']) or {}).get('contract') or {}).get('request') or {})
+        select = request.get('select') or [{}]
+        if answer.get('answer_type') in ('value', 'count'):
+            key = 'count' if answer['answer_type'] == 'count' else 'value'
+            value = answer.get(key)
+            if not isinstance(value, (int,float)) or isinstance(value,bool): return None
+            values = {str(select[0].get('alias') or section['id']): value}
+        elif (request.get('order_by') and (request.get('limit') or {}).get('value') == 1
+              and request.get('group_by') and len(answer.get('table') or []) == 1):
+            values = answer['table'][0]
+            if not isinstance(values,dict) or not values: return None
+        else:
+            return None
+        for name,value in values.items():
+            row[name if name not in row else f"{name}_{section['id']}"] = value
     return row
 
 

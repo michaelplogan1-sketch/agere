@@ -288,7 +288,7 @@ def bound_operators(question, spec_list):
 
 
 # -- windows -----------------------------------------------------------------------------------------------------------------------
-def windows(question, text, as_of):
+def windows(question, text, as_of, spec_list=()):
     rows = []
     if not as_of: return rows
     from . import decision_context as DC
@@ -305,6 +305,21 @@ def windows(question, text, as_of):
         else:
             year = w['start'][:4]
             ok = year in text
+            # Consecutive year comparisons can compile to a single half-open
+            # interval: 2028..2030 includes all of 2029 without spelling 2029.
+            def atoms(expr):
+                if not isinstance(expr,dict): return []
+                if expr.get('op') == 'and': return [a for c in expr.get('args',[]) for a in atoms(c)]
+                return [expr] if 'field' in expr else []
+            for spec in spec_list:
+                grouped = {}
+                for a in atoms(spec.get('where')):
+                    grouped.setdefault(a['field'],[]).append(a)
+                for bounds in grouped.values():
+                    starts=[str(a.get('value')) for a in bounds if a.get('op') == '>=']
+                    ends=[str(a.get('value')) for a in bounds if a.get('op') == '<']
+                    if any(v <= year+'-01-01' and re.fullmatch(r'\d{4}-\d{2}-\d{2}',v) for v in starts) and any(v >= str(int(year)+1)+'-01-01' and re.fullmatch(r'\d{4}-\d{2}-\d{2}',v) for v in ends):
+                        ok = True
             rows.append(_row(rid, 'window', w['phrase'], MET if ok else UNMET, how=f'calendar year {year} is in the plan' if ok else None,
                              reason=None if ok else f'"{w["phrase"]}" is calendar year {year}; the plan does not carry it'))
     return rows
@@ -408,7 +423,7 @@ def ranking(question, spec_list, chart_list, queries_list, text, answer):
 
 DIMENSIONS = {
     'payer': r'payer|line_of_business|\blob\b|coverage|insurance|plan_type|product', 'practice': r'practice|clinic|site|\bpcp\b|provider|location',
-    'sex': r'\bsex\b|gender', 'month': r'month|strftime|date_trunc', 'year': r'year|strftime', 'quarter': r'quarter|strftime',
+    'sex': r'\bsex(?:_reported)?\b|gender', 'month': r'month|strftime|date_trunc', 'year': r'year|strftime', 'quarter': r'quarter|strftime',
     'age': r'\bage\b|age_band|age_group|birth', 'race': r'race|ethnic', 'language': r'language', 'specialty': r'specialty',
     'condition': r'condition|diagnos|concept|disease', 'drug': r'drug|medication|class', 'code': r'\bcode|carc|icd|cpt|drg',
 }
@@ -514,6 +529,13 @@ _BY_DIM = re.compile(r'\b(?:by|per|for\s+each|each|across|broken\s+down\s+by|spl
 def requested_output(question):
     """count | patient_set | table | value | None, read carefully: "how many ... who ..." is a count; "per claim" is not a breakdown."""
     q = question or ''
+    # Per-row measures remain scalar; explicit group comparisons and per-group
+    # measures request a table even when the measure itself is an average/count.
+    if re.search(r'\b(?:for\s+each|compare|versus|vs|compared\s+(?:with|to))\b',q,re.I): return 'table'
+    if re.search(r'\b(?:by|split\s+by|grouped\s+by)\s+(?:[\w-]+\s+){0,2}(?:practice|payer|pharmac(?:y|ies)|sex|gender|need|tier|type|status|year|month|age)\b',q,re.I): return 'table'
+    if re.search(r'\b(?:women|men|female|male|commercial|medicare|medicaid|dual|medigap)\b[^?]{0,35}\band\s+(?:of\s+)?(?:women|men|female|male|commercial|medicare|medicaid|dual|medigap)\b',q,re.I): return 'table'
+    if re.search(r'\b(?:in|during)\s+(?:19|20)\d\d\s+and\s+(?:in|during)\s+(?:19|20)\d\d',q,re.I): return 'table'
+    if re.search(r'\bwhich\s+(?:\d+|one|two|three|four|five)\b',q,re.I) and wanted_ranking(q)[0]: return 'table'
     if _COUNT_ASK.search(q) and not _VALUE_ASK.search(q): return 'table' if _BY_DIM.search(q) else 'count'
     if _BY_DIM.search(q) or re.search(r'\b(?:break(?:s)?\s*(?:it\s+)?(?:down|out)|breakdown|split|tabulate|monthly|quarterly|weekly|trend)\b', q, re.I): return 'table'
     if _VALUE_ASK.search(q): return 'value'
@@ -619,7 +641,7 @@ def evaluate(question, *, contract=None, graph=None, answer=None, as_of=None, ro
         rows = [r for r in rows if r['kind'] == 'threshold']
         rows.append(_row('scope:words', 'scope', 'every word of the question', NA, how='accounted for by the fully consumed grammar / governed engine form'))
     rows += bound_operators(question, spec_list)
-    rows += windows(question, text, as_of)
+    rows += windows(question, text, as_of, spec_list)
     rows += ranking(question, spec_list, chart_list, query_list, text, answer)
     rows += grouping(question, spec_list, query_list, text)
     rows += denominators(question, spec_list, query_list)

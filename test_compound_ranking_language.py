@@ -26,6 +26,15 @@ class CompoundRanking(CompositionFixture):
         a,b=self.execute_parts('What share of pharmacy claims were rejected in 2029, and what is the most common reject code in 2028?')
         self.assertEqual(a['value'],40)
         self.assertEqual(b['rows'],[{'reject_code':'OLD','count':4}])
+    def test_summary_row_preserves_top_category_and_never_slices_multiple_rows(self):
+        sections=[{'id':'rate','answer':{'status':'answered','answer_type':'value','value':40}},
+                  {'id':'rank','answer':{'status':'answered','answer_type':'table','table':[{'reject_code':'N1','count':2}]}}]
+        contract={'nodes':[{'id':'rate','contract':{'request':{'select':[{'alias':'percent'}]}}},
+                           {'id':'rank','contract':{'request':{'order_by':[{'alias':'count'}],'limit':{'value':1},'group_by':['reject_code']}}}]}
+        self.assertEqual(P.scalar_row(sections,contract),{'percent':40,'reject_code':'N1','count':2})
+        sections[1]['answer']['table'].append({'reject_code':'OTHER','count':1})
+        self.assertIsNone(P.scalar_row(sections,contract))
+
     def test_quote_mask_keeps_contractions_but_hides_quoted_commands(self):
         self.assertEqual(L.syntax_text("what's top?"),"what's top?")
         masked=L.syntax_text("label 'A and how many' and count patients")

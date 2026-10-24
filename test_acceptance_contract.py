@@ -365,3 +365,26 @@ class AnalystBinding(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class GroupedMeasureAcceptance(unittest.TestCase):
+    def test_grouped_measure_shapes_and_ordinary_scalars_remain_distinct(self):
+        table={'status':'answered','answer_type':'table','table':[{'payer':'A','average':2},{'payer':'B','average':3}]}
+        for q in ['For each primary-care practice, how many patients visited?',
+                  'Compare average paid per claim for retail versus mail-order pharmacies.',
+                  'What share of women and of men have a lab result?',
+                  'What was total paid in 2028 and in 2029?']:
+            self.assertIsNone(AC.output_misfit(q,table),q)
+        for q in ['What is the average paid per claim?', 'How many admissions were between 2028 and 2029?']:
+            self.assertIsNotNone(AC.output_misfit(q,table),q)
+    def test_grouped_sex_field_matches_sex_but_payer_does_not(self):
+        good=spec(group_by=['sex'],select=[{'kind':'field','field':'patient.sex_reported','alias':'sex'}, {'kind':'count','alias':'count'}])
+        self.assertTrue(all(r['status'] != AC.UNMET for r in AC.grouping('Count patients for each sex',[good],[],'')))
+        bad=spec(group_by=['payer'],select=[{'kind':'field','field':'patient.payer_id','alias':'payer'}])
+        self.assertTrue(any(r['status'] == AC.UNMET for r in AC.grouping('Count patients for each sex',[bad],[],'')))
+    def test_consecutive_calendar_years_are_proved_by_same_field_bounds(self):
+        request=spec({'op':'and','args':[{'field':'claim.service_from','op':'>=','value':'2028-01-01'}, {'field':'claim.service_from','op':'<','value':'2030-01-01'}]})
+        self.assertEqual(AC.windows('Total paid in 2029','',AS_OF,[request])[0]['status'],AC.MET)
+        self.assertEqual(AC.windows('Total paid in 2031','',AS_OF,[request])[0]['status'],AC.UNMET)
+        request['where']['args'][1]['field']='claim.other_date'
+        self.assertEqual(AC.windows('Total paid in 2029','',AS_OF,[request])[0]['status'],AC.UNMET)
