@@ -996,9 +996,9 @@ class CohortSpend:
         if params['kind'] == 'total':
             facts = [fact('paid', f"The {len(ids):,} patients paid {usd(part / 100)} on counted medical claims in {y}.", value=round(part / 100, 2), unit='USD')]
             return dict(headline=f"{len(ids):,} patients: {usd(part / 100)} paid in {y}", facts=facts, value=round(part / 100, 2), answer_type='value',
-                        read_back=f'Counted medical paid dollars in {y} for the saved patients of the previous answer.', notes=notes, patient_ids=ids)
+                        read_back=f'Counted medical paid dollars in {y} for the saved patients of the previous answer.', notes=notes)
         facts = [fact('share', f"The {len(ids):,} patients account for {pct(part / total)}% of total {y} medical paid spend ({usd(part / 100)} of {usd(total / 100)}) = {part / total:.4f}.",
                       value=pct(part / total), numerator=part / 100, denominator=total / 100, unit='%')]
         return dict(headline=f"{len(ids):,} patients account for {pct(part / total)}% of {y} medical paid spend", facts=facts, value=pct(part / total), answer_type='value',
                     table=[{'patients': len(ids), 'paid_dollars': round(part / 100, 2), 'total_paid_dollars': round(total / 100, 2), 'share_percent': pct(part / total)}],
-                    read_back=f'Share of total {y} counted medical paid spend that comes from the saved patients of the previous answer.', notes=notes, patient_ids=ids)
+                    read_back=f'Share of total {y} counted medical paid spend that comes from the saved patients of the previous answer.', notes=notes)

@@ -1191,7 +1191,7 @@ class Parser(PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms)
             rest, group_fields, group_quote = self.grouping(rest, {k: k for k in V.GROUPS})
         except PlanError:
             return None  # a grouping the governed measure cannot apply ("by month"): the relational grammar may
-        if group_fields and definition.get('grain', {}).get('entity') == 'claim':
+        if group_fields and definition.get('grain', {}).get('entity') == 'claim' and 'counts_in_metrics' in self.catalog.tables.get('payer_claim', []) and re.fullmatch(r'\s*(?:(?:in|during|for)\s+)?(?:20\d\d)?\s*', rest, re.I):
             return None  # the governed grouping is by the PATIENT's attribute; a claim measure grouped by payer / line of business groups the claims themselves (relational forms)
         groups, quotes = [field for _, field in group_fields], list(measure_quote) if isinstance(measure_quote, list) else [measure_quote]
         if group_quote: quotes.append(group_quote)
