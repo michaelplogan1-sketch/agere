@@ -362,8 +362,8 @@
     "kind": "implementation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Shared request generalization preserves polarity, ratio scope, rolling claim dates, note reasons and negative chart results; reported historical note counts retain their note scope.",
-    "measured_failure_reduction": "Cold dev83 to84/100, paraphrases214 to217/295, composition15 to26/130. Frozen paid dev87/100 under current scorer at estimated$0.192139175. Shipped release includes later chart/notes repairs not covered by that full run.",
+    "user_behavior_delta": "Shared request generalization preserves polarity, ratio scope, rolling claim dates, note reasons and negative chart results; reported historical note counts retain their note scope. Analytical summary capture now preserves exact transformed input membership independently of output membership.",
+    "measured_failure_reduction": "Cold dev83 to84/100, paraphrases214 to217/295, composition15 to26/130. Frozen paid dev87/100 under current scorer at estimated$0.192139175. Shipped release includes later chart/notes repairs not covered by that full run. Summary-input regression:25 modules pass on candidate and base;9 focused tests pass. Legacy oracle exposure incident documented; current held-out bank untouched.",
     "evidence": [
       "docs/agere/DEV_GENERALIZATION_2026-10-24.md"
     ],
