@@ -298,7 +298,19 @@ class Cascade:
         for slots in by_stage.values():
             members = sorted((order[i] for i in slots), key=lambda t: (-predicted.get(t, 0.0), order.index(t)))
             for i, t in zip(slots, members): order[i] = t
-        return tuple(self.qwen_after_quick_claude(order))
+        return tuple(self.analyst_first(self.qwen_after_quick_claude(order)))
+
+    def analyst_first(self, order):
+        """A permutation (AGERE_ANALYST_FIRST=on): the semantic analyst (one Claude tool loop over the documented semantic layer,
+        3-13 s) leads the Claude stage, so a population question reaches it inside the answer budget; it ran last and was
+        almost never reached (2026-10-23). Its answers stay free-form and need System One confirmation."""
+        order = list(order)
+        if os.environ.get('AGERE_ANALYST_FIRST', 'off') != 'on' or 'semantic_analyst' not in order or not claude_available(): return order
+        claude = [i for i, t in enumerate(order) if STAGES[stage_of(t)][0] == 'claude']
+        if not claude: return order
+        order.remove('semantic_analyst')
+        at = min(i for i, t in enumerate(order) if STAGES[stage_of(t)][0] == 'claude')
+        return order[:at] + ['semantic_analyst'] + order[at:]
 
     def qwen_after_quick_claude(self, order):
         """A permutation: with Claude available, the local Qwen planners follow the quick Claude planners (QUICK_CLAUDE)."""
