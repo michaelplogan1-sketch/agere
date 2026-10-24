@@ -522,9 +522,9 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
     """Run each predicate through note_frames.answer_patient and merge into one core answer."""
     if nf is None:
         from . import note_frames as nf  # builder A's module (spec: answer_patient)
-    lines, sources, rows, statuses, matches, counted = [], [], [], [], [], []
+    lines, sources, rows, statuses, matches, counted, neg_asked = [], [], [], [], [], [], []
     for pred in predicates:
-        anchor_note = None
+        anchor_note = unresolved = None
         pred = dict(pred)
         anchor = pred.pop('_anchor', None)
         ask_detail = pred.pop('_ask_detail', None)
@@ -551,12 +551,20 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
                 pred['window'] = {'start': start, 'end': str(as_of)[:10], 'quote': f"after {anchor['concept']['term']} on {dates[-1][:10]}"}
                 anchor_note = f"anchor: {anchor['concept']['term']} documented {dates[-1][:10]}; later notes read from {start}"
             else:
-                anchor_note = f"anchor: {anchor['concept']['term']} has no dated documentation ({a.get('status')}); all notes were read"
+                # no date to start from: reading every note would answer a different question ("ever", not "after"), so nothing is read
+                unresolved = (f"anchor: {anchor['concept']['term']} has no dated documentation ({a.get('status')}); "
+                              'the later notes were not read because there is no date to read them from')
+                anchor_note = unresolved
             sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote'), anchor=True) for e in (a.get('evidence') or [])[:2])
-        res = _read(nf, stack, _valid(nf, pred), patient_id, as_of, ledger, allow_live)
+        if unresolved:
+            res = {'status': 'unknown', 'holds': None, 'detail': {}, 'evidence': [], 'p': None}
+        else:
+            res = _read(nf, stack, _valid(nf, pred), patient_id, as_of, ledger, allow_live)
         status = res.get('status', 'unknown')
+        asks_denied = pred.get('statuses') == ['denied']  # "was X ruled out?": a `denied` reading is the YES here
+        neg_asked.append(asks_denied)
         detail = res.get('detail') or {}
-        ok = bool(res['holds']) if res.get('holds') is not None else status in POSITIVE
+        ok = bool(res['holds']) if res.get('holds') is not None else status in POSITIVE or (asks_denied and status == 'denied')
         is_open = bool(pred['concept'].get('open'))
         if ok and ask_detail:
             ok = detail_matches(ask_detail, detail)
@@ -614,12 +622,14 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
                          **({'count': counted[-1]['n']} if counted[-1] is not None else {})})
             sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in ev)
+        if res.get('truncated'):  # retrieval caps: absence, earliest, latest and "no contradiction" are not established from part of the notes
+            lines[-1] += f" | partial: {res.get('partial')}; the rest were not read, so a negative or earliest/latest answer is undecided"
         if want_response:
             rline, rrows, rsources, rstatuses = _response_part(nf, stack, pred, res, patient_id, as_of, ledger, allow_live)
             lines.append(rline)
             rows.extend(rrows)
             sources.extend(rsources)
-    positive = [s in POSITIVE and m for s, m in zip(statuses, matches)]
+    positive = [(s in POSITIVE or (n and s == 'denied')) and m for s, m, n in zip(statuses, matches, neg_asked)]
     if yes_no and len(statuses) >= 1:
         if any(positive):
             lead = 'Yes'

@@ -206,17 +206,24 @@ def _texts(db, patient_id, sources, as_of):
     return out
 
 
+class Passages(list):
+    """The ranked passages, plus whether the bound dropped candidates: `truncated` is True when more passages matched than are returned
+    (the max_passages or per_record cap), `candidates` is how many matched. A reduction over a truncated set cannot claim absence."""
+    truncated = False
+    candidates = 0
+
+
 def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_of, max_passages=MAX_PASSAGES, per_record=PER_RECORD,
              patterns=None, note_types=None, prefer_records=None):
     """Candidate passages for one patient and concept, ranked and bounded. Each: {passage_id, record_id, source, stream,
-    note_type, date, start, end, text, terms, duplicates}. `window` {'start','end'} filters on the note's event date
+    note_type, date, start, end, text, terms, duplicates} (a Passages list: `.truncated` says the caps dropped matches). `window` {'start','end'} filters on the note's event date
     (a note dated in the window is where the statement was made; the reading's `historical` status handles the rest).
     `note_types` (names from note_open.NOTE_TYPES) keeps only records whose note type, stream or document title matches one of them
     (a cue such as "the discharge summary" or "the ED note"); `prefer_records` ranks passages of those records first."""
     db = stack_or_db if isinstance(stack_or_db, sqlite3.Connection) else connect(stack_or_db)
     pats = patterns or concept_patterns(concept)
     if not pats:
-        return []
+        return Passages()
     window = window or {}
     lo, hi = window.get('start') or '', min(window.get('end') or as_of, as_of)
     cands, seen = [], {}
@@ -242,7 +249,7 @@ def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_
             seen[key] = c
             cands.append(c)
     cands.sort(key=lambda c: (c['record_id'] not in prefer, -c['terms'], c['date'] is None, _neg_date(c['date']), c['record_id'], c['start']))
-    out, per = [], {}
+    out, per = Passages(), {}
     for c in cands:
         if per.get(c['record_id'], 0) >= per_record:
             continue
@@ -250,6 +257,7 @@ def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_
         out.append(c)
         if len(out) >= max_passages:
             break
+    out.candidates, out.truncated = len(cands), len(out) < len(cands)
     for c in out:
         c['passage_id'] = f"{c['record_id']}@{c['start']}-{c['end']}"
     return out
