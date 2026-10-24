@@ -718,3 +718,12 @@ class EngineRunsTheTypedPlan(unittest.TestCase):
             OP.execute(None, [], {'patient_id': 'P-HF11', 'question': 'when was the most recent one discharged?', 'subject_quote': 'P-HF11', 'how': 'prior_turn',
                                   'chart': {'intent': 'last_event', 'domain': 'inpatient', 'window': {'start': '2029-01-01', 'end': '2029-12-31'}}}, '2030-05-27')
         self.assertEqual(seen['chart']['window']['start'], '2029-01-01')
+
+
+class GraphKeepsTheTypedChart(unittest.TestCase):
+    def test_validate_keeps_chart(self):
+        from clinical_core.agere.clinical import analysis_graph as AG
+        g = {'interpretation': 'q', 'coverage': 'supported_observation', 'unmet_requirements': [], 'nodes': [{'id': 'answer', 'operation': 'chart_reader', 'inputs': [],
+             'parameters': {'patient_id': 'SYN-67436663-A0F', 'question': 'and the one before that?', 'subject_quote': 'SYN-67436663-A0F', 'how': 'prior_turn',
+                            'chart': {'intent': 'latest_value', 'domain': 'lab', 'ordinal': 2}}, 'purpose': 'x'}]}
+        self.assertEqual(AG.validate(g, '2030-05-27')['nodes'][0]['parameters']['chart']['ordinal'], 2)

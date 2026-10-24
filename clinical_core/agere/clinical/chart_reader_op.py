@@ -21,7 +21,8 @@ PRODUCT = {'population': 'none', 'view': 'table',
                   'care gaps, a pre-visit brief, and what the notes say (note frames). Answers carry units, dates and source record ids.'}
 CONTRACT = {'inputs': [],
             'parameters': {'patient_id': 'exact patient id from the warehouse', 'question': 'the single-patient question verbatim',
-                           'subject_quote': 'how the question named the patient', 'how': 'patient_id|member_id|pronoun|prior_turn'},
+                           'subject_quote': 'how the question named the patient', 'how': 'patient_id|member_id|pronoun|prior_turn',
+                           'chart': 'the typed chart request (intent, domain, concept, window, ordering, note predicates)'},
             'meaning': 'Answer a question about one named patient from the structured chart and the notes. Latest labs per the decision '
                        'context, ED / inpatient events from all sources, spend from counted payer claims; a named deceased patient is '
                        'answered and flagged. Use for questions that name a patient id, not for cohorts.'}
@@ -51,7 +52,10 @@ def validate(p):
     how = p.get('how') or 'patient_id'
     if how not in HOW:
         raise ValueError(f'how: one of {HOW}')
-    return {'patient_id': pid, 'question': question.strip(), 'subject_quote': p.get('subject_quote') or pid, 'how': how}
+    out = {'patient_id': pid, 'question': question.strip(), 'subject_quote': p.get('subject_quote') or pid, 'how': how}
+    if p.get('chart'):
+        out['chart'] = p['chart']  # the typed request the engine executes (dropping it lost the inherited window / ordinal)
+    return out
 
 
 def execute(stack, patient_ids, params, as_of):
