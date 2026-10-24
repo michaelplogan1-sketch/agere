@@ -50,7 +50,7 @@ class FrontierReviewTests(unittest.TestCase):
         self.assertEqual(out['answer'], {'count': 3})
         self.assertEqual(out['decision'], 'frontier_reviewed')
         self.assertEqual(len(calls), 4)
-        self.assertEqual(calls[-1][0], 'claude-opus-5-5')
+        self.assertEqual(calls[-1][0], 'claude-sonnet-5-5')
         self.assertEqual(out['new_paid_api_calls'], 4)
         self.assertAlmostEqual(out['cost_usd'], .04)
 
@@ -88,7 +88,7 @@ class FrontierReviewTests(unittest.TestCase):
         self.assertEqual(out['answer'], {'count': 3})
         self.assertEqual(out['decision'], 'escalated')
         self.assertEqual(len(calls), 4)
-        self.assertEqual({model for model, _ in calls}, {'claude-opus-5-5'})
+        self.assertEqual([model for model, _ in calls], ['claude-haiku-5-5'] * 3 + ['claude-sonnet-5-5'])  # three Haiku analysts, then the Sonnet tie-break (the ladder's escalation)
 
 
 class DefinitionLengthTests(unittest.TestCase):
