@@ -161,6 +161,11 @@ def _condition_concept_sql(cols):
                  f"AND concept IN ({names}))") if 'diagnosis_basis' in c else '0'
         parts.append(f"SELECT patient_id, concept, {'event_date' if 'event_date' in c else 'NULL'} AS event_date FROM condition "
                      f"WHERE concept IS NOT NULL AND (is_diagnosis = 1 OR {basis})")
+        if 'icd10' in c:  # a condition is its code set: EHR diagnosis rows by code, whatever concept label they carry
+            prefixes = ' UNION ALL '.join(f"SELECT '{name}' AS concept, '{code}' AS prefix" for name, v in concepts.CONDITIONS.items() for code in v['icd10'])
+            dx = "is_diagnosis = 1" + (" OR (is_diagnosis IS NULL AND diagnosis_basis = 'ehr_problem_list')" if 'diagnosis_basis' in c else '')
+            parts.append(f"SELECT x.patient_id, m.concept, {'x.event_date' if 'event_date' in c else 'NULL'} FROM condition x "
+                         f"JOIN ({prefixes}) m ON x.icd10 LIKE m.prefix || '%' WHERE ({dx})")
     if {'patient_id', 'icd10', 'counts_in_metrics'} <= d:
         prefixes = ' UNION ALL '.join(f"SELECT '{name}' AS concept, '{code}' AS prefix" for name, v in concepts.CONDITIONS.items() for code in v['icd10'])
         parts.append(f"SELECT d.patient_id, m.concept, {'d.service_from' if 'service_from' in d else 'NULL'} FROM payer_claim_diagnosis d "
