@@ -763,6 +763,76 @@ def inherit_window(prior, question):
     return re.sub(r'\s*\?$', '', q) + ' ' + phrase + '?', f'period kept from the previous question: {phrase}'
 
 
+def named_cohort_reference(stack, question, saved):
+    """Bind an undefined definite population name to a verified ancestor's exact membership.
+
+    Known standalone populations stay standalone. A name must occur as the
+    subject of an earlier analytical command, not merely somewhere in its text.
+    No client IDs or model-invented definitions enter this binding.
+    """
+    m=re.search(r'\bof\s+(?:the|our)\s+(?P<label>[a-z][a-z -]{1,70}?)\s+(?=(?:have|has|had|are|is|with|without|who|that)\b)',question,re.I)
+    if not m or len(m['label'].split()) < 2: return None
+    from .request_plan import Catalog,PlanError
+    from .request_language import Parser
+    catalog=Catalog.load(stack.path)
+    try:
+        if Parser(catalog,m['label']).population_phrase(m['label']) is not None: return None
+    except PlanError:
+        pass
+    from ..deliverables import answer_context as A
+    key=saved['id'];visited=set()
+    naming=re.compile(r'^\s*(?:who\s+are|which(?:\s+are)?|list|show(?:\s+me)?|find|how\s+many|number\s+of|count(?:\s+of)?)\s+(?:(?:the|our|all)\s+)?'+re.escape(m['label'])+r'\b',re.I)
+    for _ in range(32):
+        if key in visited: return None
+        visited.add(key)
+        parent=A.load(stack.path,key,current=True,follow_up=True)
+        defining=parent.get('original_question') or parent.get('question') or ''
+        if (naming.search(defining) and parent.get('result_scope_available')
+                and parent.get('answer',{}).get('status') == 'answered' and not parent['answer'].get('missing')
+                and not parent['answer'].get('unknown_count')):
+            return {'context_id':key,'label':m['label'],'defining_question':defining,
+                    'standalone':question[:m.start()]+'of those patients '+question[m.end():],
+                    'patients':len(parent['patient_ids'])}
+        key=(parent.get('cohort_transform') or {}).get('parent_context_id')
+        if not key: return None
+    return None
+
+
+def monetary_followup(catalog, question):
+    """A monetary measure has a financial clock; a condition in its input does not."""
+    from . import request_language as L
+    from .insight_families import CohortSpend
+    if CohortSpend.parse(question, catalog): return True
+    try:
+        plan=L.parse(catalog,question,bound=True)
+    except L.PlanError:
+        return False
+    def money(expr):
+        if not isinstance(expr,dict): return False
+        if str(expr.get('field','')).endswith(('paid_cents','allowed_cents','charge_cents','cost_cents','amount_cents')): return True
+        return any(money(v) for k,v in expr.items() if k != 'where' and isinstance(v,dict))
+    return any(money(m) for m in plan.get('select',[]))
+
+
+def inherited_period(question, prior, as_of):
+    """A follow-up with no period keeps one literal period from its antecedent.
+
+    Multiple prior periods and any new temporal instruction remain unresolved
+    here. This resolver never chooses a default period or a patient population.
+    """
+    from . import decision_context as DC
+    if not prior or not prior.get('resolved_question') or not is_followup(question): return None
+    from .request_language import MONTH_NAMES
+    if re.search(r'\b(?:'+'|'.join(MONTH_NAMES)+r')\b',question,re.I): return None
+    if DC.year_window(question, as_of) or re.search(r'\b(?:since|before|after|calendar|last|past|this|next|previous)\b|\b\d{4}\b', question,re.I): return None
+    windows=DC.year_window(prior['resolved_question'],as_of)
+    if len({(w['kind'],w['start'],w['end']) for w in windows}) != 1: return None
+    window=windows[0]
+    return {'standalone':question.rstrip('?. ').strip()+' '+window['phrase'],
+            'phrase':window['phrase'],'from_question':prior['resolved_question'],
+            'start':window['start'],'end':window['end'],'kind':window['kind']}
+
+
 def handle_compose(stack, body, hosted_factory=None):
     """Run /api/stack/compose with optional conversation context. Logging matches the single-question route."""
     from . import answer_log, learning
@@ -800,6 +870,22 @@ def handle_compose(stack, body, hosted_factory=None):
             saved = (prior or {}).get('action_context')
             bound = None
             shared = getattr(stack, 'shared_request_planning', False) is True
+            reference = (named_cohort_reference(stack, question, saved) if shared and saved and not explicit_context
+                         and body.get('scope') != 'warehouse' else None)
+            if reference:
+                saved={'id':reference['context_id']}
+                refers=True
+            temporal = None
+            if shared and prior and saved and is_followup(question) and body.get('scope') != 'warehouse' and not explicit_context:
+                from .request_plan import Catalog
+                catalog=Catalog.load(stack.path)
+                if monetary_followup(catalog,question):
+                    temporal = inherited_period(question, prior, catalog.identity['as_of'])
+                if temporal:
+                    if not saved: temporal = None
+                    else: answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
+            effective_question = temporal['standalone'] if temporal else reference['standalone'] if reference else question
+            used_temporal = False
             if explicit_context and not shared:
                 raise QuestionNotUnderstood('This service cannot apply an explicitly selected saved cohort. The saved population was preserved; no warehouse-wide query was run.')
             rescoped = ((rescope(stack, question, saved) or regroup(stack, question, saved)) if shared and saved and not explicit_context
@@ -821,7 +907,8 @@ def handle_compose(stack, body, hosted_factory=None):
                     # grouping. They operate on immutable membership, never text rewrites.
                     bound = answer_context.followup(stack.path, saved['id'], question, scope=selected_scope)
                     if bound is None:
-                        bound = stack.compose(question, population=parent['patient_ids'], parent=parent, planning=planning)
+                        bound = stack.compose(effective_question, population=parent['patient_ids'], parent=parent, planning=planning)
+                        used_temporal = temporal is not None
                     bound['cohort_transform']['scope'] = selected_scope
                 elif not shared and saved and is_followup(question) and planning == 'auto' and parse_frame(question) is None:
                     bound = answer_context.followup(stack.path, saved['id'], question)
@@ -843,8 +930,25 @@ def handle_compose(stack, body, hosted_factory=None):
                 if resolution.get('hosted_receipt'):
                     r = resolution['hosted_receipt']
                     hosted_usd = float(r.get('api_usd') or 0.0); hosted_calls = 0 if r.get('cache_hit') else 1
+                if shared and temporal and bound is None:
+                    resolution['standalone'] = effective_question
+                    used_temporal = True
                 standalone = resolution['standalone']
                 result = bound if bound else stack.compose(standalone) if planning == 'auto' else stack.compose(standalone, planning=planning)
+                if reference and bound:
+                    resolution.update(standalone=effective_question,method='named_cohort',follow_up=True,
+                                      reason='Bound the population name to its verified saved definition')
+                    result['reference_binding']=reference
+                    result['answer']['limitations']=[*(result['answer'].get('limitations') or []),
+                        'Population name "'+reference['label']+'" refers to the '+str(reference['patients'])+
+                        ' saved patients from: '+reference['defining_question']]
+                if used_temporal:
+                    resolution.update(standalone=effective_question, method='inherited_period', follow_up=True,
+                                      reason='Kept the explicitly stated period of the previous question')
+                    resolution['edits'] = [*resolution['edits'], 'Kept period: '+temporal['phrase']]
+                    result['inherited_period'] = temporal
+                    result['answer']['limitations'] = [*(result['answer'].get('limitations') or []),
+                        'Time period carried from the previous question: '+temporal['phrase']+'.']
     except Exception as exc:
         logged = resolution['standalone'] if resolution else str(question)
         from .question_input import failure
