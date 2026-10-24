@@ -57,12 +57,15 @@ class PopulationForms:
         quote, (self.base, default), rest = source
         where = []
         if default: where.append(self.preset_filter(default, quote))
+        note = self.medicare_note(rest) if any(w.lower() == 'medicare' for w in modifiers) else None
+        if note: rest = rest[len(note):]
         for word in modifiers:
             if word.lower().startswith('adult'):
                 where.append(atom('patient.age', '>=', 18, word))
                 continue
             value, left = self.one(word)
             if value is None or left.strip(): return None
+            if note and word.lower() == 'medicare': value['quote'] = [word, note.strip()]
             where.append(value)
         rest = rest.strip()
         # "patients 50 to 74" / "women 65 and older": an age range right after the noun needs no "aged"
@@ -77,6 +80,17 @@ class PopulationForms:
             if value: where.append(value)
         return combine('and', where, start) if where else False
 
+    MEDICARE_NOTE = re.compile(r'^\s*\(\s*including\s+[^)]*\)', re.I)
+
+    def medicare_note(self, text):
+        """'(including dual and Medigap)' right after "Medicare patients": the decision context's Medicare already includes dual and Medigap, so the
+        parenthetical only restates it. It is consumed only when it names BOTH (a narrower or wider note would change the population)."""
+        m = self.MEDICARE_NOTE.match(text)
+        if not m: return None
+        names = set(re.findall(r'dual|medigap', m.group(), re.I))
+        words = set(re.findall(r'[a-z]+', m.group().lower())) - {'including', 'and', 'or', 'the', 'dual', 'medigap', 'eligible', 'eligibles', 'duals', 'dually', 'plans', 'plan', 'members', 'patients'}
+        return m.group() if {n.lower() for n in names} == {'dual', 'medigap'} and not words else None
+
     # -- shares ----------------------------------------------------------------------------------------------------------
     def split_share(self, body):
         """Split "<population> <predicate>" at the verb that starts the predicate -> (population where, predicate, population text) or None."""
@@ -87,6 +101,7 @@ class PopulationForms:
             starts += [v.start() for v in re.finditer(r'\b(?:over|under|above|below|less than|greater than|at least|at most)\s+\d', body, re.I)]
         for at in starts:
             pop_text, pred_text = body[:at].strip(), body[at:].strip()
+            pop_text = re.sub(r'\s+(?:also|then|both)$', '', pop_text, flags=re.I)  # "of the patients with hypertension, what share ALSO have diabetes": the population ends before "also"
             if not pop_text: continue
             gaps = list(self.gaps)
             self.bp_quote = None

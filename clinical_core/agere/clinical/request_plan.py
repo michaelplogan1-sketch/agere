@@ -20,6 +20,12 @@ VERSION = 'warehouse-request/1'
 STOP_WORDS = set('a an the please me our we us there are is was were be of for to from show give find get tell what which who how many number list count total sum average mean by per with where among patients patient that have has had whose in on at and or but not without excluding exclude only all any every each than then also do does it them those these their overall s plus did see saw just'.split())  # 's' is the contraction in what's
 
 
+# Closed-class words of Boolean structure. A Boolean operation whose quote holds ONLY these (and stop words) covers them; every content word
+# still needs its own leaf predicate (a parent never covers a whole span).
+LOGIC_WORDS = set('both either neither nor no never none without all once one together combined same time least most exactly two three four five '
+                  'six seven eight nine ten following these those t don doesn didn isn aren wasn weren any'.split())
+
+
 class PlanError(ValueError):
     """An interpretation cannot be executed as a complete original request."""
 
@@ -191,6 +197,7 @@ class Compiler:
         self.outputs = {}
         self.json_streams = {}
         self.notes, self.rescaled = [], set()
+        self.window_numbers = set()  # numbers a compiled rolling-year period stands for (12)
         self.ratio_parts = {}  # select path -> (numerator SQL, denominator SQL) of each ratio measure
         self.conditions = {}  # measure path -> its conditional (numerator) predicate
         self.note_predicates = {}  # id -> the validated note predicate; the SQL holds note_pred(patient_id, id) until a reader fills it
@@ -207,8 +214,10 @@ class Compiler:
             if kind in ('population', 'measure') and re.search(
                     r'\b(with|without|where|whose|who|excluding|exclude|unless)\b', quote, re.I):
                 raise PlanError(f'{path}: bind filter wording to its own predicate, not a broad source or measure quote')
+            logic_only = (kind == 'predicate' and obj.get('op') in ('and', 'or', 'not', 'at_least_of') and
+                          all(w.lower() in LOGIC_WORDS or w.lower() in STOP_WORDS for w in re.findall(r'\w+', quote)))
             self.bindings.append({'path': path, 'kind': kind, 'quote': quote,
-                                  'covers': not (kind == 'predicate' and obj.get('op') in ('and', 'or', 'not', 'exists') and
+                                  'covers': logic_only or not (kind == 'predicate' and obj.get('op') in ('and', 'or', 'not', 'exists', 'at_least_of') and
                                                  (obj.get('where') is not None or obj.get('args') or obj.get('arg'))),
                                   'disposition': 'unresolved' if kind == 'unresolved' else 'applied'})
 
@@ -264,13 +273,22 @@ class Compiler:
         if op in ('and', 'or'):
             if set(expr) != {'op', 'args', 'quote'} or not isinstance(expr['args'], list) or not 2 <= len(expr['args']) <= 24:
                 raise PlanError('Boolean operations need 2..24 explicit operands')
-            if op == 'or' and not re.search(r'\bor\b|/', quote_text(expr['quote']), re.I):
+            if op == 'or' and not re.search(r'\bor\b|/|\bat least\b|\bany\b|\beither\b', quote_text(expr['quote']), re.I):
                 raise PlanError('An OR requires its original disjunction')
             return '(' + (' AND ' if op == 'and' else ' OR ').join(self.predicate(x, scope, f'{path}.args.{i}', depth+1) for i, x in enumerate(expr['args'])) + ')'
         if op == 'not':
             if set(expr) != {'op', 'arg', 'quote'} or not re.search(r"\b(?:not|no|without|exclude|excluding|except|neither|nor|never|missing|missed|living|alive|didn)\b|n't\b", quote_text(expr['quote']), re.I):
                 raise PlanError('Negation must be explicit in the original request')
             return '(NOT ' + self.predicate(expr['arg'], scope, path+'.arg', depth+1) + ')'
+        if op == 'at_least_of':
+            # At least N of several predicates hold for the same patient ("at least two of diabetes, CKD, heart failure").
+            if (set(expr) != {'op', 'n', 'args', 'quote'} or type(expr['n']) is not int or not isinstance(expr['args'], list)
+                    or not 2 <= len(expr['args']) <= 12 or not 1 <= expr['n'] <= len(expr['args'])):
+                raise PlanError('at_least_of needs a whole-number N and 2..12 operands, N no larger than the operand count')
+            if not re.search(r'\bat\s+least\b|\bany\b|\bmore\s+than\b|\bor\s+more\b|\+|\bone\b|\btwo\b|\bthree\b', quote_text(expr['quote']), re.I):
+                raise PlanError('An at-least-N-of threshold requires its original wording')
+            parts = [self.predicate(x, scope, f'{path}.args.{i}', depth+1) for i, x in enumerate(expr['args'])]
+            return '((' + ' + '.join(f'(CASE WHEN {x} THEN 1 ELSE 0 END)' for x in parts) + f') >= {expr["n"]})'
         if op == 'sequence':
             return self.sequence(expr, scope, path, depth)
         if op == 'count_at_least':
@@ -504,12 +522,17 @@ class Compiler:
             if set(expr) - {'kind', 'alias', 'quote'} or self.subject is None:
                 raise PlanError('A note answer is read for one named patient (subject) and takes only kind, alias and quote')
             return '1'
+        if kind == 'cohort_group': return self.cohort_group(expr, scope, path)
+        if kind == 'count_related': return self.count_related(expr, scope, path)
         allowed = ({'kind', 'field', 'alias', 'quote', 'grain'} if kind == 'field' else
                    {'kind', 'alias', 'quote', 'numerator', 'denominator', 'scale', 'round'} if kind == 'ratio' else
                    {'kind', 'field', 'alias', 'quote', 'where', 'scale', 'round'})
         if set(expr) - allowed: raise PlanError('Unknown measure fields')
         if kind == 'ratio':
             if expr.get('scale', 1) not in (1, 100, 1000): raise PlanError('Ratio scale must be 1, 100 or 1000')
+            scale = expr.get('scale', 1)
+            if scale in (100, 1000) and re.search(r'\bper\s+(?:' + re.escape(format(scale, ',')) + '|' + str(scale) + r')\b', self.question, re.I):
+                self.window_numbers.add(str(scale))  # "per 1,000 patients": the rate's own unit, compiled as the ratio scale
             n = self.measure(expr['numerator'], scope, path+'.numerator')
             d = self.measure(expr['denominator'], scope, path+'.denominator')
             self.ratio_parts[path] = (n, d)
@@ -538,6 +561,50 @@ class Compiler:
             scale = expr['scale']
             if type(scale) not in (int, float) or not math.isfinite(scale) or not 0 < scale <= 1000:
                 raise PlanError('Measure scale must be a finite positive number up to 1000')
+            rendered = f'({literal(scale)} * {rendered})'
+        return self.rounded(rendered, expr)
+
+    def cohort_group(self, expr, scope, path):
+        """A grouping dimension whose groups are named predicates (age bands, payer types, 'women' and 'men', 'heart failure' and 'COPD'): each
+        row joins every group whose predicate it meets (groups may overlap; a row in none drops out), and the group's label is the value.
+        {'kind': 'cohort_group', 'alias', 'quote', 'groups': [{'label', 'where', 'quote'}, ...2..12]}"""
+        if set(expr) != {'kind', 'alias', 'quote', 'groups'}: raise PlanError('A cohort grouping takes kind, alias, quote and groups')
+        groups = expr['groups']
+        if not isinstance(groups, list) or not 2 <= len(groups) <= 12: raise PlanError('A cohort grouping needs 2..12 named groups')
+        if 'cohort_group' in self.joins: raise PlanError('One cohort grouping per request')
+        if 'patient_id' not in self.catalog.tables.get(self.base, []): raise PlanError('A cohort grouping needs a patient-keyed source')
+        self.serial += 1
+        alias = 'cg' + str(self.serial)
+        arms, ons, labels = [], [], set()
+        for i, g in enumerate(groups):
+            if (not isinstance(g, dict) or set(g) != {'label', 'where', 'quote'} or not isinstance(g['label'], str)
+                    or not 1 <= len(g['label']) <= 60 or not isinstance(g['where'], dict) or g['label'] in labels):
+                raise PlanError('Each group needs a unique label, a predicate and its source words')
+            labels.add(g['label'])
+            self.bind(g, f'{path}.groups.{i}', 'group')
+            cond = self.predicate(g['where'], scope, f'{path}.groups.{i}.where')
+            arms.append(f"SELECT {literal(g['label'])} AS label, {i} AS idx")
+            ons.append(f'({alias}.idx = {i} AND ({cond}))')
+        self.joins['cohort_group'] = f'JOIN ({" UNION ALL ".join(arms)}) AS {alias} ON ' + ' OR '.join(ons)
+        return f'{alias}.label'
+
+    def count_related(self, expr, scope, path):
+        """The total number of related rows (ED visits, admissions, fills) of the counted patients: SUM over patients of their own count.
+        {'kind': 'count_related', 'alias', 'quote', 'table', 'where'?, 'scale'?, 'round'?}. With a ratio it makes a rate per patient or per 1,000."""
+        if set(expr) - {'kind', 'alias', 'quote', 'table', 'where', 'scale', 'round'} or 'table' not in expr: raise PlanError('A related count names its table')
+        table = expr['table']
+        if table not in self.catalog.tables or 'patient_id' not in self.catalog.tables[table]: raise PlanError(f'Unknown relation: {table}')
+        if 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base not in scope: raise PlanError('A related count needs a patient-keyed source')
+        self.serial += 1
+        alias = 'rc' + str(self.serial)
+        nested = {**scope, table: alias}
+        cond = self.predicate(expr['where'], nested, path + '.where') if expr.get('where') else '1'
+        unit = ("COUNT(DISTINCT " + " || '|' || ".join(f'{alias}.{identifier(c)}' for c in EPISODE_KEYS[table]) + ')') if table in EPISODE_KEYS else 'COUNT(*)'
+        outer = self.field(self.base + '.patient_id', scope)
+        rendered = f'SUM((SELECT {unit} FROM {identifier(table)} AS {alias} WHERE {alias}.patient_id = {outer} AND {cond}))'
+        if 'scale' in expr:
+            scale = expr['scale']
+            if type(scale) not in (int, float) or not math.isfinite(scale) or not 0 < scale <= 1000: raise PlanError('Measure scale must be a finite positive number up to 1000')
             rendered = f'({literal(scale)} * {rendered})'
         return self.rounded(rendered, expr)
 
@@ -621,7 +688,7 @@ class Compiler:
             rendered = self.measure(expr, scope, f'select.{i}')
             self.outputs[alias] = rendered
             selections.append(rendered + ' AS ' + identifier(alias))
-            if expr['kind'] == 'field': projections[alias] = rendered
+            if expr['kind'] in ('field', 'cohort_group'): projections[alias] = rendered
         groups = plan['group_by']
         if not isinstance(groups, list) or any(x not in projections for x in groups) or len(set(groups)) != len(groups):
             raise PlanError(f'group_by must contain only these projected field aliases: {list(projections)}; got {groups}')
@@ -740,6 +807,7 @@ class Compiler:
                 if identifier(column) in query:
                     rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', column.replace('_', ' ')))
         rendered_numbers.update(self.rescaled)  # compiled as their 0-100 equivalent, disclosed in notes
+        rendered_numbers.update(self.window_numbers)
         unresolved_text = ' '.join(quote_text(x['quote']) for x in [*plan['unresolved'], *[s for s in plan.get('workflow', []) if s['unresolved']]])
         missing_numbers = numeric - rendered_numbers - set(re.findall(r'(?<!\w)\d+(?:\.\d+)?', unresolved_text))
         if missing_numbers: raise PlanError('Numeric constraints were not compiled: ' + ', '.join(sorted(missing_numbers)))
@@ -761,7 +829,7 @@ class Compiler:
             # rows explicitly contain patient IDs; never substitute all matches.
             if 'patient_id' not in aliases: membership = None
             else: membership = f'SELECT DISTINCT patient_id FROM ({query})'
-        measured = [(i, e) for i, e in enumerate(plan['select']) if e['kind'] != 'field']
+        measured = [(i, e) for i, e in enumerate(plan['select']) if e['kind'] not in ('field', 'cohort_group')]
         if membership and returns != 'patient_set' and len(measured) == 1 and not plan.get('having') and not limit:
             # A conditional count or a ratio's conditional numerator: retain the patients it counted, not its whole base.
             i, e = measured[0]

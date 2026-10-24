@@ -196,6 +196,9 @@ def concept_sql(expr, compiler, scope):
         if start > end or end > compiler.catalog.identity['as_of']: raise PlanError('Concept period exceeds snapshot')
         if 'event_date' not in compiler.catalog.tables[table]: raise PlanError('Concept date unavailable')
         where += f' AND {alias}.event_date BETWEEN {literal(start)} AND {literal(end)}'
+        from . import decision_context
+        if (start, end) == tuple(decision_context.rolling_year(compiler.catalog.identity['as_of'])):
+            compiler.window_numbers.add('12')  # "in the last 12 months": the rolling-year period encodes the 12
         compiler.notes.append(f'Medication use means at least one picked-up fill dated {start} through {end}'
                               + (' (the 12 months ending at the as-of date: current use).' if end == compiler.catalog.identity['as_of'] else '.'))
     return f'EXISTS (SELECT 1 FROM {table} {alias} WHERE {alias}.patient_id = {outer} AND {where})'
