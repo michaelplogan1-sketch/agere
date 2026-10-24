@@ -670,7 +670,10 @@ _EARLY, _EARLY_LOCK, EARLY_TTL = {}, threading.Lock(), 180.0
 
 
 def _early_key(stack, question, population):
-    return (str(getattr(stack, 'path', '') or id(stack)), ' '.join(str(question or '').split()), tuple(population) if population is not None else None)
+    """Per request: the question's decision-context scope object (one per compose) keeps two concurrent identical questions apart."""
+    from .decision_context import _SCOPE
+    return (str(getattr(stack, 'path', '') or id(stack)), ' '.join(str(question or '').split()), tuple(population) if population is not None else None,
+            id(_SCOPE.get()))
 
 
 def start_early(stack, catalog, question, *, population=None, ledger=None, names=('s1_slots', 'haiku')):
@@ -685,6 +688,9 @@ def start_early(stack, catalog, question, *, population=None, ledger=None, names
             if not names: return
             ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, decide=PROVIDERS['decide'], models=PROVIDERS['models'],
                       deadline=now + env_float('AGERE_SPEC_EARLY_SECONDS', 30.0))
+            # the spec grammar first, on this context (cheap, deterministic): System One slot filling reads its decline (the unconsumed tail),
+            # and a spec the grammar fills needs no paid filler at all
+            if run_filler('grammar', grammar_fill, ctx)['status'] == 'valid': return
             fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
             pool = ThreadPoolExecutor(max_workers=len(names), thread_name_prefix='spec-early')
             futures = {n: pool.submit(contextvars.copy_context().run, run_filler, n, fns[n], ctx) for n in names}
@@ -695,10 +701,16 @@ def start_early(stack, catalog, question, *, population=None, ledger=None, names
 
 
 def take_early(stack, question, population):
-    """-> {name: Future} started for this question (removed from the registry), or {}."""
+    """-> (ctx, {name: Future}) started for this question (removed from the registry), or (None, {})."""
     with _EARLY_LOCK:
         entry = _EARLY.pop(_early_key(stack, question, population), None)
-    return entry[1] if entry else {}
+    return (entry[0], entry[1]) if entry else (None, {})
+
+
+def cancel_early(stack, question, population):
+    """The question is answered (another route won, or the spec path finished): the early fillers stop at their next step."""
+    ctx, _ = take_early(stack, question, population)
+    if ctx is not None: ctx.cancel.set()
 
 
 def fill(stack, catalog, question, *, population=None, ledger=None, decide=None, models=None, as_of=None, verify=None, fillers=None, grace=None,
@@ -721,11 +733,11 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
     if 'grammar' in names:
         candidates['grammar'] = run_filler('grammar', grammar_fill, ctx)
     paid = [n for n in names if n != 'grammar']
-    if candidates.get('grammar', {}).get('status') == 'valid': take_early(stack, question, population)  # the grammar's spec wins; drop the early start
+    if candidates.get('grammar', {}).get('status') == 'valid': cancel_early(stack, question, population)  # the grammar's spec wins; stop the early start
     if candidates.get('grammar', {}).get('status') != 'valid' and paid:
         limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 8.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 12.0)}
         fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
-        early = take_early(stack, question, population) if decide is PROVIDERS['decide'] and models is PROVIDERS['models'] else {}
+        early_ctx, early = take_early(stack, question, population) if decide is PROVIDERS['decide'] and models is PROVIDERS['models'] else (None, {})
         pool = ThreadPoolExecutor(max_workers=len(paid), thread_name_prefix='spec-fill')
         futures = {(early[n] if n in early else pool.submit(contextvars.copy_context().run, run_filler, n, fns[n], ctx)): n for n in paid}
         due = {n: time.monotonic() + limits.get(n, 20.0) for n in paid}
@@ -750,6 +762,7 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
                 if first_valid is not None and time.monotonic() - first_valid >= grace: break
         finally:
             ctx.cancel.set()
+            if early_ctx is not None: early_ctx.cancel.set()  # the early fillers belong to this request: they stop with it
             pool.shutdown(wait=False, cancel_futures=True)
         for f, n in futures.items():
             if n not in candidates:
