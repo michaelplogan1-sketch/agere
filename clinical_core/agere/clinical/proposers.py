@@ -190,9 +190,8 @@ NOT_PROPOSERS = {
 # 0 accepted answers in every end-to-end run (dev and the held-out milestone), 73 s / 0 s / 12 s of dev budget (Codex final review 2026-10-24).
 OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_verified_sql', 'cohort_family_late', 'hybrid_analysts', 'bottled_sql',
                'qwen_rewrite_compiler')
-# The hosted typed interpreter accepted no answer end to end; it is the one reader of recorded corrections (FEEDBACK_READERS), so by default it
-# runs only for a question with a recorded correction. AGERE_HOSTED_INTERPRETER=always restores it for every question.
-CORRECTIONS_ONLY = ('hosted_typed_interpreter',)
+# The hosted typed interpreter accepted no answer end to end but stays on: it reads recorded corrections (FEEDBACK_READERS) and procedural-memory
+# lessons, which a corrections-only switch would cut off (tried 2026-10-24: 20 correction/lesson tests regressed).
 
 
 def enabled(name, stack):
@@ -434,8 +433,6 @@ class Cascade:
 
     def runnable(self, name):
         """Would this tier be asked at all (saved cohort, switches, live-only paid tiers)? Only those can be deferred."""
-        if name in CORRECTIONS_ONLY and not getattr(self, 'corrected', False) and os.environ.get('AGERE_HOSTED_INTERPRETER', 'corrections') != 'always':
-            return False
         return not (self.population is not None and name not in TYPED_WITH_POPULATION) and enabled(name, self.stack)
 
     def attempt(self, name, limit):
