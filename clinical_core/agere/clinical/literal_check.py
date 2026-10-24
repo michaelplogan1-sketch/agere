@@ -119,6 +119,8 @@ def missing(question, evidence):
     return gaps
 
 
+RANKED_GROUPS = re.compile(r'\b(?:top|bottom)\s+\w+|\b(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:lowest|highest|most|fewest|best|worst)\b|'
+                           r'\bwhich\s+(?:\d+\s+|one\s+|two\s+|three\s+|four\s+|five\s+)?(?:practices|payers|clinics|sites|providers|groups|segments)\b', re.I)
 SHAPES = {'count': {'count', 'value', 'patient_set'}, 'value': {'value', 'count'},
           'patient_set': {'patient_set', 'table'}, 'table': {'table'}}
 
@@ -132,6 +134,7 @@ def shape_misfit(question, answer):
     if status not in ('answered', 'partial'): return f'the plan did not produce an answer (status {status})'
     got = answer.get('answer_type')
     if got == 'composite': return None
+    if got == 'table' and RANKED_GROUPS.search(question or ''): return None  # "the three lowest share ... practices": a ranked table is the shape asked for, whatever the measure's wording
     if wanted is None or got in SHAPES.get(wanted, {got}): return None
     rows = answer.get('table')
     if wanted in ('count', 'value') and isinstance(rows, list) and len(rows) == 1: return None

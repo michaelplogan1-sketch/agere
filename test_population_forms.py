@@ -517,6 +517,17 @@ class EngineForms(Base):
         # every engine answer states how the question was read and carries its definitions
         self.assertTrue(a['read_back'] and a['limitations'])
 
+    def test_a_saved_cohort_is_only_answered_by_a_form_made_for_one(self):
+        ids = ['P01', 'P02']
+        self.assertIsNotNone(PE.interpret(self.catalog, 'What share of total 2029 medical paid spend do they account for?', population=ids))
+        self.assertIsNone(PE.interpret(self.catalog, 'What share of total 2029 medical paid spend do they account for?'))          # no cohort: not a warehouse question
+        self.assertIsNone(PE.interpret(self.catalog, 'Which practices have the biggest diabetes control gap?', population=ids))      # never widened past the cohort
+        r = S.compose(self.stack, 'What share of total 2029 medical paid spend do they account for?', population=ids,
+                      model=Mock(side_effect=AssertionError('no language model on the free path')))
+        part = sum(c[10] for c in CLAIMS if c[14] == 1 and c[7].startswith('2029') and c[1] in ids)
+        total = sum(c[10] for c in CLAIMS if c[14] == 1 and c[7].startswith('2029'))
+        self.assertAlmostEqual(r['answer']['value'], round(100.0 * part / total, 1), places=1)
+
     def test_a_word_no_family_accounts_for_is_not_silently_dropped(self):
         for q in ('Which practices have the biggest diabetes control gap among women?', 'Which 3 practices have the biggest diabetes control gap?'):
             with self.subTest(q=q):

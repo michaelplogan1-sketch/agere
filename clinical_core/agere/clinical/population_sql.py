@@ -31,6 +31,7 @@ class Ctx:
             has_segment = 'patient' in names and any(r[1] == 'data_segment' for r in db.execute('PRAGMA table_info(patient)'))
         self.living = 'p.patient_id ' + decision_context.counted_predicate(has_segment)  # living, and each person once
         self.queries = []  # every statement run, for the answer's evidence
+        self.population = None  # the saved cohort a bound form answers about (set by population_engines.execute)
 
     # -- running ---------------------------------------------------------------------------------------------------------
     def rows(self, sql):

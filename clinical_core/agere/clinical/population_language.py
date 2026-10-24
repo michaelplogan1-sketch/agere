@@ -204,8 +204,7 @@ class PopulationForms:
         number = float(m[2]) if '.' in m[2] else int(m[2])
         leaf = related('measurement_latest', combine('and', [atom('measurement_latest.concept', '=', self.marker_lab, quote),
                                                               atom('measurement_latest.value_canonical', ops[m[1].lower()], number, quote)], quote), quote)
-        self.notes_for_plan = getattr(self, 'notes_for_plan', []) + [
-            f'A bare threshold after a diabetes-control question reads as the latest HbA1c ({quote}).']
+        self.extra_notes.append(f'A bare threshold after a diabetes-control question reads as the latest HbA1c ("{quote}").')
         return leaf, text[m.end():]
 
     # -- blood pressure --------------------------------------------------------------------------------------------------

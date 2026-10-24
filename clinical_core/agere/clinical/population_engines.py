@@ -35,9 +35,9 @@ class Declined(Exception):
 def interpret(catalog, question, *, population=None):
     """-> (contract, interpretation) for the first family that recognises the question and accounts for all of it, else None."""
     from . import insight_families  # noqa: F401 - registers the families
-    if population is not None: return None  # a saved cohort keeps its own request language
     text = ' '.join(question.strip().split())
     for cls in FAMILIES:
+        if bool(getattr(cls, 'BOUND', False)) != (population is not None): continue  # a saved cohort is only ever answered by a form made for one
         try:
             spec = cls.parse(text, catalog)
         except Declined:
@@ -81,6 +81,7 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     if current.identity != contract['source_identity']:
         raise PlanError('Warehouse changed during planning; recompute against the new snapshot')
     ctx = population_sql.Ctx(stack.path, current.target, current.identity['as_of'], question)
+    ctx.population = sorted(set(population)) if population is not None else None
     try:
         result = cls.run(ctx, contract['params'])
     except (sqlite3.Error, ValueError, KeyError) as exc:  # a relation or column this warehouse does not carry: say so, never a partial number
@@ -92,6 +93,9 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
            'new_paid_api_calls': receipt['new_paid_api_calls'], 'planning_economics': economics(receipt) if economics else None,
            'elapsed_seconds': time.perf_counter() - started, 'clinical_execution_authorized': False, 'execution_snapshot': execution_snapshot,
            'computation_complete': True, 'workflow': []}
+    if parent:
+        out['cohort_transform'] = {'parent_context_id': parent['id'], 'input_patient_ids': sorted(population or []),
+                                   'operations': ['Apply population form to exact saved membership'], 'request_id': contract['id']}
     if Catalog.load(stack.path).identity != contract['source_identity'] or source_identity(stack.path) != execution_snapshot:
         raise PlanError('Warehouse changed during execution; no unstable answer was accepted')
     return out

@@ -960,3 +960,45 @@ class PmpmBy:
                     table=[{params['label']: r['grp'], 'member_months': r['member_months'], f"{params['basis']}_dollars": round(r['cents'] / 100, 2), 'pmpm_dollars': round(r['pmpm'], 2)} for r in rows],
                     read_back=f"{params['basis'].capitalize()} medical PMPM for {y} by {params['label']}: counted payer-adjudicated claims in an enrolled member month, grouped by that month's {params['label']}, over the group's member months.",
                     notes=notes + ['A claim counts in the group of the member month it was incurred in; PMPM = dollars / member months of the group (the governed rule).'])
+
+
+# ============================================================================================================================
+# a follow-up about the patients of the previous answer ("what share of total spend do they account for?")
+# ============================================================================================================================
+@family
+class CohortSpend:
+    NAME = 'cohort_spend'
+    BOUND = True  # only with a saved cohort: "they" / "these" / "those" are the previous answer's patients
+    WORDS = set('''what share of total medical paid spend do they account for how much did cost in these those'''.split())
+
+    @classmethod
+    def parse(cls, text, catalog):
+        t = text.strip().rstrip('?.')
+        pronoun = r'(?:they|these|those)'
+        share = re.match(r'^what\s+share\s+of\s+total\s+(?:(20\d\d)\s+)?(?:medical\s+)?(?:paid\s+)?spend\s+do\s+' + pronoun + r'\s+account\s+for(?:\s+in\s+(20\d\d))?$', t, re.I)
+        if share:
+            year = int(share[1] or share[2]) if (share[1] or share[2]) else None
+            return {'params': {'kind': 'share', 'year': year}, 'quotes': [t]}
+        cost = re.match(r'^how\s+much\s+(?:did|do|have)\s+' + pronoun + r'\s+(?:cost|spend|account\s+for)(?:\s+in\s+(20\d\d))?$', t, re.I)
+        if cost:
+            return {'params': {'kind': 'total', 'year': int(cost[1]) if cost[1] else None}, 'quotes': [t]}
+        return None
+
+    @classmethod
+    def run(cls, ctx, params):
+        ids = list(ctx.population or [])
+        y = params['year'] or last_full_year(ctx)
+        notes = [] if params['year'] else [FULL_YEAR_NOTE.format(y=y, a=ctx.as_of[:4])]
+        marks = ','.join(q(i) for i in ids) or "''"
+        base = f"c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))}"
+        part = ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) FROM payer_claim c WHERE {base} AND c.patient_id IN ({marks})", 0)
+        total = ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) FROM payer_claim c WHERE {base}", 0)
+        if params['kind'] == 'total':
+            facts = [fact('paid', f"The {len(ids):,} patients paid {usd(part / 100)} on counted medical claims in {y}.", value=round(part / 100, 2), unit='USD')]
+            return dict(headline=f"{len(ids):,} patients: {usd(part / 100)} paid in {y}", facts=facts, value=round(part / 100, 2), answer_type='value',
+                        read_back=f'Counted medical paid dollars in {y} for the saved patients of the previous answer.', notes=notes, patient_ids=ids)
+        facts = [fact('share', f"The {len(ids):,} patients account for {pct(part / total)}% of total {y} medical paid spend ({usd(part / 100)} of {usd(total / 100)}) = {part / total:.4f}.",
+                      value=pct(part / total), numerator=part / 100, denominator=total / 100, unit='%')]
+        return dict(headline=f"{len(ids):,} patients account for {pct(part / total)}% of {y} medical paid spend", facts=facts, value=pct(part / total), answer_type='value',
+                    table=[{'patients': len(ids), 'paid_dollars': round(part / 100, 2), 'total_paid_dollars': round(total / 100, 2), 'share_percent': pct(part / total)}],
+                    read_back=f'Share of total {y} counted medical paid spend that comes from the saved patients of the previous answer.', notes=notes, patient_ids=ids)
