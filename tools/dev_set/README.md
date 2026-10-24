@@ -63,3 +63,25 @@ conversation` (default) sends the real chain and reports what happened; `--follo
   cervical-cancer screening (no Pap / HPV data), genetic or genomic results.
 - Smoke test (5 dev questions, 2026-10-23): the live service refused all five as `not_understood` -- patient ids are not parsed as
   entities by the current planners. That is a finding about the service, not the set.
+
+## Composition set (split `dev2`)
+`compose_questions.jsonl` (built by `compose_keys.py`) is a second development set for iterating on population / claims / insight
+COMPOSITION without tuning on the original 100 dev questions and without touching `heldout`. Its split is always `dev2`; every row
+carries a `family` (condition_combo, condition_lab, condition_med, utilization_window, share_denominator, grouped_breakdown, top_n,
+group_comparison, claims_money, pharmacy, sdoh, follow_up, absent) and the same bucket names / key schema as `questions.jsonl`
+(ids `c3-NN` clinical quality, `c4-NN` claims / pharmacy / SDOH, `c5-NN` insight).
+
+    .venv/bin/python -m tools.dev_set.compose_keys --summary        # counts per bucket / family / answer type
+    .venv/bin/python -m tools.dev_set.compose_keys --check          # recompute every key, compare with the file
+    .venv/bin/python -m tools.dev_set.run --set compose             # live service (also --split dev2)
+    .venv/bin/python -m tools.dev_set.run_inprocess --set compose   # in-process, Claude off (also --split dev2); add --ids / --bucket
+    .venv/bin/python -m unittest tools.dev_set.test_compose_set
+
+Keys are independent SQL (no product SQL builder is imported) against the decision context: living, de-duplicated patients; age from the
+birth date; latest lab unless the question says ever / any; condition evidence incl. counted claim diagnoses and the diabetes / CKD lab
+rules; Medicare = medicare + dual + medigap coverage; "on" a drug = a picked-up fill in the 12 months ending 2030-05-27; rolling year
+(2029-05-27, 2030-05-27]; frequent ED = 3+ visits; high cost = $50,000+. Event counts (ED / inpatient / observation) are over living
+patients; money counts every member's claims. Patient payer-type groups are commercial / Medicare / Medicaid by `patient.coverage_type`;
+practice = PCP practice, else the attributing practice of the latest enrollment span. Insight items are rubrics of SQL-computed facts.
+The test file checks that no question duplicates (or nearly duplicates) a non-held-out dev question; held-out lines are filtered out
+before they are parsed, so overlap with held-out questions is not checkable and is avoided only by writing from the tables.
