@@ -59,7 +59,7 @@ DOMAINS = {
 
 # -- lexicons ---------------------------------------------------------------------------------------------------------------
 LAB_TERMS = [  # (pattern, concept(s))
-    (r'\b(?:hba1c|a1c|hemoglobin a1c|haemoglobin a1c|glycated h\w+|glycohemoglobin|a-1-c)\b', ['hba1c']),
+    (r'\b(?:hba1cs?|a1cs?|hemoglobin a1cs?|haemoglobin a1cs?|glycated h\w+|glycohemoglobin|a-1-c)\b', ['hba1c']),
     (r'\b(?:egfr|e-gfr|gfr|glomerular filtration|kidney function)\b', ['egfr']),
     (r'\bldl\b', ['ldl']), (r'\bhdl\b', ['hdl']),
     (r'\btriglycerides?\b', ['triglycerides']),
@@ -123,7 +123,7 @@ NEEDS = [(r'\bfood\b|hunger|nutrition', 'food'), (r'\bhous\w+|homeless|rent\b', 
 SUMMARY = re.compile(r"\b(?:summar(?:y|ize|ise)|overview|briefing|brief me|what should i know|before (?:i )?(?:see|seeing|meeting|the visit|visit)|"
                      r"snapshot|tell me about|run ?down|chart review|patient profile|catch me up|bring me up to speed|walk me through)\b", re.I)
 HOW_MANY = re.compile(r'\b(?:how many|number of|count of|how often|how many times|count)\b', re.I)
-HOW_MUCH = re.compile(r'\bhow much\b|\btotal (?:paid|spend|cost|billed|allowed|amount)|\bspen[dt]\b|\bpaid\b|\bcosts?\b|\bamount\b', re.I)
+HOW_MUCH = re.compile(r'\bhow much\b|\btotal (?:claims? )?(?:paid|payments?|spend|cost|billed|allowed|amount)|\bpay(?: out)?\b|\bspen[dt]\b|\bpaid\b|\bcosts?\b|\bamount\b', re.I)
 STATUS_LEAD = re.compile(r"^\W*(?:and\s+)?(?:is|are|was|were|does|do|did|has|have|had|can|could|will|would|any)\b", re.I)
 # A yes/no question may open with a short phrase before its verb: "At the annual wellness visit, was a memory concern raised?"
 FRONTED_STATUS_LEAD = re.compile(r"^\W*[^,?]{3,80},\s*(?:and\s+)?(?:is|are|was|were|does|do|did|has|have|had|can|could|will|would|any)\b", re.I)
@@ -564,7 +564,7 @@ def _attribute(domain, low):
 def _intent(domain, q, low, out, prior):
     if domain is None:
         return None
-    count, status = bool(HOW_MANY.search(q)), bool(STATUS_LEAD.search(q))
+    count, status = bool(HOW_MANY.search(q)), asks_yes_no(q)
     when, last = bool(WHEN.search(q)), bool(LAST.search(q))
     listish = bool(LISTISH.search(q))
     if domain == 'lab':
@@ -594,6 +594,8 @@ def _intent(domain, q, low, out, prior):
     if domain == 'claims' or domain == 'pharmacy_claim':
         if count:
             return 'count_in_window'
+        if HOW_MUCH.search(q) and not re.search(r'\b(?:list|which|each|every)\b', low):
+            return 'sum'
         if listish or re.search(r'\bshow|\blist\b', low):
             return 'list'
         if HOW_MUCH.search(q) or out.get('attribute'):

@@ -71,6 +71,9 @@ def executable_text(*parts):
 
 def _numbers(text):
     found = set()
+    # Apply the same number-word normalization to executable evidence and the
+    # question. Restated question fields have already been removed upstream.
+    text = re.sub(r'\b[a-z]+\b', lambda m: N.NUMBER_WORDS.get(m.group(), m.group()), text.lower())
     for n in re.findall(r'(?<![a-z_])\d+(?:\.\d+)?', text.lower().replace(',', '')):
         v = float(n)
         found |= {_fmt(v), _fmt(v * 100), _fmt(v / 100)}

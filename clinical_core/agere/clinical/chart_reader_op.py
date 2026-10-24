@@ -81,6 +81,11 @@ def answer(report, plan, question):
     if graph_type == 'table' or isinstance(value, bool):
         value = out.get('headline')  # the dev scorer and the UI read count / value; text answers carry their headline as the value
     count = out.get('count') if t == 'count' else (1 if t == 'yes_no' and out.get('yes_no') else 0 if t == 'yes_no' else out.get('count'))
+    if graph_type == 'table' and not out.get('table') and t == 'label' and out.get('value') is not None:
+        # A sourced label is a populated observation, just like a boolean. Its
+        # scalar value must survive adaptation so guards can inspect the result.
+        out = {**out, 'table': [{'patient_id': pid, 'value': out['value']}
+                               for pid in report['patient_ids']]}
     merged = {**out, 'status': 'unsupported' if out.get('status') == 'unsupported' else ('partial' if partial and out.get('status') != 'answered' else 'answered'),
               'answer_type': graph_type, 'value': value, 'count': count, 'patient_ids': report['patient_ids'], 'membership_role': 'selected',
               'chart_headline': out.get('headline'), 'definitions': [{'term': 'chart reader', 'basis': out.get('method')}],
