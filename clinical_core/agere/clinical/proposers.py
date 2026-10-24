@@ -532,6 +532,8 @@ class Cascade:
                 return self.accept(order, name, found)
             if free_only:
                 raise QuestionNotUnderstood('The rewording was not read by the free stages; the question as typed is tried next.')
+            found = self.reserved_analyst(order)  # the analyst never got its turn inside the budget: it gets a reserved slot of its own
+            if found is not None: return found
             found = self.escalate(order, budget)  # every Haiku attempt failed: the Sonnet rung, tier by tier
             if found is not None: return found
             if budget.best() and (budget.expired() or self.deferred):
@@ -564,6 +566,17 @@ class Cascade:
         finally:
             self.flush_timings()
             self.close()
+
+    def reserved_analyst(self, order):
+        """The LLM layer always gets a turn: when the answer budget ran out before the semantic analyst was asked (end-to-end held-out
+        run f2cbeb0: 15 of 27 refusals never reached it), it runs once now with its own time (AGERE_ANALYST_RESERVE_SECONDS, default 25;
+        0 turns this off). -> accept() result or None."""
+        name, seconds = 'semantic_analyst', float(os.environ.get('AGERE_ANALYST_RESERVE_SECONDS', '25'))
+        if seconds <= 0 or name not in order or not self.runnable(name) or not claude_available() or self.claude_down: return None
+        if any(e.get('proposer') == name and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return None  # it had its turn
+        self.deferred = [d for d in self.deferred if d.get('tier') != name]
+        found = self.attempt(name, seconds)
+        return self.accept(order, name, found) if found is not None else None
 
     def escalatable(self, name):
         """Did this tier spend a Haiku attempt that failed (declined, rejected, errored) and is Claude still reachable?"""

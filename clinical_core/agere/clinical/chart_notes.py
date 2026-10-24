@@ -21,7 +21,8 @@ from . import note_open as NO
 
 VERSION = 'chart-notes/2'
 STRONG = re.compile(
-    r"\b(?:in (?:the |his |her |their )?notes?|the notes?|notes? (?:say|show|record|mention|document|list|stated)|chart (?:say|show|mention)s?|later notes?|"
+    r"\b(?:in (?:the |his |her |their )?notes?|the notes?|notes? (?:say|show|record|mention|document|list|stated)|(?:is|are) there (?:a|an|any) (?:\w+ )?(?:notes?|documentation|mention)|"
+    r"(?:a|an|any) notes? (?:saying|stating|documenting|mentioning|showing|recording)|chart (?:say|show|mention)s?|later notes?|"
     r"discussed|discussion|conversation|goals[- ]of[- ]care|code status|dnr|dni|resuscitat\w*|chest compressions|breathing tube|intubat\w*|"
     r"advance directive|polst|molst|living will|health ?care proxy|why was|why did|why is|reason (?:for|why|\w+ (?:was|were))|accept(?:ed)?|declin\w+|refus\w+|"
     r"(?:report|reports|reported)\s+(?:taking|using|having)|discharge summary|impression|x-?ray|radiolog\w+|ruled out|rule[- ]out|stress test|"
@@ -123,6 +124,12 @@ def split_parts(question):
         context = ' '.join(s for s in parts if s is not ask and s not in qs[1:])
         return ask, context, True
     ask, context = asking_and_context(question)
+    # one sentence that asks the finding and then, after "and", what was done about it ("... barriers, and what was done to address them?")
+    m = NO.RESPONSE_PART.search(ask)
+    if m and m.start() > 12:
+        head = re.sub(r"[,;:\s]*(?:(?:and|then|also)\s*)*(?:(?:tell me|let me know|say|state|show me|explain|describe)\s*)?$", '', ask[:m.start()]).strip()
+        if len(head) > 12 and not NO.RESPONSE_PART.search(head):
+            return head + ('?' if ask.rstrip().endswith('?') else ''), context, True
     return ask, context, False
 
 
@@ -181,6 +188,14 @@ def dated_note_reference(q):
                           r"s?\s+(?:from|of|dated|on|written|done|taken)\s+" + DATE_TEXT, q or '', re.I))
 
 
+FRONTED_CLAUSE = re.compile(r"^\W*(?:after|following|since|once|when|given|before)\b[^?]{3,220}?[,)]\s*((?:and\s+)?(?:is|are|was|were|does|do|did|has|have|had|can|could|will|would)\b[^?]*\??)\s*$", re.I)
+
+
+def main_clause(ask):
+    m = FRONTED_CLAUSE.match(ask or '')
+    return m.group(1) if m and frames_of(m.group(1)) else ask
+
+
 def frames_of(ask):
     found = []
     for frame, pat in FRAME_CUES:
@@ -216,7 +231,8 @@ FRAME_LABELS = {'condition': 'Condition or diagnosis', 'symptom': 'Symptom or co
                 'care_process': 'Care process or service', 'social_need': 'Social need or barrier', 'function_cognition': 'Function, cognition or safety',
                 'preference_refusal': 'Preference, refusal or decision', 'plan_followup': 'Plan, follow-up or disposition'}
 NOT_DRUGS = frozenset('the a an any new it them that this these those his her their patient later earlier notes note chart still again also not never because'.split())
-MED_WORD = [re.compile(r"\b([a-z][a-z-]{3,})\s+(?:was|were|has been|had been|is|are)\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
+MED_WORD = [re.compile(r"\b(?:was|were|is|are)\s+([a-z][a-z-]{3,})\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
+            re.compile(r"\b([a-z][a-z-]{3,})\s+(?:was|were|has been|had been|is|are)\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
             re.compile(r"\b(?:stopped|started|holding|held|discontinued|restarted|taking|takes|using|list|lists|listed|show|shows|accept(?:ed)?|declined|refused)\s+(?:the\s+|on\s+)?([a-z][a-z-]{3,})\b", re.I),
             re.compile(r"\breason\s+([a-z][a-z-]{3,})\s+was\b", re.I)]
 
@@ -249,6 +265,18 @@ def _persistence(pred, question, ask, context):
     return p
 
 
+LONG_FRONTED_YES_NO = re.compile(r"^\W*(?:after|before|when|while|at|during|in|on|following|since|given|if|once|with|from)\b[^?]{3,220}?[,)]\s*(?:and\s+)?"
+                                 r"(?:is|are|was|were|does|do|did|has|have|had|can|could|will|would)\b", re.I)
+
+
+def asks_yes_no(ask):
+    """A yes/no question, including one that opens with a long dated clause ("After the 2029-08-05 note that stopped X (reason), do later notes still ...?")."""
+    return bool(CI.asks_yes_no(ask) or LONG_FRONTED_YES_NO.match(ask or ''))
+
+
+ANAPHORIC_ASK = re.compile(r"^\W*(?:and\s+)?(?:what|which|who|how many|how much)\b[^?]{0,30}\b(?:it|they|them|those|that|these|this|ones?)\b[^?]{0,20}\??\W*$", re.I)
+
+
 def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     """-> [predicate dict]. `choose(question, options, task_key)` -> label | None is the System One closed-list choice (frame, when the cues are silent)."""
     question = PATIENT_TOKEN.sub(' ', question or '').strip()
@@ -256,9 +284,13 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     window = window_for(ask, context, as_of)
     cues = NO.source_cues(question)
     drug = CI._drug(ask, lexicon) or CI._drug(context, lexicon) or _med_word(ask) or _med_word(context)
-    frames = frames_of(ask)
+    frames = frames_of(main_clause(ask))  # "After <dated event clause>, do later notes show X?": the frame is what the main clause asks, not the clause that dates it
     if not frames and context:
-        frames = frames_of(context)[:1]
+        # the asking sentence is only a pointer back ("What is it?", "Which ones?"): the sentence that names the finding is the question
+        named = next((x for x in sentences(context) if frames_of(x)), None)
+        frames = frames_of(named or context)[:1]
+        if named and frames and ANAPHORIC_ASK.search(ask):
+            ask = named
     elliptical = bool(prior_predicates) and len(ask.split()) <= 8 and not frames_of(ask)
     if elliptical:
         # "and morphine?": the previous question's predicates with the concept swapped
@@ -325,6 +357,12 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             pred['_ask_detail'] = detail  # judged here against the fields answer_patient returns; never sent as a constraint
         if ret:
             pred['return_detail'] = list(dict.fromkeys(ret))
+        if frame == 'medication_event' and 'reason' in ret and detail.get('event'):
+            # A reason belongs to the requested event, not the latest medication
+            # mention. A later continuation must not replace a documented stop.
+            # ANY matching event retains its own reason and supporting passage.
+            pred['detail'] = dict(detail)
+            pred['combine'] = 'any'
         if frame == 'procedure_test' and {'result', 'result_text'} & set(ret) and not (window and window.get('kind') == 'day'):
             pred['combine'] = 'any'  # "the impression on the report" with no date: every matching report's result, not only the latest
         if window:
@@ -334,6 +372,10 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     if preds and CI.HOW_MANY.search(ask):
         preds = preds[:1]
         preds[0]['_count'] = True
+        # Reported counts belong to the dated note, even when its events are
+        # historical. An unqualified event-count question keeps its own scope.
+        if re.search(r'\breport(?:s|ed|ing)?\b', ask, re.I):
+            preds[0]['statuses'] = list(dict.fromkeys([*preds[0]['statuses'], 'historical']))
         preds[0]['return_detail'] = list(dict.fromkeys([*(preds[0].get('return_detail') or []), *(['count'] if preds[0]['frame'] in COUNT_FRAMES else [])]))
         if not preds[0]['concept'].get('open'):
             preds[0]['combine'] = 'any'  # every documented occurrence in the window, not only the latest
@@ -358,6 +400,13 @@ def is_elliptical(question):
     """A short follow-up with no frame cue of its own ("and morphine?", "what about aspirin?")."""
     q = (question or '').strip().lower()
     return len(q.split()) <= 8 and bool(re.match(r'^(?:and|what about|how about|also|then)\b', q)) and not frames_of(question)
+
+
+def follows_note_question(intent, prior_note):
+    """Is a typed (structured) reading of an elliptical follow-up really the next question of a prior NOTE question? True when the new intent
+    names a drug on the medication domain and the prior note question was about a medication event."""
+    concept = (intent or {}).get('concept') or {}
+    return (intent or {}).get('domain') == 'medication' and concept.get('kind') == 'drug' and any(p.get('frame') == 'medication_event' for p in prior_note or [])
 
 
 def detail_matches(wanted, got):
@@ -397,6 +446,18 @@ def focus_quote(quote, pred, limit=400):
     keep = [s for _, _, s in NE.sentences(text) if any(p.search(s) for p in pats) or (want_result and RESULT_WORDS.search(s))]
     out = ' '.join(keep) if keep else text
     return out[:limit]
+
+
+OCR_DIGIT = [(re.compile(r"(?<=[a-z])(?<!\ba)1(?=[a-z])|\b1(?=[a-z]{3,})"), 'l'), (re.compile(r"(?<=[a-z])0(?=[a-z])|\b0(?=[a-z]{3,})"), 'o')]
+
+
+def ocr_clean(text):
+    """A scanned passage with a digit inside a word ("1owerlobe" for "lowerlobe"): the same text with the obvious digit-for-letter swaps undone,
+    shown NEXT TO the verbatim quote, never in place of it."""
+    out = str(text or '')
+    for rx, ch in OCR_DIGIT:
+        out = rx.sub(ch, out)
+    return out
 
 
 def _quote(e, n=300):
@@ -482,7 +543,7 @@ def count_events(res, is_open=False):
             return {'n': n, 'basis': f"at least: distinct findings the readers settled; {res.get('partial')}"}
         return {'n': n, 'basis': 'distinct findings the readers settled' if n else 'none documented'}
     evs = [e for e in (res.get('evidence') or []) if e.get('supports')]
-    stated = sorted(((e.get('date') or '', _whole((e.get('detail') or {}).get('count')), e) for e in evs if (_whole((e.get('detail') or {}).get('count')) or 0) > 0),
+    stated = sorted(((e.get('date') or '', _whole((e.get('detail') or {}).get('count')), e) for e in evs if _whole((e.get('detail') or {}).get('count')) is not None),
                     key=lambda t: t[0])
     if stated:
         d, n, e = stated[-1]
@@ -573,8 +634,14 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
         detail = res.get('detail') or {}
         ok = bool(res['holds']) if res.get('holds') is not None else status in POSITIVE or (asks_denied and status == 'denied')
         is_open = bool(pred['concept'].get('open'))
+        if ask_detail and not persist:
+            # the question names an event ("why was X stopped"): the passage that HAS that event answers it, whenever it was written,
+            # not only the latest passage read about the drug (a later list that still shows the drug does not undo the stop)
+            res, status, detail = _select_asked_event(res, status, detail, ask_detail)
         if ok and ask_detail:
             ok = detail_matches(ask_detail, detail)
+        elif ask_detail and not ok and status in POSITIVE and detail_matches(ask_detail, detail):
+            ok = True
         active = ended = None
         if persist and not is_open:
             status, ok, active, ended = persistence_verdict(res)
@@ -621,7 +688,10 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
                 own = ''
                 if multi:  # several reports: each one's own reading, not the best one's
                     own = _detail_text({k: v for k, v in (e.get('detail') or {}).items() if k in (pred.get('return_detail') or [])})
-                line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}{own}: \"{focus_quote(e.get('quote'), pred)}\""
+                shown_quote = focus_quote(e.get('quote'), pred)
+                line += f" | {e.get('date') or ''} {e.get('note_type') or ''} {e.get('record_id') or ''}{own}: \"{shown_quote}\""
+                if ocr_clean(shown_quote) != shown_quote:
+                    line += f' [OCR-corrected reading: "{ocr_clean(shown_quote)}"]'
             if anchor_note:
                 line += f' | {anchor_note}'
             if counted[-1] is not None:
@@ -656,6 +726,21 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
                       notes=['note frames: System One reads retrieved passages; the count is a number the note states, else the distinct documented occurrences in the window'])
     return Q.core('note', headline, value=headline, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': lead},
                   notes=['note frames: System One reads retrieved passages; code reduces them to one patient value; an undecided patient is never read as "no"'])
+
+
+def _select_asked_event(res, status, detail, ask_detail):
+    """-> (res, status, detail). When no reading of the combined value matches the asked detail but individual passages do, the value is the
+    LATEST matching passage and the cited evidence is the matching passages (supports=True), so the answer states that passage's own detail."""
+    if status in POSITIVE and detail_matches(ask_detail, detail):
+        return res, status, detail
+    hit = [e for e in (res.get('evidence') or []) if e.get('status') in POSITIVE and detail_matches(ask_detail, e.get('detail') or {})]
+    if not hit:
+        return res, status, detail
+    hit.sort(key=lambda e: (e.get('date') or '', e.get('record_id') or ''))
+    best = hit[-1]
+    rest = [e for e in (res.get('evidence') or []) if e not in hit]
+    ev = [{**e, 'supports': True} for e in reversed(hit)] + [{**e, 'supports': False} for e in rest]
+    return {**res, 'status': best['status'], 'holds': True, 'detail': best.get('detail') or {}, 'p': best.get('p'), 'evidence': ev}, best['status'], best.get('detail') or {}
 
 
 def _response_part(nf, stack, pred, res, patient_id, as_of, ledger, allow_live):

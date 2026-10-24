@@ -297,6 +297,8 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
             prior_frame = (prior or {}).get('frame') or {}
             choose = lambda text, options, key: _so_choice(text, options, as_of=as_of, task_key=key, decide=decide, allow_live=allow_live, spend=spend)  # noqa: E731
             it = _intent_from_spec(spec)
+            if it is not None and not note_preds and prior_frame.get('note') and CN.is_elliptical(question) and CN.follows_note_question(it, prior_frame['note']):
+                it = None  # "and morphine?" after a note question about a drug: the same note question about the new drug, not the active-medication list
             if it is None and not note_preds and prior_frame.get('note') and CN.is_elliptical(question):
                 note_preds = CN.build(question, as_of, lexicon=ch.lexicon, prior_predicates=prior_frame['note'], choose=choose)
                 it = {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': ['inherited_from_prior'], 'question': question}
@@ -308,7 +310,7 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
             if note_preds:
                 it = it or {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': [], 'question': question}
                 it = {**it, 'domain': NOTE_DOMAIN}
-                core = CN.render(stack, note_preds, pid, as_of, ledger=ledger, nf=nf, yes_no=CI.asks_yes_no(CN.asking_and_context(question or '')[0]) or (
+                core = CN.render(stack, note_preds, pid, as_of, ledger=ledger, nf=nf, yes_no=CN.asks_yes_no(CN.asking_and_context(question or '')[0]) or (
                     'inherited_from_prior' in it.get('flags', []) and bool(prior_frame.get('yes_no'))), allow_live=allow_live)
             elif it is not None and it.get('domain') == NOTE_DOMAIN:
                 return unsupported('The question reads as a note question but no note predicate could be built from it.', question, started, spend, pid=pid, intent=it)

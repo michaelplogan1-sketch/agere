@@ -873,11 +873,12 @@ def request_keys(stack, catalog, question, population, planning, memory_identity
     interpretation keeps its meaning across releases; it is recompiled and re-executed under the current code on replay."""
     key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
                                     'tables': catalog.tables, 'stream_fields': catalog.stream_fields, 'code': code,
-                                    'interpretation_policy':'deterministic-first-hosted-last/1',
+                                    'interpretation_policy':request_plan.MEANING_REVISION,
                                     'allow_live': bool(getattr(stack, 'allow_live', False)),
                                     'hosted_model': hosted_model,
                                     'planning': planning, 'procedural_memory': memory_identity})
     stable_key = request_plan.fingerprint({'question': question, 'population': population, 'source': catalog.identity,
+                                           'interpretation_policy': request_plan.MEANING_REVISION,
                                            'tables': catalog.tables, 'stream_fields': catalog.stream_fields,
                                            'planning': planning, 'procedural_memory': memory_identity})
     return key, stable_key
@@ -890,7 +891,7 @@ def store_request(cache_path, key, stable_key, question, contract, interpretatio
             and contract.get('kind') not in ('checked_graph', 'engine_form') and (contract.get('kind') != 'request_program' or request_program.cacheable(contract, interpretation))):
         return False
     from .decision_context import VERSION as DEFINITIONS
-    interpretation = {**interpretation, 'definitions_version': DEFINITIONS}  # a saved plan replays only under the same definitions
+    interpretation = {**interpretation, 'definitions_version': DEFINITIONS, 'meaning_revision': request_plan.MEANING_REVISION}  # a saved plan replays only under the same definitions
     with sqlite3.connect(cache_path) as db:
         db.execute('CREATE TABLE IF NOT EXISTS shared_requests(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
         saved_plan = ({'program': contract['program']} if contract.get('kind') == 'request_program' else
@@ -961,7 +962,8 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
         saved = json.loads(hit[0])
         if not saved.get('interpretation', {}).get('execution_accepted'): hit = None
         from .decision_context import VERSION as DEFINITIONS
-        if saved.get('interpretation', {}).get('definitions_version') != DEFINITIONS:
+        if (saved.get('interpretation', {}).get('definitions_version') != DEFINITIONS
+                or saved.get('interpretation', {}).get('meaning_revision') != request_plan.MEANING_REVISION):
             hit, carried = None, None  # planned under other definitions (living patients, latest labs, condition evidence): re-plan
         from .terminology import stale, store_path  # a saved plan built before a term's granularity was decided is re-read, not replayed
         if hit and stale(store_path(Path(catalog.target).parent), saved['interpretation'].get('terminology')): hit = None

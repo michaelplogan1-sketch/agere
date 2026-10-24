@@ -100,7 +100,12 @@ def capture(path, question, result, *, original_question=None):
     context_policy = policy_identity()
     # Preserve an explicit question input independently of output membership.
     # None means unscoped, [] means an intentionally empty saved population.
-    input_ids = contract.get('population') if contract else (result.get('cohort_transform') or {}).get('input_patient_ids')
+    input_ids = (contract or {}).get('population')
+    transformed_ids = (result.get('cohort_transform') or {}).get('input_patient_ids')
+    if input_ids is not None and transformed_ids is not None and set(input_ids) != set(transformed_ids):
+        raise ValueError('Executed contract and cohort transform disagree on the saved input population')
+    if input_ids is None:
+        input_ids = transformed_ids
     input_ids = None if input_ids is None else sorted(set(input_ids))
     data = {'schema': 'agere-answer-context/1', 'context_policy_identity': context_policy, 'question': question,
             'original_question': original_question or question, 'source': source,

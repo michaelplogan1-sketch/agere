@@ -64,6 +64,23 @@ class SummaryFollowup(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'saved input population'):
             self.follow(unscoped)
 
+    def test_engine_summary_retains_transform_input_when_contract_omits_population(self):
+        for ids in (['A', 'B'], []):
+            result, _ = self.summary(population=ids)
+            result['planner_receipt']['request_contract'].pop('population', None)
+            result['cohort_transform'] = {'input_patient_ids': ids, 'operations': ['Summarize exact input']}
+            saved = A.capture(self.path, 'Summarize exact input', result)
+            data = A.load(self.path, saved['id'], current=True)
+            self.assertEqual(data['input_patient_ids'], ids)
+            self.assertEqual(A.reference_scope(data, 'input')['patient_ids'], ids)
+            self.assertFalse(A.supports_patient_work(data))
+
+    def test_conflicting_contract_and_transform_cannot_change_input(self):
+        result, _ = self.summary()
+        result['cohort_transform'] = {'input_patient_ids': ['OUTSIDE']}
+        with self.assertRaisesRegex(ValueError, 'disagree'):
+            A.capture(self.path, 'Conflicting scopes', result)
+
     def test_summary_result_reference_does_not_silently_use_its_input(self):
         _, context = self.summary()
         with self.assertRaisesRegex(ValueError, 'analytical summary'):

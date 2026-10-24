@@ -81,3 +81,28 @@ class AnalystGate(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ReservedAnalyst(unittest.TestCase):
+    def cascade(self, log):
+        c = P.Cascade.__new__(P.Cascade)
+        c.log, c.deferred, c.claude_down, c.population = log, [{'tier': 'semantic_analyst'}], None, None
+        c.stack = type('S', (), {'allow_live': True})()
+        return c
+
+    def test_the_analyst_gets_a_reserved_turn_when_the_budget_skipped_it(self):
+        c = self.cascade([{'proposer': 'semantic_analyst', 'outcome': 'skipped'}])
+        asked = []
+        with patch.object(P, 'claude_available', lambda: True), \
+             patch.object(P.Cascade, 'attempt', lambda self, name, limit: asked.append((name, limit)) or ('contract', {})), \
+             patch.object(P.Cascade, 'accept', lambda self, order, name, found: ('accepted', name)):
+            self.assertEqual(c.reserved_analyst(['chart_reader', 'semantic_analyst']), ('accepted', 'semantic_analyst'))
+        self.assertEqual(asked, [('semantic_analyst', 25.0)])
+        self.assertEqual(c.deferred, [])
+
+    def test_no_second_turn_and_off_switch(self):
+        with patch.object(P, 'claude_available', lambda: True), \
+             patch.object(P.Cascade, 'attempt', lambda *a: self.fail('asked twice')):
+            self.assertIsNone(self.cascade([{'proposer': 'semantic_analyst', 'outcome': 'declined'}]).reserved_analyst(['semantic_analyst']))
+            with patch.dict(os.environ, {'AGERE_ANALYST_RESERVE_SECONDS': '0'}):
+                self.assertIsNone(self.cascade([]).reserved_analyst(['semantic_analyst']))

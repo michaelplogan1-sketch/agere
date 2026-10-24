@@ -88,6 +88,12 @@ def answer(report, plan, question):
     if out.get('answer_type') == 'yes_no':
         merged['answer_type'] = 'table'
         merged['value'] = out.get('headline')
+        if not merged.get('table'):
+            # A determinate NO is a populated boolean answer, not an empty
+            # result table. Preserve that value through the graph adapter so
+            # zero-result checks do not reject a correctly read negative chart.
+            merged['table'] = [{'patient_id': report['patient_ids'][0],
+                                'answer': out.get('yes_no', out.get('value'))}]
     return merged
 
 
