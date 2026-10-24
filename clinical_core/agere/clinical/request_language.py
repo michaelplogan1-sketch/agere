@@ -219,7 +219,7 @@ def syntax_text(text, *, hide_parentheses=False):
         if quote:
             chars[i] = ' '
             if char == quote: quote = None
-        elif char in ('"', "'"):
+        elif char in ('"', "'") and not (char == "'" and i > 0 and i + 1 < len(text) and text[i-1].isalnum() and text[i+1].isalnum()):
             quote = char
             chars[i] = ' '
         elif hide_parentheses and char == '(':
@@ -1112,8 +1112,8 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
 
     def ranking(self, text):
         """'What is the most common <thing> [in <its source>]' / 'What are the top N <things> ...': counts by value."""
-        head = re.match(r'^(?:(?:what|which)\s+(?:is|are|was|were)\s+)?(?:the\s+|our\s+)?'
-                        r'(most\s+(?:common(?:ly\s+\w+)?|frequent(?:ly\s+\w+)?)|top\s+(\d+|' + '|'.join(NUMBER_WORDS) + r'))\s+', text, re.I)
+        head = re.match(r'^(?:(?:(?:what|which)\s+(?:is|are|was|were)|what[\'’]s)\s+)?(?:the\s+|our\s+)?'
+                        r'(most\s+(?:common(?:ly\s+\w+)?|frequent(?:ly\s+\w+)?)|top(?:\s+(\d+|' + '|'.join(NUMBER_WORDS) + r'))?)\s+', text, re.I)
         if head and not re.match(r'^(?:what|which)\b', text, re.I) and not head[2]: head = None  # without "what is", only "top N" opens a ranking
         if not head: return None
         body = text[head.end():]
@@ -1614,7 +1614,7 @@ def parse_program(catalog, question, *, bound=False):
     cannot be established from the wording requires clarification.
     """
     mask = syntax_text(question, hide_parentheses=True)
-    boundaries = list(re.finditer(r'(?:\s+and\s+|;\s*)(?!how\s+many(?:\s+\w+)?\s+each\b)(?=(?:the\s+)?(?:number of|count(?: of)?|how many|average|mean|total|sum|list|show|find)\s+)', mask, re.I))
+    boundaries = list(re.finditer(r'(?:\s+and\s+|;\s*)(?!how\s+many(?:\s+\w+)?\s+each\b)(?=(?:the\s+)?(?:number of|count(?: of)?|how many|average|mean|total|sum|list|show|find|what[\'’]s|what\s+(?:is|are)|which)\s+)', mask, re.I))
     if not boundaries: return None
     clauses, cursor = [], 0
     for boundary in boundaries:
@@ -1635,6 +1635,26 @@ def parse_program(catalog, question, *, bound=False):
             if not (i and front): raise
             requests.append(parse(catalog, front[1] + ' ' + clause, bound=bound))
             quotes[i] = [front[1], clause]
+    def date_scope(expr, table):
+        if not isinstance(expr, dict): return None
+        if expr.get('op') == 'and':
+            values = [date_scope(v, table) for v in expr.get('args', [])]
+            return combine('and', values, list(dict.fromkeys(scope_words(expr)))) if values and all(v is not None for v in values) else None
+        if expr.get('field') == table + '.' + CLOCKS.get(table, ''): return expr
+        return None
+    def scope_words(expr):
+        if not isinstance(expr, dict): return []
+        q = expr.get('quote')
+        if 'field' in expr: return [q] if isinstance(q,str) else list(q or [])
+        return [q for child in expr.get('args', []) for q in scope_words(child)]
+    for i, request in enumerate(requests[1:], 1):
+        first = requests[0]
+        table = request['source']['table']
+        inherited = date_scope(first.get('where'), table) if first['source']['table'] == table else None
+        if (inherited and request.get('order_by') and request.get('group_by')
+                and not re.search(r'\b(?:19|20)\d\d\b|\b(?:last|past|calendar)\b', clauses[i], re.I)):
+            request['where'] = combine('and', [inherited, request.get('where')], clauses[i])
+            quotes[i] = [*dict.fromkeys(scope_words(inherited)), clauses[i]]
     trailing = re.search(r'\s+((?:in|during|over|within|for)\s+(?:the\s+)?(?:(?:last|past)\s+(?:\d+|\w+)\s+(?:years?|months?)|(?:last|past)\s+year|calendar\s+(?:year\s+)?(?:19|20)\d\d|(?:19|20)\d\d))\s*$', clauses[-1], re.I)
     if trailing and len(clauses) > 1:
         for i, clause in enumerate(clauses[:-1]):
@@ -1655,7 +1675,8 @@ def parse_program(catalog, question, *, bound=False):
             table=request['source']['table']
             if not has_period and any(c.endswith(('_date','_time','_at')) for c in catalog.tables[table]):
                 raise AmbiguousRequest('State the date scope for each dated output; it is unclear whether the period applies to '+clause)
-    if len({r['source']['table'] for r in requests}) == 1 and len({bool(r['group_by']) for r in requests}) > 1:
+    if (len({r['source']['table'] for r in requests}) == 1 and len({bool(r['group_by']) for r in requests}) > 1
+            and not any(r.get('order_by') and r.get('limit') for r in requests)):
         raise AmbiguousRequest('State whether grouping applies to both outputs or only the grouped output')
     return {'nodes':[{'id':f'output_{i+1}','quote':quote,'inputs':[],'request':request}
                      for i,(quote,request) in enumerate(zip(quotes,requests))], 'unresolved':[]}
