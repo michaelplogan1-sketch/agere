@@ -56,6 +56,45 @@ def scratch_dir(stack_path):
     return d
 
 
+_OPERATIONAL_LOCK = threading.Lock()
+
+
+def operational_path(stack_path, name):
+    """Evaluation previews use a consistent private copy, including prior work state.
+
+    Preparing analytical review proposals needs read-after-write semantics. Keep
+    those drafts in evaluation scratch rather than changing the live work store.
+    The frozen snapshot id isolates independent runs; follow-up requests in one
+    run share their private proposals. SQLite backup includes committed WAL rows.
+    """
+    source = Path(stack_path) / name
+    if not active():
+        return source
+    import hashlib
+    run = hashlib.sha256(str(frozen_snapshot() or 'request-evaluation').encode()).hexdigest()[:16]
+    target = scratch_dir(stack_path) / run / name
+    with _OPERATIONAL_LOCK:
+        if not target.exists():
+            target.parent.mkdir(parents=True, exist_ok=True)
+            real_connect = _original_connect.get('connect', sqlite3.connect)
+            temporary = target.with_suffix('.copying')
+            try:
+                destination = real_connect(temporary)
+                try:
+                    if source.exists():
+                        original = real_connect(source.resolve().as_uri() + '?mode=ro', uri=True)
+                        try:
+                            original.backup(destination)
+                        finally:
+                            original.close()
+                finally:
+                    destination.close()
+                temporary.replace(target)
+            finally:
+                temporary.unlink(missing_ok=True)
+    return target
+
+
 def frozen_snapshot():
     state = _STATE.get()
     return (state or {}).get('frozen_learning') or os.environ.get('AGERE_FROZEN_LEARNING') or None
@@ -101,6 +140,7 @@ def receipt():
     state = _STATE.get() or {}
     return {'version': VERSION, 'learning_writes': 'off', 'background_continuation': 'off',
             'frozen_learning': frozen_snapshot(), 'scope': 'request' if state else 'process',
+            'operational_previews': 'isolated_scratch',
             'write_attempts_by_store': dict(state.get('write_attempts') or {}),
             'allowed_writes_by_store': dict(state.get('allowed_writes') or {}),
             'writes_denied': bool(os.environ.get('AGERE_EVALUATION_STRICT', '') in _TRUE)}

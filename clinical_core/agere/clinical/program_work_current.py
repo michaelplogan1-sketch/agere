@@ -72,7 +72,8 @@ def definition(program):
 
 
 def database(path):
-    db = sqlite3.connect(Path(path)/'program-work.sqlite3', timeout=30)
+    from .evaluation import operational_path
+    db = sqlite3.connect(operational_path(path, 'program-work.sqlite3'), timeout=30)
     db.execute('PRAGMA foreign_keys=ON')
     db.executescript('''
       CREATE TABLE IF NOT EXISTS work_proposals(id TEXT PRIMARY KEY,payload TEXT NOT NULL);

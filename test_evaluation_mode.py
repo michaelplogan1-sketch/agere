@@ -216,6 +216,35 @@ class AuditTests(Fixture):
         db.commit(); db.close()
 
 
+class OperationalPreviewTests(Fixture):
+    def test_private_work_copy_preserves_state_and_followups_without_live_writes(self):
+        from clinical_core.agere.clinical import program_work_v1, program_work_current
+        with program_work_v1.database(self.path) as db:
+            db.execute("INSERT INTO work_proposals VALUES ('existing','{}')")
+        before = snapshot(self.path)
+        with mock.patch.dict(os.environ, {'AGERE_EVALUATION_SCRATCH': str(self.root / 'scratch')}):
+            with evaluation.scope('run-a', self.path):
+                with program_work_v1.database(self.path) as db:
+                    self.assertEqual(db.execute('SELECT id FROM work_proposals').fetchall(), [('existing',)])
+                    db.execute("INSERT INTO work_proposals VALUES ('draft','{}')")
+            with evaluation.scope('run-a', self.path):
+                with program_work_current.database(self.path) as db:
+                    self.assertEqual(db.execute('SELECT count(*) FROM work_proposals').fetchone()[0], 2)
+            with evaluation.scope('run-b', self.path):
+                with program_work_v1.database(self.path) as db:
+                    self.assertEqual(db.execute('SELECT id FROM work_proposals').fetchall(), [('existing',)])
+        self.assertEqual(snapshot(self.path), before)
+
+    def test_normal_work_path_and_missing_evaluation_store(self):
+        self.assertEqual(evaluation.operational_path(self.path, 'program-work.sqlite3'), self.path / 'program-work.sqlite3')
+        with mock.patch.dict(os.environ, {'AGERE_EVALUATION_SCRATCH': str(self.root / 'scratch')}):
+            with evaluation.scope('new', self.path):
+                from clinical_core.agere.clinical import program_work_v1
+                with program_work_v1.database(self.path) as db:
+                    db.execute("INSERT INTO work_proposals VALUES ('draft','{}')")
+        self.assertFalse((self.path / 'program-work.sqlite3').exists())
+
+
 class ComposeTests(Fixture):
     """handle_compose end to end with a fake stack: the response carries the receipts and an evaluation request writes nothing."""
 
