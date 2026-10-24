@@ -52,11 +52,12 @@ class EarlyStart(unittest.TestCase):
         with patch.object(spec_fill, 'run_filler', fake_run_filler):
             spec_fill.start_early(stack, catalog, 'How many  patients have X?', names=('haiku',))
             spec_fill.start_early(stack, catalog, 'How many patients have X?', names=('haiku',))  # same question: started once
-            futures = spec_fill.take_early(stack, 'How many patients have X?', None)
+            ctx, futures = spec_fill.take_early(stack, 'How many patients have X?', None)
             self.assertEqual(list(futures), ['haiku'])
+            self.assertIsNotNone(ctx)
             self.assertEqual(futures['haiku'].result(timeout=5)['name'], 'haiku')
-        self.assertEqual(calls, ['haiku'])
-        self.assertEqual(spec_fill.take_early(stack, 'How many patients have X?', None), {})
+        self.assertEqual(calls, ['grammar', 'haiku'])  # the spec grammar runs first on the early context
+        self.assertEqual(spec_fill.take_early(stack, 'How many patients have X?', None), (None, {}))
 
     def test_an_expired_start_is_dropped(self):
         stack = type('S', (), {'path': '/tmp/y'})()

@@ -3,6 +3,7 @@
     .venv/bin/python -m tools.dev_set.run --split dev --jobs 1            # whole dev split (slow: a question can take minutes)
     .venv/bin/python -m tools.dev_set.run --bucket insight --split heldout
     .venv/bin/python -m tools.dev_set.run --limit 5 --out /tmp/smoke.json  # smoke
+    .venv/bin/python -m tools.dev_set.run --set compose                    # the composition set (split dev2; same as --split dev2)
 
 Every request carries X-Agere-Evaluation: 1 (the service learns nothing from it). Follow-ups: the service links a follow-up to
 the prior turn through `conversation_id` in the /api/stack/compose body (conversation.handle_compose); in evaluation mode the
@@ -328,10 +329,19 @@ def score_rubric(rub, text, low):
 
 
 # --- driver -------------------------------------------------------------------------------------------------------------
-def select(args):
-    qs = read()
-    if args.split != 'all':
-        qs = [q for q in qs if q['split'] == args.split]
+def load_set(args):
+    """All questions of the chosen set: tools/dev_set/questions.jsonl, or compose_questions.jsonl (--set compose / --split dev2)."""
+    if args.set == 'compose' or args.split == 'dev2':
+        from tools.dev_set.compose_keys import read as read_compose
+        return read_compose()
+    return read()
+
+
+def select(args, all_qs=None):
+    qs = all_qs if all_qs is not None else load_set(args)
+    split = args.split or ('dev2' if args.set == 'compose' else 'dev')
+    if split != 'all':
+        qs = [q for q in qs if q['split'] == split]
     if args.bucket:
         qs = [q for q in qs if q['bucket'] == args.bucket]
     if args.ids:
@@ -421,7 +431,8 @@ def report(rows):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--url', default=DEFAULT_URL)
-    ap.add_argument('--split', choices=('dev', 'heldout', 'all'), default='dev')
+    ap.add_argument('--set', choices=('dev', 'compose'), default='dev', help='question file: dev = questions.jsonl, compose = compose_questions.jsonl (split dev2)')
+    ap.add_argument('--split', choices=('dev', 'dev2', 'heldout', 'all'), default=None, help='default dev (dev2 with --set compose); dev2 reads the compose set')
     ap.add_argument('--bucket', choices=BUCKETS)
     ap.add_argument('--ids', nargs='*')
     ap.add_argument('--limit', type=int, help='first N selected questions (smoke)')
@@ -433,9 +444,10 @@ def main(argv=None):
     if args.report_card:
         from tools.dev_set import report_card
         return report_card.main([args.report_card])
-    qs = select(args)
+    all_qs = load_set(args)
+    qs = select(args, all_qs)
     run_id = time.strftime('%Y%m%dT%H%M%S')
-    cs = chains(qs, read())
+    cs = chains(qs, all_qs)
     with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
         rows = [r for part in ex.map(lambda c: run_chain(c, args, run_id), cs) for r in part]
     report(rows)

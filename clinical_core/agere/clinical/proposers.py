@@ -186,9 +186,12 @@ NOT_PROPOSERS = {
 # Registered but off the default path (2026-10-24): held-out calibration 13/13 and 19/19 wrong, precision too low, and no accepted correct answer
 # on the 100 dev questions; hosted_verified_sql: end-to-end dev run deb4a33, reached 6 times, 0 accepted, 103 s of answer budget, which left the
 # semantic analyst unreached. AGERE_PROPOSER_ON=metric_router,... puts one back.
-# cohort_family_late: two end-to-end dev runs (deb4a33, fb36f0a), 0 proposals, 36 s of budget. (hosted_typed_interpreter also accepted nothing,
-# but it is the one reader of recorded corrections, FEEDBACK_READERS, so it stays on.)
-OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_verified_sql', 'cohort_family_late')
+# cohort_family_late: two end-to-end dev runs (deb4a33, fb36f0a), 0 proposals, 36 s of budget. hybrid_analysts, bottled_sql, qwen_rewrite_compiler:
+# 0 accepted answers in every end-to-end run (dev and the held-out milestone), 73 s / 0 s / 12 s of dev budget (Codex final review 2026-10-24).
+OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_verified_sql', 'cohort_family_late', 'hybrid_analysts', 'bottled_sql',
+               'qwen_rewrite_compiler')
+# The hosted typed interpreter accepted no answer end to end but stays on: it reads recorded corrections (FEEDBACK_READERS) and procedural-memory
+# lessons, which a corrections-only switch would cut off (tried 2026-10-24: 20 correction/lesson tests regressed).
 
 
 def enabled(name, stack):
@@ -237,6 +240,11 @@ class Cascade:
         return self._ledger
 
     def close(self):
+        try:  # the question is settled: early spec fillers started for it stop at their next step (spec_fill.cancel_early)
+            from .spec_fill import cancel_early
+            cancel_early(self.stack, self.question, self.population)
+        except Exception:  # noqa: BLE001 - cleanup only
+            pass
         if self._owned: self._ledger.close()
 
     @property
@@ -340,6 +348,7 @@ class Cascade:
         order = list(order)
         # on by default since the end-to-end dev run deb4a33 (2026-10-24): behind the other Claude tiers it was reached 0 times in 100 questions
         if os.environ.get('AGERE_ANALYST_FIRST', 'on') != 'on' or 'semantic_analyst' not in order or not claude_available(): return order
+        if getattr(self, 'corrected', False): return order  # a recorded correction: its one reader (the hosted interpreter) keeps the lead
         claude = [i for i, t in enumerate(order) if STAGES[stage_of(t)][0] == 'claude']
         if not claude: return order
         order.remove('semantic_analyst')

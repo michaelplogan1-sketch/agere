@@ -155,7 +155,7 @@ class Planner(unittest.TestCase):
             ctx = self.common() + [patch.object(bottled.BottledModel, 'get', return_value=model),
                                    patch.object(operator_router, 'route', return_value=(routed, {'decision': 'x', 'calls': []})),
                                    patch.object(operator_router, 'cost', return_value=0.0),
-                                   patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'operator_router'})]  # an off-default tier, switched on
+                                   patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'operator_router,bottled_sql'})]  # an off-default tier, switched on
             for c in ctx: c.start()
             try:
                 _, r = p.plan(self.stack(root, live=True), Answer.Q, None, Mock())

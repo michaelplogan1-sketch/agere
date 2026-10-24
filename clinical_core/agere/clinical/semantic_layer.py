@@ -105,7 +105,7 @@ SOURCE_COVERAGE = {
         'meaning': 'An explicit screened negative is distinct from never screened. No row is unknown need, never a negative response.'},
 }
 
-DIAGNOSIS_ANY_VERSION = 2  # 2: the compiler's condition evidence (decision_context.py, Mike 2026-10-23): EHR condition rows + counted payer-claim diagnoses
+DIAGNOSIS_ANY_VERSION = 3  # 3: + the decision-context lab-rule members (source lab_rule, icd10 LAB_RULE_*), stored lab rows for generic diabetes / CKD only; 2: the compiler's condition evidence (decision_context.py, Mike 2026-10-23): EHR condition rows + counted payer-claim diagnoses
 DIAGNOSIS_ANY_DOC = ('Every documented ICD-10 diagnosis, one row per source record: patient_id, icd10 (upper case, as received, dotted), '
                      'source = condition (EHR condition records with is_diagnosis = 1, incl. EHR problem-list conditions, and, for diabetes and '
                      'CKD only, laboratory-evidence rows; assessment topics, rule-outs and the laboratory-evidence rows of every other condition '
@@ -113,7 +113,7 @@ DIAGNOSIS_ANY_DOC = ('Every documented ICD-10 diagnosis, one row per source reco
                      'versions whatever their adjudication, so claims-only members count), source_detail = the source table / claim status, '
                      'event_date (YYYY-MM-DD; claim service_from, condition date), record_ref = source record / claim id. This is the one '
                      'condition-evidence rule every path uses (grammar, compiler, metrics, families), read by ICD-10 code. Encounter diagnoses are '
-                     'not part of it (encounter_diagnosis holds them). Use it to count or list patients with a diagnosis code: SELECT '
+                     'not part of it (encounter_diagnosis holds them). Members by the lab rule (diabetes: any current HbA1c >= 6.5; CKD: two eGFR < 60 at least 90 days apart) have no code: source = lab_rule, icd10 = LAB_RULE_DIABETES / LAB_RULE_CKD. Use it to count or list patients with a diagnosis code: SELECT '
                      "count(DISTINCT patient_id) FROM diagnosis_any WHERE icd10 LIKE 'F11%'. The same patient appears once per source record, so "
                      'always count DISTINCT patient_id. condition alone holds only EHR condition records and undercounts documented diagnoses '
                      '(payer claims add patients). By library concept (no codes) use concept_patient.')
@@ -142,10 +142,22 @@ def _diagnosis_any_sql(cols):
             ('d.service_from' if 'service_from' in d else 'NULL')
         parts.append(f"SELECT d.patient_id, upper(trim(d.icd10)), 'payer_claim', {'c.final_status' if joined else 'NULL'}, substr({day}, 1, 10), d.payer_claim_id "
                      f"FROM payer_claim_diagnosis d{joined} WHERE d.icd10 IS NOT NULL AND trim(d.icd10) <> ''{counted}")
+    m = cols.get('measurement', set())
+    if m:  # diabetes / CKD by the decision-context lab rule (no ICD-10 code exists for these members: icd10 = LAB_RULE_<concept>)
+        from .decision_context import lab_rule_sql
+        for name in LAB_EVIDENCE_CONDITIONS:
+            rule = lab_rule_sql(name, {'measurement': m})
+            if rule: parts.append(f"SELECT patient_id, 'LAB_RULE_{name.upper()}', 'lab_rule', NULL, substr(event_date, 1, 10), NULL FROM ({rule})")
+    m = cols.get('measurement', set())
+    if m:  # diabetes / CKD by the decision-context lab rule (no ICD-10 code exists for these members: icd10 = LAB_RULE_<concept>)
+        from .decision_context import lab_rule_sql
+        for name in LAB_EVIDENCE_CONDITIONS:
+            rule = lab_rule_sql(name, {'measurement': m})
+            if rule: parts.append(f"SELECT patient_id, 'LAB_RULE_{name.upper()}', 'lab_rule', NULL, substr(event_date, 1, 10), NULL FROM ({rule})")
     return ' UNION ALL '.join(parts) or None
 
 
-CONCEPT_PATIENT_VERSION = 2  # 2: the condition rows of concept_patient are the compiler's condition evidence (decision_context.py), claims-only members included
+CONCEPT_PATIENT_VERSION = 3  # 3: the lab rules (decision context v2), EHR rows by code set whatever their concept label, stored lab rows for generic diabetes / CKD only; 2: the condition rows of concept_patient are the compiler's condition evidence (decision_context.py), claims-only members included
 
 
 def _condition_concept_sql(cols):
@@ -279,6 +291,24 @@ def upgrade_diagnosis_any(path, *, force=False):
             return {'upgraded': False, 'rows': db.execute('SELECT count(*) FROM diagnosis_any').fetchone()[0]}
         with db:
             rows = build_diagnosis_any(db)
+        return {'upgraded': True, 'rows': rows}
+    finally:
+        db.close()
+
+
+def upgrade_concept_patient(path, *, force=False):
+    """Rewrite the condition rows of concept_patient in an existing semantic.sqlite3 (a stack dir or the file) at CONCEPT_PATIENT_VERSION.
+    Idempotent: a database already at the version is left alone unless force. Measurement / encounter rows are kept. Writes the database:
+    never run it while a benchmark reads the stack; the beside DuckDB copy is stale until duckdb_engine.build(sqlite_path). -> {'upgraded', 'rows'}"""
+    path = Path(path)
+    target = path / 'semantic.sqlite3' if path.is_dir() else path
+    db = sqlite3.connect(target)
+    try:
+        ver = db.execute("SELECT value FROM meta WHERE key = 'concept_patient'").fetchone()
+        if ver and ver[0] == str(CONCEPT_PATIENT_VERSION) and not force:
+            return {'upgraded': False, 'rows': db.execute("SELECT count(*) FROM concept_patient WHERE kind = 'condition'").fetchone()[0]}
+        with db:
+            rows = build_concept_patient_conditions(db)
         return {'upgraded': True, 'rows': rows}
     finally:
         db.close()

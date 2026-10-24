@@ -28,6 +28,11 @@ def enabled(stack=None):
 
 def spend_receipt(cascade, receipt):
     cascade.spend(receipt.get('calls', 0), receipt.get('usd', 0.0), receipt.get('cost_known', True))
+    # a Haiku spec call made by the early start ran outside this tier's model tracking: record it here, so the escalation rung (Sonnet)
+    # still knows this tier spent a Haiku attempt (Codex 2026-10-24)
+    haiku = ((receipt.get('fillers') or {}).get('haiku') or {})
+    if haiku.get('calls') and not model_policy.escalating():
+        model_policy.record(os.environ.get('AGERE_SPEC_HAIKU', spec_fill.HAIKU))
 
 
 def interpretation_for(question, catalog, fill_result, verification, repaired=None):

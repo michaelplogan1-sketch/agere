@@ -173,7 +173,10 @@ def stubs(reached, behaviours=None):
 
 
 class CascadeOrder(unittest.TestCase):
-    def setUp(self): G._ROUTE_CACHE.clear()
+    def setUp(self):
+        G._ROUTE_CACHE.clear()
+        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler'})  # tiers off the default path that these tests exercise
+        env.start(); self.addCleanup(env.stop)
 
     def test_system_one_routing_reorders_and_is_charged(self):
         reached = []
@@ -185,7 +188,7 @@ class CascadeOrder(unittest.TestCase):
         self.assertEqual(first[:2], ['evidence_retrieval', 'evidence_review'])  # then the System One route: evidence before free planners
         self.assertLess(reached.index('evidence_review'), reached.index('local_compiler'))
         self.assertTrue(all(P.stage_of(t) == len(P.STAGES) - 1 for t in reached[-9:]))  # Claude tiers last
-        self.assertEqual(sorted(reached), sorted(t for t in P.ORDER if t not in P.OFF_DEFAULT))  # never removes a tier (off-default tiers are switched off)
+        self.assertEqual(sorted(reached), sorted(t for t in P.ORDER if P.enabled(t, SimpleNamespace(allow_live=True))))  # never removes an enabled tier
         self.assertEqual(ctx.exception.planner_receipt['new_paid_api_calls'], 1)
         self.assertAlmostEqual(ctx.exception.planner_receipt['known_api_estimate_usd'], 0.0002)
 
@@ -201,7 +204,10 @@ def billing(self): raise ProviderUnavailable('provider_unavailable (billing): cr
 
 
 class Outage(unittest.TestCase):
-    def setUp(self): G._ROUTE_CACHE.clear()
+    def setUp(self):
+        G._ROUTE_CACHE.clear()
+        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler'})  # tiers off the default path that these tests exercise
+        env.start(); self.addCleanup(env.stop)
 
     def run_outage(self, fake, behaviours):
         reached = []

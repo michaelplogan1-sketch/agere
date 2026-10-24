@@ -52,7 +52,8 @@ WORDS = [
     # medicines
     (r'acei', 'ACE inhibitor'), (r'ace[- ]i', 'ACE inhibitor'), (r'ace[- ]inhibitors', 'ACE inhibitors'),
     (r'ics', 'inhaled corticosteroid'), (r'inhaled\s+(?:steroids?|corticosteroids?)', 'inhaled corticosteroid'),
-    (r'doacs?', 'anticoagulant'), (r'blood\s+thinners?', 'anticoagulant'), (r'anticoagulation', 'anticoagulant'),
+    # no DOAC class exists: 'DOACs' -> 'anticoagulant' would widen the drugs to warfarin and heparin (Codex 2026-10-24), so it is not reworded
+    (r'blood\s+thinners?', 'anticoagulant'), (r'anticoagulation', 'anticoagulant'),
     (r'scripts', 'prescriptions'), (r'script', 'prescription'), (r'rx', 'prescription'), (r'rxs', 'prescriptions'),
     (r'meds', 'medications'), (r'med', 'medication'),
     (r'guideline[- ]directed\s+(?:medical\s+)?therapy', 'GDMT'),

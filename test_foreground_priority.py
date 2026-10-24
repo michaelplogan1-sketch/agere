@@ -73,6 +73,8 @@ class Lock(unittest.TestCase):
 class BackgroundYields(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory(); self.addCleanup(self.dir.cleanup)
+        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler'})  # the heavy tiers these tests exercise are off the default path: switched on here
+        env.start(); self.addCleanup(env.stop)
         TT._cache.clear(); BG._queue.clear(); BG._recent.clear()
         self.assertTrue(BG.wait_idle(5))
 

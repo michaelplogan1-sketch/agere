@@ -36,6 +36,8 @@ class Fixture(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.TemporaryDirectory()
         self.addCleanup(self.dir.cleanup)
+        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'bottled_sql,hybrid_analysts,qwen_rewrite_compiler'})  # the heavy tiers these tests exercise are off the default path: switched on here
+        env.start(); self.addCleanup(env.stop)
         self.clock = Clock()
         self.reached = []
         TT._cache.clear()
@@ -91,7 +93,8 @@ class Production(Fixture):
         for n in P.COSTLY: self.assertNotIn(n, self.reached)
         self.assertIn('specialist_families_late', self.reached)  # cheap tiers still ask (cohort_family_late is off the default path)
         deferred = {d['tier']: d for d in c.deferred}
-        self.assertEqual(set(P.COSTLY) & set(deferred), set(P.COSTLY) - set(P.OFF_DEFAULT))  # none dropped: all listed (off-default tiers never run)
+        on = {t for t in P.COSTLY if P.enabled(t, SimpleNamespace(allow_live=True))}
+        self.assertEqual(set(P.COSTLY) & set(deferred), on)  # none dropped: every enabled heavy tier listed (switched-off tiers never run)
         self.assertEqual(deferred['bottled_sql']['expected_seconds'], 20.0)
         entry = next(e for e in c.log if e['proposer'] == 'bottled_sql')
         self.assertEqual(entry['outcome'], 'skipped')
