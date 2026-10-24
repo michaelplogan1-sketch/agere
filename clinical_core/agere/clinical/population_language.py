@@ -24,7 +24,7 @@ BP_AGE = (18, 85)  # the CBP measure's eligible ages (config/agere/measures/cbp.
 SHARE_HEAD = re.compile(r'^(?:what|which)\s+(?:is\s+|was\s+|are\s+|were\s+)?(?:the\s+|our\s+)?(?:overall\s+)?'
                         r'(?:share|percent(?:age)?|proportion|fraction|rate)\s+of\s+', re.I)
 PREDICATE_VERBS = re.compile(r"(?<!\bwho )(?<!\bthat )(?<!\bwhose )\b(?:have|has|had|are|is|were|was|filled|got|received|completed|underwent|"
-                             r"did|do|does|ever|haven't|hasn't|aren't|isn't|didn't|don't|doesn't|screened)\b", re.I)
+                             r"did|do|does|ever|haven't|hasn't|aren't|isn't|didn't|don't|doesn't|screened|missed|visited|went|used|came|presented)\b", re.I)
 ADJECTIVES = {'adult': ('patient.age', '>=', 18), 'adults': ('patient.age', '>=', 18)}
 
 
@@ -57,12 +57,15 @@ class PopulationForms:
         quote, (self.base, default), rest = source
         where = []
         if default: where.append(self.preset_filter(default, quote))
+        note = self.medicare_note(rest) if any(w.lower() == 'medicare' for w in modifiers) else None
+        if note: rest = rest[len(note):]
         for word in modifiers:
             if word.lower().startswith('adult'):
                 where.append(atom('patient.age', '>=', 18, word))
                 continue
             value, left = self.one(word)
             if value is None or left.strip(): return None
+            if note and word.lower() == 'medicare': value['quote'] = [word, note.strip()]
             where.append(value)
         rest = rest.strip()
         # "patients 50 to 74" / "women 65 and older": an age range right after the noun needs no "aged"
@@ -76,6 +79,17 @@ class PopulationForms:
             if tail.strip(): return None
             if value: where.append(value)
         return combine('and', where, start) if where else False
+
+    MEDICARE_NOTE = re.compile(r'^\s*\(\s*including\s+[^)]*\)', re.I)
+
+    def medicare_note(self, text):
+        """'(including dual and Medigap)' right after "Medicare patients": the decision context's Medicare already includes dual and Medigap, so the
+        parenthetical only restates it. It is consumed only when it names BOTH (a narrower or wider note would change the population)."""
+        m = self.MEDICARE_NOTE.match(text)
+        if not m: return None
+        names = set(re.findall(r'dual|medigap', m.group(), re.I))
+        words = set(re.findall(r'[a-z]+', m.group().lower())) - {'including', 'and', 'or', 'the', 'dual', 'medigap', 'eligible', 'eligibles', 'duals', 'dually', 'plans', 'plan', 'members', 'patients'}
+        return m.group() if {n.lower() for n in names} == {'dual', 'medigap'} and not words else None
 
     # -- shares ----------------------------------------------------------------------------------------------------------
     def split_share(self, body):
@@ -92,10 +106,13 @@ class PopulationForms:
             starts.append(adverb.start() if adverb else verb.start())
         if not verbs:
             starts = [v.start() for v in re.finditer(r'\bwith\b', body, re.I)]
+        if not verbs:
+            starts += [v.start() for v in re.finditer(r'\b(?:on|taking|receiving)\s+(?:an?\s+|any\s+|the\s+)?[A-Za-z]', body, re.I)]
         if getattr(self, 'marker_lab', None):
             starts += [v.start() for v in re.finditer(r'\b(?:over|under|above|below|less than|greater than|at least|at most)\s+\d', body, re.I)]
         for at in starts:
             pop_text, pred_text = body[:at].strip(), body[at:].strip()
+            pop_text = re.sub(r'\s+(?:also|then|both)$', '', pop_text, flags=re.I)  # "of the patients with hypertension, what share ALSO have diabetes": the population ends before "also"
             if not pop_text: continue
             gaps = list(self.gaps)
             self.bp_quote = None
@@ -292,7 +309,8 @@ class RankingForms:
         """-> (quote, field) when the whole text names one grouping dimension of the current base ("practices", "payers"), else None."""
         words = text.strip().split()
         if not words or len(words) > 4: return None
-        singular = lambda w: re.sub(r'ies$', 'y', w, flags=re.I) if w.lower().endswith('ies') else re.sub(r'(?<!s)s$', '', w, flags=re.I)
+        singular = lambda w: (re.sub(r'ies$', 'y', w, flags=re.I) if w.lower().endswith('ies') else re.sub(r'sses$', 'ss', w, flags=re.I) if w.lower().endswith('sses')
+                              else re.sub(r'(?<!s)s$', '', w, flags=re.I))
         for candidate in (text.strip(), ' '.join(words[:-1] + [singular(words[-1])])):
             got = self.field_prefix(candidate)
             if got and not got[2]: return text.strip(), got[1]

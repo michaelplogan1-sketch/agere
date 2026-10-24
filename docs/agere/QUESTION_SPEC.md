@@ -68,6 +68,36 @@ defaults applied. For example: "Counted living patients with a documented heart 
 and no SGLT2 inhibitor fill in the 12 months ending 2030-05-27." It is shown with every answer and checked by System One,
 part by part, against the question.
 
+## Addition 4: composition constructs (2026-10-24; the compiler, the grammar and the spec writer share them)
+
+These are typed forms the compiler accepts and the deterministic grammar produces (request_language + composition_language, claims_composition,
+comparison_composition, sdoh_composition); the Haiku spec writer is told about them in `spec_fill.COMPOSITION_ADDENDUM`. Every quote is still a
+literal slice of the question. A Boolean operation whose quote holds ONLY closed-class logic words (`request_plan.LOGIC_WORDS`: "both", "no",
+"neither", "nor", "all at once", "at least two of these three") covers those words; every content word needs its own leaf predicate.
+
+Predicates (anywhere a predicate can stand):
+- `{"op": "at_least_of", "n": 2, "args": [p1, p2, p3], "quote": "at least two of these three"}` -- at least N of 2..12 predicates hold for the patient.
+- `{"op": "sum_at_least", "table": "payer_claim", "field": "paid_cents", "where": pred, "amount": 50000, "scale": 0.01, "cmp": ">=", "quote": ...}` -- the
+  patient's total of a money column over a related relation reaches an amount (`scale` converts cents to dollars; `cmp` is `>=` or `>`).
+- `count_at_least` accepts `"distinct": "need"`: at least N DIFFERENT values of that column (two or more different social needs).
+- Negation and exclusive-or are ordinary `not` / `and` / `or` trees: "A or B but not both" is `and(concept[A,B], not(and(A, B)))`; "neither A nor B"
+  is `and(not A, not B)` with the quotes "neither" and "nor".
+
+Dimensions and measures (in `select`):
+- `{"kind": "cohort_group", "alias": "payer_type", "quote": [...], "groups": [{"label": "medicare", "where": pred, "quote": "Medicare (including dual and Medigap)"}, ...]}`
+  -- a grouping dimension whose groups are named predicates (2..12; groups may overlap; a row in no group drops out). The label is the output value:
+  numeric bands are `under_40`, `40_to_64`, `65_plus`; other labels are the snake-cased group wording. Groups that are values of ONE column are read as a
+  plain grouping by that column restricted to the named values. A request over another relation joins `patient` (a `joins` entry) when a group reads a patient field.
+- `{"kind": "count_related", "table": "utilization_event", "where": event_pred, "alias": "events"}` -- the total number of related rows of the counted patients
+  (SUM over patients of their own count; stays count as episodes). With a ratio of scale 1000 or 100 it is a rate per patient group
+  ("ED visits per 1,000 patients"): the denominator is every counted patient, with or without an event.
+- `{"kind": "sum_related", "table": "payer_claim", "field": "paid_cents", "where": claim_pred}` -- the total of a money column over the related rows (the cost of a group of patients;
+  with a ratio it is the average per patient, zero-claim patients included).
+
+Reading rules the grammar applies (so a spec writer need not): "practice" in a ranking is the patient's primary-care practice (`pcp_practice_id`); a ranked or claims-grouped
+dimension drops rows with no value for it; "Medicare (including dual and Medigap)" is `coverage_type in (medicare, dual, medigap)` and a note naming only one of them is declined;
+an output that points back at another output ("how many fills was that") is declined, not guessed.
+
 ## How a spec is filled (owner: builder B)
 
 Run in parallel, take the first spec that validates (`request_plan.compile_request` plus the literal check), and prefer

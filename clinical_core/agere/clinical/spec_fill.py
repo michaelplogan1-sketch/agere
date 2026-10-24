@@ -458,6 +458,16 @@ A negative condition uses op=not around the positive concept; put the negation w
 Every substantive word must bind to an executed leaf or an explicit operator. Source/measure quotes should include their complete source/calculation wording, not just a single noun. Preserve comparative groups and denominators as separate executed predicates; do not mark ordinary counting, conjunction, negation, or a stated group_by as unresolved merely because the wording is unfamiliar.
 A drug or condition that no listed name covers cannot be expressed: keep its exact words in unresolved with that reason; never invent a name.
 '''
+COMPOSITION_ADDENDUM = '''
+COMPOSITION FORMS the compiler accepts (docs/agere/QUESTION_SPEC.md, Addition 4); use them instead of leaving a requirement unresolved:
+- predicate {"op":"at_least_of","n":2,"args":[p1,p2,p3],"quote":"at least two of these three"}: at least N of 2..12 predicates.
+- predicate {"op":"sum_at_least","table":"payer_claim","field":"paid_cents","where":claim predicate,"amount":50000,"scale":0.01,"cmp":">=","quote":"..."}: a patient's total of a money column reaches an amount.
+- count_at_least may carry "distinct":"need" (at least N DIFFERENT values of that column).
+- negation and "A or B but not both" are not / and / or trees; the quote of an and / or / not / at_least_of holds only logic words ("both", "no", "neither", "nor", "all at once"); every content word sits in a leaf.
+- dimension {"kind":"cohort_group","alias":"payer_type","quote":[...],"groups":[{"label":"medicare","where":predicate,"quote":"Medicare"},...]} (2..12 named groups, may overlap) for age bands, payer types, "women and men", "heart failure patients vs COPD patients"; group by its alias.
+- measure {"kind":"count_related","table":"utilization_event","where":event predicate,"alias":"events"} = total related rows of the counted patients; in a ratio of scale 1000 it is "per 1,000 patients" (denominator count_distinct patient_id). measure {"kind":"sum_related","table":"payer_claim","field":"paid_cents","where":...} is the total of a money column of the counted patients.
+- a ranking is group_by + order_by (alias, direction) + limit; "at least N rows" is a having on an output alias (result.<alias>).
+'''
 NOTE_ADDENDUM = '''
 NOTE PREDICATES (what the clinical notes, scanned documents and HIE documents say) -- a predicate that may stand anywhere a predicate can (inside where, and/or/not, exists):
 {"op":"note","frame":FRAME,"concept":{"term":"metformin","codes":["RxNorm:6809"],"quote":"metformin"},"statuses":[STATUS...],"detail":{FIELD:VALUE},"window":{"start":"YYYY-MM-DD","end":"YYYY-MM-DD","quote":"in the last year"},"combine":COMBINE,"sources":[...],"quote":"literal clause of the question"}
@@ -490,7 +500,7 @@ def spec_system():
             notes = notes.replace(key, value)
     else:
         notes = NO_NOTES_ADDENDUM
-    return base + SPEC_ADDENDUM + notes + SUBJECT_ADDENDUM
+    return base + SPEC_ADDENDUM + COMPOSITION_ADDENDUM + notes + SUBJECT_ADDENDUM
 
 
 def default_models(ctx):

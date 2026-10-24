@@ -37,8 +37,8 @@ CLAIM_PREDICATES = {
     ],
     'payer_pharmacy_claim': [
         (r'rejected', (('claim_status', '=', 'rejected'),)),
-        (r'generic', (('formulary_tier', '=', 'generic'),)),
-        (r'brand(?:[- ]name)?', (('formulary_tier', '=', 'brand'),)),
+        (r'generics?', (('formulary_tier', '=', 'generic'),)),
+        (r'brand(?:[- ]name)?(?:s)?', (('formulary_tier', '=', 'brand'),)),
         (r'specialty', (('formulary_tier', '=', 'specialty'),)),
     ],
 }
@@ -47,7 +47,7 @@ CLAIM_PREDICATES = {
 ROW_RATES = [
     (r'(?:first[- ]pass\s+)?(?:claim\s+)?denial', 'payer_claim', (('final_status', 'in', ['denied', 'denied_upheld']),), (), 'denial rate'),
     (r'no[- ]show', 'appointment', (('final_status', '=', 'no_show'),), (), 'no-show rate'),
-    (r'(?:pharmacy\s+)?(?:claim\s+)?reject(?:ion)?', 'payer_pharmacy_claim', (('claim_status', '=', 'rejected'),),
+    (r'(?:pharmacy\s+)?(?:claim\s+)?reject(?:ion)?|rejected[- ](?:pharmacy[- ])?claim|(?:pharmacy\s+)?claim\s+reject(?:ion)?', 'payer_pharmacy_claim', (('claim_status', '=', 'rejected'),),
      (('claim_status', 'in', ['paid', 'rejected']),), 'reject rate'),
     (r'generic\s+dispensing|generic\s+fill', 'payer_pharmacy_claim', (('formulary_tier', '=', 'generic'),),
      (('counts_as_fill', '=', 1), ('formulary_tier', 'not_null', None)), 'generic dispensing rate'),
@@ -75,17 +75,12 @@ class ClaimForms:
     def year_atoms(self, table, text):
         """Atoms for a calendar year named in the text ("in 2029" / "2029 medical spend"): -> (atoms, quote) or ([], None)."""
         from .request_language import atom
-        from .decision_context import ROLLING_YEAR
-        rolling = ROLLING_YEAR.search(text)
-        if rolling and CLOCK[table] in self.catalog.tables[table]:
-            # The same service/fill clock governs a rolling year and a calendar
-            # year. Leaving the former unbound used to refuse ordinary finance
-            # questions after the amount form had already matched them.
+        rolling, rolling_quote = self.claim_rolling_atoms(table, text)
+        if rolling:
             if YEAR.search(text):
                 from .request_plan import AmbiguousRequest
                 raise AmbiguousRequest('A rolling window and calendar year need an explicit comparison')
-            q = rolling.group()
-            return [atom(f'{table}.{CLOCK[table]}', 'within_last_months', 12, q)], q
+            return rolling, rolling_quote
         m = YEAR.search(text)
         if not m or CLOCK[table] not in self.catalog.tables[table]: return [], None
         year = int(m[1]); field = f'{table}.{CLOCK[table]}'
@@ -124,6 +119,7 @@ class ClaimForms:
 
     # -- amounts ---------------------------------------------------------------------------------------------------------
     AMOUNT_LEAD = re.compile(r"^(?:(?:" + HEAD + r")\s+(?:did|do|have|has)\s+we\s+(?:pay|paid|spend|spent)(?:\s+out)?\b|"
+                             r"(?:what(?:'s|\s+is|\s+was|\s+are))\s+(?:the\s+|our\s+)?total\s+(?:medical\s+|pharmacy\s+)?(?:paid|allowed|billed|plan[- ]paid)(?:\s+(?:amount|dollars))?(?=\s+(?:on|for|of|in|by)\b|$)|"
                              r"(?:what(?:'s|\s+is|\s+was|\s+are)|how\s+much\s+(?:is|was|are))\s+(?:the\s+|our\s+)?total\s+(?:(?:paid|allowed|billed|plan[- ]paid)\s+)?"
                              r"(?:amount\s+|dollars\s+|spend\s+)?(?:on|for|of|in)\b)", re.I)
 
@@ -200,7 +196,7 @@ class ClaimForms:
         self.base = table
         kind = (m['kind'] or 'paid').lower()
         field = {'paid': 'paid_cents', 'allowed': 'allowed_cents', 'billed': 'charge_cents'}[kind]
-        noun = re.search(r'\b(?:claims?|visits?)\b', rest, re.I)
+        noun = re.search(r'\b(?:(?:medical|institutional|professional)\s+)?(?:claims?|visits?)\b', rest, re.I)
         year_atoms, _ = self.year_atoms(table, rest)
         preds = self.claim_predicates(table, rest)
         src_quote = noun.group() if noun else (preds[-1][2] if preds else rest.split()[0])
