@@ -1534,8 +1534,8 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             got = self.prefix(text[med.end():], self.drugs)
             if got:
                 _, drugs, tail = got
-                while True:  # "a GLP-1 or an SGLT2 inhibitor": one drug set (any of them)
-                    more_drug = re.match(r'^or\s+(?:(?:an?|any|the)\s+)?', tail, re.I)
+                while True:  # "a GLP-1 or an SGLT2 inhibitor", "a beta blocker, an ACE inhibitor or an ARB": one drug set (any of them)
+                    more_drug = re.match(r'^(?:,\s*(?:or\s+)?|or\s+)(?:(?:an?|any|the)\s+)?', tail, re.I)
                     other = self.prefix(tail[more_drug.end():], self.drugs) if more_drug else None
                     if not other: break
                     drugs = list(dict.fromkeys([*drugs, *other[1]])); tail = other[2]

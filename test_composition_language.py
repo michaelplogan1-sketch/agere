@@ -330,6 +330,24 @@ class WordingVariants(CompositionFixture):
         self.assertIn('different', spec_readback.predicate_text(plan['where']))
 
 
+class MoreWording(CompositionFixture):
+    def test_a_comma_list_of_drugs_is_one_set(self):
+        self.assertEqual(self.count('How many patients with diabetes are not on a statin, an antiplatelet or insulin?'), 0)  # A statin, B insulin, D antiplatelet
+        self.assertEqual(self.count('How many patients with diabetes are on a statin, an antiplatelet or insulin?'), 3)
+
+    def test_a_rate_word_after_the_event(self):
+        v = self.run_q('ED visit rate per 1,000 patients over the last 12 months')
+        self.assertAlmostEqual(v, 1000 * 5 / 7, 1)
+
+    def test_filled_the_most(self):
+        rows = self.run_q('Which two drug classes were filled the most in the last 12 months?')
+        self.assertEqual([(r['drug_class'], r['count']) for r in rows], [('statin', 3), ('antiplatelet', 2)])
+
+    def test_high_cost_claimants_by_a_patient_column(self):
+        rows = self.run_q('Of the 2029 high-cost claimants ($300+ paid), how many are in each coverage type?')
+        self.assertEqual({r['coverage_type']: r['patients'] for r in rows}, {'medicare': 1})  # A 100 + 300 = $400; B $200
+
+
 class MoneyComposition(CompositionFixture):
     def test_a_patient_total_reaches_an_amount(self):
         self.assertEqual(self.count('How many living patients accumulated $400 or more in paid claims over the past 12 months?'), 1)  # A 100 + 300; B 200

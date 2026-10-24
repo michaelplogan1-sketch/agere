@@ -84,6 +84,38 @@ class ClaimFrames:
         if leaf['where'] is None: return None
         return leaf, tail
 
+    HIGH_COST_OF = re.compile(
+        r'^(?:of|among)\s+the\s+(?:(?P<year>(?:19|20)\d\d)\s+)?(?P<hc>high[- ]cost\s+(?:claimants|patients|members)\s*\(\s*(?P<amt>\$\s?\d[\d,]*(?:\.\d+)?)(?P<k>\s*[kK])?\s*'
+        r'(?P<cmp>\+|or\s+more)?\s*(?P<basis>paid|allowed|billed)?\s*\))\s*,\s*how\s+many\s+(?:of\s+them\s+)?(?P<are>are\s+in)\s+(?P<each>each\s+(?P<dim>[a-z][a-z ]*?))\s*$', re.I)
+
+    def high_cost_breakdown(self, text):
+        """'Of the 2029 high-cost claimants ($50k+ paid), how many are in each line of business?' -> the patients whose year's paid dollars reach the amount,
+        counted per value of the dimension."""
+        from .request_language import atom, combine
+        t = text.strip().rstrip('?.').strip()
+        m = self.HIGH_COST_OF.match(t)
+        if not m or 'payer_claim' not in self.catalog.tables or 'patient' not in self.catalog.tables: return None
+        field = {'paid': 'paid_cents', 'allowed': 'allowed_cents', 'billed': 'charge_cents'}[(m['basis'] or 'paid').lower()]
+        if field not in self.catalog.tables['payer_claim']: return None
+        amount = float(m['amt'].replace('$', '').replace(',', '').strip()) * (1000 if m['k'] else 1)
+        amount = int(amount) if amount == int(amount) else amount
+        period, period_quotes, years = (self.claim_period('payer_claim', m['year']) if m['year'] else ([], [], []))
+        if m['year'] and not period: return None
+        self.base = 'patient'
+        dim = self.dimension(m['dim'].strip())
+        if not dim or not dim[1].startswith('patient.'): return None
+        quote = [q for q in (m['year'], m['hc']) if q]
+        where = [atom('payer_claim.counts_in_metrics', '=', 1, quote)] if 'counts_in_metrics' in self.catalog.tables['payer_claim'] else []
+        where += [{**a, 'quote': quote} for a in period]
+        leaf = {'op': 'sum_at_least', 'table': 'payer_claim', 'field': field, 'where': combine('and', where, quote) if where else None, 'amount': amount, 'scale': 0.01, 'quote': quote}
+        if leaf['where'] is None: return None
+        key = dim[1].partition('.')[2]
+        return {'source': {'table': 'patient', 'quote': m['hc'].split()[1] if False else 'claimants'}, 'select': [
+                    {'kind': 'field', 'field': dim[1], 'alias': key, 'quote': [m['each']]},
+                    {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': ['how many', m['are']]}],
+                'where': leaf, 'group_by': [key], 'order_by': [], 'limit': None, 'unresolved': [],
+                'notes': [f'High-cost claimants: patients whose summed {(m["basis"] or "paid").lower()} dollars on counted medical claims reach {amount:,}.']}
+
     def cost_per_patient(self, text):
         """'How much did the average living diabetic cost us in medical paid claims in 2029?' -> the patients' total claim dollars over those patients
         (patients with no claim stay in the denominator)."""

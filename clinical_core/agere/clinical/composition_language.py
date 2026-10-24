@@ -327,7 +327,7 @@ class FallbackForms:
         self.uncovered_words = left
         return not left
 
-    FRAMES = ('rate_per_form', 'cost_per_patient', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'most_filled', 'rank_cost', 'rank_floor_first', 'claims_frame', 'rank_measure', 'grouping_wrapper')
+    FRAMES = ('rate_per_form', 'cost_per_patient', 'high_cost_breakdown', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'most_filled', 'rank_cost', 'rank_floor_first', 'claims_frame', 'rank_measure', 'grouping_wrapper')
 
 
 class RateForms:
@@ -342,6 +342,8 @@ class RateForms:
         m = self.PER.search(text)
         if not m: return None
         before = re.sub(r'^(?:(?:what|how\s+many|which)\s+(?:is|are|was|were|many)\s+)?(?:the\s+|our\s+|total\s+)*', '', text[:m.start()].strip(), flags=re.I)
+        rate_word = re.search(r'\s+(?:rates?)$', before, re.I)  # "ED visit rate per 1,000 patients"
+        if rate_word: before = before[:rate_word.start()]
         event = self.thing(before) if before else None
         if not event or event[0] == 'measurement' or event[4].strip(): return None
         table, field, atoms, event_quote, _ = event
@@ -361,7 +363,8 @@ class RateForms:
         events = {'kind': 'count_related', 'alias': 'events', 'table': table, 'quote': [before] if before in text else [event_quote],
                   'where': combine('and', [*atoms, *win], event_quote)}
         denominator = {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': [unit_quote, *([note_text] if note_text else [])]}
-        ratio = {'kind': 'ratio', 'alias': 'rate', 'quote': [unit_quote], 'scale': scale, 'round': 2, 'numerator': events, 'denominator': denominator}
+        ratio = {'kind': 'ratio', 'alias': 'rate', 'quote': [*([rate_word.group().strip()] if rate_word else []), unit_quote], 'scale': scale, 'round': 2,
+                 'numerator': events, 'denominator': denominator}
         return {'source': {'table': 'patient', 'quote': noun or unit_quote}, 'select': [ratio], 'where': None, 'group_by': [], 'order_by': [], 'limit': None,
                 'unresolved': [], 'notes': [f'A rate of {event_quote} per {"patient" if scale == 1 else f"{scale:,} patients"}: the events of the living patients counted, over those patients '
                                             '(patients with no event stay in the denominator).']}
@@ -506,7 +509,8 @@ class RankForms:
         extra = [m['dim'].strip()] if m['by'] else []
         return self.build_ranking(plan, dim_text, m['sup'].lower(), m['n'], head, extra_quote=extra)
 
-    MOST_FILLED = re.compile(r"^(?:what|which)\s+(?:are|is)\s+the\s+(?P<n>" + NUM + r")\s+(?P<sup>most|least)[- ](?P<verb>filled|prescribed|dispensed)\s+(?P<dim>drug\s+classes?|drugs?|medications?)"
+    MOST_FILLED = re.compile(r"^(?:what|which)\s+(?:(?:are|is)\s+the\s+(?P<n>" + NUM + r")\s+(?P<sup>most|least)[- ](?P<verb>filled|prescribed|dispensed)\s+(?P<dim>drug\s+classes?|drugs?|medications?)"
+                             r"|(?:(?P<n2>" + NUM + r")\s+)?(?P<dim2>drug\s+classes?|drugs?|medications?)\s+(?:were|are|was|is)\s+(?P<verb2>filled|prescribed|dispensed)\s+the\s+(?P<sup2>most|least))"
                              r"(?P<win>\s+(?:in|during|over|within)\s+the\s+(?:last|past|previous)\s+(?:\d+|\w+)\s+(?:months?|years?)|\s+in\s+(?:calendar\s+)?(?:19|20)\d\d)?\s*,?\s*(?P<by>by\s+(?:the\s+)?number\s+of\s+fills)?$", re.I)
 
     def most_filled(self, text):
@@ -514,14 +518,20 @@ class RankForms:
         t = text.strip().rstrip('?.').strip()
         m = self.MOST_FILLED.match(t)
         if not m or 'fill' not in self.catalog.tables: return None
-        plan = self.parse_measure_for_rank('fills' if not m['by'] else t[m.start('by') + m['by'].index('fills'):m.end('by')])
+        dim, sup, n = (m['dim'] or m['dim2']), (m['sup'] or m['sup2']).lower(), (m['n'] or m['n2'])
+        verb_end = m.end('sup2') if m['sup2'] else m.end('dim')
+        by = m['by']
+        plan = self.parse_measure_for_rank('fills' if not by else t[m.start('by') + by.index('fills'):m.end('by')])
         if not plan or plan['source']['table'] != 'fill': return None
+        if not by:  # "were filled the most": the verb is the count's own word
+            verb = (m['verb2'] or m['verb']).strip()
+            plan = {**plan, 'source': {**plan['source'], 'quote': verb}, 'select': [{**plan['select'][0], 'quote': verb}]}
         if m['win']:
             plan = self.apply_tail(plan, m['win'].strip())
             if not plan: return None
-        head = t[:m.end('dim')].strip()
-        extra = [m['by'].strip()] if m['by'] else []
-        return self.build_ranking(plan, m['dim'].strip(), m['sup'].lower() if m['sup'].lower() == 'least' else 'most', m['n'], head, extra_quote=extra)
+        head = t[:verb_end].strip()
+        extra = [by.strip()] if by else []
+        return self.build_ranking(plan, dim.strip(), 'least' if sup == 'least' else 'most', n, head, extra_quote=extra)
 
 
 class ShareMeasureForms:
