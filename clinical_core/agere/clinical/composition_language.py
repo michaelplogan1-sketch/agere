@@ -168,13 +168,14 @@ class CompositionForms:
         # exclusive: "A or B but not both"
         excl = re.match(r'^\s*,?\s*(?:but|and|though)\s+not\s+both\b', after, re.I)
         and_quote = [q for q in ([quant.group().strip()] if quant and quant[1].lower() == 'both' else []) + logic if q]
+        quant_word = [quant.group().strip()] if quant and quant[1].lower() in ('either', 'any') and kind == 'or' else []
         if kind == 'or':
             if len(items) > 1 or content:
-                value = self.condition(items[0][0], self.leaf_quote(lead_words, items[0][1], *content) if len(items) == 1 else
-                                       [q for q in [lead_words, text_span(body, items[0][1], items[-1][1]), *content] if q])
+                value = self.condition(items[0][0], self.leaf_quote(lead_words, *quant_word, items[0][1], *content) if len(items) == 1 else
+                                       [q for q in [lead_words, *quant_word, text_span(body, items[0][1], items[-1][1]), *content] if q])
                 if len(items) > 1:
                     value['names'] = list(dict.fromkeys(c for c, _ in items))
-                    value['quote'] = [q for q in [lead_words, text_span(body, items[0][1], items[-1][1]), *content] if q]
+                    value['quote'] = [q for q in [lead_words, *quant_word, text_span(body, items[0][1], items[-1][1]), *content] if q]
                     if len(value['quote']) == 1: value['quote'] = value['quote'][0]
             else:
                 value = leaves[0]
@@ -219,8 +220,8 @@ class CompositionForms:
     def k_of_conditions(self, text):
         """'(have) at least two of these three: A, B, C' -> at_least_of over the listed conditions."""
         m = re.match(r'^(?:(?:with|having|have|has|had)\s+)?((?:at\s+least|any|a\s+minimum\s+of)\s+(?:\d+|' + '|'.join(NUMBER_WORDS) +
-                     r')\s+(?:of|from)\s+(?:the\s+following|these(?:\s+(?:\d+|' + '|'.join(NUMBER_WORDS) + r'))?|those(?:\s+(?:\d+|' +
-                     '|'.join(NUMBER_WORDS) + r'))?|the)(?:\s+(?:conditions|diagnoses|diseases))?)\s*:?\s*', text, re.I)
+                     r')\s+(?:of|from)(?:\s+(?:the\s+following|these(?:\s+(?:\d+|' + '|'.join(NUMBER_WORDS) + r'))?|those(?:\s+(?:\d+|' +
+                     '|'.join(NUMBER_WORDS) + r'))?|the)(?:\s+(?:conditions|diagnoses|diseases))?)?)\s*:?\s*', text, re.I)
         if not m: return None
         number = re.search(r'\d+|' + '|'.join(NUMBER_WORDS), m[1].split(' of ')[0] if ' of ' in m[1] else m[1], re.I)
         k = int(number.group()) if number.group().isdigit() else NUMBER_WORDS[number.group().lower()]
@@ -269,6 +270,38 @@ class FallbackForms:
             if plan and self.plan_covers(text, plan): return plan
         raise error
 
+    def accepted(self, text, plan):
+        """Would the compiler accept this plan for this text? (cheap approximate coverage first, then the real compile; anything unexpected counts as accepted)"""
+        t = text.strip().rstrip('?.').strip()
+        if 'analyses' in plan or self.plan_covers(t, plan): return True
+        from .request_plan import compile_request, PlanError
+        try:
+            compile_request(self.catalog, text, plan)
+            return True
+        except PlanError:
+            return False
+        except Exception:  # noqa: BLE001 - not a coverage verdict
+            return True
+
+    def composition_alternative(self, text):
+        """The first composition frame whose plan covers every content word of the text, else None (the ordinary plan stands)."""
+        from .request_language import PlanError
+        for frame in self.FRAMES:
+            try:
+                plan = getattr(self, frame)(text)
+            except PlanError:
+                plan = None
+            if plan and self.plan_covers(text, plan):
+                from .request_plan import compile_request
+                try:
+                    compile_request(self.catalog, text, plan)
+                except PlanError:
+                    continue
+                except Exception:  # noqa: BLE001
+                    pass
+                return plan
+        return None
+
     def plan_covers(self, text, plan):
         """Do the plan's quotes account for every content word of the text? (the compiler's coverage rule, so a frame that reads only part of a
         sentence yields to the next frame instead of failing at compile time)"""
@@ -294,7 +327,7 @@ class FallbackForms:
         self.uncovered_words = left
         return not left
 
-    FRAMES = ('rate_per_form', 'cost_per_patient', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'most_filled', 'rank_cost', 'rank_floor_first', 'claims_frame', 'rank_measure', 'grouping_wrapper')
+    FRAMES = ('rate_per_form', 'cost_per_patient', 'high_cost_breakdown', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'most_filled', 'rank_cost', 'rank_floor_first', 'claims_frame', 'rank_measure', 'grouping_wrapper')
 
 
 class RateForms:
@@ -309,6 +342,8 @@ class RateForms:
         m = self.PER.search(text)
         if not m: return None
         before = re.sub(r'^(?:(?:what|how\s+many|which)\s+(?:is|are|was|were|many)\s+)?(?:the\s+|our\s+|total\s+)*', '', text[:m.start()].strip(), flags=re.I)
+        rate_word = re.search(r'\s+(?:rates?)$', before, re.I)  # "ED visit rate per 1,000 patients"
+        if rate_word: before = before[:rate_word.start()]
         event = self.thing(before) if before else None
         if not event or event[0] == 'measurement' or event[4].strip(): return None
         table, field, atoms, event_quote, _ = event
@@ -328,7 +363,8 @@ class RateForms:
         events = {'kind': 'count_related', 'alias': 'events', 'table': table, 'quote': [before] if before in text else [event_quote],
                   'where': combine('and', [*atoms, *win], event_quote)}
         denominator = {'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': [unit_quote, *([note_text] if note_text else [])]}
-        ratio = {'kind': 'ratio', 'alias': 'rate', 'quote': [unit_quote], 'scale': scale, 'round': 2, 'numerator': events, 'denominator': denominator}
+        ratio = {'kind': 'ratio', 'alias': 'rate', 'quote': [*([rate_word.group().strip()] if rate_word else []), unit_quote], 'scale': scale, 'round': 2,
+                 'numerator': events, 'denominator': denominator}
         return {'source': {'table': 'patient', 'quote': noun or unit_quote}, 'select': [ratio], 'where': None, 'group_by': [], 'order_by': [], 'limit': None,
                 'unresolved': [], 'notes': [f'A rate of {event_quote} per {"patient" if scale == 1 else f"{scale:,} patients"}: the events of the living patients counted, over those patients '
                                             '(patients with no event stay in the denominator).']}
@@ -473,7 +509,8 @@ class RankForms:
         extra = [m['dim'].strip()] if m['by'] else []
         return self.build_ranking(plan, dim_text, m['sup'].lower(), m['n'], head, extra_quote=extra)
 
-    MOST_FILLED = re.compile(r"^(?:what|which)\s+(?:are|is)\s+the\s+(?P<n>" + NUM + r")\s+(?P<sup>most|least)[- ](?P<verb>filled|prescribed|dispensed)\s+(?P<dim>drug\s+classes?|drugs?|medications?)"
+    MOST_FILLED = re.compile(r"^(?:what|which)\s+(?:(?:are|is)\s+the\s+(?P<n>" + NUM + r")\s+(?P<sup>most|least)[- ](?P<verb>filled|prescribed|dispensed)\s+(?P<dim>drug\s+classes?|drugs?|medications?)"
+                             r"|(?:(?P<n2>" + NUM + r")\s+)?(?P<dim2>drug\s+classes?|drugs?|medications?)\s+(?:were|are|was|is)\s+(?P<verb2>filled|prescribed|dispensed)\s+the\s+(?P<sup2>most|least))"
                              r"(?P<win>\s+(?:in|during|over|within)\s+the\s+(?:last|past|previous)\s+(?:\d+|\w+)\s+(?:months?|years?)|\s+in\s+(?:calendar\s+)?(?:19|20)\d\d)?\s*,?\s*(?P<by>by\s+(?:the\s+)?number\s+of\s+fills)?$", re.I)
 
     def most_filled(self, text):
@@ -481,14 +518,20 @@ class RankForms:
         t = text.strip().rstrip('?.').strip()
         m = self.MOST_FILLED.match(t)
         if not m or 'fill' not in self.catalog.tables: return None
-        plan = self.parse_measure_for_rank('fills' if not m['by'] else t[m.start('by') + m['by'].index('fills'):m.end('by')])
+        dim, sup, n = (m['dim'] or m['dim2']), (m['sup'] or m['sup2']).lower(), (m['n'] or m['n2'])
+        verb_end = m.end('sup2') if m['sup2'] else m.end('dim')
+        by = m['by']
+        plan = self.parse_measure_for_rank('fills' if not by else t[m.start('by') + by.index('fills'):m.end('by')])
         if not plan or plan['source']['table'] != 'fill': return None
+        if not by:  # "were filled the most": the verb is the count's own word
+            verb = (m['verb2'] or m['verb']).strip()
+            plan = {**plan, 'source': {**plan['source'], 'quote': verb}, 'select': [{**plan['select'][0], 'quote': verb}]}
         if m['win']:
             plan = self.apply_tail(plan, m['win'].strip())
             if not plan: return None
-        head = t[:m.end('dim')].strip()
-        extra = [m['by'].strip()] if m['by'] else []
-        return self.build_ranking(plan, m['dim'].strip(), m['sup'].lower() if m['sup'].lower() == 'least' else 'most', m['n'], head, extra_quote=extra)
+        head = t[:verb_end].strip()
+        extra = [by.strip()] if by else []
+        return self.build_ranking(plan, dim.strip(), 'least' if sup == 'least' else 'most', n, head, extra_quote=extra)
 
 
 class ShareMeasureForms:
@@ -537,7 +580,13 @@ class GroupingForms(ShareMeasureForms, RankForms, FallbackForms):
             rest = fronted['q']
             cats = fronted['cats'] or fronted['cats2']
             clause = text[:fronted.start('q')].strip(' ,:')
-            return self.grouped(rest, fronted['dim'], cats, text, [fronted['marker'] + ' ' + fronted['dim']] + ([cats] if False else []))
+            return self.grouped(rest, fronted['dim'], cats, text, [fronted['marker'] + ' ' + fronted['dim']])
+        middle = re.match(r'^(?P<lead>(?:how\s+many|what\s+(?:is|are)\s+the\s+number\s+of)\s+[a-z][a-z -]*?)\s+(?P<marker>in\s+each|for\s+each|per)\s+(?P<dim>' + self.DIM_WORDS + r')\s+'
+                          r'(?P<rest>(?:had|have|has|with|who|that|were|was|visited|filled|received|screened|missed)\b.+)$', text, re.I)
+        if middle and self.dimension_of(middle['dim']):
+            from .request_language import PlanError
+            head = middle['lead'] + ' ' + middle['rest']  # the literal words of the question around the dimension phrase
+            return self.grouped(head, middle['dim'], None, text, [middle['marker'] + ' ' + middle['dim']])
         leading = self.BREAK_LEAD.match(text)
         body = text[leading.end():] if leading else text
         best = None
@@ -584,6 +633,10 @@ class GroupingForms(ShareMeasureForms, RankForms, FallbackForms):
             if not plan: return None
         if plan.get('analyses') or plan.get('group_by') or plan.get('having') or any(e.get('kind') == 'field' for e in plan['select']): return None
         dim = self.dimension_of(dim_words)
+        if not cats and dim and dim[0] == 'payer':  # "by payer type" without a named list: the patient's payer column as stored
+            self.base = plan['source']['table'] if plan['source']['table'] == 'patient' else 'patient'
+            alt = self.dimension(re.sub(r'\s+', ' ', dim_words.strip().lower()))
+            if alt: dim = ('field', alt[1], alt[0])
         if cats and re.search(r'(?:and\s+so\s+on|etc\.?|and\s+others|for\s+example)\s*$', cats, re.I) and dim and dim[0] == 'field':
             quote = [*quote, cats.strip()]  # "by product (Medicare Advantage vs FFS, marketplace, and so on)": examples, not a closed list
             cats = None

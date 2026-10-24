@@ -75,12 +75,23 @@ class ClaimForms:
     def year_atoms(self, table, text):
         """Atoms for a calendar year named in the text ("in 2029" / "2029 medical spend"): -> (atoms, quote) or ([], None)."""
         from .request_language import atom
-        rolling, rolling_quote = self.claim_rolling_atoms(table, text)
-        if rolling:
+        from .decision_context import ROLLING_YEAR
+        rolling = ROLLING_YEAR.search(text)
+        if rolling and CLOCK[table] in self.catalog.tables[table]:
+            # The same service/fill clock governs a rolling year and a calendar
+            # year. Leaving the former unbound used to refuse ordinary finance
+            # questions after the amount form had already matched them.
             if YEAR.search(text):
                 from .request_plan import AmbiguousRequest
                 raise AmbiguousRequest('A rolling window and calendar year need an explicit comparison')
-            return rolling, rolling_quote
+            q = rolling.group()
+            return [atom(f'{table}.{CLOCK[table]}', 'within_last_months', 12, q)], q
+        rolling_other, rolling_other_quote = self.claim_rolling_atoms(table, text)  # "over the last 6 months", "in the past two years": any trailing window
+        if rolling_other:
+            if YEAR.search(text):  # Codex safeguard: any rolling window with a calendar year needs an explicit comparison
+                from .request_plan import AmbiguousRequest
+                raise AmbiguousRequest('A rolling window and calendar year need an explicit comparison')
+            return rolling_other, rolling_other_quote
         m = YEAR.search(text)
         if not m or CLOCK[table] not in self.catalog.tables[table]: return [], None
         year = int(m[1]); field = f'{table}.{CLOCK[table]}'

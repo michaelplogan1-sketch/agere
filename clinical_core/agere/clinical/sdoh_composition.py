@@ -13,7 +13,7 @@ from .claims_language import SDOH_SOURCE
 
 NUM = r'(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)'
 SVI = re.compile(
-    r'^(?:(?:who\s+)?(?:live|lives|living|reside|resides|residing)\s+in\s+|(?:are|is)\s+in\s+|in\s+)?(?:an?\s+)?(?:(?P<lvl>high|low)[- ])?'
+    r'^(?:(?:who\s+)?(?:live|lives|living|reside|resides|residing)\s+in\s+|(?:are|is)\s+in\s+|in\s+)?(?:an?\s+)?(?:(?:areas?|neighborhoods?|tracts?|counties|zip\s+codes?)\s+(?:with|where|having)\s+(?:an?\s+)?)?(?:(?P<lvl>high|low)[- ])?'
     r'(?:svi|social\s+vulnerability(?:\s+index)?|vulnerability)\b(?:\s+(?:areas?|neighborhoods?|tracts?|counties|zip\s+codes?))?'
     r'\s*(?:\(\s*|\s+)(?:(?:svi|score)\s+)?(?:of\s+)?(?:(?P<op>under|below|less\s+than|over|above|at\s+least|<=|>=|<|>)\s*)?(?P<n>\d{1,3})\s*'
     r'(?P<suf>\+|or\s+(?:above|higher|more|over|greater)|or\s+(?:below|lower|less|under))?\s*\)?(?:\s+(?:areas?|neighborhoods?|tracts?))?', re.I)
@@ -29,7 +29,24 @@ class SdohComposition:
     """Mixed into request_language.Parser."""
 
     def sdoh_composition(self, text):
-        return self.svi_predicate(text) or self.vendor_score_predicate(text) or self.missed_appointments(text) or self.distinct_needs(text)
+        return (self.svi_predicate(text) or self.vendor_score_predicate(text) or self.missed_appointments(text) or self.distinct_needs(text)
+                or self.need_predicate(text))
+
+    NEED_PHRASE = re.compile(r'^(?P<lead>(?:(?:have|has|had)\s+)?(?:(?P<no>no|without)\s+)?(?:an?\s+)?)(?P<need>food\s+insecurity|transportation\s+(?:barriers?|needs?)|housing\s+instability|utility\s+needs|safety\s+needs?)\b', re.I)
+
+    def need_predicate(self, text):
+        """'have a transportation barrier', 'no food insecurity' -> a positive screen of that need (negated by no / without)."""
+        from .request_language import atom, combine, related, NEEDS
+        if self.base != 'patient' or 'social_need' not in self.catalog.tables: return None
+        m = self.NEED_PHRASE.match(text)
+        if not m: return None
+        key = re.sub(r'\s+', ' ', m['need'].lower())
+        need = NEEDS.get(key) or NEEDS.get(key.replace('needs', 'need').replace('barriers', 'barrier')) or NEEDS.get(key.split()[0])
+        if not need: return None
+        quote = text[len(m['lead']):m.end()].strip()
+        leaf = related('social_need', combine('and', [atom('social_need.need', '=', need, quote), atom('social_need.positive', '=', 1, quote)], quote), quote)
+        if m['no']: return {'op': 'not', 'arg': leaf, 'quote': m['no']}, text[m.end():]
+        return leaf, text[m.end():]
 
     def svi_predicate(self, text):
         from .request_language import atom, related

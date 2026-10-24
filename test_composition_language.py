@@ -290,6 +290,99 @@ class ClaimsComposition(CompositionFixture):
         self.assertEqual([(r['payer_id'], r.get('value', r.get('paid_cents'))) for r in rows], [('P1', 40000), ('P2', 20000)])  # D's claim is not counted
 
 
+class DeclinedAndInherited(CompositionFixture):
+    def test_two_values_of_one_column_joined_by_and_are_declined(self):
+        plan_text = 'How many patients are women and men?'
+        with self.assertRaises(R.PlanError): L.parse(self.catalog, plan_text)
+
+    def test_named_groups_on_a_share_read_as_a_comparison(self):
+        rows = self.run_q('What share of women and men have diabetes?')
+        got = {r['sex_reported']: r['percent'] for r in rows}
+        self.assertEqual(got, {'F': 100 * 1 / 4, 'M': 100 * 2 / 3})  # women A C E G (A has diabetes), men B D F (B and D)
+
+    def test_more_than_one_is_strict(self):
+        self.assertEqual(self.count('How many patients had more than one ED visit in the last year?'), 1)  # A (2); B has one inside the window, C and D one each
+
+    def test_at_least_n_of_a_bare_list(self):
+        self.assertEqual(self.count('How many patients have at least 2 of: diabetes, CKD, heart failure?'), 3)
+
+    def test_a_rate_by_a_column_with_a_trailing_period(self):
+        rows = self.run_q('ED visits per 1000 patients by sex in the last year')
+        self.assertEqual({r['sex_reported'] for r in rows}, {'F', 'M'})
+
+    def test_compare_between_two_groups(self):
+        rows = self.run_q('Compare ED visits per 1,000 patients between Medicare and Medicaid in 2029')
+        by = {r['group']: r for r in rows}
+        self.assertEqual(set(by), {'medicare', 'medicaid'})
+        self.assertEqual(by['medicaid']['patients'], 1)  # D: one ED visit in 2029
+        self.assertAlmostEqual(by['medicaid']['rate'], 1000.0, 1)
+
+    def test_a_follow_up_keeps_the_previous_period(self):
+        from clinical_core.agere.clinical import conversation
+        question, note = conversation.inherit_window({'resolved_question': 'Count of paid prescription fills over the last 12 months?'},
+                                                     'and what was the average plan-paid amount per fill?')
+        self.assertEqual(question, 'and what was the average plan-paid amount per fill over the last 12 months?')
+        self.assertIn('kept', note)
+        same, none = conversation.inherit_window({'resolved_question': 'How many patients have diabetes?'}, 'and what was the average plan-paid amount per fill?')
+        self.assertIsNone(none)
+        stated, none = conversation.inherit_window({'resolved_question': 'fills in 2029?'}, 'and what was the average plan-paid per fill in 2028?')
+        self.assertIsNone(none)
+
+
+class WordingVariants(CompositionFixture):
+    def test_seen_in_the_ed(self):
+        self.assertEqual(self.count('How many patients were seen in the ED in the last 12 months?'), 4)  # A B C D
+
+    def test_events_that_happened(self):
+        self.assertEqual(self.count('How many ED visits happened in 2029?'), 3)  # A 2029-08-01, B 2029-03-01, D 2029-07-01
+
+    def test_take_a_drug(self):
+        self.assertEqual(self.count('How many patients with diabetes take an antiplatelet?'), 1)  # D
+
+    def test_either_or_but_not(self):
+        self.assertEqual(self.count('How many patients have either heart failure or asthma but not CKD?'), 3)  # A (hf), F, G (asthma); C has hf and ckd
+
+    def test_a_need_and_the_lack_of_another(self):
+        self.assertEqual(self.count('How many patients have a transportation barrier but no food insecurity?'), 0)  # A and D have both
+
+    def test_a_dimension_in_the_middle_of_the_question(self):
+        rows = self.run_q('How many patients in each sex had an ED visit in the last 12 months?')
+        self.assertEqual({r['sex_reported']: r['patients'] for r in rows}, {'F': 2, 'M': 2})  # A C | B D
+
+    def test_the_distinct_needs_read_back_says_different(self):
+        plan = L.parse(self.catalog, 'How many patients screened positive for two or more social needs?')
+        self.assertIn('different', spec_readback.predicate_text(plan['where']))
+
+
+class ShareDenominator(CompositionFixture):
+    def test_with_condition_who_clause_keeps_the_condition_in_the_denominator(self):
+        rows = self.run_q('Which practices have the lowest share of patients with diabetes who are on a statin?')
+        pct = sorted(round(r['percent'], 1) for r in rows)
+        self.assertEqual(pct, [0.0, 50.0])  # practice 1: D only (antiplatelet) 0/1; practice 0: A (statin), B 1/2 -- never over all patients
+
+    def test_share_of_hypertensives_who_also_have_diabetes(self):
+        v = self.run_q('Of the patients with hypertension, what share also have diabetes?')
+        self.assertAlmostEqual(v, 50.0, 1)  # D has both, E only hypertension
+
+
+class MoreWording(CompositionFixture):
+    def test_a_comma_list_of_drugs_is_one_set(self):
+        self.assertEqual(self.count('How many patients with diabetes are not on a statin, an antiplatelet or insulin?'), 0)  # A statin, B insulin, D antiplatelet
+        self.assertEqual(self.count('How many patients with diabetes are on a statin, an antiplatelet or insulin?'), 3)
+
+    def test_a_rate_word_after_the_event(self):
+        v = self.run_q('ED visit rate per 1,000 patients over the last 12 months')
+        self.assertAlmostEqual(v, 1000 * 5 / 7, 1)
+
+    def test_filled_the_most(self):
+        rows = self.run_q('Which two drug classes were filled the most in the last 12 months?')
+        self.assertEqual([(r['drug_class'], r['count']) for r in rows], [('statin', 3), ('antiplatelet', 2)])
+
+    def test_high_cost_claimants_by_a_patient_column(self):
+        rows = self.run_q('Of the 2029 high-cost claimants ($300+ paid), how many are in each coverage type?')
+        self.assertEqual({r['coverage_type']: r['patients'] for r in rows}, {'medicare': 1})  # A 100 + 300 = $400; B $200
+
+
 class MoneyComposition(CompositionFixture):
     def test_a_patient_total_reaches_an_amount(self):
         self.assertEqual(self.count('How many living patients accumulated $400 or more in paid claims over the past 12 months?'), 1)  # A 100 + 300; B 200

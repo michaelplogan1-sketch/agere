@@ -164,7 +164,7 @@ FIELD_SYNONYMS = {  # everyday names for received fields; the field must exist i
     'lead time': 'appointment.lead_time_days',
     'svi score': 'patient_svi.svi_overall', 'social vulnerability index': 'patient_svi.svi_overall', 'svi': 'patient_svi.svi_overall',
     'length of stay in days': 'stay.los_days', 'los': 'stay.los_days',
-    'days supply': 'fill.days_supply', 'county code': 'patient.county', 'county codes': 'patient.county',
+    'days supply': 'fill.days_supply', 'county code': 'patient.county', 'county codes': 'patient.county', 'drug': 'payer_pharmacy_claim.drug_name',
     'payer type': 'patient.line_of_business', 'lob': 'patient.line_of_business', 'line of business': 'patient.line_of_business',
 }
 FIELDS = {
@@ -231,6 +231,11 @@ def syntax_text(text, *, hide_parentheses=False):
         elif depth:
             chars[i] = ' '
     return ''.join(chars)
+
+
+def quote_words(atom_):
+    q = atom_.get('quote')
+    return ' '.join(q) if isinstance(q, list) else str(q or '')
 
 
 class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingForms, CompositionForms, PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
@@ -518,7 +523,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                     r"(?:have|has)\s+not\s+been\s+seen(?:\s+in)?|(?:have|has)\s+never\s+(?:had|received)|never\s+(?:had|received|got)|missed|"
                     r"(?:are|were|is)\s+missing|missing|without)")
     POSITIVE_LEAD = (r"(?:(?:have|has)\s+(?:had|ever\s+(?:had|received|got|been)|received|been)|ever\s+(?:had|received|got|been)|had|have|has|with|whose|got|received|completed|underwent|"
-                     r"(?:(?:went|gone|go|goes|been|presented|came|come|came\s+in)\s+(?:to|through|into)|visited|used|(?:have|has)\s+(?:visited|used))(?:\s+the)?|"
+                     r"(?:(?:went|gone|go|goes|been|presented|came|come|came\s+in)\s+(?:to|through|into)|(?:(?:were|was|been|got)\s+)?seen\s+(?:in|at)|visited|used|(?:have|has)\s+(?:visited|used))(?:\s+the)?|"
                      r"(?:were|was|been)(?=\s+admitted))")
 
     def window(self, text, table, field):
@@ -812,18 +817,20 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                          for (t, _, atoms, _, _), win in ((first, win1), (second, win2))]
                 self.gaps.append(quote)
                 return combine('and', parts, quote), tail
+        more_than = re.match(r'^(?:(?:have|has|had|with)\s+)?(?:more\s+than|over)\s+(\d+|' + '|'.join(NUMBER_WORDS) + r')\s+(?=\D)', text, re.I)  # strictly more than N
         many = re.match(r'^(?:(?:have|has|had|with)\s+)?(?:(?:at\s+least)\s+(\d+|' + '|'.join(NUMBER_WORDS) + r')|(\d+|' + '|'.join(NUMBER_WORDS)
-                        + r')\s*(?:\+|or\s+more))\s+', text, re.I)
+                        + r')\s*(?:\+|or\s+more))\s+', text, re.I) or more_than
         if many:
             found = self.thing_evidence(text[many.end():]) or self.counted_event(text[many.end():])
             if found:
                 table, field, atoms, _, after = found
                 win, tail = self.window(after, table, field)
                 quote = start[:len(start) - len(tail)].strip()
-                word = (many[1] or many[2]).lower()
+                word = (many[1] or (many[2] if many.lastindex and many.lastindex >= 2 else None) or '').lower()
                 atoms[0] = {**atoms[0], 'quote': [many.group().strip(), *([atoms[0]['quote']] if isinstance(atoms[0]['quote'], str) else atoms[0]['quote'])]}
-                return {'op': 'count_at_least', 'table': table, 'where': combine('and', atoms + win, quote),
-                        'n': int(word) if word.isdigit() else int(NUMBER_WORDS[word]), 'quote': quote}, tail
+                n = int(word) if word.isdigit() else int(NUMBER_WORDS[word])
+                return {'op': 'count_at_least', 'table': table, 'where': combine('and', atoms + win, quote), 'n': n,
+                        **({'strict': True} if more_than and many is more_than else {}), 'quote': quote}, tail
         # Attribution or enrollment in a calendar month (member months).
         month = re.match(r'^(?:(?:were|was|are|is)\s+)?(attributed(?:\s+to\s+an?\s+(?:practice|pcp|primary\s+care\s+(?:practice|provider)|clinician))?|enrolled)'
                          r'\s+(?:in|for|as\s+of)\s+(' + '|'.join(MONTH_NAMES) + r')\s+(20\d\d)\b', text, re.I)
@@ -869,11 +876,32 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         else:
             try:
                 plan = self._parse(text)
+                if isinstance(plan, dict): self.reject_contradiction(plan.get('where'))
+                if isinstance(plan, dict) and not self.accepted(text if text is not None else self.question, plan):
+                    plan = self.composition_alternative(text if text is not None else self.question) or plan
             except PlanError as err:
                 plan = self.composition_fallback(text if text is not None else self.question, err)
         if self.extra_notes and isinstance(plan, dict) and 'select' in plan:
             plan['notes'] = list(dict.fromkeys([*(plan.get('notes') or []), *self.extra_notes]))
         return plan
+
+    def reject_contradiction(self, where):
+        """An AND of two different values of one column ("women and men") matches nothing: decline it (the groups may be compared, or joined with "or")."""
+        if not isinstance(where, dict): return
+        def flat(node):  # the atoms joined by AND at this level, through nested ANDs
+            if isinstance(node, dict) and node.get('op') == 'and':
+                for arg in node['args']: yield from flat(arg)
+            else:
+                yield node
+        if where.get('op') == 'and':
+            seen = {}
+            for arg in flat(where):
+                if isinstance(arg, dict) and arg.get('op') == '=' and arg.get('field') and 'value' in arg:
+                    if arg['field'] in seen and seen[arg['field']] != arg['value']:
+                        raise PlanError('Two different values of one field at once (' + quote_words(arg) + ') match nothing; use "or", or compare the groups')
+                    seen[arg['field']] = arg['value']
+        for arg in (where.get('args') or [where.get('arg')]):
+            if isinstance(arg, dict) and arg.get('op') in ('or', 'not', 'at_least_of'): self.reject_contradiction(arg)
 
     def _parse(self, text=None):
         text = (text if text is not None else self.question).strip().rstrip('?.').strip()
@@ -1038,9 +1066,11 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         clock = self.clock or CLOCKS.get(self.base)
         dimensions = {**self.field_aliases(), **({'month': f'{self.base}.{clock}@month'} if clock else {})}
         rest, group_fields, group_quote = self.grouping(rest, dimensions)
-        rest = re.sub(r'^\s*(?:are|were|is|was)(?:\s+there)?(?:\s+|$)', '', rest, flags=re.I)
+        rest = re.sub(r'^\s*(?:are|were|is|was)(?!\s+admitted)(?:\s+there)?(?:\s+|$)', '', rest, flags=re.I)
         rest = re.sub(r'\s+(?:are|were|is)\s+there\s*$', '', rest, flags=re.I)
-        rest = re.sub(r'^\s*(?:that\s+)?(?:(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)|(?:have|has)\s+we\s+(?:had|seen|recorded|logged))\b\s*', '', rest, flags=re.I)
+        event_verb = re.match(r'^\s*(?:happened|occurred|took\s+place|were\s+(?:recorded|logged))\b', rest, re.I)  # "ED visits happened in 2029": the verb says nothing more than "were there"
+        event_word = event_verb.group().strip() if event_verb else ''
+        rest = re.sub(r'^\s*(?:that\s+)?(?:(?:(?:do|did)\s+)?we\s+(?:have|had|see|saw)|(?:have|has)\s+we\s+(?:had|seen|recorded|logged)|(?:happened|occurred|took\s+place|were\s+(?:recorded|logged)))\b\s*', '', rest, flags=re.I)
         rest = re.sub(r"^[\u2019']s?\s+(?=\S)", '', rest)  # "diabetics' most recent A1c": the possessive of the population noun
         base_filter = None
         if default: base_filter = self.preset_filter(default, source_quote)
@@ -1081,7 +1111,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             measure = {'kind': fn, 'field': field_name, 'alias': fn+'_'+field_name.split('.')[-1], 'quote': [lead.group().strip(), field_text]}
         else:
             measure = {'kind': 'count_distinct' if self.base == 'patient' else 'count', 'alias': 'patients' if self.base == 'patient' else 'count',
-                       'quote': [measure_quote, distinct_word] if distinct_word else measure_quote}
+                       'quote': [measure_quote, *[w for w in (distinct_word, event_word) if w]] if (distinct_word or event_word) else measure_quote}
             if self.base == 'patient': measure['field'] = 'patient.patient_id'
         measures.append(measure)
         if unit:
@@ -1344,6 +1374,12 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                 break
             values.append(value)
             tail = remaining.lstrip()
+        seen = {}
+        for v in values:  # "women and men": two different values of one single-valued column at once can match nothing -- say "or", or compare the groups
+            if isinstance(v, dict) and v.get('op') == '=' and v.get('field') and 'value' in v:
+                if v['field'] in seen and seen[v['field']] != v['value']:
+                    raise PlanError('"' + text[:len(text)-len(tail)].strip() + '" asks for two different values of one field at once; use "or", or compare the groups')
+                seen[v['field']] = v['value']
         return combine('and', values, text[:len(text)-len(tail)].strip()), tail
 
     def one(self, text):
@@ -1494,13 +1530,13 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             value = self.condition(concept_id, quote)
             if len(names) > 1: value['names'] = list(dict.fromkeys(n for n in names))
             return self.concept_period(value, tail)
-        med = re.match(r'^(?:(?:have|has|had)\s+(?:ever\s+)?)?(?:(?:currently|now|presently)\s+)?(?:on|taking|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
+        med = re.match(r'^(?:(?:have|has|had)\s+(?:ever\s+)?)?(?:(?:currently|now|presently)\s+)?(?:on|taking|takes?|took|receiving|prescribed|filled|dispensed)\s+(no\s+)?(?:(?:an?|any|the)\s+)?', text, re.I)
         if med:
             got = self.prefix(text[med.end():], self.drugs)
             if got:
                 _, drugs, tail = got
-                while True:  # "a GLP-1 or an SGLT2 inhibitor": one drug set (any of them)
-                    more_drug = re.match(r'^or\s+(?:(?:an?|any|the)\s+)?', tail, re.I)
+                while True:  # "a GLP-1 or an SGLT2 inhibitor", "a beta blocker, an ACE inhibitor or an ARB": one drug set (any of them)
+                    more_drug = re.match(r'^(?:,\s*(?:or\s+)?|or\s+)(?:(?:an?|any|the)\s+)?', tail, re.I)
                     other = self.prefix(tail[more_drug.end():], self.drugs) if more_drug else None
                     if not other: break
                     drugs = list(dict.fromkeys([*drugs, *other[1]])); tail = other[2]
