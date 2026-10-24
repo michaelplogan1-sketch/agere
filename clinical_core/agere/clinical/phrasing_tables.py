@@ -108,6 +108,8 @@ FRAMES = [
     # numbers: "65+" -> "65 and older" (an age) or "3 or more" (a count); "between 50 and 74" -> "50 to 74"; "last 2 years" -> "last two years"
     ('plus_number', r'(?<![\w.$(,])(?P<n>\d+)\s*\+(?!\s*\))', '@'),
     ('lab_n_or_more', r'\b(?P<lab><LAB>)\s+(?P<n>\d+(?:\.\d+)?)\s+or\s+(?P<d>higher|above|more|greater|lower|below|less)\b', '{lab} of {n} or {d}'),
+    ('says_takes', r'\b(?:said|says|stated|states|told\s+us)\s+(?:that\s+)?(?:they|he|she)\s+(?:take|takes|are\s+taking|is\s+taking|use|uses)\b', 'reports taking'),
+    ('why_did_stop', r'^why\s+did\s+(?:they|he|she|the\s+\w+)\s+(?:stop|discontinue)\s+(?P<d>\w+)\s+for\s+(?P<who>ZZID\d+ZZ)$', 'Why was {d} stopped for {who}'),
     ('filled_rx', r'\bfill(?:ed|s)?\s+(?:an?\s+)?(?P<d><DRUG>)\s+prescriptions?\b', 'filled a {d}'),
     ('date_of', r'^(?:the\s+)?date\s+of\s+(?P<rest>.+)$', 'When was {rest}'),
     ('change_in', r'\b(?P<lab><LAB>)\s+change\b', 'change in {lab}'),
@@ -150,7 +152,7 @@ FRAMES = [
     ('on_neither', r'(?P<pre>.*?)\b(?:on|taking)\s+neither\s+(?:an?\s+)?(?P<a>.+?)\s+nor\s+(?:an?\s+)?(?P<b>.+?)(?P<tail>[?.\s—–-]*)$', '{pre} not on an {a} or {b} {tail}'),
     ('do_not_take', r'(?P<pre>.*?)\b(?:do\s+not|don\'t|does\s+not|doesn\'t)\s+(?:take|use)\s+(?P<post>.+)$', '{pre} are not on {post}'),
     # drugs: "take / use / receive X" -> "are on X"; "have no X" -> "are on no X"
-    ('have_no_drug', r'\b(?:have|has)\s+no\s+(?P<d><DRUG>)\b(?!\s+fills?\b)', 'are on no {d}'),
+    ('have_no_drug', r'\b(?:have|has)\s+no\s+(?P<d><DRUG>)\b(?!(?:\s*,?\s*(?:or|and)?\s*<DRUG>)*\s+fills?\b)', 'are on no {d}'),
     ('is_taking_drug', r'\b(?P<aux>is|are|was|were)\s+(?P<subj>[\w-]+)\s+(?:taking|using|receiving)\s+(?P<art>an?\s+|any\s+)?(?P<d><DRUG>)\b', '{aux} {subj} on {art} {d}'),
     ('does_take_drug', r'\b(?:does|do)\s+(?P<subj>[\w-]+)\s+(?:take|use|receive)\s+(?P<art>an?\s+|any\s+)?(?P<d><DRUG>)\b', 'is {subj} on {art} {d}'),
     ('take_drug', r'(?<!report )(?<!reports )(?<!reported )(?<!say )\b(?:(?:are|is|were|was)\s+)?(?:take|takes|taking|use|uses|using|receive|receives|receiving)\s+(?P<art>an?\s+|any\s+)?(?P<d><DRUG>)\b', 'are on {art} {d}'),
