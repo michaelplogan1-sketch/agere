@@ -153,5 +153,63 @@ class UnresolvedAnchor(unittest.TestCase):
         self.assertIn('not read', a['headline'])
 
 
+class CappedOpenAndAnchors(unittest.TestCase):
+    """Positive findings from a capped read stand; their dates, record counts and the anchor date are qualified as partial."""
+
+    def reading(self, rid, day):
+        return {'finding': {'concept': 'sulfa rash', 'source': 'quote', 'quote': 'sulfa rash'}, 'detail': {}, 'duplicates': [], 'status': 'documented', 'p': 0.9, 'passage_id': rid + ':0',
+                'record_id': rid, 'date': day, 'note_type': 'office_followup', 'source': 'notes', 'quote': 'sulfa rash', 'start': 0, 'end': 9,
+                'undecided': False, 'cost_usd': 0.0}
+
+    def pred(self):
+        return {'op': 'note', 'frame': 'adverse_event', 'concept': {'term': 'drug intolerance', 'codes': [], 'open': True, 'class': 'adverse'},
+                'statuses': ['documented'], 'combine': 'any'}
+
+    def test_capped_findings_carry_the_truncation_and_bound_the_dates(self):
+        out = nq.combine_open(self.pred(), [self.reading('R1', '2027-01-01'), self.reading('R2', '2027-02-01')], True, 2, 9)
+        self.assertTrue(out['holds'])  # the finding stands
+        self.assertTrue(out['truncated'])
+        self.assertIn('2 of 9', out['partial'])
+        self.assertTrue(all(g['bounds_partial'] for g in out['findings']))
+
+    def test_uncapped_findings_are_not_qualified(self):
+        out = nq.combine_open(self.pred(), [self.reading('R1', '2027-01-01')], False, 1, 1)
+        self.assertNotIn('truncated', out)
+        self.assertFalse(out['findings'][0].get('bounds_partial'))
+
+    def test_render_says_the_dates_and_count_are_partial(self):
+        out = nq.combine_open(self.pred(), [self.reading('R1', '2027-01-01'), self.reading('R2', '2027-02-01')], True, 2, 9)
+        nfk = FakeNotes({('adverse_event', 'drug intolerance'): out})
+        a = CN.render(None, [self.pred()], 'P1', AS_OF, nf=nfk, yes_no=True)
+        self.assertIn('at least 2 record(s)', a['headline'])
+        self.assertIn('not first/last overall', a['headline'])
+        self.assertIn('partial', a['headline'])
+
+    def test_capped_count_is_at_least(self):
+        out = nq.combine_open(self.pred(), [self.reading('R1', '2027-01-01')], True, 1, 9)
+        self.assertIn('at least', CN.count_events(out, True)['basis'])
+
+    def test_capped_anchor_is_qualified(self):
+        anchor = {'op': 'note', 'frame': 'medication_event', 'concept': {'term': 'metformin', 'codes': []}, 'statuses': ['documented'], 'combine': 'any'}
+        main = {'op': 'note', 'frame': 'condition', 'concept': {'term': 'nausea', 'codes': []}, 'statuses': ['documented'], 'combine': 'any', '_anchor': anchor}
+        ev = [{'record_id': 'A-1', 'date': '2029-03-01', 'note_type': 'progress_note', 'quote': 'metformin started', 'supports': True}]
+        for capped in (True, False):
+            nfk = FakeNotes({('medication_event', 'metformin'): {'status': 'documented', 'holds': True, 'detail': {}, 'evidence': ev, 'p': 0.9,
+                                                                 **({'truncated': True, 'partial': 'only 30 of 80 matching passages were read'} if capped else {})},
+                             ('condition', 'nausea'): {'status': 'documented', 'holds': True, 'detail': {}, 'evidence': EV, 'p': 0.9}})
+            a = CN.render(None, [main], 'P1', AS_OF, nf=nfk, yes_no=True)
+            self.assertEqual('partial anchor' in a['headline'], capped)
+
+    def test_citation_is_the_supporting_passage_not_every_record_read(self):
+        ev = [{'record_id': 'OLD', 'date': '2028-01-01', 'note_type': 'progress_note', 'quote': 'old unrelated mention', 'supports': False},
+              {'record_id': 'NEW', 'date': '2029-01-01', 'note_type': 'progress_note', 'quote': 'metformin stopped', 'supports': True}]
+        pred = {'op': 'note', 'frame': 'medication_event', 'concept': {'term': 'metformin', 'codes': []}, 'statuses': ['documented'], 'combine': 'latest'}
+        nfk = FakeNotes({('medication_event', 'metformin'): {'status': 'documented', 'holds': True, 'detail': {}, 'evidence': ev, 'p': 0.9}})
+        a = CN.render(None, [pred], 'P1', AS_OF, nf=nfk, yes_no=True)
+        self.assertEqual([s['record_id'] if 'record_id' in s else s.get('id') for s in a['sources']].count('OLD'), 0)
+        self.assertNotIn('OLD', a['headline'])
+        self.assertIn('NEW', a['headline'])
+
+
 if __name__ == '__main__':
     unittest.main()
