@@ -33,7 +33,8 @@ class FreeFirst(unittest.TestCase):
         self.assertEqual(sorted(moved), sorted(order))  # a permutation: no tier dropped
         heavy = [moved.index(t) for t in P.HEAVY]
         self.assertLess(moved.index('local_compiler'), min(heavy))
-        self.assertEqual({'specialist_families_late', 'cohort_family_late'}, set(moved[moved.index('local_compiler') + 1:min(heavy)]))  # only the cheap free families sit between
+        # only the cheap free families and the spec path (which follows the free planners, cascade v2) sit between
+        self.assertEqual({'specialist_families_late', 'cohort_family_late', 'spec_path'}, set(moved[moved.index('local_compiler') + 1:min(heavy)]))
         self.assertLess(moved.index('exact_local_plan'), moved.index('local_compiler'))  # cheaper free tiers still go first
         self.assertLess(moved.index('local_compiler'), moved.index('hosted_typed_interpreter'))  # System One / Claude order unchanged
 
@@ -74,7 +75,7 @@ class TimeShare(unittest.TestCase):
         entry = next(e for e in c.log if e['proposer'] == 'atomic_system_one')
         self.assertEqual(entry['outcome'], 'declined')
         self.assertIn('time share exhausted', entry['detail'])
-        self.assertTrue(set(P.ORDER) - {'typed_decider'} <= set(reached) | {'typed_decider'})  # every later tier still ran
+        self.assertTrue(set(P.ORDER) - {'typed_decider'} - set(P.OFF_DEFAULT) <= set(reached) | {'typed_decider'})  # every later tier still ran
         self.assertIn('legacy_cost_ladder', reached)
         time.sleep(0.5)
         self.assertFalse([e for e in c.log if e['outcome'] == 'rejected' and e['detail'] == 'late rejection'])

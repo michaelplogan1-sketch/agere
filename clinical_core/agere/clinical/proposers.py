@@ -123,13 +123,15 @@ def cheap(tier):
     return STAGES[stage_of(tier)][0] in CHEAP_STAGES
 
 
-def staged(order):
+def staged(order, routed=()):
     """Hard boundaries only: reuse/certified tiers first, then the spec path, Claude and the free-form writers last; the routers' order is kept
     inside, so a System One router may send a chart-evidence question to the evidence readers before the free planners (a stable sort: nothing
     dropped)."""
     last, spec, evidence = len(STAGES) - 1, STAGE_INDEX['spec_path'], STAGE_INDEX['system_one_evidence']
-    return tuple(sorted(order, key=lambda t: (0 if stage_of(t) == 0 else 4 if stage_of(t) == last else 2 if stage_of(t) == spec
-                                              else 3 if stage_of(t) == evidence else 1)))
+    # System One choosers and free planners, then the spec path, then System One on record evidence; a tier the System One question router
+    # routed to (routed: e.g. the evidence readers for a chart-evidence question) keeps its routed place among the choosers and planners
+    return tuple(sorted(order, key=lambda t: (0 if stage_of(t) == 0 else 4 if stage_of(t) == last else 1 if t in routed
+                                              else 2 if stage_of(t) == spec else 3 if stage_of(t) == evidence else 1)))
 
 
 ORDER = tuple(t for _, tiers in STAGES for t in tiers if t in TIERS) + staged(t for t in TIERS if t not in STAGE_OF)  # the stated order within each stage
@@ -298,7 +300,11 @@ class Cascade:
             order, self.tier_routing = reorder(self.stack, self.question, order)
         except Exception:  # noqa: BLE001 - no promoted model / encoder: keep the order
             pass
-        return self.heavy_last(self.free_first(staged(order)))
+        routed = ()
+        if (self.routing or {}).get('applied'):
+            from .system_one_gate import ROUTES
+            routed = tuple(t for t in ROUTES.get(self.routing.get('label'), ()) if stage_of(t) != len(STAGES) - 1)
+        return self.heavy_last(self.free_first(staged(order, routed)))
 
     def heavy_last(self, order):
         """A permutation: the costly tiers (COSTLY) run only after the cheap ones (stages A-B and local_compiler), and among themselves

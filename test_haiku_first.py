@@ -275,6 +275,11 @@ def cascade(live=True):
 class CascadeLadder(unittest.TestCase):
     """The Claude stage on fake tiers whose Claude requests are the ones the model policy would resolve (no transport at all)."""
 
+    def setUp(self):  # the ladder is tested over every Claude tier, the off-default routers switched back on
+        from clinical_core.agere.clinical import proposers
+        env = patch.dict(os.environ, {'AGERE_PROPOSER_ON': ','.join(proposers.OFF_DEFAULT)})
+        env.start(); self.addCleanup(env.stop)
+
     def run_cascade(self, behaviour):
         """behaviour: tier -> callable(model) -> None | 'answer' | Exception; returns (calls, result, cascade). calls: [(tier, model)] in order."""
         calls = []

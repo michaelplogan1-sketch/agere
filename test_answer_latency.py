@@ -91,7 +91,7 @@ class Production(Fixture):
         for n in P.COSTLY: self.assertNotIn(n, self.reached)
         self.assertIn('cohort_family_late', self.reached)  # cheap tiers still ask
         deferred = {d['tier']: d for d in c.deferred}
-        self.assertEqual(set(P.COSTLY) & set(deferred), set(P.COSTLY))  # none dropped: all listed
+        self.assertEqual(set(P.COSTLY) & set(deferred), set(P.COSTLY) - set(P.OFF_DEFAULT))  # none dropped: all listed (off-default tiers never run)
         self.assertEqual(deferred['bottled_sql']['expected_seconds'], 20.0)
         entry = next(e for e in c.log if e['proposer'] == 'bottled_sql')
         self.assertEqual(entry['outcome'], 'skipped')
