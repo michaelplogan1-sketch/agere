@@ -184,8 +184,9 @@ NOT_PROPOSERS = {
 
 
 # Registered but off the default path (2026-10-24): held-out calibration 13/13 and 19/19 wrong, precision too low, and no accepted correct answer
-# on the 100 dev questions. AGERE_PROPOSER_ON=metric_router,... puts one back.
-OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql')
+# on the 100 dev questions; hosted_verified_sql: end-to-end dev run deb4a33, reached 6 times, 0 accepted, 103 s of answer budget, which left the
+# semantic analyst unreached. AGERE_PROPOSER_ON=metric_router,... puts one back.
+OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_verified_sql')
 
 
 def enabled(name, stack):
@@ -335,7 +336,8 @@ class Cascade:
         3-13 s) leads the Claude stage, so a population question reaches it inside the answer budget; it ran last and was
         almost never reached (2026-10-23). Its answers stay free-form and need System One confirmation."""
         order = list(order)
-        if os.environ.get('AGERE_ANALYST_FIRST', 'off') != 'on' or 'semantic_analyst' not in order or not claude_available(): return order
+        # on by default since the end-to-end dev run deb4a33 (2026-10-24): behind the other Claude tiers it was reached 0 times in 100 questions
+        if os.environ.get('AGERE_ANALYST_FIRST', 'on') != 'on' or 'semantic_analyst' not in order or not claude_available(): return order
         claude = [i for i, t in enumerate(order) if STAGES[stage_of(t)][0] == 'claude']
         if not claude: return order
         order.remove('semantic_analyst')

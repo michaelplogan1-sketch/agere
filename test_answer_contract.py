@@ -237,7 +237,8 @@ class MissingClaims(Fixture):
               mock.patch('clinical_core.agere.gateway.BudgetLedger', Model),
               mock.patch.object(MR, '_ask', side_effect=lambda q, a, l, o, tools, forced=None, feedback=None, model=None:
                                 Script((MR.NO_METRIC, {'reason': 'none'}))(q, a, tools)),
-              mock.patch.dict(os.environ, {'AGERE_LOCAL_MODEL': 'off', 'AGERE_SEMANTIC_CACHE': 'off', 'AGERE_VERIFICATION_V2': 'off'})]
+              mock.patch.dict(os.environ, {'AGERE_LOCAL_MODEL': 'off', 'AGERE_SEMANTIC_CACHE': 'off', 'AGERE_VERIFICATION_V2': 'off',
+                                           'AGERE_PROPOSER_ON': 'hosted_verified_sql'})]  # the hosted tier under test is off the default path
         for p in ps: p.start()
         try:
             graph, receipt = planner.plan(stack, 'How many patients have no race recorded?', SimpleNamespace(path=self.root / 'ledger.sqlite3'), None)
