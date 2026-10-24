@@ -97,7 +97,10 @@ class PopulationForms:
         from .request_language import PlanError
         # a verb starts the predicate ("... have an A1c above 9"); failing that, the preposition "with" does ("diabetics with an A1c under 8")
         verbs = list(PREDICATE_VERBS.finditer(body))
-        starts = []
+        # "patients with hypertension WHO have their blood pressure under control": the relative clause is the predicate and "with hypertension" stays in the
+        # population (the denominator); splitting at "with" would move the cohort condition into the numerator and widen the denominator to everyone
+        starts = [m.start() for m in re.finditer(r'\b(?:who|that)\s+(?=(?:have|has|had|are|is|were|was|filled|got|received|completed|screened|missed|visited|went|used|came)\b)', body, re.I)
+                  if re.search(r'\bwith\b', body[:m.start()], re.I)]
         for verb in verbs:
             # ALSO belongs with the predicate, not the population noun phrase.
             # A later WITH split would otherwise move the cohort condition into
@@ -105,14 +108,15 @@ class PopulationForms:
             adverb = re.search(r'\balso\s+$', body[:verb.start()], re.I)
             starts.append(adverb.start() if adverb else verb.start())
         if not verbs:
-            starts = [v.start() for v in re.finditer(r'\bwith\b', body, re.I)]
-        if not verbs:
+            starts += [v.start() for v in re.finditer(r'\bwith\b', body, re.I)]  # += keeps the relative-clause splits found above (denominator)
+        if not verbs:  # Codex safeguard: a drug phrase starts the predicate only when no verb does ("diabetics aged 40 to 75 on a statin")
             starts += [v.start() for v in re.finditer(r'\b(?:on|taking|receiving)\s+(?:an?\s+|any\s+|the\s+)?[A-Za-z]', body, re.I)]
         if getattr(self, 'marker_lab', None):
             starts += [v.start() for v in re.finditer(r'\b(?:over|under|above|below|less than|greater than|at least|at most)\s+\d', body, re.I)]
         for at in starts:
             pop_text, pred_text = body[:at].strip(), body[at:].strip()
-            pop_text = re.sub(r'\s+(?:also|then|both)$', '', pop_text, flags=re.I)  # "of the patients with hypertension, what share ALSO have diabetes": the population ends before "also"
+            pop_text = re.sub(r'\s+(?:also|then|both)$', '', pop_text, flags=re.I)
+            if re.match(r'(?:who|that)\s', pred_text, re.I): pred_text = re.sub(r'^(?:who|that)\s+', '', pred_text, flags=re.I)  # "of the patients with hypertension, what share ALSO have diabetes": the population ends before "also"
             if not pop_text: continue
             gaps = list(self.gaps)
             self.bp_quote = None

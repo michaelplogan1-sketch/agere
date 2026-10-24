@@ -139,7 +139,7 @@ class ComparisonForms:
         t = re.sub(r'^(?:(?:and|now|also)\s+)+', '', t, flags=re.I)
         two = SENTENCE_SPLIT.match(text.strip().rstrip('.'))
         for handler in (self.compare_on, self.compare_between, self.compare_how, self.compare_do, self.compare_likely, self.compare_which_group, self.compare_in_areas,
-                        self.share_categories, self.compare_contrast):
+                        self.share_categories, self.count_categories, self.compare_contrast):
             try:
                 plan = handler(t, two)
             except PlanError:
@@ -234,11 +234,26 @@ class ComparisonForms:
         plan, _, _ = self.share_plan(head_quote, population or None, pred, m['pop'] or t)
         return self.attach_groups(plan, groups, [m['head']])
 
-    def compare_between(self, t, two):
-        """Imperative counterpart of 'How do ... compare between A and B'."""
-        m = re.match(r'^compare\s+(?:the\s+)?(?P<measure>.+?)\s+between\s+(?P<cats>.+)$', t, re.I)
+    def count_categories(self, t, two):
+        """'How many <group> and <group> <predicate>?' -> the number of patients of each named group that meet the predicate."""
+        m = re.match(r'^how\s+many\s+(?P<cats>.+?)(?:\s+(?:patients|members|people))?\s+(?P<pred>' + self.PRED_VERBS + r'\b.+)$', t, re.I)
         if not m: return None
-        return self.contrast_with(m['measure'], m['cats'], ['Compare', 'between'])
+        self.base = 'patient'
+        groups = self.named_groups(m['cats'], 'patient')
+        if not groups: return None
+        pred, tail = self.expression(m['pred'])
+        if pred is None or tail.strip(): return None
+        lead = t[:m.start('cats')].strip()
+        plan = {'source': {'table': 'patient', 'quote': lead}, 'select': [{'kind': 'count_distinct', 'field': 'patient.patient_id', 'alias': 'patients', 'quote': lead}],
+                'where': pred, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
+        return self.attach_groups(plan, groups, [lead])
+
+    def compare_between(self, t, two):
+        """'Compare <measure> between <group> and <group> [window]' -> the measure per group."""
+        m = re.match(r'^compare\s+(?:the\s+)?(?P<measure>.+?)\s+between\s+(?P<cats>.+?)(?P<win>(?:\s+' + _WINDOW + r')*)\s*$', t, re.I)
+        if not m: return None
+        framing = [re.match(r'^compare', t, re.I).group(), 'between']
+        return self.contrast_with(m['measure'], m['cats'], framing, tail=(m['win'] or '').strip())
 
     def compare_how(self, t, two):
         """'How do <measure> compare between|across <groups>' -> the measure per group."""
@@ -351,6 +366,16 @@ class ComparisonForms:
         table = plan['source']['table']
         words = TRAILING_WINDOW.search(' ' + t)
         if not words or words.group().strip() != t: return None
+        rate = plan['select'][-1] if plan['select'] and plan['select'][-1].get('kind') == 'ratio' else None
+        if rate and rate.get('numerator', {}).get('kind') == 'count_related':  # a rate per patient: the period belongs to the events counted in the numerator
+            from .request_language import CLOCKS, combine
+            events = rate['numerator']
+            clock = CLOCKS.get(events['table'])
+            if not clock or clock not in self.catalog.tables.get(events['table'], []): return None
+            atoms, rest = self.window(' ' + t, events['table'], clock)
+            if not atoms or rest.strip(): return None
+            plan = {**plan, 'select': [*plan['select'][:-1], {**rate, 'numerator': {**events, 'where': combine('and', [events.get('where'), *atoms], self.question)}}]}
+            return plan
         average = re.search(r'\bon\s+average\b', t, re.I)
         period_text = re.sub(r'\bon\s+average\b', ' ', t, flags=re.I)
         if table in CLOCK:

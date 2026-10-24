@@ -745,6 +745,24 @@ def rescope(stack, question, saved):
     return result, base if not year else new_question, note
 
 
+CLAIMS_DOMAIN = re.compile(r'\b(?:claims?|fills?|pharmacy|spend(?:ing)?|paid|payments?|plan-paid)\b', re.I)
+WINDOW_PHRASE = re.compile(r'(?:\b(?:in|during|over|within|for)\s+)?(?:the\s+)?(?:(?:last|past|previous)\s+(?:\d+|\w+)\s+(?:months?|years?)|(?:last|past)\s+year)\b'
+                           r'|\b(?:in|during|for)\s+(?:calendar\s+)?(?:19|20)\d\d\b', re.I)
+
+
+def inherit_window(prior, question):
+    """A follow-up that continues a claims / pharmacy question ("and what was the average plan-paid amount per fill?") without stating a period keeps the
+    previous question's period; the resolved question is shown to the user. -> (question, note or None). Anything else is returned unchanged."""
+    q = ' '.join(str(question or '').split())
+    prev = (prior or {}).get('resolved_question')
+    if not prev or not re.match(r'^(?:and|also|now|then)\b', q, re.I): return question, None
+    if WINDOW_PHRASE.search(q) or not CLAIMS_DOMAIN.search(q) or not CLAIMS_DOMAIN.search(prev): return question, None
+    windows = list(WINDOW_PHRASE.finditer(prev))
+    if not windows: return question, None
+    phrase = windows[-1].group().strip()
+    return re.sub(r'\s*\?$', '', q) + ' ' + phrase + '?', f'period kept from the previous question: {phrase}'
+
+
 def named_cohort_reference(stack, question, saved):
     """Bind an undefined definite population name to a verified ancestor's exact membership.
 
@@ -953,11 +971,12 @@ def handle_compose(stack, body, hosted_factory=None):
                 hosted = None
                 if not shared and prior is not None and getattr(stack, 'allow_live', False):
                     hosted = (hosted_factory or _default_hosted)(stack)
+                inherited, inherited_note = (inherit_window(prior, question) if shared and not bound and body.get('scope') != 'warehouse' else (question, None))
                 resolution = ({'standalone': question, 'method': 'saved_cohort', 'frame': None, 'follow_up': True,
                                'edits': bound['cohort_transform']['operations'], 'reason': 'Applied to the exact saved cohort',
                                'hosted_receipt': None} if bound else
-                              {'standalone': question, 'method': 'standalone', 'frame': None, 'follow_up': False,
-                               'edits': [], 'reason': 'Original question sent unchanged to the shared planner',
+                              {'standalone': inherited, 'method': 'window_inherited' if inherited_note else 'standalone', 'frame': None, 'follow_up': bool(inherited_note),
+                               'edits': [inherited_note] if inherited_note else [], 'reason': inherited_note or 'Original question sent unchanged to the shared planner',
                                'hosted_receipt': None} if shared or body.get('scope') == 'warehouse'
                               else resolve(question, prior, hosted=hosted))
                 if resolution.get('hosted_receipt'):
