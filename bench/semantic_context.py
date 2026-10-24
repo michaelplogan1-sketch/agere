@@ -8,3 +8,12 @@ from clinical_core.agere.clinical.semantic_docs import (  # noqa: F401 - re-expo
     ALLOWED_SPLITS, CLINICAL, CONFIG, EXAMPLES_PATH, HELDOUT_PREFIXES, REPO, _Literal, _compact, _concepts_section,
     _definitions_section, _examples_section, _measures_section, _metrics_section, _tables_section, build_context,
     concept_library, load_examples, schema_doc)
+
+
+def agere_context(semantic, base=None):
+    """Agere only: the analyst's documentation with the decision-context definition views first (analyst_definitions). The competitor
+    baseline (frontier_semantic) never calls this and keeps build_context's plain documented layer unchanged. Imported lazily so the
+    bench does not load the product unless this is used."""
+    from clinical_core.agere.clinical import semantic_analyst
+    from clinical_core.agere.clinical.analyst_definitions import agere_context as _agere
+    return _agere(semantic, base or semantic_analyst.semantic_context(semantic))
