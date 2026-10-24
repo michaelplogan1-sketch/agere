@@ -710,7 +710,8 @@ def handle_compose(stack, body, hosted_factory=None):
         question = patient_ids.rebind(stack.path, conv or None, question)
         from .question_input import QuestionNotUnderstood
         from ..deliverables import answer_context
-        refers = requires_saved_cohort(question)
+        # A question that names a patient ("Does P-5003 want CPR if their heart stops?") refers to that patient, not a saved cohort.
+        refers = requires_saved_cohort(question) and not patient_ids.names_a_patient(question)
         if refers and getattr(stack, 'shared_request_planning', False) is True:
             from .request_plan import Catalog
             refers = requires_saved_cohort(question, Catalog.load(stack.path))
