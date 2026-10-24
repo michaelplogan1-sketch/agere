@@ -106,6 +106,12 @@ FREE_FORM = frozenset({'hosted_verified_sql', 'semantic_analyst', 'hybrid_analys
 FALLBACK_SOFT_REASONS = ("an uncalibrated free planner's answer is shipped only when", 'certificate:')
 
 
+# A reworded question (phrasing.py) is tried on the free stages only; the question as typed then gets the whole cascade (shared_planner.compose)
+import contextvars as _cv
+FREE_ONLY = _cv.ContextVar('agere_free_stages_only', default=False)
+FREE_STAGES = frozenset({'reuse_certified', 'system_one_choice', 'free_planners'})
+
+
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
     return STAGE_INDEX['system_one_choice'] if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
@@ -482,6 +488,8 @@ class Cascade:
         budget = self.budget = start_budget()
         try:
             order = self.order_used = self.order()
+            free_only = FREE_ONLY.get()
+            if free_only: order = self.order_used = [t for t in order if STAGES[stage_of(t)][0] in FREE_STAGES]
             for i, name in enumerate(order):
                 if not self.runnable(name): continue
                 if budget.expired():  # out of time: everything that would have run next is deferred, then the honest early reply
@@ -494,6 +502,8 @@ class Cascade:
                 found = self.attempt(name, self.tier_seconds(name, budget))
                 if found is None: continue
                 return self.accept(order, name, found)
+            if free_only:
+                raise QuestionNotUnderstood('The rewording was not read by the free stages; the question as typed is tried next.')
             found = self.escalate(order, budget)  # every Haiku attempt failed: the Sonnet rung, tier by tier
             if found is not None: return found
             if budget.best() and (budget.expired() or self.deferred):

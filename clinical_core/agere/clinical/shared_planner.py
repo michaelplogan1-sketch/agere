@@ -1087,29 +1087,25 @@ def compose(stack, question, *, population=None, parent=None, model=None, planni
     except (AttributeError, KeyError, TypeError): as_of = None  # a stand-in stack without a snapshot
     # The question in the wording the grammar and every check were written against (phrasing.py: abbreviations, synonyms, alternative
     # constructions; every number, patient id and negation kept) is tried first; if the stack cannot read it, the question as typed is.
-    # A rewording gets the free readers only: if they cannot read it, the question as typed runs with the full fallback (a rewording
-    # never reaches a language model; 2026-10-24 regression diff).
+    # A rewording gets the free stages only (proposers.FREE_ONLY: no spec writer, no Claude, no escalation or background work); if they
+    # cannot read it, the question as typed runs the whole cascade (2026-10-24 regression diff). An explicit model is the caller's own path.
     from . import phrasing
-    for text in phrasing.variants(question):
+    from .proposers import FREE_ONLY
+    for text in (phrasing.variants(question) if model is None else []):
+        token = FREE_ONLY.set(True)
         try:
             with decision_context.scope(text, as_of) as state:
-                result = _compose(stack, text, population=population, parent=parent, model=_no_language_model, planning=planning)
+                result = _compose(stack, text, population=population, parent=parent, model=None, planning=planning)
                 result = decision_context.finalize(stack.path, result, state)
-        except (QuestionNotUnderstood, _RewordingNeedsModel):
+        except QuestionNotUnderstood:
             continue
+        finally:
+            FREE_ONLY.reset(token)
         phrasing.disclose(result, question, text)
         return result
     with decision_context.scope(question, as_of) as state:
         result = _compose(stack, question, population=population, parent=parent, model=model, planning=planning)
         return decision_context.finalize(stack.path, result, state)
-
-
-class _RewordingNeedsModel(Exception):
-    """A reworded question reached the language fallback: the question as typed is tried instead."""
-
-
-def _no_language_model(*args, **kwargs):
-    raise _RewordingNeedsModel()
 
 
 def _compose(stack, question, *, population=None, parent=None, model=None, planning='auto'):
