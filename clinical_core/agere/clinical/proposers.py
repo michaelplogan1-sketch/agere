@@ -186,7 +186,8 @@ NOT_PROPOSERS = {
 # Registered but off the default path (2026-10-24): held-out calibration 13/13 and 19/19 wrong, precision too low, and no accepted correct answer
 # on the 100 dev questions; hosted_verified_sql: end-to-end dev run deb4a33, reached 6 times, 0 accepted, 103 s of answer budget, which left the
 # semantic analyst unreached. AGERE_PROPOSER_ON=metric_router,... puts one back.
-OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_verified_sql')
+# hosted_typed_interpreter and cohort_family_late: two end-to-end dev runs (deb4a33, fb36f0a), 0 accepted answers, 60 s and 36 s of budget.
+OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_verified_sql', 'hosted_typed_interpreter', 'cohort_family_late')
 
 
 def enabled(name, stack):

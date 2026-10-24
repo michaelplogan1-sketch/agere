@@ -250,3 +250,19 @@ class ScorerTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class ScorerFormat(unittest.TestCase):  # 2026-10-24: format-only fixes, applied to every contestant
+    def test_a_fraction_share_in_a_table_key_matches_the_same_share_as_a_percent(self):
+        from tools.dev_set import run as R
+        q = {'answer_type': 'table', 'key': {'answer': [{'practice': 'P2', 'n': 75, 'share': 0.5867}], 'tolerance': {'abs': 0.001}}}
+        resp = {'answer': {'status': 'answered', 'table': [{'practice': 'P2', 'n': 75, 'share_pct': 58.67}]}}
+        self.assertTrue(R.score(q, resp)[0])
+        resp['answer']['table'][0]['share_pct'] = 61.0
+        self.assertFalse(R.score(q, resp)[0])
+
+    def test_a_label_is_read_from_the_answer_not_the_echoed_question(self):
+        from tools.dev_set import run as R
+        q = {'answer_type': 'label', 'key': {'answer': 'worsening', 'accept': {'improving': ['better', 'improv'], 'worsening': ['worse']}}}
+        resp = {'answer': {'status': 'answered', 'headline': 'Worsening: 7.1 then 7.9', 'interpretation': 'Is it getting better or worse?'}}
+        self.assertTrue(R.score(q, resp)[0])
