@@ -182,6 +182,20 @@ class GroupingComposition(CompositionFixture):
         key = next(k for k in rows[0] if 'practice' in k)
         self.assertEqual({r[key]: r['patients'] for r in rows}, {'WH-PRACTICE-0': 2, 'WH-PRACTICE-1': 2})  # A B | C D
 
+    def test_unqualified_practice_keeps_governed_attribution_fallback(self):
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.execute('CREATE TABLE enrollment_span(patient_id TEXT, attribution_practice_id TEXT, coverage_start TEXT)')
+            db.execute("UPDATE patient SET pcp_practice_id=NULL WHERE patient_id='A'")
+            db.execute("INSERT INTO enrollment_span VALUES('A','Fallback','2029-01-01')")
+        self.catalog=R.Catalog.load(self.path)
+        q='For each practice, how many patients had an ED visit in the last 12 months?'
+        rows=self.run_q(q)
+        field=next(k for k in rows[0] if 'practice' in k)
+        self.assertEqual({r[field]:r['patients'] for r in rows}, {'Fallback':1,'WH-PRACTICE-0':1,'WH-PRACTICE-1':2})
+        rows=self.run_q(q.replace('each practice','each primary-care practice'))
+        field=next(k for k in rows[0] if 'practice' in k)
+        self.assertEqual({r[field]:r['patients'] for r in rows}, {'WH-PRACTICE-0':1,'WH-PRACTICE-1':2})
+
     def test_a_cohort_group_overlaps(self):
         c = self.contract('How do ED visits per 1,000 patients over the last year compare between COPD patients and heart failure patients?')
         rows = sql_query.execute(self.path, {'query': c['query'], 'returns': c['returns']}, target=self.catalog.target)['rows']

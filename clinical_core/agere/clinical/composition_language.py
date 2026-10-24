@@ -402,7 +402,7 @@ class RankForms:
         if not dim: return None
         quote_dim, field = dim
         extra_where = None
-        if field == 'patient.practice':  # "practices" in a ranking are our own primary-care practices (a patient's PCP practice), not the payer's attribution network
+        if field == 'patient.practice' and re.search(r'\bprimary[- ]care\b|\bpcp\b', ' '.join(self.as_list(quote_dim)), re.I):  # explicit primary-care scope uses the recorded PCP practice
             field, extra_where = 'patient.pcp_practice_id', atom('patient.pcp_practice_id', 'not_null', None, quote_dim)
             plan = {**plan, 'notes': [*plan.get('notes', []), "Practices are the patients' primary-care practices (the PCP practice on the patient row); patients without one are in no practice."]}
         key = field.partition('.')[2]
@@ -594,7 +594,7 @@ class GroupingForms(ShareMeasureForms, RankForms, FallbackForms):
         elif dim[0] == 'field':
             field = dim[1]
             extra_where = None
-            if field == 'patient.practice':  # our own primary-care practices (see rank_measure)
+            if field == 'patient.practice' and re.search(r'\bprimary[- ]care\b|\bpcp\b', ' '.join(self.as_list(quote)), re.I):  # explicit primary-care scope
                 from .request_language import atom, combine
                 field = 'patient.pcp_practice_id'
                 extra_where = atom(field, 'not_null', None, quote)
