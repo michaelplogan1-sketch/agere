@@ -520,7 +520,7 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     if frequency and len(preds) == 1 and preds[0]['frame'] == 'medication_event' and re.search(r'\b(?:use|used|using|take|takes|taking|taken)\b', ask, re.I):
         preds[0]['_reported_frequency'] = frequency
     # a question that asks HOW MANY is answered by one count over its first frame (a second frame would be a second answer)
-    if preds and CI.HOW_MANY.search(ask) and not DAYS_OF.search(ask):
+    if preds and CI.HOW_MANY.search(ask) and not frequency and not DAYS_OF.search(ask):
         preds = preds[:1]
         preds[0]['_count'] = True
         # Reported counts belong to the dated note, even when its events are
@@ -727,7 +727,9 @@ def _whole(x):
 
 
 def reported_frequency_request(question):
-    match = re.search(r"\bhow many\s+(?:of\s+)?(?:the\s+)?(?:(?:last|past|previous)\s+)?(\d+)\s+(days?|weeks?|doses?)\b", question or '', re.I)
+    from .local_normalizer import NUMBER_WORDS
+    normalized = re.sub(r'\b[a-z]+\b', lambda m: NUMBER_WORDS.get(m.group(), m.group()), (question or '').lower())
+    match = re.search(r"\bhow many\s+(?:of\s+)?(?:the\s+)?(?:(?:last|past|previous)\s+)?(\d+)\s+(days?|weeks?|doses?)\b", normalized, re.I)
     return {'period': int(match[1]), 'unit': match[2].lower().rstrip('s')} if match and int(match[1]) > 0 else None
 
 
@@ -740,10 +742,16 @@ def reported_frequency(predicate, reading, wanted):
     from . import note_evidence as NE
     patterns = [re.compile(p, re.I) for p in NE.concept_patterns(predicate['concept'])]
     if not patterns or reading.get('status') == 'other_person': return None
-    matches = []
+    matches, conflicts = [], []
     fraction = re.compile(r'(?<![\w.\-/])([0-9]+)\s*(?:out\s+of|of|/)\s*([0-9]+)\s*(days?|weeks?|doses?)\b', re.I)
     for evidence in reading.get('evidence') or []:
         if not evidence.get('record_id'): continue
+        quote = str(evidence.get('quote') or '')
+        if not any(p.search(quote) for p in patterns): continue
+        all_counts = {int(m[1]) for m in fraction.finditer(quote) if int(m[2]) == wanted['period'] and m[3].lower().rstrip('s') == wanted['unit']}
+        if len(all_counts) > 1:
+            conflicts.append(evidence.get('date') or '')
+            continue  # a later clause may update the count without repeating the drug name
         clauses = [clause for _, _, sentence in NE.sentences(str(evidence.get('quote') or '')) for clause in re.split(r'[;\n]', sentence)]
         for sentence in clauses:
             if not any(p.search(sentence) for p in patterns): continue
@@ -762,7 +770,9 @@ def reported_frequency(predicate, reading, wanted):
                 matches.append((evidence.get('date') or '', n, evidence))
     if not matches: return None
     # Undated competing readings cannot establish which report is latest.
-    latest = [m for m in matches if m[0] == max(x[0] for x in matches)]
+    latest_date = max(x[0] for x in matches)
+    if any(not day or day >= latest_date for day in conflicts): return None
+    latest = [m for m in matches if m[0] == latest_date]
     if any(not m[0] for m in matches) and len({m[1] for m in matches}) != 1: return None
     if len({m[1] for m in latest}) != 1: return None
     return {'count': latest[0][1], **wanted, 'evidence': [m[2] for m in latest]}
