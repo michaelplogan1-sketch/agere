@@ -141,7 +141,8 @@ def policy_identity():
                      'spec_fill.py', 'spec_verify.py', 'spec_readback.py', 'spec_path.py', 'spec_exec.py',
                      'chart_reader.py', 'chart_intents.py', 'chart_queries.py', 'chart_reader_op.py', 'chart_notes.py',
                      'note_open.py', 'note_evidence.py', 'note_frames.py', 'note_questions.py', 'ocr_passages.py',
-                     'answer_shape.py', 'semantic_reader.py')}})
+                     'answer_shape.py', 'semantic_reader.py', 'answer_checks.py', 'system_one_gate.py',
+                     'system_one_cross_check.py', 'acceptance_contract.py', 'requirement_ledger.py')}})
 
 # Rule text in named parts: the hosted planner sends them all (SYSTEM); the local shaper (local_prompt.py) sends the core and only
 # the parts a question needs.

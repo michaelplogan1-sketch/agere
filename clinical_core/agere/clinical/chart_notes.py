@@ -622,6 +622,13 @@ def focus_quote(quote, pred, limit=400):
     """The part of a passage that speaks to the question: a short passage whole; a long one cut to the sentences that carry the concept (and, for
     a result question, the impression / result sentences) instead of its first `limit` characters (a letterhead)."""
     text = str(quote or '').strip()
+    want_result = bool({'result', 'result_text'} & set(pred.get('return_detail') or []))
+    if want_result:
+        section = re.search(r'\b(?:IMPRESSION|CONCLUSION|INTERPRETATION|FINAL DIAGNOSIS|RESULTS?)\s*:\s*', text, re.I)
+        if section:
+            # Keep the source wording (including negation and uncertainty), not
+            # the letterhead that happens to precede the requested result.
+            return text[section.start():section.start() + limit]
     if len(text) <= limit:
         return text
     from . import note_evidence as NE

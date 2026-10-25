@@ -339,7 +339,8 @@ def matches_document_type(names, metadata, text):
     # A quoted exam inside a specifically labelled ED/consult/discharge note
     # does not turn that note into the requested original report.
     other_kinds = [n for n in NOTE_TYPES if n not in (*names, 'outside_report')]
-    if type_regex(other_kinds).search(metadata):
+    other_rx = type_regex(other_kinds)
+    if other_rx is not None and other_rx.search(metadata):
         return False
     header = re.search(r'(?im)^\s*(?:(?:EXAM|STUDY|REPORT)\s*:\s*(?:CHEST\s+)?(?:X[- ]?RAY|CXR|CT|MRI|ULTRASOUND)\b|(?:CHEST\s+)?X[- ]?RAY\s+(?:FINDINGS|IMPRESSION)\s*:)', text or '')
     return bool(header and re.search(r'\b(?:FINDINGS|IMPRESSION)\s*:', text or '', re.I))
