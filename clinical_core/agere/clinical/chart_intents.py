@@ -327,6 +327,9 @@ def condition_control(q, low, domain, concept):
     return domain, concept, False
 
 
+COMPARISON_NONLATEST = re.compile(r'\b(?:ever|never|always|every|all|previous|prior|earliest|first|before)\b', re.I)
+
+
 def explicit_comparisons(text, concepts):
     """Literal user-supplied bounds; this does not supply clinical goal values."""
     if re.search(r'\bnot\b|\bno longer\b', text):
@@ -422,8 +425,7 @@ def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
     if domain == 'lab' and isinstance(concept, dict):
         comparisons = explicit_comparisons(low, concept.get('concepts') or [concept.get('value')])
         if comparisons and asks_yes_no(q):
-            latest_scope = (out['mode'] == 'latest' and not out.get('ordinal') and
-                            not re.search(r'\b(?:ever|never|always|every|all|previous|prior|earliest|first|before)\b', low))
+            latest_scope = out['mode'] == 'latest' and not out.get('ordinal') and not COMPARISON_NONLATEST.search(low)
             prior_point = (not inherited or (prior.get('intent') == 'latest_value' and
                            prior.get('mode', 'latest') == 'latest' and not prior.get('ordinal')))
             if latest_scope and prior_point:

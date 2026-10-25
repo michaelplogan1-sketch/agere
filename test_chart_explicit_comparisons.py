@@ -82,3 +82,12 @@ class ExplicitComparisons(unittest.TestCase):
         prior = {'intent': 'latest_value', 'domain': 'lab', 'concept': {'kind': 'lab', 'value': 'hba1c', 'concepts': ['hba1c']},
                  'mode': 'latest', 'ordinal': 2}
         self.assertIn('comparison_scope', intents.parse('is that below 7?', charts.AS_OF, prior=prior)['gaps'])
+
+    def test_declaring_latest_in_a_model_spec_does_not_override_ever(self):
+        from clinical_core.agere.clinical import chart_reader_op as op, chart_intents as intents
+        question = f'Has {charts.RICH} ever had HbA1c above 7?'
+        chart = CR.typed_chart(intents.parse('Is the latest HbA1c above 7?', charts.AS_OF))
+        report = op.execute(self.fixture.stack, [charts.RICH], {'patient_id': charts.RICH,
+                            'question': question, 'subject_quote': charts.RICH, 'chart': chart}, charts.AS_OF)
+        self.assertEqual(report['answer_contract']['answer_type'], 'none')
+        self.assertIsNone(report['answer_contract']['value'])
