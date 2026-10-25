@@ -642,18 +642,24 @@ class Cascade:
         direction, AND/OR structure)."""
         return requirement_ledger.gaps(self.question, text)
 
-    def contract_gaps(self, *, contract=None, graph=None):
+    def contract_gaps(self, *, contract=None, graph=None, receipt=None):
         """The acceptance contract (acceptance_contract.py) over a proposal before it executes: every unmet part of the question, [] when it passes.
         In observe mode the parts are only recorded."""
         from . import acceptance_contract as AC
         self.last_contract = None
-        if AC.mode() == 'off': return self.gaps(evidence_of(contract or {}) if contract else executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+        try:  # a semantic-analyst proposal is read with every query it rests on and what its definition views apply (analyst_acceptance)
+            extra = AC.analyst_text(receipt, graph) if graph else ''
+        except Exception:  # noqa: BLE001 - extra evidence is optional: the check then reads the SQL alone, as for every other tier
+            extra = ''
+        plain = lambda: self.gaps(evidence_of(contract or {}) if contract else '\n'.join(
+            t for t in (executable_text([n.get('parameters') for n in graph.get('nodes', [])]), extra) if t))
+        if AC.mode() == 'off': return plain()
         try:
             as_of = str((getattr(self.catalog, 'identity', None) or {}).get('as_of') or '')[:10] or None
-            receipt = self.last_contract = AC.evaluate(self.question, contract=contract, graph=graph, as_of=as_of, phase='plan')
+            found = self.last_contract = AC.evaluate(self.question, contract=contract, graph=graph, as_of=as_of, phase='plan', extra_text=extra)
         except Exception as exc:  # noqa: BLE001 - the contract failing to run never blocks: the literal check below still decides (heal, don't block)
-            return self.gaps(evidence_of(contract or {}) if contract else executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
-        return receipt['unmet'] if AC.enforcing() else self.gaps(evidence_of(contract or {}) if contract else executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
+            return plain()
+        return found['unmet'] if AC.enforcing() else plain()
 
     def evidence(self, contract):
         if (contract or {}).get('kind') == 'checked_graph':
@@ -850,7 +856,7 @@ class Cascade:
             if name == 'undelivered_input': return decline
             self.held_decline = self.held_decline or decline
             return 'held'
-        gaps = self.contract_gaps(graph=graph)
+        gaps = self.contract_gaps(graph=graph, receipt=receipt)
         if gaps: return self.reject(name, gaps)
         if isinstance(receipt, dict) and getattr(self, 'last_contract', None):  # the plan-time half of the contract rides on the proposal to answer_checks
             from . import acceptance_contract as AC
@@ -868,7 +874,7 @@ class Cascade:
             result = final(self.question, graph, receipt, result)
         except (ValueError, KeyError, TypeError):
             pass  # reshaping is optional; the output check below decides
-        misfit = shape_misfit(self.question, result.get('answer'))
+        misfit = shape_misfit(self.question, result.get('answer'), analyst=isinstance(receipt, dict) and isinstance(receipt.get('analyst_evidence'), dict))
         if misfit:
             offered = getattr(self, 'budget', None) and self.executed(name, graph, receipt, result)
             if offered: self.budget.offer(offered, label=name, reasons=[misfit]); self.keep(name, offered, [misfit])

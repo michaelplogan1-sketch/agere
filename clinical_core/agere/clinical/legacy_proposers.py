@@ -75,6 +75,92 @@ def _answering_sql(run):
     return None, None
 
 
+_SCALE_DECIMALS = {'percent': 2, 'per_100': 2, 'mean': 2, 'average': 2}
+
+
+def _plain_sql(sql):
+    """One analyst SELECT as a bare statement: comments and the closing semicolon removed (it is embedded in another query)."""
+    return re.sub(r'\s*;\s*$', '', re.sub(r'--[^\n]*', ' ', str(sql or '')).strip()).strip()
+
+
+def ratio_sql(ratio):
+    """The ONE query whose single cell is the analyst's share / rate / average: its numerator and denominator queries, divided in SQL exactly as the
+    code computes the stated value (analyst_definitions.compute_ratio / SCALES; two decimals for percent and means, four otherwise). None when the
+    ratio does not carry both queries. The graph executes this, so the answer the cascade checks is the share, not one of its two parts."""
+    from . import analyst_definitions as D
+    if not isinstance(ratio, dict): return None
+    num, den = _plain_sql(ratio.get('numerator_sql')), _plain_sql(ratio.get('denominator_sql'))
+    scale = str(ratio.get('scale') or 'fraction').lower()
+    if not num or not den or scale not in D.SCALES: return None
+    scaled = f'({num}) * {float(D.SCALES[scale])} / NULLIF(({den}), 0)'
+    return f'SELECT ROUND({scaled}, {_SCALE_DECIMALS.get(scale, 4)}) AS value'
+
+
+def analyst_queries(answer, calls):
+    """The SQL one analyst answer rests on: {'final', 'numerator', 'denominator', 'composed', 'queries'}.
+    final: the query its answer was read from (an audit-rewritten answer query first, then the last successful non-audit call, then the declared
+    sql); numerator / denominator: the audited (possibly rewritten) queries of a share, else the declared ones. composed: the single query the
+    graph executes (the share built from numerator and denominator, else final). queries: every query of composed, for the checks."""
+    answer = answer if isinstance(answer, dict) else {}
+    calls = [c for c in calls or [] if isinstance(c, dict) and c.get('sql') and not (isinstance(c.get('result'), dict) and 'error' in c['result'])]
+    audited = {c['audit']: c['sql'] for c in calls if c.get('audit')}
+    ratio = answer.get('ratio') if isinstance(answer.get('ratio'), dict) else None
+    plain = [c['sql'] for c in calls if not c.get('audit')]
+    declared = answer.get('sql') if isinstance(answer.get('sql'), str) and answer['sql'].strip() else None
+    final = audited.get('answer') or (plain[-1] if plain else None) or declared
+    out = {'final': final, 'numerator': None, 'denominator': None, 'composed': None, 'queries': []}
+    if ratio:
+        out['numerator'] = audited.get('numerator') or ratio.get('numerator_sql')
+        out['denominator'] = audited.get('denominator') or ratio.get('denominator_sql')
+        both = ratio_sql({**ratio, 'numerator_sql': out['numerator'], 'denominator_sql': out['denominator']})
+        if both:
+            out['composed'], out['queries'] = both, [out['numerator'], out['denominator']]
+            return out
+    out['composed'] = final
+    out['queries'] = [final] if final else []
+    return out
+
+
+def analyst_views(queries):
+    """The definition views (analyst_definitions.VIEW_NAMES) the queries read."""
+    from . import analyst_definitions
+    text = ' '.join(re.sub(r"'[^']*'", "''", re.sub(r'--[^\n]*', ' ', q or '')) for q in queries or []).lower()
+    return {v for v in analyst_definitions.VIEW_NAMES if re.search(rf'\b{v}\b', text)}
+
+
+def analyst_graph(question, answer, calls, contract, as_of, columns, receipt, *, rows=None, rec=False):
+    """-> (graph, receipt) for a recorded or live analyst answer, or (None, reason) when it makes no proposal. The graph executes
+    analyst_queries()['composed'] (a share is computed from its numerator and denominator, not read from one of them); the receipt carries
+    analyst_evidence (every query of the proposal) for the acceptance checks, and the definitions audit of EACH query is bound to the graph's digest
+    (acceptance_contract.audit_bound)."""
+    from . import analyst_definitions, acceptance_contract as AC
+    found = analyst_queries(answer, calls)
+    if not found['composed']: return None, 'no sql'
+    composed = found['composed'] is not found['final'] and bool(found['numerator'])
+    returns = _returns((contract or {}).get('answer_type'), question)
+    shown = (rows or {}).get('rows') if isinstance(rows, dict) else None
+    if composed: returns = 'value'
+    elif returns in ('count', 'value') and shown is not None and (len(shown) != 1 or len(shown[0]) != 1):
+        returns = 'table'  # the answering query returns several outputs: a table
+    graph = _sql_graph(question, found['composed'], returns, as_of, 'Semantic analyst query (reconciled by Claude)' if rec else 'Semantic analyst query')
+    receipt['analyst_evidence'] = {'queries': [q for q in found['queries'] if q], 'composed': composed, 'views': sorted(analyst_views(found['queries']))}
+    if isinstance(receipt.get('definitions_audit'), dict):
+        patient_set = 'patient_set' if (contract or {}).get('answer_type') == 'patient_set' else None
+        findings = []
+        for q in receipt['analyst_evidence']['queries']:
+            try:
+                findings += analyst_definitions.audit_sql(question, as_of, q, columns, patient_set if not composed else None)
+            except Exception as exc:  # noqa: BLE001 - an audit that cannot run does not authorize
+                findings.append({'rule': 'audit_error', 'detail': f'{type(exc).__name__}: {exc}'[:200], 'mechanical': False})
+        receipt['definitions_audit']['final_sql_digest'] = AC.sql_digest(graph)
+        receipt['definitions_audit']['final_sql_findings'] = [f['rule'] for f in findings]
+        if findings:
+            receipt['definitions_audit'].update(action='declined', reason='the final sql departs from the decision-context definitions: '
+                                                + '; '.join(f['detail'] for f in findings)[:300])
+            return None, receipt['definitions_audit']['reason']
+    return graph, receipt
+
+
 def _self_check(answer, result):
     """None when the stated count/value matches the single cell the answering SQL returned, else the executed reading."""
     if not answer or answer.get('answer_type') not in ('count', 'value') or not result: return None
@@ -148,26 +234,16 @@ def _analyst(stack, question, ledger, against=None):
         return {'graph': _decline_graph(question, answer.get('missing'), _as_of(stack)), 'receipt': receipt, 'picked': picked}
     if not (answer and answer.get('status') in ('answered', 'partial') and sql):
         return {'graph': None, 'receipt': receipt, 'picked': None}
-    returns = _returns(answer.get('answer_type'), question)
-    shown = (rows or {}).get('rows') if isinstance(rows, dict) else None
-    if returns in ('count', 'value') and shown is not None and (len(shown) != 1 or len(shown[0]) != 1):
-        returns = 'table'  # the answering query returns several outputs (a share with its numerator and denominator): a table
-    graph = _sql_graph(question, sql, returns, _as_of(stack),
-                       'Semantic analyst query (reconciled by Claude)' if rec else 'Semantic analyst query')
-    if audit:
-        # The definitions audit ran on the analyst's own run. What executes is THIS sql (after reconciliation, which can replace the answer and
-        # its query): audit the FINAL sql and bind the audit to its digest, so the audit authorizes only the proposal that actually runs
-        # (acceptance_contract.audit_bound; Codex 2026-10-24 "the analyst audit is a definitions check, not a meaning acceptance gate").
-        from . import analyst_definitions, acceptance_contract as AC
-        try:
-            final = analyst_definitions.audit_sql(question, _as_of(stack), sql, wh.columns, 'patient_set' if answer.get('answer_type') == 'patient_set' else None)
-        except Exception as exc:  # noqa: BLE001 - an audit that cannot run does not authorize
-            final = [{'rule': 'audit_error', 'detail': f'{type(exc).__name__}: {exc}'[:200], 'mechanical': False}]
-        receipt['definitions_audit']['final_sql_digest'] = AC.sql_digest(graph)
-        receipt['definitions_audit']['final_sql_findings'] = [f['rule'] for f in final]
-        if final:
-            receipt['definitions_audit'].update(action='declined', reason='the final sql departs from the decision-context definitions: ' + '; '.join(f['detail'] for f in final)[:300])
-            return {'graph': None, 'receipt': receipt, 'picked': None}
+    # What the checks and the executor see is ALL the SQL the answer rests on (analyst_graph): a share's numerator and denominator, not whichever query
+    # ran last (that was the denominator's audit query, so the question's numbers, concepts, window and ordering all looked "missing" from the plan).
+    if rec and picked == 'neither':
+        raw, tool_calls = rec.get('answer'), (rec.get('result') or {}).get('tool_calls')
+        rows = _answering_sql(rec.get('result') or {})[1]
+    else:
+        raw, tool_calls = run.get('answer'), run.get('tool_calls')
+    graph, built = analyst_graph(question, raw if isinstance(raw, dict) else {}, tool_calls, answer, _as_of(stack), getattr(wh, 'columns', None) or {}, receipt, rows=rows, rec=bool(rec))
+    if graph is None:
+        return {'graph': None, 'receipt': receipt, 'picked': None}
     return {'graph': graph, 'receipt': receipt, 'picked': picked}
 
 

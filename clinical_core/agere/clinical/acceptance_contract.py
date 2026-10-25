@@ -670,6 +670,13 @@ def merge(plan_summary, receipt):
             'unverified': list(dict.fromkeys([*(plan_summary.get('unverified') or []), *receipt['unverified']]))}
 
 
+def analyst_text(receipt, graph=None):
+    """Extra evidence text of a semantic-analyst proposal (every query it rests on, the rules its definition views apply, concept vocabulary): see
+    analyst_acceptance. '' for every other tier."""
+    from . import analyst_acceptance
+    return analyst_acceptance.text(receipt, graph)
+
+
 def gaps(question, *, contract=None, graph=None, as_of=None):
     """The unmet parts of a proposal before it executes (the cascade's plan-time check): readable reasons, [] when it passes."""
     return evaluate(question, contract=contract, graph=graph, as_of=as_of, phase='plan')['unmet']
