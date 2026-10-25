@@ -53,7 +53,34 @@ class CodeStatusProposition(unittest.TestCase):
         self.assertTrue(answer['headline'].startswith('Recorded code status: DNR/DNI'))
         self.assertIsNone(answer['facts']['lead'])
 
-    def test_cpr_wording_reaches_the_code_status_note_frame(self):
-        predicates=C.build('Does P-QA want CPR?', '2030-05-27')
+    def test_explicit_code_context_keeps_cpr_procedure_questions_separate(self):
+        predicates=C.build('Per the code status, does P-QA want CPR?', '2030-05-27')
         self.assertTrue(any(p.get('frame')=='care_process' and p.get('concept',{}).get('term')=='code status' for p in predicates))
         self.assertIs(self.answer('Does the patient want no CPR?','dnr_dni')['value'],None)
+        self.assertNotIn('care_process',C.frames_of('Was CPR performed?'))
+
+
+    def test_unrelated_predicate_is_not_replaced_by_code_status(self):
+        rows=[{'frame':'care_process','concept':'code status','status':'documented','detail':{'code_status':'dnr_dni'}},
+              {'frame':'preference_refusal','concept':'dialysis','status':'documented','detail':{'decision':'accepted'}}]
+        self.assertIsNone(C.code_status_proposition('Does the patient want CPR or accept dialysis?',rows))
+
+    def test_context_connectors_do_not_change_intervention_operators(self):
+        self.assertIs(self.answer('Does the patient want CPR and intubation for cardiac arrest or trauma?','dnr')['value'],False)
+        self.assertIs(self.answer('Is the patient DNR and DNI in the clinic or the hospital?','dnr')['value'],None)
+        self.assertIs(self.answer('Is the patient DNR and DNI or full code?','dnr')['value'],None)
+
+
+    def test_explicit_preference_conflict_is_not_overridden_by_the_order(self):
+        rows=[{'frame':'care_process','concept':'code status','status':'documented','detail':{'code_status':'dnr_dni'}},
+              {'frame':'preference_refusal','concept':'chest compressions','status':'documented','detail':{'decision':'accepted'}}]
+        result=C.code_status_proposition('Does the patient want CPR?',rows)
+        self.assertIsNone(result['value'])
+        self.assertTrue(result['preference_conflict'])
+        rows[1]['detail']['decision']=['declined']
+        self.assertIs(C.code_status_proposition('Did the patient agree to CPR?',rows)['value'],False)
+
+    def test_explicit_preference_can_fill_an_unspecified_intervention(self):
+        rows=[{'frame':'care_process','concept':'code status','status':'documented','detail':{'code_status':'dnr'}},
+              {'frame':'preference_refusal','concept':'intubation','status':'documented','detail':{'decision':'declined'}}]
+        self.assertIs(C.code_status_proposition('Does the patient want intubation?',rows)['value'],False)

@@ -23,7 +23,7 @@ VERSION = 'chart-notes/2'
 STRONG = re.compile(
     r"\b(?:in (?:the |his |her |their )?notes?|the notes?|notes? (?:say|show|record|mention|document|list|stated)|(?:is|are) there (?:a|an|any) (?:\w+ )?(?:notes?|documentation|mention)|"
     r"(?:a|an|any) notes? (?:saying|stating|documenting|mentioning|showing|recording)|chart (?:say|show|mention)s?|later notes?|"
-    r"discussed|discussion|conversation|goals[- ]of[- ]care|code status|dnr|dni|(?:resuscitat\w*|\bcpr\b)|chest compressions|breathing tube|intubat\w*|"
+    r"discussed|discussion|conversation|goals[- ]of[- ]care|code status|dnr|dni|resuscitat\w*|chest compressions|breathing tube|intubat\w*|"
     r"advance directive|polst|molst|living will|health ?care proxy|why was|why did|why is|reason (?:for|why|\w+ (?:was|were))|accept(?:ed)?|declin\w+|refus\w+|"
     r"(?:report|reports|reported)\s+(?:taking|using|having)|discharge summary|impression|x-?ray|radiolog\w+|ruled out|rule[- ]out|stress test|"
     r"memory concern|intoleran\w+|outside (?:report|record|chest)|scanned|did the patient|does the patient|patient (?:choose|chose|want|wants|prefer)|"
@@ -59,7 +59,7 @@ WEAK = re.compile(r"\b(?:falls?|fell|raised|trouble|barriers?|symptoms?|complain
 STRUCTURED_FIRST = re.compile(r"\b(?:ed visits?|admissions?|claims?|fills?|pick(?:ed)? up|prescribed|prescriptions?|mammogra\w+|flu shot|vaccin\w+|a1c|egfr|ldl|"
                               r"blood pressure|practice|attributed|allergies|medication list|active medications?|appointments?|no-shows?)\b", re.I)
 FRAME_CUES = [  # (frame, pattern); evaluated on the asking sentence; every match is kept (at most two are used)
-    ('care_process', r"goals[- ]of[- ]care|code status|\bdnr\b|\bdni\b|(?:resuscitat\w*|\bcpr\b)|chest compressions|breathing tube|intubat\w*|advance directive|polst|molst|living will|health ?care proxy|counsel\w*|referr\w+|hospice|palliative|lung (?:cancer )?screening|screening criteria|meets? (?:the )?(?:screening )?criteria|eligib\w+"),
+    ('care_process', r"goals[- ]of[- ]care|code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*|advance directive|polst|molst|living will|health ?care proxy|counsel\w*|referr\w+|hospice|palliative|lung (?:cancer )?screening|screening criteria|meets? (?:the )?(?:screening )?criteria|eligib\w+"),
     ('preference_refusal', r"\baccept\w*|\bdeclin\w*|\brefus\w*|\bprefer\w*|\bwants?\b|\bchoose\b|\bchose\b|\bdecid\w*|\bagree\w*"),
     ('medication_event', r"\bstopped\b|\bdiscontinu\w*|\bheld\b|\bswitch\w*|\bstarted\b|\bbeing started\b|\bstarting\b|\bstart\b|\bstop\b|\badd(?:ed)?\b|\bdose\b|\btaking\b|\btakes?\b|\bused?\b|\busing\b|\bbump\w*|\bup-?titrat\w*|\bincreas\w+|\bdecreas\w+|\bsuggest\w* (?:starting|stopping|adding)|\bstill (?:list|show|taking|on)\w*|\blist\w* (?:it|them)\b|\brestart\w*|\bmedications?\b"),
     ('adverse_event', r"intoleran\w+|allerg\w+|side effects?|adverse|reaction|angioedema"),
@@ -76,8 +76,8 @@ FRAME_CUES = [  # (frame, pattern); evaluated on the asking sentence; every matc
 CONCEPT_PHRASES = [  # (cue pattern, canonical concept term, frames it applies to; () = any); not a drug
     (r"goals[- ]of[- ]care", 'goals of care', ('care_process',)), (r"goals[- ]of[- ]care", 'goals of care', ('preference_refusal',)),
     (r"code status|\bdnr\b|\bdni\b", 'code status', ('care_process',)),
-    (r"code status|\bdnr\b|\bdni\b|(?:resuscitat\w*|\bcpr\b)|chest compressions|breathing tube|intubat\w*", 'chest compressions', ('preference_refusal',)),
-    (r"(?:resuscitat\w*|\bcpr\b)|chest compressions|breathing tube|intubat\w*", 'code status', ('care_process',)),
+    (r"code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*", 'chest compressions', ('preference_refusal',)),
+    (r"resuscitat\w*|chest compressions|breathing tube|intubat\w*", 'code status', ('care_process',)),
     (r"advance directive|polst|molst|living will|health ?care proxy", 'advance directive', ('care_process', 'preference_refusal')),
     (r"social or financial|financial barriers?|social barriers?|financial|afford\w*", 'financial', ('social_need',)),
     (r"trouble getting to appointments|transport\w*|getting to appointments", 'transportation', ('social_need',)),
@@ -837,7 +837,7 @@ def code_status_proposition(question, rows):
     the documented status; it does not infer wishes from absent chart evidence.
     """
     text = (question or '').lower()
-    wants = bool(re.search(r"\b(?:want|wants|wish|wishes|prefer|prefers|preferences?|agree|accept|consent)\b", text))
+    wants = bool(re.search(r"\b(?:want(?:s|ed)?|wish(?:es|ed)?|prefer(?:s|red)?|preferences?|agree(?:s|d)?|accept(?:s|ed)?|consent(?:s|ed)?)\b", text))
     cpr = bool(re.search(r'\bcpr\b|resuscitat\w*|chest compressions', text))
     tube = bool(re.search(r'intubat\w*|breathing tube', text))
     named_dnr = bool(re.search(r'\bdnr\b', text))
@@ -850,6 +850,13 @@ def code_status_proposition(question, rows):
     if (not wants and re.search(r'\b(?:document\w*|record\w*)\b', text)
             and not re.search(r'\b(?:as|status(?:\s+(?:is|of))?)\s+(?:full[- ]code|dnr|dni)\b', text)):
         return None  # preserve the distinct absence/unknown semantics of documentation questions
+    for row in rows:
+        concept = str(row.get('concept') or '').lower().replace('_', ' ')
+        if row.get('frame') == 'care_process' and concept == 'code status':
+            continue
+        if row.get('frame') == 'preference_refusal' and re.fullmatch(r'chest compressions|cpr|resuscitation|intubation|breathing tube', concept):
+            continue
+        return None  # do not replace a multi-domain question with its code-status component
     care = [r for r in rows if r.get('frame') == 'care_process' and
             (r.get('concept') == 'code status' or 'code_status' in (r.get('detail') or {}))]
     if not care:
@@ -857,7 +864,23 @@ def code_status_proposition(question, rows):
     codes = {r.get('detail', {}).get('code_status') for r in care if r.get('status') == 'documented'} - {None, 'unknown', 'not_documented'}
     values = {'full_code': (True, True), 'dnr': (False, None), 'dni': (None, False), 'dnr_dni': (False, False)}
     code = next(iter(codes)) if len(codes) == 1 else None
-    pair = values.get(code, (None, None))
+    pair = list(values.get(code, (None, None)))
+    preference_conflict = False
+    if wants:
+        for row in rows:
+            if row.get('frame') != 'preference_refusal' or row.get('status') != 'documented':
+                continue
+            term = str(row.get('concept') or '').lower()
+            index = 0 if re.search(r'cpr|resuscitation|chest compressions', term) else 1
+            decision = (row.get('detail') or {}).get('decision')
+            choices = set(decision if isinstance(decision, list) else [decision]) - {None}
+            if not choices:
+                continue
+            stated = True if choices == {'accepted'} else False if choices == {'declined'} else None
+            if stated is None or (pair[index] is not None and pair[index] != stated):
+                preference_conflict = True
+            else:
+                pair[index] = stated
     asked = []
     if wants:
         if cpr: asked.append(pair[0])
@@ -868,17 +891,26 @@ def code_status_proposition(question, rows):
         if full: asked.append(True if code == 'full_code' else False if code in values else None)
     # Negated wording requires its own parsed proposition; it cannot inherit a positive documentation answer.
     negated = re.search(r"\b(?:not|never|refus\w*|declin\w*)\b|n't\b|\b(?:want|wants|prefer|prefers)\s+(?:no|without)\b", text)
-    if negated or not asked:
+    if negated or not asked or preference_conflict:
         value = None
-    elif re.search(r'\bor\b', text):
-        value = True if True in asked else None if None in asked else False
     else:
-        value = False if False in asked else None if None in asked else True
+        patterns = ([r'\bcpr\b|resuscitat\w*|chest compressions', r'intubat\w*|breathing tube'] if wants
+                    else [r'\bdnr\b', r'\bdni\b', r'\bfull[- ]code\b'])
+        spans = sorted((m.start(), m.end()) for pattern in patterns if (m := re.search(pattern, text)))
+        between = text[spans[0][1]:spans[-1][0]] if len(spans) > 1 else ''
+        connectors = set(re.findall(r'\b(?:and|or)\b', between))
+        if len(connectors) > 1:
+            value = None  # mixed operator precedence needs a complete parsed proposition
+        elif 'or' in connectors:
+            value = True if True in asked else None if None in asked else False
+        else:
+            value = False if False in asked else None if None in asked else True
     label = {'full_code': 'full code', 'dnr': 'DNR (no CPR; intubation not established by this status)',
              'dni': 'DNI (no intubation; CPR not established by this status)',
              'dnr_dni': 'DNR/DNI (no CPR; no intubation)'}.get(code, code or 'unresolved or conflicting')
     return {'value': value, 'lead': 'Undecided' if value is None else 'Yes' if value else 'No',
-            'recorded_code_status': code, 'text': 'Recorded code status: ' + label}
+            'recorded_code_status': code, 'preference_conflict': preference_conflict,
+            'text': 'Recorded code status: ' + label + ('; preference evidence conflicts or remains undecided' if preference_conflict else '')}
 
 def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no=False, allow_live=None, question=None):
     """Run each predicate through note_frames.answer_patient and merge into one core answer."""
