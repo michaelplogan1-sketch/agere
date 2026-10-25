@@ -94,8 +94,11 @@ def definitions_doc(names):
                      'prefixes yourself to define a condition.')
     if 'latest_lab' in have:
         lines.append('- latest_lab(patient_id, concept, value, unit, event_date): the LATEST result per living patient and lab concept (canonical unit). '
-                     'Every lab threshold ("A1c above 9", "potassium over 5.5", "eGFR under 60") uses it. Use the measurement table (every result) ONLY '
-                     'when the question says ever, any, at any time, history of, at least once, highest, lowest, or asks for a trend.')
+                     'Numeric current-state thresholds use it unless the question specifies another reduction. For the most recent result WITHIN a stated '
+                     'period, filter measurement to that period before ranking results; do not substitute the overall latest result. '
+                     'Completion or receipt of testing in a period uses qualifying measurement rows from that period, even when newer results exist. '
+                     'A non-null validity test does not make a completion query a latest-value query. Ever/any/history, extrema, counts and trends '
+                     'also use measurement with the requested reduction.')
     if 'last_12_months' in have:
         lines.append("- last_12_months(start_exclusive, end_inclusive): one row. 'Last year / past year / last 12 months' = event_date > start_exclusive "
                      'AND event_date <= end_inclusive. A calendar year word ("in 2029") is that calendar year.')
@@ -107,6 +110,7 @@ def definitions_doc(names):
                  'deceased", "all patients ever"), use the base tables and the death table instead and say so.')
     lines.append('SHARES, RATES AND AVERAGES: compute the numerator and the denominator as two single-value queries and report both '
                  '(see the answer contract); the system computes the share.')
+    lines.append('At claim, visit, admission, stay or transaction grain, do not add a living-only patient restriction unless the question asks for it or explicitly defines a living-patient cohort. Patient defaults do not silently narrow event or money totals. A named patient is never excluded for being deceased.')
     return '\n'.join(lines)
 
 
@@ -389,3 +393,13 @@ def _apply_ratio(answer, ratio, values, receipt):
     answer['headline'] = f"{_format(shown, scale)} ({ratio['numerator']:,} of {ratio['denominator']:,})"
     receipt['arithmetic'] = {'numerator': ratio['numerator'], 'denominator': ratio['denominator'], 'scale': scale, 'computed': value,
                              'stated': prior, 'replaced': not agrees and prior is not None, 'notes': notes}
+
+# Agere-only completion requirements; the competitor definitions=False prompt is unchanged.
+CONTRACT_SUFFIX += '''
+Before answering, account for every requested output, comparison group and calculation. The final answering SQL must return all of them
+as columns or rows. A comparison needs a result for every requested group; one group plus an explanation in grounding is incomplete.
+A request for both a share and an average needs both calculations. A request for drivers needs the relevant breakdown as well as the total
+or rate. Grounding explains executed results; it must not be the only place a requested result appears. Use a table for multiple outputs.
+Keep the requested denominators and dates explicit in each calculation. Do not change a rate into a count or a contribution share.
+If you cannot execute part of the request, set status to partial and list that specific missing part; do not label a subset answered.
+'''
