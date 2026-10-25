@@ -1,57 +1,83 @@
 # Agere measurements — October 24, 2026
 
-The >95% / 99% correctness target remains unmet. G3 is active; G5, clinical qualification and full ten-area product acceptance remain incomplete. All measurements use synthetic data.
+**The >95% / 99% correctness target is unmet.** The latest development diagnostic is81.0% under the published scorer, which still over-credits some answers. The earlier held-out result remains30%; development results do not replace it. G3 is active, G5 and full ten-area acceptance are incomplete. All data are synthetic.
 
-## Completed paid comparisons
-
-These runs were completed in the planned order. Both held-out comparisons ran once; they will not be repeated for development.
+## Completed measurements
 
 | Run | Published correctness | Recorded provider estimate |
 | --- | ---: | ---: |
-| Live Agere dev, d4de3ef | 94/100 (94%) | $0.092350224 |
-| Competitor held-out, unchanged Opus 5.5 + semantic layer + eight SQL tools | 22/50 (44%) | $4.8693294 |
-| Agere held-out, d4de3ef interpretation + evaluation correction 06cd48a | 15/50 (30%) | $2.930939989 |
+| Original live Agere dev, d4de3ef | 94/100 (94%) | $0.092350224 |
+| Competitor held-out, unchanged Opus5.5 + semantic layer + eight SQL tools | 22/50 (44%) | $4.8693294 |
+| Agere held-out, d4de3ef interpretation + evaluation correction06cd48a | 15/50 (30%) | $2.930939989 |
+| Full dev3 BUILD diagnostic,6422bf3 → evaluation-only correctiona0832bc | 64/79 (81.0%); answered precision58/68 (85.3%) | $3.289170316 |
+| Targeted five-note diagnosticc23b3a6 | 4/5 targets;5/6 including parent | $0.011944076 |
+| Targeted five-note diagnostic6422bf3 | 4/5 targets;5/6 including parent | $0.011184148 |
+| Source-scope check57a96f4 | Failed: fell back to “2 passages” | $0.004075512 |
+| Source/evidence-context check1a7cef4 | Two separately dated supported outside reports; scoped source review below | $0.001080286 |
 
-Dev buckets: structured20/20, notes20/20, quality18/20, claims18/20, insight18/20. The full dev ledger includes $0.023014716 missing question tags; $0.069335508 previously reported was only the attributed portion.
+The original paid dev and both held-out comparisons completed in that order. Both held-out runs were asked once, with no completed-question repeats. No subsequent held-out or CHECK run was performed here. No current held-out question text or individual outcome was inspected for development. An earlier accidental legacy-oracle exposure was disclosed; that legacy material cannot be called unseen. The protected directory, private data and generator remain outside this work.
 
-Agere held-out:15 correct,13 wrong,22 refused/error; precision among answered45.8%. Buckets: structured7/10, notes3/10, quality1/10, claims3/10, insight1/10. Competitor buckets:9/10,1/10,4/10,6/10,2/10 respectively.
+Original dev buckets: structured20/20, notes20/20, quality18/20, claims18/20, insight18/20. Its full ledger includes$0.023014716 missing question tags; the earlier$0.069335508 was only the attributed portion. Agere held-out:15correct,13wrong,22refused/error; answered precision45.8%. Buckets7/10,3/10,1/10,3/10,1/10. Competitor buckets9/10,1/10,4/10,6/10,2/10.
 
-The Agere held-out trial was interrupted by strict audit denials. It retained13 prior attempts and asked37 new items, repeated zero, and conservatively counted one unretained/ungraded response failed. Source identity and learning fingerprints match. Fifty receipts include one denied stack write and25 denied OCR temporary writes; one model-cache write was allowed. Pending reservations:zero. Interpretation, definitions, model policy and scorer remained fixed while evaluation-only write guards were corrected. This was an interrupted comparison with disclosed corrections, not uninterrupted single-release qualification.
+The Agere held-out run was interrupted by strict audit denials. Thirteen earlier attempts were retained,37 new questions were asked, zero were repeated, and one unretained/ungraded response was conservatively failed. Source identity and learning fingerprints match. Fifty audit receipts include one denied stack write and25 denied OCR temporary writes; one model-cache write was allowed. Interpretation, definitions, model policy and scorer stayed fixed while evaluation-only write guards were corrected. This is an interrupted comparison with disclosed corrections, not uninterrupted single-release qualification. A later dev fixture proved that denied OCR rebuilding can affect evidence availability; its effect on individual held-out items is unknown. The30% score stands and will not be rerun for development.
 
-A later dev-only fixture reproduced that denied OCR temporary rebuilding can affect evidence availability. The new private evaluation cache fixes that defect. Its effect on the earlier held-out score cannot be inferred; the30% result stands and will not be rerun.
+## Full79-question development run
 
-Published scoring can over-credit an expected date appearing in a table when the primary answer differs. A supplemental dev-only primary-value audit now exposes such discrepancies; it is limited in coverage and does not replace whole-question adjudication. No reference answer or clinical definition was changed to improve scores.
+| Bucket | Correct / questions | Wrong returned | Refused | Unretained failure |
+| --- | ---: | ---: | ---: | ---: |
+| Structured patient |14/14|0|0|0|
+| Notes/documents |13/18|4|0|1|
+| Population quality |12/18|5|1|0|
+| Claims/pharmacy/social factors |10/12|1|1|0|
+| Insight |15/17|0|2|0|
+| Total |64/79|10|4|1|
 
-No current held-out text or individual outcomes were inspected for development. An earlier accidental inspection exposed legacy oracle text labelled held-out; it was disclosed, stopped, and those legacy items cannot be claimed unseen. The reserved directory, current held-out bank, private data and generator remain unopened.
+BUILD and CHECK are separated by conversation roots. Only BUILD text/outcomes were inspected here. A concurrent owner's earlier population merge improved free BUILD16→54/79 while CHECK stayed13/71: no measured transfer. The current paid BUILD run is development evidence; six items had previously appeared in a targeted dev diagnostic. It is not unseen qualification.
 
-## Subsequent dev-only evidence
+The run retained11 answers before five attempted semantic-reading cache writes were denied. An evaluation-only private-cache repair retained18 more responses. The next response was discarded by an overly strict HTTP200 assertion, which also incorrectly rejected ordinary HTTP400 refusals. Its exact failure type is unknown; it counts as one failure and was not repeated. The corrected client retained the remaining49 results. No conversation chain crossed a recovery boundary. There were zero repeats of completed questions within the79-question run.
 
-| Measurement | Result | Provider spend |
-| --- | --- | ---: |
-| Matched free paraphrases, 3d3f6ff vs preceding main | 238/295 vs237; one recovery, zero losses | $0 |
-| Matched free paraphrases, 530edf9 vs preceding main | 239/295 on both; zero losses | $0 |
-| Independent dev3 BUILD baseline, 3d3f6ff | 16/79;8 wrong,55 refused | $0 |
-| Semantic repairs plus source-absence work, b911822 | 24/79;5 wrong,50 refused; structured14/14 | $0 |
-| Concurrent owner's population merge, e7364f5 | BUILD54/79; CHECK13/71 unchanged | $0 |
-| Targeted paid note diagnostic, c23b3a6 | 4/5 targets;5/6 with parent context | $0.011944076 |
-| Targeted paid note diagnostic, 6422bf3 | 4/5 targets;5/6 with parent context | $0.011184148 |
+Cost reconciliation: first phase incremental$0.032441278 plus the later dedicated ledger$3.256729038 equals$3.289170316. Total1330 recorded provider calls:88Haiku,37Sonnet,679Jev,524Perplexity and2preset-fast. All returned priced responses were priced; pending reservations are zero. Thirty-seven failed calls lack usage, including provider rate-limit failures, so this remains a usage estimate. Final source fingerprints match the initial source and no learning/bank files changed. Five denied cache writes and the one missing audit receipt remain disclosed. No clinical definitions or answer keys were changed to improve scores.
 
-BUILD and CHECK are separated by conversation roots. Only BUILD text/outcomes were inspected here. CHECK text remains closed; the concurrent owner's aggregate is reported as evidence of **no measured transfer**, not generalization success. A narrow note diagnostic is not whole-stack accuracy.
+**The published scorer is not strict adjudication.** Two of the64 credits lack affirmative data-absence proof; one is a generic `not_understood` answer that the scorer credits because its type is `unsupported`. The supplemental primary-value audit covers only14/79 items:13match,1mismatch,65unverified. Other weaknesses include incidental table dates and citation IDs without entailment. These limitations are retained rather than silently regrading the completed comparison.
 
-Landed repairs preserve exact BP bounds, latest-only comparison scope, distinct drug-class counts, mortality polarity and conflicting dates, explicit social-screen positivity, ambiguous latest-admission ties, typed primary values and private OCR evaluation scratch. Candidate c23b3a6 compared31 relevant modules against26 current-main modules:zero failures on either side and zero new failures. Earlier broader suites retain known failures; this does not mean the entire suite is green.
+A read-only BUILD audit explains one population discrepancy: the reference counts87patients with two stay rows, while the compiled answer counts72with two distinct admission days. Fifteen patients differ;13 have same-day/same-facility zero-day plus longer-stay records. This supports a duplicate-episode concern, not automatic reference correction. The remaining records and clinical unit need adjudication. Source evidence is retained; the score remains wrong.
 
-Normal :8885 now runs pushed c23b3a6, verified ready/synthetic on the original active warehouse with the preceding live definition overlay, evaluation flags unset and normal shared ledger preserved. The routing and semantic-reading cache follow-up remain isolated candidates. Receipt: `artifacts/agere-semantic-review-c23b3a6/implementation-receipt.json`.
+## Landed repairs and source-fidelity evidence
 
-## Spend accounting
+The current product release is **b3bc46d**, pushed to main and restarted on the original synthetic :8885 service. Health is ready. The preceding live definition overlay and normal shared ledger are preserved; evaluation flags are unset. Two clean normal requests (no benchmark headers) cite exactly the two qualified chest reports. The repeat took4.8seconds with zero provider calls and$0 recorded provider cost. Receipt: `artifacts/agere-imaging-scope-b3bc46d/implementation-receipt.json`.
 
-Completed dedicated continuation runs including invalid diagnostics and original comparisons: $12.015487791. Subsequent reported normal-service smokes: $0.006018, $0.000195 and reconciled question-tagged $0.006503224; one failed live call lacks usage. The isolated note diagnostic adds $0.011944076. The next isolated note run adds $0.011184148 (three failed calls lack usage). Known recorded subtotal before the in-progress full BUILD run: **$12.051332239**, with these attribution and missing-usage limits. This excludes the pre-existing60-question analyst calibration ($0.204123845) and other sessions' activity.
+Earlier semantic repairs preserve exact latest-only BP comparisons, distinct drug-class counts, mortality/date uncertainty, positive social-screen filters, latest-admission ties and typed primary values. The next increment preserves a checked scalar after final spec execution: a real dev response changed from `1 rows · days_used` with no primary scalar to `0 days used`, while keeping its partial status and every uncertainty limitation. This was replayed with zero provider calls; attribution and interpretation remain separately unverified.
 
-The calibration achieved26/60 correct,43.3% accuracy and46.4% answered precision. Quality13/20 cost$0.066366145; claims11/20 cost$0.06188009; insight2/20 cost$0.07587761. Free-path baselines were65%,65%,70%. The analyst remains a fallback after free refusal rather than replacing accepted free answers.
+The source increment binds “CXR report” to document kind, recognizes formal report headings when imported titles are generic, excludes ED/discharge narratives, keeps conflicting dated reports separate, and gives the answer checker the cited impression text. It also versions saved plans against note interpretation and acceptance modules. No checker threshold was reduced.
 
-Costs are recorded usage estimates, not invoices or account-wide totals. Failed calls can lack usage. Haiku remains first; no unilateral spend ceiling was introduced. Current raw dev diagnostics and aggregate-only comparison receipts are retained under `/tmp/agere_generalization/`; protected raw comparison files remain closed.
+Final regression:40candidate/38main modules, one identical existing `test_core.setUpClass` failure and zero new failures. Ninety focused tests pass with one skip. Matched free paraphrases:243/295(82.4%) versus241/295; two recoveries, zero previously correct answers lost, provider cost$0. Earlier independent scalar/cache increment:45/43modules, two identical existing failures, zero new failures;241/295 on both. These checks do not mean the entire suite is green.
 
-## Current development measurement
+Service checks first exposed mixed ED summaries and then an unqualified generic radiograph in an outside-CXR answer. The benchmark client used evaluation headers: these checks exercised live code with learning writes disabled, not normal learning. This mislabelling is corrected; raw responses are preserved.
 
-A complete79-question dev3 BUILD paid run is in progress on immutable6422bf3 with strict frozen evaluation and the same source/definition overlay. The six previously diagnosed dev items repeat within this consistent full-set measurement; this is disclosed rather than presented as fresh qualification. Its start ledger is $0.011184148; both the incremental run cost and full ledger total will be reported. No CHECK or held-out rerun is planned. A matched295-paraphrase free comparison againstc23b3a6 is also in progress. Normal deployment waits for verification.
+The source-kind/context increment passed90focused tests(1skip),40candidate/38main modules with one identical existing setup failure and zero new failures. It improved free paraphrases241→243/295, with two recoveries and zero losses. A frozen check cost$0.001080286,27SystemOne calls and noClaude, with source/bank state unchanged and no strict write attempts. It returned two supported outside reports, but a later service check also included a nonspecific XRAY. The additional body/modality qualification now selects exactly two chest-supported reports and leaves all three available for a broad X-ray request. That increment passed79focused tests(1skip),41candidate/40main modules with one identical existing failure and zero new failures;243/295 on both, no losses.
 
-The routing candidate free paraphrase result is238/295 versus241/295. All three lost published credits had baseline headlines “2 passages” and now refuse; they require reader-level healing, not restoration of unverified passage-only acceptance. The full BUILD diagnostic stopped after11/79 retained correct answers on five denied semantic-reading cache writes, at incremental recorded$0.032441278. The evaluation-only private-cache repair resumes only the68unasked questions on a new ledger. No source write was authorized.
+Final clean normal-mode requests use only `Content-Type`; both return evaluation=None, exactly the two qualified sources and separate findings. The first took10.9seconds, the repeat4.8seconds; both recorded zero provider usage. The earlier evaluated b3bc46d service check had two directly tagged SystemOne calls costing$0.00009361. Same-window Haiku activity is not assigned to this question. Source quotes preserve both a possible infiltrate and a negative cardiopulmonary finding; they are not collapsed into one clinical result.
+
+The original automated source audit expected all three retrieved radiographs to be cited. Its `all_matching_reports_cited=false` is preserved. The third candidate merely says XRAY / mild degenerative changes / no fracture, without establishing chest specificity. Retrieval candidates are not confirmed facts. The supplemental review records two supported chest-report answers and the unasserted nonspecific candidate; it is not clinical adjudication or a complete-warehouse coverage claim. No evaluation answer key was changed.
+
+The experimental passage gate remains isolated. It reduced a free score241→238 by withholding three previously credited “2 passages” answers. It was excluded from the live release while stronger source-bound answering was repaired.
+
+## Spend and remaining work
+
+Cost attribution was reconciled separately from account activity:
+
+| Category | Recorded estimate |
+| --- | ---: |
+| Dedicated continuation ledgers, including invalid runs and completed comparisons | $15.332942129 |
+| Directly question-tagged recent service checks | $0.001526914 |
+| Earlier reported normal-smoke estimates, still provisional | $0.012716224 |
+| Subtotal including those older provisional estimates | **$15.347185267** |
+| Deduplicated same-window activity with unassigned ownership, excluded above | $0.032960800 |
+
+Earlier totals included same-window Haiku calls without causal attribution. Those are real recorded activity, but none is linked to these executions in the request journal, so they remain unassigned. The raw telemetry and earlier reconciliation are preserved. The benchmark-header correction also means earlier “normal” service checks must not be used as proof of normal learning. The two clean normal-mode checks above now establish that behavior. These are usage estimates, not invoices or account-wide totals; failed calls can lack usage. The pre-existing analyst calibration($0.204123845) and other sessions' activity remain outside the owner subtotal.
+
+The60-question analyst calibration achieved26/60 correct(43.3%),46.4% answered precision. Quality13/20 cost$0.066366145; claims11/20 cost$0.06188009; insight2/20 cost$0.07587761, versus free65%,65%,70%. The analyst remains a fallback after free refusal, not an override of accepted free answers.
+
+Next: repair the observed shared-result identity collision in devx2-18, where a generated classification key overwrites a known patient identifier with “unknown”; then address premature acceptance of partial/unknown results while preserving useful fallback evidence. Keep definition/episode disputes separate from scoring changes. Haiku remains before Sonnet; no unilateral spending ceiling, held-out/CHECK tuning or rerun has been introduced. Greater than95% correctness, clinical qualification and superiority over commercial stacks remain unestablished.
+
+Receipts and aggregate-only comparisons: `/tmp/agere_generalization/`. Current product/receipt state is maintained in `BUILD_OWNER.json` and `AGERE_BUILD_CONTROL.json`.

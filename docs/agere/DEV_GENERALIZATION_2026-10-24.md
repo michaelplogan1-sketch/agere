@@ -1,5 +1,7 @@
 # Dev generalization repair, October 24
 
+**Current status:** the source/evidence/body-scope releaseb3bc46d is pushed, restarted and verified in normal mode. Two qualified reports are returned; normal repeat4.8seconds/$0provider cost. The completed dev3 BUILD run is64/79 published (81.0%),85.3% answered precision, recorded$3.289170316; this is development evidence with disclosed scoring and interruption limits. Held-out stays15/50. The current coherent report is [COMPARISON_RESULTS_2026-10-24.md](COMPARISON_RESULTS_2026-10-24.md); sections below retain chronological evidence. >95%/99% remains unmet.
+
 Release a7f2c9b is pushed to main and the synthetic service on :8885 restarted; /health reports ready. The target of >95% remains unmet. No current held-out evaluation was started. A later inspection incident is recorded below; current held-out bank and generator remain unopened.
 
 Repairs preserve polarity, conjunctions, ratio denominators, rolling claim dates, event-specific note reasons and safe plan-cache revision. Completed discovery fields are cached even if another field times out. The chart adapter retains negative boolean results as derived rows so the answer guard can inspect them. Explicit reported historical event counts retain the dated note scope; stated zero counts remain zero.
@@ -133,3 +135,14 @@ Matched free routing paraphrases:238/295 versus241/295. Three lost credits were 
 The full paid BUILD diagnostic stopped after11/79 retained correct responses on five denied `semantic-readings.sqlite3` cache writes. Incremental recordedspend$0.032441278; full ledger$0.043625426 includes the preceding$0.011184148 diagnostic. Source protection held. The evaluation-only private-cache correction a0832bc has15candidate/14base modules0failures, combined21candidate/20current-main modules0failures. Only68unasked BUILD items continue on a new ledger; no chain crosses the phase boundary and no completed question repeats. These results cannot qualify unseen correctness.
 
 The coherent current comparison and spend report is `COMPARISON_RESULTS_2026-10-24.md`; earlier sections above retain historical evidence. G3 active, G5 incomplete, all ten areas retained. >95%/99% unmet.
+
+
+## Sealed source/body-scope repair and accounting correction
+
+Releaseb3bc46d is pushed and live on the original synthetic :8885, health ready. It retains source-kind and separate-report evidence, makes chest/body/modality qualification depend on source wording, and versions saved plans against interpretation and acceptance modules. The source audit gives2qualified chest reports and3generic radiographs. Final regression41candidate/40main modules:one identical existing `test_core.setUpClass` failure,zero new failures.79focused tests pass(1skip). Freeparaphrases243/295 on both; no previously correct result lost. The preceding source/context increment recovered2paraphrases versus241, also with0losses.
+
+Earlier “normal” checks used the benchmark client evaluation header. Their raw receipts remain unchanged; they prove code behavior with learning off, not normal learning. Two clean urllib requests without that header now prove normal mode(eval=None), exact2qualified source membership and separate findings. Both cost$0in recorded provider use; the repeat took4.8seconds. Receipt: `artifacts/agere-imaging-scope-b3bc46d/implementation-receipt.json`.
+
+Shared cost telemetry also included same-window Haiku activity not causally linked to these requests. It is now reported separately: dedicated-ledger continuation estimate$15.332942129; recent directly tagged service checks$0.001526914; older normal-smoke provisional estimates$0.012716224; subtotalwithprovisional$15.347185267. Unassigned deduplicatedwindowactivity$0.0329608 is excluded. This is an attribution correction, not an invoice/refund. The completed BUILD79run remains64correct,10wrongreturned,4refused,1unretainedfailed(81.0%),58/68answeredprecision(85.3%),recorded$3.289170316. Two absence credits lack affirmative proof; the published scorer was not changed.
+
+NextG3increment: preserve real patient identity when a generated atomic result key collides with `patient_id`, then continue shared-cascade partial/unknown healing. No heldout/CHECK text, score tuning or repeat; all10areas retained/G5incomplete/>95%99%unmet.
