@@ -36,3 +36,22 @@ class CheckEvidenceContext(unittest.TestCase):
         text = G.render('q', None, {'answer': {'intent': 'legacy',
                         'sources': [{'record_id': 'r', 'quote': 'Source account.'}]}})
         self.assertIn('Source account.', text)
+
+
+from test_decision_context import Fixture as DecisionFixture
+
+
+class EffectiveSQLContext(DecisionFixture):
+    def test_real_sql_operator_supplies_the_guarded_query_to_the_checker(self):
+        from clinical_core.agere.clinical import sql_query, decision_context, system_one_gate
+        query = 'SELECT COUNT(DISTINCT patient_id) FROM patient'
+        node = {'id': 'answer', 'operation': 'sql', 'parameters': {'query': query, 'returns': 'count'}}
+        with decision_context.scope('How many patients?', '2030-05-27'):
+            payload = sql_query.execute(self.path, node['parameters'], target=self.target)
+        result = {'answer': {'answer_type': 'count', 'count': payload['value']},
+                  'results': [{'node': node, 'result': payload}]}
+        self.assertEqual(payload['value'], 5)
+        text = system_one_gate.render('How many patients?', {'nodes': [node]}, result)
+        self.assertIn(payload['decision_context']['executed_query'], text)
+        self.assertNotIn(query, text)
+        self.assertNotIn('Columns: node, result', text)

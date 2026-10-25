@@ -130,12 +130,22 @@ def render(question, graph, result, *, limit=1800):
     graph = graph if isinstance(graph, dict) else {}
     if graph.get('interpretation') and graph.get('interpretation') != question:
         lines.append('Plan reading: ' + _short(graph['interpretation'], 200))
+    executed_sql = {}
+    for step in (result or {}).get('results') or []:
+        if not isinstance(step, dict): continue
+        actual_node, payload = step.get('node') or {}, step.get('result') or {}
+        if not isinstance(actual_node, dict) or not isinstance(payload, dict): continue
+        if actual_node.get('operation') != 'sql' or not str(payload.get('schema') or '').startswith('semantic-sql/'):
+            continue
+        context = payload.get('decision_context') or {}
+        query = context.get('executed_query') or payload.get('query')
+        if isinstance(query, str): executed_sql[str(actual_node.get('id'))] = query
     nodes = graph.get('nodes') or []
     sql_only = bool(nodes) and all((n.get('parameters') or {}).get('query') or (n.get('parameters') or {}).get('sql') for n in nodes)
     for node in nodes if sql_only else nodes[:4]:
         params = node.get('parameters') or {}
         bits = [f"{k}={_short(params[k], 160)}" for k in _PARAM_KEYS if params.get(k) not in (None, '', [], {})]
-        sql = params.get('query') or params.get('sql')
+        sql = executed_sql.get(str(node.get('id'))) or params.get('query') or params.get('sql')
         if sql: bits.append('SQL: ' + (str(sql) if sql_only else _short(sql, 420)))
         lines.append(f"Step {node.get('operation') or node.get('id') or '?'}: " + ('; '.join(bits) or _short(params, 200)))
     answer = (result or {}).get('answer') if isinstance(result, dict) else None
@@ -156,7 +166,7 @@ def render(question, graph, result, *, limit=1800):
                 from .chart_notes import focus_quote
                 quote = focus_quote(quote, preds[0], limit=140)
             lines.append(f"Source {source.get('record_id') or '?'} [{source.get('date') or '?'}]: " + json.dumps(_short(quote, 140)))
-    table = answer.get('table') or answer.get('rows') or (result or {}).get('results') or []
+    table = answer.get('table') or answer.get('rows') or []
     if isinstance(table, list) and table:
         first = table[0]
         if isinstance(first, dict): lines.append('Columns: ' + ', '.join(map(str, list(first)[:12])))
