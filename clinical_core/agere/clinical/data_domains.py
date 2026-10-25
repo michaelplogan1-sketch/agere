@@ -5,7 +5,7 @@ table, column, record-stream field or coded value name could hold that domain, t
 of a generic 'not understood'. Anything that might exist falls through to normal planning. A period that starts after the snapshot is
 reported the same way. Absence is checked against the catalog, never assumed from wording alone.
 
-Two stages, one registry (DOMAINS):
+Two stages, one registry (_SPEC; DOMAINS is its label-pattern-hints view):
 
   pre    check(catalog, question)          before planning, for the domains whose wording is unambiguous (a domain with stage 'pre');
   post   after_decline(path, question, e)  after every answering layer declined (QuestionNotUnderstood): the whole registry, including
@@ -26,10 +26,10 @@ import sqlite3
 import threading
 from datetime import date
 
-# (label, question pattern, catalog name hints that would hold it, optional keys). A hint is one name: its tokens must all occur in ONE
+# _SPEC rows: (label, question pattern, catalog name hints that would hold it, optional keys). A hint is one name: its tokens must all occur in ONE
 # catalog name ('prior_auth' = a name with both tokens). Optional keys: stage ('pre' default | 'post'), unless (pattern: wording that
 # means an answerable neighbouring question), text (literals searched in received note / document text), exists (what IS received).
-DOMAINS = [
+_SPEC = [
     ('patient-experience survey (CAHPS / satisfaction) results',
      r'\b(?:h?cahps|patient satisfaction|satisfaction scores?|patient experience surveys?|press ganey|nps score)\b',
      ('survey', 'cahps', 'satisfaction', 'experience_score')),
@@ -109,6 +109,7 @@ DOMAINS = [
      ('incident_report', 'sentinel_event', 'never_event', 'medication_error', 'safety_event', 'adverse_event', 'adverse_drug_event'),
      {'stage': 'post', 'text': ('incident report', 'sentinel event', 'never event', 'medication error', 'adverse drug event')}),
 ]
+DOMAINS = [row[:3] for row in _SPEC]  # (label, pattern, hints): the registry other modules and tests read
 MONTHS = {m: i for i, m in enumerate('january february march april may june july august september october november december'.split(), 1)}
 _CAMEL, _TOKEN = re.compile(r'([a-z0-9])([A-Z])'), re.compile(r'[a-z0-9]+')
 _CACHE, _LOCK = {}, threading.Lock()
@@ -226,7 +227,7 @@ def check(catalog, question, stage='pre'):
     with unambiguous wording; stage 'post' (after every layer declined): every domain."""
     text = question.lower()
     loaded = None
-    for row in DOMAINS:
+    for row in _SPEC:
         label, pattern, hints, opts = _entry(row)
         if stage == 'pre' and opts.get('stage', 'pre') != 'pre': continue
         if not re.search(pattern, text, re.I): continue
