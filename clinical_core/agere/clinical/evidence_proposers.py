@@ -213,9 +213,23 @@ def expand(question, hits, limit=12):
 
 
 # -- retrieval proposer --------------------------------------------------------------------------------------------
+def passage_request(question):
+    """Ranked excerpts answer requests for text, not clinical facts inferred from it.
+
+    Other questions retain retrieval inside the chart reader/review/planner; this
+    only controls whether a bare retrieve graph may finish the cascade.
+    """
+    q = question.strip()
+    if re.search(r"\b(?:quote|quotes|quoted|excerpts?|passages?)\b", q, re.I):
+        return True
+    if re.match(r"^(?:please\s+)?(?:find|search|retrieve|show|display|give|pull)\b", q, re.I):
+        return bool(re.match(r"^(?:please\s+)?(?:find|search|retrieve|show|display|give|pull)\s+(?:me\s+)?(?:the\s+)?(?:notes?|documents?|charts?|text|passages?|excerpts?)\b", q, re.I))
+    return bool(re.match(r"^what\s+(?:do|does|did)\s+(?:the\s+)?(?:notes?|documents?|charts?|text)\b.*\bsay\b", q, re.I))
+
+
 def retrieval_tier(stack, question, population=None, *, granite_encoder=None):
     """What do the notes/documents/charts say -> cohort -> retrieve. None when not a narrative question or nothing found."""
-    if not narrative_question(question, stack): return None
+    if not narrative_question(question, stack) or not passage_request(question): return None
     started, cutoff = time.perf_counter(), as_of(stack)
     named = named_patients(stack, question)
     if named and len(named) <= 3 and ASSERTION.match(question) and evidence_question(question):
