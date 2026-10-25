@@ -378,7 +378,8 @@ def requires_saved_cohort(question, catalog=None):
     Explicit references to earlier results always require saved context.
     """
     text = ' '.join(question.lower().split())
-    if ANAPHORIC_FOLLOWUP.match(text): return True
+    if ANAPHORIC_FOLLOWUP.match(text) or group_edit(text): return True
+    if re.search(r'\b(?:this|that|the saved)\s+(?:group|cohort|population)\b', text): return True
     if re.search(r'\b(?:previous|prior|earlier|last|saved|same)\s+'
                  r'(?:answer|result|analysis|cohort|population|list|patients?|members?)\b', text):
         return True
@@ -649,6 +650,22 @@ EVERYONE_ELSE = re.compile(r'^(?:everyone|everybody|all)\s+else|the\s+rest|(?:th
 
 
 REGROUP = re.compile(r"^(?:and\s+)?(?:(?:the\s+)?same(?:\s+thing)?\s+(?:but\s+)?|(?:break|split)\s+(?:that|this|it)(?:\s+(?:down|out))?\s+)(?:by|per|for\s+each)\s+(?P<dim>[a-z][a-z ]*?)\s*\??$", re.I)
+
+GROUP_EDIT_FORMS = tuple(re.compile(p, re.I) for p in (
+    r'^(?:(?:the\s+)?same(?:\s+(?:thing|measure))?(?:\s+but)?[ ,]*)?(?:split\s+|broken\s+(?:down|out)\s+)?(?:by|per|for\s+each)\s+(?P<dim>[a-z][a-z ]*?)\s*\??$',
+    r'^(?:break|split|group|show)\s+(?:the\s+)?(?:same(?:\s+(?:thing|measure))?|that|this|it)(?:\s+broken)?(?:\s+(?:down|out))?\s+(?:by|per|for\s+each)\s+(?P<dim>[a-z][a-z ]*?)\s*\??$'))
+
+
+def group_edit(question):
+    """Read an entire grouping command; extra requirements stay in the dimension text."""
+    text = question.strip().rstrip('.')
+    text = re.sub(r'^(?:(?:and|now|also)\s+)?(?:(?:can|could)\s+you\s+)?', '', text, count=1, flags=re.I)
+    return next((m for rx in GROUP_EDIT_FORMS if (m := rx.fullmatch(text))), None)
+
+
+def group_dimension(text):
+    return {'lob': 'line of business', 'type of payer': 'payer type'}.get(text.strip().lower(), text.strip())
+
 PMPM_OF_THAT = re.compile(r"^(?:and\s+)?what(?:'s|\s+is|\s+was)\s+(?:that|it|this)\s+(?:per\s+member\s+per\s+month|pmpm)\s*\??$", re.I)
 
 
@@ -658,7 +675,7 @@ def regroup(stack, question, saved):
     "Same thing by payer type" / "break that down by practice" re-asks the previous question with the grouping added, when the previous
     answer was a measure (a count, share, rate or amount). "What's that per member per month?" turns a previous medical-claims amount
     into the paid PMPM for the same year and grouping. The re-asked question goes through the ordinary planner; nothing is guessed."""
-    group, pmpm = REGROUP.match(question.strip()), PMPM_OF_THAT.match(question.strip())
+    group, pmpm = group_edit(question), PMPM_OF_THAT.match(question.strip())
     if not (group or pmpm): return None
     from ..deliverables import answer_context
     parent = answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
@@ -669,7 +686,7 @@ def regroup(stack, question, saved):
                                                                    and not any(k in answer for k in ('value', 'numerator')))
     if group:
         if cohort_list or re.search(r'\b(?:by|per|for each)\s+[a-z]', base, re.I): return None  # a list is grouped over its saved members; an already grouped question is not regrouped
-        standalone = f"{base}, by {group['dim'].strip()}"
+        standalone = f"{base}, by {group_dimension(group['dim'])}"
         note = f'Follow-up: re-asked "{base}" grouped by {group["dim"].strip()}.'
     else:
         year = re.search(r'\b(20\d\d)\b', base)
@@ -677,7 +694,8 @@ def regroup(stack, question, saved):
         if not re.search(r'\b(?:pay|paid|spend|spent|cost)\b', base, re.I) or not year: return None
         standalone = f"What was the medical claims paid PMPM in {year[1]}" + (f" by {by[1]}" if by else '')
         note = f'Follow-up: the {year[1]} medical claims paid per member per month' + (f' by {by[1]}' if by else '') + ' (from the previous amount).'
-    result = stack.compose(standalone)
+    population = parent.get('input_patient_ids')
+    result = stack.compose(standalone) if population is None else stack.compose(standalone, population=population)
     result['answer']['rescope'] = {'base_question': standalone}
     result['answer']['limitations'] = [*(result['answer'].get('limitations') or []), note]
     return result, standalone, note
@@ -978,7 +996,7 @@ def handle_compose(stack, body, hosted_factory=None):
                     bound = answer_context.followup(stack.path, saved['id'], question)
                     if bound is None:
                         raise QuestionNotUnderstood('This follow-up cannot yet be executed over the saved cohort. The original cohort was preserved; no rewritten query or whole-population substitution was run.')
-                elif refers:
+                elif refers and not (not shared and prior and group_edit(question)):
                     raise QuestionNotUnderstood('No saved patient cohort is available for this follow-up. Ask the complete question first.')
                 hosted = None
                 if not shared and prior is not None and getattr(stack, 'allow_live', False):
