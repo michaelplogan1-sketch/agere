@@ -10,13 +10,14 @@
 #      (together -> stack_runtime / economical_planner / local_compiler / metric_router / answer_checks,
 #      semantic_layer -> drug_classes, gateway -> economics / warehouse). Those load numpy + scipy.
 #   3. Pinned each to importlib.metadata.version() from .venv.
-# Everything else in the hosted path is standard library (http.server, sqlite3, urllib, hashlib, json).
+# Other non-optional imports in the hosted path are standard library (http.server, sqlite3, urllib, hashlib, json).
 
 # --- required ---------------------------------------------------------------------------------------------
 cryptography==50.0.2   # hosted/secrets.py: Fernet encryption of tenant credentials (AGERE_SECRET_KEY)
 cffi==2.1.1            # cryptography runtime dependency (pinned for reproducibility)
 pycparser==3.11        # cffi dependency
 numpy==2.5.3           # semantic layer / analytic operators reached lazily from together.py + economics
+sqlglot==30.24.0       # decision_context: scope-aware numeric versus historical measurement reads
 scipy==1.18.1          # same lazy path (stack_runtime, drug_classes, metric_router, warehouse)
 
 # --- optional extras: uncomment for the source types a customer actually connects --------------------------
