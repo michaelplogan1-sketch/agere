@@ -67,7 +67,7 @@ def execute(stack, patient_ids, params, as_of):
     if chart.get('note_predicates'):
         spec['note'] = chart['note_predicates']
     elif chart.get('intent'):
-        spec['chart'] = {k: chart.get(k) for k in ('intent', 'domain', 'concept', 'window', 'ordinal', 'attribute', 'mode', 'flags', 'comparisons') if k in chart}
+        spec['chart'] = {k: chart.get(k) for k in ('intent', 'domain', 'concept', 'window', 'ordinal', 'attribute', 'mode', 'flags', 'comparisons', 'screen_filter') if k in chart}
     out = chart_reader.answer(stack, spec, as_of=as_of, question=params['question'], prior=PI.current_prior())
     return {'schema': chart_reader.VERSION, 'answer_contract': out, 'patient_ids': [params['patient_id']]}
 
@@ -87,6 +87,7 @@ def answer(report, plan, question):
         out = {**out, 'table': [{'patient_id': pid, 'value': out['value']}
                                for pid in report['patient_ids']]}
     merged = {**out, 'status': 'unsupported' if out.get('status') == 'unsupported' else ('partial' if partial and out.get('status') != 'answered' else 'answered'),
+              'primary_answer_type': t, 'primary_value': out.get('value'),
               'answer_type': graph_type, 'value': value, 'count': count, 'patient_ids': report['patient_ids'], 'membership_role': 'selected',
               'chart_headline': out.get('headline'), 'definitions': [{'term': 'chart reader', 'basis': out.get('method')}],
               'limitations': [*ASSUMPTIONS, *(out.get('limitations') or [])]}

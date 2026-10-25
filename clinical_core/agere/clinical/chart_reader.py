@@ -212,6 +212,8 @@ def validate_chart(chart):
         raise ValueError(f'chart.domain must be one of {list(CI.DOMAINS)} or {NOTE_DOMAIN!r}')
     if chart.get('intent') == 'compare_values':
         import math
+        if chart.get('mode', 'latest') != 'latest' or chart.get('ordinal'):
+            raise ValueError('This comparison reader executes latest values only')
         concept = chart.get('concept') or {}
         if not isinstance(concept, dict):
             raise ValueError('Measurement comparisons require typed concepts')
@@ -228,6 +230,8 @@ def validate_chart(chart):
         if {p['concept'] for p in comparisons} != set(concepts):
             raise ValueError('Every requested measurement needs its explicit bound')
     w = chart.get('window')
+    if 'screen_filter' in chart and (chart.get('domain') != 'social_need' or chart['screen_filter'] != {'positive': 1}):
+        raise ValueError('This social-screen reader executes the recorded positive = 1 filter')
     if w is not None and (not isinstance(w, dict) or not {'start', 'end'} <= set(w)):
         raise ValueError('chart.window needs start and end (ISO dates)')
     return chart
@@ -285,7 +289,8 @@ def _intent_from_spec(spec):
         validate_chart(chart)
         return {'intent': chart['intent'], 'domain': chart.get('domain'), 'concept': chart.get('concept'), 'window': chart.get('window'), 'ordinal': chart.get('ordinal'),
                 'attribute': chart.get('attribute'), 'mode': chart.get('mode', 'latest'), 'flags': list(chart.get('flags') or []), 'gaps': [], 'source': 'spec',
-                'question': spec.get('question', ''), **({'comparisons': chart['comparisons']} if chart.get('comparisons') else {})}
+                'question': spec.get('question', ''), **({'comparisons': chart['comparisons']} if chart.get('comparisons') else {}),
+                **({'screen_filter': chart['screen_filter']} if chart.get('screen_filter') else {})}
     return None
 
 
@@ -380,7 +385,7 @@ def unsupported(message, question, started, spend, *, pid=None, intent=None, mis
 def _clean_intent(it):
     if not it:
         return None
-    keep = ('intent', 'domain', 'concept', 'window', 'ordinal', 'attribute', 'mode', 'flags', 'gaps', 'source', 'comparisons')
+    keep = ('intent', 'domain', 'concept', 'window', 'ordinal', 'attribute', 'mode', 'flags', 'gaps', 'source', 'comparisons', 'screen_filter')
     return {k: it.get(k) for k in keep if k in it}
 
 
@@ -460,6 +465,8 @@ def typed_chart(it, preds=None, question=None):
            'flags': list(it.get('flags') or [])}
     if it.get('comparisons'):
         out['comparisons'] = plain(it['comparisons'])
+    if it.get('domain') == 'social_need':
+        out['screen_filter'] = {'positive': 1}  # the governed filter actually executed by chart_queries.social_needs
     if it.get('domain') == 'readmission':  # the chart reader's readmission is stay.readmitted_30d: say so, so another window is caught
         out['measure'] = {'field': 'stay.readmitted_30d', 'within_days': 30, 'window': '30 days after discharge_date', 'after': 'discharge_date'}
     if it.get('mode') in ('latest', 'first') or it.get('ordinal') or it.get('intent') in ('latest_value', 'last_event', 'compare_values'):

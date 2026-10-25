@@ -70,7 +70,7 @@ FRAME_CUES = [  # (frame, pattern); evaluated on the asking sentence; every matc
     ('preference_refusal', r"\bwho (?:pushed|urged|encouraged|convinced|insisted|talked|made|told|prompted|asked|brought|drove)\b|\bpushed\b|\burged\b|\bencouraged\b|\binsisted\b|\bprompted\b"),
     ('social_need', r"smoking|tobacco|alcohol|drinks?\b|drinking|\betoh\b|substance|cannabis|marijuana"),
     ('finding_value', r"\bscore\b|\bvalue\b|\breading\b|\ba1c\b|\bhba1c\b|\bphq-?\d\b|\bgad-?\d\b|\bbmi\b|\bldl\b|\begfr\b|come back as|came back as|how (?:big|large|small|high|low)\b|what size|\bsize of\b|\bin (?:mm|cm)\b|\bnodule\b"),
-    ('condition', r"ruled out|rule[- ]out|diagnos\w+|history of|syndrome"),
+    ('condition', r"ruled out|rule[- ]out|\bexcluded\b|diagnos\w+|history of|syndrome"),
     ('symptom', r"symptom|complain\w*|reports? (?:pain|dyspnea|nausea)|\bpain\b"),
 ]
 CONCEPT_PHRASES = [  # (cue pattern, canonical concept term, frames it applies to; () = any); not a drug
@@ -83,7 +83,7 @@ CONCEPT_PHRASES = [  # (cue pattern, canonical concept term, frames it applies t
     (r"trouble getting to appointments|transport\w*|getting to appointments", 'transportation', ('social_need',)),
     (r"\bfalls?\b|\bfell\b", 'falls', ('function_cognition', 'adverse_event')), (r"memory (?:concern|problem|loss)|cognit\w*", 'memory concern', ('function_cognition',)),
     (r"smok\w*|tobacco|cigarette", 'smoking', ('social_need', 'finding_value', 'condition')), (r"drug intolerance|intoleran\w+", 'intolerance', ('adverse_event',)),
-    (r"chest x-?ray", 'chest x-ray', ('procedure_test',)), (r"stress test", 'stress test', ('procedure_test',)),
+    (r"chest x-?ray|\bcxr\b", 'chest x-ray', ('procedure_test',)), (r"stress test", 'stress test', ('procedure_test',)),
     (r"acute coronary syndrome|\bacs\b", 'acute coronary syndrome', ('condition',)),
     (r"new disease-directed medications?|disease-directed", 'started', ('medication_event',)),
     (r"discharge summary|follow[- ]?up", 'follow up', ('plan_followup',)),
@@ -466,7 +466,7 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             term, quote = concept_for(frame, ask, context, drug)
         if not term:
             continue
-        statuses = ['denied'] if frame == 'condition' and re.search(r'\bruled out\b|\bnot present\b|\bdenies\b', ask, re.I) else ['documented']
+        statuses = ['denied'] if frame == 'condition' and re.search(r'\bruled out\b|\bexcluded\b|\bnot present\b|\bdenies\b', ask, re.I) else ['documented']
         if term in ('smoking', 'code status') or re.search(r'\bis (?:a |an )?[a-z ]{0,30}(?:documented|recorded|mentioned)\b', ask, re.I):
             statuses = ['documented', 'denied'] + (['historical'] if term == 'smoking' else [])  # "is X documented anywhere": any statement about it counts
         detail = {}
@@ -476,7 +476,9 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             elif re.search(r'\bstarted\b|\bbeing started\b|\bstarting\b|\bnew\b', ask, re.I):
                 detail['event'] = 'started'
         if frame == 'preference_refusal':
-            if re.search(r'\baccept\w*', ask, re.I) and not re.search(r'\bdeclin\w*|\brefus\w*', ask, re.I):
+            if re.search(r'\b(?:not\s+(?:agree|accept)\w*|disagree\w*)\b', ask, re.I):
+                return []  # not accepting need not mean declining; leave this negated proposition to the broader reader
+            elif re.search(r'\b(?:accept|agree)\w*', ask, re.I) and not re.search(r'\bdeclin\w*|\brefus\w*', ask, re.I):
                 detail['decision'] = 'accepted'
             elif re.search(r'\bdeclin\w*|\brefus\w*', ask, re.I) and not re.search(r'\baccept\w*', ask, re.I):
                 detail['decision'] = 'declined'
@@ -620,6 +622,13 @@ def focus_quote(quote, pred, limit=400):
     """The part of a passage that speaks to the question: a short passage whole; a long one cut to the sentences that carry the concept (and, for
     a result question, the impression / result sentences) instead of its first `limit` characters (a letterhead)."""
     text = str(quote or '').strip()
+    want_result = bool({'result', 'result_text'} & set(pred.get('return_detail') or []))
+    if want_result:
+        section = re.search(r'\b(?:IMPRESSION|CONCLUSION|INTERPRETATION|FINAL DIAGNOSIS|RESULTS?)\s*:\s*', text, re.I)
+        if section:
+            # Keep the source wording (including negation and uncertainty), not
+            # the letterhead that happens to precede the requested result.
+            return text[section.start():section.start() + limit]
     if len(text) <= limit:
         return text
     from . import note_evidence as NE
@@ -866,6 +875,12 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             cited = [e for e in ev if e.get('supports')] or ev  # a positive answer cites the passages that produced it, not every record read
             top = sorted(cited, key=lambda e: not e.get('supports'))[:6 if pred.get('combine') == 'any' else 4]
             multi = pred.get('combine') == 'any' and len([e for e in top if e.get('supports')]) > 1
+            separate_reports = (multi and pred['frame'] == 'procedure_test'
+                                and len({(e.get('record_id'), e.get('date')) for e in top if e.get('supports')}) > 1)
+            if separate_reports:
+                line = f"Multiple matching '{pred['concept']['term']}' reports; each dated result is listed separately"
+                if pred.get('sources') or pred.get('note_types'):
+                    line += ' [read only: ' + ', '.join([*(pred.get('note_types') or []), *(pred.get('sources') or [])]) + ']'
             for e in top:
                 own = ''
                 if multi:  # several reports: each one's own reading, not the best one's
@@ -879,8 +894,14 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             if counted[-1] is not None:
                 line = f"{counted[-1]['n']} {pred['concept']['term']} documented in the notes ({counted[-1]['basis']}) | {line}"
             lines.append(line)
-            rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
-                         **({'count': counted[-1]['n']} if counted[-1] is not None else {})})
+            if separate_reports:
+                rows.extend({'frame': pred['frame'], 'concept': pred['concept']['term'],
+                             'status': e.get('status') or status, 'detail': e.get('detail') or {},
+                             'date': e.get('date'), 'record_id': e.get('record_id'), 'p': e.get('p'),
+                             'matches_question': bool(e.get('supports'))} for e in top)
+            else:
+                rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
+                             **({'count': counted[-1]['n']} if counted[-1] is not None else {})})
             sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in cited)
         if res.get('truncated'):  # retrieval caps: absence, earliest, latest and "no contradiction" are not established from part of the notes
             lines[-1] += f" | partial: {res.get('partial')}; the rest were not read, so a negative or earliest/latest answer is undecided"

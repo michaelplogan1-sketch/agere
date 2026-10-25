@@ -36,6 +36,7 @@ class AnalystForms:
             if latest: end += latest.end()
             quote = text[:end].strip()
             self.extra_notes.append(f'A positive screen is read as the latest {label}.')
+            self.extra_notes.append('PHQ-9 screening-threshold reference: Kroenke et al. (2001), https://pubmed.ncbi.nlm.nih.gov/11556941/; a positive screen is not a diagnosis.')
             return related('measurement_latest', combine('and', [atom('measurement_latest.concept', '=', concept, quote),
                                                                   atom('measurement_latest.value_canonical', op, cutoff, quote)], quote), quote), text[end:]
         return None

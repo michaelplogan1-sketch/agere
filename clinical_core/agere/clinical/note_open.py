@@ -294,7 +294,7 @@ SOURCE_CUE_TABLE = [  # (question pattern, sources or None, note type names)
     (r"\bhie\b|health information exchange|care ?everywhere|\bccd\b|\bc-?cda\b|exchange document", ['hie_document'], []),
     (r"\bdischarge summar(?:y|ies)\b|\bdischarge (?:paperwork|document)s?\b", None, ['discharge_summary']),
     (r"\bED (?:note|summary|visit note|record|report)s?\b|\bemergency (?:department|room) (?:note|summary|record|report)s?\b|\bER (?:note|summary)\b", None, ['ed_note']),
-    (r"\bradiology (?:report|impression|read)s?\b|\bx-?ray (?:report|impression|film)s?\b|\bimaging report\b|\b(?:ct|mri|ultrasound) report\b", None, ['radiology_report']),
+    (r"\bradiology (?:report|impression|read)s?\b|\b(?:x-?ray|cxr) (?:report|impression|film)s?\b|\bimaging report\b|\b(?:ct|mri|ultrasound) report\b", None, ['radiology_report']),
     (r"\bpathology (?:report|result)s?\b|\bbiopsy report\b", None, ['pathology_report']),
     (r"\b(?:procedure|operative|endoscopy|colonoscopy) report\b", None, ['procedure_report']),
     (r"\bconsult(?:ation)? (?:note|letter|report)s?\b|\bspecialist (?:letter|note|report)s?\b", None, ['consult_note']),
@@ -323,3 +323,24 @@ def type_regex(names):
     """One compiled alternation over the note-type names (or None)."""
     pats = [NOTE_TYPES[n] for n in names or [] if n in NOTE_TYPES]
     return re.compile('|'.join(f'(?:{p})' for p in pats), re.I) if pats else None
+
+
+def matches_document_type(names, metadata, text):
+    """A received report can have a generic imported-document title.
+
+    Match its formal exam/impression headings, never a passing test mention in
+    an ED or discharge narrative. Metadata remains authoritative when specific.
+    """
+    rx = type_regex(names)
+    if rx is None or rx.search(metadata):
+        return True
+    if 'radiology_report' not in names:
+        return False
+    # A quoted exam inside a specifically labelled ED/consult/discharge note
+    # does not turn that note into the requested original report.
+    other_kinds = [n for n in NOTE_TYPES if n not in (*names, 'outside_report')]
+    other_rx = type_regex(other_kinds)
+    if other_rx is not None and other_rx.search(metadata):
+        return False
+    header = re.search(r'(?im)^\s*(?:(?:EXAM|STUDY|REPORT)\s*:\s*(?:CHEST\s+)?(?:X[- ]?RAY|CXR|CT|MRI|ULTRASOUND)\b|(?:CHEST\s+)?X[- ]?RAY\s+(?:FINDINGS|IMPRESSION)\s*:)', text or '')
+    return bool(header and re.search(r'\b(?:FINDINGS|IMPRESSION)\s*:', text or '', re.I))

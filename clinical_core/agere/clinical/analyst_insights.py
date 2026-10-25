@@ -88,14 +88,14 @@ class ReadmissionDrivers:
         hospitals = ctx.rows(f"SELECT org AS grp, COUNT(*) AS n, SUM(readmitted) AS k, 1.0 * SUM(readmitted) / COUNT(*) AS rate FROM ({base}) WHERE org IS NOT NULL "
                              f"GROUP BY org HAVING COUNT(*) >= {HOSPITAL_MIN_STAYS} ORDER BY rate DESC, grp")
         for i, r in enumerate(hospitals[:3]):
-            facts.append(fact(f"hospital_{i + 1}", f"{r['grp']} has {'the highest' if i == 0 else 'the next-highest'} {y} readmission rate: {pct(r['rate'])}% ({r['k']} of {r['n']} stays) = {r['rate']:.4f}.",
+            facts.append(fact(f"hospital_{i + 1}", f"Among hospitals with at least {HOSPITAL_MIN_STAYS} stays, {r['grp']} has {'the highest' if i == 0 else 'the next-highest'} {y} readmission rate: {pct(r['rate'])}% ({r['k']} of {r['n']} stays) = {r['rate']:.4f}.",
                               value=pct(r['rate']), numerator=r['k'], denominator=r['n'], unit='%'))
         tables['by_condition'] = [{'condition': r['condition'], 'admissions': r['admissions'], 'readmitted': r['readmitted'], 'rate_percent': pct(r['rate'])} for r in ranked]
         tables['by_hospital'] = [{'hospital': r['grp'], 'stays': r['n'], 'readmitted': r['k'], 'rate_percent': pct(r['rate'])} for r in hospitals]
         head = f"{y} 30-day readmission rate {pct(overall['k'] / overall['n'])}%" + (f"; highest among conditions: {ranked[0]['condition']} ({pct(ranked[0]['rate'])}%)" if ranked else '') \
-            + (f"; highest hospital: {hospitals[0]['grp']} ({pct(hospitals[0]['rate'])}%)" if hospitals else '')
+            + (f"; highest hospital among those with at least {HOSPITAL_MIN_STAYS} stays: {hospitals[0]['grp']} ({pct(hospitals[0]['rate'])}%)" if hospitals else '')
         notes += [f'Admissions are the all-source inpatient utilization_event rows of living patients, counted by admission year; a readmission is a new admission within 30 days of discharge (readmitted_30d).',
-                  f'Hospitals are ranked only above {HOSPITAL_MIN_STAYS} stays in the year; a patient counts in every condition group they have (canonical condition evidence).']
+                  f'Hospitals are ranked with at least {HOSPITAL_MIN_STAYS} stays in the year; a patient counts in every condition group they have (canonical condition evidence).']
         return dict(headline=head, facts=facts, table=tables['by_condition'], tables=tables,
                     read_back=f"30-day readmission rate for {y} admissions of living patients, by condition group and by hospital (hospitals with at least {HOSPITAL_MIN_STAYS} stays).", notes=notes)
 

@@ -134,3 +134,32 @@ class ScannedText(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class SemanticParaphrases(unittest.TestCase):
+    def test_cxr_is_the_chest_xray_concept(self):
+        _, p = first("P-1001's outside CXR report: what was the impression?")
+        self.assertEqual((p['frame'], p['concept']['term']), ('procedure_test', 'chest x-ray'))
+
+    def test_excluded_condition_and_test_result_keep_both_requirements(self):
+        _, ps = read('For P-1001 in April 2027: ACS excluded or not, and what was the stress test result?')
+        by = {p['frame']: p for p in ps}
+        self.assertEqual(by['condition']['concept']['term'], 'acute coronary syndrome')
+        self.assertEqual(by['condition']['statuses'], ['denied'])
+        self.assertEqual(by['procedure_test']['concept']['term'], 'stress test')
+        self.assertTrue(all(p['window']['start'] == '2027-04-01' for p in ps))
+
+    def test_agree_binds_acceptance_and_negated_agreement_is_not_relabelled_declined(self):
+        ps = CN.build('Did P-1001 agree to statin therapy when discussed?', AS_OF)
+        p = next(p for p in ps if p['frame'] == 'preference_refusal')
+        self.assertEqual(p['_ask_detail']['decision'], 'accepted')
+        self.assertEqual(CN.build('Did P-1001 not agree to statin therapy?', AS_OF), [])
+
+    def test_agreement_answer_compares_the_actual_recorded_decision(self):
+        from tools.note_labels.test_p1_note_correctness import FakeNotes, EV
+        p = CN.build('Did P-1001 agree to statin therapy when discussed?', AS_OF)[0]
+        for decision, lead in [('accepted', 'Yes'), ('declined', 'No')]:
+            reader = FakeNotes({('preference_refusal', 'statin'): {
+                'status': 'documented', 'holds': True, 'detail': {'decision': decision}, 'evidence': EV, 'p': .99}})
+            a = CN.render(None, [p], 'P-1001', AS_OF, nf=reader, yes_no=True)
+            self.assertEqual(a['facts']['lead'], lead)

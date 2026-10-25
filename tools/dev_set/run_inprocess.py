@@ -110,7 +110,9 @@ def run(qs, ask, follow_ups='conversation', quiet=False):
             verdict = 'correct' if correct is True else 'refused' if correct is None else 'WRONG'
             st = dev_run.status_of(resp)
             a = resp.get('answer') if isinstance(resp.get('answer'), dict) else {}
+            from tools.dev_set.primary_audit import audit
             rows.append({'id': q['id'], 'bucket': q['bucket'], 'asked': text, 'verdict': verdict, 'status': st, 'seconds': round(secs, 2),
+                         'primary_audit': audit(q, resp),
                          'detail': detail, 'route': dev_run.route_of(resp),
                          'read_as': ((resp.get('planner_receipt') or {}).get('interpretation') or {}).get('reworded_as'),
                          'error': str(resp.get('error') or '')[:400], 'headline': str(a.get('headline') or resp.get('error') or '')[:420],
@@ -121,6 +123,8 @@ def run(qs, ask, follow_ups='conversation', quiet=False):
 
 
 def summarize(rows):
+    audited = Counter((row.get('primary_audit') or {}).get('verdict', 'unverified') for row in rows)
+    print('Supplemental primary-value audit (limited coverage, not whole-question accuracy):', dict(audited))
     print('\n=== per bucket (correct / WRONG / refused) ===')
     for b in BUCKETS:
         rs = [r for r in rows if r['bucket'] == b]
