@@ -114,10 +114,31 @@ def _breakdown_by(q):
     return False
 
 
+_SOURCE_QUALIFIER = re.compile(
+    r"\bper\s+(?:the\s+)?(?:(?:january|february|march|april|may|june|july|august|september|october|november|december|"
+    r"last|latest|previous|prior|recent|outside|imported|scanned|telephone|discharge|consult|progress|clinical|radiology|"
+    r"[0-9]{1,4}(?:st|nd|rd|th)?|[0-9]{4}-[0-9]{2}-[0-9]{2})\s+)*"
+    r"(?:callbacks?|notes?|reports?|records?|charts?|documentation|summar(?:y|ies))\b", re.I)
+
+
+def shape_wording(question):
+    """Source attribution changes no requested rows. Use only for shape, not scope checks."""
+    text = str(question or '')
+    def replace(match):
+        before = text[:match.start()]
+        if re.search(r'\b(?:row|rows|entry|entries|result|results)\s*$', before, re.I):
+            return match.group(0)
+        phrase = match.group(0).lower()
+        if re.fullmatch(r'per\s+(?:note|report|chart|callback|summary)', phrase) and before.strip() and not before.rstrip().endswith(','):
+            return match.group(0)
+        return 'using source'
+    return _SOURCE_QUALIFIER.sub(replace, text)
+
+
 def requested(question):
     """-> {'shape': 'count'|'value'|'patient_set'|'table'|None, 'percent': bool, 'decimals': int|None, 'cue': str|None,
     'terms': [measure words]}."""
-    q = ' '.join(str(question or '').split())
+    q = ' '.join(shape_wording(question).split())
     full = q.lower()
     out = {'shape': None, 'percent': False, 'decimals': None, 'cue': None, 'terms': []}
     d = _DECIMALS.search(full)

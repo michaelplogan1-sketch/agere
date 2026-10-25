@@ -177,7 +177,8 @@ def benchmark_references(answer, question=None, operation=None):
 
 def requested_shape(question):
     """What kind of answer the question asks for, from its wording."""
-    q = (question or '').lower()
+    from .answer_shape import shape_wording
+    q = shape_wording(question).lower()
     # Evidential 'going by the last two results' does not request grouped rows.
     q = re.sub(r'\b(?:going|judging)\s+by\b', 'using', q)
     if re.search(r'\b(?:by|per|for each|each|break(?:s)? ?(?:it )?(?:down|out)|split|tabulate|monthly|quarterly|weekly|trend)\b'
