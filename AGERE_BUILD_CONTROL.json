@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-25T07:06:57.394952+00:00",
+  "updated_at": "2026-10-25T07:17:44.465733+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -369,8 +369,8 @@
       "docs/agere/COMPARISON_RESULTS_2026-10-24.md"
     ],
     "remaining_gap": "Broad generalization, complete multi-part answers, clinical/source definition ambiguities and independent95% qualification remain open; noteBooleanadapter andanalyst bypass inactive.",
-    "next_action": "G3: a60c519 live/ready with historical completion, executed-query checker, offline recovery and scoped retrieval. f2b10b0 ordering follow-up is pushed but its own sealed295 free run is pending in /private/tmp/agere-scoped-retrieval-order; qualify before activation. Then repair complete-request coverage and note Boolean/structured-scope preservation on BUILD/paraphrases only. Actual executed checker calibration: strict9/10=90%, not95%; do not activate audit-only analyst bypass or claim target achieved. Haiku-first when new Claude measurement is needed; report incremental dollars. No heldout/CHECK access/rerun or key/default changes.",
-    "next": "G3: a60c519 live/ready with historical completion, executed-query checker, offline recovery and scoped retrieval. f2b10b0 ordering follow-up is pushed but its own sealed295 free run is pending in /private/tmp/agere-scoped-retrieval-order; qualify before activation. Then repair complete-request coverage and note Boolean/structured-scope preservation on BUILD/paraphrases only. Actual executed checker calibration: strict9/10=90%, not95%; do not activate audit-only analyst bypass or claim target achieved. Haiku-first when new Claude measurement is needed; report incremental dollars. No heldout/CHECK access/rerun or key/default changes.",
+    "next_action": "G3: f2b10b0 sealedlive/ready,243/295freeparaphrases/0lost,0newregressions. Continue preserving fullBoolean/structuredscope in incoming note_answer adapter and complete multi-part outputs on BUILD/paraphrases only. Agere-only analyst prompt candidate in /private/tmp/agere-analyst-complete-request has105focusedchecks passing, but freshHaiku diagnostic blocked onfirstrequest byAnthropicHTTP400lowcredits;5unattempted,$0known/1failedwithoutusage;do not activate prompt or retry paid untilcredits restored. S1strictactualexec calibration9/10=90%,not95;analyst bypass remainsinactive. No heldout/CHECK access or rerun, no keys/defaultchanges. All10areas/G3active/G5incomplete.",
+    "next": "G3: f2b10b0 sealedlive/ready,243/295freeparaphrases/0lost,0newregressions. Continue preserving fullBoolean/structuredscope in incoming note_answer adapter and complete multi-part outputs on BUILD/paraphrases only. Agere-only analyst prompt candidate in /private/tmp/agere-analyst-complete-request has105focusedchecks passing, but freshHaiku diagnostic blocked onfirstrequest byAnthropicHTTP400lowcredits;5unattempted,$0known/1failedwithoutusage;do not activate prompt or retry paid untilcredits restored. S1strictactualexec calibration9/10=90%,not95;analyst bypass remainsinactive. No heldout/CHECK access or rerun, no keys/defaultchanges. All10areas/G3active/G5incomplete.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
       "kind": "Owner/JavaScript syntax/existing workflow tests/API-state comparison/candidate and live browser checks; presentation only",
@@ -446,11 +446,12 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-25T07:06:57.394952+00:00",
-      "release": "a60c519",
-      "receipt": "artifacts/agere-query-scope-retrieval-a60c519/implementation-receipt.json",
+      "at": "2026-10-25T07:17:44.465733+00:00",
+      "release": "f2b10b0",
+      "receipt": "artifacts/agere-query-scope-retrieval-f2b10b0/implementation-receipt.json",
       "owner_known_estimate_usd": 16.621161705,
-      "pending": "f2b10b0 sealed free paraphrases"
+      "paid_blocker": "Anthropic lowcredits;no modelqualityresultfromHaiku6candidate",
+      "offline_next": "Boolean/structuredcontractpreservation andcomplete-requestcoverage"
     }
   },
   "decisions": [
