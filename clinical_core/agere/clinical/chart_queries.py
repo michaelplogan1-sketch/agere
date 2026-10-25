@@ -420,8 +420,12 @@ def utilization(ch, it):
     label = UTIL_LABEL[kind]
     window, intent = it.get('window'), it['intent']
     frag, params = CI.window_sql('event_date', window)
+    discharge_order = 'order_by_discharge' in (it.get('flags') or [])
+    order = 'end_date DESC, event_date DESC, record_id DESC' if discharge_order else 'event_date DESC, record_id DESC'
+    if discharge_order:
+        frag += ' AND end_date IS NOT NULL'
     rows = ch.rows(f'SELECT kind, event_date, end_date, discharge_known, sources, in_ehr, record_id, organization_id, readmitted_30d, days_to_readmission '
-                   f'FROM utilization_event WHERE patient_id = ? AND kind = ?{frag} ORDER BY event_date DESC, record_id DESC', ch.pid, kind, *params)
+                   f'FROM utilization_event WHERE patient_id = ? AND kind = ?{frag} ORDER BY {order}', ch.pid, kind, *params)
     table = [{'date': r['event_date'], 'discharge_date': r['end_date'], 'sources': r['sources'], 'readmitted_30d': r['readmitted_30d']} for r in rows]
     sources = [src('utilization_event', r['record_id'], r['event_date'], kind=kind) for r in rows]
     notes = [f'{label}s are all-source utilization_event rows (EHR, ADT and claims), not the EHR-only visit table', win_note(window)]
@@ -440,7 +444,9 @@ def utilization(ch, it):
         attr = it.get('attribute')
         if attr == 'discharge_date':
             if r['end_date']:
-                return core('date', f"The most recent {label} for {ch.pid} (admitted {r['event_date']}) was discharged {r['end_date']}", value=r['end_date'],
+                headline = (f"Latest recorded hospital discharge for {ch.pid}: {r['end_date']} (admitted {r['event_date']})" if discharge_order else
+                            f"The most recent {label} for {ch.pid} (admitted {r['event_date']}) was discharged {r['end_date']}")
+                return core('date', headline, value=r['end_date'],
                             facts={'admit_date': r['event_date'], 'discharge_date': r['end_date']}, table=table[:5], sources=sources[:1], notes=notes)
             return core('none', f"The most recent {label} for {ch.pid} (admitted {r['event_date']}) has no recorded discharge date", facts={'admit_date': r['event_date']},
                         table=table[:5], sources=sources[:1], notes=notes)

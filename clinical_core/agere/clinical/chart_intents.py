@@ -371,6 +371,8 @@ def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
     elif ORDINAL_FIRST.search(q):
         out['ordinal'] = 1
     out['attribute'] = _attribute(domain, low)
+    if domain == 'inpatient' and re.search(r'\b(?:most recent|latest|last)\s+(?:hospital\s+)?discharge\b', low):
+        out['flags'].append('order_by_discharge')
     out['intent'] = _intent(domain, q, low, out, prior if inherited else None)
     if controlled:
         out['flags'].append('condition_control')

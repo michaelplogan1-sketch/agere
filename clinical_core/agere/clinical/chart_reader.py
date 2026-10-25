@@ -408,7 +408,8 @@ def ask(stack, question, *, conversation_id=None, prior=None, as_of=None, ledger
 def _elliptical(question):
     q = (question or '').strip().lower()
     refers = re.match(r"^(?:and|what about|how about|also|then|the one|the previous|the prior)\b", q) or re.search(
-        r"\b(?:most recent|latest|last|previous|prior|first|earlier|next) one\b|\bthat one\b|\bthose\b", q)
+        r"\b(?:most recent|latest|last|previous|prior|first|earlier|next) one\b|\bthat one\b|\bthose\b|"
+        r"^(?:date|result|value) of (?:the )?(?:most recent|latest|last|previous|prior)\b", q)
     return (len(q.split()) <= 12 and bool(refers)
             and not re.search(r'\b(?:patients|members|practice|practices|cohort|population|everyone|by (?:practice|payer|pcp)|group)\b', q))
 
@@ -427,7 +428,8 @@ def typed_chart(it, preds=None, question=None):
     if it.get('domain') == 'readmission':  # the chart reader's readmission is stay.readmitted_30d: say so, so another window is caught
         out['measure'] = {'field': 'stay.readmitted_30d', 'within_days': 30, 'window': '30 days after discharge_date', 'after': 'discharge_date'}
     if it.get('mode') in ('latest', 'first') or it.get('ordinal') or it.get('intent') in ('latest_value', 'last_event'):
-        out['order_by'] = [{'field': 'event_date', 'direction': 'asc' if it.get('mode') == 'first' else 'desc'}]
+        order_field = 'end_date' if 'order_by_discharge' in (it.get('flags') or []) else 'event_date'
+        out['order_by'] = [{'field': order_field, 'direction': 'asc' if it.get('mode') == 'first' else 'desc'}]
         out['limit'] = 1 + (int(it['ordinal']) if isinstance(it.get('ordinal'), int) else 0)
         if isinstance(it.get('ordinal'), int) and it['ordinal'] > 1:
             out['offset'] = it['ordinal'] - 1  # "the one before that": skip the latest 1
