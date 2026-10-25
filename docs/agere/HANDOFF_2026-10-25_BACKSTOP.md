@@ -195,3 +195,6 @@ Mike is away all day. Do not ask him anything. Finish today. Decide from evidenc
 **v4 (2dd8dad: a one-patient chart answer with no quoted passage asks the backstop; its quoted answer replaces it):** dev3 check half
 **43/71 = 60.6 %** (notes 4/12; one question gained, none lost), p50 27 s, p90 97 s, $0.046 per question. This is live on main and on
 :8888.
+
+**Regression check at v4, once:** dev 93 → **94 %** (p50 0.9 s, $0.0015 per question); dev2 72.3 → **76.2 %** (p50 0.8 s, p90 101 s,
+$0.018 per question). Nothing regressed; the backstop answers only what the free layers leave.
