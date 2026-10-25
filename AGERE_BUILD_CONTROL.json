@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-24T20:31:30.272284+00:00",
+  "updated_at": "2026-10-25T00:47:38.443837+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,17 +359,18 @@
     }
   ],
   "checkpoint": {
-    "kind": "implementation_delivered",
+    "kind": "implementation_delivered_qualification_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Release ce310b5 expands shared clinical/claims/SDOH composition, preserves ratio/event/temporal scope and offers common per-route acceptance that advances incomplete proposals to the next layer; chart booleans, note counts and summary input provenance repaired. Established practice attribution preserved.",
-    "measured_failure_reduction": "Broad regression105 modules7 failures vs102/9, zero new failure names; final-scope17/1 vs17/1 zero new.15 grouped dev regressions caught and repaired before landing. Live pharmacy composite and SVI comparison both key-correct at0 calls/$0. Earlier full paid dev87/100 at$0.192139175; targeted earlier-release replay4/13 failures recovered at$1.436317484. Frozen09 freecompose91/130; new full paid run in progress.",
+    "user_behavior_delta": "Release3d3f6ff preserves request cost/audit context in parallel note reading, paid-claims lists versus totals, and patient/discharge chronology in short dev followups. Original synthetic warehouse restored, :8885 ready.",
+    "measured_failure_reduction": "213/211module comparison37same failures/0new; finalchart16/14modules1same failure/0new. Dev discharge fragment primary text recovered. Paid published-score dev94/100$0.092350224, competitorheldout22/50$4.8693294, Agereheldout15/50$2.930939989: transfer target NOTmet. Source/learning unchanged,50unique/0repeats,1conservativefailure.",
     "evidence": [
       "docs/agere/DEV_GENERALIZATION_2026-10-24.md",
+      "docs/agere/COMPARISON_RESULTS_2026-10-24.md",
       "artifacts/agere-generalization-d4de3ef/implementation-receipt.json"
     ],
-    "remaining_gap": "95% target unmet; broad composition, conversational antecedents, multi-part claims and independent qualification remain open. All ten acceptance areas retained; G3 active, G5 incomplete.",
-    "next_action": "Finish all50uniqueheldoutitems without repeating any; inspect aggregatesonly, verify source/learning fingerprints and report whole-ledger-window spend. Disclose evaluation-only correction and1conservative failure. Then integrate tested note-worker accounting fix againstlatestmain, push/restartnormal original-source live service, recordfinalreceipt. >95%/99%notestablished; G3active/G5incomplete/fullacceptancefalse.",
+    "remaining_gap": ">95%/99%notestablished: published heldout30%, answeredprecision45.8%. Date scorer can over-credit incidental dates; strict primary-answer adjudication, latest-admission ambiguity, unfamiliar composition and refused followups remain open. All10acceptance areas retained; G3active/G5incomplete.",
+    "next_action": "Finish matched free paraphrase candidate/main checks with calibration/model links and Metal access; no heldout reruns or individual inspection. Diagnose only dev3 BUILD half(79questions), keeping CHECK half closed for transfer. First reproduced new build failure: BP followup with explicit paired target; implement shared typed comparisons with source/date/unknown preservation. Tighten dev primary-answer scoring separately from frozen published comparison. Regression-diff before every landing; Haiku first and report spend.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
@@ -1295,6 +1296,13 @@
       "basis": "Reproduced browser ambiguity;32 primary/frozen regressions, final syntax/browser verification, exact before/after API-state equality and live asset hashes.",
       "scope_impact": "Specific B3 failure removed; original whole-request/independent qualification blockers retained. No workflow authority, source, paid-provider or external action change.",
       "evidence": "artifacts/agere-work-progress-labels-v1/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-25T00:47:38.443837+00:00",
+      "decision": "Reassess after dev gains failed to improve unseen transfer: retain completed once-only comparison, shift diagnosis to independent dev3 BUILD half and strict primary-answer checks.",
+      "basis": "Final published dev94% but heldout30%, competitor44%; over-crediting date scorer found on dev. Minor dev-only wording fixes do not establish generalization.",
+      "scope_impact": "All10areas and G3/G5status retained. No heldout texts/outcomes used for diagnosis, no keys/clinical definitions changed. CHECK half reserved for transfer, Haiku-first spend visible.",
+      "evidence": "docs/agere/COMPARISON_RESULTS_2026-10-24.md"
     }
   ]
 }
