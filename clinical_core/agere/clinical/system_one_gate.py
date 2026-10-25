@@ -130,11 +130,13 @@ def render(question, graph, result, *, limit=1800):
     graph = graph if isinstance(graph, dict) else {}
     if graph.get('interpretation') and graph.get('interpretation') != question:
         lines.append('Plan reading: ' + _short(graph['interpretation'], 200))
-    for node in (graph.get('nodes') or [])[:4]:
+    nodes = graph.get('nodes') or []
+    sql_only = bool(nodes) and all((n.get('parameters') or {}).get('query') or (n.get('parameters') or {}).get('sql') for n in nodes)
+    for node in nodes if sql_only else nodes[:4]:
         params = node.get('parameters') or {}
         bits = [f"{k}={_short(params[k], 160)}" for k in _PARAM_KEYS if params.get(k) not in (None, '', [], {})]
         sql = params.get('query') or params.get('sql')
-        if sql: bits.append('SQL: ' + _short(sql, 420))
+        if sql: bits.append('SQL: ' + (str(sql) if sql_only else _short(sql, 420)))
         lines.append(f"Step {node.get('operation') or node.get('id') or '?'}: " + ('; '.join(bits) or _short(params, 200)))
     answer = (result or {}).get('answer') if isinstance(result, dict) else None
     answer = answer if isinstance(answer, dict) else {}
@@ -162,6 +164,9 @@ def render(question, graph, result, *, limit=1800):
     elif answer.get('patient_ids'):
         lines.append(f"Patients listed: {len(answer['patient_ids'])}")
     text = '\n'.join(lines) or 'Nothing was computed.'
+    # SQL-only proposals must expose every predicate, denominator and ordering.
+    # A clipped WHERE tail is a different computation, not a cheaper rendering.
+    if sql_only: return text
     return text if len(text) <= limit else text[:limit - 3] + '...'
 
 
