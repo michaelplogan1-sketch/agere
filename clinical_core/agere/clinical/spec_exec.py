@@ -75,6 +75,7 @@ def holds(predicate, reading):
 def evaluate_one(stack, predicate, ids, *, as_of, ledger, evaluate):
     """-> ({pid: reading}, receipt). A reader that raises or is absent leaves every patient undecided."""
     started = time.perf_counter()
+    if not ids: return {}, {'available': evaluate is not None, 'patients': 0, 'skipped': 'structured or earlier predicates already settle this subject'}
     if evaluate is None:
         return {}, {'available': False, 'reason': 'the note reader (note_frames.evaluate) is not installed', 'patients': len(ids)}
     try:
@@ -98,7 +99,7 @@ def bind(stack, contract, *, population=None, target=None, as_of=None, ledger=No
     if not predicates: return {'contract': contract, 'readings': {}, 'receipt': {'version': VERSION, 'predicates': 0}}
     as_of = as_of or (contract.get('source_identity') or {}).get('as_of')
     evaluate = evaluate if evaluate is not None else request_plan.executor('note_frames.evaluate')
-    bound, readings, steps = {}, {}, []
+    bound, readings, condition_readings, steps = {}, {}, {}, []
     for ident in sorted(predicates, key=lambda k: int(k[1:])):
         predicate = predicates[ident]
         candidates = patient_ids(stack, substitute(contract.get('unknown_membership_query'), bound), population, target)
@@ -108,6 +109,7 @@ def bind(stack, contract, *, population=None, target=None, as_of=None, ledger=No
             verdict = holds(predicate, read.get(pid))
             if verdict is True: true.add(pid)
             elif verdict is None: unknown.add(pid)
+        condition_readings[ident] = read
         bound[ident] = {'true': true, 'unknown': unknown}
         readings[ident] = {pid: read[pid] for pid in true if pid in read}
         steps.append({'predicate': ident, 'frame': predicate['frame'], 'candidates': len(candidates), 'true': len(true),
@@ -115,7 +117,7 @@ def bind(stack, contract, *, population=None, target=None, as_of=None, ledger=No
     bound_contract = {**contract}
     for key in ('query', 'membership_query', 'unknown_membership_query', 'coverage_query'):
         if bound_contract.get(key): bound_contract[key] = substitute(bound_contract[key], bound)
-    return {'contract': bound_contract, 'readings': readings, 'receipt': {'version': VERSION, 'predicates': len(predicates), 'steps': steps}}
+    return {'contract': bound_contract, 'readings': readings, 'condition_readings': condition_readings, 'receipt': {'version': VERSION, 'predicates': len(predicates), 'steps': steps}}
 
 
 def evidence_of(readings, ids, limit=200):
@@ -144,15 +146,72 @@ def range_note(answer, undecided, readings_receipt):
     return answer
 
 
+def compound_note_answer(stack, contract, *, as_of, ledger, question):
+    """Execute the compiled three-valued condition; never flatten AND/OR/NOT.
+
+    An open detail request needs the detail renderer and cannot be replaced by
+    a yes/no membership test. Declining this adapter leaves the original request
+    available to the next checked proposer.
+    """
+    from . import chart_queries as Q
+    if (not re.match(r'(?i)^\s*(?:is|are|was|were|do|does|did|has|have|had|can|could)\b', question or '')
+            or re.search(r'(?i)\b(?:what|why|when|where|how)\b', question or '')):
+        raise request_plan.PlanError('A compound note detail request needs its full detail output; a Boolean answer would omit it')
+    import inspect
+    evaluate = request_plan.executor('note_frames.evaluate')
+    if evaluate is not None:
+        fn = evaluate
+        accepts_live = 'allow_live' in inspect.signature(fn).parameters
+        def evaluate(stack_, predicate, ids, *, as_of, ledger):
+            kw = {'as_of': as_of, 'ledger': ledger}
+            if accepts_live: kw['allow_live'] = bool(getattr(stack_, 'allow_live', False))
+            return fn(stack_, predicate, ids, **kw)
+    catalog = request_plan.Catalog.load(stack.path)
+    population = contract.get('population')
+    result = bind(stack, contract, population=population, target=catalog.target, as_of=as_of, ledger=ledger, evaluate=evaluate)
+    compiled = result['contract']
+    if not compiled.get('membership_query') or not compiled.get('unknown_membership_query'):
+        raise request_plan.PlanError('The combined note condition has no complete executable membership contract')
+    matches = patient_ids(stack, compiled.get('membership_query'), population, catalog.target)
+    unknown = patient_ids(stack, compiled.get('unknown_membership_query'), population, catalog.target)
+    pid = contract['subject']['patient_id']
+    truth = True if pid in matches else None if pid in unknown else False
+    sources, rows, seen = [], [], set()
+    for ident, patients in result.get('condition_readings', {}).items():
+        reading = patients.get(pid)
+        if not reading: continue
+        pred = contract['note_predicates'][ident]
+        rows.append({'criterion': pred['concept']['term'], 'status': reading.get('status'),
+                     'matches': holds(pred, reading), 'detail': reading.get('detail') or {}})
+        for ev in reading.get('evidence') or []:
+            key = (ev.get('record_id'), ev.get('quote'))
+            if key in seen: continue
+            seen.add(key)
+            sources.append(Q.src(ev.get('note_type') or 'clinical_note', ev.get('record_id'), ev.get('date'), quote=ev.get('quote')))
+    headline = ('Yes. The requested combination is supported' if truth is True else
+                'No. The requested combination is not supported' if truth is False else
+                'The requested combination remains unresolved') + ' for ' + pid + '.'
+    return {'status': 'answered' if truth is not None else 'partial', 'answer_type': 'yes_no',
+            'value': truth, 'yes_no': truth, 'headline': headline, 'table': rows, 'sources': sources,
+            'patient_id': pid, 'patient_ids': [pid], 'unknown_count': int(truth is None),
+            'missing': ['The combined condition cannot be settled from the available evidence.'] if truth is None else [],
+            'limitations': [], 'actionable_cohort': False, 'data_absence_established': False,
+            'note_reading': result['receipt'], 'condition_evaluation': {'truth': truth, 'compiled_request_id': contract['id']}}
+
+
 def note_answer(stack, contract, *, as_of=None, ledger=None, answer=None, question=None):
     """A single patient's note answer through the chart reader (builder C). -> the answer contract, or an honest 'not available'."""
-    answer = answer or request_plan.executor('chart_reader.answer')
     as_of = as_of or (contract.get('source_identity') or {}).get('as_of')
+    request = dict(contract['request'])
+    where = request.get('where')
+    if contract.get('note_predicates') and isinstance(where, dict) and where.get('op') != 'note':
+        return compound_note_answer(stack, contract, as_of=as_of, ledger=ledger,
+                                    question=question or contract.get('original_question') or contract.get('question') or '')
+    answer = answer or request_plan.executor('chart_reader.answer')
     if answer is None:
         return {'status': 'not_available', 'answer_type': 'unsupported', 'headline': 'The chart reader is not installed in this build.',
                 'missing': ['chart_reader.answer is not registered'], 'patient_ids': [], 'actionable_cohort': False,
                 'data_absence_established': False, 'limitations': ['No note answer was read; nothing was guessed.']}
-    request = dict(contract['request'])
     # The chart reader executes note predicates from spec['note']; a spec writes them in where ({"op": "note", ...}, possibly under and/or).
     # Hand them over, with the subject and the question, so the reader executes the spec instead of re-reading the question text (dev3 2026-10-24:
     # every valid note spec came back "domain, intent left open").
