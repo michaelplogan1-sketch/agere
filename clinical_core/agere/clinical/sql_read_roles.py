@@ -60,12 +60,13 @@ def _numeric_measurement_reads(sql, table_positions, *, exempt_aliases=()):
     def active(scope):
         return {name.lower(): source for name, (_, source) in scope.selected_sources.items()}
 
-    def trace_expression(expression, scope):
+    def trace_expression(expression, scope, reduced=False):
         for column in expression.find_all(exp.Column):
-            if not ignored(column): resolve(scope_of(column, scope), column.name, column.table)
+            if not ignored(column): resolve(scope_of(column, scope), column.name, column.table, reduced)
 
-    def trace_source(source, name):
+    def trace_source(source, name, reduced=False):
         if isinstance(source, exp.Table):
+            if reduced: return
             if source.name.lower() != 'measurement' or (name != '*' and name.lower() not in value_names): return
             if source.alias_or_name.lower() in exempt_aliases: return
             owner = source.find_ancestor(exp.Select)
@@ -80,11 +81,13 @@ def _numeric_measurement_reads(sql, table_positions, *, exempt_aliases=()):
             return
         if not isinstance(source, Scope): return
         expressions = list(source.expression.selects)
+        owner = source.expression
+        reduced = reduced or bool(owner.args.get('having') or any(w.find_ancestor(exp.Select) is owner for w in owner.find_all(exp.Window)))
         if name == '*':
             for expression in expressions:
                 if isinstance(expression, exp.Star):
-                    for child in active(source).values(): trace_source(child, '*')
-                else: trace_expression(expression, source)
+                    for child in active(source).values(): trace_source(child, '*', reduced)
+                else: trace_expression(expression, source, reduced)
             return
         names = source.outer_columns or [x.alias_or_name for x in expressions]
         index = next((i for i, n in enumerate(names) if n.lower() == name.lower()), None)
@@ -92,23 +95,23 @@ def _numeric_measurement_reads(sql, table_positions, *, exempt_aliases=()):
         if index is not None:
             for branch in branches:
                 selected = list(branch.expression.selects)
-                if index < len(selected): trace_expression(selected[index], branch)
+                if index < len(selected): trace_expression(selected[index], branch, reduced)
         elif any(isinstance(x, exp.Star) or (isinstance(x, exp.Column) and x.is_star) for x in expressions):
-            for branch in branches: resolve(branch, name, '')
+            for branch in branches: resolve(branch, name, '', reduced)
 
-    def resolve(scope, name, qualifier):
+    def resolve(scope, name, qualifier, reduced=False):
         if scope is None: return
-        key = (id(scope), name.lower(), qualifier.lower())
+        key = (id(scope), name.lower(), qualifier.lower(), reduced)
         if key in visited: return
         visited.add(key)
         sources = active(scope)
         if qualifier:
             source = sources.get(qualifier.lower())
-            if source is not None: trace_source(source, name)
-            elif scope.parent is not None: resolve(scope.parent, name, qualifier)
+            if source is not None: trace_source(source, name, reduced)
+            elif scope.parent is not None: resolve(scope.parent, name, qualifier, reduced)
             return
         if len(sources) == 1:
-            trace_source(next(iter(sources.values())), name)
+            trace_source(next(iter(sources.values())), name, reduced)
             return
         # Unqualified canonical value columns are unambiguous only with a single
         # value-bearing source. Multiple physical candidates cannot be guessed.
@@ -122,8 +125,8 @@ def _numeric_measurement_reads(sql, table_positions, *, exempt_aliases=()):
                 names = source.outer_columns or [x.alias_or_name for x in selected]
                 if name.lower() in {n.lower() for n in names} or any(isinstance(x, exp.Star) for x in selected):
                     candidates.append(source)
-        if len(candidates) == 1: trace_source(candidates[0], name)
-        elif not sources and scope.parent is not None: resolve(scope.parent, name, '')
+        if len(candidates) == 1: trace_source(candidates[0], name, reduced)
+        elif not sources and scope.parent is not None: resolve(scope.parent, name, '', reduced)
         elif len(candidates) > 1: raise ValueError('Ambiguous measurement value column')
 
     for column in tree.find_all(exp.Column):
