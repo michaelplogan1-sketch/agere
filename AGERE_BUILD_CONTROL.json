@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-25T05:15:30.251230+00:00",
+  "updated_at": "2026-10-25T05:28:35.471822+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -362,14 +362,14 @@
     "kind": "implementation_delivered_qualification_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Atomic answer columns cannot overwrite patient identity or derived columns",
-    "measured_failure_reduction": "Saved BUILDx2-18 real patientID retained instead ofunknown; unresolved membership/count range preserved; no accuracy gainclaimed.30focusedtests1skip; release20/19moduleszero fail on finalmatchedrerun, initialflaky evaluationcachetest retained/whole35testmodulepassed. Normal source scope exact2reports/evalNone/$0. Initialartifactsetupsmokeknown$.001017174 plus1failedwithoutusage, originalsharedartifacts restored.",
+    "user_behavior_delta": "Cited source qualifiers do not demand a grouped table; explicit reported medication-use counts retain period, unit, date, source and uncertainty.",
+    "measured_failure_reduction": "OpenedBUILDx2-14:refused100.3sec/$.668084025 ->correcttyped0/14days withMay13callbackcitation10.8sec/known$.000179898(1failedwithoutusage),0Claude;sourcebanksunchanged/0writes. Finalfreeparaphrases243/295vs242/295,0lost;recoveredcreditisbarepassages,notclinicalproof.44/42mainregmodules2samefail/0new;33focusedtests. Normalmodeexactcount/source/evalNone;repeat19.7sec/0calls/$0. Initialnormaltagged$.000323428;unassignedwindow$.00035643keptseparate.",
     "evidence": [
-      "artifacts/agere-atomic-identity-03904dd/implementation-receipt.json",
-      "docs/agere/DEV_GENERALIZATION_2026-10-24.md"
+      "artifacts/agere-source-frequency-5162f78/implementation-receipt.json",
+      "docs/agere/COMPARISON_RESULTS_2026-10-24.md"
     ],
     "remaining_gap": "95%/99% not established. Original heldout30% and CHECK13/71 remain unchanged/closed. Published scoring can over-credit incidental values, unsupported absences and passage citations. Clinical/source semantic proof and unfamiliar composition remain incomplete. All10areas/G3active/G5incomplete.",
-    "next_action": "G3: finish5162f78source-frequencyrelease qualification. Fullfrozen2751b6bdevx2-14 recovered refusal tocorrecttyped0days/datedcallbackcitation in10.8sec, known$.000179898(1failedwithoutusage), noClaude/sourcebankchanges/writeattempts. Hardened5162f78keepslatestconflictingfrequenciesunknown andspelledrecallquantities;33focusedtests+savedactualsource replay$0pass. Postmergefinalregressionrunning(e339e14vs79444f6);295freehardenedparaphrasesrunning. Preliminary275free242/295vs039242/295:one lostb2-04-p1 andone recoveredb2-27-p2,bothbaseline/candidate credited2passagesonly;diagnose timing/barepassageovercredit withmatchedtargetedfreechecks beforelanding. Mainnotpushedsince79444f6;live03904dd unchanged. Partialcontinuation326a7ee remainsunpromoted/noaccuracygain. Incoming312noteadapter unsafeBooleanflattening staysinactive; analyst503negationfixpushedbutinactive. Haikufirst/reportspend,noclosedheldout/CHECKinspection/rerun/no newcaps. All10areas/G3active/G5incomplete.",
+    "next_action": "G3: compare actual039before offline analyst replay withhardenedmain on47verifiedBUILD-onlyrecordedHaikuanswers. Currentafter:40proposals21correct/19wrong;cascadeadmits19correct/11wrong(63.3%precision),so do NOT activateincominganalystimprovement yet. HealfalsechecksbyvalidSQL/viewevidence but requireindependentsemanticverificationinsteadofaudit-onlybypass;measureSystemOnebeforeClaudeusingrecordedBUILDonlyifneeded,reportdedicatedcost. Incoming312noteadapterBooleanflattening remainsinactive. Twoexistingcase_synthesisfailuresareuncapped-ledgerNonecomparison;repairwithoutnewcaps as supportingwork. No closedheldout/CHECKaccess/reruns, all10areas/G3active/G5incomplete/95%99%unmet.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
