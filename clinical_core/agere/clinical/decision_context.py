@@ -293,7 +293,7 @@ def copy_context_call(fn, *args, **kwargs):
 # --- SQL enforcement -------------------------------------------------------------------------------------------------------------
 _KEYWORDS = frozenset('''where on join left right inner outer cross full natural group order limit union except intersect having using
 select window set values returning offset'''.split())
-_FROM = re.compile(r'(?is)\b(FROM|JOIN)(\s+)("?)([A-Za-z_]\w*)\3(?=[\s,;)]|$)(?:(\s+)(AS\s+)?([A-Za-z_]\w*))?')
+_FROM = re.compile(r'(?is)\b(FROM|JOIN)(\s+)("?)([A-Za-z_]\w*)\3(?=[\s,;)]|$)(?:(\s+)(AS\s+)?("(?:[^"]|"")*"|[A-Za-z_]\w*))?')
 _COUNT_PATIENTS = re.compile(r'(?is)\bcount\s*\(\s*distinct\b[^;]{0,200}?patient_id')
 _SELECT_PATIENT = re.compile(r'(?is)^\s*(?:with\b.*?\)\s*)?select\s+(?:distinct\s+)?(?:\w+\.)?"?patient_id"?\s*(?:,|\bfrom\b|as\b)')
 _COUNT_ROWS_OF_PATIENT = re.compile(r'(?is)\bselect\s+count\s*\(\s*(?:\*|1|[\w."]*patient_id)\s*\)[^;]*?\bfrom\s+"?patient"?(?=[\s,;)]|$)')
@@ -318,7 +318,17 @@ def patient_grain(sql, returns=None):
     """Does this query count or list patients, or summarise a PATIENT attribute (average SVI, average age)? (money, event counts and row-level analyses are not patient grain.)"""
     masked, _ = _mask(sql or '')
     if returns == 'patient_set': return True
-    return bool(_COUNT_PATIENTS.search(masked) or _SELECT_PATIENT.search(masked) or _COUNT_ROWS_OF_PATIENT.search(masked) or _summarises_patient_attribute(masked))
+    if _COUNT_PATIENTS.search(masked) or _SELECT_PATIENT.search(masked) or _COUNT_ROWS_OF_PATIENT.search(masked) or _summarises_patient_attribute(masked):
+        return True
+    if re.search(r'(?i)\bcount\s*\(\s*distinct\b', masked):
+        from .sql_read_roles import counts_distinct_patient_ids
+        try:
+            return counts_distinct_patient_ids(sql)
+        except (ValueError, ImportError):
+            state = _SCOPE.get()
+            if state is not None: state.problem('the counted identifier could not be verified as a patient or event grain')
+            return False  # an unproven alias does not authorize a patient-grain rewrite
+    return False
 
 
 _SUMMARY = re.compile(r'(?i)\b(?:avg|sum|min|max|median)\s*\(')
@@ -358,7 +368,8 @@ def _substitute(sql, living, latest, predicate=LIVING_PREDICATE):
             tail = ''
         if table in ctes or table not in PATIENT_TABLES: return m.group()
         # the lab rule reads ANY result by definition (oracle Q13 / Q25 / Q28: rewritten to the latest, it lost patients)
-        is_measurement = table == 'measurement' and latest and (alias or '').lower() != LAB_RULE_READ
+        alias_name = (alias or '').strip('"').lower()
+        is_measurement = table == 'measurement' and m.start() in latest and alias_name != LAB_RULE_READ
         if not living and not is_measurement: return m.group()
         if is_measurement:
             inner = '(SELECT * FROM measurement WHERE record_id IN (SELECT record_id FROM measurement_latest)'
@@ -386,10 +397,19 @@ def enforce_sql(sql, returns=None, tables=None):
     if not patient_grain(sql, returns): return sql, None
     # `tables` = the relations of the database the query runs on: a database without `death` (or measurement_latest) has nothing to apply
     living = state.living_only and not references_death(sql) and (tables is None or 'death' in tables)
-    masked, _ = _mask(sql)
-    uses_measurement = (bool(re.search(r'(?i)\b(?:FROM|JOIN)\s+"?measurement"?(?=[\s,;)]|$)', masked)) and 'value' in masked.lower()
-                        and not re.search(r'(?i)\bhaving\b|\bover\s*\(', masked))  # per-patient result counts and windows need every result
-    latest = state.lab_mode == 'latest' and uses_measurement and (tables is None or 'measurement_latest' in tables)
+    masked, held = _mask(sql)
+    references = {m.start(4): m.start() for m in _FROM.finditer(masked) if m.group(4).lower() == 'measurement'}
+    latest = set()
+    if state.lab_mode == 'latest' and references and (tables is None or 'measurement_latest' in tables):
+        from .sql_read_roles import numeric_measurement_reads
+        def placeholder(m):
+            original = held[int(m[1])]
+            return ('0' + ' ' * (len(m.group()) - 1)) if original.startswith("'") else ' ' * len(m.group())
+        parseable = re.sub(r'\x00(\d+)\x00', placeholder, masked)
+        try:
+            latest = numeric_measurement_reads(parseable, references, exempt_aliases=(LAB_RULE_READ,))
+        except (ValueError, ImportError) as exc:
+            state.problem('the numeric versus completion scope of a measurement read could not be verified: ' + type(exc).__name__)
     if not living and not latest: return sql, None
     rewritten, done = _substitute(sql, living, latest, counted_predicate(tables is not None and SEGMENT_MARKER in tables))
     with state.lock: state.checked += 1

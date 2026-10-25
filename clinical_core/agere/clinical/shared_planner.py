@@ -133,7 +133,7 @@ def policy_identity():
         name: request_plan.fingerprint(Path(__file__).with_name(name).read_text())
         for name in ('shared_planner.py', 'request_plan.py', 'request_language.py', 'analysis_graph.py',
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
-                     'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py', 'local_prompt.py',
+                     'decision_context.py', 'sql_read_roles.py', 'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py', 'local_prompt.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
                      'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
