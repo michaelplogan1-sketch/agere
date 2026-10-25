@@ -93,3 +93,9 @@ class LabReadRoles(unittest.TestCase):
         self.assertFalse(counts_distinct_patient_ids('SELECT COUNT(DISTINCT claim_id) FROM claim'))
         self.assertFalse(counts_distinct_patient_ids("SELECT COUNT(DISTINCT patient_id || event_date) FROM measurement"))
         self.assertTrue(counts_distinct_patient_ids('WITH p AS (SELECT patient_id AS person FROM patient) SELECT COUNT(DISTINCT person) FROM p'))
+
+    def test_explicit_historical_window_in_derived_scope_keeps_its_own_reduction(self):
+        for projection in ('*', 'patient_id,event_date,value_canonical'):
+            sql = "WITH a AS (SELECT patient_id,event_date,value_canonical FROM measurement WHERE concept='hba1c' AND event_date BETWEEN '2029-01-01' AND '2029-12-31'), r AS (SELECT " + projection + ", ROW_NUMBER() OVER(PARTITION BY patient_id ORDER BY event_date DESC) AS rn FROM a) SELECT COUNT(DISTINCT patient_id) FROM r WHERE rn=1 AND value_canonical>9"
+            value, receipt, _ = self.run_query(sql,'How many patients had a most recent 2029 A1c above 9?')
+            self.assertEqual(value,1); self.assertFalse(receipt['latest_labs'])
