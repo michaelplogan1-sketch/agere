@@ -516,6 +516,9 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
         if window:
             pred['window'] = {'start': window['start'], 'end': window['end'], 'quote': window.get('phrase') or ''}
         preds.append(pred)
+    frequency = reported_frequency_request(ask)
+    if frequency and len(preds) == 1 and preds[0]['frame'] == 'medication_event' and re.search(r'\b(?:use|used|using|take|takes|taking|taken)\b', ask, re.I):
+        preds[0]['_reported_frequency'] = frequency
     # a question that asks HOW MANY is answered by one count over its first frame (a second frame would be a second answer)
     if preds and CI.HOW_MANY.search(ask) and not DAYS_OF.search(ask):
         preds = preds[:1]
@@ -723,6 +726,48 @@ def _whole(x):
     return int(v) if v == int(v) and v >= 0 else None
 
 
+def reported_frequency_request(question):
+    match = re.search(r"\bhow many\s+(?:of\s+)?(?:the\s+)?(?:(?:last|past|previous)\s+)?(\d+)\s+(days?|weeks?|doses?)\b", question or '', re.I)
+    return {'period': int(match[1]), 'unit': match[2].lower().rstrip('s')} if match and int(match[1]) > 0 else None
+
+
+def reported_frequency(predicate, reading, wanted):
+    """Read an explicit n-of-N unit statement from a concept-matching cited sentence.
+
+    No occurrence counting, inference from non-use labels, or zero from missing
+    evidence. A latest-date conflict or incompatible recall period stays unknown.
+    """
+    from . import note_evidence as NE
+    patterns = [re.compile(p, re.I) for p in NE.concept_patterns(predicate['concept'])]
+    if not patterns or reading.get('status') == 'other_person': return None
+    matches = []
+    fraction = re.compile(r'(?<![\w.\-/])([0-9]+)\s*(?:out\s+of|of|/)\s*([0-9]+)\s*(days?|weeks?|doses?)\b', re.I)
+    for evidence in reading.get('evidence') or []:
+        if not evidence.get('record_id'): continue
+        clauses = [clause for _, _, sentence in NE.sentences(str(evidence.get('quote') or '')) for clause in re.split(r'[;\n]', sentence)]
+        for sentence in clauses:
+            if not any(p.search(sentence) for p in patterns): continue
+            for found in fraction.finditer(sentence):
+                prefix = sentence[:found.start()]
+                anchors = [m for p in patterns for m in p.finditer(prefix)]
+                if not anchors: continue
+                between = prefix[max(m.end() for m in anchors):]
+                if re.search(r'\b(?:and|but|while|whereas|versus|vs)\b', between, re.I): continue
+                if not re.search(r'\b(?:used|using|taken|taking|took|use|uses|takes?)\s+(?:on\s+)?$', prefix, re.I): continue
+                if re.search(r'\b(?:not|never|denies?|should|will|recommend\w*|instruct\w*|plan\w*|goal|prescrib\w*)\b', prefix, re.I): continue
+                if not re.search(r'\b(?:used|taken|took|report\w*|stat(?:es?|ed)|says?|said)\b', prefix, re.I): continue
+                if re.search(r'(?:[0-9]+\s*[-–]|(?:about|approximately|maybe|perhaps|roughly|at least|at most))\s*$', prefix, re.I): continue
+                n, period = int(found[1]), int(found[2])
+                if found[3].lower().rstrip('s') != wanted['unit'] or period != wanted['period'] or not 0 <= n <= period: continue
+                matches.append((evidence.get('date') or '', n, evidence))
+    if not matches: return None
+    # Undated competing readings cannot establish which report is latest.
+    latest = [m for m in matches if m[0] == max(x[0] for x in matches)]
+    if any(not m[0] for m in matches) and len({m[1] for m in matches}) != 1: return None
+    if len({m[1] for m in latest}) != 1: return None
+    return {'count': latest[0][1], **wanted, 'evidence': [m[2] for m in latest]}
+
+
 def count_events(res, is_open=False):
     """HOW MANY, from one patient's reading: the number a note states (the latest stating note decides), else the number of distinct
     documented occurrences in the window (one per note date). -> {'n', 'basis'} or None when the reading is undecided (never a guessed 0)."""
@@ -787,6 +832,7 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
         want_response = pred.pop('_response', False)
         persist = pred.pop('_persist', False)
         count_asked = pred.pop('_count', False)
+        frequency_wanted = pred.pop('_reported_frequency', None)
         if anchor:
             anchor = dict(anchor)
             keep_window, wanted_event = anchor.pop('_keep_window', False), anchor.pop('_event', None)
@@ -819,6 +865,15 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             res = {'status': 'unknown', 'holds': None, 'detail': {}, 'evidence': [], 'p': None}
         else:
             res = _read(nf, stack, _valid(nf, pred), patient_id, as_of, ledger, allow_live)
+        frequency = reported_frequency(pred, res, frequency_wanted) if frequency_wanted else None
+        if frequency:
+            n, period, unit = frequency['count'], frequency['period'], frequency['unit']
+            evidence = frequency['evidence']
+            cited = [Q.src(e.get('note_type') or 'clinical_note', e['record_id'], e.get('date'), quote=e.get('quote')) for e in evidence]
+            return Q.core('count', f"Reported use of {pred['concept']['term']}: {n} of {period} {unit}s ({evidence[0].get('date') or 'undated'}; {evidence[0]['record_id']}).",
+                          value=n, count=n, table=[{'reported_count': n, 'recall_period': period, 'unit': unit}], sources=cited,
+                          facts={'reported_frequency': {'count': n, 'period': period, 'unit': unit}},
+                          notes=['Patient-reported frequency in the cited source; this does not verify actual adherence.'])
         status = res.get('status', 'unknown')
         asks_denied = pred.get('statuses') == ['denied']  # "was X ruled out?": a `denied` reading is the YES here
         neg_asked.append(asks_denied)
