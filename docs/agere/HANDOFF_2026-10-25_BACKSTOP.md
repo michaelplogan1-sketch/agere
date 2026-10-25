@@ -172,3 +172,22 @@ Mike is away all day. Do not ask him anything. Finish today. Decide from evidenc
   - Insight, 9 misses. The backstop gives 1–2 of the required facts, or picks a defensible but non-governed definition when ask_agere
     cannot read the sub-question. The lever is ask_agere coverage: the sub-questions it declines are the engine gaps worth filling.
   - Definition ambiguities in the keys (pharmacy spend: claim events vs counted fills) are left as they are; not tuned.
+
+**Held-out milestone, run once at v3 (origin/main 8a7ead2; subscription; 50 questions; scored by the runner, questions not read):**
+
+| Bucket | Agere 10-24 night | **Agere v3 (10-25)** | Competitor (API, run once) |
+|---|---|---|---|
+| single patient, structured | 70 % | **80 %** | 90 % |
+| notes | 40 % | **60 %** | 80 % (cites without quoting: lower under the strict scorer) |
+| population quality | 10 % | 20 % | 10 % |
+| claims / pharmacy / SDOH | 20 % | **60 %** | 50 % |
+| insight | 10 % | 10 % | 10 % |
+| **overall** | 36 % | **46 %** (answered 86 %) | 50 % (36 % under the strict passage-quote scorer) |
+
+- $0.075 per question API-equivalent ($3.75 for 50); p50 43 s, p90 136 s. Routes: backstop 12, chart_reader 11, spec_path 7, semantic
+  analyst 7.
+- Read: the gains transfer to held-out (36 → 46 %). Under today's strict scorer Agere is ahead of the competitor (36 %); under the
+  competitor's original scorer Agere is 4 points behind. Cost per question is $0.075 vs the competitor's $0.097 ($4.87 / 50).
+- Population quality on held-out is the weakest bucket (2/10; p90 350 s inside it). Nested ask_agere sub-questions plus backstop
+  turns make up the latency tail. Each sub-question already runs on the 8 s rewording budget, so the tail is the number of calls. Next:
+  widen ask_agere's coverage (the sub-questions it declines are the engine gaps), so fewer turns fall back to free SQL.
