@@ -391,7 +391,8 @@ def synthesize(path, context_id, ledger, *, allow_live=False, maximum_passes=8):
         if old and old[0] != 'validated': raise ValueError('Prior synthesis pending/failed; no silent paid retry')
         return bool(old)
     required = sum(not available(b) for b, _ in prepared)+min(maximum_passes, len(source_components(row, links)))
-    if ledger.receipt()['remaining_reservation_usd'] < required*.5:
+    remaining_usd = ledger.receipt()['remaining_reservation_usd']
+    if remaining_usd is not None and remaining_usd < required*.5:
         raise ValueError('Shared authorization cannot cover all source passes and reconciliation; no calls made')
     def fresh():
         if digest(single.verified_context(path, context_id)) != row_digest or digest(dependencies(path, row)) != link_digest:
@@ -425,7 +426,8 @@ def synthesize(path, context_id, ledger, *, allow_live=False, maximum_passes=8):
             atomic_write(progress_target, progress)
         jobs = reconciliation_jobs(row, progress['passes'], links, maximum_passes)
         needed = sum(not available(j['body']) for j in jobs)
-        if ledger.receipt()['remaining_reservation_usd'] < needed*.5:
+        remaining_usd = ledger.receipt()['remaining_reservation_usd']
+        if remaining_usd is not None and remaining_usd < needed*.5:
             raise ValueError('Shared authorization cannot cover the remaining reconciliation requests; progress retained')
         reconciliations = []
         for i, job in enumerate(jobs, 1):

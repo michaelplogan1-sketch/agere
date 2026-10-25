@@ -214,7 +214,8 @@ def synthesize(path, context_id, ledger, *, allow_live=False):
     prior = ledger.db.execute('SELECT status FROM calls WHERE id=?',(wire_key,)).fetchone()
     if prior and prior[0] != 'validated':
         raise ValueError('Prior synthesis pending/failed; no silent paid retry')
-    if not prior and ledger.receipt()['remaining_reservation_usd'] < .5:
+    remaining = ledger.receipt()['remaining_reservation_usd']
+    if not prior and remaining is not None and remaining < .5:
         raise ValueError('Shared authorization exhausted before provider dispatch')
     tokens = token_check(body,target.parent,allow_live=allow_live)
     verified_context(path,context_id)
