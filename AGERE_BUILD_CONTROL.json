@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-25T04:42:22.188438+00:00",
+  "updated_at": "2026-10-25T04:53:47.684077+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -369,7 +369,7 @@
       "docs/agere/DEV_GENERALIZATION_2026-10-24.md"
     ],
     "remaining_gap": "95%/99% not established. Original heldout30% and CHECK13/71 remain unchanged/closed. Published scoring can over-credit incidental values, unsupported absences and passage citations. Clinical/source semantic proof and unfamiliar composition remain incomplete. All10areas/G3active/G5incomplete.",
-    "next_action": "G3: complete matched provider-disabled dev paraphrase measurement of partial-continuation candidate in /private/tmp/agere-continue-partial versus03904dd; inspect onlydev regressions. Preserve checked partial fallback while later tiers try fullanswer.59focused mockedtests pass,27/26module regressionzero failures; finalfallbackaccepted-flag refinement awaits finaldiff. Then targeted Haiku-first dev diagnostic with dedicatedledger/spend; land onlyzero-new-failure diff. Incomingmain312b13d noteadapter flattening must preserveAND/OR/NOT/structuredscope beforeactivation. No heldout/CHECK reruns orinspection, no newcaps; all10areas/G3active/G5incomplete.",
+    "next_action": "G3: repair shared requested-shape falsegrouping of source qualifiers (per the May2027callback) usingdev/paraphrases and counterexamples. Preserve realby/perpayer/month groupings and allnumeric/date constraints. Partial-continuation326a7ee staysinactive: noaccuracygain measured. Negation50362e9 removes falseabove-thresholdproof forunmeasuredpatients;25tests and16/16regmoduleszero failures, mergeheldpendingpush. Incomingnoteadapter stillneedsBoolean-scopeproofbeforeactivation. Haikufirst onlyafterfree/source-replay passes, reportdedicatedspend. No heldout/CHECKinspection/reruns ornewcaps.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
@@ -1309,6 +1309,13 @@
       "basis": "Saved devx2-18 has atomic sub-question keypatient_id and rendered patient_idunknown although the evaluated patient is known. Source/body-scope increment is now verified in actual normal mode.",
       "scope_impact": "Shared result identity underG3, no clinical definition/key change, no external care, no protected evaluation use; full charter retained.",
       "evidence": "artifacts/agere-imaging-scope-b3bc46d/implementation-receipt.json"
+    },
+    {
+      "at": "2026-10-25T04:53:47.684077+00:00",
+      "decision": "Reassess after identity repair and partial-continuation experiment showed no generalization gain; keep continuation candidate inactive and repair the reproduced evidence-versus-grouping false rejection.",
+      "basis": "Matched295free paraphrases242correct onboth; paid2BUILDpartials baseline1/2$.673830245 andcandidate1/2$.593646393. Identityrepair corrected membershipbutnotclinicalanswer. Devx2-14 chart_reader rejected because per the May2027callback interpreted asbreakdown. Generic grouping regexconflictswithricheranswer_shape interpretation.",
+      "scope_impact": "G3sharedmeaning/acceptance: preserve allnumeric/date requirements and realby/pergrouping. No key/clinicaldefinition changes, closedheldout/CHECKuntouched; all10areas/G5incomplete.",
+      "evidence": "/tmp/agere_generalization/continue_partial_free_diff.json"
     }
   ]
 }

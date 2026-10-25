@@ -84,3 +84,6 @@ Receipts and aggregate-only comparisons: `/tmp/agere_generalization/`. Current p
 
 
 Atomicidentity03904dd is pushed/live after20/19module matched regressionzero failures on finalrerun. Saved BUILDpatientidentity repaired; answer remainsunknown, no accuracygainclaimed. Finaltrue-normal sourcecheck exact2reports/$0/evalNone. Initialartifactsetupsmoke26SystemOnecalls known$0.001017174 plus1failedwithoutusage, accounted separately and preserved; originalsharedartifacts restored before finalverification. Updated owner subtotal including older provisionalestimates$15.348202441, unassignedwindowactivity unchanged$0.032960800. Partial-continuation candidate is notlive; devparaphrase comparisoninprogress.
+
+
+Partial-continuation probe: baseline03904dd1/2correct($.673830245,34calls,11Haiku10Sonnet) versuscandidate326a7ee1/2($.593646393,36calls,8Haiku14Sonnet,1failedwithoutusage). No source/bankchanges orstrictwriteattempts. Exploratoryfreeparaphrases242/295onboth,0lost/0recovered,$0; candidatepolicycacheidentitylistchanged duringrun,so thisisnotsealedreleasequalification. No measuredaccuracygain; candidatekeptinactive. Owner recorded subtotalincludingolderprovisional$16.615679079, plusunassignedwindowactivity$0.032960800 separately. Nextreassessedfailure: sourcequalifier pertheMay2027callbackfalselydemandsagroupedtable.
