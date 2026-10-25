@@ -278,6 +278,21 @@ def as_tool_calls(send):
     return wrapped
 
 
+def shaped(a):
+    """The agent's JSON in the product's answer shape: a {columns, rows} table becomes row dicts; empty value / count / table / patient_ids are
+    left out (a null value reads downstream as "the value is absent" and would replace a headline that states the numbers); an answer whose
+    type promises a field it does not carry is a composite (headline + facts)."""
+    t = a.get('table')
+    if isinstance(t, dict) and isinstance(t.get('rows'), list):
+        cols = t.get('columns') or []
+        a['table'] = [dict(zip(cols, r)) if isinstance(r, list) else r for r in t['rows']]
+    for k in ('value', 'count', 'table', 'patient_ids', 'unit'):
+        if a.get(k) in (None, [], {}, ''): a.pop(k, None)
+    need = {'count': 'count', 'value': 'value', 'table': 'table', 'patient_set': 'patient_ids'}.get(a.get('answer_type'))
+    if need and need not in a and a.get('status') in ('answered', 'partial'): a['answer_type'] = 'composite'
+    return a
+
+
 def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
     """-> {'answer': answer contract or None, 'tool_calls', 'model', 'estimated_cost_usd', 'new_paid_api_calls', 'error', 'seconds'}."""
     if ledger is None and send is None:  # a direct caller: charge the product ledger of a live stack
@@ -310,7 +325,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
            'error': run.get('error'), 'final_text': run.get('final_text'), 'seconds': round(time.perf_counter() - started, 1), 'version': VERSION}
     a = out['answer']
     if a is not None:
-        a = dict(a)
+        a = shaped(dict(a))
         kept, dropped = verified_sources(a, tools)
         a['sources'] = kept
         notes = list(a.get('limitations') or [])

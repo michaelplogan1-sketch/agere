@@ -44,6 +44,18 @@ class Snapping(unittest.TestCase):
         self.assertIsNone(B.snap('patient refused insulin pump therapy', doc))
 
 
+class Shape(unittest.TestCase):
+    def test_numbers_in_the_headline_are_not_read_as_an_absent_value(self):
+        a = B.shaped({'status': 'answered', 'answer_type': 'value', 'headline': '97 of 490 stays (19.8%)', 'value': None, 'count': None,
+                      'table': {'columns': ['g', 'n'], 'rows': [['HF', 51]]}})
+        self.assertEqual(a['table'], [{'g': 'HF', 'n': 51}])
+        self.assertNotIn('value', a)
+        self.assertEqual(a['answer_type'], 'composite')
+        from clinical_core.agere.clinical import answer_format
+        answer_format._honest_unknown(a)
+        self.assertEqual(a['headline'], '97 of 490 stays (19.8%)')
+
+
 class ToolErrors(unittest.TestCase):
     def test_bad_arguments_are_a_tool_error_not_a_crash(self):
         t = B.Tools.__new__(B.Tools)
