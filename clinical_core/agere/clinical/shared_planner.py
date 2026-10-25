@@ -138,7 +138,10 @@ def policy_identity():
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
                      'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
                      'metrics.py', 'metric_families.py', 'measures.py', 'risk_adjustment.py', 'vbc.py',
-                     'spec_fill.py', 'spec_verify.py', 'spec_readback.py', 'spec_path.py', 'spec_exec.py')}})
+                     'spec_fill.py', 'spec_verify.py', 'spec_readback.py', 'spec_path.py', 'spec_exec.py',
+                     'chart_reader.py', 'chart_intents.py', 'chart_queries.py', 'chart_reader_op.py', 'chart_notes.py',
+                     'note_open.py', 'note_evidence.py', 'note_frames.py', 'note_questions.py', 'ocr_passages.py',
+                     'answer_shape.py', 'semantic_reader.py')}})
 
 # Rule text in named parts: the hosted planner sends them all (SYSTEM); the local shaper (local_prompt.py) sends the core and only
 # the parts a question needs.

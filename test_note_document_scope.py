@@ -31,3 +31,32 @@ class DocumentScope(unittest.TestCase):
         self.assertFalse(O.matches_document_type(['radiology_report'], 'ED summary', 'EXAM: XRAY FINDINGS: clear. IMPRESSION: no acute disease.'))
         self.assertFalse(O.matches_document_type(['radiology_report'], 'ED summary', 'EXAM: lungs clear. CXR pending. IMPRESSION: dyspnea.'))
         self.assertTrue(O.matches_document_type(['radiology_report'], 'Radiology Report', 'Chest film normal.'))
+
+
+class SeparateReports(unittest.TestCase):
+    def test_normal_and_abnormal_reports_do_not_become_one_combined_result(self):
+        from tools.note_labels.test_p1_note_correctness import FakeNotes
+        readings = [dict(record_id='scan-old', date='2028-01-01', note_type='Radiology Report',
+                         status='documented', supports=True, detail={'result': 'abnormal'}, quote='IMPRESSION: infiltrate.'),
+                    dict(record_id='scan-new', date='2029-01-01', note_type='Radiology Report',
+                         status='documented', supports=True, detail={'result': 'normal'}, quote='IMPRESSION: clear.')]
+        reader = FakeNotes({('procedure_test', 'chest x-ray'): dict(status='documented', holds=True,
+                              detail={'result': 'abnormal'}, evidence=readings, p=.99)})
+        pred = C.build('What was the impression on the outside CXR report for P-1001?', '2030-05-27')[0]
+        a = C.render(None, [pred], 'P-1001', '2030-05-27', nf=reader)
+        self.assertTrue(a['headline'].startswith('Multiple matching'))
+        self.assertEqual({r['record_id']: r['detail']['result'] for r in a['table']},
+                         {'scan-old': 'abnormal', 'scan-new': 'normal'})
+
+
+class NotePlanIdentity(unittest.TestCase):
+    def test_document_interpretation_change_invalidates_saved_plan_identity(self):
+        from pathlib import Path
+        from clinical_core.agere.clinical import shared_planner as S
+        baseline = S.policy_identity()
+        real_read = Path.read_text
+        def changed(path, *args, **kwargs):
+            text = real_read(path, *args, **kwargs)
+            return text + '\n# changed document interpretation' if path.name == 'note_open.py' else text
+        with patch.object(Path, 'read_text', changed):
+            self.assertNotEqual(S.policy_identity(), baseline)

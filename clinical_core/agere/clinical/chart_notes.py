@@ -868,6 +868,12 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             cited = [e for e in ev if e.get('supports')] or ev  # a positive answer cites the passages that produced it, not every record read
             top = sorted(cited, key=lambda e: not e.get('supports'))[:6 if pred.get('combine') == 'any' else 4]
             multi = pred.get('combine') == 'any' and len([e for e in top if e.get('supports')]) > 1
+            separate_reports = (multi and pred['frame'] == 'procedure_test'
+                                and len({(e.get('record_id'), e.get('date')) for e in top if e.get('supports')}) > 1)
+            if separate_reports:
+                line = f"Multiple matching '{pred['concept']['term']}' reports; each dated result is listed separately"
+                if pred.get('sources') or pred.get('note_types'):
+                    line += ' [read only: ' + ', '.join([*(pred.get('note_types') or []), *(pred.get('sources') or [])]) + ']'
             for e in top:
                 own = ''
                 if multi:  # several reports: each one's own reading, not the best one's
@@ -881,8 +887,14 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             if counted[-1] is not None:
                 line = f"{counted[-1]['n']} {pred['concept']['term']} documented in the notes ({counted[-1]['basis']}) | {line}"
             lines.append(line)
-            rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
-                         **({'count': counted[-1]['n']} if counted[-1] is not None else {})})
+            if separate_reports:
+                rows.extend({'frame': pred['frame'], 'concept': pred['concept']['term'],
+                             'status': e.get('status') or status, 'detail': e.get('detail') or {},
+                             'date': e.get('date'), 'record_id': e.get('record_id'), 'p': e.get('p'),
+                             'matches_question': bool(e.get('supports'))} for e in top)
+            else:
+                rows.append({'frame': pred['frame'], 'concept': pred['concept']['term'], 'status': status, 'detail': detail, 'p': res.get('p'), 'matches_question': ok,
+                             **({'count': counted[-1]['n']} if counted[-1] is not None else {})})
             sources.extend(Q.src(e.get('note_type') or 'clinical_note', e.get('record_id'), e.get('date'), quote=e.get('quote')) for e in cited)
         if res.get('truncated'):  # retrieval caps: absence, earliest, latest and "no contradiction" are not established from part of the notes
             lines[-1] += f" | partial: {res.get('partial')}; the rest were not read, so a negative or earliest/latest answer is undecided"
