@@ -71,6 +71,30 @@ def validate(p):
     return {'query': q, 'returns': p['returns']}
 
 
+_DEFINITION_VIEW = re.compile(r'(?i)\b(?:living_patient|condition_member|latest_lab|last_12_months|medicare_member)\b')
+
+
+def uses_definition_views(query):
+    """True when the query reads one of the analyst's decision-context definition views (analyst_definitions.VIEW_NAMES)."""
+    return bool(_DEFINITION_VIEW.search(re.sub(r"'[^']*'", "''", re.sub(r'--[^\n]*', ' ', query or ''))))
+
+
+def define_definition_views(db):
+    """Create the definition views as TEMP views on this (read-only, not yet authorized) connection, exactly as the analyst's own connection has them
+    (semantic_analyst.SemanticWarehouse.define): a graph built from the analyst's SQL then executes where the analyst ran it. Never written to the file."""
+    from . import analyst_definitions
+    names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view') ORDER BY name")]
+    columns = {n: [r[1] for r in db.execute(f'PRAGMA table_info("{n}")')] for n in names}
+    as_of = next((r[0] for r in db.execute("SELECT value FROM meta WHERE key = 'as_of'")), None) if 'meta' in columns else None
+    views = analyst_definitions.build_views(columns, str(as_of or '2000-01-01')[:10])
+    db.execute('PRAGMA query_only=OFF')
+    try:
+        for name in analyst_definitions.VIEW_NAMES:  # dependency order: living_patient before medicare_member
+            if name in views: db.execute(f'CREATE TEMP VIEW {name} AS {views[name]}')
+    finally:
+        db.execute('PRAGMA query_only=ON')
+
+
 def _authorizer(action, *_):
     return sqlite3.SQLITE_OK if action in _ALLOWED else sqlite3.SQLITE_DENY
 
@@ -87,7 +111,8 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
     p = {**p, 'query': run_sql}
     from . import duckdb_engine  # DuckDB serving (AGERE_SQL_ENGINE=duckdb) with SQLite fallback; shadow comparison
     engine_receipt = None
-    if duckdb_engine.engine() == 'duckdb':
+    uses_views = uses_definition_views(run_sql)  # the analyst's definition views exist only as temp views on a SQLite connection
+    if duckdb_engine.engine() == 'duckdb' and not uses_views:
         started = time.perf_counter()
         columns, rows, engine_receipt = duckdb_engine.serve(target, p['query'], patient_ids, time_limit=limit,
                                                             max_rows=MAX_ROWS)
@@ -102,6 +127,7 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
         query, unfused = add(query), add(unfused)
         args['population'] = json.dumps(sorted(patient_ids))
     db = register(sqlite3.connect(f'file:{target}?mode=ro', uri=True))
+    if uses_views: define_definition_views(db)
     deadline = time.perf_counter() + limit
     db.set_progress_handler(lambda: 1 if time.perf_counter() > deadline else 0, 10000)
     db.set_authorizer(_authorizer)

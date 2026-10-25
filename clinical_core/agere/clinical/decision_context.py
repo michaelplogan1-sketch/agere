@@ -97,6 +97,10 @@ EVENT_RELATIONS = {
 EHR_ONLY_EVENT_TABLES = ('visit', 'encounter')
 EHR_ONLY_EVENT_VALUES = re.compile(r"\b(?:inpatient|emergency|observation|ed|er)\b", re.I)
 
+# The analyst's definition views (analyst_definitions) are living-only by construction: a patient-grain query that reads one has the living rule applied
+# by that view (no other tier writes these names; the executor creates them only for a query that reads them: sql_query.define_definition_views).
+LIVING_VIEW_USE = re.compile(r'(?i)\b(?:living_patient|condition_member|latest_lab|medicare_member)\b')
+
 # patient-keyed relations whose rows must be restricted to living patients inside a patient-grain query. death itself and the raw
 # record stores are never rewritten.
 PATIENT_TABLES = frozenset('''adt_visit allergy_entry appointment cancer_screening claim claim_adjudication claim_adjustment claim_line
@@ -394,7 +398,7 @@ def enforce_sql(sql, returns=None, tables=None):
     rewritten, done = _substitute(sql, living, latest, counted_predicate(tables is not None and SEGMENT_MARKER in tables))
     with state.lock: state.checked += 1
     receipt = {'living': done['living'] if living else [], 'latest_labs': done['latest'], 'rewritten': rewritten != sql}
-    if living and not done['living'] and not re.search(r'(?i)\bpopulation\b', masked):
+    if living and not done['living'] and not re.search(r'(?i)\bpopulation\b', masked) and not LIVING_VIEW_USE.search(masked):
         state.problem('a patient-grain query reads no patient-keyed relation the living-patient rule could restrict')
     if receipt['rewritten']:
         state.note('living_patients' if living and done['living'] else 'latest_labs',

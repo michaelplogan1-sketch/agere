@@ -128,7 +128,7 @@ SHAPES = {'count': {'count', 'value', 'patient_set'}, 'value': {'value', 'count'
           'patient_set': {'patient_set', 'table'}, 'table': {'table'}}
 
 
-def shape_misfit(question, answer):
+def shape_misfit(question, answer, analyst=False):
     """None when the executed answer has the requested output shape (one-row tables count as scalars), else why not."""
     from .analysis_graph import requested_shape
     wanted = requested_shape(question)
@@ -137,6 +137,9 @@ def shape_misfit(question, answer):
     if status not in ('answered', 'partial'): return f'the plan did not produce an answer (status {status})'
     got = answer.get('answer_type')
     if got == 'composite': return None
+    if analyst and wanted == 'patient_set' and got == 'count':
+        from .analyst_acceptance import wants_count_not_set  # "how many ... on their list": the question names a count; "list" / "who" are words inside it
+        if wants_count_not_set(question, answer): return None
     if got == 'table' and RANKED_GROUPS.search(question or ''): return None  # "the three lowest share ... practices": a ranked table is the shape asked for, whatever the measure's wording
     if wanted is None or got in SHAPES.get(wanted, {got}): return None
     rows = answer.get('table')
