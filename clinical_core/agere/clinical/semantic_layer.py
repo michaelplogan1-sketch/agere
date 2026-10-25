@@ -87,7 +87,10 @@ SOURCE_COVERAGE = {
         'meaning': 'claim merges provider medical claims and distinct payer medical claims with adjudication/replacement and duplicate handling. '
                    'payer_claim contains only the received payer feed. Broad medical-claim amounts use claim; grouping by payer or PCP '
                    'does not restrict the source. Explicit payer-reported-only questions can use payer_claim with its counts_in_metrics policy. '
-                   'Never add these overlapping relations together. Observed amounts do not imply complete external cost capture.'},
+                   'CLAIM COUNTS (Mike 2026-10-25): payer/VBC contract reports use payer_claim with counts_in_metrics=1; '
+                   'clinical utilization reports use deduplicated claim; unclear report context requires BOTH labeled counts. '
+                   'Grouping by payer alone does not establish report context. Never add these overlapping relations together. '
+                   'Observed amounts do not imply complete external cost capture.'},
     'medication_observations': {
         'relations': ['medication', 'record', 'current_record'],
         'meaning': 'Orders, list entries, reports, administrations and pickups are different observations. Neither presence nor absence of '

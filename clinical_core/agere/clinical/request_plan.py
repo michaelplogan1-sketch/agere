@@ -861,6 +861,10 @@ class Compiler:
                 covered[match.start():match.end()] = [True] * (match.end()-match.start())
         for m in DISCOURSE_PHRASE.finditer(self.question):  # "pull up ...", "can you": a request frame, not a requirement
             covered[m.start():m.end()] = [True] * (m.end() - m.start())
+        from . import claim_count_policy
+        if claim_count_policy.eligible(plan):
+            for match in claim_count_policy.report_matches(self.question):
+                covered[match.start():match.end()] = [True] * (match.end()-match.start())
         uncovered = [m.group() for m in re.finditer(r'[\w%]+', self.question)
                      if not all(covered[m.start():m.end()]) and m.group().lower() not in STOP_WORDS and m.group().lower() not in DISCOURSE_WORDS]
         if uncovered: raise PlanError('Unaccounted original request text: ' + ', '.join(uncovered))
@@ -979,7 +983,9 @@ def reads_picked_up_fills_only(request):
 
 
 def compile_request(catalog, question, plan, *, population=None):
-    return Compiler(catalog, question, population=population).compile(plan)
+    from .claim_count_policy import compile_counts
+    scoped = compile_counts(catalog, question, plan, population, Compiler, PlanError, fingerprint)
+    return scoped if scoped is not None else Compiler(catalog, question, population=population).compile(plan)
 
 
 def normalize_wire(catalog, question, proposal):
