@@ -31,3 +31,7 @@ class PrimaryAudit(unittest.TestCase):
     def test_closed_evaluations_are_refused(self):
         q = self.question('date', '2029-12-27'); q['split'] = 'heldout'
         with self.assertRaises(ValueError): audit(q, {})
+
+    def test_conflicting_primary_booleans_are_not_cherry_picked(self):
+        self.assertEqual(audit(self.question('yes_no', False), {'answer': {
+            'primary_answer_type': 'yes_no', 'primary_value': True, 'yes_no': False}})['verdict'], 'unverified')
