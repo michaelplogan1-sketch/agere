@@ -158,6 +158,11 @@ def attach(result, interpretation, contract, catalog, question):
     if interpretation.get('spec_fill'): answer['spec_fill'] = interpretation['spec_fill']
     checks = interpretation.get('answer_checks')
     if checks:
+        # The typed contract is executed again after its checked proposal. Keep
+        # the same unambiguous output conformance on the actual shipped result.
+        from .answer_shape import final
+        result.update(final(question, result.get('graph') or {}, {}, result))
+        answer = result['answer']
         result['answer_checks'] = checks
         answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *(checks.get('annotations') or [])]))
     unconfirmed = [p for p in (interpretation.get('spec_verification') or {}).get('parts', []) if p.get('status') != 'pass']

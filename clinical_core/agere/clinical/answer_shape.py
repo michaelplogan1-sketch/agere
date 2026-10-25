@@ -382,7 +382,7 @@ def conform(question, answer, *, operation=None):
         if col is None: return misfit(why)
         v = row[col]
         if want == 'count':
-            out.update(answer_type='count', count=int(v))
+            out.update(answer_type='count', count=int(v), value=int(v), headline=f"{int(v)} {col.replace('_', ' ')}")
         else:
             if req['percent'] and not _PERCENT_COLUMN.search(col) and _FRACTION_COLUMN.search(col) and 0 <= v <= 1:
                 v = v * 100; info['scaled'] = 'fraction -> percent'
