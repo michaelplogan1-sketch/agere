@@ -43,6 +43,8 @@ def as_response(result):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--split', choices=('dev', 'heldout', 'all'), default='heldout')
+    ap.add_argument('--set', choices=('dev', 'dev3'), default='dev', help='dev3 = tools/dev_set/dev3_questions.jsonl (use --half)')
+    ap.add_argument('--half', choices=('build', 'check', 'all'))
     ap.add_argument('--bucket')
     ap.add_argument('--ids', nargs='*')
     ap.add_argument('--model', default=MODEL)
@@ -53,7 +55,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     if a.rescore:
         saved = json.loads(a.rescore.read_text())
-        keys = {json.loads(l)['id']: json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'questions.jsonl')}
+        keys = {json.loads(l)['id']: json.loads(l) for name in ('questions.jsonl', 'dev3_questions.jsonl')
+                for l in open(ROOT / 'tools' / 'dev_set' / name)}
         by, skipped = {}, []
         for r in saved['rows']:
             if 'response' not in r:
@@ -65,9 +68,14 @@ def main(argv=None):
         print(f'rescored {sum(len(v) for v in by.values())} rows; SKIPPED (no saved raw response) {len(skipped)}'
               + (f': {skipped[:20]}{" ..." if len(skipped) > 20 else ""}' if skipped else ''))
         return
-    qs = [json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'questions.jsonl')]
-    sel = [q for q in qs if (a.split == 'all' or q['split'] == a.split) and (not a.bucket or q['bucket'] == a.bucket)
-           and (not a.ids or q['id'] in a.ids)]
+    if a.set == 'dev3':
+        from tools.dev_set.halves import keep
+        qs = keep([json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'dev3_questions.jsonl')], a.half)
+        sel = [q for q in qs if (not a.bucket or q['bucket'] == a.bucket) and (not a.ids or q['id'] in a.ids)]
+    else:
+        qs = [json.loads(l) for l in open(ROOT / 'tools' / 'dev_set' / 'questions.jsonl')]
+        sel = [q for q in qs if (a.split == 'all' or q['split'] == a.split) and (not a.bucket or q['bucket'] == a.bucket)
+               and (not a.ids or q['id'] in a.ids)]
     semantic = SemanticWarehouse(a.semantic)
     as_of = str(semantic.as_of)[:10]
     rows = []
