@@ -42,6 +42,7 @@ OTHER_STREAMS = (
 
 # Topic lexicon: concept words -> extra regexes. Keys are matched against the concept term (word-boundary, lower case).
 SYNONYMS = {
+    r'^(?:x-?ray|radiograph(?:y)?)$': [r'\bx[- ]?ray\b', r'\bradiograph\w*'],
     r'falls?|fell': [r'\bfalls?\b', r'\bfell\b', r'\bfallen\b', r'\bfalling\b'],
     r'goals? of care': [r'goals? of care', r'comfort[- ]focused', r'comfort measures', r'\bhospice\b', r'\bpalliative\b'],
     r'code status|dnr|resuscitat|cpr|polst|molst|advance directive|living will': [

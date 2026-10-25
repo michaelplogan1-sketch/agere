@@ -30,3 +30,17 @@ class ImagingBodyScope(unittest.TestCase):
     def test_xray_request_does_not_admit_mri_with_an_incidental_prior_xray(self):
         self.assertFalse(E.report_concept_scope({'term': 'x-ray'},
                          'EXAM: MRI HEAD\nPrior CXR clear. IMPRESSION: Normal.'))
+
+    def test_unqualified_hyphenated_xray_request_still_retrieves_generic_reports(self):
+        import sqlite3
+        from unittest.mock import patch
+        row = ('r', 'other_text', 'imported_documents', 'Radiology Report', '2029-01-01',
+               'EXAM: XRAY\nIMPRESSION: Mild degenerative changes. No fracture.', 'Radiology Report')
+        db = sqlite3.connect(':memory:')
+        try:
+            with patch.object(E, '_texts', return_value=[row]):
+                generic = E.retrieve(db, 'P-1001', {'term': 'x-ray'}, as_of='2030-05-27', note_types=['radiology_report'])
+                chest = E.retrieve(db, 'P-1001', {'term': 'chest x-ray'}, as_of='2030-05-27', note_types=['radiology_report'])
+            self.assertEqual([r['record_id'] for r in generic], ['r'])
+            self.assertEqual(chest, [])
+        finally: db.close()
