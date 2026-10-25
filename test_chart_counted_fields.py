@@ -36,3 +36,18 @@ class CountedFields(unittest.TestCase):
         with sqlite3.connect(self.fixture.stack.path / 'semantic.sqlite3') as db:
             db.execute('UPDATE death SET sources_disagree=1')
         self.assertEqual(self.fixture.ask('When did '+charts.DEAD+' die?')['answer_type'], 'none')
+
+    def test_mortality_predicate_polarity_is_preserved(self):
+        for patient, alive in [(charts.RICH, True), (charts.DEAD, False)]:
+            for wording, expected in [('Is {P} alive?', alive), ('Is {P} deceased?', not alive),
+                                      ('Has {P} died?', not alive), ('Did {P} die?', not alive),
+                                      ('Is {P} not alive?', not alive), ('Is {P} not deceased?', alive), ('Has {P} not died?', alive), ('Is {P} alive and not deceased?', alive)]:
+                self.assertEqual(self.fixture.ask(wording.replace('{P}', patient))['value'], expected, wording)
+
+    def test_conflicting_death_dates_are_not_reintroduced_in_the_footnote(self):
+        with sqlite3.connect(self.fixture.stack.path / 'semantic.sqlite3') as db:
+            db.execute('UPDATE death SET sources_disagree=1')
+        answer = self.fixture.ask('When did '+charts.DEAD+' die?')
+        self.assertEqual(answer['answer_type'], 'none')
+        self.assertNotIn('2029-03-23', answer['headline'])
+        self.assertIsNone(answer['deceased']['death_date'])

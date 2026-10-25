@@ -450,9 +450,16 @@ def death(ch, it):
         return core('date', f"Recorded death date for {ch.pid}: {d['death_date']} (source: {d['death_source']})", value=d['death_date'],
                     facts={'death_date': d['death_date']}, sources=[src('death', ch.pid, d['death_date'])])
     if d:
-        return core('yes_no', f"No: {ch.pid} is deceased (death date {d['death_date']}, source {d['death_source']})", value=False,
-                    facts={'deceased': True, 'death_date': d['death_date']}, sources=[src('death', ch.pid, d['death_date'])])
-    return core('yes_no', f'Yes: {ch.pid} has no death record (living as of {ch.as_of})', value=True, facts={'deceased': False}, sources=[src('death', ch.pid)])
+        yes = it.get('attribute') == 'deceased'
+        if 'negated_status' in (it.get('flags') or []):
+            yes = not yes
+        date_detail = 'death-date sources disagree' if d.get('sources_disagree') else f"death date {d['death_date']}"
+        return core('yes_no', f"{'Yes' if yes else 'No'}: {ch.pid} is deceased ({date_detail}, source {d['death_source']})", value=yes,
+                    facts={'deceased': True, 'death_date': None if d.get('sources_disagree') else d['death_date']}, sources=[src('death', ch.pid, d['death_date'])])
+    yes = it.get('attribute') != 'deceased'
+    if 'negated_status' in (it.get('flags') or []):
+        yes = not yes
+    return core('yes_no', f"{'Yes' if yes else 'No'}: {ch.pid} has no death record (living as of {ch.as_of})", value=yes, facts={'deceased': False}, sources=[src('death', ch.pid)])
 
 
 # -- utilization ---------------------------------------------------------------------------------------------------------------

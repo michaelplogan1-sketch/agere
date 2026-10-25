@@ -388,8 +388,10 @@ def finish(core, pid, subject, it, as_of, question, receipt, death, note_preds, 
     deceased = None
     headline = core['headline']
     if death:
-        deceased = {'deceased': True, 'death_date': death['death_date'], 'source': death['death_source']}
-        headline = f"{headline} [{pid} is deceased (death date {death['death_date']}); a named patient is answered even though the living-patient default would exclude them]"
+        date_known = not death.get('sources_disagree')
+        deceased = {'deceased': True, 'death_date': death['death_date'] if date_known else None, 'source': death['death_source']}
+        date_detail = f"death date {death['death_date']}" if date_known else 'death-date sources disagree'
+        headline = f"{headline} [{pid} is deceased ({date_detail}); a named patient is answered even though the living-patient default would exclude them]"
     intent_clean = _clean_intent(it)
     if note_preds:
         intent_clean = {**(intent_clean or {}), 'note': [{k: v for k, v in p.items() if k not in ('_anchor', '_response')} for p in note_preds],
