@@ -342,6 +342,10 @@ def explicit_comparisons(text, concepts):
     op = match['op']
     first = match['a']
     if set(concepts) == {'systolic_bp', 'diastolic_bp'} and match['b']:
+        # Below a paired target means both components are below it. An "above"
+        # pair can mean either component or both; do not invent that connective.
+        if operators[op] not in ('<', '<='):
+            return None
         values = [('systolic_bp', first), ('diastolic_bp', match['b'])]
     elif len(concepts) == 1 and concepts[0] and not match['b']:
         values = [(concepts[0], first)]

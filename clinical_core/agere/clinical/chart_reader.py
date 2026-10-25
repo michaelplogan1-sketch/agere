@@ -213,6 +213,8 @@ def validate_chart(chart):
     if chart.get('intent') == 'compare_values':
         import math
         concept = chart.get('concept') or {}
+        if not isinstance(concept, dict):
+            raise ValueError('Measurement comparisons require typed concepts')
         concepts = concept.get('concepts') or [concept.get('value')]
         comparisons = chart.get('comparisons')
         if chart.get('domain') != 'lab' or not isinstance(comparisons, list) or not comparisons:
@@ -223,6 +225,8 @@ def validate_chart(chart):
             raise ValueError('Invalid explicit measurement comparison')
         if len({p['concept'] for p in comparisons}) != len(comparisons):
             raise ValueError('Multiple bounds for one measurement require explicit boolean composition')
+        if {p['concept'] for p in comparisons} != set(concepts):
+            raise ValueError('Every requested measurement needs its explicit bound')
     w = chart.get('window')
     if w is not None and (not isinstance(w, dict) or not {'start', 'end'} <= set(w)):
         raise ValueError('chart.window needs start and end (ISO dates)')

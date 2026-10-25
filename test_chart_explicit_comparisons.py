@@ -60,3 +60,15 @@ class ExplicitComparisons(unittest.TestCase):
         from clinical_core.agere.clinical import chart_intents as intents
         self.assertIsNone(intents.explicit_comparisons('is there an a1c over 12 months?', ['hba1c']))
         self.assertIsNone(intents.explicit_comparisons('is a1c not below 7?', ['hba1c']))
+
+    def test_paired_above_does_not_invent_and_or_meaning(self):
+        from clinical_core.agere.clinical import chart_intents as intents
+        self.assertIsNone(intents.explicit_comparisons('is bp above 140/90?', ['systolic_bp', 'diastolic_bp']))
+
+    def test_invalid_typed_bounds_are_rejected(self):
+        from clinical_core.agere.clinical import chart_intents as intents
+        chart = CR.typed_chart(intents.parse('Is the latest BP below 150/90?', charts.AS_OF))
+        chart['comparisons'] = chart['comparisons'][:1]
+        with self.assertRaises(ValueError): CR.validate_chart(chart)
+        chart['comparisons'][0]['value'] = float('nan')
+        with self.assertRaises(ValueError): CR.validate_chart(chart)
