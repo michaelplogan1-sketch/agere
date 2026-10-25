@@ -24,7 +24,7 @@ VERSION = 'system-one-gate/1'
 
 # Claude-backed cascade tiers (proposers.PAID minus the Perplexity typed decider): skipped for the rest of a question after an outage.
 CLAUDE_TIERS = frozenset({'hosted_typed_interpreter', 'hosted_verified_sql', 'frontier_graph_planner', 'hybrid_analysts',
-                          'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose'})
+                          'metric_router', 'operator_router', 'semantic_analyst', 'stack_planner_propose', 'backstop_agent'})
 
 CHECK_OPTIONS = {
     'answers_fully': 'What was computed answers the question exactly as asked: the same population and filters, time window, '

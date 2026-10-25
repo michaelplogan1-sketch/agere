@@ -75,6 +75,8 @@ TIERS = {
     'operator_router': ('Haiku', 'FAILED calibration: held-out 19/19 wrong; proposes only', 'graph'),
     'local_free_sql': ('free (Qwen3-4B)', 'FAILED calibration: precision too low; proposes only', 'graph'),
     'legacy_cost_ladder': ('free locally; its paid rungs only when live', 'pre-2026-10-19 ladder + together semantics, last resort; uncalibrated', 'graph'),
+    'backstop_agent': ('Sonnet (the escalation rung), one tool loop of up to 20 calls', 'final backstop analyst with SQL + document tools + the '
+                       'conversation; quotes verified verbatim; accepted with checks as annotations (Mike 2026-10-25); uncalibrated', 'answer'),
 }
 # The cascade runs in six stages (CTO, 2026-10-23; Mike, 2026-10-23: the spec path is the main path); a tier never runs before an earlier
 # stage's tiers, whatever the learned routers prefer (they reorder within a stage only). A: reuse and certified free tiers. SPEC: the question
@@ -94,7 +96,10 @@ STAGES = (
     ('spec_path', ('spec_path',)),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
     ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler',
-                'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
+                'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql',
+                # the backstop (Sonnet tool agent: governed engines per sub-question, SQL, documents) before the Haiku analyst: dev3 build-half
+                # insight 7/17 vs 3/17 (2026-10-25); the Haiku analyst still runs when it declines
+                'backstop_agent', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
                 'stack_planner_propose', 'legacy_cost_ladder')),
 )
 STAGE_OF = {t: i for i, (_, tiers) in enumerate(STAGES) for t in tiers}
@@ -537,6 +542,8 @@ class Cascade:
                 raise QuestionNotUnderstood('The rewording was not read by the free stages; the question as typed is tried next.')
             found = self.reserved_analyst(order)  # the analyst never got its turn inside the budget: it gets a reserved slot of its own
             if found is not None: return found
+            found = self.reserved_backstop(order)  # the final backstop always gets its turn before the question is declined
+            if found is not None: return found
             found = self.escalate(order, budget)  # every Haiku attempt failed: the Sonnet rung, tier by tier
             if found is not None: return found
             if budget.best() and (budget.expired() or self.deferred):
@@ -569,6 +576,46 @@ class Cascade:
         finally:
             self.flush_timings()
             self.close()
+
+    def reserved_backstop(self, order):
+        """The final LLM backstop runs once before any decline (AGERE_BACKSTOP_SECONDS, default 90; 0 turns this off), when the budget ran out
+        before it was asked. -> accept() result or None."""
+        name, seconds = 'backstop_agent', float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))
+        if seconds <= 0 or name not in order or not self.runnable(name) or not claude_available() or self.claude_down: return None
+        if any(e.get('proposer') == name and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return None
+        self.deferred = [d for d in self.deferred if d.get('tier') != name]
+        found = self.attempt(name, seconds)
+        return self.accept(order, name, found) if found is not None else None
+
+    def tier_backstop_agent(self):
+        """The final backstop analyst (backstop_agent.py) on the escalation rung (Sonnet): every Haiku tier before it declined. Its answer is
+        accepted with the checks as annotations (heal, don't block): it is the last layer, and its document quotes are verified verbatim."""
+        if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
+        from . import backstop_agent
+        with model_policy.escalation():
+            run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger)
+        self.spend(run.get('new_paid_api_calls', 0), run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+        answer = run.get('answer')
+        if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial', 'unsupported'):
+            return self.reject('backstop_agent', [str(run.get('error') or 'no answer')[:300]])
+        if answer.get('answer_type') == 'note': answer['answer_type'] = 'note_answer'
+        if answer.get('status') == 'unsupported':
+            answer = {**answer, 'status': 'not_available', 'answer_type': 'unsupported', 'data_absence_established': False}
+        sqls = [c.get('sql') for c in run.get('tool_calls') or [] if c.get('sql')]
+        graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
+                 'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': q, 'returns': 'table'},
+                            'purpose': 'Backstop analyst query (executed)'} for i, q in enumerate(sqls[-6:])]}
+        receipt = {'route': 'backstop_agent', 'model': run.get('model'), 'new_paid_api_calls': run.get('new_paid_api_calls', 0),
+                   'backstop': {'version': run.get('version'), 'tool_calls': len(run.get('tool_calls') or []), 'seconds': run.get('seconds')}}
+        notes = []
+        try:  # the checks still run and are recorded, as annotations (never a veto at the last layer)
+            misfit = shape_misfit(self.question, answer)
+            if misfit: notes.append('shape: ' + str(misfit)[:200])
+        except Exception:  # noqa: BLE001
+            pass
+        if notes: answer = {**answer, 'limitations': [*(answer.get('limitations') or []), *('Check note: ' + n for n in notes)]}
+        answer.setdefault('patient_ids', answer.get('patient_ids') or [])
+        return self.contract_of('backstop_agent', graph, receipt, {'answer': answer, 'results': [], 'new_paid_api_calls': 0})
 
     def reserved_analyst(self, order):
         """The LLM layer always gets a turn: when the answer budget ran out before the semantic analyst was asked (end-to-end held-out

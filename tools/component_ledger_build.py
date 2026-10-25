@@ -315,6 +315,8 @@ E('semantic_analyst', 'Single semantic analyst + Haiku reconcile', 'proposer', C
   'Legacy Haiku analyst tool loop with Haiku reconcile (Sonnet on the escalation rung).', 'not_on_path', 'semantic_analyst.py:324,377; together.py:321', cost=HAIKU, flag='AGERE_SEMANTIC_MODEL, AGERE_RECONCILE_MODEL')
 E('legacy_cost_ladder', 'Legacy 18-rung cost ladder', 'proposer', C + 'economical_planner', 'legacy_plan',
   'Former ordered ladder; superseded by the cascade (rungs reused through Ladder).', 'not_on_path', f'{EP}:619-651')
+E('backstop_agent', 'Final LLM backstop agent', 'proposer', C + 'backstop_agent', 'answer',
+  'Sonnet (escalation rung) tool agent over SQL definition views and the documents (list/search/read), with the conversation; quotes verified verbatim; accepted with checks as annotations.', tier('backstop_agent'), 'backstop_agent.py; proposers.py tier_backstop_agent/reserved_backstop', cost=SONNET, flag='AGERE_BACKSTOP, AGERE_BACKSTOP_SECONDS, AGERE_BACKSTOP_TOOLS')
 E('scoped_review_compiler', 'Scoped local candidate compiler', 'proposer', C + 'scoped_review_compiler', 'compile_question',
   'Only reachable from Stack._legacy_compose (no callers).', 'not_on_path', 'stack_runtime.py:129-134')
 E('stack_planner_propose', 'Stack planner propose (older)', 'proposer', C + 'stack_planner', 'propose', 'Older analytic plan proposer imported by stack_runtime; no active caller on compose.', 'not_on_path', 'stack_planner.py:74; stack_runtime.py:8')
@@ -625,6 +627,7 @@ WIRED = {
     'scoped_review_compiler': ('cascade_tier:scoped_review_compiler', None, None),
     'stack_planner_propose': ('cascade_tier:stack_planner_propose', None, None),
     'legacy_cost_ladder': ('cascade_tier:legacy_cost_ladder', None, None),
+    'backstop_agent': ('cascade_tier:backstop_agent', None, None),
     'legacy_compose_together': ('inside:legacy_cost_ladder', None, None),
     'learned_router': ('inside:operator_router', None, None),
     'vbc_knowledge_context_for': ('inside:hosted_typed_interpreter', None, None),

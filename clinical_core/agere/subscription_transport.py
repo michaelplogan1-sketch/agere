@@ -101,9 +101,11 @@ def _tool_call(text, tools):
     if not tools: return None
     s = (text or '').strip()
     if s.startswith('```'): s = s.strip('`').split('\n', 1)[-1].rsplit('```', 1)[0].strip()
-    if not s.startswith('{'): return None
+    start = s.find('{"tool_use"')
+    if start < 0: start = s.find('{') if s.startswith('{') else -1
+    if start < 0: return None
     try:
-        obj = json.loads(s)
+        obj, _ = json.JSONDecoder().raw_decode(s[start:])  # the first object: a reply may run on past it (prose, a second call)
     except ValueError:
         return None
     call = obj.get('tool_use') if isinstance(obj, dict) else None
@@ -135,7 +137,12 @@ def respond(body):
     """A Messages API body -> a Messages API response dict, answered by the CLI."""
     model = body.get('model') or 'claude-haiku-5-5'
     system, user = build_prompt(body)
-    out = run_cli(model, system, user)
+    # a CLI call normally takes seconds; a hung one (about 1 in 8 under load, 2026-10-25) is cut short and retried once
+    timeout = float(os.environ.get('AGERE_SUBSCRIPTION_TIMEOUT', '150'))
+    try:
+        out = run_cli(model, system, user, timeout=timeout)
+    except subprocess.TimeoutExpired:
+        out = run_cli(model, system, user, timeout=timeout)
     text = out.get('result') or ''
     usage = out.get('usage') or {}
     usage = {k: usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}

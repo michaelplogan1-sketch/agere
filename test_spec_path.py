@@ -29,7 +29,8 @@ class Order(unittest.TestCase):
             self.assertLess(order.index(governed), order.index('spec_path'), governed)
         for governed in ('metric_router', 'operator_router'):
             self.assertGreater(order.index(governed), order.index('spec_path'), governed)
-        non_free = [order.index(t) for t in order if t not in P.FREE_FORM]
+        # the final backstop agent writes free-form too but is accepted with checks as annotations (not System One gated), so it sits among them
+        non_free = [order.index(t) for t in order if t not in P.FREE_FORM and t != 'backstop_agent']
         free = [order.index(t) for t in P.FREE_FORM]
         self.assertGreater(min(free), max(non_free) - 3)  # free-form writers sit in the last stage, behind the governed Claude routers
         for t in ('hosted_verified_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder',
