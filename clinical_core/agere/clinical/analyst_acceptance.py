@@ -12,7 +12,7 @@ and the concept library already say into evidence TEXT (never a restated questio
   * a string literal naming a library concept (`concept = 'hba1c'`) in the concept's own words (concepts.MEASUREMENTS / CONDITIONS label; never its
     codes or digits), so 'hba1c' meets "hemoglobin A1c" and 'chronic_kidney_disease' meets "chronic kidney disease";
   * numbers that live inside a column name (`readmitted_30d`: 30);
-  * a comparison under NOT / NOT IN / NOT EXISTS as its complement (`NOT IN (... v <= 9)` is "above 9").
+  * a directly negated scalar comparison as its complement (`NOT IN (... v <= 9)` is "above 9").
 
 It applies to analyst proposals only (receipt carries analyst_evidence); every other tier is checked on its own SQL as before.
 """
@@ -30,8 +30,6 @@ VIEW_RULES = {
 }
 _STRING = re.compile(r"'([^']{1,80})'")
 _IDENT_NUMBER = re.compile(r'(?<=[a-z])_(\d{1,4})(?=[a-z_]|\b)', re.I)
-_NEGATED_GROUP = re.compile(r'(?is)\bnot\s+(?:in|exists|between)?\s*\(')
-_COMPARISON = re.compile(r"(>=|<=|<>|!=|>|<)\s*'?(-?\d+(?:\.\d+)?)'?")
 _COMPLEMENT = {'>=': '<', '<=': '>', '>': '<=', '<': '>='}
 
 
@@ -58,15 +56,16 @@ def _concept_terms(literal):
 
 
 def _negated_complements(sql):
-    """Comparisons inside a NOT (...) / NOT IN (...) / NOT EXISTS (...) group, written as their complements."""
-    out = []
-    for m in _NEGATED_GROUP.finditer(sql):
-        depth, i = 1, m.end()
-        while i < len(sql) and depth:
-            depth += {'(': 1, ')': -1}.get(sql[i], 0)
-            i += 1
-        out += [f'{_COMPLEMENT[op]} {n}' for op, n in _COMPARISON.findall(sql[m.end():i])]
-    return out
+    """Complement only a directly negated scalar comparison, preserving SQL NULL logic.
+
+    NOT IN / NOT EXISTS can include people with no measurement. Negating a
+    compound predicate does not imply that each comparison is complemented.
+    Neither form establishes an above/below-threshold observation.
+    """
+    code = _STRING.sub(lambda m: m.group(0) if re.fullmatch(r"-?\d+(?:\.\d+)?", m.group(1)) else "''", sql)
+    code = re.sub(r'/\*.*?\*/|--[^\n]*', ' ', code, flags=re.S)
+    scalar = re.compile(r"\bnot\s*\(\s*(?:[a-z_]\w*\.)?[a-z_]\w*\s*(>=|<=|>|<)\s*'?(-?\d+(?:\.\d+)?)'?\s*\)", re.I)
+    return [f'{_COMPLEMENT[op]} {number}' for op, number in scalar.findall(code)]
 
 
 def text(receipt, graph=None):

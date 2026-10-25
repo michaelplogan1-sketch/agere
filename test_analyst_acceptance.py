@@ -116,13 +116,33 @@ class PlanTimeChecks(unittest.TestCase):
         gaps = plan_gaps(Q_SHARE, both, receipt_for(wrong_num, DEN))
         self.assertTrue(any('9' in g for g in gaps), gaps)
 
-    def test_the_wrong_direction_still_fails_and_a_negated_complement_passes(self):
+    def test_only_a_direct_scalar_negation_establishes_the_complement(self):
         asc = "SELECT COUNT(*) FROM latest_lab WHERE concept = 'hba1c' AND value < 9"
         self.assertTrue(plan_gaps('How many have an A1c above 9?', asc, receipt_for(asc), 'count'))
         neg = "SELECT COUNT(*) FROM living_patient WHERE patient_id NOT IN (SELECT patient_id FROM latest_lab WHERE concept = 'hba1c' AND value <= 9)"
-        self.assertEqual(plan_gaps('How many have an A1c above 9?', neg, receipt_for(neg), 'count'), [])
+        self.assertTrue(plan_gaps('How many have an A1c above 9?', neg, receipt_for(neg), 'count'))
+        direct = "SELECT COUNT(*) FROM latest_lab WHERE concept = 'hba1c' AND NOT (value <= 9)"
+        self.assertEqual(plan_gaps('How many have an A1c above 9?', direct, receipt_for(direct), 'count'), [])
         plain = "SELECT COUNT(*) FROM latest_lab WHERE concept = 'hba1c' AND value <= 9"
         self.assertTrue(plan_gaps('How many have an A1c above 9?', plain, receipt_for(plain), 'count'))
+
+    def test_missing_measurement_is_not_above_threshold(self):
+        db = sqlite3.connect(':memory:')
+        self.addCleanup(db.close)
+        db.executescript("CREATE TABLE living_patient(patient_id TEXT); CREATE TABLE latest_lab(patient_id TEXT,concept TEXT,value REAL); INSERT INTO living_patient VALUES ('high'),('low'),('missing'); INSERT INTO latest_lab VALUES ('high','hba1c',10),('low','hba1c',8);")
+        neg = "SELECT COUNT(*) FROM living_patient WHERE patient_id NOT IN (SELECT patient_id FROM latest_lab WHERE concept='hba1c' AND value<=9)"
+        direct = "SELECT COUNT(*) FROM latest_lab WHERE concept='hba1c' AND NOT (value<=9)"
+        self.assertEqual(db.execute(neg).fetchone()[0], 2)
+        self.assertEqual(db.execute(direct).fetchone()[0], 1)
+        self.assertTrue(plan_gaps('How many have an A1c above 9?', neg, receipt_for(neg), 'count'))
+        self.assertEqual(plan_gaps('How many have an A1c above 9?', direct, receipt_for(direct), 'count'), [])
+
+    def test_compound_negation_and_sql_literals_are_not_scalar_proof(self):
+        for sql in ("NOT (value<=9 AND sex='F')", "NOT (value<=9 OR sex='F')",
+                    "NOT EXISTS (SELECT 1 WHERE value<=9)", "SELECT 'NOT(value<=9)'",
+                    "SELECT 1 /* NOT(value<=9) */", "NOT(value!=9)", "NOT(value<>9)"):
+            with self.subTest(sql=sql): self.assertEqual(AA._negated_complements(sql), [])
+        self.assertEqual(AA._negated_complements('NOT (ll.value <= 9)'), ['> 9'])
 
     def test_the_view_applies_the_window_only_when_it_is_read(self):
         q = 'How many patients filled an opioid prescription in the past year?'
