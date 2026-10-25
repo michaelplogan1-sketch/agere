@@ -28,9 +28,12 @@ class PayerClaims(unittest.TestCase):
         c = R.compile_request(self.catalog, q, L.parse(self.catalog, q, bound=False))
         return sql_query.execute(self.path, {'query': c['query'], 'returns': c['returns']}, target=self.catalog.target)['value']
 
-    def test_claims_are_counted_payer_claims(self):
-        self.assertEqual(self.count('How many claims were there in 2029?'), 2)
-        self.assertEqual(self.count('How many medical claims were there in 2029?'), 2)
+    def test_ambiguous_counts_show_both_sources_under_oct25_human_policy(self):
+        for q in ('How many claims were there in 2029?', 'How many medical claims were there in 2029?'):
+            c = R.compile_request(self.catalog, q, L.parse(self.catalog, q))
+            r = sql_query.execute(self.path, {'query': c['query'], 'returns': c['returns']}, target=self.catalog.target)
+            self.assertEqual([row['count'] for row in r['rows']], [3, 2])
+            self.assertEqual(len({row['claim_scope'] for row in r['rows']}), 2)
 
     def test_provider_claim_plans_retire_unless_asked(self):
         plan = {'analysis': {'steps': [{'sql': 'SELECT COUNT(*) FROM claim WHERE final_status = 1'}]}}

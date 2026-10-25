@@ -197,13 +197,13 @@ CONDITION_WORDS = [(r'diabet\w*', 'diabetes'), (r'heart\s+failure|\bhf\b|\bchf\b
 class Prioritize:
     NAME = 'prioritize'
     WORDS = set('''who which what should we the our care team patients patient first right now need a call calling prioritize prioritise outreach
-        for to recently'''.split())
+        for to recently whom priority target reach out'''.split())
 
     @classmethod
     def parse(cls, text, catalog):
         t = text.strip().rstrip('?.')
-        if not re.search(r'\b(?:should|need|needs)\b', t, re.I) or not re.match(r'^(?:who|which)\b', t, re.I): return None
-        action = span(t, r'prioriti[sz]e|call(?:\s+first)?|a\s+call|outreach|reach|contact')
+        if not re.search(r'\b(?:should|need|needs|priority)\b', t, re.I) or not re.match(r'^(?:who|whom|which)\b', t, re.I): return None
+        action = span(t, r'prioriti[sz]e|call(?:\s+first)?|a\s+call|outreach|reach\s+out|reach|contact|target')
         if not action: return None
         discharged = span(t, r'recently\s+discharged')
         if discharged:
@@ -275,17 +275,17 @@ class Prioritize:
 @family
 class CareGaps:
     NAME = 'care_gaps'
-    WORDS = set('''where what what's are is the our biggest largest worst gap gaps care in'''.split())
+    WORDS = set('''where what what's which are is the our we have has biggest largest worst gap gaps care in shortfall measure measures furthest behind on'''.split())
 
     @classmethod
     def parse(cls, text, catalog):
         t = text.strip().rstrip('?.')
-        if not re.match(r"^(?:where|what)(?:'s|\s+is|\s+are)?\b", t, re.I) or not span(t, r'\bgaps?\b'): return None
+        if not re.match(r"^(?:where|what|which)(?:'s|\s+is|\s+are)?\b", t, re.I) or not span(t, r'\b(?:gaps?|shortfall|behind)\b'): return None
         if span(t, r'preventive'):
-            return {'params': {'topic': 'preventive', 'ranking': 'largest gap first (lowest rate first)'}, 'quotes': [span(t, r'preventive'), span(t, r'\bgaps?\b'), span(t, r'biggest|largest|worst') or '']}
+            return {'params': {'topic': 'preventive', 'ranking': 'largest gap first (lowest rate first)'}, 'quotes': [span(t, r'preventive'), span(t, r'\b(?:gaps?|shortfall|behind)\b'), span(t, r'biggest|largest|worst') or '']}
         cond = next(((span(t, p), c) for p, c in CONDITION_WORDS if span(t, p)), None)
         if not cond: return None
-        return {'params': {'topic': 'condition', 'condition': cond[1], 'ranking': 'largest gap first'}, 'quotes': [cond[0], span(t, r'\bgaps?\b'), span(t, r'biggest|largest|worst') or '']}
+        return {'params': {'topic': 'condition', 'condition': cond[1], 'ranking': 'largest gap first'}, 'quotes': [cond[0], span(t, r'\b(?:gaps?|shortfall|behind)\b'), span(t, r'biggest|largest|worst') or '']}
 
     @classmethod
     def run(cls, ctx, params):
@@ -812,13 +812,14 @@ def seg_in_patient(column, values):
 @family
 class FrequentUsers:
     NAME = 'frequent_users'
-    WORDS = set('''who are our frequent users and how much of volume do they drive'''.split())
+    WORDS = set('''who which identify are our the frequent frequently users utilizers patients use and how what much of all volume visits do they drive share portion account for generate comes from them'''.split())
 
     @classmethod
     def parse(cls, text, catalog):
         t = text.strip().rstrip('?.')
-        if not re.match(r'^who\s+are\s+our\s+frequent\s+ed\s+users\b', t, re.I): return None
-        return {'params': {'minimum': 3}, 'quotes': [span(t, r'frequent\s+ed\s+users'), span(t, r'ed\s+volume') or '']}
+        subject = span(t, r'frequent\s+(?:ED|emergency department)\s+(?:users|utilizers)|patients\s+use\s+(?:the\s+)?(?:ED|emergency department)\s+frequently')
+        if not subject or not re.match(r'^(?:who|which|identify|frequent)\b', t, re.I): return None
+        return {'params': {'minimum': 3}, 'quotes': [subject, *[m.group() for m in re.finditer(r'\b(?:ED|emergency department)\s+(?:volume|visits)\b', t, re.I)]]}
 
     @classmethod
     def run(cls, ctx, params):
@@ -829,13 +830,15 @@ class FrequentUsers:
                        f"AND {ctx.events('ed_visit', n)}", 0)
         hf = ctx.count(ctx.events('ed_visit', n), ctx.cond('heart_failure'))
         lobs = ctx.rows(f"SELECT {ctx.lob} AS lob, COUNT(*) AS patients FROM patient p WHERE {ctx.living} AND {ctx.events('ed_visit', n)} GROUP BY lob ORDER BY patients DESC, lob")
+        share = mine / total if total else None
+        share_text = f'{pct(share, 0):.0f}%' if share is not None else 'unknown share (no ED visits)'
         facts = [fact('n', f"{len(ids)} patients had {n} or more ED visits in the last 12 months.", value=len(ids), unit='patients'),
-                 fact('visits', f"They account for {mine:,} of {total:,} ED visits ({pct(mine / total, 0):.0f}%) = {mine / total:.4f}.", value=pct(mine / total), numerator=mine, denominator=total, unit='%'),
+                 fact('visits', f"They account for {mine:,} of {total:,} living-patient ED visits ({share_text}).", value=pct(share), numerator=mine, denominator=total, unit='%'),
                  fact('hf', f"{hf} of them have heart failure.", value=hf, unit='patients'),
-                 fact('lob', f"Largest line of business among them: {lobs[0]['lob']} ({lobs[0]['patients']} of {len(ids)}).", value=lobs[0]['lob'])]
-        return dict(headline=f"{len(ids)} frequent ED users ({n}+ visits in 12 months) drive {pct(mine / total, 0):.0f}% of ED visits", facts=facts, patient_ids=ids, cohort_role='listed',
+                 fact('lob', (f"Largest line of business among them: {lobs[0]['lob']} ({lobs[0]['patients']} of {len(ids)})." if lobs else 'No frequent ED users; no largest line of business.'), value=lobs[0]['lob'] if lobs else None)]
+        return dict(headline=f"{len(ids)} frequent ED users ({n}+ visits in 12 months) drive {share_text} of living-patient ED visits", facts=facts, patient_ids=ids, cohort_role='listed',
                     table=[{'line_of_business': r['lob'], 'patients': r['patients']} for r in lobs],
-                    read_back=f"Living patients with {n} or more all-source ED visits in the 12 months to {ctx.as_of}, their share of all ED visits, heart-failure overlap and line of business.",
+                    read_back=f"Living patients with {n} or more all-source ED visits in the 12 months to {ctx.as_of}, their share of living-patient ED visits, heart-failure overlap and line of business.",
                     notes=[f'"Frequent ED user" is read as {n} or more ED visits in the last 12 months; the governed repeat-user metric uses 2 or more.'])
 
 

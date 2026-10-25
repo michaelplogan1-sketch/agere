@@ -544,7 +544,7 @@ def requested_output(question):
     return None
 
 
-def output_misfit(question, answer):
+def output_misfit(question, answer, contract=None):
     """None when the executed answer has the requested output, else why not. A one-row table is a scalar; a composite answer carries several outputs."""
     status = (answer or {}).get('status')
     if status in DECLINE_STATUSES: return None
@@ -553,6 +553,9 @@ def output_misfit(question, answer):
     if got == 'composite': return None
     wanted = requested_output(question)
     if wanted is None: return None
+    if wanted == 'count' and got == 'table' and isinstance(contract, dict):
+        from .claim_count_policy import validated_dual_counts
+        if validated_dual_counts(contract, answer): return None
     one_row = isinstance(rows, list) and len(rows) == 1
     ok = {'count': {'count', 'value', 'patient_set'}, 'value': {'value', 'count'}, 'patient_set': {'patient_set', 'table'}, 'table': {'table'}}[wanted]
     if got in ok or (wanted in ('count', 'value') and got == 'table' and one_row): return None
@@ -650,7 +653,7 @@ def evaluate(question, *, contract=None, graph=None, answer=None, as_of=None, ro
     rows += denominators(question, spec_list, query_list)
     if isinstance(answer, dict):
         if shape:  # answer_checks' own shape review (which may reshape) decides inside the cascade; every other route checks it here
-            misfit = output_misfit(question, answer)
+            misfit = output_misfit(question, answer, contract=contract)
             rows.append(_row('output.shape', 'output.shape', 'requested output', UNMET if misfit else MET,
                              how=None if misfit else 'the executed answer has the requested shape', reason=misfit))
         rows += evidence_need(question, answer, text)

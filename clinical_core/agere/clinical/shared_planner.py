@@ -133,7 +133,7 @@ def policy_identity():
         name: request_plan.fingerprint(Path(__file__).with_name(name).read_text())
         for name in ('shared_planner.py', 'request_plan.py', 'request_language.py', 'analysis_graph.py',
                      'graph_contracts.py', 'graph_planner.py', 'semantic_layer.py', 'sql_query.py',
-                     'decision_context.py', 'sql_read_roles.py', 'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py', 'local_prompt.py',
+                     'decision_context.py', 'claim_count_policy.py', 'sql_read_roles.py', 'age.py', 'request_vocabulary.py', 'request_shapes.py', 'local_request_worker.py', 'local_prompt.py',
                      'concepts.py', 'drug_classes.py', 'nl2sql.py', 'workflow_contract.py', 'request_discovery.py', 'general_analysis.py', 'dose.py', 'clinical_definitions.py',
                      'analysis_evidence.py', 'request_program.py', 'answer_dependencies.py', 'procedural_memory.py', 'clinical_inputs.py',
                      'conversation.py', 'answer_format.py', 'paraphrase.py', 'local_normalizer.py', 'data_domains.py', 'question_input.py', 'learning.py', 'economics_learning.py', 'healthcare_learning.py', 'vbc_knowledge.py', 'programs.py', 'contract_strategy.py',
@@ -1303,6 +1303,8 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     unknown = (sql_query.execute(stack.path, {'query': run['unknown_membership_query'], 'returns': 'patient_set'}, patient_ids=population, target=target)
                if contract.get('unknown_membership_query') else None)
     partial = report['truncated'] or bool(membership and membership['truncated']) or bool(unknown and unknown['truncated'])
+    policy = contract.get('claim_count_policy') or {}
+    if policy.get('missing_readings'): partial = True
     limitations = ['Results describe received records. No matching record does not establish absent care.',
                   'The request and SQL are inspectable. Language/model and clinical accuracy are not independently qualified.']
     if re.search(r'\bFROM condition\b', contract['query']):
@@ -1373,6 +1375,9 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     if note_bind:
         answer['note_evidence'] = spec_exec.evidence_of(note_bind['readings'], ids)
         answer['note_reading'] = note_bind['receipt']
+    if policy:
+        answer['claim_count_policy'] = policy
+        answer['missing'] += policy.get('missing_readings', [])
     if report['returns'] in ('count', 'value'):
         answer['count' if report['returns'] == 'count' else 'value'] = report['value']
         answer['headline'] = str(report['value'])+' — '+contract['request']['select'][0]['alias'].replace('_', ' ')

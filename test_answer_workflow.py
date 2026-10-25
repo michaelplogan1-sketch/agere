@@ -13,7 +13,7 @@ from clinical_core.agere.deliverables import answer_context as A, workflow as W,
 class AnswerWorkflow(unittest.TestCase):
     setUp = fixtures.SharedPlanner.setUp
 
-    def composed(self, base='Count claims where ever_denied = 1 by payer', unresolved=False):
+    def composed(self, base='Count claims where ever_denied = 1 by payer for our clinical utilization report', unresolved=False):
         q = base + '; create a command center; prepare a simulated outreach program; monitor this answer'
         p = L.parse(self.catalog, base)
         p['workflow'] = [
@@ -119,13 +119,13 @@ class AnswerWorkflow(unittest.TestCase):
         bad=copy.deepcopy(p)
         bad['workflow'][1]['quote']='prepare a simulated outreach program for those without a statin'
         altered=q.replace('prepare a simulated outreach program',bad['workflow'][1]['quote'])
-        R.compile_request(self.catalog,altered,bad)
-        self.assertTrue(bad['workflow'][1]['unresolved'])
+        checked = R.compile_request(self.catalog,altered,bad)
+        self.assertTrue(checked['request']['workflow'][1]['unresolved'])
         bad=copy.deepcopy(p)
         bad['workflow'][2]['quote']='monitor ED visits afterwards'
         altered=q.replace('monitor this answer','monitor ED visits afterwards')
-        R.compile_request(self.catalog,altered,bad)
-        self.assertTrue(bad['workflow'][2]['unresolved'])
+        checked = R.compile_request(self.catalog,altered,bad)
+        self.assertTrue(checked['request']['workflow'][2]['unresolved'])
         bad['workflow'][2]['unresolved']=['Define and compute the requested visit outcome']
         R.compile_request(self.catalog,altered,bad)  # Explicit unknown cannot start a monitor.
 
@@ -181,7 +181,7 @@ class AnswerWorkflow(unittest.TestCase):
 
     def test_briefing_failure_isolated_and_each_card_reopens_exact_answer(self):
         with patch.object(chief_staff,'CHECKS',[
-            ('claims','Claims','Count claims where ever_denied = 1 by payer','Review','Open'),
+            ('claims','Claims','Count claims where ever_denied = 1 by payer for our clinical utilization report','Review','Open'),
             ('broken','Unsupported','Count imaginary_warehouse','Missing','Open')]):
             r=chief_staff.cached(self.path)
             self.assertEqual(len(r['cards']),1)

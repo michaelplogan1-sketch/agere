@@ -66,7 +66,7 @@ class EventRowsAreLivingPatientsAndTiesAreStable(Extra):
     def test_the_event_rule_is_the_decision_contexts_not_a_special_case(self):
         self.assertIn('appointment', DC.EVENT_GRAIN_TABLES)
         self.assertNotIn('payer_claim', DC.EVENT_GRAIN_TABLES)  # money is decided by the question's own words (NON_PATIENT_GRAIN)
-        self.assertEqual(self.value('How many claims were denied?') is not None, True)
+        self.assertEqual(self.value('How many claims were denied for our payer report?') is not None, True)
 
 
 class EngineCohortsCarryTheLabRule(Extra):

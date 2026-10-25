@@ -1,0 +1,38 @@
+{
+  "schema": "agere-human-definition-decisions/1",
+  "decided_on": "2026-10-25",
+  "authority": "Mike; explicit answers in build-owner conversation",
+  "runtime_status": "Implemented in isolated candidate; qualification in progress. First three decisions confirm existing rules.",
+  "historical_results": "Preserve published scores, historical keys and saved responses. These decisions do not retrospectively establish correctness.",
+  "decisions": [
+    {
+      "id": "a1c_missing_population",
+      "decision": "All living patients, including children, unless the request explicitly limits age.",
+      "human_answer": "Keep all living patients",
+      "disputed_example": {
+        "current_rule": 211,
+        "adult_only_key": 206
+      }
+    },
+    {
+      "id": "pmpm_payer_attribution",
+      "decision": "Attribute costs to enrollment coverage active in the service month.",
+      "human_answer": "Keep enrollment-month coverage"
+    },
+    {
+      "id": "frequent_ed_volume_denominator",
+      "decision": "Include visits from living patients only in both numerator and denominator, unless deceased patients are explicitly requested.",
+      "human_answer": "Keep living-patient visits only"
+    },
+    {
+      "id": "medical_claim_count_scope",
+      "decision": "Use eligible insurer claims for payer/VBC contract reports; use all received deduplicated medical claims for clinical utilization; return both labeled counts when report context is unclear. Never sum the overlapping readings.",
+      "human_answer": "Use report context; show both if unclear",
+      "disputed_example": {
+        "all_received": 645,
+        "eligible_insurer": 637
+      },
+      "implementation_status": "Typed count compiler selects report-context readings, labels ambiguous counts, preserves scopes, and discloses unavailable source fields; full regression and live qualification pending."
+    }
+  ]
+}

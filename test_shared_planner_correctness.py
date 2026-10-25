@@ -233,7 +233,7 @@ class Correctness(unittest.TestCase):
                 'group_by':[], 'order_by':[], 'limit':None, 'unresolved':[]}
 
     def learn(self):
-        question = 'Give me the tally of claims whose allowed cents exceed 100 in 2029'
+        question = 'Give me the tally of claims whose allowed cents exceed 100 in 2029 for our clinical utilization report'
         plan = self.teacher_request(question)
         teacher = Mock(side_effect=[(json.dumps(plan), {'api_usd': .1, 'api_cost_known': True}),
                                     (json.dumps({'equivalent':True,'issues':[]}), {'api_usd': .1, 'api_cost_known': True})])
@@ -267,7 +267,7 @@ class Correctness(unittest.TestCase):
         self.assertIsNone(H.lookup(self.path, self.catalog, new, S.policy_identity()))
 
     def test_partial_or_unaccepted_interpretation_never_seeds_shape(self):
-        question = 'Give me the tally of claims whose allowed cents exceed 100 in 2029'
+        question = 'Give me the tally of claims whose allowed cents exceed 100 in 2029 for our clinical utilization report'
         contract = R.compile_request(self.catalog, question, self.teacher_request(question))
         self.assertIsNone(H.save(self.path,self.catalog,contract,
                                 {'review':'model_semantic_review','execution_accepted':False},S.policy_identity()))

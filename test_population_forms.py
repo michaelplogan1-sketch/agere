@@ -357,7 +357,7 @@ class GrammarForms(Base):
         self.assertAlmostEqual(a['value'] if a.get('value') is not None else a['table'][0][next(iter(a['table'][0]))],
                                sum(x[5] for x in PHARMACY if x[1].startswith('2029') and x[4] == 1) / 100.0, places=2)
         denied = [c for c in CLAIMS if c[14] == 1 and c[9] == 'denied']
-        top = self.table('Which payer had the most claim denials?')
+        top = self.table('Which payer had the most claim denials for our payer report?')
         by = {}
         for c in denied: by[c[2]] = by.get(c[2], 0) + 1
         self.assertEqual((top[0]['payer_id'], top[0]['count']), max(by.items(), key=lambda kv: kv[1]))
