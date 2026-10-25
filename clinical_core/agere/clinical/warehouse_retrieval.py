@@ -14,7 +14,7 @@ from ..warehouse import Warehouse
 from ..narrative_sources import text_fields, FORBIDDEN
 
 VERSION = 'warehouse-hybrid-retrieval/1'
-SCOPED_CONTENT_SQL = 'SELECT DISTINCT p.content FROM query_scope_passages qs CROSS JOIN passages p ON p.id=qs.id'
+SCOPED_CONTENT_SQL = 'SELECT DISTINCT p.content FROM query_scope_passages qs CROSS JOIN passages p ON p.id=qs.id ORDER BY p.content'
 ROOT = Path(__file__).resolve().parents[3]
 ALIASES = {
  'kidney': ['renal', 'ckd', 'egfr', 'creatinine', 'nephrology'],
