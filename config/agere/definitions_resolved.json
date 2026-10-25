@@ -111,6 +111,58 @@
    "retrieved": "2026-10-22",
    "cost_usd": 0.0018
   },
+  "medicare advantage cost": {
+   "term": "Medicare Advantage cost",
+   "definition": "No CMS, NCQA, or other named measure steward definition of the exact term was identified. In the CMS MSPB Clinician measure convention, “cost” means the standardized Medicare allowed amount for covered Part A and Part B services; Medicare Advantage-enrolled patients are excluded, so this is not a definition of Medicare Advantage spending itself.",
+   "numerator": null,
+   "denominator": null,
+   "exclusions": [],
+   "period": null,
+   "steward": "CMS, Medicare Spending Per Beneficiary (MSPB) Clinician measure, 2025 performance year; this specification defines “cost” but not the exact term “Medicare Advantage cost.”",
+   "standard": false,
+   "sources": [
+    {
+     "title": "[PDF] Medicare Spending Per Beneficiary (MSPB) Clinician Measure",
+     "url": "https://qpp.cms.gov/docs/cost_specifications/2025-06-py2025-mif-mspb-clinician.pdf"
+    }
+   ],
+   "provider": "perplexity_agent",
+   "preset": "fast",
+   "served_model": "openai/gpt-6-luna",
+   "status": "cited",
+   "request_hash": "af2c8fffc6596e58452b4cea9e56349371757f96c4a0976eed9623f926e2f935",
+   "query_digest": "900bf0a818e7fd931e1fab1c1e3240ae9fe0019bca2c3785adfaceea96908963",
+   "retrieved": "2026-10-24",
+   "cost_usd": 0.00168
+  },
+  "medicare rates": {
+   "term": "Medicare rates",
+   "definition": "No single CMS, NCQA, AHRQ, or PQA standard definition for the exact term “Medicare rates” is established by the available sources. In CMS quality-measure convention, a rate is calculated from a measure-specific numerator and eligible-population denominator; the counted events, exclusions, and period depend on that measure’s specifications.",
+   "numerator": null,
+   "denominator": null,
+   "exclusions": [],
+   "period": null,
+   "steward": "CMS, Quality Measures Inventory User Guide and Data Dictionary; no specific measure or year identified",
+   "standard": false,
+   "sources": [
+    {
+     "title": "Quality Measures",
+     "url": "https://www.cms.gov/medicare/quality/measures"
+    },
+    {
+     "title": "[PDF] Quality Measures Inventory User Guide and Data Dictionary - CMS",
+     "url": "https://www.cms.gov/Medicare/Quality-Initiatives-Patient-Assessment-Instruments/QualityMeasures/Downloads/CMS_Inventory_User_Guide.pdf"
+    }
+   ],
+   "provider": "perplexity_agent",
+   "preset": "fast",
+   "served_model": "openai/gpt-6-luna",
+   "status": "cited",
+   "request_hash": "2bee9bad936222adf099e8c220d45268ed8141990f03ad60de2269a01961c53f",
+   "query_digest": "c776e01db01d91db71051718ffb019d66e1b00627bd97b25574e997c747b8340",
+   "retrieved": "2026-10-24",
+   "cost_usd": 0.00159
+  },
   "mssp avoidable spend": {
    "term": "MSSP avoidable spend",
    "definition": "No CMS or other measure steward definition for the exact term “MSSP avoidable spend” was identified. In common ACO industry usage, it refers to spending on unnecessary or avoidable services or utilization that an ACO seeks to reduce; this is not a standardized MSSP measure and is distinct from CMS-calculated savings against an ACO benchmark.",

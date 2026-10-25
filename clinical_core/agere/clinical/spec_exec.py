@@ -169,7 +169,9 @@ def note_answer(stack, contract, *, as_of=None, ledger=None, answer=None, questi
         if found: request['note'] = found
     request.setdefault('subject', contract.get('subject'))
     request.setdefault('question', question or contract.get('question') or '')
-    out = answer(stack, request, as_of=as_of, ledger=ledger, question=request.get('question') or None)
+    import inspect
+    extra = {'question': request.get('question') or None} if 'question' in inspect.signature(answer).parameters else {}
+    out = answer(stack, request, as_of=as_of, ledger=ledger, **extra)
     return out if isinstance(out, dict) else {'status': 'not_available', 'answer_type': 'unsupported', 'headline': 'The chart reader returned no answer.',
                                               'missing': ['empty chart reader answer'], 'patient_ids': [], 'actionable_cohort': False,
                                               'data_absence_established': False, 'limitations': []}
