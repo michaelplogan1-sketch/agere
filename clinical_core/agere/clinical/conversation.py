@@ -883,6 +883,18 @@ def inherited_period(question, prior, as_of):
             'start':window['start'],'end':window['end'],'kind':window['kind']}
 
 
+def _stated_absence(stack, question, exc):
+    """The final decline path: a 'not understood' decline of a question that names data the received catalog does not hold becomes a
+    not_available answer naming what is missing and what was checked (data_domains.after_decline); anything else is None."""
+    from .question_input import QuestionNotUnderstood
+    if not isinstance(exc, QuestionNotUnderstood): return None
+    try:
+        from . import data_domains
+        return data_domains.after_decline(stack.path, str(question), exc)
+    except Exception:  # noqa: BLE001 - the absence check never turns a decline into an error
+        return None
+
+
 def handle_compose(stack, body, hosted_factory=None):
     """Run /api/stack/compose with optional conversation context. Logging matches the single-question route."""
     from . import answer_log, learning
@@ -1008,45 +1020,52 @@ def handle_compose(stack, body, hosted_factory=None):
                     result['answer']['limitations'] = [*(result['answer'].get('limitations') or []),
                         'Time period carried from the previous question: '+temporal['phrase']+'.']
     except Exception as exc:
-        logged = resolution['standalone'] if resolution else str(question)
-        from .question_input import failure
-        usage = getattr(exc, 'planner_receipt', {})
-        failed = failure(exc)
-        logged_failure = None
-        if hasattr(exc, 'planner_receipt'):
-            from .shared_planner import economics as planner_economics
-            logged_failure = {
-                'answer': {'status': failed['status']},
-                'planner_receipt': {'route': 'shared_planner'},
-                'new_paid_api_calls': usage.get('new_paid_api_calls', 0) + hosted_calls,
-                'planning_economics': planner_economics({
-                    **usage,
-                    'known_api_estimate_usd': usage.get('known_api_estimate_usd', 0) + hosted_usd,
-                }),
-            }
-        probe.mark('compose')
-        answer_log.record(stack.path, logged, result=logged_failure,
-                          error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0, question_id=probe.question_id)
-        learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
-                                failed['status'], str(exc),
-                                usage.get('new_paid_api_calls', 0)+hosted_calls,
-                                None if usage.get('api_cost_known') is False else usage.get('known_api_estimate_usd', 0)+hosted_usd)
-        if conv is not False:
-            fallback = resolution or {'standalone': ' '.join(question.split()), 'method': 'unresolved', 'edits': [], 'frame': None}
-            record(stack.path, conv, question, fallback,
-                   plan_summary={'route': 'shared_planner', **usage} if usage else None,
-                   answer_summary=failed, error=f'{type(exc).__name__}: {exc}')
-            if resolution and resolution['follow_up'] and isinstance(exc, (ValueError, PermissionError, RuntimeError)):
-                # The user must see what was attempted even when it was not answered.
-                exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)
-        from .learning_hooks import after_failure
-        after_failure(stack, logged, exc)
-        probe.mark('learning')
-        exc.cost_telemetry = probe.finish(logged_failure, error=f'{type(exc).__name__}: {exc}')
-        exc.cost_receipt = cost_telemetry.receipt(exc.cost_telemetry, getattr(exc, 'planner_receipt', None), failed=True)
-        exc.evaluation = evaluation.receipt()
-        cost_telemetry.record(stack.path, exc.cost_telemetry)
-        raise
+        absent = _stated_absence(stack, resolution['standalone'] if resolution else question, exc)
+        if absent is not None:  # every layer declined and the received catalog shows the named data never arrived: the decline states the absence
+            result = absent
+            if conv is not False and resolution is None:
+                resolution = {'standalone': ' '.join(question.split()), 'method': 'unresolved', 'edits': [], 'frame': None, 'follow_up': False,
+                              'reason': 'Stated absence: the received catalog holds no such data'}
+        else:
+            logged = resolution['standalone'] if resolution else str(question)
+            from .question_input import failure
+            usage = getattr(exc, 'planner_receipt', {})
+            failed = failure(exc)
+            logged_failure = None
+            if hasattr(exc, 'planner_receipt'):
+                from .shared_planner import economics as planner_economics
+                logged_failure = {
+                    'answer': {'status': failed['status']},
+                    'planner_receipt': {'route': 'shared_planner'},
+                    'new_paid_api_calls': usage.get('new_paid_api_calls', 0) + hosted_calls,
+                    'planning_economics': planner_economics({
+                        **usage,
+                        'known_api_estimate_usd': usage.get('known_api_estimate_usd', 0) + hosted_usd,
+                    }),
+                }
+            probe.mark('compose')
+            answer_log.record(stack.path, logged, result=logged_failure,
+                              error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0, question_id=probe.question_id)
+            learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
+                                    failed['status'], str(exc),
+                                    usage.get('new_paid_api_calls', 0)+hosted_calls,
+                                    None if usage.get('api_cost_known') is False else usage.get('known_api_estimate_usd', 0)+hosted_usd)
+            if conv is not False:
+                fallback = resolution or {'standalone': ' '.join(question.split()), 'method': 'unresolved', 'edits': [], 'frame': None}
+                record(stack.path, conv, question, fallback,
+                       plan_summary={'route': 'shared_planner', **usage} if usage else None,
+                       answer_summary=failed, error=f'{type(exc).__name__}: {exc}')
+                if resolution and resolution['follow_up'] and isinstance(exc, (ValueError, PermissionError, RuntimeError)):
+                    # The user must see what was attempted even when it was not answered.
+                    exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)
+            from .learning_hooks import after_failure
+            after_failure(stack, logged, exc)
+            probe.mark('learning')
+            exc.cost_telemetry = probe.finish(logged_failure, error=f'{type(exc).__name__}: {exc}')
+            exc.cost_receipt = cost_telemetry.receipt(exc.cost_telemetry, getattr(exc, 'planner_receipt', None), failed=True)
+            exc.evaluation = evaluation.receipt()
+            cost_telemetry.record(stack.path, exc.cost_telemetry)
+            raise
     probe.mark('compose')
     if hosted_calls or hosted_usd:
         econ = dict(result.get('planning_economics') or {})

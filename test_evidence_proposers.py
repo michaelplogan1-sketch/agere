@@ -212,3 +212,12 @@ class Executes(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class NoteCueGate(unittest.TestCase):  # 2026-10-24: the chart reader's strong note cues also open the evidence tiers
+    def test_document_kind_questions_reach_the_evidence_tiers_structured_ones_do_not(self):
+        from clinical_core.agere.clinical.evidence_proposers import narrative_question
+        self.assertTrue(narrative_question('What did the d/c summary say about follow-up for SYN-1?'))
+        self.assertTrue(narrative_question('What did the MRI report show for WHP-2?'))
+        self.assertFalse(narrative_question('How many patients have diabetes?'))
+        self.assertFalse(narrative_question('What is the latest A1c for SYN-3?'))
