@@ -304,8 +304,12 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
                 it = {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': ['inherited_from_prior'], 'question': question}
             if it is None and not note_preds:
                 it = build_intent(stack, question, as_of, db, quotes=[subject.get('quote')], prior=prior, decide=decide, allow_live=allow_live, spend=spend)
-                if CN.is_note_question(question, it):
-                    note_preds = CN.build(question, as_of, lexicon=ch.lexicon, choose=choose)
+                follows = CN.back_references(question, prior_frame.get('note'))  # "and her PHQ-9 that day?": the next question about the same note encounter
+                if CN.is_note_question(question, it) or follows:
+                    note_preds = CN.build(question, as_of, lexicon=ch.lexicon, prior_predicates=prior_frame.get('note') if follows else None, choose=choose)
+                    if not note_preds and follows and not CN.is_note_question(question, it):
+                        note_preds = None  # the back-reference carried no note frame of its own: the structured reading stands
+                if note_preds:
                     it = {**it, 'domain': NOTE_DOMAIN, 'intent': it.get('intent') or 'status', 'gaps': []}
             if note_preds:
                 it = it or {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': [], 'question': question}
@@ -314,6 +318,9 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
                     'inherited_from_prior' in it.get('flags', []) and bool(prior_frame.get('yes_no'))), allow_live=allow_live)
             elif it is not None and it.get('domain') == NOTE_DOMAIN:
                 return unsupported('The question reads as a note question but no note predicate could be built from it.', question, started, spend, pid=pid, intent=it)
+            elif CN.dangling_reference(question) and not it.get('window') and not prior_frame:
+                return unsupported('The question points at "that visit / that day" but no earlier question in this conversation names one; say which visit or date.',
+                                   question, started, spend, pid=pid, intent=it)
             elif it.get('gaps'):
                 missing = it['gaps']
                 return unsupported(f'The question could not be typed: {", ".join(missing)} left open (System One did not settle them).', question, started, spend, pid=pid,
@@ -486,9 +493,13 @@ def tier(stack, question, population=None, *, ledger=None, decide=None):
         prior = PI.current_prior()
         it = build_intent(stack, question, as_of, db, quotes=[sub['quote'] if sub['how'] in ('patient_id', 'member_id') else None], prior=prior,
                           decide=decide, allow_live=allow_live, spend=spend)
-        note = CN.is_note_question(question, it)
+        prior_note = ((prior or {}).get('frame') or {}).get('note')
+        follows = CN.back_references(question, prior_note)
+        note = CN.is_note_question(question, it) or follows
         choose = lambda text, options, key: _so_choice(text, options, as_of=as_of, task_key=key, decide=decide, allow_live=allow_live, spend=spend)  # noqa: E731
-        preds = CN.build(question, as_of, lexicon=lexicon_of(stack, db), choose=choose) if note else None
+        preds = CN.build(question, as_of, lexicon=lexicon_of(stack, db), prior_predicates=prior_note if follows else None, choose=choose) if note else None
+        if note and not preds and follows and not CN.is_note_question(question, it):
+            note = False  # a back-reference with no note frame of its own: the structured reading stands
     finally:
         db.close()
     if note and not preds:
