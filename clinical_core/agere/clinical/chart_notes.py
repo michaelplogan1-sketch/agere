@@ -847,6 +847,9 @@ def code_status_proposition(question, rows):
         return None
     if not wants and re.search(r'\b(?:mention\w*|discuss\w*|talk\w*|conversation|counsel\w*|consider\w*|offer\w*|recommend\w*)\b', text):
         return None  # a discussion/mention is not a request to classify the active code status
+    if (not wants and re.search(r'\b(?:document\w*|record\w*)\b', text)
+            and not re.search(r'\b(?:as|status(?:\s+(?:is|of))?)\s+(?:full[- ]code|dnr|dni)\b', text)):
+        return None  # preserve the distinct absence/unknown semantics of documentation questions
     care = [r for r in rows if r.get('frame') == 'care_process' and
             (r.get('concept') == 'code status' or 'code_status' in (r.get('detail') or {}))]
     if not care:

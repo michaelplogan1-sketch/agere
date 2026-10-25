@@ -24,6 +24,7 @@ class CodeStatusProposition(unittest.TestCase):
 
     def test_documentation_presence_is_a_different_proposition(self):
         self.assertIsNone(self.answer('Is a code status documented?','dnr_dni'))
+        self.assertIsNone(self.answer('Is a DNR order or code status documented?','unknown','not_mentioned'))
         self.assertIsNone(self.answer('Was DNR discussed?','full_code'))
         self.assertIsNone(self.answer('Do the notes mention DNR?','full_code'))
         self.assertIsNone(C.code_status_proposition('Does the patient want CPR?',[]))
