@@ -85,3 +85,48 @@ patients; money counts every member's claims. Patient payer-type groups are comm
 practice = PCP practice, else the attributing practice of the latest enrollment span. Insight items are rubrics of SQL-computed facts.
 The test file checks that no question duplicates (or nearly duplicates) a non-held-out dev question; held-out lines are filtered out
 before they are parsed, so overlap with held-out questions is not checkable and is avoided only by writing from the tables.
+
+## Independent set (split `dev3`)
+`dev3_questions.jsonl` (built by `dev3_keys.py`) is a 150-question development set written by a DIFFERENT process than dev / dev2. Reason: the stack
+scored 93% on dev and 72% on the composition set (both written by the team that wrote the planners) but 36% on an independent held-out set; the
+team's sets share its phrasing and blind spots. Here the question types and wording come from public population-health / value-based-care material and
+the keys are plain SQL (or short Python) written from the warehouse schema, `decision_context.py` and `definitions.py`. The author did not read the
+product's grammar / compiler / phrasing modules, any held-out line, or any private / sealed material, and did not call any model provider.
+
+    .venv/bin/python -m tools.dev_set.dev3_keys --summary      # counts per bucket / answer type / source
+    .venv/bin/python -m tools.dev_set.dev3_keys --check        # recompute every key and compare with the file
+    .venv/bin/python -m tools.dev_set.run --set dev3           # live service (same as --split dev3)
+    AGERE_CLAUDE=off .venv/bin/python -m tools.dev_set.run_inprocess --set dev3 --cold --quiet --out /tmp/dev3.json
+    .venv/bin/python -m unittest tools.dev_set.test_dev3_set   # keys compute, no overlap with dev / dev2 / paraphrases (< 0.85), 15 alternative derivations
+
+Shape: 30 per bucket (ids `x1-NN` single structured, `x2` single unstructured, `x3` clinical quality, `x4` claims / pharmacy / SDOH, `x5` insight), 15
+`absent` items (10%), 17 follow-ups (`follow_up_of` + `key.standalone`, as in dev). Each row carries `source`, a list of tags into the table below.
+Wording varies in length (a 4-word follow-up to a 30-word measure definition), register (exec, analyst, clinician), abbreviations (pt, dx, HTN, ACEi,
+PMPM, PDC, GDMT) and a few typos; several rows ask two things at once.
+
+### What the wording was modelled on (public sources, searched 2026-10-24)
+| tag | source | question types taken |
+|---|---|---|
+| hedis_cbp, hedis_cbp_bcbsnc | NCQA HEDIS CBP summaries (healthplan.org; BCBSNC) | "adults 18-85 with hypertension whose most recent BP is under 140/90, missing reading = not controlled" |
+| hedis_hbd_acp, hedis_cdc_centene | HEDIS HbA1c poor control / testing, comprehensive diabetes care (ACP; Centene provider guide) | A1c > 9 inverse measure with "no test = poor control", testing in the year, statin therapy 40-75, kidney evaluation (eGFR + uACR) |
+| molina_quality, molina_data | Molina quality / data analyst interview question lists (cleverprep.com) | "identify members with a care gap for a HEDIS measure", "diabetics overdue for HbA1c from claims", screening-rate campaigns |
+| aco_reach, mssp_measures | ACO REACH / MSSP quality measure descriptions (pearlhealth.com, NQF MAP) | all-condition readmission, follow-up after acute ED visit / hospitalization, multiple-chronic-condition admissions, med reconciliation |
+| ahrq_pqi | AHRQ Prevention Quality Indicators technical specs | ambulatory-care-sensitive admissions (HF, COPD / asthma, diabetes) as a share of stays |
+| stars_pdc, pdc_outcomes | Part D Star Ratings adherence measures (nimblerx.com, outcomes.com) | PDC >= 80% for statins and RAS antagonists with at least two fills |
+| rising_risk_ajmc, nachc_risk_strat, healthcatalyst_caremgmt | rising-risk vs high-cost claimant commentary (AJMC), NACHC risk-stratification guide, Health Catalyst care-management analytics | rising-risk cohorts, complexity tiers, concentration of ED / spend, SDOH + clinical joins |
+| cdc_svi | CDC / ATSDR SVI usage notes (PolicyMap) | SVI percentile cut points, SVI vs payer type / cost, social-need screens |
+| claims_kpis_knowi, claims_trend_simplify, claims_trend_cassidy | payer claims dashboards / PMPM trend decomposition write-ups | PMPM by year, denial and reject rates, place-of-service and DRG drivers, pharmacy PMPM, price / utilization splits |
+| previsit_mango, awv_checklist, aafp_awv | pre-visit planning and Medicare AWV checklists | chart-review questions a clinician asks before a visit (last BP / PHQ-9, on a med?, vaccine, screens, documented follow-up) |
+The full URLs are in `dev3_keys.SOURCES`. Search results were used for question types and phrasing only; no measure value was copied, every number is computed
+from this warehouse.
+
+### Conventions the keys fix (also in each row's `notes`)
+Living, de-duplicated patients unless the question asks about the deceased; age in whole years at 2030-05-27 from the birth date; latest lab unless the
+question says ever / highest / any; "last year" = the 12 months ending 2030-05-27; "in 2029" = the calendar year; "on a drug" = a picked-up fill in the 12 months
+ending the as-of date (calendar-2029 fill when the question says so); Medicare = medicare + dual + medigap; practice = PCP practice else the attributing
+practice; money = counted payer claims by service date. HEDIS-style questions state their missing-data rule in the question (for example "no A1c counts as poor control").
+Notes keys (bucket x2) are READ: each item names one document (patient, kind, date) and the exact quote; `dev3_keys.build_b2` fails if the quote does not match
+exactly once, and not-documented items are checked against every note, HIE and scanned document of the patient. Scanned items keep the OCR noise in the
+stored quote (for example "me1oxicam").
+Known limits: some insight rubrics rank groups whose rates are close (hospital and payer rates differ by a few points); the HF four-pillar question was changed to "at least three" because no patient is on
+all four; single-patient notes questions are anchored with a month and year because the charts repeat templated sentences across visits.
