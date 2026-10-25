@@ -191,3 +191,7 @@ Mike is away all day. Do not ask him anything. Finish today. Decide from evidenc
 - Population quality on held-out is the weakest bucket (2/10; p90 350 s inside it). Nested ask_agere sub-questions plus backstop
   turns make up the latency tail. Each sub-question already runs on the 8 s rewording budget, so the tail is the number of calls. Next:
   widen ask_agere's coverage (the sub-questions it declines are the engine gaps), so fewer turns fall back to free SQL.
+
+**v4 (2dd8dad: a one-patient chart answer with no quoted passage asks the backstop; its quoted answer replaces it):** dev3 check half
+**43/71 = 60.6 %** (notes 4/12; one question gained, none lost), p50 27 s, p90 97 s, $0.046 per question. This is live on main and on
+:8888.
