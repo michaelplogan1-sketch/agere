@@ -49,7 +49,8 @@ def normalize(text):
 
 
 def store_path(stack_dir):
-    return Path(stack_dir) / STORE
+    from .evaluation import operational_path
+    return operational_path(stack_dir, STORE)
 
 
 def _blocks(text):
@@ -124,13 +125,16 @@ def ensure(stack_dir):
     """The store, rebuilt when missing or built from a different semantic layer. Returns its path (None without sources)."""
     target, source = store_path(stack_dir), _semantic(stack_dir)
     if target.exists():
+        valid = False
         try:
             db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
-            try: sig = dict(db.execute('SELECT key, value FROM meta')).get('source')
+            try:
+                sig = dict(db.execute('SELECT key, value FROM meta')).get('source')
+                valid = sig is not None
             finally: db.close()
         except sqlite3.Error:
             sig = None
-        if not source.exists() or sig in (_signature(source), ''): return target
+        if valid and (not source.exists() or sig in (_signature(source), '')): return target
     if not source.exists(): return None
     build(stack_dir)
     return target
