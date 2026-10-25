@@ -32,10 +32,30 @@ def enabled():
 
 
 def cli_path():
-    """The real Anthropic CLI (not a wrapper that cannot read the login): AGERE_CLAUDE_CLI, else ~/.local/bin/claude-anthropic, else `claude`."""
-    for candidate in (os.environ.get('AGERE_CLAUDE_CLI'), os.path.expanduser('~/.local/bin/claude-anthropic'), shutil.which('claude')):
+    """The real Anthropic CLI (not a wrapper that cannot read the login): AGERE_CLAUDE_CLI, else the newest ~/.local/share/claude/versions/<v>,
+    else ~/.local/bin/claude-anthropic, else `claude`."""
+    versions = os.path.expanduser('~/.local/share/claude/versions')
+    newest = None
+    if os.path.isdir(versions):
+        names = [n for n in os.listdir(versions) if all(p.isdigit() for p in n.split('.'))]
+        if names: newest = os.path.join(versions, max(names, key=lambda n: tuple(int(p) for p in n.split('.'))))
+    for candidate in (os.environ.get('AGERE_CLAUDE_CLI'), newest, os.path.expanduser('~/.local/bin/claude-anthropic'), shutil.which('claude')):
         if candidate and os.path.exists(candidate): return candidate
     raise RuntimeError('No Claude Code CLI found for the subscription transport (set AGERE_CLAUDE_CLI)')
+
+
+TOKEN_FILE = os.path.expanduser(os.environ.get('AGERE_CLAUDE_TOKEN_FILE', '~/.agere-claude-oauth-token'))
+
+
+def cli_env():
+    """The CLI's environment: never the API key; the subscription token from the user's private token file (`claude setup-token`) when present.
+    The token is passed only to the CLI process and is never logged or returned."""
+    env = {k: v for k, v in os.environ.items() if k != 'ANTHROPIC_API_KEY'}
+    if not env.get('CLAUDE_CODE_OAUTH_TOKEN') and os.path.isfile(TOKEN_FILE):
+        with open(TOKEN_FILE) as f:
+            token = f.read().strip()
+        if token: env['CLAUDE_CODE_OAUTH_TOKEN'] = token
+    return env
 
 
 def _text(content):
@@ -96,7 +116,7 @@ def run_cli(model, system, user, timeout=300):
     """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure."""
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:
         f.write(system); path = f.name
-    env = {k: v for k, v in os.environ.items() if k != 'ANTHROPIC_API_KEY'}  # never the API account: the subscription login only
+    env = cli_env()  # never the API account: the subscription login / token only
     cmd = [cli_path(), '-p', '--model', model, '--system-prompt-file', path, '--output-format', 'json', '--tools', '',
            '--strict-mcp-config', '--no-session-persistence']
     try:
