@@ -319,8 +319,8 @@ def _engine_misfit(question, req, want, answer, operation, served):
     return None
 
 
-def conform(question, answer, *, operation=None):
-    """-> (answer, info). Pure; the input answer is not mutated."""
+def conform(question, answer, *, operation=None, analyst=False):
+    """-> (answer, info). Pure; the input answer is not mutated. analyst: a semantic-analyst proposal (analyst_acceptance.entity_ranking_question)."""
     req = requested(question)
     info = {'version': VERSION, 'requested': req['shape'], 'status': 'skipped'}
     if req['percent']: info['percent'] = True
@@ -366,6 +366,11 @@ def conform(question, answer, *, operation=None):
         out.update(answer_type='value', value=answer['count'])
         info.update(status='reshaped', how='a total stated as its count')
         return _round(out, req), info
+    if analyst and want == 'patient_set' and have == 'table' and table:
+        from .analyst_acceptance import entity_ranking_question  # "which practice has the most ...": the entity asked for is not the patient
+        if entity_ranking_question(question):
+            info.update(status='fits', how='the table names the entities the question asks which of')
+            return out, info
     if want == 'patient_set' and have == 'table' and table and not truncated:
         rows = [r for r in table if isinstance(r, dict)]
         ids = [r.get('patient_id') for r in rows]
@@ -485,7 +490,8 @@ def final(question, graph, receipt, result):
     """Last conformance on the shipped answer (no re-plan): a later step (guard re-plan, cross-check replacement) may have
     replaced the answer after review(). Reshapes / rounds when unambiguous; a misfit is withheld as non-final."""
     if not enabled() or not isinstance(result, dict) or not isinstance(result.get('answer'), dict): return result
-    answer, info = conform(question, result['answer'], operation=_final_operation(graph))
+    answer, info = conform(question, result['answer'], operation=_final_operation(graph),
+                           analyst=isinstance(receipt, dict) and isinstance(receipt.get('analyst_evidence'), dict))
     if isinstance(receipt, dict) and info['status'] != 'skipped':
         receipt.setdefault('answer_fit', {})['final'] = {k: info.get(k) for k in ('status', 'how', 'reason', 'rounded') if info.get(k) is not None}
     if info['status'] == 'misfit':

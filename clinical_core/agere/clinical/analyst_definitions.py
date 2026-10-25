@@ -138,6 +138,8 @@ _ENTITY_FROM = re.compile(r'(?is)\b(?:FROM|JOIN)\s+"?(?:patient|living_patient|m
 _RAW_PATIENT = re.compile(r'(?is)\b(?:FROM|JOIN)\s+"?patient"?(?=[\s,;)]|$)')
 _RAW_CONDITION = re.compile(r'(?is)\b(?:FROM|JOIN)\s+"?condition"?(?=[\s,;)]|$)')
 _RAW_MEASUREMENT = re.compile(r'(?is)\b(?:FROM|JOIN)\s+"?measurement"?(?=[\s,;)]|$)')
+# `value_canonical IS NOT NULL` asks whether a result EXISTS (a missing-lab question), it applies no threshold to the value
+_VALUE_IS_NULL = re.compile(r'\bvalue(?:_canonical)?\s+is\s+(?:not\s+)?null\b')
 _AGE_FEED = re.compile(r'(?i)\b(?:(\w+)\.)?(age_reported|age_latest)\b')
 _MEDICARE_ONLY = re.compile(r"(?is)\bcoverage_type\s*(?:=\s*'medicare'|IN\s*\(\s*'medicare'\s*\))")
 _LIVING_VIEW_USE = re.compile(r'(?i)\b(?:' + '|'.join(LIVING_VIEWS) + r')\b')
@@ -164,7 +166,7 @@ def audit_sql(question, as_of, sql, columns, returns=None):
                 add('living', 'a patient count or list must start from living_patient (no death row, a duplicate chart once)', True)
             elif dup_needed and not re.search(r'duplicate_chart|data_segment', text):
                 add('living', 'excludes the deceased but counts duplicate charts twice: use living_patient', bool(_RAW_PATIENT.search(masked)))
-    if grain and state.lab_mode == 'latest' and 'measurement_latest' in columns and _RAW_MEASUREMENT.search(masked) and 'value' in masked.lower() \
+    if grain and state.lab_mode == 'latest' and 'measurement_latest' in columns and _RAW_MEASUREMENT.search(masked) and 'value' in _VALUE_IS_NULL.sub(' ', masked.lower()) \
             and not re.search(r'(?i)\bhaving\b|\bover\s*\(|\b(?:measurement_latest|latest_lab)\b', masked):
         add('latest_lab', 'a lab threshold reads the latest result (latest_lab), not every result: the question does not say ever / any / history of', True)
     if grain and _RAW_CONDITION.search(masked) and not re.search(r'(?i)\b(?:condition_member|diagnosis_any|concept_patient)\b', masked) \

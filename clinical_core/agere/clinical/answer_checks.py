@@ -1026,7 +1026,7 @@ def _unchecked_zero(receipt, answer, state, verdict):
     return 'unchecked'
 
 
-def _shape(question, graph, result, verdict):
+def _shape(question, graph, result, verdict, receipt=None):
     """answer_shape_review: free conformance; unambiguous reshape replaces the answer, a misfit rejects the proposal."""
     from . import answer_shape as S
     answer = result['answer']
@@ -1034,7 +1034,8 @@ def _shape(question, graph, result, verdict):
         verdict['accept'] = False
         verdict['reasons'].append('answer shape: ' + str((answer.get('missing') or ['wrong-shaped answer withheld'])[-1])[:300])
         return 'withheld'
-    fixed, info = S.conform(question, answer, operation=S._final_operation(graph))
+    fixed, info = S.conform(question, answer, operation=S._final_operation(graph),
+                            analyst=isinstance(receipt, dict) and isinstance(receipt.get('analyst_evidence'), dict))
     if info['status'] == 'misfit':
         verdict['accept'] = False
         verdict['reasons'].append(f"answer shape: the question asks for a {info.get('requested')}; the proposal returned a "
@@ -1179,8 +1180,12 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
             except (AttributeError, KeyError, TypeError): as_of = None
         # The executed half of the contract. Its plan-time half (lexical coverage of the question's words, Cascade.contract_gaps) already ran over
         # this same graph before it executed and is carried on the receipt; the two are merged into one receipt.
+        try:  # a semantic-analyst proposal is read with every query it rests on and what its definition views apply (analyst_acceptance)
+            extra = AC.analyst_text(receipt, graph)
+        except Exception:  # noqa: BLE001 - extra evidence is optional
+            extra = ''
         found = AC.evaluate(question, graph=graph, answer=answer, as_of=str(as_of)[:10] if as_of else None, route=tier, phase='executed', shape=False,
-                            lexical=False)
+                            lexical=False, extra_text=extra)
         found = AC.merge((receipt or {}).get('acceptance_contract') if isinstance(receipt, dict) else None, found)
         summary = AC.summary(found)
         verdict['acceptance_contract'] = summary
@@ -1226,7 +1231,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('unchecked_zero_guard', lambda: _unchecked_zero(receipt, answer, state, verdict))
     from . import release_drift
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release
-    run('answer_shape_review', lambda: _shape(question, graph, result, verdict))
+    run('answer_shape_review', lambda: _shape(question, graph, result, verdict, receipt))
     run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
     if verdict['accept'] and not spec_confirmed(receipt) and not audited_analyst(tier, receipt, graph): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
