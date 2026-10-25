@@ -253,7 +253,14 @@ def read_back(it, pid, as_of, *, note_predicates_=None, deceased=None):
         'readmission': lambda: '30-day readmissions', 'claims': lambda: 'plan-paid claims', 'condition': lambda: (c.get('value') or 'conditions').replace('_', ' '),
     }.get(domain, lambda: CI.DOMAINS.get(domain, str(domain)).split(' (')[0].lower())()
     phrase = {'latest_value': 'Latest', 'trend': 'Trend of', 'list': 'List of', 'count_in_window': 'Count of', 'last_event': 'Date of the most recent',
-              'timeline': 'Every dated', 'status': 'Whether the patient has / is on', 'sum': 'Total', 'summary': 'Brief of the whole chart for'}.get(intent, intent)
+              'timeline': 'Every dated', 'status': 'Whether the patient has / is on', 'sum': 'Total', 'summary': 'Brief of the whole chart for',
+              'compare_values': 'Explicit numeric comparison of'}.get(intent, intent)
+    if domain == 'fill' and it.get('attribute') == 'drug_class':
+        what = 'distinct recorded drug classes filled'
+    if domain == 'death' and it.get('attribute') == 'death_date':
+        phrase, what = 'Recorded', 'death date'
+    if intent == 'compare_values':
+        what = ' and '.join(f"{CI.LAB_LABELS.get(p['concept'], p['concept'])} {p['operator']} {p['value']:g}" for p in it.get('comparisons') or [])
     if it.get('ordinal') == 2:
         phrase = 'The result before the latest'
     if domain == 'lab' and intent == 'latest_value' and it.get('mode') == 'any':
@@ -381,8 +388,10 @@ def finish(core, pid, subject, it, as_of, question, receipt, death, note_preds, 
     deceased = None
     headline = core['headline']
     if death:
-        deceased = {'deceased': True, 'death_date': death['death_date'], 'source': death['death_source']}
-        headline = f"{headline} [{pid} is deceased (death date {death['death_date']}); a named patient is answered even though the living-patient default would exclude them]"
+        date_known = not death.get('sources_disagree')
+        deceased = {'deceased': True, 'death_date': death['death_date'] if date_known else None, 'source': death['death_source']}
+        date_detail = f"death date {death['death_date']}" if date_known else 'death-date sources disagree'
+        headline = f"{headline} [{pid} is deceased ({date_detail}); a named patient is answered even though the living-patient default would exclude them]"
     intent_clean = _clean_intent(it)
     if note_preds:
         intent_clean = {**(intent_clean or {}), 'note': [{k: v for k, v in p.items() if k not in ('_anchor', '_response')} for p in note_preds],
