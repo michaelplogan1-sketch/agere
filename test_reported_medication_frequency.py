@@ -27,6 +27,7 @@ class ReportedFrequency(unittest.TestCase):
                       'albuterol: reports use on 3 of 14 days.',
                       'fluticasone: none taken; albuterol: reports use on 3 of 14 days.',
                       'fluticasone and albuterol: reports use on 3 of 14 days.',
+                      'fluticasone: used 0 of 14 days last month; now reports use on 7 of 14 days.',
                       'fluticasone: reports use on 3 of 30 days.',
                       'fluticasone: reports use on 3 of 14 weeks.',
                       'fluticasone: reports use on 15 of 14 days.',
@@ -42,6 +43,8 @@ class ReportedFrequency(unittest.TestCase):
         self.assertEqual(read(old, new)['count'], 0)
         self.assertIsNone(read(new, {**old, 'date': new['date']}))
         self.assertIsNone(read(new, {**old, 'date': None}))
+        ambiguous = evidence('fluticasone: used 0 of 14 days last month; now reports use on 7 of 14 days.', '2027-05-14', 'R-conflict')
+        self.assertIsNone(read(old, new, ambiguous))
 
     def test_fraction_requires_an_actual_citation(self):
         item = evidence('fluticasone: reports use on 3 of 14 days.')
