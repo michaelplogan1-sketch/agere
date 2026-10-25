@@ -35,7 +35,7 @@ BUCKETS = ('population_clinical_quality', 'population_claims_pharmacy_sdoh', 'in
 DEFAULT_MODEL = 'claude-haiku-5-5'  # together.DEFAULT_SEMANTIC_MODEL
 
 
-def load_dev(path=QUESTIONS, buckets=BUCKETS, ids=None):
+def load_dev(path=QUESTIONS, buckets=BUCKETS, ids=None, splits=('dev',)):
     """The dev questions of the requested buckets. A held-out line is skipped before it is parsed."""
     out = []
     with open(path) as handle:
@@ -43,7 +43,7 @@ def load_dev(path=QUESTIONS, buckets=BUCKETS, ids=None):
             if '"split": "heldout"' in line or not line.strip():
                 continue
             q = json.loads(line)
-            if q.get('split') != 'dev' or q.get('bucket') not in buckets or (ids and q['id'] not in ids):
+            if q.get('split') not in splits or q.get('bucket') not in buckets or (ids and q['id'] not in ids):
                 continue
             out.append(q)
     return out
@@ -115,6 +115,8 @@ def main(argv=None):
     ap.add_argument('--max-tools', type=int, default=8)
     ap.add_argument('--semantic', type=Path, default=SEMANTIC)
     ap.add_argument('--out', type=Path)
+    ap.add_argument('--set', choices=('dev', 'dev3'), default='dev', help='dev3 = tools/dev_set/dev3_questions.jsonl (use --half)')
+    ap.add_argument('--half', choices=('build', 'check', 'all'))
     ap.add_argument('--dry-run', action='store_true', help='list the selected dev questions and exit; no call')
     ap.add_argument('--rescore', type=Path, help='re-score a saved run against the current keys; no calls')
     a = ap.parse_args(argv)
@@ -129,7 +131,11 @@ def main(argv=None):
             rows.append({**r, 'correct': correct, 'detail': detail, 'outcome': classify(correct, r['response'])})
         print('\n'.join(summarize(rows)))
         return rows
-    qs = load_dev(buckets=tuple(a.bucket or BUCKETS), ids=a.ids)[:a.limit]
+    if a.set == 'dev3':
+        from tools.dev_set.halves import keep
+        qs = keep(load_dev(Path(__file__).with_name('dev3_questions.jsonl'), buckets=tuple(a.bucket or BUCKETS), ids=a.ids, splits=('dev3',)), a.half)[:a.limit]
+    else:
+        qs = load_dev(buckets=tuple(a.bucket or BUCKETS), ids=a.ids)[:a.limit]
     if a.dry_run:
         for q in qs:
             print(f"{q['id']:>6} {q['bucket'][:30]:30} {q['answer_type']}")

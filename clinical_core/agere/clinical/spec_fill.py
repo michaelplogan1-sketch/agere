@@ -455,6 +455,9 @@ The decision context above is applied by the compiler: do not add a living-patie
 Every quote is a literal substring of the original question. Preserve every predicate, negation, OR/AND, number, window, measure and grouping.
 Use op=concept only with names listed in named_concepts. Its quote must describe exactly that one predicate, including its own evidence verb and window when present: e.g. "on a statin in 2029". The compiler reparses the quote and requires the concept, polarity and period to agree. Do not attach another condition, a sibling negation, grouping, or an unrelated filter to a concept leaf. Literal spans may be a list when the relevant words are separated.
 A negative condition uses op=not around the positive concept; put the negation words on the NOT quote and the positive evidence wording on its child. "neither X nor Y" means NOT X AND NOT Y. "both X and Y" and a comma-separated condition list mean AND for the same patient; they do not require equal diagnosis dates unless dates are explicitly requested.
+A vague but ordinary business word ("usual reason" = the most frequent value, "most expensive" = highest allowed amount, "driven by" = the largest
+contributors, "lagging" = lowest rate) takes its standard reading: write that reading as the spec and let the read-back state it. Use unresolved only
+when the data or definition genuinely does not exist in the catalog, never because a standard reading had to be chosen.
 Every substantive word must bind to an executed leaf or an explicit operator. Source/measure quotes should include their complete source/calculation wording, not just a single noun. Preserve comparative groups and denominators as separate executed predicates; do not mark ordinary counting, conjunction, negation, or a stated group_by as unresolved merely because the wording is unfamiliar.
 A drug or condition that no listed name covers cannot be expressed: keep its exact words in unresolved with that reason; never invent a name.
 '''
@@ -481,6 +484,11 @@ statuses (the shared assertion options; the predicate holds when the patient's c
 combine (how several passages or notes reduce to one patient value): {combines}. sources (optional): {sources}.
 detail fields per frame (closed option lists): {details}
 Use a note predicate only for what the notes say (a reason, a refusal, a symptom, a stated history); use coded fields for diagnoses, labs, fills, visits and claims. Never invent a status or detail value outside these lists.
+A reference to a specific document, call or visit ("at the June 2027 annual physical", "the discharge summary", "the specialist letter", "the medication history call",
+"the callback", "the H&P", "outside records", "the preventive review") names WHICH NOTE to read: write a note predicate with sources set to the closest listed source
+and a window that covers the stated date (a stated month = that whole month; a stated day = that day). A value asked "at" or "in" such a document or visit (a vital,
+a lab, a dose, a count, a plan) is read from that note (frame finding_value or the closest frame), even when coded rows hold the same kind of value. Never put a
+document, call or visit reference in unresolved because coded rows lack an encounter key: the note predicate is how it binds.
 '''
 NO_NOTES_ADDENDUM = '''
 This build has no note reader: a requirement about what the clinical notes say stays in unresolved with that reason.
@@ -739,7 +747,7 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
     decide, models = decide or PROVIDERS['decide'], models or PROVIDERS['models']
     names = tuple(fillers) if fillers else enabled_fillers()
     grace = env_float('AGERE_SPEC_GRACE_SECONDS', 2.0) if grace is None else grace
-    seconds = env_float('AGERE_SPEC_SECONDS', 12.0) if seconds is None else seconds
+    seconds = env_float('AGERE_SPEC_SECONDS', 50.0) if seconds is None else seconds
     ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, decide=decide, models=models, as_of=as_of,
               deadline=time.monotonic() + seconds)
     if ctx_hook: ctx_hook(ctx)
@@ -752,7 +760,7 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
     paid = [n for n in names if n != 'grammar']
     if candidates.get('grammar', {}).get('status') == 'valid': cancel_early(stack, question, population)  # the grammar's spec wins; stop the early start
     if candidates.get('grammar', {}).get('status') != 'valid' and paid:
-        limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 8.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 12.0)}
+        limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 8.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 45.0)}
         fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
         early_ctx, early = take_early(stack, question, population) if decide is PROVIDERS['decide'] and models is PROVIDERS['models'] else (None, {})
         pool = ThreadPoolExecutor(max_workers=len(paid), thread_name_prefix='spec-fill')
@@ -811,7 +819,7 @@ def repair(stack, catalog, question, plan, review, *, population=None, ledger=No
     """One Haiku repair of a spec System One refused part by part (feedback: spec_verify.feedback). -> the same dict as fill, or SpecNotFilled."""
     started = time.perf_counter()
     models = models or PROVIDERS['models']
-    ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, models=models, as_of=as_of, deadline=time.monotonic() + env_float('AGERE_SPEC_HAIKU_SECONDS', 12.0))
+    ctx = Ctx(stack, catalog, question, population=population, ledger=ledger, models=models, as_of=as_of, deadline=time.monotonic() + env_float('AGERE_SPEC_HAIKU_SECONDS', 45.0))
     cand = run_filler('haiku', lambda c: haiku_fill(c, previous=plan, review=review), ctx)
     receipt = {'version': VERSION, 'fillers': {'haiku': {k: cand.get(k) for k in ('status', 'seconds', 'calls', 'usd', 'cost_known', 'error')}},
                'seconds': round(time.perf_counter() - started, 3), 'calls': cand.get('calls', 0), 'usd': cand.get('usd', 0.0), 'cost_known': cand.get('cost_known', True),
