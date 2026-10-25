@@ -975,7 +975,7 @@ def social_needs(ch, it):
     wfrag, wparams = CI.window_sql('event_date', window)
     cfrag, cparams = (' AND need = ?', [concept['value']]) if concept else ('', [])
     rows = ch.rows(f'SELECT record_id, need, positive, instrument, event_date FROM social_need WHERE patient_id = ?{cfrag}{wfrag} ORDER BY event_date DESC', ch.pid, *cparams, *wparams)
-    pos = [r for r in rows if r['positive']]
+    pos = [r for r in rows if r['positive'] == 1]
     by = {}
     for r in pos:
         by.setdefault(r['need'], []).append(r)
