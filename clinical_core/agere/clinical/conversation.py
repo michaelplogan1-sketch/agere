@@ -409,7 +409,7 @@ def requires_saved_cohort(question, catalog=None):
     # "Which patients look like they have ...": a seeming verb between the population and the pronoun keeps it local.
     if reference.group() in ('they', 'their', 'them') and re.match(r'\s*(?:look|looks|seem|seems|appear|appears)\b', link):
         return False
-    if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned|completed|received|got|had|filled|went|visited|underwent)\b', link):
+    if reference.group() == 'their' and re.search(r'\b(?:have|has|are|were|with|without|attributed|assigned|completed|received|got|had|filled|went|visited|underwent|screened|documented|recorded|listed|carry|carries)\b', link):
         return False
     # A noun alone is insufficient: "count claims for those patients" still
     # refers outside this question. Only recognize an explicit clause link.

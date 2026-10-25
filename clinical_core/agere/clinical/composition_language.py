@@ -327,7 +327,7 @@ class FallbackForms:
         self.uncovered_words = left
         return not left
 
-    FRAMES = ('rate_per_form', 'cost_per_patient', 'high_cost_breakdown', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'most_filled', 'rank_cost', 'rank_floor_first', 'claims_frame', 'rank_measure', 'grouping_wrapper')
+    FRAMES = ('event_share', 'rate_per_form', 'cost_per_patient', 'high_cost_breakdown', 'needs_breakdown', 'compare_frame', 'claims_share_frame', 'most_filled', 'rank_cost', 'rank_floor_first', 'claims_frame', 'rank_measure', 'grouping_wrapper', 'measure_for_categories', 'contrast_ellipsis')
 
 
 class RateForms:

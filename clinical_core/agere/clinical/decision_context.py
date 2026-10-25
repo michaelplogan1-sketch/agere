@@ -315,10 +315,20 @@ def _unmask(sql, held):
 
 
 def patient_grain(sql, returns=None):
-    """Does this query count or list patients? (money, event counts and row-level analyses are not patient grain.)"""
+    """Does this query count or list patients, or summarise a PATIENT attribute (average SVI, average age)? (money, event counts and row-level analyses are not patient grain.)"""
     masked, _ = _mask(sql or '')
     if returns == 'patient_set': return True
-    return bool(_COUNT_PATIENTS.search(masked) or _SELECT_PATIENT.search(masked) or _COUNT_ROWS_OF_PATIENT.search(masked))
+    return bool(_COUNT_PATIENTS.search(masked) or _SELECT_PATIENT.search(masked) or _COUNT_ROWS_OF_PATIENT.search(masked) or _summarises_patient_attribute(masked))
+
+
+_SUMMARY = re.compile(r'(?i)\b(?:avg|sum|min|max|median)\s*\(')
+_FIRST_FROM = re.compile(r'(?i)\bfrom\s+"?(\w+)"?')
+
+
+def _summarises_patient_attribute(masked):
+    """An average / total over the patient row or its one-row-per-patient attribute relation (patient, patient_svi): the patients it describes are living patients."""
+    first = _FIRST_FROM.search(masked)
+    return bool(_SUMMARY.search(masked) and first and first.group(1).lower() in ('patient', 'patient_svi'))
 
 
 def references_death(sql):

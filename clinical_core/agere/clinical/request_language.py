@@ -18,6 +18,7 @@ from .composition_language import CompositionForms, GroupingForms, RateForms
 from .claims_composition import ClaimFrames
 from .comparison_composition import ComparisonForms
 from .sdoh_composition import SdohComposition
+from .analyst_language import AnalystForms
 
 SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
@@ -49,6 +50,11 @@ SOURCES = {
     'pediatricians': ('clinician', ('specialty', 'Pediatrics')), 'radiologists': ('clinician', ('specialty', 'Radiology')),
     'hospitalists': ('clinician', ('specialty', 'Hospitalist')), 'ophthalmologists': ('clinician', ('specialty', 'Ophthalmology')),
     'women': ('patient', ('sex_reported', 'F')), 'men': ('patient', ('sex_reported', 'M')),
+    # an age group named as a noun (a value comparison on age, not a stored category): children are under 18, older adults 65 and over
+    'children': ('patient', ('age', ('<', 18))), 'kids': ('patient', ('age', ('<', 18))), 'minors': ('patient', ('age', ('<', 18))),
+    'pediatric patients': ('patient', ('age', ('<', 18))), 'seniors': ('patient', ('age', ('>=', 65))), 'older adults': ('patient', ('age', ('>=', 65))),
+    'elderly patients': ('patient', ('age', ('>=', 65))), 'geriatric patients': ('patient', ('age', ('>=', 65))),
+    'deaths': ('death', None),
     'members': ('patient', None), 'attributed members': ('patient', None), 'attributed lives': ('patient', None),
     'female patients': ('patient', ('sex_reported', 'F')), 'male patients': ('patient', ('sex_reported', 'M')),
     # condition adjectives and plurals ("our diabetic patients", "hypertensive patients"): the patients with that condition
@@ -94,8 +100,11 @@ EVIDENCE = [
     (r'(?:zoster|shingles|shingrix)\s+(?:vaccines?|vaccinations?|shots?|immunizations?)', 'immunization', 'event_date',
      [('vaccine', 'like', 'zoster%'), ('status', '=', 'completed')]),
     (r'mammogra(?:ms?|phy(?:\s+screenings?)?)', 'cancer_screening', 'event_date', [('test', '=', 'bilateral_screening_mammography')]),
+    (r'fit\s+(?:tests?|screenings?|kits?)|fecal\s+immunochemical(?:\s+tests?)?', 'cancer_screening', 'event_date', [('test', '=', 'FIT')]),
     (r'(?:annual wellness visits?|awvs?)', 'wellness_visit', 'event_date', [('awv', '=', 1)]),
     # decision context: an inpatient stay is the all-source admission (stay), an observation stay the all-source utilization_event
+    (r'(?:active|current)\s+(?:medications?|meds?|drugs?|prescriptions?)(?:\s+(?:on|in)\s+(?:their|the|his|her)\s+(?:medication\s+)?(?:list|profile))?', 'medication_list_entry', 'last_listed',
+     [('list_status', '=', 'active')]),
     (r'(?:(?:inpatient|hospital)\s+(?:admissions?|stays?))|admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
     (r'observation\s+(?:stays?|visits?|admissions?)', 'utilization_event', 'event_date', [('kind', '=', 'observation')]),
     (r'(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
@@ -117,6 +126,12 @@ SEQUENCE_EVENTS = [
     (r'(?:an?\s+)?primary\s+care\s+(?:visits?|follow-?ups?)', 'payer_claim_line', 'service_date',
      [('counts_in_metrics', '=', 1), ('cpt', '>=', '99202'), ('cpt', '<=', '99215')]),
     (r'(?:an?\s+)?(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
+    # an office visit is an in-person primary-care or specialist visit; the same office E/M claim line (CPT 99202-99215) is its second source
+    (r'(?:an?\s+)?(?:office|outpatient|ambulatory|clinic)\s+(?:visits?|encounters?)', 'visit', 'event_date', [('type_concept', 'in', ['primary_care_visit', 'specialist_visit'])]),
+    (r'(?:an?\s+)?(?:office|outpatient|ambulatory|clinic)\s+(?:visits?|encounters?)', 'payer_claim_line', 'service_date',
+     [('counts_in_metrics', '=', 1), ('cpt', '>=', '99202'), ('cpt', '<=', '99215')]),
+    (r'(?:an?\s+)?(?:specialist|specialty)\s+(?:visits?|follow-?ups?)', 'visit', 'event_date', [('type_concept', '=', 'specialist_visit')]),
+    (r'(?:an?\s+)?(?:tele(?:health|phone)|virtual)\s+(?:visits?|contacts?|encounters?)', 'visit', 'event_date', [('type_concept', '=', 'telehealth_contact')]),
 ]
 MONTH_NAMES = {m: i for i, m in enumerate('january february march april may june july august september october november december'.split(), 1)}
 NUMBER_WORDS = {w: str(i) for i, w in enumerate('zero one two three four five six seven eight nine ten eleven twelve'.split()) if i}
@@ -181,7 +196,8 @@ CLOCKS = {'utilization_event': 'event_date', 'visit': 'event_date', 'stay': 'adm
           'prescription': 'ordered_date', 'fill': 'fill_date',
           'appointment': 'scheduled_date', 'medication': 'event_date',
           'measurement': 'event_date', 'condition': 'event_date', 'record': 'event_date',
-          'claim_adjudication': 'event_date', 'member_month': 'month', 'returned_fill': 'event_date', 'social_need': 'event_date'}
+          'claim_adjudication': 'event_date', 'member_month': 'month', 'returned_fill': 'event_date', 'social_need': 'event_date',
+          'death': 'death_date'}
 CONDITION_ALIASES = {'coronary disease': 'coronary_artery_disease', 'cad': 'coronary_artery_disease',
                      'a prior heart attack': 'myocardial_infarction', 'prior heart attack': 'myocardial_infarction',
                      'a heart attack': 'myocardial_infarction', 'heart attack': 'myocardial_infarction',
@@ -238,7 +254,7 @@ def quote_words(atom_):
     return ' '.join(q) if isinstance(q, list) else str(q or '')
 
 
-class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingForms, CompositionForms, PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
+class Parser(AnalystForms, SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingForms, CompositionForms, PopulationForms, RankingForms, ClaimForms, SdohForms, DefinedForms):
     def __init__(self, catalog, question, *, bound=False):
         self.catalog, self.question, self.bound = catalog, question, bound
         self.base = 'patient'
@@ -388,14 +404,18 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
 
     def status_word(self, text):
         """A word naming one received status value of the current relation ('cancelled', 'kept', 'rejected')."""
-        m = re.match(r'^([a-z][a-z_-]+)\b', text, re.I)
+        # "ended as no-shows", "were marked as cancelled", "resulted in a no-show": the outcome verb restates "was"; it is quoted with the status
+        outcome = re.match(r'^(?:(?:ended(?:\s+up)?|(?:was|were|are|is|got|get)\s+(?:marked|recorded|logged|classified|flagged|labell?ed|coded|listed|counted)|resulted|turned\s+out)'
+                           r'\s+(?:as|in|to\s+be)\s+)(?:an?\s+)?', text, re.I)
+        m = re.match(r'^([a-z][a-z_-]+)\b', text[outcome.end():] if outcome else text, re.I)
         if not m or not self.base: return None
         word = m[1].lower().replace('-', '_')
         for column in self.STATUS_COLUMNS:
             values = {v.lower(): v for v in self.observed_values(self.base, column)}
             for candidate in (word, word[:-1] if word.endswith('s') else word):  # "no-shows" names the no_show status
                 if candidate in values:
-                    return atom(f'{self.base}.{column}', '=', values[candidate], m.group()), text[m.end():]
+                    end = (outcome.end() if outcome else 0) + m.end()
+                    return atom(f'{self.base}.{column}', '=', values[candidate], text[:end]), text[end:]
         return None
 
     SEX_COLUMNS = ('sex_reported', 'sex', 'gender')
@@ -440,8 +460,9 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
 
     def grouping(self, text, dimensions):
         """Consume only named group dimensions; leave later clauses to parse."""
-        markers = list(re.finditer(r'(?<!\S)(?:grouped by|group by|broken down by|by|per)\s+',
-                                   syntax_text(text, hide_parentheses=True), re.I))
+        masked = syntax_text(text, hide_parentheses=True)
+        markers = [m for m in re.finditer(r'(?<!\S)(?:grouped by|group by|broken down by|by|per)\s+', masked, re.I)
+                   if not re.search(r'\bfollowed\s+$', masked[:m.start()], re.I)]  # "followed by a visit" is a sequence, not a grouping
         if not markers: return text, [], None
         if len(markers) != 1: raise PlanError('Use one explicit grouping clause')
         marker = markers[0]
@@ -482,6 +503,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         for field, value in pairs:
             if field == 'condition': found.append(self.condition(value, quote))
             elif isinstance(value, list): found.append(atom(f'{self.base}.{field}', 'in', value, quote))
+            elif isinstance(value, tuple): found.append(atom(f'{self.base}.{field}', value[0], value[1], quote))  # an operator and a number: age < 18
             else: found.append(atom(f'{self.base}.{field}', '=', value, quote))
         return combine('and', found, quote)
 
@@ -643,9 +665,33 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             found = (table, field, self.usable_result(atoms, quote), quote, tail)
         return found
 
+    VISIT_KINDS = {'office': ['primary_care_visit', 'specialist_visit'], 'outpatient': ['primary_care_visit', 'specialist_visit'],
+                   'ambulatory': ['primary_care_visit', 'specialist_visit'], 'clinic': ['primary_care_visit', 'specialist_visit'],
+                   'primary care': ['primary_care_visit'], 'specialty': ['specialist_visit'], 'specialist': ['specialist_visit'],
+                   'telehealth': ['telehealth_contact'], 'telephone': ['telehealth_contact']}
+
+    def visit_list(self, text):
+        """"an office, primary care, specialty or telehealth visit": one follow-up contact of ANY of the listed kinds (visit.type_concept), with the primary-care
+        claim line (an office E/M, CPT 99202-99215) as the second source when a primary-care or office kind is listed, as for a single "primary care visit"."""
+        names = '|'.join(sorted((k.replace(' ', r'\s+') for k in self.VISIT_KINDS), key=len, reverse=True))
+        m = re.match(r'^(?:an?\s+)?((?:(?:' + names + r')(?:\s*,\s*(?:or\s+|and\s+)?|\s+(?:or|and)\s+))+(?:' + names + r'))\s+(?:visits?|encounters?|contacts?)\b', text, re.I)
+        if not m or 'visit' not in self.catalog.tables or 'type_concept' not in self.catalog.tables['visit']: return None
+        kinds = [re.sub(r'\s+', ' ', k.lower()) for k in re.findall(r'(?:' + names + r')', m[1], re.I)]
+        types = list(dict.fromkeys(t for k in kinds for t in self.VISIT_KINDS[k]))
+        quote = m.group().strip()
+        atoms = [atom('visit.type_concept', 'in', types, quote)]
+        tail = text[m.end():]
+        claim = 'payer_claim_line' in self.catalog.tables and {'counts_in_metrics', 'cpt', 'service_date'} <= set(self.catalog.tables['payer_claim_line'])
+        if claim and any(k in ('office', 'primary care', 'outpatient', 'ambulatory', 'clinic') for k in kinds):
+            lines = [atom('payer_claim_line.counts_in_metrics', '=', 1, quote), atom('payer_claim_line.cpt', '>=', '99202', quote), atom('payer_claim_line.cpt', '<=', '99215', quote)]
+            return 'any', None, [('visit', 'event_date', atoms), ('payer_claim_line', 'service_date', lines)], tail, quote
+        return 'visit', 'event_date', atoms, tail, quote
+
     def sequence_event(self, text, *, started=False):
         """(table, date, atoms, tail, quote) for a named dated event; a drug name after 'started' is a new start.
         An event received from several sources returns ('any', None, [(table, date, atoms), ...], tail, quote)."""
+        listed = self.visit_list(text)
+        if listed: return listed
         found = []
         for pattern, table, field, fixed in SEQUENCE_EVENTS:
             m = re.match(pattern + r'\b', text, re.I)
@@ -681,7 +727,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             if not inner: return None
             value, rest = inner
             return {'op': 'not', 'arg': value, 'quote': start[:len(start) - len(rest)].strip()}, rest
-        lead = None if negated else re.match(r'^(?:(started|start|starting|began)|(?:have|has|had|got|received|with|filled|picked\s+up|refilled))\s+', text, re.I)
+        lead = None if negated else re.match(r'^(?:(started|start|starting|began)|(?:have|has|had|got|received|with|filled|picked\s+up|refilled|followed\s+by))\s+', text, re.I)
         if not lead and not negated: return None
         lead_quote, lead_end = (lead.group().strip(), lead.end()) if lead else (negated, 0)
         then = self.sequence_event(text[lead_end:], started=bool(lead and lead[1]))
@@ -719,9 +765,9 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                 a_atoms = list(a_atoms) + extra
             if extra or rank:  # one literal span: rank + event + its period
                 a_quote = anchor_text[:len(anchor_text) - len(rest)].strip()
-        elif bounded and not explicit and self.base == 'stay' and self.clock:
-            # "follow-up within a week": after the counted row's own event (each discharge)
-            a_table, a_field, a_atoms, rest, a_quote = 'stay', self.clock, [], tail[window.end():], ''
+        elif bounded and not explicit and (self.base == 'stay' and self.clock or self.base == 'utilization_event' and CLOCKS.get(self.base)):
+            # "follow-up within a week": after the counted row's own event (each discharge, each ED visit)
+            a_table, a_field, a_atoms, rest, a_quote = self.base, (self.clock if self.base == 'stay' else CLOCKS[self.base]), [], tail[window.end():], ''
         else:
             return None
         if a_table == 'any': return None  # an anchor from several sources needs one date per source; not composed here
@@ -789,6 +835,8 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         if self.base != 'patient': return None
         noted = self.note_evidence(text)
         if noted: return noted
+        both = self.both_evidence(text)
+        if both: return both
         start = text
         social = re.match(r'^(?:(?:have|has|had)\s+)?(?:ever\s+)?((?:never|not)\s+)?screened\s+(positive\s+)?for\s+', text, re.I)
         if social and 'social_need' in self.catalog.tables:
@@ -1045,6 +1093,25 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                     if word in values:
                         adjective = atom(f'{table}.{column}', '=', values[word], first[1]); source = later; break
         if not source:
+            # "urgent care claims", "denied claims", "brand pharmacy claims": a claim condition named before the claims noun (claims_language.CLAIM_PREDICATES,
+            # the same data the amount and rate forms read)
+            from .claims_language import CLAIM_PREDICATES
+            for claim_table, patterns in CLAIM_PREDICATES.items():
+                if claim_table not in self.catalog.tables: continue
+                for pattern, conditions in patterns:
+                    named = re.match(r'^((?:the|our|all)\s+)?(' + pattern + r')\s+', rest, re.I)
+                    later = self.prefix(rest[named.end():], self.sources) if named else None
+                    if later and later[1][0] == claim_table and all(c in self.catalog.tables[claim_table] for c, _, _ in conditions):
+                        adjective = combine('and', [atom(f'{claim_table}.{c}', op, v, named[2]) for c, op, v in conditions], named[2])
+                        source = later; break
+                if source: break
+            if not source and 'payer_pharmacy_claim' in self.catalog.tables:  # "Jardiance claims", "Eliquis fills": a received drug name before the pharmacy-claims noun
+                drug = next(iter(self.drug_mentions(rest[:60])), None)
+                noun = re.match(r'^\s+(?:pharmacy\s+)?(?:claims?|fills?|prescriptions?|scripts?)\b', rest[len(drug[1]):], re.I) if drug and drug[0] == 0 else None
+                if noun:
+                    adjective = atom('payer_pharmacy_claim.drug_name', 'like', '%' + drug[1] + '%', drug[1])
+                    source = (noun.group().strip(), ('payer_pharmacy_claim', None), rest[len(drug[1]) + noun.end():].lstrip())
+        if not source:
             # "<condition> patients" names the patients with that condition.
             named = self.prefix(rest, self.conditions)
             people = re.match(r'^(?:patients|members)\b', named[2], re.I) if named else None
@@ -1077,6 +1144,17 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         where, tail = self.expression(rest)
         if tail.strip(): raise PlanError('Unconsumed request: '+tail)
         if modifiers and self.base != 'patient': raise PlanError('Population adjectives apply to patients: ' + ' '.join(modifiers))
+        if adjective and self.base == 'appointment' and adjective.get('value') in ('scheduled', 'booked'):
+            # "scheduled appointments ended as no-shows": "scheduled" names the appointments (every one of them was scheduled), and the outcome that
+            # follows is the filter; two different statuses at once would match nothing, so the lifecycle word keeps its quote on the outcome atom
+            def atoms_of(node):
+                if isinstance(node, dict) and 'field' in node: yield node
+                for child in (node.get('args') or [] if isinstance(node, dict) else []): yield from atoms_of(child)
+            clash = [a for a in atoms_of(where) if a['field'].split('.')[-1] in self.STATUS_COLUMNS and a.get('op') == '=' and a.get('value') != adjective['value']]
+            if clash:
+                held = clash[0]['quote']
+                clash[0]['quote'] = [adjective['quote'], *([held] if isinstance(held, str) else held)]
+                adjective = None
         if adjective: where = combine('and', [adjective, where], self.question)
         if lead_year:
             value, left = self.one(lead_year[1])
@@ -1246,9 +1324,19 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
     def governed(self, text):
         """One metric name plus independently consumed scope/period/group slots."""
         from . import request_vocabulary as V, metrics
+        alias_phrase = None
         frame = self.comparison_frame(text)
         if frame: text, compared, frame_quotes = frame
         rest = re.sub(r"^(?:(?:what|how much) (?:is|was|are)|what'?s|show(?: me)?|give me|tell me)\s+", '', text, flags=re.I)
+        # Analyst asks for a named measure ("how are we doing on", "what was our performance on", "report on"): the lead carries no requirement
+        # of its own, so its words are quoted with the measure.
+        lead_quote = []
+        analyst = re.match(r"^(?:(?:how\s+(?:are|were|is|was)\s+we\s+(?:doing|performing)|how\s+did\s+we\s+(?:do|perform)|where\s+(?:are|do)\s+we\s+(?:stand|sit)|"
+                           r"what(?:'s|\s+(?:is|was|are|were))\s+(?:our|the|my)\s+(?:performance|results?|numbers?|rate|score|status)|"
+                           r"(?:what|how)\s+(?:is|was)\s+our\s+(?:performance|status))\s+(?:on|for|with|in|against)|"
+                           r"(?:report|calculate|compute|pull(?:\s+up)?|run|get|give\s+me|show(?:\s+me)?)(?:\s+(?:on|up))?)\s+", rest, re.I)
+        if analyst and self.prefix(re.sub(r'^(?:(?:the|our|overall)\s+)+', '', rest[analyst.end():], flags=re.I), V.aliases()):
+            lead_quote.append(analyst.group().strip()); rest = rest[analyst.end():]
         rest = re.sub(r'^(?:(?:the|our|overall)\s+)+', '', rest, flags=re.I)
         # A leading year ("the 2029 denial rate") is the measure period, kept with its original span.
         leading = re.match(r'^(20\d{2})\s+', rest)
@@ -1263,8 +1351,28 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             got = True
         else:
             got = self.prefix(rest, V.aliases())
-            if not got: return None
+            if not got:  # "7-day follow-up after hospital discharge": the window restates the measure's own window when its definition states that number
+                nday = re.match(r'^(\d+)[- ]days?\s+', rest, re.I)
+                found = self.prefix(rest[nday.end():], V.aliases()) if nday else None
+                if found and found[1] in V.definitions() and nday[1] in {str(int(float(n))) for n in V.definition_vocabulary(V.definitions()[found[1]])[1]}:
+                    got = found; lead_quote.append(nday.group().strip())
+            if not got:
+                # "What share of diabetics got a kidney health evaluation in 2029?": the population and the verb restate the measure's own
+                # denominator and numerator; they are consumed only when the population is the measure's own (V.own_population_regex).
+                share = re.match(r'^(?:what\s+|which\s+)?(?:share|percent(?:age)?|proportion|fraction)\s+of\s+(?:(?:the|our|all)\s+)?(?P<pop>.+?)\s+'
+                                 r'(?:(?:who|that)\s+)?(?:got|had|have|has|received|completed|met|are\s+on|were\s+on|passed)\s+(?:(?:an?|the|their|both)\s+)?(?P<rest>.+)$',
+                                 rest, re.I)
+                found = self.prefix(share['rest'], V.aliases()) if share else None
+                pop_ok = False
+                if found:
+                    wording = V.own_population_regex(V.definitions().get(found[1]) or {})
+                    pop_ok = bool(wording and re.fullmatch(wording, share['pop'].strip(), re.I))
+                if not pop_ok: return None
+                got = (found[0], found[1], found[2])
+                lead_quote.append(rest[:share.start('rest')].strip())
             measure_quote, ident, rest = got
+            alias_phrase = got[0]
+        if lead_quote: measure_quote = [*lead_quote, *([measure_quote] if isinstance(measure_quote, str) else measure_quote)]
         if leading: rest = rest + ' ' + leading[1]
         # A parenthetical that names a metric restates or narrows it: "medical PMPM (paid per member per month)".
         paren = re.match(r'^\s*\(([^()]+)\)', rest)
@@ -1281,6 +1389,34 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         if re.match(r'^(?:for|of|from)\s+(?:admissions|hospital stays)\b', rest, re.I):
             return None  # explicit field/source aggregation uses the relational grammar
         definition = V.definitions()[ident]
+        # Words that restate what the measure already is (V.MEASURE_KIND_WORDS / own_population_regex / gloss_accounted): consumed, never
+        # a constraint, and only when the definition itself states every content word and number of them.
+        extra_quotes = []
+        kind = re.match(r'^\s*' + V.MEASURE_KIND_WORDS + r'\b', rest, re.I)
+        if kind: extra_quotes.append(kind.group().strip()); rest = rest[kind.end():]
+        window = re.match(r'^\s*(?:within|in)\s+(\d+)[- ]days?\b', rest, re.I)  # "follow-up ... within 7 days": the measure's own window, when its definition states it
+        if window and window[1] in {str(int(float(n))) for n in V.definition_vocabulary(definition)[1]}:
+            extra_quotes.append(window.group().strip()); rest = rest[window.end():]
+        own_wording = V.own_population_regex(definition)
+        if own_wording:
+            restated_pop = re.match(r'^\s*(?:(?:for|in|among|of|across)\s+)?(?:(?:the|our|all)\s+)?' + own_wording + r'(?=\s|$|[,:;—–])', rest, re.I)
+            if restated_pop: extra_quotes.append(restated_pop.group().strip()); rest = rest[restated_pop.end():]
+        gloss = re.match(r'^\s*(?:[:;—–]|\s-\s)\s*(?P<g>\S.*)$', rest)
+        if gloss:
+            period_re = r'\b(?:(?:in|during|for)\s+)?20\d{2}\b|\b(?:last|past|trailing)\s+(?:12|twelve)\s+months\b|\b(?:last year|this year|ytd)\b'
+            g = gloss['g']
+            spans = [m.span() for m in re.finditer(period_re, g, re.I)]
+            cuts, last = [], 0
+            for a, b in spans: cuts.append(g[last:a]); last = b
+            cuts.append(g[last:])
+            pieces = [c.strip(' ,;:?.') for c in cuts if c.strip(' ,;:?.')]
+            if pieces and V.gloss_accounted(' '.join(pieces), definition):
+                extra_quotes.extend(pieces)
+                # the same period stated twice ("most recent 2029 A1c ... no A1c in 2029") is one period: the first is the measure's, the rest are quoted
+                texts = [g[a:b] for a, b in spans]
+                core = {re.sub(r'^(?:in|during|for)\s+', '', t.strip(), flags=re.I).lower() for t in texts}
+                if len(core) == 1: extra_quotes.extend(texts[1:]); texts = texts[:1]
+                rest = ' '.join(texts)
         # A rate's unit is part of its meaning: per member-months is not per member-years.
         asked = re.search(r'per\s+1,?000\s+member[- ](months?|years?)', self.question, re.I)
         defined = re.search(r'member[- ](months?|years?)', ' '.join(str(definition.get(k, '')) for k in ('name', 'unit')), re.I)
@@ -1294,6 +1430,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             return None  # the governed grouping is by the PATIENT's attribute; a claim measure grouped by payer / line of business groups the claims themselves (relational forms)
         groups, quotes = [field for _, field in group_fields], list(measure_quote) if isinstance(measure_quote, list) else [measure_quote]
         if group_quote: quotes.append(group_quote)
+        quotes.extend(extra_quotes)
         # A single explicit period belongs to the measure, never to patient DOB.
         periods = list(re.finditer(
             r'\b(?:(?:in|during|for)\s+)?20\d{2}\b|\b(?:last|past|trailing)\s+(?:12|twelve)\s+months\b|\b(?:last year|this year|ytd)\b',
@@ -1323,10 +1460,13 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         if own:
             restated = re.search(r'(?:^|\s)(?:(?:for|on|of|among|across)\s+)?(?:(?:the|our|all)\s+)?(?:' + own + r')\b', rest, re.I)
             if restated:
-                quotes.append(restated.group().strip())
+                quotes.extend(piece for piece in re.split(r'\s{2,}', restated.group().strip()) if piece)  # a removed period leaves a gap: each side is its own literal slice
                 rest = rest[:restated.start()] + ' ' + rest[restated.end():]
         where, tail = self.expression(rest.strip())
-        if tail.strip(): raise PlanError('Unconsumed metric scope: '+tail)
+        if tail.strip():
+            if alias_phrase and alias_phrase.lower() in V.library_alias_only():
+                return None  # an analyst alias the library lists: another reading of the whole wording (a plain rate for a stated population) may still read it
+            raise PlanError('Unconsumed metric scope: '+tail)
         self.bind_parent_quotes(where)
         spans = ([metrics.period_for(y, self.catalog.identity['as_of'], 'all')[:2] for y in sorted(years)]
                  if frame else [(start, end)])
@@ -1336,8 +1476,13 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             try: V.validate(params)
             except ValueError as exc: raise PlanError(str(exc)) from exc
             analyses.append({'operation': 'governed_metric', 'parameters': params, 'quote': quotes})
-        return {'source': {'table': 'patient', 'quote': measure_quote},
-                'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': measure_quote}],
+        # The population / measure quote may not hold filter words ("with", "who"): a measure name that contains them ("statin therapy for
+        # patients with diabetes") keeps its full wording in the analysis quotes and quotes only its filter-free head here.
+        parts = [measure_quote] if isinstance(measure_quote, str) else list(measure_quote)
+        plain = next((c for c in (re.split(r'\b(?:with|without|where|whose|who|excluding|exclude|unless)\b', p, maxsplit=1, flags=re.I)[0].strip(' ,') for p in parts) if c),
+                     parts[0])
+        return {'source': {'table': 'patient', 'quote': plain},
+                'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': plain}],
                 'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': [],
                 'analyses': analyses}
 
@@ -1359,9 +1504,32 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                 depth += (char == '(') - (char == ')')
                 if depth == 0: return i == len(fragment)-1
             return False
+        # "reversed or recouped for dates of service in 2029": alternatives of ONE column of an event relation followed by a trailing period apply the
+        # period to the row, so the alternatives are one set and the window covers all of them (no other reading of that wording exists).
+        shared = self.shared_period(terms)
+        if shared:
+            quote = text[:len(text)-len(tail)].strip()
+            return combine('and', [combine('or', shared[0], quote), shared[1]], quote), tail
         if len(terms) > 1 and any(t and t.get('op') == 'and' and not enclosed(f) for t, f in zip(terms, fragments)):
             raise AmbiguousRequest('This mixes AND and OR without a clear scope. Add parentheses, for example age > 65 and (diabetes or ckd), or (age > 65 and diabetes) or ckd.')
         return combine('or', terms, text[:len(text)-len(tail)].strip()), tail
+
+    def shared_period(self, terms):
+        """-> ([alternative atoms], period window) when the OR terms are single-column alternatives and the last term carries the trailing period."""
+        clock = self.clock or CLOCKS.get(self.base)
+        if self.base == 'patient' or not clock or len(terms) < 2 or not all(isinstance(t, dict) for t in terms): return None
+        last = terms[-1]
+        if last.get('op') != 'and' or len(last.get('args', [])) < 2: return None
+        window = last['args'][-1]
+        field = f'{self.base}.{clock}'
+        def is_window(n):
+            if n.get('field') == field and n.get('op') == 'within_last_months': return True
+            return (n.get('op') == 'and' and len(n.get('args', [])) == 2 and all(a.get('field') == field and a.get('op') in ('>=', '<') for a in n['args']))
+        if not is_window(window): return None
+        alternatives = [*terms[:-1], *last['args'][:-1]]
+        if len(alternatives) < 2 or not all('field' in a and a.get('op') in ('=', 'in') for a in alternatives): return None
+        if len({a['field'] for a in alternatives}) != 1: return None
+        return alternatives, window
 
     def conjunction(self, text):
         values, tail = [], text.strip()
@@ -1430,9 +1598,11 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
         if marker: return marker
         sdoh = self.sdoh_predicate(text)
         if sdoh: return sdoh
+        analyst = self.screen_positive(text) or self.active_coverage(text)
+        if analyst: return analyst
         evidence = self.evidence(text)
         if evidence: return evidence
-        neg = re.match(r"^(?:not|without|excluding|exclude|(?:have|has|with)\s+no|no|(?:do|does)\s+not|don't|doesn't)\s+", text, re.I)
+        neg = re.match(r"^(?:not|without|excluding|exclude|(?:have|has|with)\s+no|no|(?:do|does)\s+not|don't|doesn't|(?:are|is|were|was)\s+not(?=\s+(?:on|taking|using|receiving)\b)|(?:aren't|isn't|weren't|wasn't)(?=\s+(?:on|taking|using|receiving)\b))\s+", text, re.I)
         if neg:
             child, tail = self.one(text[neg.end():])
             if child is None: raise PlanError('Missing negated predicate')
@@ -1444,7 +1614,10 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             months = n * (12 if roll[2].lower().startswith('year') else 1)
             return atom(self.base + '.' + (self.clock or CLOCKS.get(self.base)), 'within_last_months', months, roll.group()), text[roll.end():]
         # Source-specific clock, never a blanket patient-year filter.
-        m = re.match(r'^(?:(?:in|during|for|of)\s+)?(?:the\s+)?(?:calendar\s+)?(?:year\s+)?(\d{4})(?![\d-])', text, re.I)
+        # "for dates of service in 2029" / "with service dates in 2029": the service clock the claims relations already use for a bare year
+        service = r'(?:(?:for|with|on)\s+)?(?:(?:the\s+)?dates?\s+of\s+service|service\s+dates?|services\s+(?:rendered|provided|delivered))\s+(?:in|during|of)\s+' \
+            if self.base in ('payer_claim', 'claim', 'payer_claim_line') else ''
+        m = re.match(r'^(?:' + (service + '|' if service else '') + r'(?:(?:in|during|for|of)\s+)?)(?:the\s+)?(?:calendar\s+)?(?:year\s+)?(\d{4})(?![\d-])', text, re.I)
         if m:
             clock = self.clock or CLOCKS.get(self.base)
             if not clock: raise PlanError('This period needs an explicit event/date field')
@@ -1477,8 +1650,14 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             alive = re.match(r'^(?:living|alive|still alive|(?:who\s+)?are\s+(?:still\s+)?alive)\b(?:\s+(?:patients|members))?', text, re.I)
             if alive:
                 return {'op': 'not', 'arg': related('death', None, alive.group()), 'quote': alive.group()}, text[alive.end():]
-            died = re.match(r'^(?:who\s+)?died\b', text, re.I)
-            if died: return related('death', None, died.group()), text[died.end():]
+            # "died", "have died", "passed away", "had a death", optionally with a calendar year ("died in 2029"): the death record, dated by its own clock
+            died = re.match(r'^(?:(?:who|that)\s+)?(?:(?:have\s+|has\s+)?died|passed\s+away|(?:had|have|has)\s+a\s+death)\b'
+                            r'(?:\s+(?:in|during)\s+(?:the\s+(?:calendar\s+)?year\s+)?((?:19|20)\d\d)(?![\d-]))?', text, re.I)
+            if died:
+                if not died[1]: return related('death', None, died.group()), text[died.end():]
+                year, quote = int(died[1]), died.group()
+                window = combine('and', [atom('death.death_date', '>=', f'{year}-01-01', quote), atom('death.death_date', '<', f'{year + 1}-01-01', quote)], quote)
+                return related('death', window, quote), text[died.end():]
         explicit = self.base == 'patient' or bool(re.match(r'^(?:among|for) (?:the )?(?:patients|members)\b', start, re.I))
         ranged = re.match(r'^aged?\s+(\d+)\s*(?:to|-|\u2013|through)\s*(\d+)\b', text, re.I)
         if ranged and explicit:
@@ -1489,7 +1668,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
             if ranged:
                 quote = ranged.group()
                 return combine('and', [atom('patient.age', '>=', int(ranged[1]), quote), atom('patient.age', '<=', int(ranged[2]), quote)], quote), text[ranged.end():]
-        older = re.match(r'^(?:aged?\s+)?(\d+)\s*(?:\+|(?:and|or)\s+(?:older|over|above))', text, re.I)
+        older = re.match(r'^(?:aged?\s+)?(\d+)\s*(?:\+|(?:and|or)\s+(?:older|over|above|up|upwards?))', text, re.I)
         if older and explicit:
             return atom('patient.age', '>=', int(older[1]), older.group()), text[older.end():]
         deceased = re.match(r'^deceased(?:\s+(?:patients|members))?\b', text, re.I)
@@ -1522,7 +1701,7 @@ class Parser(SdohComposition, ComparisonForms, ClaimFrames, RateForms, GroupingF
                 other = self.prefix(tail[more.end():], self.conditions) if more else None
                 if not other: break
                 names.append(other[1]); tail = other[2]
-            suffix = re.match(r'^\s*(?:diagnos(?:is|es)|on record|all at once)\b', tail, re.I)
+            suffix = re.match(r'^\s*(?:diagnos(?:is|es)|dxs?|on record|all at once)\b', tail, re.I)
             if suffix: tail = tail[suffix.end():]
             either = re.match(r'^\s*\(either one\)', tail, re.I)
             if either and len(names) > 1: tail = tail[either.end():]
@@ -1668,6 +1847,14 @@ def parse_program(catalog, question, *, bound=False):
         try:
             requests.append(parse(catalog, clause, bound=bound))
         except PlanError:
+            # "how many of them are diabetic, and how many hypertensive": over a saved cohort, a later bare "how many <predicate>" shares the first clause's
+            # "of them are" (the shared words are a literal span of the first clause; the clause keeps its own words)
+            ellipsis = re.match(r'^how\s+many\s+(?!of\b)', clause, re.I) if (bound and i) else None
+            scope = re.match(r'^how\s+many\s+(of\s+(?:them|those|these)\s+(?:are|have|has|had|were))\b', clauses[0], re.I) if ellipsis else None
+            if scope:
+                requests.append(parse(catalog, 'how many ' + scope[1] + ' ' + clause[ellipsis.end():], bound=bound))
+                quotes[i] = [scope[1], clause]
+                continue
             if not (i and front): raise
             requests.append(parse(catalog, front[1] + ' ' + clause, bound=bound))
             quotes[i] = [front[1], clause]
