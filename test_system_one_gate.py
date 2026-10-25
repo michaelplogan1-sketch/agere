@@ -57,7 +57,27 @@ class Render(unittest.TestCase):
         text = G.render('How many patients have heart failure?', GRAPH, RESULT)
         for part in ("SELECT count(DISTINCT patient_id)", 'heart failure', 'Answer shape: count', 'Headline: 42 patients', 'count: 42'):
             self.assertIn(part, text)
-        self.assertLessEqual(len(G.render('q', {'nodes': [{'parameters': {'query': 'x' * 5000}}]}, RESULT, limit=300)), 300)
+        self.assertLessEqual(len(G.render('q', {'nodes': [{'operation': 'review', 'parameters': {'description': 'x' * 5000}}]}, RESULT, limit=300)), 300)
+
+    def test_sql_scope_is_not_clipped_to_a_prefix(self):
+        sql = "SELECT COUNT(*) FROM patient WHERE alive=1 " + "AND alive=1 " * 100 + "AND event_date >= '2029-01-01' AND payer='Medicaid'"
+        text = G.render('q', {'nodes': [{'operation': 'sql', 'parameters': {'query': sql, 'returns': 'count'}}]}, RESULT, limit=300)
+        self.assertIn(sql, text)
+        self.assertIn("payer='Medicaid'", text)
+        self.assertGreater(len(text), 300)
+
+    def test_checker_reads_the_context_query_that_ran_not_the_proposal(self):
+        graph = {'nodes': [{'id': 'answer', 'operation': 'sql', 'parameters': {'query': 'SELECT 99 AS value'}}]}
+        result = {'answer': {'answer_type': 'value', 'value': 1}, 'results': [
+            {'node': graph['nodes'][0], 'result': {'schema': 'semantic-sql/1', 'query': 'SELECT 99 AS value',
+             'decision_context': {'executed_query': 'SELECT 1 AS value'}}}]}
+        text = G.render('q', graph, result)
+        self.assertIn('SELECT 1 AS value', text)
+        self.assertNotIn('SELECT 99 AS value', text)
+
+    def test_every_sql_step_is_visible(self):
+        graph = {'nodes': [{'id': str(i), 'operation': 'sql', 'parameters': {'query': f'SELECT {i}'}} for i in range(6)]}
+        self.assertIn('SELECT 5', G.render('q', graph, RESULT))
 
     def test_render_without_plan(self):
         self.assertEqual(G.render('q', None, None), 'Nothing was computed.')
