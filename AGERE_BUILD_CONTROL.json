@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-25T00:47:38.443837+00:00",
+  "updated_at": "2026-10-25T01:09:25.568205+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -362,15 +362,14 @@
     "kind": "implementation_delivered_qualification_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Release3d3f6ff preserves request cost/audit context in parallel note reading, paid-claims lists versus totals, and patient/discharge chronology in short dev followups. Original synthetic warehouse restored, :8885 ready.",
-    "measured_failure_reduction": "213/211module comparison37same failures/0new; finalchart16/14modules1same failure/0new. Dev discharge fragment primary text recovered. Paid published-score dev94/100$0.092350224, competitorheldout22/50$4.8693294, Agereheldout15/50$2.930939989: transfer target NOTmet. Source/learning unchanged,50unique/0repeats,1conservativefailure.",
+    "user_behavior_delta": "Preserve latest-only comparisons, distinct drug class counts/death-date uncertainty, primary typed values, positive social-screen scope, ambiguous admission ties and evaluation OCR scratch; retain concurrent population work.",
+    "measured_failure_reduction": "Reviewed semantic repairs: structured BUILD14/14 on frozen free development run; latest-admission tie yields explicit ambiguity rather than a misleading primary date; strict OCR rebuilding succeeds without touching source. c23 targeted notes4/5, $0.011944076. Regression31/26modules0failures. Normal c23 health ready/synthetic.",
     "evidence": [
-      "docs/agere/DEV_GENERALIZATION_2026-10-24.md",
       "docs/agere/COMPARISON_RESULTS_2026-10-24.md",
-      "artifacts/agere-generalization-d4de3ef/implementation-receipt.json"
+      "artifacts/agere-semantic-review-c23b3a6/implementation-receipt.json"
     ],
-    "remaining_gap": ">95%/99%notestablished: published heldout30%, answeredprecision45.8%. Date scorer can over-credit incidental dates; strict primary-answer adjudication, latest-admission ambiguity, unfamiliar composition and refused followups remain open. All10acceptance areas retained; G3active/G5incomplete.",
-    "next_action": "Finish matched free paraphrase candidate/main checks with calibration/model links and Metal access; no heldout reruns or individual inspection. Diagnose only dev3 BUILD half(79questions), keeping CHECK half closed for transfer. First reproduced new build failure: BP followup with explicit paired target; implement shared typed comparisons with source/date/unknown preservation. Tighten dev primary-answer scoring separately from frozen published comparison. Regression-diff before every landing; Haiku first and report spend.",
+    "remaining_gap": "Unfamiliar composition and meaningful acceptance remain unqualified: heldout15/50 unchanged; CHECK13/71 no transfer. Supplemental primary audit is limited coverage. A note retrieval miss is not source-wide absence. All ten areas retained, G3 active/G5 incomplete.",
+    "next_action": "Complete remaining68 paid dev3 BUILD questions on a0832bc evaluation-cache-only correction, retaining first11 correct responses and counting all spend; never repeat completed questions. Heal three free paraphrase passage-only answer gaps before landing routing candidate (238vs241). Cachefix15/14modules0failures; combined candidate/main21/20modules0failures. Livec23 is pushed and ready. No heldout/CHECK rerun or individual inspection; target>95%/99% unmet. Continue shared executable meaning and source-bound answer acceptance under G3.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",

@@ -5,11 +5,11 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "2026-10-20T21:04:37.523810+00:00 Mike requested takeover from Claude and then explicitly said okay please continue.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Independent-dev generalization and strict primary-answer validation after completed paid comparison; >95%/99% target unmet.",
+  "active_work": "Frozen dev3 BUILD79 paid diagnostic plus matched paraphrase verification; generic passage-answer routing repair. Mainc23b3a6 pushed, live530edf9 pending verified deployment; >95%/99% unmet.",
   "latest_delivery": "docs/agere/COMPARISON_RESULTS_2026-10-24.md",
-  "latest_receipt": "artifacts/agere-generalization-d4de3ef/implementation-receipt.json",
-  "owned_server_pid": 9782,
-  "owned_server_session": 32008,
+  "latest_receipt": "artifacts/agere-semantic-review-c23b3a6/implementation-receipt.json",
+  "owned_server_pid": 24474,
+  "owned_server_session": 74373,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -22,13 +22,13 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-25T00:47:38.443837+00:00",
+  "latest_checkpoint": "2026-10-25T02:49:35.296251+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "3d3f6ff ready/synthetic on :8885 using original active warehouse; normal evaluation flags off; Haiku-first fallback active.",
+  "server_status": "c23b3a6 pushed, ready/synthetic on :8885; original active warehouse and preceding live definitions preserved; evaluation flags unset.",
   "unsealed_work": {
     "status": "inactive_candidate",
     "path": "artifacts/agere-citation-recovery-v1",
@@ -68,94 +68,28 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-25T00:47:38.443837+00:00",
-    "commit": "3d3f6ff",
-    "rollback_commit": "a106ffd",
-    "workspace": "/private/tmp/agere-live-3d3f6ff",
+    "commit": "c23b3a6",
+    "workspace": "/private/tmp/agere-live-c23b3a6",
     "port": 8885,
-    "pid": 9782,
-    "session": 32008,
-    "log": "/tmp/agere_generalization/live_3d3f6ff_normal.log",
-    "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
-    "configuration_preserved": true,
-    "warehouse_stat_preserved": true,
-    "source_hashes": {
-      "clinical_core/agere/deliverables/action_center.html": "765c99b5d86a48bf590daaaa2f21a8a63701165a24fcbd990164f9dc4a7a57ce",
-      "clinical_core/agere/deliverables/action_center.js": "dd1209900469cfa1b1e2a58777776c9289a9e98616f3bb02a8a5b1bf9ce9d87c"
-    },
-    "code_hashes_match": true,
-    "backend_restart_required": false,
-    "python_backend_commit": "e10385b7cda79ca7d40ccdbdde4032b9e84e587d",
-    "product_paths_changed": [
-      "clinical_core/agere/deliverables/action_center.html",
-      "clinical_core/agere/deliverables/action_center.js"
-    ],
+    "pid": 24474,
+    "session": 74373,
     "health": {
       "status": "ready",
       "synthetic": true
     },
-    "allow_live_stack": false,
-    "verification_provider_calls": 0,
-    "ledgers": {
-      "/Users/mikel/clinical-insights-local/artifacts/agere-measurement-evidence-v1/live-provider-budget.sqlite3": {
-        "exists": true,
-        "calls": 0
-      },
-      "/Users/mikel/clinical-insights-local/artifacts/agere-work-progress-labels-v1/candidate-provider-budget.sqlite3": {
-        "exists": false,
-        "calls": 0
-      }
-    },
-    "url": "http://127.0.0.1:8885/ask",
-    "verified_at": "2026-10-21T21:21:28.721837+00:00",
-    "api_status": "Working (credit added 2026-10-21).",
-    "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions.",
-    "hf_acceptance": "HF compound question answered (missing []) under Mike-governed definitions: 36 patients, 144/144 pillar flags match independent SQL, $1.75, 245 s.",
-    "smoke": "Synthetic dev admission count6; latest-discharge primary text2029-12-27. Reported provider estimate$0.006018 (2Haiku/6SystemOne). Date value is formatted answer text rather than a bare date; strict scalar-shape validation remains open.",
-    "paid_calls": "Enabled by current explicit user request; deterministic first, Haiku before Sonnet, no unilateral cap.",
-    "change": "Follow-up narrowing and re-scoping; honest not-available for absent data domains.",
-    "free_bank_measure": {
-      "bank": "/Users/mikel/agere-eval-bank-2 (184 items)",
-      "no_llm": true,
-      "cost_usd": 0,
-      "by_commit": {
-        "1f0cc07": "17 correct / 21 wrong / 11 of 11 honest unknowns (lenient 9.8%)",
-        "ed556f9": "4 correct (cache orphaned by code-hash key)",
-        "03354fd": "33 correct / 33 wrong / 9 of 11 (19.1%), carry-forward",
-        "0273c22": "35 correct / 30 wrong (20.2%), dollars + names, mean latency 18s -> 1.2s",
-        "d16eb73": "35 correct / 28 wrong / 11 of 11 (20.2%), honest unknowns",
-        "4e79d96": "38 correct / 30 wrong / 11 of 11 (22.0% lenient, 19.7% strict), paraphrase reuse",
-        "625e044": "43 correct / 25 wrong / 11 of 11 (24.9% lenient, 22.5% strict), lab-evidence diabetes",
-        "be1dd44": "46 correct / 24 wrong / 11 of 11 (26.6% lenient, 23.7% strict)",
-        "6505402": "45 correct / 20 wrong / 11 of 11 (26.0% lenient, 23.1% strict)",
-        "14c1d66": "56 correct / 21 wrong / 11 of 11 (32.4% lenient, 29.5% strict); runner now reads comparison answers",
-        "4bc77f8": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)",
-        "e97aa25": "61 correct / 25 wrong / 11 of 11 (35.3% lenient, 32.4% strict)",
-        "4653703": "61 correct / 25 wrong / 11 of 11 (35.3% lenient); bank references use stale age_latest",
-        "5a904e1": "64 correct / 26 wrong / 11 of 11 (37.0% lenient, 34.1% strict)",
-        "17837f7": "65 correct / 25 wrong / 11 of 11 (37.6% lenient, 34.7% strict)",
-        "a753a48": "74 correct / 27 wrong / 11 of 11 (42.8% lenient, 39.9% strict)",
-        "429559c": "87 correct / 15 wrong / 11 of 11 (50.3% lenient, 47.4% strict) on bank v1.2",
-        "a106ffd": "88 correct / 16 wrong / 11 of 11 with the normalizer on (50.9% lenient)",
-        "b77be69": "92 correct / 16 wrong / 11 of 11 (53.2% lenient); chain turns 9 correct (was 3)"
-      }
-    },
+    "log": "/tmp/agere_generalization/live_c23b3a6_normal.log",
+    "configuration": "/Users/mikel/clinical-insights-local/config/agere/active_warehouse.json",
+    "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
+    "definition_overlay_matches_previous_live": true,
     "env": {
       "AGERE_CLAUDE": "on",
       "AGERE_EVALUATION": "unset",
       "AGERE_EVALUATION_STRICT": "unset",
-      "AGERE_LEDGER_PATH": "normal default shared ledger"
+      "AGERE_LEDGER_PATH": "normal shared default"
     },
-    "sealed_bank": {
-      "round_1": {
-        "commit": "a106ffd",
-        "answerable": 151,
-        "correct": 8,
-        "confidently_wrong": 3,
-        "unknown": 136,
-        "cost_usd": 0
-      }
-    }
+    "verification_provider_calls": 0,
+    "rollback_commit": "530edf9",
+    "at": "2026-10-25T02:49:35.296251+00:00"
   },
   "current_spending_constraint": "Small visible spend, Haiku first, no unilateral cap. No protected-question tuning, generator/private access or new services.",
   "current_turn_spending_policy": "Mike explicitly authorizes Haiku-first paid measurements and improvement, then Sonnet escalation only after Haiku; no assistant-imposed monetary cap; report actual recorded estimated spend after runs.",
