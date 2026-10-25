@@ -442,6 +442,13 @@ def coverage(ch, it):
 
 def death(ch, it):
     d = ch.death
+    if it.get('attribute') == 'death_date':
+        if not d or not d.get('death_date'):
+            return no_data(f'No death date is recorded for {ch.pid}', sources=[src('death', ch.pid)])
+        if d.get('sources_disagree'):
+            return no_data(f'Death-date sources disagree for {ch.pid}; no single confirmed date is reported', sources=[src('death', ch.pid)])
+        return core('date', f"Recorded death date for {ch.pid}: {d['death_date']} (source: {d['death_source']})", value=d['death_date'],
+                    facts={'death_date': d['death_date']}, sources=[src('death', ch.pid, d['death_date'])])
     if d:
         return core('yes_no', f"No: {ch.pid} is deceased (death date {d['death_date']}, source {d['death_source']})", value=False,
                     facts={'deceased': True, 'death_date': d['death_date']}, sources=[src('death', ch.pid, d['death_date'])])
@@ -659,6 +666,17 @@ def fills(ch, it):
     sources = [src('fill', (r['record_ids'] or '').split(',')[0] or r['fill_id'], r['fill_date']) for r in rows]
     notes = ['fill = dispense and counted pharmacy-claim fills merged', win_note(window)]
     if intent == 'count_in_window':
+        if it.get('attribute') == 'drug_class':
+            from collections import Counter
+            classes = Counter(r['drug_class'] for r in rows if r['drug_class'])
+            unknown = sum(not r['drug_class'] for r in rows)
+            table = [{'drug_class': name, 'fills': count} for name, count in sorted(classes.items())]
+            facts = {'distinct_recorded_drug_classes': len(classes), 'unclassified_fills': unknown, 'fills': len(rows)}
+            if unknown:
+                return no_data(f'At least {len(classes)} recorded drug classes for {ch.pid}; {unknown} fills lack a class, so the exact class count is unknown',
+                               table=table, sources=sources, facts=facts, notes=notes)
+            return core('count', f'{len(classes)} distinct recorded drug classes for {ch.pid} ({CI.describe_window(window)}; {len(rows)} fills)',
+                        value=len(classes), count=len(classes), table=table, sources=sources, facts=facts, notes=notes)
         return core('count', f'{len(rows)} {label} fill(s) for {ch.pid} ({CI.describe_window(window)})', value=len(rows), count=len(rows), table=table, sources=sources, notes=notes)
     if intent == 'status':
         return core('yes_no', f"{'Yes' if rows else 'No'}: {len(rows)} {label} fill(s) for {ch.pid} ({CI.describe_window(window)})", value=bool(rows), count=len(rows), table=table[:5], sources=sources[:5], notes=notes)

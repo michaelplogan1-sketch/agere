@@ -253,7 +253,14 @@ def read_back(it, pid, as_of, *, note_predicates_=None, deceased=None):
         'readmission': lambda: '30-day readmissions', 'claims': lambda: 'plan-paid claims', 'condition': lambda: (c.get('value') or 'conditions').replace('_', ' '),
     }.get(domain, lambda: CI.DOMAINS.get(domain, str(domain)).split(' (')[0].lower())()
     phrase = {'latest_value': 'Latest', 'trend': 'Trend of', 'list': 'List of', 'count_in_window': 'Count of', 'last_event': 'Date of the most recent',
-              'timeline': 'Every dated', 'status': 'Whether the patient has / is on', 'sum': 'Total', 'summary': 'Brief of the whole chart for'}.get(intent, intent)
+              'timeline': 'Every dated', 'status': 'Whether the patient has / is on', 'sum': 'Total', 'summary': 'Brief of the whole chart for',
+              'compare_values': 'Explicit numeric comparison of'}.get(intent, intent)
+    if domain == 'fill' and it.get('attribute') == 'drug_class':
+        what = 'distinct recorded drug classes filled'
+    if domain == 'death' and it.get('attribute') == 'death_date':
+        phrase, what = 'Recorded', 'death date'
+    if intent == 'compare_values':
+        what = ' and '.join(f"{CI.LAB_LABELS.get(p['concept'], p['concept'])} {p['operator']} {p['value']:g}" for p in it.get('comparisons') or [])
     if it.get('ordinal') == 2:
         phrase = 'The result before the latest'
     if domain == 'lab' and intent == 'latest_value' and it.get('mode') == 'any':

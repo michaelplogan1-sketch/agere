@@ -401,6 +401,11 @@ def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
     elif ORDINAL_FIRST.search(q):
         out['ordinal'] = 1
     out['attribute'] = _attribute(domain, low)
+    if domain == 'death' and WHEN.search(q):
+        out['attribute'] = 'death_date'
+    if domain == 'fill' and re.search(r'\b(?:(?:drug|medication|therapeutic) classes|classes of (?:drugs|medications))\b', low):
+        out['attribute'] = 'drug_class'
+        out['flags'].append('distinct_drug_class')
     if domain == 'inpatient' and re.search(r'\b(?:most recent|latest|last)\s+(?:hospital\s+)?discharge\b', low):
         out['flags'].append('order_by_discharge')
     out['intent'] = _intent(domain, q, low, out, prior if inherited else None)
@@ -484,7 +489,7 @@ DOMAIN_RULES = [  # first match wins; order encodes specificity
     ('pharmacy_claim', r'\bpharmacy\b.*\b(?:claims?|spend|cost\w*|pa(?:y|id)|plan)\b|\bdrug (?:spend|cost)s?\b|\brx (?:spend|cost)\b'),
     ('claims', r'\bclaims?\b|\bspen[dt]\b|\bbilled\b|\ballowed\b|\bplan paid\b|\bplan pay\b|\bout[- ]of[- ]pocket\b|\bcopay\w*|\bdenied\b|\bdenials?\b'),
     ('problem_list', r'\bproblem list\b'),
-    ('death', r'\bdeceased\b|\bdied\b|\bdeath\b|\balive\b|\bvital status\b'),
+    ('death', r'\bdeceased\b|\bdied\b|\bdie\b|\bdeath\b|\balive\b|\bvital status\b'),
     ('practice', r'\bpractice\b|\bpcp\b|\bprimary care (?:provider|physician|doctor|clinician)\b|\battribut\w+|\bassigned (?:doctor|clinician)\b'),
     ('coverage', r'\bcoverage\b|\binsurance\b|\binsured\b|\bpayer\b|\bhealth plan\b|\bmember id\b|\benroll\w+|\bmedicare\b|\bmedicaid\b|\bline of business\b|\bmarketplace\b|\bplan\b'),
     ('demographics', r'\bhow old\b|\bage\b|\bborn\b|\bbirth\w*\b|\bdob\b|\bsex\b|\bgender\b|\brace\b|\bethnic\w*\b|\blanguage\b|\bzip\b|\bcounty\b|\baddress\b|\bmarital\b|\binterpreter\b|\bstate does\b'),
