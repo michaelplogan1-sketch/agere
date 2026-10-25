@@ -67,6 +67,12 @@ def _not_examples(question):
 def narrative_question(question, stack=None):
     if _not_examples(question): return False
     if NARRATIVE.search(question): return True
+    try:  # the chart reader's note cues (document kinds, named tests, role asks: chart_notes.is_note_question) also mark a document question,
+        # so a note question the reader leaves undecided still reaches the passage-quoting evidence tiers (dev3 2026-10-24)
+        from .chart_notes import is_note_question
+        if is_note_question(question, {'domain': 'evidence_gate'}): return True  # a non-structured domain: only the strong note cues count
+    except Exception:  # noqa: BLE001 - a cue check never blocks the gate
+        pass
     if WEAK_NARRATIVE.search(question) and stack is not None:
         return _schema_points_to_text(stack, question)
     return False
