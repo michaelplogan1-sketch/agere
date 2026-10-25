@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-25T05:28:35.471822+00:00",
+  "updated_at": "2026-10-25T07:06:57.394952+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -362,15 +362,15 @@
     "kind": "implementation_delivered_qualification_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Cited source qualifiers do not demand a grouped table; explicit reported medication-use counts retain period, unit, date, source and uncertainty.",
-    "measured_failure_reduction": "OpenedBUILDx2-14:refused100.3sec/$.668084025 ->correcttyped0/14days withMay13callbackcitation10.8sec/known$.000179898(1failedwithoutusage),0Claude;sourcebanksunchanged/0writes. Finalfreeparaphrases243/295vs242/295,0lost;recoveredcreditisbarepassages,notclinicalproof.44/42mainregmodules2samefail/0new;33focusedtests. Normalmodeexactcount/source/evalNone;repeat19.7sec/0calls/$0. Initialnormaltagged$.000323428;unassignedwindow$.00035643keptseparate.",
+    "user_behavior_delta": "Historical completion queries retain dated evidence; source-scoped retrieval avoids full-index scan; correct normalfrequencyanswer retained.",
+    "measured_failure_reduction": "59existing regression failures removed/0new;243/295free paraphrases unchanged/0lost;recordedBUILD accepted accuracy19/30->20/30. Target unmet.",
     "evidence": [
       "artifacts/agere-source-frequency-5162f78/implementation-receipt.json",
       "docs/agere/COMPARISON_RESULTS_2026-10-24.md"
     ],
-    "remaining_gap": "95%/99% not established. Original heldout30% and CHECK13/71 remain unchanged/closed. Published scoring can over-credit incidental values, unsupported absences and passage citations. Clinical/source semantic proof and unfamiliar composition remain incomplete. All10areas/G3active/G5incomplete.",
-    "next_action": "G3: compare actual039before offline analyst replay withhardenedmain on47verifiedBUILD-onlyrecordedHaikuanswers. Currentafter:40proposals21correct/19wrong;cascadeadmits19correct/11wrong(63.3%precision),so do NOT activateincominganalystimprovement yet. HealfalsechecksbyvalidSQL/viewevidence but requireindependentsemanticverificationinsteadofaudit-onlybypass;measureSystemOnebeforeClaudeusingrecordedBUILDonlyifneeded,reportdedicatedcost. Incoming312noteadapterBooleanflattening remainsinactive. Twoexistingcase_synthesisfailuresareuncapped-ledgerNonecomparison;repairwithoutnewcaps as supportingwork. No closedheldout/CHECKaccess/reruns, all10areas/G3active/G5incomplete/95%99%unmet.",
-    "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
+    "remaining_gap": "Broad generalization, complete multi-part answers, clinical/source definition ambiguities and independent95% qualification remain open; noteBooleanadapter andanalyst bypass inactive.",
+    "next_action": "G3: a60c519 live/ready with historical completion, executed-query checker, offline recovery and scoped retrieval. f2b10b0 ordering follow-up is pushed but its own sealed295 free run is pending in /private/tmp/agere-scoped-retrieval-order; qualify before activation. Then repair complete-request coverage and note Boolean/structured-scope preservation on BUILD/paraphrases only. Actual executed checker calibration: strict9/10=90%, not95%; do not activate audit-only analyst bypass or claim target achieved. Haiku-first when new Claude measurement is needed; report incremental dollars. No heldout/CHECK access/rerun or key/default changes.",
+    "next": "G3: a60c519 live/ready with historical completion, executed-query checker, offline recovery and scoped retrieval. f2b10b0 ordering follow-up is pushed but its own sealed295 free run is pending in /private/tmp/agere-scoped-retrieval-order; qualify before activation. Then repair complete-request coverage and note Boolean/structured-scope preservation on BUILD/paraphrases only. Actual executed checker calibration: strict9/10=90%, not95%; do not activate audit-only analyst bypass or claim target achieved. Haiku-first when new Claude measurement is needed; report incremental dollars. No heldout/CHECK access/rerun or key/default changes.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
       "kind": "Owner/JavaScript syntax/existing workflow tests/API-state comparison/candidate and live browser checks; presentation only",
@@ -445,7 +445,13 @@
         "completion": "Independent appropriate qualification remains separate from deterministic engineering acceptance; do not use protected evaluations or credits as a prerequisite for local build work."
       }
     ],
-    "latest_progress": "Clinical/SQL meaning d4de3ef; eval-only cache correction06cd48a passed22/21modules8same existingfailures/0new. Finaldev94/100 fullledger$0.092350224(attributed$0.069335508). Competitorheldout22/50(44%)at$4.8693294. Agereheldout recovering unaskeditemsonly;13retainedattempts including1conservativelyfailedungradedresponse;last37inprogress, strictwritesdenied,dataunchanged;noquestionsrepeated."
+    "latest_progress": {
+      "at": "2026-10-25T07:06:57.394952+00:00",
+      "release": "a60c519",
+      "receipt": "artifacts/agere-query-scope-retrieval-a60c519/implementation-receipt.json",
+      "owner_known_estimate_usd": 16.621161705,
+      "pending": "f2b10b0 sealed free paraphrases"
+    }
   },
   "decisions": [
     {
