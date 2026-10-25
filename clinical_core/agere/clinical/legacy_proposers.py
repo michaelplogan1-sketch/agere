@@ -241,7 +241,7 @@ def _analyst(stack, question, ledger, against=None):
         rows = _answering_sql(rec.get('result') or {})[1]
     else:
         raw, tool_calls = run.get('answer'), run.get('tool_calls')
-    graph, built = analyst_graph(question, raw if isinstance(raw, dict) else {}, tool_calls, answer, _as_of(stack), wh.columns, receipt, rows=rows, rec=bool(rec))
+    graph, built = analyst_graph(question, raw if isinstance(raw, dict) else {}, tool_calls, answer, _as_of(stack), getattr(wh, 'columns', None) or {}, receipt, rows=rows, rec=bool(rec))
     if graph is None:
         return {'graph': None, 'receipt': receipt, 'picked': None}
     return {'graph': graph, 'receipt': receipt, 'picked': picked}
