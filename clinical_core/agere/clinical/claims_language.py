@@ -34,6 +34,13 @@ CLAIM_PREDICATES = {
         (r'(?:professional|physician)(?:\s+claims?)?', (('claim_type', '=', 'professional'),)),
         (r'(?:ED|emergency(?:\s+(?:department|room))?)', (('place_of_service', '=', '23'),)),
         (r'(?:denied|denials?)', (('final_status', 'in', ['denied', 'denied_upheld']),)),
+        # place of service named by its standard CMS name (the same codes "place of service 20" states): data, not a question recipe
+        (r'urgent\s+care(?:\s+(?:centers?|centres?|clinics?|facilit(?:y|ies)))?', (('place_of_service', '=', '20'),)),
+        (r'(?:ambulatory\s+surg(?:ery|ical)\s+(?:centers?|centres?)|asc)', (('place_of_service', '=', '24'),)),
+        (r'(?:hospital\s+outpatient|outpatient\s+hospital)', (('place_of_service', '=', '22'),)),
+        (r'skilled\s+nursing(?:\s+facilit(?:y|ies))?', (('place_of_service', '=', '31'),)),
+        (r'tele(?:health|medicine)', (('place_of_service', 'in', ['02', '10']),)),
+        (r'independent\s+lab(?:oratory|oratories|s)?', (('place_of_service', '=', '81'),)),
     ],
     'payer_pharmacy_claim': [
         (r'rejected', (('claim_status', '=', 'rejected'),)),
@@ -53,6 +60,7 @@ ROW_RATES = [
      (('counts_as_fill', '=', 1), ('formulary_tier', 'not_null', None)), 'generic dispensing rate'),
     (r'out[- ]of[- ]network', 'payer_claim', (('network_status', '=', 'out_of_network'),), (), 'out-of-network rate'),
 ]
+GENERIC_WORDS = {'tablet', 'capsule', 'injection', 'inhaler', 'solution', 'pack', 'oral', 'spray', 'cream', 'patch', 'powder', 'metered', 'extended', 'release', 'delayed', 'pharmaceutical'}
 HEAD = r"(?:what|how\s+much)"
 VERB = r'(?:went|go|goes|going|is|are|was|were|comes?|came|from)'
 
@@ -61,10 +69,35 @@ class ClaimForms:
     """Methods mixed into request_language.Parser."""
 
     # -- helpers ---------------------------------------------------------------------------------------------------------
+    def drug_phrases(self):
+        """{lowercase brand or ingredient name: [received drug_name values]} from the pharmacy claims themselves (brand in [brackets], first ingredient word):
+        a drug named in a spend / fill question selects its own claims, however the received name is spelled."""
+        cache = getattr(self, '_drug_phrases', None)
+        if cache is None:
+            cache = self._drug_phrases = {}
+            names = self.observed_values('payer_pharmacy_claim', 'drug_name', limit=2000) if 'payer_pharmacy_claim' in self.catalog.tables else []
+            for name in names:
+                tokens = [b.strip() for b in re.findall(r'\[([^\]]+)\]', name)]
+                ingredient = re.match(r'(?:[\d.]+\s*(?:ML|HR|DAY|ACTUAT|UNT)?\s*)*([A-Za-z][A-Za-z-]{4,})', name)
+                if ingredient: tokens.append(ingredient[1])
+                for token in tokens:
+                    if len(token) >= 5 and token.lower() not in GENERIC_WORDS: cache.setdefault(token.lower(), []).append(name)
+        return cache
+
+    def drug_mentions(self, text):
+        """[(start, quote)] of every received drug name in the text, longest first."""
+        names = self.drug_phrases()
+        if not names: return []
+        found = []
+        for phrase in sorted(names, key=len, reverse=True):
+            for m in re.finditer(r'(?<![\w-])' + re.escape(phrase) + r'(?![\w-])', text, re.I):
+                if not any(a <= m.start() < b for a, b in [(f[0], f[0] + len(f[1])) for f in found]): found.append((m.start(), m.group()))
+        return sorted(found)
+
     def claim_table(self, text, default=False):
         """The claims relation a text is about: pharmacy words -> pharmacy claims; claim / spend words -> medical claims; else None (or medical
         claims when the lead itself is about paying, default=True). A question about patients never becomes a claims question."""
-        if re.search(r'pharmacy|prescription', text, re.I): t = 'payer_pharmacy_claim'
+        if re.search(r'pharmacy|prescription', text, re.I) or self.drug_mentions(text): t = 'payer_pharmacy_claim'
         elif default or re.search(r'\bclaims?\b|\bspend(?:ing)?\b|\bpaid\s+(?:amount|dollars)\b|\bpayments?\b', text, re.I): t = 'payer_claim'
         else: return None
         return t if t in self.catalog.tables else None
@@ -109,6 +142,9 @@ class ClaimForms:
                 if not all(c in self.catalog.tables[table] for c, _, _ in conditions): continue
                 q = m.group().strip()
                 out.append((m.start(), [atom(f'{table}.{c}', op, v, q) for c, op, v in conditions], q))
+        if table == 'payer_pharmacy_claim' and 'drug_name' in self.catalog.tables[table]:
+            for start, quote in self.drug_mentions(text):  # a named drug: the claims whose received drug name contains it
+                out.append((start, [atom(f'{table}.drug_name', 'like', f'%{quote}%', quote)], quote))
         out.sort(key=lambda x: x[0])
         return out
 
@@ -129,7 +165,7 @@ class ClaimForms:
         return rest, groups, quote
 
     # -- amounts ---------------------------------------------------------------------------------------------------------
-    AMOUNT_LEAD = re.compile(r"^(?:(?:" + HEAD + r")\s+(?:did|do|have|has)\s+we\s+(?:pay|paid|spend|spent)(?:\s+out)?\b|"
+    AMOUNT_LEAD = re.compile(r"^(?:(?:" + HEAD + r")\s+(?:did|do|have|has)\s+(?:we|(?:the|our)\s+(?:health\s+)?plan)\s+(?:pay|paid|spend|spent)(?:\s+out)?\b|"
                              r"(?:what(?:'s|\s+is|\s+was|\s+are))\s+(?:the\s+|our\s+)?total\s+(?:medical\s+|pharmacy\s+)?(?:paid|allowed|billed|plan[- ]paid)(?:\s+(?:amount|dollars))?(?=\s+(?:on|for|of|in|by)\b|$)|"
                              r"(?:what(?:'s|\s+is|\s+was|\s+are)|how\s+much\s+(?:is|was|are))\s+(?:the\s+|our\s+)?total\s+(?:(?:paid|allowed|billed|plan[- ]paid)\s+)?"
                              r"(?:amount\s+|dollars\s+|spend\s+)?(?:on|for|of|in)\b)", re.I)

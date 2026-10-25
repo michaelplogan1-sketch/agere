@@ -467,6 +467,11 @@ COMPOSITION FORMS the compiler accepts (docs/agere/QUESTION_SPEC.md, Addition 4)
 - dimension {"kind":"cohort_group","alias":"payer_type","quote":[...],"groups":[{"label":"medicare","where":predicate,"quote":"Medicare"},...]} (2..12 named groups, may overlap) for age bands, payer types, "women and men", "heart failure patients vs COPD patients"; group by its alias.
 - measure {"kind":"count_related","table":"utilization_event","where":event predicate,"alias":"events"} = total related rows of the counted patients; in a ratio of scale 1000 it is "per 1,000 patients" (denominator count_distinct patient_id). measure {"kind":"sum_related","table":"payer_claim","field":"paid_cents","where":...} is the total of a money column of the counted patients.
 - a ranking is group_by + order_by (alias, direction) + limit; "at least N rows" is a having on an output alias (result.<alias>).
+ANALYST FORMS (QUESTION_SPEC.md, Addition 5): comparison op "null_or_gte" / "null_or_gt" (value an ISO date) = the field is missing or on/after (after) that date, e.g. enrollment_span.coverage_end for "active coverage as of <date>";
+a drug named in a pharmacy question is {"field":"payer_pharmacy_claim.drug_name","op":"like","value":"%Ozempic%"}; a death in a year is exists(table "death") with death_date bounds; a share of EVENT rows that were followed by something
+("what share of 2029 ED visits had an office visit within 7 days") is a ratio of count measures over utilization_event whose numerator where is a "sequence" predicate with anchor {"outer":"utilization_event.event_date"}.
+A governed measure's own name ("kidney health evaluation", "statin therapy for patients with diabetes", "PQI 90", "follow-up after ED visit") is an analysis operation governed_metric, never a recomputation; words that restate the measure's
+own population, age band or follow-up window (and only those) belong to its quote.
 '''
 NOTE_ADDENDUM = '''
 NOTE PREDICATES (what the clinical notes, scanned documents and HIE documents say) -- a predicate that may stand anywhere a predicate can (inside where, and/or/not, exists):

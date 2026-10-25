@@ -98,6 +98,43 @@ Reading rules the grammar applies (so a spec writer need not): "practice" in a r
 dimension drops rows with no value for it; "Medicare (including dual and Medigap)" is `coverage_type in (medicare, dual, medigap)` and a note naming only one of them is declined;
 an output that points back at another output ("how many fills was that") is declined, not guessed.
 
+## Addition 5: analyst wording (2026-10-24 night; request_language, analyst_language, request_vocabulary, analyst_insights)
+
+Measured on the independent dev3 set (written from public analyst and quality-measure sources, not from the grammar): population quality, claims and
+insight questions in real analyst wording were mostly refused. The missing constructs are general; none reads a question's text.
+
+Measure names (request_vocabulary + `Parser.governed`):
+- Every library alias of a governed definition names it (`request_vocabulary.aliases()` reads the metric's `aliases`: "statin therapy for patients with diabetes",
+  "PQI 90", "pdc for statins", "follow-up after ED visit"). A hand-written alias keeps its meaning when a name is claimed twice.
+- Words that restate what the measure already is are consumed, never a constraint, and only when its definition states them: a kind word ("rate", "score",
+  "PDC", "composite"), its own population ("for patients with diabetes", "share of diabetics who got ..."), its own window ("within 7 days", "7-day"), and a gloss after a
+  colon ("Kidney health evaluation: share of diabetics 18 to 85 who got both an eGFR and a uACR in 2029"). `gloss_accounted` requires every content word and number to be in the
+  definition (name, aliases, summary, denominator, numerator, value sets); direction words must agree (above / below). A number the definition states is carried by its digest.
+- Analyst leads ("how are we doing on", "what was our performance on", "report on") are quoted with the measure.
+
+Vocabulary and predicates (`request_language`, `analyst_language`, `claims_language`):
+- Age-group nouns: children / kids / minors (under 18), seniors / older adults (65 and over); "65 and up". Deaths: "died in 2029", "deaths in 2029" (the death record by its own date).
+- Outcome verbs before a status ("ended as no-shows"); a lifecycle word ("scheduled appointments ended as no-shows") names the rows, the outcome filters.
+- "N or more active medications on their list" (`medication_list_entry`), "dx", "aren't on ...", "got BOTH an eGFR and a uACR in 2029" (the period covers both tests).
+- Claims: place of service by name (urgent care 20, outpatient hospital 22, ambulatory surgery 24, skilled nursing 31, telehealth 02/10, independent lab 81; "inpatient" = a claim with an
+  admission date), a drug named in a spend or fill question (`payer_pharmacy_claim.drug_name like %Ozempic%`), "reversed or recouped for dates of service in 2029" (a period after
+  alternatives of one column covers all of them), "what did the plan pay for ...".
+- Active coverage: an enrollment span open on the as-of date (compare op `null_or_gte`: the end date is missing or on or after it). A positive depression screen: the latest PHQ-9 of 10 or higher;
+  a restated different cut-off is refused.
+- Event shares: "what share of 2029 ED visits (were followed by | had) an office, primary care, specialty or telehealth visit within 7 days" is a ratio of rows of the event relation whose numerator is a
+  `sequence` predicate anchored on the row itself (`analyst_language.event_share`); a visit list reads as one follow-up of any listed kind.
+- "<measure> for A, B and C patients" and "<measure of A>, versus B" are the measure per named group (`measure_for_categories`, `contrast_ellipsis`).
+- A lab leaf that bounds its results to a stated period and puts no threshold on the value ("had an eGFR in 2029") reads every result in the period: the latest-result rule applies to thresholds on a patient's
+  current value (`request_plan.lab_presence_in_period`, `request_vocabulary.period_lab_reads`). An average or total over a patient attribute (average SVI, average age) describes living patients
+  (`decision_context.patient_grain`).
+- Spelling: a word that is neither a dictionary word nor a domain word, one edit from exactly one domain word with a common three-letter ending, is that word (`phrasing.fix_spelling`).
+
+Insight shapes (`analyst_insights.py`, engine forms; every number states its numerator and denominator; groups below a stated minimum are not ranked):
+readmission_drivers, use_concentration, evidence_gap, period_series, cohort_defined (a cohort the question itself defines: "I mean two or more ED visits in the last year but no admission"),
+comorbidity_cost, drug_spend_drivers, outcome_rates (denials, pharmacy rejects by payer / place of service, with the usual reason), need_gap, group_vs_rest, condition_drivers,
+segment_readmission, measure_by_group (worst and best practice on a governed measure), spend_mix, top_spenders; `yoy_trend` also reads "why did X jump in 2029 compared with 2028" and
+says when the stated direction is not what the numbers show.
+
 ## How a spec is filled (owner: builder B)
 
 Run in parallel, take the first spec that validates (`request_plan.compile_request` plus the literal check), and prefer

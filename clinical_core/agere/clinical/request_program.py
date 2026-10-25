@@ -306,12 +306,16 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
     economics = S.economics(receipt)
     if child_calls:
         economics.update(api_cost_known=False, new_api_estimate_usd=None)
-    return {'schema': VERSION, 'synthetic': True, 'route': 'shared_planner', 'question': question,
-            'graph': graph, 'answer': answer, 'program_results': parts, 'results': [],
-            'planner_receipt': receipt, 'request_contract': contract, 'execution_snapshot': snapshot,
-            'new_paid_api_calls': receipt['new_paid_api_calls'] + child_calls, 'planning_economics': economics,
-            'elapsed_seconds': time.perf_counter() - started, 'workflow': [],
-            'clinical_execution_authorized': False}
+    out = {'schema': VERSION, 'synthetic': True, 'route': 'shared_planner', 'question': question,
+           'graph': graph, 'answer': answer, 'program_results': parts, 'results': [],
+           'planner_receipt': receipt, 'request_contract': contract, 'execution_snapshot': snapshot,
+           'new_paid_api_calls': receipt['new_paid_api_calls'] + child_calls, 'planning_economics': economics,
+           'elapsed_seconds': time.perf_counter() - started, 'workflow': [],
+           'clinical_execution_authorized': False}
+    if parent:  # a program over a saved cohort ("how many of them are diabetic, and how many hypertensive") records its lineage like a single request
+        out['cohort_transform'] = {'parent_context_id': parent['id'], 'input_patient_ids': sorted(population or []),
+                                   'operations': ['Apply request program to exact saved membership'], 'request_id': contract['id']}
+    return out
 
 
 def scalar_row(sections, contract):
