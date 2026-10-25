@@ -417,6 +417,9 @@ def select(args, all_qs=None):
     split = args.split or {'compose': 'dev2', 'dev3': 'dev3'}.get(args.set, 'dev')
     if split != 'all':
         qs = [q for q in qs if q['split'] == split]
+    if getattr(args, 'half', None):
+        from tools.dev_set.halves import keep
+        qs = keep(qs, args.half)
     if args.bucket:
         qs = [q for q in qs if q['bucket'] == args.bucket]
     if args.ids:
@@ -509,6 +512,7 @@ def main(argv=None):
     ap.add_argument('--set', choices=('dev', 'compose', 'dev3'), default='dev', help='question file: dev = questions.jsonl, compose = compose_questions.jsonl (split dev2), dev3 = dev3_questions.jsonl (split dev3, independent wording)')
     ap.add_argument('--split', choices=('dev', 'dev2', 'dev3', 'heldout', 'all'), default=None, help='default dev (dev2 with --set compose, dev3 with --set dev3); dev2 reads the compose set, dev3 the independent set')
     ap.add_argument('--bucket', choices=BUCKETS)
+    ap.add_argument('--half', choices=('build', 'check', 'all'), help='dev3 only: the build half (develop) or the check half (measure transfer only)')
     ap.add_argument('--ids', nargs='*')
     ap.add_argument('--limit', type=int, help='first N selected questions (smoke)')
     ap.add_argument('--jobs', type=int, default=1, help='parallel chains (the live service is shared: keep 1 unless told otherwise)')

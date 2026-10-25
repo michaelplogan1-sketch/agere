@@ -141,9 +141,12 @@ def main(argv=None):
     ap.add_argument('--follow-ups', choices=('conversation', 'standalone'), default='conversation')
     ap.add_argument('--cold', action='store_true', help='run on a stack copy with no saved plans / answers / learning (no exact-wording cache hits)')
     ap.add_argument('--quiet', action='store_true')
+    ap.add_argument('--half', choices=('build', 'check', 'all'), help='dev3 only: the build half (develop) or the check half (measure transfer only)')
     ap.add_argument('--out')
     args = ap.parse_args(argv)
     qs = read({'dev2': 'compose', 'dev3': 'dev3'}.get(args.split, args.set))
+    from tools.dev_set.halves import keep
+    qs = keep(qs, args.half)
     if args.bucket:
         qs = [q for q in qs if q['bucket'] == args.bucket]
     if args.ids:
