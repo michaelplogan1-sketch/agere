@@ -69,7 +69,8 @@ def identity():
 
 
 def db(path):
-    result=sqlite3.connect(Path(path)/'semantic-readings.sqlite3',timeout=30)
+    from .evaluation import operational_path
+    result=sqlite3.connect(operational_path(path, 'semantic-readings.sqlite3'),timeout=30)
     result.executescript('''CREATE TABLE IF NOT EXISTS readings(id TEXT PRIMARY KEY,patient TEXT NOT NULL,payload TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS reviews(reading TEXT,revision INTEGER,payload TEXT NOT NULL,PRIMARY KEY(reading,revision));
       CREATE TABLE IF NOT EXISTS review_requests(id TEXT PRIMARY KEY,request_hash TEXT NOT NULL,payload TEXT NOT NULL);
