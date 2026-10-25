@@ -918,6 +918,10 @@ class Parser(AnalystForms, SdohComposition, ComparisonForms, ClaimFrames, RateFo
 
     def parse(self, text=None, governed=True):
         self.use_governed = governed
+        from .claim_count_policy import without_report
+        original = text if text is not None else self.question
+        if re.search(r'\bclaims?\b', original, re.I):
+            text = without_report(original)
         contrast = self.contrast_first(text if text is not None else self.question)
         if contrast:
             plan = contrast
