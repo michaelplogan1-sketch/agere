@@ -1449,7 +1449,7 @@ def _subject_limitations(stack, patient_id):
 def _note_answer_result(stack, question, graph, receipt, contract, *, started, execution_snapshot):
     from . import spec_exec
     with spec_exec.ledger_for(stack) as ledger:
-        answer = spec_exec.note_answer(stack, contract, ledger=ledger)
+        answer = spec_exec.note_answer(stack, contract, ledger=ledger, question=question)
     answer = dict(answer)
     answer.setdefault('missing', [])
     answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []), *_subject_limitations(stack, contract['subject']['patient_id']),

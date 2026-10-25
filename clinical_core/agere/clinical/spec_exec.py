@@ -144,7 +144,7 @@ def range_note(answer, undecided, readings_receipt):
     return answer
 
 
-def note_answer(stack, contract, *, as_of=None, ledger=None, answer=None):
+def note_answer(stack, contract, *, as_of=None, ledger=None, answer=None, question=None):
     """A single patient's note answer through the chart reader (builder C). -> the answer contract, or an honest 'not available'."""
     answer = answer or request_plan.executor('chart_reader.answer')
     as_of = as_of or (contract.get('source_identity') or {}).get('as_of')
@@ -152,7 +152,26 @@ def note_answer(stack, contract, *, as_of=None, ledger=None, answer=None):
         return {'status': 'not_available', 'answer_type': 'unsupported', 'headline': 'The chart reader is not installed in this build.',
                 'missing': ['chart_reader.answer is not registered'], 'patient_ids': [], 'actionable_cohort': False,
                 'data_absence_established': False, 'limitations': ['No note answer was read; nothing was guessed.']}
-    out = answer(stack, contract['request'], as_of=as_of, ledger=ledger)
+    request = dict(contract['request'])
+    # The chart reader executes note predicates from spec['note']; a spec writes them in where ({"op": "note", ...}, possibly under and/or).
+    # Hand them over, with the subject and the question, so the reader executes the spec instead of re-reading the question text (dev3 2026-10-24:
+    # every valid note spec came back "domain, intent left open").
+    if not request.get('note'):
+        found = []
+
+        def collect(node):
+            if isinstance(node, dict):
+                if node.get('op') == 'note': found.append(node); return
+                for v in node.values(): collect(v)
+            elif isinstance(node, list):
+                for v in node: collect(v)
+        collect(request.get('where'))
+        if found: request['note'] = found
+    request.setdefault('subject', contract.get('subject'))
+    request.setdefault('question', question or contract.get('question') or '')
+    import inspect
+    extra = {'question': request.get('question') or None} if 'question' in inspect.signature(answer).parameters else {}
+    out = answer(stack, request, as_of=as_of, ledger=ledger, **extra)
     return out if isinstance(out, dict) else {'status': 'not_available', 'answer_type': 'unsupported', 'headline': 'The chart reader returned no answer.',
                                               'missing': ['empty chart reader answer'], 'patient_ids': [], 'actionable_cohort': False,
                                               'data_absence_established': False, 'limitations': []}

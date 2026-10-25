@@ -19,6 +19,10 @@ import sys
 VERSION = 'warehouse-request/1'
 # Interpretation changes can invalidate an old plan even if its SQL still compiles.
 MEANING_REVISION = 'population-composition/2'
+# Discourse words that never state a requirement, for the coverage check only ("actually", "I", "can you"); words that can carry meaning ("yet",
+# "up" in "65 and up", "concentrated") are NOT here. dev3 spec calibration 2026-10-24.
+DISCOURSE_WORDS = set('i im i\'m actually really basically you your can could would let lets okay ok hey hi quick quickly please kindly'.split())
+DISCOURSE_PHRASE = re.compile(r"\b(?:pull(?:ing)?\s+up|bring\s+up|look\s+up|can\s+you|could\s+you|would\s+you|i\s+(?:want|need|would\s+like)\s+to\s+(?:know|see))\b", re.I)
 STOP_WORDS = set('a an the please me our we us there are is was were be of for to from show give find get tell what which who how many number list count total sum average mean by per with where among patients patient that have has had whose in on at and or but not without excluding exclude only all any every each than then also do does it them those these their overall s plus did see saw just'.split())  # 's' is the contraction in what's
 
 
@@ -855,8 +859,10 @@ class Compiler:
                 continue
             for match in re.finditer(re.escape(b['quote']), self.question):
                 covered[match.start():match.end()] = [True] * (match.end()-match.start())
+        for m in DISCOURSE_PHRASE.finditer(self.question):  # "pull up ...", "can you": a request frame, not a requirement
+            covered[m.start():m.end()] = [True] * (m.end() - m.start())
         uncovered = [m.group() for m in re.finditer(r'[\w%]+', self.question)
-                     if not all(covered[m.start():m.end()]) and m.group().lower() not in STOP_WORDS]
+                     if not all(covered[m.start():m.end()]) and m.group().lower() not in STOP_WORDS and m.group().lower() not in DISCOURSE_WORDS]
         if uncovered: raise PlanError('Unaccounted original request text: ' + ', '.join(uncovered))
         # Never accept a numeric/time literal that vanished during interpretation.
         # A number joined to letters by a hyphen is part of a name or code (PHQ-9, COVID-19), not a constraint.
