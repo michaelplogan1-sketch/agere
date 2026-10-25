@@ -1280,15 +1280,15 @@ def execute_contract(stack, question, graph, receipt, *, population=None, parent
     if current.identity != contract['source_identity']:
         raise request_plan.PlanError('Warehouse changed during planning; recompute against the new snapshot')
     target = current.target
-    if contract['returns'] == 'note_answer':  # one named patient's note answer: the chart reader answers, nothing is computed in SQL
-        return _note_answer_result(stack, question, graph, receipt, contract, started=started, execution_snapshot=execution_snapshot)
-    analytical = bool(contract['request'].get('analyses'))
-    graph_result = stack.run_graph(graph, question=question) if analytical else None
     if contract.get('subject'):  # a named patient is answered whether or not they died (their answer says so): the living rule does not apply to them
         from . import decision_context as DC
         state = DC.current()
         if state is not None:
             with state.lock: state.population = {'living_only': False, 'reason': 'the question names one patient; a named patient is answered whether or not they died'}
+    if contract['returns'] == 'note_answer':  # one named patient's note answer: the chart reader answers, nothing is computed in SQL
+        return _note_answer_result(stack, question, graph, receipt, contract, started=started, execution_snapshot=execution_snapshot)
+    analytical = bool(contract['request'].get('analyses'))
+    graph_result = stack.run_graph(graph, question=question) if analytical else None
     run, note_bind = contract, None
     if contract.get('note_predicates'):  # System One reads the evidence the structured part left open; SQL combines the readings
         from . import spec_exec
