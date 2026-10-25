@@ -96,8 +96,11 @@ STAGES = (
     ('spec_path', ('spec_path',)),
     ('system_one_evidence', ('evidence_retrieval', 'evidence_review', 'atomic_system_one')),
     ('claude', ('metric_router', 'operator_router', 'hosted_verified_sql', 'hosted_typed_interpreter', 'local_normalizer', 'qwen_rewrite_compiler',
-                'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
-                'stack_planner_propose', 'legacy_cost_ladder', 'backstop_agent')),
+                'bottled_sql', 'qwen_typed_interpreter', 'local_free_sql',
+                # the backstop (Sonnet tool agent: governed engines per sub-question, SQL, documents) before the Haiku analyst: dev3 build-half
+                # insight 7/17 vs 3/17 (2026-10-25); the Haiku analyst still runs when it declines
+                'backstop_agent', 'semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner',
+                'stack_planner_propose', 'legacy_cost_ladder')),
 )
 STAGE_OF = {t: i for i, (_, tiers) in enumerate(STAGES) for t in tiers}
 STAGE_INDEX = {name: i for i, (name, _) in enumerate(STAGES)}

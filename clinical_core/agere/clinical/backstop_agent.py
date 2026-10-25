@@ -30,6 +30,12 @@ DOC_SOURCES = ('clinical_note', 'hie_document', 'scanned_document_text', 'other_
 READ_CHARS = 9000
 
 TOOLS = [
+    {'name': 'ask_agere', 'description': "Ask Agere's governed engines ONE simple, self-contained sub-question (one measure, one population, one "
+     "period, one grouping, e.g. 'How many inpatient admissions were there in 2028?', 'Plan-paid pharmacy spend by year', 'ED visit rate by "
+     "payer in the last 12 months'). They apply the governed definitions (decision context, counted claims and fills, utilization events, "
+     "measure specs) and return the answer with its method, or say they could not read it. No language model; a few seconds. Prefer this for "
+     "every number it can answer; use query_sql for what it cannot.",
+     'input_schema': {'type': 'object', 'properties': {'question': {'type': 'string'}}, 'required': ['question'], 'additionalProperties': False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Results are capped (2000 rows / 60K characters); aggregate in SQL.",
      'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'}}, 'required': ['sql'], 'additionalProperties': False}},
@@ -48,8 +54,11 @@ TOOLS = [
 
 RULES = '''You are the final analyst of Agere, a healthcare analytics system over synthetic clinical, claims and document data. Every other layer
 has already declined this question, so it is yours to answer completely and correctly. Work like a careful senior analyst:
-- Plan first. Use query_sql for anything structured (counts, rates, rankings, groupings, money) and compute in SQL; use list_documents /
-  search_documents / read_document for anything the notes, discharge summaries, letters, reports or scanned documents say.
+- Plan first: break the question into the simple facts it needs (each measure, population, period and comparison group). Get each number
+  from ask_agere first (one simple sub-question per call; its governed definitions are the ones this system is judged by), and use
+  query_sql only for what ask_agere cannot answer or to break its result down further. Use list_documents / search_documents /
+  read_document for anything the notes, discharge summaries, letters, reports or scanned documents say.
+- A question can rest on a false premise ("why did X jump" when X fell): check the premise with the numbers and say so.
 - Follow the DECISION CONTEXT definitions below exactly (living patients, birth-date age, latest lab unless the question says ever/any,
   condition evidence via condition_member, rolling 12 months, Medicare includes dual and Medigap, "on" a drug = a picked-up fill in the
   last 12 months). Prefer the definition views and the governed measures documented below.
@@ -94,12 +103,14 @@ class Tools:
     def __init__(self, stack, semantic, as_of):
         from . import note_evidence
         self.semantic, self.as_of, self.NE = semantic, str(as_of)[:10], note_evidence
-        self.db = note_evidence.connect(stack)
+        self.db, self.stack, self.governed, self.seen = note_evidence.connect(stack), stack, [], []
         self.read = {}
 
     def __call__(self, use):
         try:
-            return self._call(use)
+            out = self._call(use)
+            self.seen.append(json.dumps(out, default=str))  # what the tools showed the model: a quote of a returned row is verified against it
+            return out
         except TypeError as exc:  # a malformed call (unknown argument): a tool error the model can correct, not the end of the loop
             raise ValueError(f'bad arguments for {use.get("name")}: {exc}') from exc
 
@@ -108,10 +119,36 @@ class Tools:
         if name == 'query_sql':
             if set(args) != {'sql'}: raise ValueError('query_sql takes one sql string')
             return self.semantic.query(args['sql'], as_of=self.as_of, max_rows=2000, max_chars=60000)
+        if name == 'ask_agere': return self.ask_agere(**args)
         if name == 'list_documents': return self.list_documents(**args)
         if name == 'search_documents': return self.search_documents(**args)
         if name == 'read_document': return self.read_document(**args)
         raise ValueError(f'unknown tool {name}')
+
+    def ask_agere(self, question):
+        """One sub-question through the free governed stages only (proposers.FREE_ONLY: certified reuse, System One choosers, the
+        deterministic planners; no Claude, so no recursion into this agent) under its own decision context."""
+        from . import shared_planner, decision_context
+        from .proposers import FREE_ONLY
+        token = FREE_ONLY.set(True)
+        try:
+            with decision_context.scope(question, self.as_of) as state:
+                result = shared_planner._compose(self.stack, question)
+                result = decision_context.finalize(self.stack.path, result, state)
+        except Exception as exc:  # noqa: BLE001 - not understood / not executable: tell the model, it falls back to query_sql
+            return {'question': question, 'answered': False, 'reason': f'{type(exc).__name__}: {str(exc)[:300]}'}
+        finally:
+            FREE_ONLY.reset(token)
+        a = (result or {}).get('answer') or {}
+        if a.get('status') not in ('answered', 'partial'):
+            return {'question': question, 'answered': False, 'reason': str(a.get('headline') or a.get('status') or 'no answer')[:300]}
+        table = a.get('table') or []
+        out = {'question': question, 'answered': True, 'read_as': (result.get('graph') or {}).get('interpretation'),
+               'headline': a.get('headline'), 'value': a.get('value'), 'count': a.get('count'), 'unit': a.get('unit'),
+               'table': table[:40], 'table_rows': len(table), 'method': a.get('method'),
+               'definitions': (a.get('limitations') or [])[:6]}
+        self.governed.append(out)
+        return {k: v for k, v in out.items() if v not in (None, [], '')}
 
     def _texts(self, patient_id):
         rows = self.NE._texts(self.db, patient_id, DOC_SOURCES, self.as_of)
@@ -165,7 +202,8 @@ class Tools:
 def verified_sources(answer, tools):
     """Keep only cited passages that really are in the cited document (the quote is an exact substring, whitespace-folded); a fabricated quote
     is dropped and noted. -> (sources, dropped count)."""
-    fold = lambda s: re.sub(r'\s+', ' ', str(s or '')).strip().lower()
+    fold = lambda s: re.sub(r'\s+', ' ', re.sub(r'[\\"]', '', str(s or ''))).strip().lower()
+    shown = fold(' '.join(getattr(tools, 'seen', None) or []).replace('\\n', ' '))
     kept, dropped = [], 0
     for s in answer.get('sources') or []:
         if not isinstance(s, dict) or not s.get('record_id') or not s.get('quote'): dropped += 1; continue
@@ -181,15 +219,71 @@ def verified_sources(answer, tools):
                 text = tools.read_document(s['record_id'])['text']
             except ValueError:
                 text = ''
-        if fold(s['quote']) and fold(s['quote']) in fold(text):
+        if fold(s['quote']) and (fold(s['quote']) in fold(text) or fold(s['quote']) in shown):
             kept.append({k: s.get(k) for k in ('record_id', 'date', 'source', 'quote')})
+            continue
+        span = snap(s['quote'], text)  # heal: a near-verbatim quote (ellipsis, re-spacing, a dropped word) becomes the document's own words
+        if span:
+            kept.append({**{k: s.get(k) for k in ('record_id', 'date', 'source')}, 'quote': span, 'quote_snapped': True})
         else:
             dropped += 1
     return kept, dropped
 
 
+def snap(quote, text, share=0.8):
+    """-> the span of `text` (its own words, verbatim) that carries at least `share` of the quote's words in order-insensitive overlap within a
+    window of about the quote's length, or None. Each '...'-separated piece of the quote is snapped on its own and the pieces joined."""
+    pieces = [p for p in re.split(r'\s*(?:\.\.\.|\u2026)\s*', str(quote or '')) if len(p.strip()) >= 3]
+    if len(pieces) > 1:
+        spans = [snap(p, text, share) for p in pieces]
+        return ' ... '.join(spans) if all(spans) else None
+    words = re.findall(r'[a-z0-9]+', str(quote or '').lower())
+    if len(words) < 2 or not text: return None
+    toks = [(m.group(0).lower(), m.start(), m.end()) for m in re.finditer(r'[A-Za-z0-9]+', text)]
+    want, n = set(words), len(words)
+    best = (0, None)
+    for i in range(len(toks)):
+        window = toks[i:i + n + 2]
+        if not window or window[0][0] not in want: continue
+        hit = len(want & {t for t, _, _ in window}) / len(want)
+        if hit > best[0]:
+            last = max(j for j, (t, _, _) in enumerate(window) if t in want)
+            best = (hit, (window[0][1], window[last][2]))
+    if best[0] < share: return None
+    a, b = best[1]
+    return text[a:b]
+
+
+def as_tool_calls(send):
+    """A sender whose text reply that is really an emulated tool call ({"tool_use": ...}, the subscription transport's protocol; also a replayed
+    cached reply) comes back as a tool_use block, so the loop runs the tool instead of taking the call for the final answer."""
+    from .. import subscription_transport as ST
+
+    def wrapped(body):
+        response, cost, hit = send(body)
+        blocks = response.get('content') or []
+        if not any(b.get('type') == 'tool_use' or (b.get('text') or '').strip() for b in blocks):  # an empty reply: ask once more
+            nudge = {'role': 'user', 'content': 'Your last reply was empty. Continue: call one tool, or give the final JSON answer object.'}
+            again, cost2, hit2 = send({**body, 'messages': [*body.get('messages', []), nudge]})
+            response, hit = again, hit and hit2
+            cost = None if cost is None or cost2 is None else cost + cost2
+            blocks = response.get('content') or []
+        if body.get('tools') and blocks and not any(b.get('type') == 'tool_use' for b in blocks):
+            call = ST._tool_call('\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text'), body['tools'])
+            if call:
+                response = {**response, 'stop_reason': 'tool_use',
+                            'content': [{'type': 'tool_use', 'id': 'toolu_bs_' + str(abs(hash(json.dumps(call, sort_keys=True))))[:16],
+                                         'name': call['name'], 'input': call['input']}]}
+        return response, cost, hit
+    return wrapped
+
+
 def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
     """-> {'answer': answer contract or None, 'tool_calls', 'model', 'estimated_cost_usd', 'new_paid_api_calls', 'error', 'seconds'}."""
+    if ledger is None and send is None:  # a direct caller: charge the product ledger of a live stack
+        from . import spec_exec
+        with spec_exec.ledger_for(stack) as own:
+            if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of)
     from . import semantic_analyst, together, analyst_definitions, decision_context
     from .legacy_proposers import _semantic_path, _send
     from .. import model_policy
@@ -209,11 +303,11 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
     tools = Tools(stack, wh, as_of)
     receipts = []
     model = model or model_policy.claude_model(model_policy.SONNET, track=True)
-    run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=send or _send(stack, ledger, receipts), model=model,
+    run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=as_tool_calls(send or _send(stack, ledger, receipts)), model=model,
                                      max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'}}, format_retries=1, max_tokens=8192)
     out = {'answer': run.get('answer') if isinstance(run.get('answer'), dict) else None, 'tool_calls': run.get('tool_calls') or [],
            'model': model, 'estimated_cost_usd': run.get('estimated_cost_usd'), 'new_paid_api_calls': run.get('new_paid_api_calls', 0),
-           'error': run.get('error'), 'seconds': round(time.perf_counter() - started, 1), 'version': VERSION}
+           'error': run.get('error'), 'final_text': run.get('final_text'), 'seconds': round(time.perf_counter() - started, 1), 'version': VERSION}
     a = out['answer']
     if a is not None:
         a = dict(a)
