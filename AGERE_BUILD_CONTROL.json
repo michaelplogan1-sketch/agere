@@ -362,14 +362,14 @@
     "kind": "implementation_delivered_qualification_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Preserve latest-only comparisons, distinct drug class counts/death-date uncertainty, primary typed values, positive social-screen scope, ambiguous admission ties and evaluation OCR scratch; retain concurrent population work.",
-    "measured_failure_reduction": "Reviewed semantic repairs: structured BUILD14/14 on frozen free development run; latest-admission tie yields explicit ambiguity rather than a misleading primary date; strict OCR rebuilding succeeds without touching source. c23 targeted notes4/5, $0.011944076. Regression31/26modules0failures. Normal c23 health ready/synthetic.",
+    "user_behavior_delta": "Qualified chest radiograph answers require source body-site/modality support. Generic radiographs remain available for broad X-ray requests. Separate source dates/findings and source-kind constraints are preserved. Saved plans version note interpretation and checking.",
+    "measured_failure_reduction": "b3bc46d: qualified report sources are exactly2, generic radiograph request retains3.79focusedtests(1skip),41/40module regression1samefailure/0new;243/295freeparaphrasesonboth,0lost. Clean normal requests(eval=None)pass exactscope; repeat4.8s/0APIcalls/$0. Earlier benchmark-header and cost-window mislabelling corrected without changing raw receipts or comparison scores.",
     "evidence": [
       "docs/agere/COMPARISON_RESULTS_2026-10-24.md",
-      "artifacts/agere-semantic-review-c23b3a6/implementation-receipt.json"
+      "artifacts/agere-imaging-scope-b3bc46d/implementation-receipt.json"
     ],
-    "remaining_gap": "Unfamiliar composition and meaningful acceptance remain unqualified: heldout15/50 unchanged; CHECK13/71 no transfer. Supplemental primary audit is limited coverage. A note retrieval miss is not source-wide absence. All ten areas retained, G3 active/G5 incomplete.",
-    "next_action": "Complete remaining68 paid dev3 BUILD questions on a0832bc evaluation-cache-only correction, retaining first11 correct responses and counting all spend; never repeat completed questions. Heal three free paraphrase passage-only answer gaps before landing routing candidate (238vs241). Cachefix15/14modules0failures; combined candidate/main21/20modules0failures. Livec23 is pushed and ready. No heldout/CHECK rerun or individual inspection; target>95%/99% unmet. Continue shared executable meaning and source-bound answer acceptance under G3.",
+    "remaining_gap": "95%/99% not established. Original heldout30% and CHECK13/71 remain unchanged/closed. Published scoring can over-credit incidental values, unsupported absences and passage citations. Clinical/source semantic proof and unfamiliar composition remain incomplete. All10areas/G3active/G5incomplete.",
+    "next_action": "G3 next: reproduce/fix atomic_questions result-column collision from saved BUILDx2-18, where generated keypatient_id overwrites actualpatientID withunknown. Preserve immutable input reports, real patient membership and unresolved IDs; deterministic safe output names must prevent identity/derived-column collisions. No API needed for reproduction/replay. Validate synthetic counterexamples and regression vs currentmain before landing. Then address premature accepted partial/unknown results while retaining useful fallback evidence. Haiku first for any necessary targeted paid validation; no new monetary/time caps, no fullpaidBUILDrepeat, no heldout/CHECK inspection or reruns. All10areas retained/G5incomplete/>95%99%unmet.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
@@ -1302,6 +1302,13 @@
       "basis": "Final published dev94% but heldout30%, competitor44%; over-crediting date scorer found on dev. Minor dev-only wording fixes do not establish generalization.",
       "scope_impact": "All10areas and G3/G5status retained. No heldout texts/outcomes used for diagnosis, no keys/clinical definitions changed. CHECK half reserved for transfer, Haiku-first spend visible.",
       "evidence": "docs/agere/COMPARISON_RESULTS_2026-10-24.md"
+    },
+    {
+      "at": "2026-10-25T04:25:31.385688+00:00",
+      "decision": "Prioritize the observed patient-identity overwrite before broader partial-acceptance changes.",
+      "basis": "Saved devx2-18 has atomic sub-question keypatient_id and rendered patient_idunknown although the evaluated patient is known. Source/body-scope increment is now verified in actual normal mode.",
+      "scope_impact": "Shared result identity underG3, no clinical definition/key change, no external care, no protected evaluation use; full charter retained.",
+      "evidence": "artifacts/agere-imaging-scope-b3bc46d/implementation-receipt.json"
     }
   ]
 }

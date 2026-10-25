@@ -569,17 +569,35 @@ def execute(stack, plan_, *, decide=None):
 def _pretty(label): return str(label).replace('_', ' ')
 
 
+def question_columns(parameters):
+    """Keep model-provided answer keys separate from identity and derived columns."""
+    used = {'patient_id'}
+    columns = {}
+    suffixes = ('', '_p', '_labels', '_trajectory', '_structured')
+    for question in parameters['sub_questions']:
+        key = question['key']
+        candidate = key
+        index = 0
+        while any(candidate + suffix in used for suffix in suffixes):
+            index += 1
+            candidate = ('answer' if key == 'patient_id' else 'answer_' + key) + (f'_{index}' if index > 1 else '')
+        columns[key] = candidate
+        used.update(candidate + suffix for suffix in suffixes)
+    return columns
+
+
 def aggregate(report):
     p = report['parameters']
     agg, selected_labels = p['aggregation'], set(p['select_labels'])
-    keys = [s['key'] for s in p['sub_questions']]
+    columns = question_columns(p)
+    keys = list(columns.values())
     by_patient = {pid: [c for c in report['cells'] if c['patient_id'] == pid] for pid in report['evaluated_patient_ids']}
     table, chosen = [], []
     for pid, cells in by_patient.items():
         row = {'patient_id': pid}
         if agg in ('conflict', 'trajectory'):
-            for k in keys:
-                seq = sorted((c for c in cells if c['key'] == k), key=lambda c: c['date'] or '')
+            for original, k in columns.items():
+                seq = sorted((c for c in cells if c['key'] == original), key=lambda c: c['date'] or '')
                 labels = [c['label'] for c in seq if c['label'] != 'unknown']
                 if agg == 'conflict':
                     row[k] = 'conflict' if len(set(labels)) > 1 else (labels[0] if labels else 'unknown')
@@ -592,11 +610,12 @@ def aggregate(report):
             hit = any(row[k] == 'conflict' for k in keys) if agg == 'conflict' else any(row[k] in selected_labels for k in keys)
         else:
             for c in cells:
-                row[c['key']] = c['label']
-                if c['probabilities']: row[f"{c['key']}_p"] = round(float((c['probabilities'] or {}).get(c['label'], 0) or 0), 3)
+                column = columns[c['key']]
+                row[column] = c['label']
+                if c['probabilities']: row[f"{column}_p"] = round(float((c['probabilities'] or {}).get(c['label'], 0) or 0), 3)
                 for s in p['sub_questions']:
                     if s['key'] == c['key'] and s['subject'] and f"{pid}|{s['subject']}" in report['structured_states']:
-                        row[f"{c['key']}_structured"] = report['structured_states'][f"{pid}|{s['subject']}"]
+                        row[f"{column}_structured"] = report['structured_states'][f"{pid}|{s['subject']}"]
             hit = any(row.get(k) in selected_labels for k in keys)
         table.append(row)
         if hit: chosen.append(pid)
@@ -608,7 +627,8 @@ def answer(report, plan_, question):
     p = report['parameters']
     table, chosen = aggregate(report)
     n, total = len(report['evaluated_patient_ids']), report['population_patients']
-    keys = [s['key'] for s in p['sub_questions']]
+    columns = question_columns(p)
+    keys = list(columns.values())
     # A patient not selected while one of its readings is unknown is unresolved, not a "no": the count is a range.
     unresolved = [r['patient_id'] for r in table if r['patient_id'] not in chosen
                   and any(r.get(k) in (None, 'unknown') for k in keys)]
@@ -663,7 +683,8 @@ def answer(report, plan_, question):
             'probabilities': probabilities, 'method': method, 'limitations': limitations,
             'capped': {'cap': report['cap'], 'evaluated': n, 'in_scope': total} if report['capped'] else None,
             'sub_questions': [{'key': s['key'], 'atom': s['atom'], 'options': list(s['options'])} for s in p['sub_questions']],
-            'membership_role': 'selected'}
+            'membership_role': 'selected',
+            **({'question_columns': columns} if any(k != v for k, v in columns.items()) else {})}
 
 
 # -- cascade rung -----------------------------------------------------------------------------------------------------
