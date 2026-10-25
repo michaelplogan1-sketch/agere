@@ -66,6 +66,15 @@ class Render(unittest.TestCase):
         self.assertIn("payer='Medicaid'", text)
         self.assertGreater(len(text), 300)
 
+    def test_checker_reads_the_context_query_that_ran_not_the_proposal(self):
+        graph = {'nodes': [{'id': 'answer', 'operation': 'sql', 'parameters': {'query': 'SELECT 99 AS value'}}]}
+        result = {'answer': {'answer_type': 'value', 'value': 1}, 'results': [
+            {'node': graph['nodes'][0], 'result': {'schema': 'semantic-sql/1', 'query': 'SELECT 99 AS value',
+             'decision_context': {'executed_query': 'SELECT 1 AS value'}}}]}
+        text = G.render('q', graph, result)
+        self.assertIn('SELECT 1 AS value', text)
+        self.assertNotIn('SELECT 99 AS value', text)
+
     def test_every_sql_step_is_visible(self):
         graph = {'nodes': [{'id': str(i), 'operation': 'sql', 'parameters': {'query': f'SELECT {i}'}} for i in range(6)]}
         self.assertIn('SELECT 5', G.render('q', graph, RESULT))
