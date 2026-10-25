@@ -236,6 +236,35 @@ class Passages(list):
     candidates = 0
 
 
+def report_concept_scope(concept, text, metadata=""):
+    """A generic radiograph does not establish the body site of a chest study.
+
+    This qualifies report candidates, not clinical findings. A non-specific
+    report remains retrievable for an unqualified radiograph request.
+    """
+    term = re.sub(r'[^a-z]+', ' ', str(concept.get('term') or '').lower()).strip()
+    chest_required = term in ('chest x ray', 'cxr', 'chest radiograph')
+    if not chest_required and term not in ('x ray', 'xray', 'radiograph', 'radiography'):
+        return True
+    folded = ocr_fold(text)
+    header = re.search(r'\b(?:EXAM|STUDY|PROCEDURE)\s*:\s*([^\n]+)', folded, re.I)
+    if header:
+        exam = re.split(r'\b(?:COMPARISON|TECHNIQUE|FINDINGS|IMPRESSION)\s*:', header.group(1), flags=re.I)[0]
+        if re.search(r'\b(?:mri|ct|ultrasound)\b', exam, re.I):
+            return False
+        if (chest_required and re.search(r'\b(?:knee|hip|spine|lumbar|cervical|ankle|foot|hand|wrist|elbow|shoulder|pelvis|skull)\b', exam, re.I)
+                and not re.search(r'\b(?:chest|thorax|cxr)\b', exam, re.I)):
+            return False
+    if not chest_required:
+        return True
+    qualified = ocr_fold(str(metadata) + '\n' + text)
+    if re.search(r'\bcxr\b', qualified, re.I):
+        return True
+    radiograph = re.search(r'\b(?:x[- ]?ray|radiograph\w*)\b', qualified, re.I)
+    chest_site = re.search(r'\b(?:chest|thorax|cardiopulmonary|pulmonary|pleural|lungs?|cardiomegaly|mediastin\w*|(?:lower|upper)[ -]?lobe)\b', qualified, re.I)
+    return bool(radiograph and chest_site)
+
+
 def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_of, max_passages=MAX_PASSAGES, per_record=PER_RECORD,
              patterns=None, note_types=None, prefer_records=None):
     """Candidate passages for one patient and concept, ranked and bounded. Each: {passage_id, record_id, source, stream,
@@ -261,6 +290,8 @@ def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_
         if not day or day < lo or day > hi:
             continue
         if type_rx is not None and not note_open.matches_document_type(note_types, f'{note_type} {stream} {title}', text):
+            continue
+        if note_types and 'radiology_report' in note_types and not report_concept_scope(concept, text, f'{note_type} {title}'):
             continue
         for ps in passages_in(text, pats):
             key = (re.sub(r'\W+', ' ', ps['text'].lower()).strip(), day)
