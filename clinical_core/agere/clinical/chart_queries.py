@@ -256,7 +256,7 @@ def measurement_comparison(ch, it):
     if len({reading['date'] for reading in readings}) > 1:
         return no_data(f'Cannot treat measurements from different dates as one reading for {ch.pid}', table=readings, sources=sources)
     yes = all(reading['passes'] for reading in readings)
-    detail = '; '.join(f"{label_of(r['concept'])} {fmt(r['actual'])} {r['operator']} {fmt(r['value'])}" for r in readings)
+    detail = '; '.join(f"{label_of(r['concept'])} {fmt(r['actual'])} (threshold {r['operator']} {fmt(r['value'])}: {'met' if r['passes'] else 'not met'})" for r in readings)
     return core('yes_no', f"{'Yes' if yes else 'No'}: {detail} ({readings[0]['date']})", value=yes,
                 table=readings, sources=sources, facts={'all_explicit_bounds_met': yes},
                 notes=['User-supplied bounds; all must hold. This is a numeric comparison, not clinical suitability.'])
