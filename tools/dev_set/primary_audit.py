@@ -19,6 +19,10 @@ def audit(question, response):
     typed = answer.get('primary_answer_type') or answer.get('answer_type')
     value = answer.get('primary_value') if 'primary_value' in answer else answer.get('value')
     expected = question['key'].get('answer')
+    if kind == 'yes_no' and type(expected) is not bool:
+        return {'verdict': 'unverified', 'reason': 'No boolean reference for this audit'}
+    if kind == 'date' and not isinstance(expected, str):
+        return {'verdict': 'unverified', 'reason': 'No date reference for this audit'}
     if kind in ('count', 'value') and (type(expected) not in (float, int) or not math.isfinite(expected)):
         return {'verdict': 'unverified', 'reason': 'No numeric scalar reference for this audit'}
     if kind == 'yes_no' and type(answer.get('yes_no')) is bool:
