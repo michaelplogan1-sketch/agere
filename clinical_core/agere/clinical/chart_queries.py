@@ -158,6 +158,8 @@ def lab(ch, it):
     if not concepts or concepts == [None]:
         return None
     window = it.get('window')
+    if intent == 'compare_values':
+        return measurement_comparison(ch, it)
     if len(concepts) == 2 and set(concepts) == {'systolic_bp', 'diastolic_bp'} and intent in ('latest_value', 'timeline', 'status', 'count_in_window'):
         return blood_pressure(ch, it)
     if c.get('condition') and len(concepts) > 1 and intent in ('trend', 'latest_value'):
@@ -226,6 +228,38 @@ def _extreme(question):
     if re.search(r'\b(?:lowest|minimum|min|nadir)\b', q):
         return 'min'
     return None
+
+
+def measurement_comparison(ch, it):
+    """Evaluate explicit bounds against sourced latest results, preserving unknowns."""
+    import operator
+    compare = {'<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
+    readings, sources = [], []
+    for predicate in it['comparisons']:
+        concept = predicate['concept']
+        if it.get('window'):
+            history = lab_history(ch, concept, it['window'])
+            reading = history[0] if history else None
+        else:
+            reading = lab_latest(ch, concept)
+        if not reading or reading['value'] is None:
+            return no_data(f'Cannot compare: no usable {label_of(concept)} result for {ch.pid}', sources=sources)
+        sources.append(src('measurement_latest' if not it.get('window') else 'measurement', reading['record_id'], reading['event_date']))
+        if reading.get('value_censor') or reading.get('same_day_values', 1) > 1:
+            return no_data(f'Cannot compare an ambiguous or censored {label_of(concept)} result for {ch.pid}', sources=sources)
+        if predicate.get('unit'):
+            normalize = lambda unit: str(unit or '').lower().replace(' ', '').replace('percent', '%')
+            if normalize(predicate['unit']) != normalize(reading.get('unit')):
+                return no_data(f"Cannot compare {label_of(concept)} in {reading.get('unit')} with the requested {predicate['unit']} without a validated conversion", sources=sources)
+        readings.append({**predicate, 'actual': reading['value'], 'date': reading['event_date'],
+                         'passes': compare[predicate['operator']](reading['value'], predicate['value'])})
+    if len({reading['date'] for reading in readings}) > 1:
+        return no_data(f'Cannot treat measurements from different dates as one reading for {ch.pid}', table=readings, sources=sources)
+    yes = all(reading['passes'] for reading in readings)
+    detail = '; '.join(f"{label_of(r['concept'])} {fmt(r['actual'])} {r['operator']} {fmt(r['value'])}" for r in readings)
+    return core('yes_no', f"{'Yes' if yes else 'No'}: {detail} ({readings[0]['date']})", value=yes,
+                table=readings, sources=sources, facts={'all_explicit_bounds_met': yes},
+                notes=['User-supplied bounds; all must hold. This is a numeric comparison, not clinical suitability.'])
 
 
 def blood_pressure(ch, it):

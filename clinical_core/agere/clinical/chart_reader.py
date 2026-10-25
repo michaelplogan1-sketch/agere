@@ -210,6 +210,23 @@ def validate_chart(chart):
         raise ValueError(f'chart.intent must be one of {list(CI.INTENTS)}')
     if chart.get('intent') != 'summary' and chart.get('domain') not in CI.DOMAINS and chart.get('domain') != NOTE_DOMAIN:
         raise ValueError(f'chart.domain must be one of {list(CI.DOMAINS)} or {NOTE_DOMAIN!r}')
+    if chart.get('intent') == 'compare_values':
+        import math
+        concept = chart.get('concept') or {}
+        if not isinstance(concept, dict):
+            raise ValueError('Measurement comparisons require typed concepts')
+        concepts = concept.get('concepts') or [concept.get('value')]
+        comparisons = chart.get('comparisons')
+        if chart.get('domain') != 'lab' or not isinstance(comparisons, list) or not comparisons:
+            raise ValueError('Measurement comparisons require lab concepts and explicit bounds')
+        if any(not isinstance(p, dict) or p.get('concept') not in concepts or
+               p.get('operator') not in ('<', '<=', '>', '>=') or
+               type(p.get('value')) not in (int, float) or not math.isfinite(p['value']) for p in comparisons):
+            raise ValueError('Invalid explicit measurement comparison')
+        if len({p['concept'] for p in comparisons}) != len(comparisons):
+            raise ValueError('Multiple bounds for one measurement require explicit boolean composition')
+        if {p['concept'] for p in comparisons} != set(concepts):
+            raise ValueError('Every requested measurement needs its explicit bound')
     w = chart.get('window')
     if w is not None and (not isinstance(w, dict) or not {'start', 'end'} <= set(w)):
         raise ValueError('chart.window needs start and end (ISO dates)')
@@ -261,7 +278,7 @@ def _intent_from_spec(spec):
         validate_chart(chart)
         return {'intent': chart['intent'], 'domain': chart.get('domain'), 'concept': chart.get('concept'), 'window': chart.get('window'), 'ordinal': chart.get('ordinal'),
                 'attribute': chart.get('attribute'), 'mode': chart.get('mode', 'latest'), 'flags': list(chart.get('flags') or []), 'gaps': [], 'source': 'spec',
-                'question': spec.get('question', '')}
+                'question': spec.get('question', ''), **({'comparisons': chart['comparisons']} if chart.get('comparisons') else {})}
     return None
 
 
@@ -356,7 +373,7 @@ def unsupported(message, question, started, spend, *, pid=None, intent=None, mis
 def _clean_intent(it):
     if not it:
         return None
-    keep = ('intent', 'domain', 'concept', 'window', 'ordinal', 'attribute', 'mode', 'flags', 'gaps', 'source')
+    keep = ('intent', 'domain', 'concept', 'window', 'ordinal', 'attribute', 'mode', 'flags', 'gaps', 'source', 'comparisons')
     return {k: it.get(k) for k in keep if k in it}
 
 
@@ -414,7 +431,7 @@ def ask(stack, question, *, conversation_id=None, prior=None, as_of=None, ledger
 
 def _elliptical(question):
     q = (question or '').strip().lower()
-    refers = re.match(r"^(?:and|what about|how about|also|then|the one|the previous|the prior)\b", q) or re.search(
+    refers = re.match(r"^(?:and|what about|how about|also|then|the one|the previous|the prior)\b|^(?:is|was|are|were)\s+(?:that|it|this)\b", q) or re.search(
         r"\b(?:most recent|latest|last|previous|prior|first|earlier|next) one\b|\bthat one\b|\bthose\b|"
         r"^(?:date|result|value) of (?:the )?(?:most recent|latest|last|previous|prior)\b", q)
     return (len(q.split()) <= 12 and bool(refers)
@@ -432,9 +449,11 @@ def typed_chart(it, preds=None, question=None):
            'attribute': it.get('attribute'), 'window': plain(it.get('window')),
            'concept': plain({k: v for k, v in concept.items() if v is not None}) if isinstance(concept, dict) else plain(concept),
            'flags': list(it.get('flags') or [])}
+    if it.get('comparisons'):
+        out['comparisons'] = plain(it['comparisons'])
     if it.get('domain') == 'readmission':  # the chart reader's readmission is stay.readmitted_30d: say so, so another window is caught
         out['measure'] = {'field': 'stay.readmitted_30d', 'within_days': 30, 'window': '30 days after discharge_date', 'after': 'discharge_date'}
-    if it.get('mode') in ('latest', 'first') or it.get('ordinal') or it.get('intent') in ('latest_value', 'last_event'):
+    if it.get('mode') in ('latest', 'first') or it.get('ordinal') or it.get('intent') in ('latest_value', 'last_event', 'compare_values'):
         order_field = 'end_date' if 'order_by_discharge' in (it.get('flags') or []) else 'event_date'
         out['order_by'] = [{'field': order_field, 'direction': 'asc' if it.get('mode') == 'first' else 'desc'}]
         out['limit'] = 1 + (int(it['ordinal']) if isinstance(it.get('ordinal'), int) else 0)
