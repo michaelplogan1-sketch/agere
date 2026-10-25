@@ -92,3 +92,14 @@ A client attempt before service readiness made no model calls/$0, was excluded a
 Competitor held-out run started once after final live dev, on the same frozen semantic database with unchanged Opus5.5/8-tool documented protocol. Its outputs remain opaque; only aggregates will be inspected. Agere held-out will run once afterward. No held-out question text or individual outcomes have been inspected for development. The six remaining scored dev failures retain unresolved population/attribution/window/measure-definition questions; no keys or standing definitions were changed to increase the score. >95%/99% remains unmet. G3 stays active, G5 incomplete and full acceptance false.
 
 Implementation evidence: artifacts/agere-generalization-d4de3ef/implementation-receipt.json (implementation verified, comparison measurements in progress).
+
+
+## Full-cost reconciliation and interrupted held-out recovery
+
+Final dev's full dedicated ledger total is$0.092350224; the$0.069335508 previously reported is the question-attributed portion. Another$0.023014716of SystemOnecalls lacked question tags. Whole-ledger windows now capture all trial charges; a separate synthetic worker-context fix is tested but not applied during this comparison. The earlier implementation receipt retains both figures when finalized.
+
+Competitorheldout completed22/50(44%), estimated$4.8693294. No question text or individual outcome was inspected. Agere's firstphase attempted9uniqueitems before an optionalcachewrite audit interruption;8originalscorer results were preserved, and the one unretained/ungraded response is conservatively counted failed and is not repeated. Its9attempts cost$0.149194188 including all ledger-window charges. Source and learning files remained unchanged because strict write protection denied the attempted write.
+
+Evaluation-only cache guards06cd48a were reproduced on synthetic dev fixtures and landed after22candidate/21main regression modules showed8identical existing failures/0new. They only suppress optional analytics/retrieval cache persistence; question interpretation, data, definitions, SQL calculations, model policy and published scorer remain unchanged. Resumption attempted4additional uniqueitems; their full responses were retained and scored internally without another APIcall. All13attempts were preserved, and the prefix ended at a conversation boundary.
+
+The final continuation sends only the remaining37unaskeditems. Strict write protection stays on. Denied optionalcache attempts are recorded as diagnostics while actual returned answers are scored; they do not pause the entire trial. Source/bank fingerprints are checked again at completion. No held-out item is repeated. The final comparison must disclose the evaluation-only correction, the single conservative failure and the full ledger-window cost. It must not be described as an uninterrupted single-release qualification.
