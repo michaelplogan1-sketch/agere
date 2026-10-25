@@ -24,7 +24,7 @@ from pathlib import Path
 from . import decision_context as DC
 
 VERSION = 'chart-intents/1'
-INTENTS = ('latest_value', 'trend', 'list', 'count_in_window', 'last_event', 'timeline', 'status', 'sum', 'summary')
+INTENTS = ('latest_value', 'trend', 'list', 'count_in_window', 'last_event', 'timeline', 'status', 'sum', 'summary', 'compare_values')
 
 DOMAINS = {
     'lab': 'Laboratory results and vital signs (HbA1c, eGFR, LDL, blood pressure, weight, creatinine ...)',
@@ -327,6 +327,32 @@ def condition_control(q, low, domain, concept):
     return domain, concept, False
 
 
+def explicit_comparisons(text, concepts):
+    """Literal user-supplied bounds; this does not supply clinical goal values."""
+    if re.search(r'\bnot\b|\bno longer\b', text):
+        return None
+    operators = {'under': '<', 'below': '<', 'less than': '<', '<': '<',
+                 'at most': '<=', '<=': '<=', 'above': '>', 'over': '>',
+                 'greater than': '>', '>': '>', 'at least': '>=', '>=': '>='}
+    matches = [m for m in re.finditer(r'(?<!\w)(?P<op>at most|at least|less than|greater than|under|below|above|over|<=|>=|<|>)\s*(?P<a>\d+(?:\.\d+)?)(?:\s*/\s*(?P<b>\d+(?:\.\d+)?))?', text)
+               if not re.match(r'\s*(?:days?|weeks?|months?|years?|hours?)\b', text[m.end():])]
+    if len(matches) != 1:
+        return None
+    match = matches[0]
+    op = match['op']
+    first = match['a']
+    if set(concepts) == {'systolic_bp', 'diastolic_bp'} and match['b']:
+        values = [('systolic_bp', first), ('diastolic_bp', match['b'])]
+    elif len(concepts) == 1 and concepts[0] and not match['b']:
+        values = [(concepts[0], first)]
+    else:
+        return None
+    unit_match = re.match(r'\s*(mmhg|%|percent|mg/dl|mmol/l|mmol/mol|ml/min(?:/1\.73m2)?)', text[match.end():])
+    unit = unit_match[1] if unit_match else None
+    return [{'concept': concept, 'operator': operators[op], 'value': float(value),
+             **({'unit': unit} if unit else {})} for concept, value in values]
+
+
 def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
     """The grammar. -> Intent dict (always; `gaps` lists what it could not fill). `prior` is the previous turn's Intent for an
     elliptical follow-up ("and the one before that?")."""
@@ -377,6 +403,10 @@ def parse(question, as_of, *, quotes=(), lexicon=None, prior=None):
     if controlled:
         out['flags'].append('condition_control')
         out['intent'] = 'trend' if CONTROL_DIRECTION.search(q) and not out.get('ordinal') else 'latest_value'
+    if domain == 'lab' and isinstance(concept, dict):
+        comparisons = explicit_comparisons(low, concept.get('concepts') or [concept.get('value')])
+        if comparisons and asks_yes_no(q):
+            out.update(intent='compare_values', comparisons=comparisons)
     if domain == 'fill' and re.search(r'\b(?:pdc|proportion of days|days covered|adherence|adherent)\b', low):
         out['attribute'], out['intent'] = 'pdc', 'latest_value'
     if domain == 'prescription' and NEVER_FILLED.search(q):
