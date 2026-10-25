@@ -260,7 +260,7 @@ def retrieve(stack_or_db, patient_id, concept, *, window=None, sources=None, as_
                                                                  as_of[:10]), key=lambda x: (x[4] or '', x[0])):
         if not day or day < lo or day > hi:
             continue
-        if type_rx is not None and not type_rx.search(f'{note_type} {stream} {title}'):
+        if type_rx is not None and not note_open.matches_document_type(note_types, f'{note_type} {stream} {title}', text):
             continue
         for ps in passages_in(text, pats):
             key = (re.sub(r'\W+', ' ', ps['text'].lower()).strip(), day)
