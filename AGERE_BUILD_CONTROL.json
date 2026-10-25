@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-25T07:48:08.925932+00:00",
+  "updated_at": "2026-10-25T11:46:31.073794+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -362,15 +362,16 @@
     "kind": "implementation_delivered_qualification_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Compiled single-patient note conditions preserveBooleanoperators,structuredscope,unknowns,citationsandnamed deceasedsubjects. Historicalcompletion andscopedretrieval repairs retained.",
-    "measured_failure_reduction": "95focusedtests pass;58vs57module regression same1nativeerror/0new;243/295freeparaphrase scoreunchanged/0lost. No95%claim.",
+    "user_behavior_delta": "Live claim counts select report-context readings and show both when unclear; governed insight wording recognizes outreach priorities, CKD gaps and frequent ED use.",
+    "measured_failure_reduction": "48/48source cases;94/100devunchanged;248/295serialparaphrases versus243baseline,+5correct/0lost. Parallel247retained,timinglimitunresolved.92focused,candidate95/merged97modules same3baselinefailures/0new;normal4/4,0calls/$0.",
     "evidence": [
       "artifacts/agere-source-frequency-5162f78/implementation-receipt.json",
-      "docs/agere/COMPARISON_RESULTS_2026-10-24.md"
+      "docs/agere/COMPARISON_RESULTS_2026-10-24.md",
+      "artifacts/agere-claim-context-6fb43d4/implementation-receipt.json"
     ],
-    "remaining_gap": "Broad generalization, complete multi-part answers, clinical/source definition ambiguities and independent95% qualification remain open; noteBooleanadapter andanalyst bypass inactive.",
-    "next_action": "G3: d73be19 sealedlive/ready,95focused checks,58vs57module regression same1nativeerror/0new,243/295sealedfreeparaphrases/0lost,normal0of14days/exactcitation29.285s/0newcalls/$0. Next restoreAnthropiccredits then resume6BUILD Haiku-only complete-request measurement in /private/tmp/agere-analyst-complete-request (eb3623c);firstrequestHTTP400lowcredits,5unattempted/noSonnet/$0known/1failedwithoutusage. Do not silently retry or activate that prompt without quality evidence. Continue full-request and reader generalization on BUILD/paraphrases only. Analyst audit bypass and broader specwriter assumptions remaininactive;runtimecontainsONLY reviewednoteexecution delta fromf2. No heldout/CHECK access/rerun, no key/defaultchanges; all10areas/G3active/G5incomplete/95%99%unmet.",
-    "next": "G3: d73be19 sealedlive/ready,95focused checks,58vs57module regression same1nativeerror/0new,243/295sealedfreeparaphrases/0lost,normal0of14days/exactcitation29.285s/0newcalls/$0. Next restoreAnthropiccredits then resume6BUILD Haiku-only complete-request measurement in /private/tmp/agere-analyst-complete-request (eb3623c);firstrequestHTTP400lowcredits,5unattempted/noSonnet/$0known/1failedwithoutusage. Do not silently retry or activate that prompt without quality evidence. Continue full-request and reader generalization on BUILD/paraphrases only. Analyst audit bypass and broader specwriter assumptions remaininactive;runtimecontainsONLY reviewednoteexecution delta fromf2. No heldout/CHECK access/rerun, no key/defaultchanges; all10areas/G3active/G5incomplete/95%99%unmet.",
+    "remaining_gap": "Overall95/99notachieved;34historicalparaphraserefusals,13wrongunderlegacyrubric;note latency, source-definition discrepancies and note proposition/polarity audit remain. Group/list followup candidate not yet qualified.",
+    "next_action": "G3: live6fb43d4 verified/main1868129pushed;48/48claimcases,94/100devunchanged,248/295serialparaphrases(+5correct/0lost),parallel247retained;92focused/candidate95/merged97modules same3baselinefailures/0new;normal4/4,0calls/$0. Next qualify uncommittedgroup/listfollowupcandidate /private/tmp/agere-followup-wording (27focusedpass) onopenparaphrasesandregressionbeforelanding. Audit found existing code-status Yes prefix can reflect documentation rather than CPR/intubation preference; add proposition/polarity fixtures and repair before claiming clinical accuracy. Broad95/99unmet. Noheldout/CHECKaccess/rerun/keychanges. No paid calls;priorAnthropiccreditblocker unchanged;subscriptioninactive.",
+    "next": "G3: live6fb43d4 verified/main1868129pushed;48/48claimcases,94/100devunchanged,248/295serialparaphrases(+5correct/0lost),parallel247retained;92focused/candidate95/merged97modules same3baselinefailures/0new;normal4/4,0calls/$0. Next qualify uncommittedgroup/listfollowupcandidate /private/tmp/agere-followup-wording (27focusedpass) onopenparaphrasesandregressionbeforelanding. Audit found existing code-status Yes prefix can reflect documentation rather than CPR/intubation preference; add proposition/polarity fixtures and repair before claiming clinical accuracy. Broad95/99unmet. Noheldout/CHECKaccess/rerun/keychanges. No paid calls;priorAnthropiccreditblocker unchanged;subscriptioninactive.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
       "kind": "Owner/JavaScript syntax/existing workflow tests/API-state comparison/candidate and live browser checks; presentation only",
@@ -446,12 +447,12 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-25T07:48:08.925932+00:00",
-      "release": "d73be19",
-      "receipt": "artifacts/agere-note-condition-d73be19/implementation-receipt.json",
+      "at": "2026-10-25T11:46:31.073794+00:00",
+      "release": "6fb43d4",
+      "receipt": "artifacts/agere-claim-context-6fb43d4/implementation-receipt.json",
       "owner_known_estimate_usd": 16.621161705,
       "paid_blocker": "Anthropic insufficientcredits;6BUILDHaiku experiment has1failed/noanswer/5unattempted;noautomaticretry",
-      "next": "Restorecredits andmeasurecomplete-requestpromptbeforepromotion"
+      "next": "Qualify saved-group followup wording and repair audited note proposition/polarity mismatch using open dev and synthetic fixtures."
     }
   },
   "decisions": [

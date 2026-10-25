@@ -2,9 +2,9 @@
 
 Agere has **not achieved >95% or 99% correctness**. The last once-only held-out measurement remains30%; it has not been rerun or used for tuning. All new diagnosis uses open dev/BUILD questions, paraphrases, or independent synthetic fixtures. The CHECK half remains closed to this work.
 
-## Current live release
+## Preceding note-condition release
 
-**d73be19** is pushed and live on port8885 from `/private/tmp/agere-note-contract-release` (PID44592, session56567), with rollback f2b10b0. Only the reviewed note-execution files were added to that preceding release; broader unqualified planner and analyst changes remain excluded.
+**d73be19** was the preceding live release on port8885 from `/private/tmp/agere-note-contract-release` (PID44592, session56567), with rollback f2b10b0. Only the reviewed note-execution files were added to that preceding release; broader unqualified planner and analyst changes remain excluded.
 
 Compiled single-patient note requests now execute AND/OR/NOT with three-valued SQL, preserving structured siblings, citations, short-circuiting and unknowns. Named deceased subjects remain in scope. An open/detail request is not replaced by a Boolean answer. Single-leaf note predicates retain the subject and original question.
 
@@ -28,7 +28,7 @@ Scoped retrieval now starts from a patient's passage IDs instead of scanning the
 - Final sealed free paraphrases: **243/295(82.4%)**, matching5162f78, zero lost answers. Code, definitions, and source manifests remained unchanged.
 - Normal live check: correct reported medication use0of14days, exact May13source citation,29.538seconds, **zero new calls/$0**. An earlier a60c519check cost$0.000124768(4SystemOnecalls, noClaude).
 - Actual executed results from47saved BUILD-only Haiku proposals:21correct versus20before. Of30accepted proposals,20are correct versus19before(66.7%). This is recorded-proposal replay, not a fresh full-cascade accuracy result. The broader analyst acceptance change remains inactive.
-- Independent reviewer calibration on those30accepted proposals: both reviewers fully confirmed10, of which9are correct(**90%precision**, low coverage). Including partial confirmations gives9correct/4wrong. The remaining strict error is the unresolved claim-source645versus637dispute; score keys and default definitions remain unchanged.
+- Independent reviewer calibration on those30accepted proposals: both reviewers fully confirmed10, of which9are correct(**90%precision**, low coverage). Including partial confirmations gives9correct/4wrong. The remaining strict error was the claim-source645versus637dispute. Mike resolved the policy on October25 as described below; the historical score remains unchanged.
 
 An initial historical-query prototype broke two A1c answers; replay caught those regressions before release and they were repaired. A first295-item run scored241/295, but its definition overlay changed during the run, so it is not release qualification. The sealed successor scored242/295 with one note timeout; the scoped-retrieval repair restored243/295. The two recovered note probes are **passage-support credits**, not proof of complete clinical answers.
 
@@ -49,3 +49,17 @@ Compound-note candidate **d73be19** preserves AND/OR/NOT through compiled three-
 This candidate isolates note execution from broader unqualified planner business-definition assumptions. Root main still contains inactive analyst changes and must not be deployed wholesale. All ten product areas remain in scope; G3 stays active, G5 incomplete, full acceptance false.
 
 Evidence: `artifacts/agere-query-scope-retrieval-f2b10b0/implementation-receipt.json`; detailed run receipts under `/tmp/agere_generalization/`.
+
+## Human definition decisions — October 25
+
+Mike explicitly confirmed all living patients (including children) for missing-A1c counts, enrollment-month coverage for PMPM attribution, and living-patient visits for the frequent-ED-volume numerator and denominator. Explicit request restrictions still apply.
+
+For medical claim counts, use eligible insurer claims in payer/VBC contract reports and all received deduplicated claims in clinical utilization reports. When report context is unclear, show both readings with clear labels; never add the overlapping counts. This resolves the policy question, but context-sensitive execution and output checks are still pending. The existing generic `claim` default does not by itself implement this decision.
+
+The machine-readable decision record is `config/agere/definition_decisions_2026-10-25.json`. The existing dirty definition overlay was preserved. No historical score/key was changed, no held-out question was opened, and no paid call was made for this recording step ($0). Current live release remains d73be19.
+
+## Current live release — claim context and wording
+
+Isolated6fb43d4 is now live on port8885 (PID65219/session73000); main1868129 is pushed. Claim counts implement the October25human decisions. The first three decisions retain their existing definitions; historical scores/keys remain unchanged. Full report: `docs/agere/CLAIM_CONTEXT_GENERALIZATION_2026-10-25.md`.
+
+92focused tests; candidate95/merged97modules with the same3baselinefailures and zero new;48/48source-count cases;94/100dev(unchanged);248/295serialfreeparaphrases(+5correct,0lost). An earlier parallel247/295run lost an admission-note passage answer; it remains retained, and note-answer timing is a limitation. Normal live4/4checks,0newcalls/$0. New spend$0; owner-known subtotal remains$16.621161705. No95%claim, paid retry, or held-out/CHECK rerun.
