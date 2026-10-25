@@ -4,6 +4,7 @@
     .venv/bin/python -m tools.dev_set.run --bucket insight --split heldout
     .venv/bin/python -m tools.dev_set.run --limit 5 --out /tmp/smoke.json  # smoke
     .venv/bin/python -m tools.dev_set.run --set compose                    # the composition set (split dev2; same as --split dev2)
+    .venv/bin/python -m tools.dev_set.run --set dev3                       # the independent set (split dev3; same as --split dev3)
 
 Every request carries X-Agere-Evaluation: 1 (the service learns nothing from it). Follow-ups: the service links a follow-up to
 the prior turn through `conversation_id` in the /api/stack/compose body (conversation.handle_compose); in evaluation mode the
@@ -402,6 +403,9 @@ def score_rubric(rub, text, low):
 # --- driver -------------------------------------------------------------------------------------------------------------
 def load_set(args):
     """All questions of the chosen set: tools/dev_set/questions.jsonl, or compose_questions.jsonl (--set compose / --split dev2)."""
+    if args.set == 'dev3' or args.split == 'dev3':
+        from tools.dev_set.dev3_keys import read as read_dev3
+        return read_dev3()
     if args.set == 'compose' or args.split == 'dev2':
         from tools.dev_set.compose_keys import read as read_compose
         return read_compose()
@@ -410,9 +414,12 @@ def load_set(args):
 
 def select(args, all_qs=None):
     qs = all_qs if all_qs is not None else load_set(args)
-    split = args.split or ('dev2' if args.set == 'compose' else 'dev')
+    split = args.split or {'compose': 'dev2', 'dev3': 'dev3'}.get(args.set, 'dev')
     if split != 'all':
         qs = [q for q in qs if q['split'] == split]
+    if getattr(args, 'half', None):
+        from tools.dev_set.halves import keep
+        qs = keep(qs, args.half)
     if args.bucket:
         qs = [q for q in qs if q['bucket'] == args.bucket]
     if args.ids:
@@ -502,9 +509,10 @@ def report(rows):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--url', default=DEFAULT_URL)
-    ap.add_argument('--set', choices=('dev', 'compose'), default='dev', help='question file: dev = questions.jsonl, compose = compose_questions.jsonl (split dev2)')
-    ap.add_argument('--split', choices=('dev', 'dev2', 'heldout', 'all'), default=None, help='default dev (dev2 with --set compose); dev2 reads the compose set')
+    ap.add_argument('--set', choices=('dev', 'compose', 'dev3'), default='dev', help='question file: dev = questions.jsonl, compose = compose_questions.jsonl (split dev2), dev3 = dev3_questions.jsonl (split dev3, independent wording)')
+    ap.add_argument('--split', choices=('dev', 'dev2', 'dev3', 'heldout', 'all'), default=None, help='default dev (dev2 with --set compose, dev3 with --set dev3); dev2 reads the compose set, dev3 the independent set')
     ap.add_argument('--bucket', choices=BUCKETS)
+    ap.add_argument('--half', choices=('build', 'check', 'all'), help='dev3 only: the build half (develop) or the check half (measure transfer only)')
     ap.add_argument('--ids', nargs='*')
     ap.add_argument('--limit', type=int, help='first N selected questions (smoke)')
     ap.add_argument('--jobs', type=int, default=1, help='parallel chains (the live service is shared: keep 1 unless told otherwise)')
