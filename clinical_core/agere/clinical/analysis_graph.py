@@ -1271,7 +1271,7 @@ def code_identity():
                       Path(__file__).with_name('risk_outcomes.py'), Path(__file__).with_name('safety_data.py'),
                       Path(__file__).with_name('medication_state.py'), Path(__file__).with_name('default_definitions.py'), Path(__file__).with_name('clinical_tasks.py'),
                       Path(__file__).with_name('atomic_questions.py'), Path(__file__).with_name('hcc_suspecting.py'), *_foundation_files(),
-                      Path(__file__).with_name('decision_context.py'), Path(__file__).with_name('sql_query.py'),
+                      Path(__file__).with_name('decision_context.py'), Path(__file__).with_name('sql_read_roles.py'), Path(__file__).with_name('sql_query.py'),
                       # the chart reader and note frames compute inside their engine: their code and calibration key the cache too
                       *[Path(__file__).with_name(f'{m}.py') for m in ('chart_reader', 'chart_intents', 'chart_queries', 'chart_summary',
                                                                      'chart_notes', 'patient_ids', 'note_frames', 'note_questions',
