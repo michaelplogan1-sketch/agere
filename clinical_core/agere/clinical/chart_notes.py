@@ -28,20 +28,48 @@ STRONG = re.compile(
     r"(?:report|reports|reported)\s+(?:taking|using|having)|discharge summary|impression|x-?ray|radiolog\w+|ruled out|rule[- ]out|stress test|"
     r"memory concern|intoleran\w+|outside (?:report|record|chest)|scanned|did the patient|does the patient|patient (?:choose|chose|want|wants|prefer)|"
     r"counsel(?:ed|ing|led|ling)|(?:do|does|did|are|is)\s+(?:the\s+)?(?:later|subsequent)\s+(?:notes?|records?|visits?))\b", re.I)
+# Real wording points at a DOCUMENT rather than saying "the notes": "the June 2028 annual physical", "the orthopedics letter", "the MRI report scanned in",
+# "per the callback", "the d/c summary", "the H&P", "the progress note", "outside records". A document kind (with a date, "the", or "per/at/in") is a
+# note cue; a bare "visit" is one only when the question asks what was said or found (VISIT_REF + CONTENT_ASK).
+MODALITY = (r"holter|\bmri\b|\bct\b|cat scan|ultrasound|sonogram|echocardiogra\w*|\becho\b|x-?ray|\bekg\b|\becg\b|stress test|colonoscop\w*|endoscop\w*|"
+            r"biops\w*|patholog\w*|\beeg\b|\bemg\b|doppler|angiogra\w*|cardiac cath\w*|sleep study|spirometry|\bpfts?\b|\bpet\b|nuclear|carotid|fluoroscop\w*")
+DOC_KIND = re.compile(
+    r"\b(?:annual|yearly|routine|preventive|prevention|wellness)\s+(?:physical|exam|visit|review|check-?up|appointment)s?\b|\bpreventive (?:care )?(?:review|visit)\b|"
+    r"\b(?:\w+\s+){0,2}(?:letter|callback|call-?back)s?\b|\b(?:medication history|phone|telephone|nurse|follow-?up|triage|care management|outreach)\s+(?:call|message|note|review|encounter)s?\b|"
+    r"\b(?:d/c|dc|discharge|hospital|transition(?:-of-care)?|transfer)\s+(?:summary|summaries|paperwork|note|report)s?\b|\bh\s?(?:&|and)\s?p\b|\bhistory and physical\b|"
+    r"\bprogress notes?\b|\b(?:office|clinic|visit|consult\w*|specialist|specialty|operative|op|nursing|admission|triage|intake|telehealth) notes?\b|"
+    r"\b(?:" + MODALITY + r"|imaging|radiolog\w*|outside|specialist|scanned|surgical|lab(?:oratory)?|procedure|operative|ed|er|pathology)\s+(?:report|result|read|study|film|findings?)s?\b|"
+    r"\b(?:outside|prior|old|external|received|faxed|scanned|transferred|hospital)\s+(?:records?|documents?|charts?|paperwork)\b|"
+    r"\b(?:the|that|this)\s+(?:[a-z0-9/-]+\s+){0,2}(?:physical|check-?up)\b|\b(?:orthopedic|cardiology|specialist|referral|consult\w*)\s+(?:visit|appointment|evaluation|clinic)\b|"
+    r"\b(?:per|according to|based on|from)\s+the\s+(?:[a-z0-9-]+\s+){0,3}(?:visit|review|call|letter|report|summary|note|physical|callback|appointment)\b|"
+    r"\b(?:it|that|this)\s+(?:should|would|might)\s+be\s+(?:in|on)\s+the\b", re.I)
+ROLE_ASK = re.compile(r"\b(?:the\s+)?(?:nurse|physician|doctor|provider|clinician|surgeon|cardiologist|specialist|therapist|pharmacist|dietitian|social worker|\bMA\b|resident|hospitalist|PCP)\s+(?:record\w*|document\w*|note[ds]?|write|wrote|writes|chart\w*|mention\w*|say|said|says|advis\w+|recommend\w*|suggest\w*|tell|told|find|found|ask\w*|report\w*)\b", re.I)
+VISIT_REF = re.compile(r"\b(?:(?:acute|sick|urgent|new[- ]patient|post-?op\w*|follow-?up|office|clinic|telehealth|video|annual|same-day|walk-in)\s+)?(?:visit|appointment|encounter)\b", re.I)
+CONTENT_ASK = re.compile(r"\b(?:who|why|what|which|how (?:big|large|small|high|low|much|long))\b[^?]{0,90}\b(?:say|said|says|show\w*|record\w*|document\w*|note[ds]?|push\w*|urg\w+|encourag\w+|"
+                         r"insist\w*|convinc\w+|recommend\w*|suggest\w*|advis\w+|report\w*|mention\w*|complain\w*|describ\w+|find|found|reveal\w*|conclude\w*|"
+                         r"bump\w*|increas\w+|decreas\w+|start\w*|stop\w*|prescrib\w+|order\w*|tell|told|ask\w*|brought|prompt\w*|come back|came back)\b", re.I)
+TEST_ASK = re.compile(r"\b(?:" + MODALITY + r")\b[^?]{0,60}\b(?:show\w*|say|said|find|found|reveal\w*|conclude\w*|impression|result\w*|read|report\w*|size)\b|"
+                      r"\b(?:show\w*|say|said|find|found|reveal\w*|conclude\w*|impression|result\w*|read|report\w*)\b[^?]{0,40}\b(?:" + MODALITY + r")\b|"
+                      r"\b(?:how (?:big|large)|what size|size of)\b[^?]{0,40}\b(?:nodule|mass|lesion|cyst|polyp|tumor|stone|aneurysm)\b|\b(?:nodule|mass|lesion|cyst|polyp)s?\b[^?]{0,40}\b(?:size|mm|cm)\b", re.I)
+BACKREF = re.compile(r"\b(?:that|the same|this|the)\s+(?:day|visit|appointment|encounter|note|call|report|letter|review|physical|check-?up|admission|stay|time)\b|\bat that time\b|"
+                     r"\bthen\b\s*\??$|\bon that date\b|\bsame (?:day|visit)\b", re.I)
+DUE_FOR = re.compile(r"\b(?:due|overdue|need(?:s|ed)?|schedul\w+|book\w*|eligible|time) (?:for|to|a|an)\b[^?]{0,30}\b(?:physical|annual|wellness|visit|check-?up|exam)\b|"
+                     r"\b(?:when|how long)\b[^?]{0,30}\b(?:last|next)\b[^?]{0,20}\b(?:physical|annual|wellness|check-?up|exam)\b", re.I)  # a care-gap / scheduling question
 WEAK = re.compile(r"\b(?:falls?|fell|raised|trouble|barriers?|symptoms?|complaints?|recommended|mentioned|anywhere|documented|noted)\b", re.I)
 STRUCTURED_FIRST = re.compile(r"\b(?:ed visits?|admissions?|claims?|fills?|pick(?:ed)? up|prescribed|prescriptions?|mammogra\w+|flu shot|vaccin\w+|a1c|egfr|ldl|"
                               r"blood pressure|practice|attributed|allergies|medication list|active medications?|appointments?|no-shows?)\b", re.I)
 FRAME_CUES = [  # (frame, pattern); evaluated on the asking sentence; every match is kept (at most two are used)
-    ('care_process', r"goals[- ]of[- ]care|code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*|advance directive|polst|molst|living will|health ?care proxy|counsel\w*|referr\w+|hospice|palliative"),
+    ('care_process', r"goals[- ]of[- ]care|code status|\bdnr\b|\bdni\b|resuscitat\w*|chest compressions|breathing tube|intubat\w*|advance directive|polst|molst|living will|health ?care proxy|counsel\w*|referr\w+|hospice|palliative|lung (?:cancer )?screening|screening criteria|meets? (?:the )?(?:screening )?criteria|eligib\w+"),
     ('preference_refusal', r"\baccept\w*|\bdeclin\w*|\brefus\w*|\bprefer\w*|\bwants?\b|\bchoose\b|\bchose\b|\bdecid\w*|\bagree\w*"),
-    ('medication_event', r"\bstopped\b|\bdiscontinu\w*|\bheld\b|\bswitch\w*|\bstarted\b|\bbeing started\b|\bstarting\b|\bdose\b|\btaking\b|\btakes\b|\bstill (?:list|show|taking|on)\w*|\blist\w* (?:it|them)\b|\brestart\w*|\bmedications?\b"),
+    ('medication_event', r"\bstopped\b|\bdiscontinu\w*|\bheld\b|\bswitch\w*|\bstarted\b|\bbeing started\b|\bstarting\b|\bstart\b|\bstop\b|\badd(?:ed)?\b|\bdose\b|\btaking\b|\btakes?\b|\bused?\b|\busing\b|\bbump\w*|\bup-?titrat\w*|\bincreas\w+|\bdecreas\w+|\bsuggest\w* (?:starting|stopping|adding)|\bstill (?:list|show|taking|on)\w*|\blist\w* (?:it|them)\b|\brestart\w*|\bmedications?\b"),
     ('adverse_event', r"intoleran\w+|allerg\w+|side effects?|adverse|reaction|angioedema"),
     ('function_cognition', r"memory|cognit\w*|mobility|gait|balance|\badl\b|vision|hearing|home safety|dementia|\bfalls?\b|\bfell\b"),
     ('social_need', r"social|financial|barriers?|transport\w*|getting to|food|housing|afford\w*|isolat\w*|utilit\w*|trouble"),
-    ('procedure_test', r"x-?ray|imaging|\bct\b|\bmri\b|stress test|biopsy|colonoscop\w*|echo\w*|impression|radiolog\w*|ultrasound|\bekg\b|\becg\b|\bstudy\b"),
-    ('plan_followup', r"follow[- ]?up|recommend\w*|\breturn\b|disposition|discharged to|\bplan\b"),
-    ('social_need', r"smoking|tobacco"),
-    ('finding_value', r"\bscore\b|\bvalue\b|\breading\b"),
+    ('procedure_test', r"x-?ray|imaging|impression|radiolog\w*|\bstudy\b|echo\w*|" + MODALITY),
+    ('plan_followup', r"follow[- ]?up|recommend\w*|suggest\w*|advis\w+|\breturn\b|disposition|discharged to|\bwhere\b[^?]{0,40}\bdischarg\w+|\bdischarg\w+ (?:home|destination|location)|\bgo(?:ne)? (?:home|after)\b|\bsent (?:home|to)\b|\bplan\b"),
+    ('preference_refusal', r"\bwho (?:pushed|urged|encouraged|convinced|insisted|talked|made|told|prompted|asked|brought|drove)\b|\bpushed\b|\burged\b|\bencouraged\b|\binsisted\b|\bprompted\b"),
+    ('social_need', r"smoking|tobacco|alcohol|drinks?\b|drinking|\betoh\b|substance|cannabis|marijuana"),
+    ('finding_value', r"\bscore\b|\bvalue\b|\breading\b|\ba1c\b|\bhba1c\b|\bphq-?\d\b|\bgad-?\d\b|\bbmi\b|\bldl\b|\begfr\b|come back as|came back as|how (?:big|large|small|high|low)\b|what size|\bsize of\b|\bin (?:mm|cm)\b|\bnodule\b"),
     ('condition', r"ruled out|rule[- ]out|diagnos\w+|history of|syndrome"),
     ('symptom', r"symptom|complain\w*|reports? (?:pain|dyspnea|nausea)|\bpain\b"),
 ]
@@ -54,12 +82,28 @@ CONCEPT_PHRASES = [  # (cue pattern, canonical concept term, frames it applies t
     (r"social or financial|financial barriers?|social barriers?|financial|afford\w*", 'financial', ('social_need',)),
     (r"trouble getting to appointments|transport\w*|getting to appointments", 'transportation', ('social_need',)),
     (r"\bfalls?\b|\bfell\b", 'falls', ('function_cognition', 'adverse_event')), (r"memory (?:concern|problem|loss)|cognit\w*", 'memory concern', ('function_cognition',)),
-    (r"smoking status|tobacco", 'smoking', ('social_need', 'finding_value', 'condition')), (r"drug intolerance|intoleran\w+", 'intolerance', ('adverse_event',)),
+    (r"smok\w*|tobacco|cigarette", 'smoking', ('social_need', 'finding_value', 'condition')), (r"drug intolerance|intoleran\w+", 'intolerance', ('adverse_event',)),
     (r"chest x-?ray", 'chest x-ray', ('procedure_test',)), (r"stress test", 'stress test', ('procedure_test',)),
     (r"acute coronary syndrome|\bacs\b", 'acute coronary syndrome', ('condition',)),
     (r"new disease-directed medications?|disease-directed", 'started', ('medication_event',)),
-    (r"discharge summary|follow[- ]?up", 'follow up', ('plan_followup',)), (r"discharged to|disposition", 'discharge disposition', ('plan_followup',)),
+    (r"discharge summary|follow[- ]?up", 'follow up', ('plan_followup',)),
+    (r"\bdischarg\w+|go(?:ne)? home|sent (?:home|to)", 'discharge disposition', ('plan_followup',)), (r"discharged to|disposition", 'discharge disposition', ('plan_followup',)),
+    (r"alcohol|\bdrinks?\b|drinking|\betoh\b", 'alcohol', ('social_need', 'finding_value', 'condition')),
+    (r"housing|homeless\w*|evict\w*", 'housing', ('social_need',)), (r"\bfood\b|hungry|grocer\w*", 'food', ('social_need',)), (r"utilit\w+", 'utilities', ('social_need',)),
+    (r"isolat\w+|lonel\w+", 'social isolation', ('social_need',)),
+    (r"hba1c|\ba1c\b|hemoglobin a1c", 'HbA1c', ('finding_value',)), (r"phq-?9", 'PHQ-9', ('finding_value',)), (r"phq-?2", 'PHQ-2', ('finding_value',)),
+    (r"gad-?7", 'GAD-7', ('finding_value',)), (r"pain (?:score|level|rating|scale)", 'pain score', ('finding_value',)),
+    (r"lung (?:cancer )?screening|screening criteria", 'lung cancer screening', ('care_process',)),
+    (r"anti-?inflammator\w*|\bnsaids?\b", 'anti-inflammatory medication', ('medication_event', 'plan_followup')),
 ]
+# A thing named only by its kind: the imaging / test word of the question ("MRI", "Holter monitor", "surgical pathology"), the measure being sized
+# ("how big was the lung nodule"), or "a medication" when the question asks WHICH drug was started / stopped / recommended.
+MODALITY_TERM = re.compile(r"\b((?:surgical\s+|lung\s+|cardiac\s+|carotid\s+)?(?:" + MODALITY + r")(?:\s+monitor)?)", re.I)
+MEASURE_OF = re.compile(r"\b(?:how (?:big|large|small)\s+(?:was|is|were|are)|(?:what size|size|measurement|dimensions?) (?:was|is|were|of))\s+(?:the\s+|a\s+|that\s+)?([a-z][a-z -]{2,30}?)\s*(?:\bon\b|\bin\b|\bat\b|\bfrom\b|\bper\b|[?,.]|$)", re.I)
+DECIDED_OBJECT = re.compile(r"\b(?:refus\w+|declin\w+|accept\w*|agree\w*|want\w*|chose|choose|prefer\w*|turned down|opted (?:for|out of))\s+(?:the\s+|a\s+|an\s+|her\s+|his\s+|their\s+|any\s+)?([a-z][a-z -]{2,30}?)(?:\s+(?:in|at|on|for|because|due|during|from|per|according)\b|[?.,]|$)", re.I)
+WHO_URGED = re.compile(r"\bwho\b[^?]{0,40}\b(?:push\w*|urg\w+|encourag\w+|convinc\w+|insist\w*|prompt\w*|talked|made|told|asked|brought)\b|\b(?:pushed|urged|encouraged|insisted|prompted)\b", re.I)
+WHICH_DRUG = re.compile(r"\b(?:what|which)\b[^?]{0,70}\b(?:start\w*|stop\w*|prescrib\w*|recommend\w*|suggest\w*|add\w*|chang\w+|switch\w*|advis\w+|new)\b", re.I)
+
 CONDITION_OF = re.compile(r"(?:was|were|is|are|has|had|did)\s+(?:the\s+|a\s+|an\s+)?([a-z][a-z -]{3,40}?)\s+(?:ruled out|excluded|present|documented|diagnosed|confirmed)", re.I)
 RETURN_CUES = [  # (cue, frame, detail field to show)
     (r"\bwhy\b|\breason", 'medication_event', 'reason'), (r"\bwhy\b|\breason", 'preference_refusal', 'reason'),
@@ -86,7 +130,10 @@ def is_note_question(question, intent):
     q = question or ''
     if intent.get('domain') == 'notes':
         return True
-    strong = STRONG.search(q)
+    strong = STRONG.search(q) or DOC_KIND.search(q) or TEST_ASK.search(q) or ROLE_ASK.search(q) or (
+        VISIT_REF.search(q) if (CONTENT_ASK.search(q) and (note_dates(q) or MONTH_YEAR.search(q))) else None)
+    if strong and not STRONG.search(q) and (DUE_FOR.search(q) or intent.get('domain') in ('care_gap', 'appointment')):
+        strong = None  # only a document-kind word, and the question is about being due / scheduling: the structured reader answers it
     if not strong and not WEAK.search(q):
         return False
     if intent.get('domain') is None:
@@ -157,6 +204,8 @@ def window_for(ask, context, as_of):
     """The note window the question implies: its own words, a month and year, 'later' than a dated note, or the exact day of a dated note."""
     q = f'{context} {ask}'.strip()
     w = CI.window_of(q, as_of)
+    if w and str(w.get('kind', '')).startswith('last_') and (MONTH_YEAR.search(q) or note_dates(q)):
+        w = None  # "how many of the LAST 14 DAYS ... per the May 2027 callback": the span the note reports, not when the note was written
     if w:
         return w
     m = MONTH_YEAR.search(q)
@@ -177,6 +226,8 @@ def window_for(ask, context, as_of):
     return None
 
 
+ON_DATE = re.compile(r"\b(?:on|at|during|from|dated|of)\s+(?:the\s+)?(?:[a-z-]+\s+){0,2}?(?:" + r"(?:\b(?:19|20)\d\d-\d\d-\d\d\b|\b\d{1,2}/\d{1,2}/(?:19|20)\d\d\b|\b(?:" + '|'.join(MONTHS) + r")\s+\d{1,2},?\s+(?:19|20)\d\d\b))", re.I)
+AFTER_EVENT_IN_MONTH = re.compile(r"\b(?:after|following|since|post)\b[^?]{2,60}?\b(?:in|during|on|from)\s+(?:" + '|'.join(MONTHS) + r")\s+(?:19|20)\d\d\b", re.I)
 DATE_TEXT = (r"(?:\b(?:19|20)\d\d-\d\d-\d\d\b|\b\d{1,2}/\d{1,2}/(?:19|20)\d\d\b|\b(?:" + '|'.join(MONTHS) + r")\s+\d{1,2},?\s+(?:19|20)\d\d\b)")
 
 
@@ -196,6 +247,45 @@ def main_clause(ask):
     return m.group(1) if m and frames_of(m.group(1)) else ask
 
 
+def _lab_term(text):
+    """The measurement the wording names, in the user's words (HbA1c, LDL, PHQ-9, blood pressure, BMI ...): chart_intents' lab lexicon, then its unmeasured vitals."""
+    for pat, _ in CI.LAB_TERMS:
+        m = re.search(pat, text or '', re.I)
+        if m:
+            return m.group().strip()
+    m = CI.UNMEASURED.search(text or '')
+    return m.group().strip() if m else None
+
+
+def _condition_term(text):
+    """A diagnosis the wording names, in the user's words, when the concept library knows it (heart failure, stroke, COPD ...)."""
+    try:
+        from . import concepts
+    except ImportError:  # noqa: PERF203
+        return None
+    best = None
+    for d in concepts.CONDITIONS.values():
+        try:
+            if d.get('exclude') and re.search(d['exclude'], text or '', re.I):
+                continue
+            m = re.search(d['text'], text or '', re.I)
+        except re.error:
+            continue
+        if m and (best is None or len(m.group()) > len(best)):
+            best = m.group()
+    return best.strip() if best and len(best.strip()) > 2 else None
+
+
+DOC_STRIP = re.compile(r"\b(?:medication history|phone|telephone|nurse|follow-?up|triage|care management|outreach)\s+(?:call|message|note|review|encounter|visit)s?\b|"
+                       r"\b(?:d/c|dc|discharge|hospital|transition(?:-of-care)?|transfer)\s+(?:summary|summaries|paperwork)\b|\b(?:\w+\s+){0,2}(?:letter|callback|call-?back)s?\b", re.I)
+
+
+def strip_documents(ask):
+    """The asking sentence without the words that name the DOCUMENT ("follow-up call", "discharge summary", "orthopedics letter"): those are where to read, not what is asked."""
+    out = DOC_STRIP.sub(' ', ask or '')
+    return re.sub(r'\s+', ' ', out).strip()
+
+
 def frames_of(ask):
     found = []
     for frame, pat in FRAME_CUES:
@@ -206,6 +296,11 @@ def frames_of(ask):
         found.remove('procedure_test')
     if 'function_cognition' in found and 'adverse_event' in found:
         found.remove('adverse_event')
+    if not found:  # no cue word: a named measurement is a value, a named diagnosis is a condition (the same lexicons the structured reader uses)
+        if _lab_term(ask):
+            found.append('finding_value')
+        elif _condition_term(ask):
+            found.append('condition')
     return found
 
 
@@ -220,9 +315,36 @@ def concept_for(frame, ask, context, drug):
                 return m.group(1).strip(), m.group(1).strip()
         if frame in ('medication_event', 'preference_refusal', 'adverse_event', 'condition') and text is ask and drug:
             return drug['value'].replace('_', ' '), drug.get('term') or drug['value']
+    if drug and frame not in ('procedure_test', 'finding_value', 'preference_refusal'):
+        return drug['value'].replace('_', ' '), drug.get('term') or drug['value']
+    if frame == 'procedure_test':
+        for text in (ask, context):
+            m = MODALITY_TERM.search(text or '')
+            if m:
+                return m.group(1).strip(), m.group(1).strip()
+    if frame == 'finding_value':
+        for text in (ask, context):
+            lab = _lab_term(text)
+            if lab:
+                return lab, lab
+            m = MEASURE_OF.search(text or '')
+            if m:
+                return m.group(1).strip(), m.group(1).strip()
+    if frame in ('medication_event', 'plan_followup') and WHICH_DRUG.search(ask or ''):
+        return 'medication', 'medication'
+    if frame == 'preference_refusal' and WHO_URGED.search(ask or ''):
+        return 'urged', 'urged'
+    if frame == 'preference_refusal':
+        m = DECIDED_OBJECT.search(ask or '')
+        if m:
+            return m.group(1).strip(), m.group(1).strip()
+    if frame == 'condition':
+        cond = _condition_term(ask) or _condition_term(context)
+        if cond:
+            return cond, cond
     if drug:
         return drug['value'].replace('_', ' '), drug.get('term') or drug['value']
-    m = re.search(r"\b(?:about|of|for|on|regarding)\s+(?:the\s+|a\s+|an\s+)?([a-z][a-z -]{3,40}?)(?:\s+(?:in|for|at|during|when|and|from)\b|[?.,]|$)", ask, re.I)
+    m = re.search(r"\b(?:about|of|for|on|regarding)\s+(?:the\s+|a\s+|an\s+|her\s+|his\s+|their\s+|any\s+)?([a-z][a-z -]{3,40}?)(?:\s+(?:in|for|at|during|when|and|from)\b|[?.,]|$)", ask, re.I)
     return (m.group(1).strip(), m.group(1).strip()) if m else (None, None)
 
 
@@ -230,10 +352,10 @@ FRAME_LABELS = {'condition': 'Condition or diagnosis', 'symptom': 'Symptom or co
                 'procedure_test': 'Procedure, test or study', 'finding_value': 'Measured value or score', 'adverse_event': 'Adverse event, allergy or intolerance',
                 'care_process': 'Care process or service', 'social_need': 'Social need or barrier', 'function_cognition': 'Function, cognition or safety',
                 'preference_refusal': 'Preference, refusal or decision', 'plan_followup': 'Plan, follow-up or disposition'}
-NOT_DRUGS = frozenset('the a an any new it them that this these those his her their patient later earlier notes note chart still again also not never because'.split())
+NOT_DRUGS = frozenset('after before during from with when while about over under into onto than then for and but nor yet the a an any new it them that this these those his her their patient later earlier notes note chart still again also not never because impression impressions result results report reports finding findings anything nothing something'.split())
 MED_WORD = [re.compile(r"\b(?:was|were|is|are)\s+([a-z][a-z-]{3,})\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
             re.compile(r"\b([a-z][a-z-]{3,})\s+(?:was|were|has been|had been|is|are)\s+(?:stopped|started|held|discontinued|restarted|switched|changed)\b", re.I),
-            re.compile(r"\b(?:stopped|started|holding|held|discontinued|restarted|taking|takes|using|list|lists|listed|show|shows|accept(?:ed)?|declined|refused)\s+(?:the\s+|on\s+)?([a-z][a-z-]{3,})\b", re.I),
+            re.compile(r"\b(?:stopped|started|holding|held|discontinued|restarted|taking|takes?|using|used?|list|lists|listed|show|shows|accept(?:ed)?|declined|refused)\s+(?:the\s+|on\s+)?([a-z][a-z-]{3,})\b", re.I),
             re.compile(r"\breason\s+([a-z][a-z-]{3,})\s+was\b", re.I)]
 
 
@@ -246,6 +368,7 @@ def _med_word(text):
     return None
 
 
+DAYS_OF = re.compile(r"\bhow many (?:of )?(?:the )?(?:last |past |previous )?\d* ?(?:days|weeks|doses)\b", re.I)  # a reported rate ("0 of 14 days"): the passage states it, there is no event count to make
 COUNT_FRAMES = ('function_cognition', 'adverse_event')  # frames whose reading has a stated `count` detail
 
 
@@ -277,14 +400,28 @@ def asks_yes_no(ask):
 ANAPHORIC_ASK = re.compile(r"^\W*(?:and\s+)?(?:what|which|who|how many|how much)\b[^?]{0,30}\b(?:it|they|them|those|that|these|this|ones?)\b[^?]{0,20}\??\W*$", re.I)
 
 
+DC_SUMMARY = re.compile(r"\b(?:d/c|dc|d-c)\s+(?:summar\w+|paperwork|note|report)s?\b|\bhospital summar(?:y|ies)\b|\btransition(?:-of-care)? summar\w+", re.I)
+
+
+def source_cues(text):
+    """note_open.source_cues plus the spellings real wording uses for the same documents ("d/c summary")."""
+    cues = NO.source_cues(text)
+    if DC_SUMMARY.search(text or '') and 'discharge_summary' not in cues['note_types']:
+        cues = {**cues, 'note_types': [*cues['note_types'], 'discharge_summary']}
+    return cues
+
+
 def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     """-> [predicate dict]. `choose(question, options, task_key)` -> label | None is the System One closed-list choice (frame, when the cues are silent)."""
     question = PATIENT_TOKEN.sub(' ', question or '').strip()
     ask, context, response_asked = split_parts(question)
     window = window_for(ask, context, as_of)
-    cues = NO.source_cues(question)
+    cues = source_cues(question)
     drug = CI._drug(ask, lexicon) or CI._drug(context, lexicon) or _med_word(ask) or _med_word(context)
-    frames = frames_of(main_clause(ask))  # "After <dated event clause>, do later notes show X?": the frame is what the main clause asks, not the clause that dates it
+    frames = frames_of(strip_documents(main_clause(ask))) or frames_of(main_clause(ask))
+    if not frames and drug:
+        frames = ['medication_event']  # a drug and no other cue ("was a statin discussed at the visit"): what the notes say about that medicine
+    frames = frames or frames_of(main_clause(ask))  # "After <dated event clause>, do later notes show X?": the frame is what the main clause asks, not the clause that dates it
     if not frames and context:
         # the asking sentence is only a pointer back ("What is it?", "Which ones?"): the sentence that names the finding is the question
         named = next((x for x in sentences(context) if frames_of(x)), None)
@@ -317,6 +454,9 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
         frames = [label] if label else []
     if not frames:
         return []
+    window = _refine_window(window, ask, context, question, frames, as_of)
+    if prior_predicates and BACKREF.search(ask) and not window:
+        window = _prior_window(prior_predicates)  # "and her PHQ-9 that day?", "did they bump the dose at that visit?": the earlier question's note window
     preds = []
     for frame in frames[:2]:
         oc = None if (drug and frame != 'social_need') else NO.open_class(frame, ask)
@@ -345,10 +485,16 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
         if oc:
             pred['concept'] = {'term': term, 'codes': [], 'quote': quote, 'open': True, 'class': oc[0]}
             pred['statuses'] = ['documented', 'historical']
+        if frame in ('medication_event', 'plan_followup', 'care_process') and re.search(r"\b(?:recommend\w*|suggest\w*|advis\w+|propos\w+|plan(?:ned)?)\b", ask, re.I):
+            pred['statuses'] = list(dict.fromkeys([*pred['statuses'], 'planned_not_done']))  # what a letter or plan RECOMMENDS is not shown as done
         if cues['sources']:
             pred['sources'] = list(cues['sources'])
         if cues['note_types']:
             pred['note_types'] = list(cues['note_types'])
+        elif prior_predicates and BACKREF.search(ask):
+            inherited = [t for pp in prior_predicates for t in (pp.get('note_types') or [])]
+            if inherited:
+                pred['note_types'] = list(dict.fromkeys(inherited))
         if response_asked and not preds:
             pred['_response'] = True  # the later part of the question: what was documented as done about the finding
             if frame == 'social_need':
@@ -369,7 +515,7 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             pred['window'] = {'start': window['start'], 'end': window['end'], 'quote': window.get('phrase') or ''}
         preds.append(pred)
     # a question that asks HOW MANY is answered by one count over its first frame (a second frame would be a second answer)
-    if preds and CI.HOW_MANY.search(ask):
+    if preds and CI.HOW_MANY.search(ask) and not DAYS_OF.search(ask):
         preds = preds[:1]
         preds[0]['_count'] = True
         # Reported counts belong to the dated note, even when its events are
@@ -394,6 +540,42 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             for p in preds:
                 p['_anchor'] = anchor
     return preds[:2]
+
+
+def _refine_window(window, ask, context, question, frames, as_of):
+    """Windows the generic wording gives that window_for leaves open: a date after "on / at / during" is the day of the encounter a lookup asks about
+    (not for a medication event, where "stopped on DATE" dates the event, not a note); "after the colectomy in June 2028" reads from that month on."""
+    q = f'{context} {ask}'.strip()
+    m = AFTER_EVENT_IN_MONTH.search(q)
+    mm = MONTH_YEAR.search(q) if m else None
+    if mm and window and window.get('kind') == 'month':
+        return {**window, 'kind': 'after_month', 'end': str(as_of)[:10], 'phrase': f'from {mm.group()}'}
+    if window is None and frames and frames[0] != 'medication_event' and not LATER.search(ask):
+        dates = note_dates(q)
+        if len(dates) == 1 and ON_DATE.search(q):
+            return {'kind': 'day', 'start': dates[0], 'end': dates[0], 'start_exclusive': False, 'phrase': dates[0]}
+    return window
+
+
+def _prior_window(prior_predicates):
+    for p in prior_predicates or []:
+        w = p.get('window')
+        if w and w.get('start'):
+            return {'kind': 'prior', 'start': w['start'], 'end': w.get('end') or w['start'], 'start_exclusive': False, 'phrase': w.get('quote') or w['start']}
+    return None
+
+
+def back_references(question, prior_note):
+    """Does a follow-up point back at the previous note question's encounter ("that visit", "that day", "the same call")?"""
+    return bool(prior_note) and bool(BACKREF.search(question or ''))
+
+
+DANGLING = re.compile(r"\b(?:at|on|during|for|from|in)\s+that\s+(?:visit|appointment|encounter|day|admission|stay|call)\b|\bthat\s+(?:day|visit)\?*\s*$", re.I)
+
+
+def dangling_reference(question):
+    """Wording that points at an encounter an earlier question must have named ("at that visit", "that day")."""
+    return bool(DANGLING.search(question or ''))
 
 
 def is_elliptical(question):
