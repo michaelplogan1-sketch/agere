@@ -39,8 +39,31 @@ class RequestSizeLimitError(ValueError):
         super().__init__(f'Model request exceeds its {max_bytes}-byte bound ({request_bytes} bytes)')
 
 
+def _revalidate_saved(key, expected, ledger_model, out, parse, reason):
+    raw = json.loads((out/(key+'.json')).read_text())['response']
+    if expected and raw.get('model') != expected: raise ValueError('Unexpected saved model revision')
+    result = parse(raw)
+    receipt = {'cache_hit': True, 'request_hash': key, 'offline_revalidation': reason,
+               'prior_failed_reservation_preserved': True, 'new_paid_api_calls': 0,
+               'model': raw.get('model'), 'usage': raw.get('usage'),
+               'cost_estimate': usage_cost(raw.get('model') if expected else ledger_model, raw.get('usage'))}
+    (out/(key+'-revalidated.json')).write_text(json.dumps(receipt, indent=2))
+    return result, receipt
+
+
 def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=False,
          revalidation_reason='bounded_probability_rounding/2', timeout=600, transport=None, max_bytes=None, variant=None):
+    # An explicitly requested offline recovery addresses the original request,
+    # including its historical model revision. Current dispatch policy must not
+    # turn that cache lookup into a different paid request.
+    if allow_failed_response_revalidation:
+        original_key = digest({'contract':'context-student/1','provider':provider,'body':body,
+                               **({'variant':variant} if variant is not None else {})})
+        original = ledger.db.execute('SELECT status FROM calls WHERE id=?', (original_key,)).fetchone()
+        if original and original[0] == 'failed' and (out/(original_key+'.json')).exists():
+            expected_original = body.get('model')
+            return _revalidate_saved(original_key, expected_original, expected_original or 'preset:'+str(body.get('preset')),
+                                     out, parse, revalidation_reason)
     # max_bytes: a caller with a larger, deliberately bounded request (the semantic analyst's ~141K-character documented
     # semantic model plus its tool loop) raises the default REQUEST_MAX_BYTES bound explicitly.
     # Preset-routed providers (Perplexity Agent API) choose the model server-side: the ledger
@@ -58,14 +81,7 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     if old and old[0]=='validated':return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}
     saved=out/(key+'.json')
     if old and old[0]=='failed' and allow_failed_response_revalidation and saved.exists():
-        raw=json.loads(saved.read_text())['response']
-        if expected and raw.get('model')!=expected:raise ValueError('Unexpected saved model revision')
-        result=parse(raw)
-        receipt={'cache_hit':True,'request_hash':key,'offline_revalidation':revalidation_reason,
-                 'prior_failed_reservation_preserved':True,'new_paid_api_calls':0,'usage':raw.get('usage'),
-                 'cost_estimate':usage_cost(raw.get('model') if expected else ledger_model,raw.get('usage'))}
-        (out/(key+'-revalidated.json')).write_text(json.dumps(receipt,indent=2))
-        return result,receipt
+        return _revalidate_saved(key, expected, ledger_model, out, parse, revalidation_reason)
     if old and old[0]=='failed' and not saved.exists():
         # Transport failure (timeout, 5xx) with no response: nothing deterministic was learned,
         # so a new explicit attempt is allowed. Failed parses keep their saved response and stay blocked.

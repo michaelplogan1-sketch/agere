@@ -89,7 +89,8 @@ def synthesize(path, context_id, ledger, *, allow_live=False):
         if old and old[0] != 'validated': raise ValueError('Prior synthesis pending/failed; no silent paid retry')
         return bool(old)
     recon_cap = 0 if len(packets) == 1 else min(8, len(passes.source_components(row, links)))
-    if ledger.receipt()['remaining_reservation_usd'] < .5*(sum(not available(b) for b, _ in packets)+recon_cap):
+    remaining_usd = ledger.receipt()['remaining_reservation_usd']
+    if remaining_usd is not None and remaining_usd < .5*(sum(not available(b) for b, _ in packets)+recon_cap):
         raise ValueError('Shared authorization cannot cover complete record scope; no calls made')
     row_hash = digest(row); out = target.parent/'provider'; out.mkdir(parents=True, exist_ok=True)
     saved_progress = {'schema': VERSION, 'id': key, 'context_id': context_id, 'status': 'pending', 'passes': [],
@@ -116,7 +117,8 @@ def synthesize(path, context_id, ledger, *, allow_live=False):
                 'result': passes._rename(result, 'p'+str(packet['pass_number'])+'_'), 'usage': usage, 'token_check': tokens, 'request_bytes': passes.request_bytes(body)})
             passes.atomic_write(progress_path, saved_progress)
         jobs = passes.reconciliation_jobs(row, saved_progress['passes'], links) if len(packets)>1 else []
-        if ledger.receipt()['remaining_reservation_usd'] < .5*sum(not available(j['body']) for j in jobs):
+        remaining_usd = ledger.receipt()['remaining_reservation_usd']
+        if remaining_usd is not None and remaining_usd < .5*sum(not available(j['body']) for j in jobs):
             raise ValueError('Shared authorization cannot cover remaining reconciliation; progress retained')
         for i, job in enumerate(jobs, 1):
             body = job['body']; result, usage, tokens = call(body, lambda raw: passes.parse_reconciliation(raw, body, job['units'], job['row'], job['excerpts']))
