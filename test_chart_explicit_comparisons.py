@@ -72,3 +72,13 @@ class ExplicitComparisons(unittest.TestCase):
         with self.assertRaises(ValueError): CR.validate_chart(chart)
         chart['comparisons'][0]['value'] = float('nan')
         with self.assertRaises(ValueError): CR.validate_chart(chart)
+
+    def test_latest_comparison_does_not_answer_historical_or_universal_questions(self):
+        from clinical_core.agere.clinical import chart_intents as intents
+        for question in ('Has A1c ever been above 7?', 'Was the previous A1c below 7?', 'Is BP always below 140/90?'):
+            parsed = intents.parse(question, charts.AS_OF)
+            self.assertNotEqual(parsed['intent'], 'compare_values', question)
+            self.assertIn('comparison_scope', parsed['gaps'])
+        prior = {'intent': 'latest_value', 'domain': 'lab', 'concept': {'kind': 'lab', 'value': 'hba1c', 'concepts': ['hba1c']},
+                 'mode': 'latest', 'ordinal': 2}
+        self.assertIn('comparison_scope', intents.parse('is that below 7?', charts.AS_OF, prior=prior)['gaps'])

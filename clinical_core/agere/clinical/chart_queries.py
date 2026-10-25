@@ -232,6 +232,8 @@ def _extreme(question):
 
 def measurement_comparison(ch, it):
     """Evaluate explicit bounds against sourced latest results, preserving unknowns."""
+    if it.get('mode', 'latest') != 'latest' or it.get('ordinal'):
+        return no_data('A latest-value comparison cannot substitute for the requested historical reading')
     import operator
     compare = {'<': operator.lt, '<=': operator.le, '>': operator.gt, '>=': operator.ge}
     readings, sources = [], []

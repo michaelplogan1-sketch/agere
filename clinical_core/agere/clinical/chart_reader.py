@@ -212,6 +212,8 @@ def validate_chart(chart):
         raise ValueError(f'chart.domain must be one of {list(CI.DOMAINS)} or {NOTE_DOMAIN!r}')
     if chart.get('intent') == 'compare_values':
         import math
+        if chart.get('mode', 'latest') != 'latest' or chart.get('ordinal'):
+            raise ValueError('This comparison reader executes latest values only')
         concept = chart.get('concept') or {}
         if not isinstance(concept, dict):
             raise ValueError('Measurement comparisons require typed concepts')
