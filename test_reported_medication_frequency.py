@@ -65,5 +65,6 @@ class ReportedFrequency(unittest.TestCase):
 
     def test_request_carries_recall_period_without_guessing(self):
         self.assertEqual(C.reported_frequency_request('How many of the last 14 days did she say she used it?'), WANT)
+        self.assertEqual(C.reported_frequency_request('How many of the last fourteen days did she use it?'), WANT)
         self.assertEqual(C.reported_frequency_request('How many of the previous 7 doses?'), {'period': 7, 'unit': 'dose'})
         self.assertIsNone(C.reported_frequency_request('How many days did she use it?'))

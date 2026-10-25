@@ -520,7 +520,7 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
     if frequency and len(preds) == 1 and preds[0]['frame'] == 'medication_event' and re.search(r'\b(?:use|used|using|take|takes|taking|taken)\b', ask, re.I):
         preds[0]['_reported_frequency'] = frequency
     # a question that asks HOW MANY is answered by one count over its first frame (a second frame would be a second answer)
-    if preds and CI.HOW_MANY.search(ask) and not DAYS_OF.search(ask):
+    if preds and CI.HOW_MANY.search(ask) and not frequency and not DAYS_OF.search(ask):
         preds = preds[:1]
         preds[0]['_count'] = True
         # Reported counts belong to the dated note, even when its events are
@@ -727,7 +727,9 @@ def _whole(x):
 
 
 def reported_frequency_request(question):
-    match = re.search(r"\bhow many\s+(?:of\s+)?(?:the\s+)?(?:(?:last|past|previous)\s+)?(\d+)\s+(days?|weeks?|doses?)\b", question or '', re.I)
+    from .local_normalizer import NUMBER_WORDS
+    normalized = re.sub(r'\b[a-z]+\b', lambda m: NUMBER_WORDS.get(m.group(), m.group()), (question or '').lower())
+    match = re.search(r"\bhow many\s+(?:of\s+)?(?:the\s+)?(?:(?:last|past|previous)\s+)?(\d+)\s+(days?|weeks?|doses?)\b", normalized, re.I)
     return {'period': int(match[1]), 'unit': match[2].lower().rstrip('s')} if match and int(match[1]) > 0 else None
 
 
