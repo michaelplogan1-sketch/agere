@@ -128,17 +128,21 @@ class Tools:
     def ask_agere(self, question):
         """One sub-question through the free governed stages only (proposers.FREE_ONLY: certified reuse, System One choosers, the
         deterministic planners; no Claude, so no recursion into this agent) under its own decision context."""
+        import contextvars
         from . import shared_planner, decision_context
         from .proposers import FREE_ONLY
-        token = FREE_ONLY.set(True)
-        try:
+
+        def run():
+            FREE_ONLY.set(True)
             with decision_context.scope(question, self.as_of) as state:
-                result = shared_planner._compose(self.stack, question)
-                result = decision_context.finalize(self.stack.path, result, state)
+                out = shared_planner._compose(self.stack, question)
+                return decision_context.finalize(self.stack.path, out, state)
+        try:
+            # its own context: the sub-question's cascade starts its own answer budget, tier deadlines and decision scope, and none of
+            # them may leak into this question's (a leaked 8 s budget read as "answer budget used up" for the rest of the backstop)
+            result = contextvars.copy_context().run(run)
         except Exception as exc:  # noqa: BLE001 - not understood / not executable: tell the model, it falls back to query_sql
             return {'question': question, 'answered': False, 'reason': f'{type(exc).__name__}: {str(exc)[:300]}'}
-        finally:
-            FREE_ONLY.reset(token)
         a = (result or {}).get('answer') or {}
         if a.get('status') not in ('answered', 'partial'):
             return {'question': question, 'answered': False, 'reason': str(a.get('headline') or a.get('status') or 'no answer')[:300]}

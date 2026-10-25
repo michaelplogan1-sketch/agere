@@ -395,6 +395,8 @@ class Cascade:
         """This tier's time in seconds: its share cap (a fraction of max(budget, 120 s)) bounded by what the budget has left;
         None when the budget is unlimited."""
         if budget.seconds == float('inf'): return None
+        if name == 'backstop_agent':  # the final layer gets its own time, not a share of what the earlier layers left
+            return max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90')))
         from .answer_budget import SHARE_BASE_SECONDS
         cap = max(budget.seconds, SHARE_BASE_SECONDS) * TIER_SHARE['heavy' if name in HEAVY or name in PAID else 'other']
         return max(0.5, min(cap, budget.remaining()))
@@ -533,16 +535,17 @@ class Cascade:
                         if self.runnable(later) and not (self.claude_down and later in CLAUDE_TIERS): self.defer(later, 'answer budget used up')
                     break
                 est = self.expected(name)
-                if not budget.allows(est):
+                if not budget.allows(est) and name != 'backstop_agent':
                     self.defer(name, f'{budget.remaining():.0f}s left', est); continue
                 found = self.attempt(name, self.tier_seconds(name, budget))
                 if found is None: continue
                 return self.accept(order, name, found)
             if free_only:
                 raise QuestionNotUnderstood('The rewording was not read by the free stages; the question as typed is tried next.')
-            found = self.reserved_analyst(order)  # the analyst never got its turn inside the budget: it gets a reserved slot of its own
-            if found is not None: return found
+            # reserved slots, strongest first (dev3 build-half insight: backstop 7/17, Haiku analyst 3/17)
             found = self.reserved_backstop(order)  # the final backstop always gets its turn before the question is declined
+            if found is not None: return found
+            found = self.reserved_analyst(order)  # the analyst never got its turn inside the budget: it gets a reserved slot of its own
             if found is not None: return found
             found = self.escalate(order, budget)  # every Haiku attempt failed: the Sonnet rung, tier by tier
             if found is not None: return found

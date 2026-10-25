@@ -36,7 +36,7 @@ FAMILY = {
     'legacy_cost_ladder': 'legacy',
 }
 SELF_CERTAIN = {'exact_local_plan', 'undelivered_input'}  # exact authored match / deterministic decline: nothing to verify
-NEVER_VERIFY_WITH = {'undelivered_input', 'legacy_cost_ladder'}
+NEVER_VERIFY_WITH = {'undelivered_input', 'legacy_cost_ladder', 'backstop_agent'}  # the backstop is the final answerer, not a second opinion
 COST_RANK = {'free': 0, 'system_one': 1, 'claude': 2}
 
 

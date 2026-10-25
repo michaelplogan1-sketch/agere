@@ -95,6 +95,23 @@ class EmptyReply(unittest.TestCase):
         self.assertEqual(response['content'][0]['text'], '{"status": "answered"}')
 
 
+class SubQuestionIsolation(unittest.TestCase):
+    def test_a_sub_question_does_not_replace_this_questions_budget(self):
+        from clinical_core.agere.clinical import answer_budget, shared_planner, decision_context, proposers
+        outer = answer_budget.start(120)
+        def fake_compose(stack, q, **kw):
+            self.assertTrue(proposers.FREE_ONLY.get())
+            answer_budget.start(8)  # what a nested cascade does
+            return {'answer': {'status': 'answered', 'headline': '578', 'value': 578}}
+        t = B.Tools.__new__(B.Tools)
+        t.stack, t.as_of, t.governed = SimpleNamespace(path='x'), '2030-05-27', []
+        with patch.object(shared_planner, '_compose', fake_compose), patch.object(decision_context, 'finalize', lambda p, r, s: r):
+            got = t.ask_agere('How many inpatient admissions were there in 2028?')
+        self.assertEqual(got['value'], 578)
+        self.assertIs(answer_budget.current(), outer)
+        self.assertFalse(proposers.FREE_ONLY.get())
+
+
 class Cascade(unittest.TestCase):
     def cascade(self):
         c = P.Cascade.__new__(P.Cascade)
