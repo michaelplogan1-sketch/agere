@@ -147,7 +147,7 @@ ORDINAL_FIRST = re.compile(r'\b(?:first|earliest|oldest|initial) (?:ever |record
 EVER = re.compile(r'\b(?:ever|at any time|at any point|in total|all time|on record|in the (?:chart|record)|any time)\b', re.I)
 NEVER_FILLED = re.compile(r'\b(?:never (?:been )?filled|not (?:been )?filled|unfilled|never (?:picked up|collected)|not picked up|abandoned)\b', re.I)
 NOTE_CUES = re.compile(r"\b(?:notes?|note says|documented in|document\w*|mention\w*|chart say|says?|discussed|discussion|conversation|talk|goals[- ]of[- ]care|"
-                       r"code status|dnr|dni|(?:resuscitat\w*|\bcpr\b)|chest compressions|breathing tube|intubat\w*|advance directive|polst|living will|why was|"
+                       r"code status|dnr|dni|resuscitat\w*|chest compressions|breathing tube|intubat\w*|advance directive|polst|living will|why was|"
                        r"reason (?:for|\w+ was)|accept(?:ed)?|declin\w*|refus\w*|report(?:s|ed)? taking|discharge summary|impression|"
                        r"radiology|x-?ray report|ruled out|rule[- ]out|stress test|wellness visit|noted|recorded in the notes|trouble|barriers?|"
                        r"intoleran\w*|goals of care|memory concern|raised|later notes|anywhere in)\b", re.I)
