@@ -147,5 +147,28 @@ Mike is away all day. Do not ask him anything. Finish today. Decide from evidenc
 | **overall** | 29/71 = 40.8 % | **39/71 = 54.9 %** | 32.4 % (45 % on its completed) |
 
 - Backstop v1: $0.067 per question API-equivalent; p50 95 s, p90 153 s.
-- v1 still had the budget-leak bug, so on insight the backstop was mostly "declined" or used as a verifier. v2 (the fixes above) is being
-  measured now; the result is below.
+- v1 still had the budget-leak bug, so on insight the backstop was mostly "declined" or used as a verifier.
+
+**v2 and v3 (same check half):**
+
+| | v1 | v2 (budget isolation, own time, not a verifier) | v3 (always before the generalists, supporting passage) |
+|---|---|---|---|
+| single patient, structured | 15/16 | 14/16 | 14/16 |
+| notes | 4/12 | 3/12 | 3/12 |
+| population quality | 8/12 | 9/12 | **10/12** |
+| claims / pharmacy / SDOH | 10/18 | 10/18 | **11/18** |
+| insight | 2/13 | 2/13 | **4/13** |
+| **overall** | 54.9 % | 53.5 % | **59.2 % (42/71)** |
+| $ / question (API-equivalent) | 0.067 | 0.035 | 0.042 |
+| p50 / p90 | 95 / 153 s | 42 / 108 s | **29 / 91 s** |
+
+- In v2 the learned routers (cascade_router, tier_router, router_order were trained before the backstop existed) still put the Haiku
+  analyst first on insight. `proposers.backstop_before_generalists` now fixes the order after every reorderer. In v3 the backstop
+  answers 8 of the 13 insight questions.
+- **What is left (classes, from the check half; diagnosis only, no tuning):**
+  - Notes, 9 misses. Earlier layers accept a wrong or unquoted note answer before the backstop runs: System One evidence_retrieval and
+    atomic_system_one (4), spec_path (2), chart_reader without a quote (1). The next lever is to let the backstop answer notes questions
+    whenever the earlier answer has no verified quote. That is the same "heal, not block" move as the analyst acceptance.
+  - Insight, 9 misses. The backstop gives 1–2 of the required facts, or picks a defensible but non-governed definition when ask_agere
+    cannot read the sub-question. The lever is ask_agere coverage: the sub-questions it declines are the engine gaps worth filling.
+  - Definition ambiguities in the keys (pharmacy spend: claim events vs counted fills) are left as they are; not tuned.

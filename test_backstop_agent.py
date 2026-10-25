@@ -159,6 +159,22 @@ class Cascade(unittest.TestCase):
         self.assertEqual(got, ('spec_path', 'backstop_agent', 'semantic_analyst', 'hosted_typed_interpreter', 'legacy_cost_ladder'))
         self.assertEqual(P.backstop_before_generalists(('backstop_agent', 'semantic_analyst')), ('backstop_agent', 'semantic_analyst'))
 
+    def test_an_unquoted_chart_answer_asks_the_backstop_and_a_quoted_one_replaces_it(self):
+        q = 'Why was losartan stopped for SYN-B2064C3E-566?'
+        bare = ({'executed': {'answer': {'status': 'answered', 'answer_type': 'note_answer', 'headline': 'Hyperkalemia.', 'sources': [{'record_id': 'N1'}]}}}, {})
+        quoted = ({'executed': {'answer': {'status': 'answered', 'answer_type': 'note_answer', 'headline': 'Hyperkalemia.',
+                                           'sources': [{'record_id': 'N1', 'quote': 'Stop losartan due to hyperkalemia'}]}}}, {})
+        self.assertTrue(P.unquoted_chart_answer(q, bare[0]))
+        self.assertFalse(P.unquoted_chart_answer(q, quoted[0]))
+        self.assertFalse(P.unquoted_chart_answer('How many patients have diabetes?', bare[0]))
+        c = self.cascade(); c.question = q; c.claude_down = None
+        with patch.object(P, 'claude_available', lambda: True), patch.object(P.Cascade, 'runnable', lambda self, n: True), \
+                patch.object(P.Cascade, 'attempt', lambda self, n, s: quoted):
+            self.assertEqual(c.quoted_or_backstop(['chart_reader', 'backstop_agent'], 'chart_reader', bare), (quoted, 'backstop_agent'))
+        with patch.object(P, 'claude_available', lambda: True), patch.object(P.Cascade, 'runnable', lambda self, n: True), \
+                patch.object(P.Cascade, 'attempt', lambda self, n, s: None):
+            self.assertEqual(c.quoted_or_backstop(['chart_reader', 'backstop_agent'], 'chart_reader', bare), (bare, 'chart_reader'))
+
     def test_off_switch(self):
         with patch.dict(os.environ, {'AGERE_BACKSTOP': 'off'}):
             self.assertIsNone(self.cascade().tier_backstop_agent())

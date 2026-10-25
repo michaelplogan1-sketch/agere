@@ -119,6 +119,19 @@ FREE_ONLY = _cv.ContextVar('agere_free_stages_only', default=False)
 FREE_STAGES = frozenset({'reuse_certified', 'system_one_choice', 'free_planners'})
 
 
+def unquoted_chart_answer(question, contract):
+    """Does this executed answer to a one-patient question (a patient id in it) cite no quoted passage while it is a note / document answer
+    (note_answer, yes_no, or note sources)?"""
+    if not requirement_ledger.PATIENT_ID.search(question or ''): return False
+    answer = ((contract or {}).get('executed') or {}).get('answer') or {}
+    if answer.get('status') not in ('answered', 'partial'): return False
+    sources = [s for s in answer.get('sources') or [] if isinstance(s, dict)]
+    chartish = answer.get('answer_type') in ('note_answer', 'yes_no') or answer.get('note_sources') or any(
+        str(s.get('table') or s.get('source') or '').endswith(('note', 'document', 'document_text')) for s in sources)
+    quoted = any(s.get('record_id') and str(s.get('quote') or '').strip() for s in sources)
+    return bool(chartish) and not quoted
+
+
 GENERALISTS = ('semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')
 
 
@@ -553,6 +566,7 @@ class Cascade:
                     self.defer(name, f'{budget.remaining():.0f}s left', est); continue
                 found = self.attempt(name, self.tier_seconds(name, budget))
                 if found is None: continue
+                found, name = self.quoted_or_backstop(order, name, found)
                 return self.accept(order, name, found)
             if free_only:
                 raise QuestionNotUnderstood('The rewording was not read by the free stages; the question as typed is tried next.')
@@ -593,6 +607,17 @@ class Cascade:
         finally:
             self.flush_timings()
             self.close()
+
+    def quoted_or_backstop(self, order, name, found):
+        """A one-patient chart answer that quotes no passage (dev3 check half: right answers scored wrong, wrong notes accepted early) asks
+        the backstop, which reads the documents and quotes them. Its answer replaces the first only when it carries a verified quote;
+        otherwise the first answer stands (heal, not block). -> (found, name)."""
+        if name == 'backstop_agent' or not isinstance(found, tuple) or not unquoted_chart_answer(self.question, found[0]): return found, name
+        if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
+        if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
+        second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
+        if isinstance(second, tuple) and not unquoted_chart_answer(self.question, second[0]): return second, 'backstop_agent'
+        return found, name
 
     def reserved_backstop(self, order):
         """The final LLM backstop runs once before any decline (AGERE_BACKSTOP_SECONDS, default 90; 0 turns this off), when the budget ran out
