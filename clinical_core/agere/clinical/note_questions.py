@@ -19,6 +19,7 @@ import os
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from datetime import date as _date
 from pathlib import Path
 
@@ -39,6 +40,17 @@ _CAL = {}
 
 
 # -- calibration file --------------------------------------------------------------------------------------------------
+def _map_context(pool, function, jobs):
+    """Each note read keeps its own caller context, including cost and audit ids.
+
+    A fresh Context per submitted job supports concurrent readers; sharing one
+    Context across workers would fail when two jobs enter it at the same time.
+    Preserve map's input order for deterministic evidence reduction.
+    """
+    futures = [pool.submit(copy_context().run, function, job) for job in jobs]
+    return [future.result() for future in futures]
+
+
 def calibration_path():
     return Path(os.environ.get('AGERE_NOTE_FRAMES_CALIBRATION') or ROOT / 'config/agere/note_frames_calibration.json')
 
@@ -548,7 +560,7 @@ def evaluate_open(db, predicate, patient_ids, *, as_of, ledger_path, workers, al
         results = [run(j) for j in jobs]
     else:
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            results = list(pool.map(run, jobs))
+            results = _map_context(pool, run, jobs)
     by, read_by_passage = {pid: [] for pid in patient_ids}, {}
     for pid, passage, rs in results:
         by[pid].extend(rs)
@@ -604,7 +616,7 @@ def evaluate(stack, predicate, patient_ids, *, as_of, ledger=None, workers=4, al
         results = [run(j) for j in jobs]
     else:
         with ThreadPoolExecutor(max_workers=workers) as pool:
-            results = list(pool.map(run, jobs))
+            results = _map_context(pool, run, jobs)
     by = {pid: [] for pid in patient_ids}
     for pid, r in results:
         by[pid].append(r)
