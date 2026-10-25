@@ -594,7 +594,8 @@ def _intent(domain, q, low, out, prior):
     if domain == 'claims' or domain == 'pharmacy_claim':
         if count:
             return 'count_in_window'
-        if HOW_MUCH.search(q) and not re.search(r'\b(?:list|which|each|every)\b', low):
+        explicit_list = bool(re.search(r'\b(?:list|which|each|every)\b', low) or (re.search(r'\bshow\b', low) and not re.search(r'\b(?:total|sum|how much|combined|overall)\b', low)))
+        if HOW_MUCH.search(q) and not explicit_list:
             return 'sum'
         if listish or re.search(r'\bshow|\blist\b', low):
             return 'list'
