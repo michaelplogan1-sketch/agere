@@ -70,7 +70,7 @@ FRAME_CUES = [  # (frame, pattern); evaluated on the asking sentence; every matc
     ('preference_refusal', r"\bwho (?:pushed|urged|encouraged|convinced|insisted|talked|made|told|prompted|asked|brought|drove)\b|\bpushed\b|\burged\b|\bencouraged\b|\binsisted\b|\bprompted\b"),
     ('social_need', r"smoking|tobacco|alcohol|drinks?\b|drinking|\betoh\b|substance|cannabis|marijuana"),
     ('finding_value', r"\bscore\b|\bvalue\b|\breading\b|\ba1c\b|\bhba1c\b|\bphq-?\d\b|\bgad-?\d\b|\bbmi\b|\bldl\b|\begfr\b|come back as|came back as|how (?:big|large|small|high|low)\b|what size|\bsize of\b|\bin (?:mm|cm)\b|\bnodule\b"),
-    ('condition', r"ruled out|rule[- ]out|diagnos\w+|history of|syndrome"),
+    ('condition', r"ruled out|rule[- ]out|\bexcluded\b|diagnos\w+|history of|syndrome"),
     ('symptom', r"symptom|complain\w*|reports? (?:pain|dyspnea|nausea)|\bpain\b"),
 ]
 CONCEPT_PHRASES = [  # (cue pattern, canonical concept term, frames it applies to; () = any); not a drug
@@ -83,7 +83,7 @@ CONCEPT_PHRASES = [  # (cue pattern, canonical concept term, frames it applies t
     (r"trouble getting to appointments|transport\w*|getting to appointments", 'transportation', ('social_need',)),
     (r"\bfalls?\b|\bfell\b", 'falls', ('function_cognition', 'adverse_event')), (r"memory (?:concern|problem|loss)|cognit\w*", 'memory concern', ('function_cognition',)),
     (r"smok\w*|tobacco|cigarette", 'smoking', ('social_need', 'finding_value', 'condition')), (r"drug intolerance|intoleran\w+", 'intolerance', ('adverse_event',)),
-    (r"chest x-?ray", 'chest x-ray', ('procedure_test',)), (r"stress test", 'stress test', ('procedure_test',)),
+    (r"chest x-?ray|\bcxr\b", 'chest x-ray', ('procedure_test',)), (r"stress test", 'stress test', ('procedure_test',)),
     (r"acute coronary syndrome|\bacs\b", 'acute coronary syndrome', ('condition',)),
     (r"new disease-directed medications?|disease-directed", 'started', ('medication_event',)),
     (r"discharge summary|follow[- ]?up", 'follow up', ('plan_followup',)),
@@ -466,7 +466,7 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             term, quote = concept_for(frame, ask, context, drug)
         if not term:
             continue
-        statuses = ['denied'] if frame == 'condition' and re.search(r'\bruled out\b|\bnot present\b|\bdenies\b', ask, re.I) else ['documented']
+        statuses = ['denied'] if frame == 'condition' and re.search(r'\bruled out\b|\bexcluded\b|\bnot present\b|\bdenies\b', ask, re.I) else ['documented']
         if term in ('smoking', 'code status') or re.search(r'\bis (?:a |an )?[a-z ]{0,30}(?:documented|recorded|mentioned)\b', ask, re.I):
             statuses = ['documented', 'denied'] + (['historical'] if term == 'smoking' else [])  # "is X documented anywhere": any statement about it counts
         detail = {}
@@ -476,7 +476,9 @@ def build(question, as_of, *, lexicon=None, prior_predicates=None, choose=None):
             elif re.search(r'\bstarted\b|\bbeing started\b|\bstarting\b|\bnew\b', ask, re.I):
                 detail['event'] = 'started'
         if frame == 'preference_refusal':
-            if re.search(r'\baccept\w*', ask, re.I) and not re.search(r'\bdeclin\w*|\brefus\w*', ask, re.I):
+            if re.search(r'\b(?:not\s+(?:agree|accept)\w*|disagree\w*)\b', ask, re.I):
+                return []  # not accepting need not mean declining; leave this negated proposition to the broader reader
+            elif re.search(r'\b(?:accept|agree)\w*', ask, re.I) and not re.search(r'\bdeclin\w*|\brefus\w*', ask, re.I):
                 detail['decision'] = 'accepted'
             elif re.search(r'\bdeclin\w*|\brefus\w*', ask, re.I) and not re.search(r'\baccept\w*', ask, re.I):
                 detail['decision'] = 'declined'
