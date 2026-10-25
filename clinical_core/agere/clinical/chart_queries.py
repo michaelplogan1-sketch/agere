@@ -491,6 +491,14 @@ def utilization(ch, it):
         r = rows[0]
         attr = it.get('attribute')
         if attr == 'discharge_date':
+            latest = [candidate for candidate in rows if candidate['event_date'] == r['event_date']]
+            dates = {candidate['end_date'] for candidate in latest}
+            if not discharge_order and len(dates) > 1:
+                possibilities = ', '.join(sorted(day or 'not recorded' for day in dates))
+                return no_data(f"Multiple admissions for {ch.pid} share the latest admission date {r['event_date']} but have different discharge dates: {possibilities}. No single discharge date is established.",
+                               table=[{'admit_date': candidate['event_date'], 'discharge_date': candidate['end_date'],
+                                       'record_id': candidate['record_id'], 'sources': candidate['sources']} for candidate in latest],
+                               sources=sources[:len(latest)], facts={'ambiguous_latest_admission': True}, notes=notes)
             if r['end_date']:
                 headline = (f"Latest recorded hospital discharge for {ch.pid}: {r['end_date']} (admitted {r['event_date']})" if discharge_order else
                             f"The most recent {label} for {ch.pid} (admitted {r['event_date']}) was discharged {r['end_date']}")
