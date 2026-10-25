@@ -539,7 +539,7 @@ class SpendConcentration:
 @family
 class YoyTrend:
     NAME = 'yoy_trend'
-    WORDS = set('''did do does are is were was go up or down from to and which drugs moved it most trending hospital pharmacy visits'''.split())
+    WORDS = set('''did do does are is were was go up or down from to and which drugs moved it most trending hospital pharmacy visits why compared with versus vs'''.split())
     METRICS = [(r'hospital\s+admissions|admissions|inpatient\s+stays', 'admissions'), (r'ed\s+visits|emergency\s+(?:department\s+)?visits', 'ed'),
                (r'pharmacy\s+spend|drug\s+spend|rx\s+spend', 'pharmacy'), (r'medical\s+spend|claims\s+spend|medical\s+claims\s+spend', 'medical')]
 
@@ -549,10 +549,16 @@ class YoyTrend:
         metric = next(((span(t, p), m) for p, m in cls.METRICS if span(t, p)), None)
         yrs = years_in(t)
         direction = span(t, r'up\s+or\s+down|trending|going\s+up|go\s+up|increas\w+|decreas\w+')
-        if not metric or len(yrs) < 2 or not direction: return None
+        # "why did hospital admissions jump in 2029 compared with 2028": a stated move (jump, rise, fall, drop, spike, grow, decline) between two years; the answer
+        # says whether the stated direction is what the numbers show
+        moved = None if direction else span(t, r'jump\w*|ris(?:e|es|en|ing)|rose|spik\w+|surg\w+|grow\w*|grew|climb\w*|fall\w*|fell|drop\w*|declin\w+|dip\w*|decreas\w+|increas\w+')
+        if moved and not (re.match(r'^(?:why|what)\b', t, re.I) and span(t, r'compared\s+(?:with|to)|versus|vs\.?|from\s+20\d\d\s+to')): moved = None
+        if not metric or len(yrs) < 2 or not (direction or moved): return None
         movers = span(t, r'which\s+drugs?\s+moved\s+it\s+most')
-        return {'params': {'metric': metric[1], 'y0': yrs[0], 'y1': yrs[1], 'movers': bool(movers), 'ranking': 'largest change first'},
-                'quotes': [metric[0], direction, str(yrs[0]), str(yrs[1]), movers or '', span(t, r'trending') or '']}
+        ordered = sorted(yrs[:2])
+        asserted = None if direction else ('up' if re.match(r'jump|ris|rose|spik|surg|grow|grew|climb|increas', moved, re.I) else 'down')
+        return {'params': {'metric': metric[1], 'y0': ordered[0], 'y1': ordered[1], 'movers': bool(movers), 'ranking': 'largest change first', **({'asserted': asserted} if asserted else {})},
+                'quotes': [metric[0], direction or moved, str(yrs[0]), str(yrs[1]), movers or '', span(t, r'trending') or '', span(t, r'compared\s+(?:with|to)|versus|vs\.?') or '', span(t, r'^why\s+did') or '']}
 
     @classmethod
     def run(cls, ctx, params):
@@ -586,6 +592,10 @@ class YoyTrend:
         facts.append(fact('direction', f"{cap(noun)} went {word} from {y0} to {y1}: {'+' if d > 0 else ''}{f(d) if not money else ('-' if d < 0 else '') + usd(abs(d))}"
                                        + (f" ({'+' if d > 0 else ''}{pc * 100:.1f}%)." if pc is not None else '.'), value=word, change=d, change_percent=round(pc * 100, 1) if pc is not None else None))
         table = [{'year': y0, noun: vals[y0]}, {'year': y1, noun: vals[y1]}]
+        asserted = params.get('asserted')
+        if asserted and ((asserted == 'up' and d <= 0) or (asserted == 'down' and d >= 0)):
+            facts.append(fact('premise', f"The question assumes {noun} went {asserted}; they did not: {noun} went {word} from {y0} to {y1}"
+                                         + (f" ({'+' if d > 0 else ''}{pc * 100:.1f}%)." if pc is not None else '.'), value=False))
         if metric == 'pharmacy' and params['movers']:
             rows = ctx.rows(
                 f"SELECT drug_name, SUM(CASE WHEN substr(fill_date, 1, 4) = {q(str(y1))} THEN COALESCE(plan_paid_cents, 0) ELSE 0 END) / 100.0 AS spend_{y1}, "
@@ -1036,3 +1046,7 @@ class CohortSpend:
         return dict(headline=f"{len(ids):,} patients account for {pct(part / total)}% of {y} medical paid spend", facts=facts, value=pct(part / total), answer_type='value',
                     table=[{'patients': len(ids), 'paid_dollars': round(part / 100, 2), 'total_paid_dollars': round(total / 100, 2), 'share_percent': pct(part / total)}],
                     read_back=f'Share of total {y} counted medical paid spend that comes from the saved patients of the previous answer.', notes=notes)
+
+
+# analyst-style shapes (analyst_insights.py) register after the families above, so every existing form keeps first refusal on its own wording
+from . import analyst_insights  # noqa: E402,F401

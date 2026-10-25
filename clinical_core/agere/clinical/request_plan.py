@@ -97,6 +97,21 @@ def quote_text(value):
     return ' '.join(value) if isinstance(value, list) else value
 
 
+def lab_presence_in_period(where):
+    """True for a lab leaf that asks whether a result EXISTS in a stated period: it bounds measurement.event_date and puts no threshold on the value."""
+    atoms = []
+
+    def walk(node):
+        if not isinstance(node, dict): return
+        if 'field' in node: atoms.append(node)
+        for child in (node.get('args') or []): walk(child)
+        if isinstance(node.get('arg'), dict): walk(node['arg'])
+    walk(where)
+    dated = any(a['field'] == 'measurement.event_date' and a.get('op') in ('>=', '>', '<', '<=', 'between') for a in atoms)
+    valued = any(a['field'] == 'measurement.value_canonical' and a.get('op') != 'not_null' for a in atoms)
+    return dated and not valued
+
+
 def without_request_scaffolding(text):
     """Ignore first-person request phrasing, preserving patient preferences."""
     return re.sub(r'\bI\s+(?:want|would\s+like)\s+you\s+to\s+', '', text, flags=re.I)
@@ -347,6 +362,11 @@ class Compiler:
             if table not in self.catalog.tables: raise PlanError(f'Unknown relation: {table}')
             self.serial += 1
             alias = 'r' + str(self.serial)
+            if table == 'measurement' and lab_presence_in_period(expr.get('where')):
+                # "had an eGFR in 2029": whether a result exists in a stated period, not a threshold on the patient's current value; the latest-result
+                # rule would turn it into "the LATEST result falls in 2029" (wrong for any period that has ended before the snapshot)
+                from .decision_context import LAB_RULE_READ
+                alias = LAB_RULE_READ
             # Same-patient EXISTS is safe across received domains. A named entity
             # key can instead bind a claim/encounter/record relationship.
             link = expr.get('link') or {'outer': self.base+'.patient_id', 'inner': table+'.patient_id'}
@@ -380,6 +400,10 @@ class Compiler:
             if type(value) is not int or not 1 <= value <= 240: raise PlanError('A trailing window needs 1..240 months')
             as_of = self.catalog.identity['as_of']
             return f"({field} > date({literal(as_of)}, {literal('-' + str(value) + ' months')}) AND {field} <= {literal(as_of)})"
+        if op in ('null_or_gte', 'null_or_gt'):
+            # "open-ended or ends on/after a date" (an enrollment span still running): the end date is missing or not before the stated date
+            if not isinstance(value, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}', value): raise PlanError('An open-ended comparison needs an ISO date')
+            return f'({field} IS NULL OR {field} {">=" if op == "null_or_gte" else ">"} {literal(value)})'
         if op not in ('=', '!=', '>', '>=', '<', '<=', 'like'): raise PlanError(f'Unknown predicate operator: {op}')
         if value is None: raise PlanError('Use explicit null predicates, not equality to null')
         # Independently check literal comparisons rather than trusting a model's
@@ -854,6 +878,14 @@ class Compiler:
             # A number in a governed measure's own identity (readmission_30d) is that measure's fixed window.
             if analysis.get('operation') == 'governed_metric':
                 rendered_numbers.update(re.findall(r'(?<!\w)\d+(?:\.\d+)?', str(analysis['parameters'].get('id', '')).replace('_', ' ')))
+                # A number the question restates from the measure's OWN definition (its age band, its follow-up window: "kidney health evaluation,
+                # diabetics 18 to 85") is carried by the definition the digest pins; a number the definition does not state stays uncompiled.
+                try:
+                    from .request_vocabulary import definitions as _definitions, definition_vocabulary as _vocabulary
+                    stated = {float(n) for n in _vocabulary(_definitions()[analysis['parameters']['id']])[1]}
+                    rendered_numbers.update(n for n in re.findall(r'(?<![\w.])\d+(?:\.\d+)?', quote_text(analysis['quote'])) if float(n) in stated)
+                except (KeyError, ValueError, TypeError):
+                    pass
             values = parameter_numbers(analysis['parameters'])
             for match in re.finditer(r'(?<![\w.])(\d+(?:\.\d+)?)\s*%', quote_text(analysis['quote'])):
                 if Decimal(match.group(1)) / 100 in values:
