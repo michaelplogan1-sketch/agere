@@ -2,7 +2,7 @@
   "schema": "agere-human-definition-decisions/1",
   "decided_on": "2026-10-25",
   "authority": "Mike; explicit answers in build-owner conversation",
-  "runtime_status": "Live verified: isolated6fb43d4 on8885; first three decisions retain existing rules.",
+  "runtime_status": "Live verified: isolatedce09ee3 on8885; first three decisions retain existing rules.",
   "historical_results": "Preserve published scores, historical keys and saved responses. These decisions do not retrospectively establish correctness.",
   "decisions": [
     {
@@ -32,7 +32,7 @@
         "all_received": 645,
         "eligible_insurer": 637
       },
-      "implementation_status": "Typed count policy live;48/48source cases and4/4normal interface checks pass. Full historical dev94/100 andparaphrases248/295; not95%clinical qualification."
+      "implementation_status": "Typed count policy retained in ce09ee3; normal645/637context checks pass. Historicaldev94/100,paraphrases251/295; not95%clinical qualification."
     }
   ]
 }

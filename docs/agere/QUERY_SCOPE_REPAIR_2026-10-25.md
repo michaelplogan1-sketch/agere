@@ -58,8 +58,14 @@ For medical claim counts, use eligible insurer claims in payer/VBC contract repo
 
 The machine-readable decision record is `config/agere/definition_decisions_2026-10-25.json`. The existing dirty definition overlay was preserved. No historical score/key was changed, no held-out question was opened, and no paid call was made for this recording step ($0). Current live release remains d73be19.
 
-## Current live release — claim context and wording
+## Preceding live release — claim context and wording
 
 Isolated6fb43d4 is now live on port8885 (PID65219/session73000); main1868129 is pushed. Claim counts implement the October25human decisions. The first three decisions retain their existing definitions; historical scores/keys remain unchanged. Full report: `docs/agere/CLAIM_CONTEXT_GENERALIZATION_2026-10-25.md`.
 
 92focused tests; candidate95/merged97modules with the same3baselinefailures and zero new;48/48source-count cases;94/100dev(unchanged);248/295serialfreeparaphrases(+5correct,0lost). An earlier parallel247/295run lost an admission-note passage answer; it remains retained, and note-answer timing is a limitation. Normal live4/4checks,0newcalls/$0. New spend$0; owner-known subtotal remains$16.621161705. No95%claim, paid retry, or held-out/CHECK rerun.
+
+## Current live release — saved scope and recorded code status
+
+ce09ee3 is live on8885 from `/private/tmp/agere-followup-wording` (PID77003/session18577), with6fb43d4rollback. It retains claim context, expands saved-list/group follow-ups, preserves empty/nonempty input scopes, and fixes the audited DNR/DNI documentation-versus-intervention answer. Full report: `docs/agere/SAVED_GROUP_WORDING_2026-10-25.md`.
+
+130focused checks;63candidate/merged modules with the same one baseline failure and zero new;94/100free dev unchanged;251/295free serial paraphrases (+3correct/0lost versus248;turn-start243). Normal7/7checks pass. Known new question-correlated SystemOne estimate$0.000496330, one failed helper without usage, zero own pending calls. No new Claude call.95/99correctness remains unmet; historical scores/keys and protected evaluations remain unchanged.
