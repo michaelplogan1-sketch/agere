@@ -9,3 +9,11 @@ Focused checks:27 pass. The open population-quality paraphrase trial improves fr
 The initial missing-context test accidentally supplied an invalid Boolean conversation ID. It now sends the supported request shape and specifically requires QuestionNotUnderstood before any compose call. Qualification must use this corrected test, not the earlier broad exception assertion.
 
 Full regression and frozen complete-bank qualification are pending. The current live release remains6fb43d4. No new provider calls were made; paid Haiku remains blocked by insufficient credits. No held-out/CHECK questions were accessed or rerun.
+
+## Recorded code status and the question actually asked
+
+The candidate also repairs an audited note-answer error: a documented DNR/DNI record was prefixed “Yes” to a question asking whether the patient wants CPR or intubation. It now states “No: Recorded code status: DNR/DNI (no CPR; no intubation)” with the original dated citation. Open wishes questions receive the translated recorded status without a Boolean prefix. Standalone CPR wording reaches the existing note frame.
+
+The projection uses received code-status enums, not the presence of documentation as agreement. DNR alone does not establish intubation preference; DNI alone does not establish CPR preference. Conflicting or unresolved recorded status remains unknown. A question about a discussion or mention retains its documentation meaning. Negated preference wording that lacks its own parsed proposition remains undecided. No clinical order or care execution is created.
+
+67focused checks pass, including three-valued combinations, partial orders, conflicts, documentation-versus-status intent, record preservation and the existing compound-note contract tests. Three open dev note wordings retain their historical score credits at$0; the first two now answer the intervention proposition instead of merely confirming that a status was documented. This does not establish representative clinical accuracy. Combined whole-bank and regression qualification are pending.
