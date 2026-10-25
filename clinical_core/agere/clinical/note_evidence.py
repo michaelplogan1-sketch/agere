@@ -67,6 +67,18 @@ SYNONYMS = {
     r'start|initiat|begin|new medication': [r'\bstart(?:ed|ing)?\b', r'\binitiat\w*', r'\bbegin\b', r'\bbegan\b', r'\bnew prescription'],
     r'stop|discontinu|held|hold': [r'\bstop(?:ped)?\b', r'\bdiscontinu\w*', r'\bheld\b', r'\bon hold\b', r'\bhold\b'],
     r'edema|swelling': [r'edema', r'swelling', r'swollen'],
+    # wording real analysts and clinicians use for the same things (a class named by its kind, a measure by its name, who prompted a visit)
+    r'inflammator|nsaid': [r'anti-?inflammator\w*', r'\bnsaids?\b', r'meloxicam', r'ibuprofen', r'naproxen', r'diclofenac', r'celecoxib', r'nabumetone',
+                           r'etodolac', r'indomethacin', r'ketorolac', r'\bmotrin\b', r'\baleve\b'],
+    r'^medications?$|^medicines?$': [r'\bstart(?:ed|ing)?\b', r'\brecommend\w*', r'\bprescri\w+', r'\b\d+(?:\.\d+)?\s?(?:mg|mcg|units?)\b', r'\bsuggest\w*'],
+    r'a1c|glycated|glycohemoglobin': [r'a1c', r'hemoglobin a1c', r'glycated h?emoglobin', r'\bhba'],
+    r'nodule|lesion|\bmass\b': [r'nodul\w*', r'lesion', r'\bmass\b', r'opacity'],
+    r'^urged$': [r'\bdaughter\b', r'\bson\b', r'\bwife\b', r'\bhusband\b', r'\bspouse\b', r'\bfamily\b', r'\bneighbou?r\b', r'\bfriend\b',
+                 r'thinks? (?:i|he|she|they) should', r'\burg\w+', r'\bpush\w*', r'\bencourag\w+', r'\binsist\w+', r'told (?:me|him|her|them) to',
+                 r'wanted (?:me|him|her|them) to'],
+    r'holter|ambulatory (?:rhythm|ecg|ekg)|event monitor': [r'holter', r'ambulatory (?:rhythm|ecg|ekg|monitor)', r'event monitor', r'telemetry'],
+    r'patholog': [r'patholog\w*', r'biops\w*', r'specimen', r'margins?\b', r'histolog\w*', r'carcinoma|adenoma|benign|malignan\w*'],
+    r'\bmri\b|magnetic resonance': [r'\bmri\b', r'magnetic resonance', r'impression'],
 }
 STOP = {'the', 'and', 'for', 'with', 'any', 'from', 'that', 'this', 'patient', 'patients', 'documented', 'documentation', 'history',
         'status', 'level', 'test', 'tests', 'use', 'using', 'taking', 'take'}
@@ -130,6 +142,16 @@ def concept_patterns(concept):
     return uniq
 
 
+_OCR_L = re.compile(r"(?<=[a-z])(?<!\ba)1(?=[a-z])|\b1(?=[a-z]{3,})", re.I)
+_OCR_O = re.compile(r"(?<=[a-z])0(?=[a-z])|\b0(?=[a-z]{3,})", re.I)
+
+
+def ocr_fold(text):
+    """The text with the digit-for-letter swaps of a scan undone ("me1oxicam" -> "meloxicam"), the SAME LENGTH, so a match found in it points at the
+    same characters of the verbatim text. Used only to MATCH a pattern; a passage is always quoted as written."""
+    return _OCR_O.sub('o', _OCR_L.sub('l', text or ''))
+
+
 _SENT = re.compile(r'[^.!?;\n]+(?:[.!?;]+|\n|$)')
 
 
@@ -141,15 +163,16 @@ def sentences(text):
 def passages_in(text, patterns, *, context=1, max_chars=MAX_CHARS):
     """Passages of one text matching any pattern: [{start, end, text, terms, hits}]. Overlapping context merges."""
     rx = [re.compile(p, re.I) for p in patterns]
-    if len(text.strip()) <= max_chars and any(r.search(text) for r in rx):  # a short document is its own passage
+    folded = ocr_fold(text)  # a scanned "me1oxicam" still matches "meloxicam"; the passage keeps the verbatim text
+    if len(text.strip()) <= max_chars and any(r.search(folded) for r in rx):  # a short document is its own passage
         body = text.strip()
         start = text.index(body)
-        return [{'start': start, 'end': start + len(body), 'text': body, 'terms': len({k for k, r in enumerate(rx) if r.search(text)}),
+        return [{'start': start, 'end': start + len(body), 'text': body, 'terms': len({k for k, r in enumerate(rx) if r.search(folded)}),
                  'hits': 1}]
     sents = sentences(text)
     hit_idx = []
     for i, (_, _, s) in enumerate(sents):
-        t = [k for k, r in enumerate(rx) if r.search(s)]
+        t = [k for k, r in enumerate(rx) if r.search(ocr_fold(s))]
         if t:
             hit_idx.append((i, t))
     spans = []
