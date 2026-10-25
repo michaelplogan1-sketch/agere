@@ -5,11 +5,11 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "2026-10-20T21:04:37.523810+00:00 Mike requested takeover from Claude and then explicitly said okay please continue.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Cut model cost: cache the static planner prompt prefix (question text was inside the cached block, so every call paid cache-write and read nothing), measure Opus vs Sonnet for development.",
-  "latest_delivery": "docs/agere/WORK_PROGRESS_LABELS_2026-10-20.md",
-  "latest_receipt": "artifacts/agere-work-progress-labels-v1/implementation-receipt.json",
-  "owned_server_pid": 99155,
-  "owned_server_session": 2376,
+  "active_work": "Independent-dev generalization and strict primary-answer validation after completed paid comparison; >95%/99% target unmet.",
+  "latest_delivery": "docs/agere/COMPARISON_RESULTS_2026-10-24.md",
+  "latest_receipt": "artifacts/agere-generalization-d4de3ef/implementation-receipt.json",
+  "owned_server_pid": 9782,
+  "owned_server_session": 32008,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -22,13 +22,13 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-21T15:29:01.130334+00:00",
+  "latest_checkpoint": "2026-10-25T00:47:38.443837+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "60aab29 assets active on :8885/ask; e10385b Python backend remains ready/synthetic. Full compound/qualification incomplete.",
+  "server_status": "3d3f6ff ready/synthetic on :8885 using original active warehouse; normal evaluation flags off; Haiku-first fallback active.",
   "unsealed_work": {
     "status": "inactive_candidate",
     "path": "artifacts/agere-citation-recovery-v1",
@@ -68,14 +68,14 @@
   "source_control": "git; codex/agere-validated-proof; commit only owned paths as Michael Logan <michael.p.logan1@gmail.com>",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
-    "at": "2026-10-21T21:21:28.721837+00:00",
-    "commit": "b77be69efea7bfb3d6b04e5f30d604105c1727d4",
+    "at": "2026-10-25T00:47:38.443837+00:00",
+    "commit": "3d3f6ff",
     "rollback_commit": "a106ffd",
-    "workspace": "/Users/mikel/agere-mvp-run",
+    "workspace": "/private/tmp/agere-live-3d3f6ff",
     "port": 8885,
-    "pid": 75171,
-    "session": 2376,
-    "log": "/Users/mikel/agere-mvp-run/server-8885.log",
+    "pid": 9782,
+    "session": 32008,
+    "log": "/tmp/agere_generalization/live_3d3f6ff_normal.log",
     "config_sha256": "4eec831417af506fee543532c304c9cc65d07794015c98af3cc5c48ef77cef52",
     "configuration_preserved": true,
     "warehouse_stat_preserved": true,
@@ -111,8 +111,8 @@
     "api_status": "Working (credit added 2026-10-21).",
     "cost_measurement": "20-question dev set: Opus 5.5 with prompt caching $5.44 (was $12.65 uncached), 76 calls, 2.15M cache-read vs 0.15M cache-write tokens; Sonnet 5.5 $4.75, 137 calls, weaker accuracy. HF question: Opus $0.45, Sonnet $0.41, both partial under current conservative definitions.",
     "hf_acceptance": "HF compound question answered (missing []) under Mike-governed definitions: 36 patients, 144/144 pillar flags match independent SQL, $1.75, 245 s.",
-    "smoke": "0 model API calls: CAHPS = not available (named); no-show 5.52 -> transport-positive 9.83 -> everyone else 4.80 in one conversation.",
-    "paid_calls": "DISABLED by Mike 2026-10-21 (\"switch live to no paid calls\"): deterministic tier and saved verified answers only; unparsed questions return not_understood at $0.",
+    "smoke": "Synthetic dev admission count6; latest-discharge primary text2029-12-27. Reported provider estimate$0.006018 (2Haiku/6SystemOne). Date value is formatted answer text rather than a bare date; strict scalar-shape validation remains open.",
+    "paid_calls": "Enabled by current explicit user request; deterministic first, Haiku before Sonnet, no unilateral cap.",
     "change": "Follow-up narrowing and re-scoping; honest not-available for absent data domains.",
     "free_bank_measure": {
       "bank": "/Users/mikel/agere-eval-bank-2 (184 items)",
@@ -141,8 +141,10 @@
       }
     },
     "env": {
-      "AGERE_LOCAL_NORMALIZER": "on",
-      "adapter": "artifacts/agere-local-planner-v1/adapter (Qwen3-4B LoRA, 3000 iters)"
+      "AGERE_CLAUDE": "on",
+      "AGERE_EVALUATION": "unset",
+      "AGERE_EVALUATION_STRICT": "unset",
+      "AGERE_LEDGER_PATH": "normal default shared ledger"
     },
     "sealed_bank": {
       "round_1": {
@@ -155,8 +157,8 @@
       }
     }
   },
-  "current_spending_constraint": "No paid provider calls for the current coordinated build/improvement work, following Mike's verified October20 clarification in Review AI stack techniques. Continue local implementation and deterministic/source/workflow validation without waiting for credits. Existing app integration and credentials remain unchanged; live-model and independent clinical qualification remain explicitly unverified.",
-  "current_turn_spending_policy": "No paid provider calls for the current coordinated build/improvement work, following Mike's verified October20 clarification in Review AI stack techniques. Continue local implementation and deterministic/source/workflow validation without waiting for credits. Existing app integration and credentials remain unchanged; live-model and independent clinical qualification remain explicitly unverified.",
+  "current_spending_constraint": "Small visible spend, Haiku first, no unilateral cap. No protected-question tuning, generator/private access or new services.",
+  "current_turn_spending_policy": "Mike explicitly authorizes Haiku-first paid measurements and improvement, then Sonnet escalation only after Haiku; no assistant-imposed monetary cap; report actual recorded estimated spend after runs.",
   "pending_continuation": {
     "status": "completed",
     "to": "01a15af4-c150-76f2-9df2-a44c1428b70d",
