@@ -344,7 +344,7 @@ def answer(stack, spec, *, as_of=None, ledger=None, decide=None, question=None, 
                 it = it or {'intent': 'status', 'domain': NOTE_DOMAIN, 'gaps': [], 'flags': [], 'question': question}
                 it = {**it, 'domain': NOTE_DOMAIN}
                 core = CN.render(stack, note_preds, pid, as_of, ledger=ledger, nf=nf, yes_no=CN.asks_yes_no(CN.asking_and_context(question or '')[0]) or (
-                    'inherited_from_prior' in it.get('flags', []) and bool(prior_frame.get('yes_no'))), allow_live=allow_live)
+                    'inherited_from_prior' in it.get('flags', []) and bool(prior_frame.get('yes_no'))), allow_live=allow_live, question=question)
             elif it is not None and it.get('domain') == NOTE_DOMAIN:
                 return unsupported('The question reads as a note question but no note predicate could be built from it.', question, started, spend, pid=pid, intent=it)
             elif CN.dangling_reference(question) and not it.get('window') and not prior_frame:

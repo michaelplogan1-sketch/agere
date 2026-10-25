@@ -399,7 +399,12 @@ def followup(path, key, question, *, scope='result'):
     request into an unbound whole-warehouse question.
     """
     text = ' '.join(question.lower().strip(' ?.!').split())
-    listing = re.fullmatch(r'(?:(?:give|show|send|get)(?: me)?(?: the)?(?: list of)?|list|show|count)(?: me)?(?: the)?(?: list of)? (?:them|those patients|these patients|those|these|the patients)', text)
+    text = re.sub(r'^(?:can|could) i (?:get|have|see)\s+', 'show me ', text)
+    from ..clinical.conversation import group_edit, group_dimension
+    edit = group_edit(text)
+    if edit: text = 'group them by ' + group_dimension(edit['dim'])
+    patient_list = re.fullmatch(r'(?:show me|give me|show|list) (?:the )?patient list(?: for (?:that|this|the saved) (?:group|cohort|population))?', text)
+    listing = patient_list or re.fullmatch(r'(?:(?:give|show|send|get)(?: me)?(?: the)?(?: list of)?|list|show|count)(?: me)?(?: the)?(?: list of)? (?:them|those patients|these patients|those|these|the patients)', text)
     grouping = re.fullmatch(r'(?:group|break down|break (?:that|this|it|them|those) down|split(?: that| it| this| them)?(?: out)?)(?: them| those patients| these patients| that| it| this)? by (pcp|practice|payer|line of business|payer type|coverage)', text)
     exclusion = re.fullmatch(r'(?:exclude|excluding|remove)(?: the)? (?:patients|ones|those|them)(?: who have| who| that have)? (?:died|are deceased|deceased)', text)
     if not (listing or grouping or exclusion):

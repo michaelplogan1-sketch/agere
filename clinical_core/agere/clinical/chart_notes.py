@@ -829,7 +829,90 @@ def render_persistence(pred, status, active, ended):
     return line, sources
 
 
-def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no=False, allow_live=None):
+
+def code_status_proposition(question, rows):
+    """Bind an intervention question to recorded code details, not documentation presence.
+
+    Partial orders do not establish the unspecified intervention. This reports
+    the documented status; it does not infer wishes from absent chart evidence.
+    """
+    text = (question or '').lower()
+    wants = bool(re.search(r"\b(?:want(?:s|ed)?|wish(?:es|ed)?|prefer(?:s|red)?|preferences?|agree(?:s|d)?|accept(?:s|ed)?|consent(?:s|ed)?)\b", text))
+    cpr = bool(re.search(r'\bcpr\b|resuscitat\w*|chest compressions', text))
+    tube = bool(re.search(r'intubat\w*|breathing tube', text))
+    named_dnr = bool(re.search(r'\bdnr\b', text))
+    named_dni = bool(re.search(r'\bdni\b', text))
+    full = bool(re.search(r'\bfull[- ]code\b', text))
+    if not ((wants and (cpr or tube)) or named_dnr or named_dni or full):
+        return None
+    if not wants and re.search(r'\b(?:mention\w*|discuss\w*|talk\w*|conversation|counsel\w*|consider\w*|offer\w*|recommend\w*)\b', text):
+        return None  # a discussion/mention is not a request to classify the active code status
+    if (not wants and re.search(r'\b(?:document\w*|record\w*)\b', text)
+            and not re.search(r'\b(?:as|status(?:\s+(?:is|of))?)\s+(?:full[- ]code|dnr|dni)\b', text)):
+        return None  # preserve the distinct absence/unknown semantics of documentation questions
+    for row in rows:
+        concept = str(row.get('concept') or '').lower().replace('_', ' ')
+        if row.get('frame') == 'care_process' and concept == 'code status':
+            continue
+        if row.get('frame') == 'preference_refusal' and re.fullmatch(r'chest compressions|cpr|resuscitation|intubation|breathing tube', concept):
+            continue
+        return None  # do not replace a multi-domain question with its code-status component
+    care = [r for r in rows if r.get('frame') == 'care_process' and
+            (r.get('concept') == 'code status' or 'code_status' in (r.get('detail') or {}))]
+    if not care:
+        return None
+    codes = {r.get('detail', {}).get('code_status') for r in care if r.get('status') == 'documented'} - {None, 'unknown', 'not_documented'}
+    values = {'full_code': (True, True), 'dnr': (False, None), 'dni': (None, False), 'dnr_dni': (False, False)}
+    code = next(iter(codes)) if len(codes) == 1 else None
+    pair = list(values.get(code, (None, None)))
+    preference_conflict = False
+    if wants:
+        for row in rows:
+            if row.get('frame') != 'preference_refusal' or row.get('status') != 'documented':
+                continue
+            term = str(row.get('concept') or '').lower()
+            index = 0 if re.search(r'cpr|resuscitation|chest compressions', term) else 1
+            decision = (row.get('detail') or {}).get('decision')
+            choices = set(decision if isinstance(decision, list) else [decision]) - {None}
+            if not choices:
+                continue
+            stated = True if choices == {'accepted'} else False if choices == {'declined'} else None
+            if stated is None or (pair[index] is not None and pair[index] != stated):
+                preference_conflict = True
+            else:
+                pair[index] = stated
+    asked = []
+    if wants:
+        if cpr: asked.append(pair[0])
+        if tube: asked.append(pair[1])
+    else:
+        if named_dnr: asked.append(None if pair[0] is None else not pair[0])
+        if named_dni: asked.append(None if pair[1] is None else not pair[1])
+        if full: asked.append(True if code == 'full_code' else False if code in values else None)
+    # Negated wording requires its own parsed proposition; it cannot inherit a positive documentation answer.
+    negated = re.search(r"\b(?:not|never|refus\w*|declin\w*)\b|n't\b|\b(?:want|wants|prefer|prefers)\s+(?:no|without)\b", text)
+    if negated or not asked or preference_conflict:
+        value = None
+    else:
+        patterns = ([r'\bcpr\b|resuscitat\w*|chest compressions', r'intubat\w*|breathing tube'] if wants
+                    else [r'\bdnr\b', r'\bdni\b', r'\bfull[- ]code\b'])
+        spans = sorted((m.start(), m.end()) for pattern in patterns if (m := re.search(pattern, text)))
+        between = text[spans[0][1]:spans[-1][0]] if len(spans) > 1 else ''
+        connectors = set(re.findall(r'\b(?:and|or)\b', between))
+        if len(connectors) > 1:
+            value = None  # mixed operator precedence needs a complete parsed proposition
+        elif 'or' in connectors:
+            value = True if True in asked else None if None in asked else False
+        else:
+            value = False if False in asked else None if None in asked else True
+    label = {'full_code': 'full code', 'dnr': 'DNR (no CPR; intubation not established by this status)',
+             'dni': 'DNI (no intubation; CPR not established by this status)',
+             'dnr_dni': 'DNR/DNI (no CPR; no intubation)'}.get(code, code or 'unresolved or conflicting')
+    return {'value': value, 'lead': 'Undecided' if value is None else 'Yes' if value else 'No',
+            'recorded_code_status': code, 'preference_conflict': preference_conflict,
+            'text': 'Recorded code status: ' + label + ('; preference evidence conflicts or remains undecided' if preference_conflict else '')}
+
+def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no=False, allow_live=None, question=None):
     """Run each predicate through note_frames.answer_patient and merge into one core answer."""
     if nf is None:
         from . import note_frames as nf  # builder A's module (spec: answer_patient)
@@ -987,12 +1070,20 @@ def render(stack, predicates, patient_id, as_of, *, ledger=None, nf=None, yes_no
             lead = 'No'
     else:
         lead = None
+    original_ask = question or ' '.join(str(p.get('quote') or '') for p in predicates)
+    proposition = code_status_proposition(original_ask, rows) if yes_no or re.search(r'\b(?:wishes?|preferences?)\b', original_ask, re.I) else None
+    if proposition:
+        lead = proposition['lead'] if yes_no else None
+        lines.insert(0, proposition['text'])
+        if proposition['value'] is None:
+            statuses = [*statuses, 'unknown']
+            matches = [*matches, False]
     headline = (f'{lead}: ' if lead else '') + ' || '.join(lines) if lines else 'No note predicate could be built from the question'
     if len(counted) == 1 and counted[0] is not None:  # the question asked HOW MANY: a count, with the value the reader computed
         n = counted[0]['n']
         return Q.core('count', headline, value=n, count=n, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': None, 'count_basis': counted[0]['basis']},
                       notes=['note frames: System One reads retrieved passages; the count is a number the note states, else the distinct documented occurrences in the window'])
-    return Q.core('note', headline, value=headline, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': lead},
+    return Q.core('note', headline, value=headline, table=rows, sources=sources, facts={'statuses': statuses, 'matches': matches, 'lead': lead, **({'code_status_proposition': proposition} if proposition else {})},
                   notes=['note frames: System One reads retrieved passages; code reduces them to one patient value; an undecided patient is never read as "no"'])
 
 
