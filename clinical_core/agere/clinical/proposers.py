@@ -119,6 +119,20 @@ FREE_ONLY = _cv.ContextVar('agere_free_stages_only', default=False)
 FREE_STAGES = frozenset({'reuse_certified', 'system_one_choice', 'free_planners'})
 
 
+GENERALISTS = ('semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')
+
+
+def backstop_before_generalists(order):
+    """A permutation: the backstop agent runs before the free-form generalist analysts whatever the learned routers predicted (they
+    were trained before it existed; dev3 build-half insight 7/17 for the backstop vs 3/17 for the Haiku analyst, 2026-10-25)."""
+    order = list(order)
+    if 'backstop_agent' not in order: return tuple(order)
+    first = min((order.index(t) for t in GENERALISTS if t in order), default=None)
+    if first is not None and order.index('backstop_agent') > first:
+        order.remove('backstop_agent'); order.insert(first, 'backstop_agent')
+    return tuple(order)
+
+
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
     return STAGE_INDEX['system_one_choice'] if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
@@ -322,7 +336,7 @@ class Cascade:
         if (self.routing or {}).get('applied'):
             from .system_one_gate import ROUTES
             routed = tuple(t for t in ROUTES.get(self.routing.get('label'), ()) if stage_of(t) != len(STAGES) - 1)
-        return self.heavy_last(self.free_first(staged(order, routed)))
+        return backstop_before_generalists(self.heavy_last(self.free_first(staged(order, routed))))
 
     def heavy_last(self, order):
         """A permutation: the costly tiers (COSTLY) run only after the cheap ones (stages A-B and local_compiler), and among themselves

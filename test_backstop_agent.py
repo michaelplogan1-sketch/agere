@@ -56,6 +56,17 @@ class Shape(unittest.TestCase):
         self.assertEqual(a['headline'], '97 of 490 stays (19.8%)')
 
 
+class Supporting(unittest.TestCase):
+    def test_an_uncited_answer_gets_the_patients_own_supporting_sentence(self):
+        class T:
+            def _texts(self, pid):
+                return [('N1', 'clinical_note', 's', 'progress', '2029-03-02', 'Vitals stable. Metformin stopped because of diarrhea and GI upset. Return in 3 months.', '')]
+        got = B.supporting_passage(T(), 'SYN-1', 'Metformin was stopped because of diarrhea.')
+        self.assertEqual(got['record_id'], 'N1')
+        self.assertEqual(got['quote'], 'Metformin stopped because of diarrhea and GI upset.')
+        self.assertIsNone(B.supporting_passage(T(), 'SYN-1', 'Lisinopril dose increased.'))
+
+
 class ToolErrors(unittest.TestCase):
     def test_bad_arguments_are_a_tool_error_not_a_crash(self):
         t = B.Tools.__new__(B.Tools)
@@ -142,6 +153,11 @@ class Cascade(unittest.TestCase):
         with patch.object(P, 'claude_available', lambda: True), patch.object(B, 'answer', return_value={'answer': None, 'error': 'x'}), \
                 patch.object(P.Cascade, 'reject', lambda self, name, reasons: None) as rej:
             self.assertIsNone(c.tier_backstop_agent())
+
+    def test_the_backstop_runs_before_the_generalist_analysts_whatever_the_routers_say(self):
+        got = P.backstop_before_generalists(('spec_path', 'semantic_analyst', 'hosted_typed_interpreter', 'backstop_agent', 'legacy_cost_ladder'))
+        self.assertEqual(got, ('spec_path', 'backstop_agent', 'semantic_analyst', 'hosted_typed_interpreter', 'legacy_cost_ladder'))
+        self.assertEqual(P.backstop_before_generalists(('backstop_agent', 'semantic_analyst')), ('backstop_agent', 'semantic_analyst'))
 
     def test_off_switch(self):
         with patch.dict(os.environ, {'AGERE_BACKSTOP': 'off'}):

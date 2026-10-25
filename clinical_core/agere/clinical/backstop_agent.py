@@ -282,6 +282,29 @@ def as_tool_calls(send):
     return wrapped
 
 
+STOP = frozenset('that this with from were have been which their there about after before when what into than then them they also only more '
+                 'some such will would could should does done patient note notes documented record chart visit date said says'.split())
+
+
+def supporting_passage(tools, patient_id, headline):
+    """-> a source {record_id, date, source, quote, found_by} for the sentence of the patient's own documents that shares the most content words
+    with the answer's headline (at least two), or None. Used only when a one-patient answer cites nothing: the answer then carries the passage
+    that supports it, found by search and labelled so."""
+    want = {w for w in re.findall(r'[a-z0-9]{4,}', str(headline or '').lower()) if w not in STOP and not w.startswith('syn')}
+    if len(want) < 2: return None
+    best = (1, None)
+    try:
+        rows = tools._texts(patient_id)
+    except Exception:  # noqa: BLE001 - no documents
+        return None
+    for rid, src, stream, kind, date, text, title in rows:
+        for sent in re.split(r'(?<=[.;\n])\s+', text or ''):
+            got = len(want & set(re.findall(r'[a-z0-9]{4,}', sent.lower())))
+            if got > best[0] and len(sent) <= 600:
+                best = (got, {'record_id': rid, 'date': (date or '')[:10], 'source': src, 'quote': sent.strip(), 'found_by': 'supporting search'})
+    return best[1]
+
+
 def shaped(a):
     """The agent's JSON in the product's answer shape: a {columns, rows} table becomes row dicts; empty value / count / table / patient_ids are
     left out (a null value reads downstream as "the value is absent" and would replace a headline that states the numbers); an answer whose
@@ -303,7 +326,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
         from . import spec_exec
         with spec_exec.ledger_for(stack) as own:
             if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of)
-    from . import semantic_analyst, together, analyst_definitions, decision_context
+    from . import semantic_analyst, together, analyst_definitions, decision_context, requirement_ledger
     from .legacy_proposers import _semantic_path, _send
     from .. import model_policy
     started = time.perf_counter()
@@ -331,6 +354,11 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
     if a is not None:
         a = shaped(dict(a))
         kept, dropped = verified_sources(a, tools)
+        pid = (a.get('patient_ids') or [None])[0] or next((m.group() for m in requirement_ledger.PATIENT_ID.finditer(question)), None) \
+            or prior.get('patient_id')
+        if not kept and pid and a.get('status') in ('answered', 'partial'):
+            found = supporting_passage(tools, pid, a.get('headline'))
+            if found: kept = [found]
         a['sources'] = kept
         notes = list(a.get('limitations') or [])
         if dropped: notes.append(f'{dropped} cited passage(s) were not found verbatim in their documents and were removed.')

@@ -96,3 +96,56 @@ Mike is away all day. Do not ask him anything. Finish today. Decide from evidenc
 - Synthetic data only. Never open `private/`, `/Users/mikel/agere-sealed-eval`, the generator, held-out text, or the
   learning/question-plans/answers stores.
 - Builders: Sonnet subagents, at most 3, no API calls (they may use the subscription transport only for small smoke tests).
+
+## Done (10-25, later): the backstop is built, wired, live on :8888 and measured
+
+**What runs now.** `clinical_core/agere/clinical/backstop_agent.py`, a Sonnet tool agent (escalation rung; Opus stays deliverable-only).
+- Tools:
+  - `ask_agere(sub_question)`: one simple sub-question through Agere's free governed stages, with no LLM, in its own context;
+  - `query_sql` over the definition views;
+  - `list_documents`, `search_documents` and `read_document` over notes, HIE and scanned text.
+- It sees the conversation (prior turns and prior patient) and decides on its own; it is not a classifier.
+- Quotes are verified against the document or the rows the tools returned. Near-verbatim quotes are healed to the document's own words,
+  and fabricated ones are dropped and noted.
+- Cascade position:
+  - in the Claude stage, after the governed Claude routers and the typed interpreter and **before the Haiku semantic analyst**;
+  - never deferred for budget; it gets its own time (`AGERE_BACKSTOP_SECONDS`, default 90) instead of the 30 s share;
+  - a reserved slot runs it before any decline, ahead of the reserved Haiku analyst;
+  - accepted with checks as annotations;
+  - never used as a claim verifier.
+- Switches: `AGERE_BACKSTOP=off`, `AGERE_BACKSTOP_SECONDS`, `AGERE_BACKSTOP_TOOLS` (default 20).
+
+**Decisions (evidence-based, recorded here as asked):**
+1. **Sonnet goes ahead of Haiku for the final generalist.** On dev3 build-half insight (17 questions, subscription), the Haiku semantic
+   analyst got 3/17 at $0.007 per question. The backstop got 5/17 with SQL only and 7/17 with `ask_agere`, at about $0.12 per question
+   (API-equivalent). Haiku still runs first everywhere it suffices (the spec writer and the routers), and it runs after the backstop when
+   the backstop declines.
+2. **The LLM plans and the governed engines compute.** Sonnet's free SQL picks plausible but non-governed definitions: it read inpatient
+   stays from visit_group even though the decision context says utilization_event, and it read pharmacy spend from claim events rather
+   than counted fills. `ask_agere` lets it break an open question into simple governed sub-questions, and the deterministic engines answer
+   those exactly. This is "each model at what it does best": the LLM decomposes, reads and writes; the engines count.
+3. **Opus is not used per question.** There is no evidence it is needed. Sonnet already uses its 20 tools, and its misses are definition
+   choices, not reasoning failures.
+
+**Bugs found and fixed on the way (each would have hidden the backstop's answers):**
+- A nested sub-question cascade replaced the question's answer budget, an 8 s budget leaked via the contextvar. After the first
+  sub-question the backstop saw "budget used up". Now each sub-question runs in `contextvars.copy_context()`.
+- `answer_format._honest_unknown` rewrote a correct headline to "Not answerable from the received data" whenever `value` / `count` were
+  null. The backstop now emits the product shape: row-dict tables, no null fields, and `composite` when the answer is headline plus facts.
+- Subscription transport: a tool call followed by more text was taken as the final answer (`raw_decode` now finds the first object); empty
+  replies are re-asked once with a changed request; hung CLI calls (about 1 in 8 under load) time out at 150 s and are retried once.
+
+**Measurement, dev3 check half (71 questions never tuned on, subscription):**
+
+| | before (10-25 am) | backstop v1 | competitor |
+|---|---|---|---|
+| single patient, structured | 9/16 | **15/16** | 56 % |
+| notes | 1/12 | 4/12 | 17 % |
+| population quality | 8/12 | 8/12 | 25 % |
+| claims / pharmacy / SDOH | 10/18 | 10/18 | 28 % |
+| insight | 1/13 | 2/13 | 31 % |
+| **overall** | 29/71 = 40.8 % | **39/71 = 54.9 %** | 32.4 % (45 % on its completed) |
+
+- Backstop v1: $0.067 per question API-equivalent; p50 95 s, p90 153 s.
+- v1 still had the budget-leak bug, so on insight the backstop was mostly "declined" or used as a verifier. v2 (the fixes above) is being
+  measured now; the result is below.
