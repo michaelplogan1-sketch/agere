@@ -14,6 +14,7 @@ from ..warehouse import Warehouse
 from ..narrative_sources import text_fields, FORBIDDEN
 
 VERSION = 'warehouse-hybrid-retrieval/1'
+SCOPED_CONTENT_SQL = 'SELECT DISTINCT p.content FROM query_scope_passages qs CROSS JOIN passages p ON p.id=qs.id'
 ROOT = Path(__file__).resolve().parents[3]
 ALIASES = {
  'kidney': ['renal', 'ckd', 'egfr', 'creatinine', 'nephrology'],
@@ -299,7 +300,10 @@ class Retriever:
         q=q/max(float(np.linalg.norm(q)),1e-12)
         eligible=None
         if scoped:
-            eligible=np.array([r[0]-1 for r in self.db.execute('SELECT DISTINCT p.content FROM passages p'+scope_join)],dtype=int)
+            # Start with the bounded scope: DISTINCT otherwise makes SQLite scan
+            # the entire content index before probing this patient's passages.
+            eligible=np.array([r[0]-1 for r in self.db.execute(
+                SCOPED_CONTENT_SQL)],dtype=int)
         elif patient:
             eligible=np.array([r[0]-1 for r in self.db.execute('SELECT DISTINCT content FROM passages WHERE patient=?',(patient,))],dtype=int)
         if self.dense_indices is not None:
