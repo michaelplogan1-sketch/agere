@@ -47,6 +47,25 @@ ALIASES = {
     'blood pressure control': 'measure.cbp', 'a1c poor control': 'measure.gsd_poor_control',
     'breast cancer screening': 'measure.bcs', 'colorectal cancer screening': 'measure.col',
     'statin adherence': 'measure.pdc_statins',
+    # analyst wording of the same governed definitions (2026-10-24)
+    'hba1c poor control': 'measure.gsd_poor_control', 'hemoglobin a1c poor control': 'measure.gsd_poor_control',
+    'glycemic status assessment poor control': 'measure.gsd_poor_control', 'poor a1c control': 'measure.gsd_poor_control',
+    'pdc for statins': 'measure.pdc_statins', 'proportion of days covered for statins': 'measure.pdc_statins',
+    'statin proportion of days covered': 'measure.pdc_statins', 'adherence to statins': 'measure.pdc_statins',
+    'cholesterol medication adherence': 'measure.pdc_statins',
+    'proportion of days covered for diabetes medications': 'measure.pdc_diabetes', 'adherence to diabetes medications': 'measure.pdc_diabetes',
+    'proportion of days covered for ras antagonists': 'measure.pdc_rasa', 'adherence to ras antagonists': 'measure.pdc_rasa',
+    'hypertension medication adherence': 'measure.pdc_rasa', 'adherence to ace inhibitors or arbs': 'measure.pdc_rasa',
+    'kidney health evaluation for patients with diabetes': 'kidney_health_evaluation_diabetes',
+    'kidney health evaluation in diabetes': 'kidney_health_evaluation_diabetes',
+    'follow-up after ed visit': 'ed_followup_7d', 'follow up after ed visit': 'ed_followup_7d', 'follow-up after an ed visit': 'ed_followup_7d',
+    'ed follow-up': 'ed_followup_7d', 'ed follow up': 'ed_followup_7d', 'follow-up after emergency department visit': 'ed_followup_7d',
+    'post-discharge follow-up': 'post_discharge_followup_7d', 'follow-up after hospital discharge': 'post_discharge_followup_7d',
+    'follow-up after discharge': 'post_discharge_followup_7d', 'follow-up after hospitalization': 'post_discharge_followup_7d',
+    'readmissions within 30 days': 'readmission_30d', '30-day readmissions': 'readmission_30d', 'hospital readmission rate': 'readmission_30d',
+    'all-cause readmissions': 'readmission_30d', 'all-cause readmission rate': 'readmission_30d', '30 day readmission rate': 'readmission_30d',
+    'preventable admissions': 'measure.pqi_90_overall_composite', 'prevention quality indicators': 'measure.pqi_90_overall_composite',
+    'pqi': 'measure.pqi_90_overall_composite',
 }
 # Mike, 2026-10-21: medical-claim finance uses payer-adjudicated claims (counted rows). Generic names resolve to the
 # payer metric when the warehouse has counted payer claims; names of a provider-side convention keep it.
@@ -121,7 +140,20 @@ def aliases():
         if ident.startswith('measure.'):
             names.setdefault(ident.partition('.')[2], ident)
         names.setdefault(definition['name'].lower(), ident)
+        # The library's own aliases ("kidney health evaluation", "pdc for statins", "pqi 90", "follow-up after ed visit") name the same definition
+        # in analyst wording; a name already claimed by an earlier, hand-written alias keeps that meaning.
+        for alias in definition.get('aliases') or []:
+            if isinstance(alias, str) and len(alias.strip()) >= 3: names.setdefault(alias.strip().lower(), ident)
     return names
+
+
+def library_alias_only():
+    """The names that exist only because the library lists them as aliases of a definition (analyst wording), not the hand-written or id / title names."""
+    core = {k.lower() for k in ALIASES}
+    for ident, definition in definitions().items():
+        core |= {ident.replace('_', ' ').lower(), ident.lower(), definition['name'].lower()}
+        if ident.startswith('measure.'): core.add(ident.partition('.')[2].lower())
+    return {k for k in aliases() if k.lower() not in core}
 
 
 def digest(definition):
@@ -227,6 +259,20 @@ def validate(p):
     return p
 
 
+PERIOD_LAB_READ = re.compile(r"(FROM\s+measurement\s+(?:AS\s+)?)(\w+)(\s+WHERE\s+[^()]*?BETWEEN\s+'\d{4}-\d{2}-\d{2}'\s+AND\s+'\d{4}-\d{2}-\d{2}'[^()]*)", re.I)
+
+
+def period_lab_reads(sql):
+    """A measure that bounds its own lab reads to the measurement period ("an eGFR and a uACR dated in the year") reads EVERY result in that period; the
+    decision context's latest-result rule is for thresholds on a patient's current value, so these reads carry the lab-rule alias it leaves alone."""
+    from .decision_context import LAB_RULE_READ
+
+    def rename(m):
+        alias, where = m.group(2), m.group(3)
+        return m.group(1) + LAB_RULE_READ + re.sub(r'\b' + re.escape(alias) + r'\.', LAB_RULE_READ + '.', where)
+    return PERIOD_LAB_READ.sub(rename, sql)
+
+
 def scoped_sql(template, catalog):
     """Restrict each participating patient relation, including both ratio sides.
 
@@ -275,7 +321,7 @@ def execute(path, patient_ids, p, as_of=None):
         row = dict(zip(p['group_by'], keys))
         if m.get('sql_template'):
             args = metrics.parameters(m, '', as_of, (p['period']['start'], p['period']['end']))
-            query = scoped_sql(metrics.render_sql(m, args), catalog)
+            query = scoped_sql(period_lab_reads(metrics.render_sql(m, args)), catalog)
             report = sql_query.execute(path, {'query': query, 'returns': m['output']['returns']},
                                        patient_ids=ids, target=catalog.target)
             value = report['value']
@@ -327,3 +373,72 @@ def execute(path, patient_ids, p, as_of=None):
         answer['limitations'].append('ED source coverage: '+', '.join(f"{r['sources']}: {r['events']}" for r in coverage)+
                                      '. Events are deduplicated across ADT, EHR and claims.')
     return {'schema': VERSION, 'answer': answer, 'evidence': evidence, 'parameters': p}
+
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# Analyst wording around a governed measure name (2026-10-24, independent dev set). A measure NAME is followed by words that restate
+# what the measure already is: its kind ("rate", "score"), its own population ("for patients with diabetes", "among diabetics"), or a
+# gloss of its definition ("Kidney health evaluation: share of diabetics 18 to 85 who got both an eGFR and a uACR in 2029"). None of
+# these adds a requirement, so they are consumed -- but only when the definition itself accounts for every content word and number.
+# Anything the definition does not state (another threshold, another age band, another drug) stays unconsumed and declines the form.
+# ---------------------------------------------------------------------------------------------------------------------------
+MEASURE_KIND_WORDS = r'(?:rates?|measures?|scores?|performance|percentages?|results?|compliance|numbers?|composite|indicators?|pdc|adherence|proportion\s+of\s+days\s+covered|for\s+hedis|hedis|stars?)'
+OWN_POPULATIONS = [  # (word in the measure's name / population, wording that restates that population)
+    (r'diabet', r'(?:(?:adult\s+|adults?\s+with\s+)?diabet(?:es|ics?)(?:\s+(?:patients|members|population))?|(?:patients|members|adults|persons|people)\s+(?:with|who\s+have|having)\s+diabetes)'),
+    (r'cardiovascular|ascvd', r'(?:(?:patients|members|adults|persons|people)\s+(?:with|who\s+have|having)\s+(?:cardiovascular\s+disease|cvd|ascvd|clinical\s+ascvd)|cardiovascular\s+(?:disease\s+)?patients)'),
+    (r'hypertension|blood pressure', r'(?:hypertensi(?:on|ves)|(?:patients|members|adults|persons|people)\s+(?:with|who\s+have|having)\s+hypertension)'),
+]
+FILLER_WORDS = set('''anyone anybody everyone those who whose got get gets gotten had have has having were was are is be been as counting counts counted count treated
+    considered regarded rate share percent percentage proportion fraction what which how many much of in for on at to by with among within during their there it
+    its if then also all any each per and or the a an both'''.split())
+DIRECTION_GROUPS = [{'above', 'over', 'greater', 'higher', 'exceed', 'exceeds', 'exceeding', '>'}, {'below', 'under', 'less', 'lower', 'fewer', '<'}]
+
+
+def _stem(word):
+    """A crude stem for matching a gloss against a definition: a plural / tense / adverb suffix is dropped, then the first six letters compare
+    (poorly ~ poor, controlled ~ control, specialty ~ specialist, diabetics ~ diabetes)."""
+    w = word.lower()
+    for suffix in ('ically', 'ly', 'ing', 'ed', 'es', 's', 'y'):
+        if w.endswith(suffix) and len(w) - len(suffix) >= 4:
+            w = w[:-len(suffix)]
+            break
+    return w[:6]
+
+
+def own_population_regex(definition):
+    """The wording that restates this measure's own population, or None."""
+    text = ' '.join(str(definition.get(k, '')) for k in ('name', 'summary')).lower()
+    text += ' ' + str((definition.get('denominator') or {}).get('summary', '')).lower()
+    for marker, wording in OWN_POPULATIONS:
+        if re.search(marker, text): return wording
+    return None
+
+
+def definition_vocabulary(definition):
+    """-> (stems of every word the definition states, numbers it states, direction symbols it states)."""
+    parts = [definition.get('name', ''), ' '.join(a for a in definition.get('aliases') or [] if isinstance(a, str)), definition.get('summary', ''),
+             json.dumps(definition.get('denominator') or {}, default=str), json.dumps(definition.get('numerator') or {}, default=str),
+             json.dumps(definition.get('population') or {}, default=str), json.dumps(definition.get('value_sets') or {}, default=str)]
+    text = ' '.join(str(p) for p in parts)
+    words = {_stem(w) for w in re.findall(r'[A-Za-z]+', text)}
+    numbers = set(re.findall(r'\d+(?:\.\d+)?', text))
+    symbols = set(re.findall(r'[<>]', text))
+    return words, numbers, symbols
+
+
+def gloss_unaccounted(gloss, definition):
+    """The numbers and content words of a restating gloss that the measure's own definition does not state (empty = fully accounted)."""
+    words, numbers, symbols = definition_vocabulary(definition)
+    left = [n for n in re.findall(r'\d+(?:\.\d+)?', gloss) if float(n) not in {float(x) for x in numbers}]
+    for word in re.findall(r'[A-Za-z]+', gloss):
+        w = word.lower()
+        if w in FILLER_WORDS or _stem(w) in words: continue
+        group = next((g for g in DIRECTION_GROUPS if w in g), None)
+        if group and (any(_stem(g) in words for g in group if g.isalpha()) or any(g in symbols for g in group if not g.isalpha())): continue
+        left.append(word)
+    return left
+
+
+def gloss_accounted(gloss, definition):
+    """True when every content word and number of a restating gloss is stated by the measure's own definition."""
+    return not gloss_unaccounted(gloss, definition)

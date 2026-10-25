@@ -33,6 +33,7 @@ WORDS = [
     (r'seen\s+in\s+the\s+office', 'seen in an office visit'),
     (r'within\s+the\s+(last|past)', r'in the \1'),
     (r'zero', 'no'),
+    (r"aren['\u2019]t", 'are not'), (r"isn['\u2019]t", 'is not'), (r"weren['\u2019]t", 'were not'), (r"wasn['\u2019]t", 'was not'),  # the grammar reads the spelled-out negation
     (r'discontinued', 'stopped'), (r'discontinue', 'stop'), (r'discontinuing', 'stopping'), (r'discontinues', 'stops'), (r'discontinuation', 'stopping'),
     (r'brought\s+up', 'raised'),
     (r'(?:difficulty|trouble|problems?)\s+(?:with\s+)?(?:getting|get|making\s+it)\s+to\s+(?:their\s+)?appointments', 'trouble getting to appointments'),

@@ -45,6 +45,77 @@ def _tokens():
     return {'<DRUG>': alt(drugs), '<LAB>': alt(LAB_NAMES), '<COND>': alt(conds)}
 
 
+_VOCAB = []   # [set of domain words]; built on first use
+_ENGLISH = []  # [set of dictionary words, or None when the system has no word list]
+DOMAIN_NOUNS = ('patients members admissions appointments claims medications prescriptions visits discharges readmissions screening vaccination immunization colonoscopy mammography '
+                'pharmacy diabetic hypertension hypertensive hospital hospitals practices payers providers clinicians encounters conditions diagnosis diagnoses laboratory '
+                'cholesterol medication adherence enrollment coverage utilization emergency inpatient outpatient telehealth surgery specialist pediatric transportation '
+                'insurance spending pregnant pregnancy diabetics asthma statin statins insulin').split()
+
+
+def _vocabulary():
+    """The words the grammar knows (source nouns, labs, conditions, drug names, the phrasing tables' own words, the domain nouns)."""
+    if not _VOCAB:
+        words = set(DOMAIN_NOUNS)
+        try:
+            from .request_language import SOURCES, LAB_NAMES, CONDITION_ALIASES, DRUG_ALIASES
+            from .drug_classes import CLASSES, GROUPS
+            for source in (*SOURCES, *LAB_NAMES, *CONDITION_ALIASES, *DRUG_ALIASES, *CLASSES, *GROUPS):
+                words.update(re.findall(r'[a-z]+', source.lower().replace('_', ' ')))
+            for _, replacement in T.WORDS:
+                words.update(re.findall(r'[a-z]+', str(replacement).lower()))
+        except Exception:  # noqa: BLE001 - the vocabulary only widens what is corrected; the grammar never depends on it
+            pass
+        _VOCAB.append({w for w in words if len(w) >= 5})
+    return _VOCAB[0]
+
+
+def _english():
+    if not _ENGLISH:
+        try:
+            with open('/usr/share/dict/words', encoding='utf-8', errors='ignore') as handle:
+                _ENGLISH.append({line.strip().lower() for line in handle})
+        except OSError:
+            _ENGLISH.append(None)
+    return _ENGLISH[0]
+
+
+def _one_edit(a, b):
+    """True when the words differ by one insertion, deletion, substitution or adjacent transposition."""
+    if a == b or abs(len(a) - len(b)) > 1: return False
+    if len(a) == len(b):
+        diff = [i for i in range(len(a)) if a[i] != b[i]]
+        return len(diff) == 1 or (len(diff) == 2 and diff[1] == diff[0] + 1 and a[diff[0]] == b[diff[1]] and a[diff[1]] == b[diff[0]])
+    short, long_ = (a, b) if len(a) < len(b) else (b, a)
+    i = 0
+    while i < len(short) and short[i] == long_[i]: i += 1
+    return short[i:] == long_[i + 1:]
+
+
+def _common_suffix(a, b):
+    n = 0
+    while n < min(len(a), len(b)) and a[-1 - n] == b[-1 - n]: n += 1
+    return n
+
+
+def fix_spelling(text):
+    """A word that is neither a dictionary word nor a domain word, one edit from exactly one domain word, is that word ("admisions" -> "admissions",
+    "pateints" -> "patients"). Names, ids, numbers and anything ambiguous stay as typed; `safe` still checks the rewording and the answer says how the question was read."""
+    vocab, english = _vocabulary(), _english()
+    if not vocab: return text
+
+    def fix(m):
+        word = m.group()
+        w = word.lower()
+        if len(w) < 6 or w in vocab or (english is not None and w in english): return word
+        if english is None and len(w) < 8: return word
+        # an inflection of a known word (denies / denied, filled / fills) is a word, not a typo: the edit must leave a common ending of three letters
+        near = [v for v in vocab if abs(len(v) - len(w)) <= 1 and v[0] == w[0] and _one_edit(w, v) and _common_suffix(w, v) >= 3]
+        if len(near) != 1: return word
+        return near[0].capitalize() if word[:1].isupper() else near[0]
+    return re.sub(r'(?<![\w-])[A-Za-z]{6,}(?![\w-])', fix, text)
+
+
 def _frames():
     if not _FRAMES:
         tokens = _tokens()
@@ -138,6 +209,7 @@ def reword(question):
     tail = re.search(r'[?.!]+\s*$', text)
     punct = tail.group().strip() if tail else ''
     text = re.sub(r'[?.!]+\s*$', '', text).strip()
+    text = fix_spelling(text)
     text = re.sub(T.FILLER_LEAD, '', text, flags=re.I)
     text = re.sub(T.FILLER_TAIL, '', text, flags=re.I)
     text = re.sub(r'(?<![<>=])>\s*(?=\d)', ' above ', text)
