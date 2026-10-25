@@ -3,6 +3,7 @@
     .venv/bin/python -m tools.dev_set.run_inprocess --set dev                  # the 100 DEV questions (heldout lines are never parsed)
     .venv/bin/python -m tools.dev_set.run_inprocess --set paraphrase           # tools/dev_set/paraphrases.jsonl
     .venv/bin/python -m tools.dev_set.run_inprocess --set compose              # tools/dev_set/compose_questions.jsonl (split dev2; also --split dev2)
+    .venv/bin/python -m tools.dev_set.run_inprocess --set dev3                 # tools/dev_set/dev3_questions.jsonl (split dev3, independent wording; also --split dev3)
     .venv/bin/python -m tools.dev_set.run_inprocess --set paraphrase --keys    # also load Jev / Perplexity keys (System One)
     .venv/bin/python -m tools.dev_set.run_inprocess --set dev --bucket insight --out /tmp/x.json
 
@@ -32,7 +33,7 @@ _REL = Path('artifacts') / 'agere-healthcare-v28-sample-0.30' / 'stack'
 STACK = Path(os.environ['AGERE_STACK']) if os.environ.get('AGERE_STACK') else ROOT / _REL if (ROOT / _REL / 'semantic.sqlite3').exists() else Path(
     subprocess.run(['git', '-C', str(ROOT), 'rev-parse', '--git-common-dir'], capture_output=True, text=True).stdout.strip()).resolve().parent / _REL
 FILES = {'dev': ROOT / 'tools/dev_set/questions.jsonl', 'paraphrase': ROOT / 'tools/dev_set/paraphrases.jsonl',
-         'compose': ROOT / 'tools/dev_set/compose_questions.jsonl'}
+         'compose': ROOT / 'tools/dev_set/compose_questions.jsonl', 'dev3': ROOT / 'tools/dev_set/dev3_questions.jsonl'}
 
 
 def read(which):
@@ -41,7 +42,7 @@ def read(which):
         if '"split": "heldout"' in line:
             continue
         q = json.loads(line)
-        if q['split'] in ('dev', 'paraphrase', 'dev2'):
+        if q['split'] in ('dev', 'paraphrase', 'dev2', 'dev3'):
             out.append(q)
     return out
 
@@ -133,7 +134,7 @@ def summarize(rows):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--set', choices=tuple(FILES), default='dev')
-    ap.add_argument('--split', choices=('dev', 'dev2'), help='dev2 = --set compose')
+    ap.add_argument('--split', choices=('dev', 'dev2', 'dev3'), help='dev2 = --set compose, dev3 = --set dev3')
     ap.add_argument('--bucket', choices=BUCKETS)
     ap.add_argument('--ids', nargs='*')
     ap.add_argument('--keys', action='store_true', help='load Jev / Perplexity keys (System One reachable)')
@@ -142,7 +143,7 @@ def main(argv=None):
     ap.add_argument('--quiet', action='store_true')
     ap.add_argument('--out')
     args = ap.parse_args(argv)
-    qs = read('compose' if args.split == 'dev2' else args.set)
+    qs = read({'dev2': 'compose', 'dev3': 'dev3'}.get(args.split, args.set))
     if args.bucket:
         qs = [q for q in qs if q['bucket'] == args.bucket]
     if args.ids:
