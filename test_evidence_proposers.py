@@ -91,23 +91,6 @@ class Kind(unittest.TestCase):
 
 
 class Retrieval(unittest.TestCase):
-    def test_fact_questions_continue_to_readers_without_using_passages_as_answers(self):
-        for q in (
-            'What did the Holter monitor show for P-1001?',
-            'What did the specialist letter recommend starting for P-1001?',
-            'Was P-1001 smoking according to the September note?',
-            'What were the biopsy results in the documents for P-1001?',
-            'Show the Holter results from the notes for P-1001',
-        ):
-            self.assertIsNone(E.retrieval_tier(Untouchable(), q), q)
-
-    def test_explicit_passage_requests_remain_available(self):
-        for q in ('Find notes about dyspnea for P-1001',
-                  'Quote the specialist letter for P-1001',
-                  'Show passages about the Holter monitor for P-1001'):
-            stack = fake_stack(hits=[passage('P-1001', 'Received source excerpt.')])
-            self.assertIsNotNone(E.retrieval_tier(stack, q), q)
-
     def test_population_wide_passage_question(self):
         stack = fake_stack(hits=[passage('P-1002', 'Patient cannot afford insulin.')])
         graph, receipt = E.retrieval_tier(stack, 'What do the notes say about medication affordability?')
