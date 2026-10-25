@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-25T01:09:25.568205+00:00",
+  "updated_at": "2026-10-25T04:42:22.188438+00:00",
   "decision_basis": "AGERE_SHARED_FRONTIER_2026-10-20.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -362,14 +362,14 @@
     "kind": "implementation_delivered_qualification_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Qualified chest radiograph answers require source body-site/modality support. Generic radiographs remain available for broad X-ray requests. Separate source dates/findings and source-kind constraints are preserved. Saved plans version note interpretation and checking.",
-    "measured_failure_reduction": "b3bc46d: qualified report sources are exactly2, generic radiograph request retains3.79focusedtests(1skip),41/40module regression1samefailure/0new;243/295freeparaphrasesonboth,0lost. Clean normal requests(eval=None)pass exactscope; repeat4.8s/0APIcalls/$0. Earlier benchmark-header and cost-window mislabelling corrected without changing raw receipts or comparison scores.",
+    "user_behavior_delta": "Atomic answer columns cannot overwrite patient identity or derived columns",
+    "measured_failure_reduction": "Saved BUILDx2-18 real patientID retained instead ofunknown; unresolved membership/count range preserved; no accuracy gainclaimed.30focusedtests1skip; release20/19moduleszero fail on finalmatchedrerun, initialflaky evaluationcachetest retained/whole35testmodulepassed. Normal source scope exact2reports/evalNone/$0. Initialartifactsetupsmokeknown$.001017174 plus1failedwithoutusage, originalsharedartifacts restored.",
     "evidence": [
-      "docs/agere/COMPARISON_RESULTS_2026-10-24.md",
-      "artifacts/agere-imaging-scope-b3bc46d/implementation-receipt.json"
+      "artifacts/agere-atomic-identity-03904dd/implementation-receipt.json",
+      "docs/agere/DEV_GENERALIZATION_2026-10-24.md"
     ],
     "remaining_gap": "95%/99% not established. Original heldout30% and CHECK13/71 remain unchanged/closed. Published scoring can over-credit incidental values, unsupported absences and passage citations. Clinical/source semantic proof and unfamiliar composition remain incomplete. All10areas/G3active/G5incomplete.",
-    "next_action": "G3 next: reproduce/fix atomic_questions result-column collision from saved BUILDx2-18, where generated keypatient_id overwrites actualpatientID withunknown. Preserve immutable input reports, real patient membership and unresolved IDs; deterministic safe output names must prevent identity/derived-column collisions. No API needed for reproduction/replay. Validate synthetic counterexamples and regression vs currentmain before landing. Then address premature accepted partial/unknown results while retaining useful fallback evidence. Haiku first for any necessary targeted paid validation; no new monetary/time caps, no fullpaidBUILDrepeat, no heldout/CHECK inspection or reruns. All10areas retained/G5incomplete/>95%99%unmet.",
+    "next_action": "G3: complete matched provider-disabled dev paraphrase measurement of partial-continuation candidate in /private/tmp/agere-continue-partial versus03904dd; inspect onlydev regressions. Preserve checked partial fallback while later tiers try fullanswer.59focused mockedtests pass,27/26module regressionzero failures; finalfallbackaccepted-flag refinement awaits finaldiff. Then targeted Haiku-first dev diagnostic with dedicatedledger/spend; land onlyzero-new-failure diff. Incomingmain312b13d noteadapter flattening must preserveAND/OR/NOT/structuredscope beforeactivation. No heldout/CHECK reruns orinspection, no newcaps; all10areas/G3active/G5incomplete.",
     "next": "G3: demonstrate the full original compound request through the existing shared path, binding every requirement to executed evidence or a specific supported unknown, exact conditional synthetic work, faithful HTML and loop-closure monitoring. Regimen, care-team and measurement primitives are integrated; do not add another narrow helper without a reproduced missing behavior. The one unmodified no-paid original-question attempt timed out locally after20seconds; local unfamiliar interpretation remains unqualified. Preserve this failure separately from authored execution fixtures. No paid replay, protected evaluation, execution-authority bypass or live fixture injection. Then close remaining broad-domain composition and generated-meaning/latency failures; independent qualification remains separate.",
     "latest_review": {
       "at": "2026-10-21T02:25:18.143040+00:00",
