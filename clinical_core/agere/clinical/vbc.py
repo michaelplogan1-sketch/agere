@@ -340,41 +340,45 @@ def _utilization(db, people, attr, p, start, end):
 
 
 def _claims(db, start, end):
-    """Paid medical and pharmacy claims by patient and service month (cents), with arrival lag in months."""
+    """Counted medical paid by service month; net pharmacy payer deltas by event month (Mike 2026-10-25)."""
+    if not _has_table(db, 'pharmacy_claim_event') or not _has_table(db, 'payer_claim'):
+        raise ValueError('Counted medical claims and pharmacy transaction deltas are required to compute payer spend')
     rows = []
+    # Explicit allowed-cost analyses retain received provider allowed amounts. Payer spend never uses these raw payments.
     for pid, payload, available in db.execute("SELECT patient_id, payload, available_date FROM record WHERE stream='medical_claims'"):
         r = json.loads(payload)
-        if r.get('status') != 'paid' or not r.get('service_date') or not (start <= r['service_date'][:10] <= end): continue
-        rows.append((pid, r['service_date'][:7], r.get('allowed_cents') or 0, r.get('payer_paid_cents') or 0, 'medical', available))
+        if r.get('status') == 'paid' and r.get('service_date') and start <= r['service_date'][:10] <= end:
+            rows.append((pid, r['service_date'][:7], r.get('allowed_cents') or 0, 0, 'medical', available))
     for pid, payload, available in db.execute("SELECT patient_id, payload, available_date FROM record WHERE stream='pharmacy_claims'"):
         r = json.loads(payload)
         d = (r.get('event_date') or '')[:10]
         if r.get('transaction_status') != 'paid' or not d or not (start <= d <= end): continue
         paid = (r.get('payer_paid_cents') or 0)
-        rows.append((pid, d[:7], paid + (r.get('patient_paid_cents') or 0), paid, 'pharmacy', available))
+        rows.append((pid, d[:7], paid + (r.get('patient_paid_cents') or 0), 0, 'pharmacy', available))
     payer = _payer_claims(db, start, end)
     if payer is not None:  # payer feed present: it is the cost source for every patient it covers
         covered = payer[0]
         rows = [r for r in rows if r[0] not in covered] + payer[1]
+    # Mike 2026-10-25: paid pharmacy spend spans all sources and nets transactions in their event month.
+    rows += [(pid, day[:7], 0, paid or 0, 'pharmacy', day) for pid, day, paid in db.execute(
+        'SELECT patient_id, event_date, payer_paid_delta_cents FROM pharmacy_claim_event WHERE event_date BETWEEN ? AND ?', (start, end))]
     return rows
 
 
 def _payer_claims(db, start, end):
-    """Paid payer-feed claims (semantic payer_claim at its final adjudication, payer_pharmacy_claim) in the window:
-    (patients with any payer claim, rows). None when the release has no payer feed. Only the current version of each
-    claim counts (replacement over original, voids and CARC 18 duplicates excluded: counts_in_metrics), and pharmacy
-    claims reversed by a B2 return to stock are not spend (counts_as_fill)."""
+    """Counted payer claims by service date, plus the explicitly allowed pharmacy component.
+    Pharmacy payer spend is added separately from all transaction deltas in _claims (Mike 2026-10-25)."""
     if not _has_table(db, 'payer_claim'): return None
     covered = {pid for (pid,) in db.execute('SELECT patient_id FROM payer_claim UNION SELECT patient_id FROM payer_pharmacy_claim')}
-    if not covered: return None
     claim_cols = {r[1] for r in db.execute('PRAGMA table_info(payer_claim)')}
     rx_cols = {r[1] for r in db.execute('PRAGMA table_info(payer_pharmacy_claim)')}
-    current = ' AND counts_in_metrics = 1' if 'counts_in_metrics' in claim_cols else ''
+    if 'counts_in_metrics' not in claim_cols: raise ValueError('Medical payer spend requires counted claim versions')
+    current = ' AND counts_in_metrics = 1'
     filled = ' AND counts_as_fill = 1' if 'counts_as_fill' in rx_cols else ''
     rows = [(pid, svc[:7], allowed or 0, paid or 0, 'medical', available) for pid, svc, allowed, paid, available in db.execute(
-        "SELECT patient_id, service_from, allowed_cents, paid_cents, last_available_date FROM payer_claim "
-        "WHERE final_status = 'paid' AND service_from IS NOT NULL AND substr(service_from, 1, 10) BETWEEN ? AND ?" + current, (start, end))]
-    rows += [(pid, d[:7], (plan or 0) + (patient or 0), plan or 0, 'pharmacy', available) for pid, d, plan, patient, available in db.execute(
+        "SELECT patient_id, service_from, CASE WHEN final_status = 'paid' THEN allowed_cents ELSE 0 END, paid_cents, last_available_date FROM payer_claim "
+        "WHERE service_from IS NOT NULL AND substr(service_from, 1, 10) BETWEEN ? AND ?" + current, (start, end))]
+    rows += [(pid, d[:7], (plan or 0) + (patient or 0), 0, 'pharmacy', available) for pid, d, plan, patient, available in db.execute(
         "SELECT patient_id, fill_date, plan_paid_cents, patient_pay_cents, available_date FROM payer_pharmacy_claim "
         "WHERE claim_status = 'paid' AND fill_date BETWEEN ? AND ?" + filled, (start, end))]
     return covered, rows
@@ -433,7 +437,7 @@ def _cost(db, people, attr, p, start, end):
                      'pharmacy_allowed_pmpm': round(g['pharmacy_allowed'] / mm, 2),
                      'pharmacy_paid_pmpm': round(g['pharmacy_paid'] / mm, 2)})
     rows.sort(key=(lambda r: r['group']) if timed else (lambda r: -r['allowed_pmpm_completed']))
-    return rows, ('Paid medical claims by service month plus paid pharmacy claims, for enrolled member-months. '
+    return rows, ('Counted medical paid by service month plus net pharmacy payer deltas by event month, for enrolled member-months. '
                   f'Completion via chain-ladder on arrival lag (factors by months of runout: { {k: round(v, 3) for k, v in factors.items()} }).')
 
 

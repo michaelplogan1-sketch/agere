@@ -103,12 +103,12 @@ class PracticeGap:
         order = ('desc' if m['worse'] == 'high' else 'asc') if direction == 'worst' else 'desc' if direction == 'high' else 'asc'
         if m.get('per1000'):
             rows = ctx.rows(
-                f"WITH g AS (SELECT p.patient_id, {gx} AS grp FROM patient p WHERE {ctx.living}), "
+                f"WITH g AS (SELECT p.patient_id, {gx} AS grp FROM patient p WHERE {ctx.event_population}), "
                 f"e AS (SELECT u.patient_id, COUNT(*) AS visits FROM utilization_event u WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} GROUP BY u.patient_id) "
                 f"SELECT grp, COUNT(*) AS n, COALESCE(SUM(e.visits), 0) AS k, 1000.0 * COALESCE(SUM(e.visits), 0) / COUNT(*) AS rate "
                 f"FROM g LEFT JOIN e USING (patient_id) WHERE grp IS NOT NULL GROUP BY grp HAVING COUNT(*) >= {m['minimum']} ORDER BY rate {order.upper()}, grp")
             overall = ctx.rows(
-                f"WITH g AS (SELECT p.patient_id FROM patient p WHERE {ctx.living}), "
+                f"WITH g AS (SELECT p.patient_id FROM patient p WHERE {ctx.event_population}), "
                 f"e AS (SELECT u.patient_id, COUNT(*) AS visits FROM utilization_event u WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} GROUP BY u.patient_id) "
                 f"SELECT COUNT(*) AS n, COALESCE(SUM(e.visits), 0) AS k FROM g LEFT JOIN e USING (patient_id)")[0]
             top = rows[:3]
@@ -122,8 +122,8 @@ class PracticeGap:
             tables['ranking'] = [{gname: r['grp'], 'patients': r['n'], 'ed_visits': r['k'], 'ed_visits_per_1000': round(r['rate'], 1)} for r in rows]
             headline = (f"{top[0]['grp']} has the {'most' if order == 'desc' else 'fewest'} ED visits per 1,000 patients ({top[0]['rate']:.1f})" if top else 'No group meets the minimum size')
             return dict(headline=headline, facts=facts, table=tables['ranking'], tables=tables,
-                        read_back=f"Ranking {gname}s by ED visits per 1,000 living patients, last 12 months to {ctx.as_of}, groups of at least {m['minimum']} patients; "
-                                  "living patients; all-source ED visits.", notes=['ED visits are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated).'])
+                        read_back=f"Ranking {gname}s by ED visits per 1,000 patients, last 12 months to {ctx.as_of}, groups of at least {m['minimum']} patients; "
+                                  "patients; all-source ED visits.", notes=['ED visits are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated).'])
         rows = ctx.rates(gx, m['population'], m['numerator'], minimum=m['minimum'], order=order)
         overall = ctx.overall(m['population'], m['numerator'])
         if m.get('count_ranked'):
@@ -174,7 +174,7 @@ def conditions_gaps(ctx):
         'heart_failure': dict(label='heart failure patients', population=ctx.cond('heart_failure'),
                               gaps=[('nogdmt', 'no GDMT medication fill (none of the four pillars: evidence-based beta-blocker, ACEI/ARB/ARNI, MRA, SGLT2 inhibitor) in the last 12 months',
                                      f"NOT {ctx.fill(GDMT)}")],
-                              escalators=[('adm', 'were admitted to the hospital in the last 12 months', ctx.events('inpatient'))],
+                              escalators=[('adm', 'were admitted to the hospital in the last 12 months', ctx.events('hospital_stay'))],
                               tiers=[('nogdmt_adm', ['nogdmt', 'adm'], 'call first'), ('nogdmt', ['nogdmt'], 'next')]),
         'hypertension': dict(label='adult hypertensives (18-85)', population=f"{ctx.cond('hypertension')} AND {ctx.age(18, 85)}",
                              gaps=[('uncontrolled', 'a latest blood pressure of 140/90 or higher',
@@ -256,13 +256,13 @@ class Prioritize:
     def discharged(cls, ctx):
         days = 90
         start = f"date({q(ctx.as_of)}, '-{days} days')"
-        pop = f"EXISTS (SELECT 1 FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.discharge_known = 1 AND s.discharge_date > {start} AND s.discharge_date <= {q(ctx.as_of)})"
+        pop = f"EXISTS (SELECT 1 FROM stay s WHERE s.patient_id = p.patient_id AND s.type IN ('inpatient', 'observation') AND s.discharge_known = 1 AND s.discharge_date > {start} AND s.discharge_date <= {q(ctx.as_of)})"
         n = ctx.count(pop)
         # no completed outpatient follow-up (office, specialist or telehealth contact) after the patient's latest discharge in the window
-        latest = f"(SELECT MAX(s.discharge_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type = 'inpatient' AND s.discharge_known = 1 AND s.discharge_date > {start} AND s.discharge_date <= {q(ctx.as_of)})"
+        latest = f"(SELECT MAX(s.discharge_date) FROM stay s WHERE s.patient_id = p.patient_id AND s.type IN ('inpatient', 'observation') AND s.discharge_known = 1 AND s.discharge_date > {start} AND s.discharge_date <= {q(ctx.as_of)})"
         nofu = f"NOT {ctx.visit_after(latest)}"
         ids = ctx.ids(pop, nofu)
-        facts = [fact('n', f"{n:,} patients were discharged from an inpatient stay in the last {days} days.", value=n, unit='patients'),
+        facts = [fact('n', f"{n:,} patients were discharged from a hospital stay in the last {days} days.", value=n, unit='patients'),
                  fact('no_fu', f"{len(ids):,} of those {n:,} ({pct(len(ids) / n)}%) have had no outpatient follow-up visit since discharge.", value=len(ids),
                       numerator=len(ids), denominator=n, unit='patients')]
         return dict(headline=f"{len(ids):,} of {n:,} recently discharged patients have had no outpatient follow-up visit since discharge",
@@ -540,7 +540,7 @@ class SpendConcentration:
 class YoyTrend:
     NAME = 'yoy_trend'
     WORDS = set('''did do does are is were was go up or down from to and which drugs moved it most trending hospital pharmacy visits why compared with versus vs'''.split())
-    METRICS = [(r'hospital\s+admissions|admissions|inpatient\s+stays', 'admissions'), (r'ed\s+visits|emergency\s+(?:department\s+)?visits', 'ed'),
+    METRICS = [(r'inpatient\s+(?:admissions|stays)', 'inpatient'), (r'hospital\s+(?:admissions|stays)|admissions|hospitali[sz]ations', 'admissions'), (r'ed\s+visits|emergency\s+(?:department\s+)?visits', 'ed'),
                (r'pharmacy\s+spend|drug\s+spend|rx\s+spend', 'pharmacy'), (r'medical\s+spend|claims\s+spend|medical\s+claims\s+spend', 'medical')]
 
     @classmethod
@@ -564,19 +564,19 @@ class YoyTrend:
     def run(cls, ctx, params):
         y0, y1, metric = params['y0'], params['y1'], params['metric']
         facts, tables, notes = [], {}, []
-        if metric in ('admissions', 'ed'):
-            kind = 'inpatient' if metric == 'admissions' else 'ed_visit'
-            noun = 'hospital admissions' if metric == 'admissions' else 'ED visits'
+        if metric in ('admissions', 'inpatient', 'ed'):
+            kind = 'hospital_stay' if metric == 'admissions' else 'inpatient' if metric == 'inpatient' else 'ed_visit'
+            noun = 'hospital admissions' if metric == 'admissions' else 'inpatient admissions' if metric == 'inpatient' else 'ED visits'
             vals = {}
             for y in (y0, y1):
-                vals[y] = ctx.one(f"SELECT COUNT(*) FROM utilization_event WHERE kind = {q(kind)} AND substr(event_date, 1, 4) = {q(str(y))}", 0)
+                vals[y] = ctx.one(f"SELECT COUNT(*) FROM utilization_event WHERE {ctx.event_kind(kind, 'kind')} AND substr(event_date, 1, 4) = {q(str(y))}", 0)
             unit = 'events'
             notes.append(f"{cap(noun)} are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated), counted by event year.")
         elif metric == 'pharmacy':
             noun, unit = 'pharmacy spend', 'USD'
-            vals = {y: (ctx.one(f"SELECT COALESCE(SUM(plan_paid_cents), 0) FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND substr(fill_date, 1, 4) = {q(str(y))}", 0) or 0) / 100.0
+            vals = {y: (ctx.one(f"SELECT COALESCE(SUM(payer_paid_delta_cents), 0) FROM pharmacy_claim_event WHERE substr(event_date, 1, 4) = {q(str(y))}", 0) or 0) / 100.0
                     for y in (y0, y1)}
-            notes.append('Pharmacy spend is plan-paid dollars on pharmacy claims that count as fills (paid, not reversed or rejected), by fill year.')
+            notes.append('Pharmacy spend is net payer dollars over all pharmacy transactions, reversals and recoupments netted, by event year (Mike 2026-10-25).')
         else:
             noun, unit = 'medical spend', 'USD'
             vals = {y: (ctx.one(f"SELECT COALESCE(SUM(paid_cents), 0) FROM payer_claim WHERE counts_in_metrics = 1 AND substr(service_from, 1, 4) = {q(str(y))}", 0) or 0) / 100.0
@@ -598,9 +598,9 @@ class YoyTrend:
                                          + (f" ({'+' if d > 0 else ''}{pc * 100:.1f}%)." if pc is not None else '.'), value=False))
         if metric == 'pharmacy' and params['movers']:
             rows = ctx.rows(
-                f"SELECT drug_name, SUM(CASE WHEN substr(fill_date, 1, 4) = {q(str(y1))} THEN COALESCE(plan_paid_cents, 0) ELSE 0 END) / 100.0 AS spend_{y1}, "
-                f"SUM(CASE WHEN substr(fill_date, 1, 4) = {q(str(y0))} THEN COALESCE(plan_paid_cents, 0) ELSE 0 END) / 100.0 AS spend_{y0} FROM payer_pharmacy_claim "
-                f"WHERE counts_as_fill = 1 AND substr(fill_date, 1, 4) IN ({q(str(y0))}, {q(str(y1))}) GROUP BY drug_name")
+                f"SELECT drug_name, SUM(CASE WHEN substr(event_date, 1, 4) = {q(str(y1))} THEN COALESCE(payer_paid_delta_cents, 0) ELSE 0 END) / 100.0 AS spend_{y1}, "
+                f"SUM(CASE WHEN substr(event_date, 1, 4) = {q(str(y0))} THEN COALESCE(payer_paid_delta_cents, 0) ELSE 0 END) / 100.0 AS spend_{y0} FROM pharmacy_claim_event "
+                f"WHERE substr(event_date, 1, 4) IN ({q(str(y0))}, {q(str(y1))}) GROUP BY drug_name")
             for r in rows: r['change'] = round(r[f'spend_{y1}'] - r[f'spend_{y0}'], 2)
             ups = sorted(rows, key=lambda r: -r['change'])[:3]
             downs = sorted(rows, key=lambda r: r['change'])[:3]
@@ -688,13 +688,13 @@ class Association:
     def run(cls, ctx, params):
         window = f"{ctx.in_window('a.scheduled_date')}"
         notes = [f'Appointments scheduled in the 12 months to {ctx.as_of} whose outcome is known (no-show, fulfilled, attended or arrived); the no-show rate is no-shows over those.',
-                 'Patients are living patients.']
+                 'Event rates include every patient, including deceased patients (Mike 2026-10-25).']
         if params['kind'] == 'need':
             needs = [r['need'] for r in ctx.rows("SELECT DISTINCT need FROM social_need WHERE positive = 1 ORDER BY need")]
             rows = []
             for need in needs:
-                pos = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND {ctx.social_need(need)}"))[0]
-                neg = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND NOT {ctx.social_need(need)}"))[0]
+                pos = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.event_population} AND {ctx.social_need(need)}"))[0]
+                neg = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.event_population} AND NOT {ctx.social_need(need)}"))[0]
                 if not pos['resolved'] or not neg['resolved']: continue
                 rows.append({'need': need, 'positive_rate': pos['missed'] / pos['resolved'], 'positive': pos, 'others_rate': neg['missed'] / neg['resolved'], 'others': neg})
             rows.sort(key=lambda r: -(r['positive_rate'] - r['others_rate']))
@@ -714,7 +714,7 @@ class Association:
         buckets = [('booked within a week (0-7 days ahead)', 'a.lead_time_days <= 7'), ('booked 8-30 days ahead', 'a.lead_time_days BETWEEN 8 AND 30'), ('booked 31 or more days ahead', 'a.lead_time_days >= 31')]
         rows = []
         for label, cond in buckets:
-            r = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND a.lead_time_days IS NOT NULL AND {cond}"))[0]
+            r = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.event_population} AND a.lead_time_days IS NOT NULL AND {cond}"))[0]
             rows.append({'bucket': label, 'missed': r['missed'], 'resolved': r['resolved'], 'rate': r['missed'] / r['resolved'] if r['resolved'] else None})
         facts = [fact(f'b{i}', f"{r['bucket'].capitalize()}: {pct(r['rate'])}% no-show ({r['missed']} of {r['resolved']} appointments).", value=pct(r['rate']),
                       numerator=r['missed'], denominator=r['resolved'], unit='%') for i, r in enumerate(rows)]
@@ -789,10 +789,10 @@ class SegmentCompare:
                                       numerator=r['k'], denominator=r['n'], unit='%'))
                     rows.append({'segment': label, 'measure': 'hypertensives with blood pressure under 140/90', 'percent': pct(r['rate']), 'numerator': r['k'], 'denominator': r['n']})
                 else:
-                    kind = 'ed_visit' if mk == 'ed' else 'inpatient'
+                    kind = 'ed_visit' if mk == 'ed' else 'hospital_stay'
                     noun = 'ED visits' if mk == 'ed' else 'hospital admissions'
-                    r = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM((SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND u.kind = {q(kind)} AND {ctx.in_window('u.event_date')})), 0) AS k "
-                                 f"FROM patient p WHERE {ctx.living} AND {cond}")[0]
+                    r = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM((SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND {ctx.event_kind(kind)} AND {ctx.in_window('u.event_date')})), 0) AS k "
+                                 f"FROM patient p WHERE {ctx.event_population} AND {cond}")[0]
                     rate = 1000.0 * r['k'] / r['n'] if r['n'] else None
                     facts.append(fact(f'{label}_{mk}', f"{label} {noun} per 1,000 patients (last 12 months): {rate:.0f} ({r['k']:,} {noun} among {r['n']:,} patients) = {rate:.1f}.",
                                       value=round(rate, 1), numerator=r['k'], denominator=r['n'], unit='per 1,000'))
@@ -824,21 +824,21 @@ class FrequentUsers:
     @classmethod
     def run(cls, ctx, params):
         n = params['minimum']
-        ids = ctx.ids(ctx.events('ed_visit', n))
-        total = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {ctx.living}", 0)
-        mine = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {ctx.living} "
+        ids = ctx.ids(ctx.patient_population, ctx.events('ed_visit', n))
+        total = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {ctx.event_population}", 0)
+        mine = ctx.one(f"SELECT COUNT(*) FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'ed_visit' AND {ctx.in_window('u.event_date')} AND {ctx.event_population} "
                        f"AND {ctx.events('ed_visit', n)}", 0)
-        hf = ctx.count(ctx.events('ed_visit', n), ctx.cond('heart_failure'))
-        lobs = ctx.rows(f"SELECT {ctx.lob} AS lob, COUNT(*) AS patients FROM patient p WHERE {ctx.living} AND {ctx.events('ed_visit', n)} GROUP BY lob ORDER BY patients DESC, lob")
+        hf = ctx.count(ctx.patient_population, ctx.events('ed_visit', n), ctx.cond('heart_failure'))
+        lobs = ctx.rows(f"SELECT {ctx.lob} AS lob, COUNT(*) AS patients FROM patient p WHERE {ctx.patient_population} AND {ctx.events('ed_visit', n)} GROUP BY lob ORDER BY patients DESC, lob")
         share = mine / total if total else None
         share_text = f'{pct(share, 0):.0f}%' if share is not None else 'unknown share (no ED visits)'
         facts = [fact('n', f"{len(ids)} patients had {n} or more ED visits in the last 12 months.", value=len(ids), unit='patients'),
-                 fact('visits', f"They account for {mine:,} of {total:,} living-patient ED visits ({share_text}).", value=pct(share), numerator=mine, denominator=total, unit='%'),
+                 fact('visits', f"Frequent users (including deceased patients) account for {mine:,} of {total:,} ED visits of all patients ({share_text}).", value=pct(share), numerator=mine, denominator=total, unit='%'),
                  fact('hf', f"{hf} of them have heart failure.", value=hf, unit='patients'),
                  fact('lob', (f"Largest line of business among them: {lobs[0]['lob']} ({lobs[0]['patients']} of {len(ids)})." if lobs else 'No frequent ED users; no largest line of business.'), value=lobs[0]['lob'] if lobs else None)]
-        return dict(headline=f"{len(ids)} frequent ED users ({n}+ visits in 12 months) drive {share_text} of living-patient ED visits", facts=facts, patient_ids=ids, cohort_role='listed',
+        return dict(headline=f"{len(ids)} living frequent ED users; frequent users across all patients account for {share_text} of ED visits", facts=facts, patient_ids=ids, cohort_role='listed',
                     table=[{'line_of_business': r['lob'], 'patients': r['patients']} for r in lobs],
-                    read_back=f"Living patients with {n} or more all-source ED visits in the 12 months to {ctx.as_of}, their share of living-patient ED visits, heart-failure overlap and line of business.",
+                    read_back=f"Living patients with {n} or more all-source ED visits in the 12 months to {ctx.as_of}, the share of all ED visits attributable to frequent users including deceased patients, heart-failure overlap and line of business.",
                     notes=[f'"Frequent ED user" is read as {n} or more ED visits in the last 12 months; the governed repeat-user metric uses 2 or more.'])
 
 

@@ -30,9 +30,11 @@ class TemporalComposition(unittest.TestCase):
     def setUpClass(cls):
         cls.cat = R.Catalog.load(build()/'stack')
         cls.db = sqlite3.connect(f'file:{cls.cat.target}?mode=ro', uri=True)
-        cls.stays = list(cls.db.execute("SELECT patient_id, admit_date, discharge_date, discharge_known FROM stay WHERE type = 'inpatient'"))
+        # Mike 2026-10-25: unqualified hospital admissions/discharges include observation too.
+        cls.stays = list(cls.db.execute("SELECT patient_id, admit_date, discharge_date, discharge_known FROM stay WHERE type IN ('inpatient', 'observation')"))
+        cls.inpatient = list(cls.db.execute("SELECT patient_id, admit_date, discharge_date, discharge_known FROM stay WHERE type = 'inpatient'"))
         cls.ed = list(cls.db.execute("SELECT patient_id, event_date FROM utilization_event WHERE kind = 'ed_visit' AND event_date IS NOT NULL"))
-        cls.dead = {r[0] for r in cls.db.execute('SELECT patient_id FROM death')}  # patients are living patients (decision context, 2026-10-23)
+        cls.dead = {r[0] for r in cls.db.execute("SELECT patient_id FROM death UNION SELECT patient_id FROM patient WHERE data_segment = 'duplicate_chart'")}  # patients are living patients (decision context, 2026-10-23)
 
     @classmethod
     def tearDownClass(cls): cls.db.close()
@@ -67,7 +69,7 @@ class TemporalComposition(unittest.TestCase):
         got, req, _ = self.count('How many patients filled a statin within 3 months after their first inpatient admission?')
         self.assertEqual((req['where']['days'], req['where']['then']['table']), ([1, 90], 'fill'))
         first = {}
-        for p, a, _, _ in self.stays:
+        for p, a, _, _ in self.inpatient:
             if a and (p not in first or a < first[p]): first[p] = a
         fills = self.db.execute("SELECT patient_id, fill_date FROM fill WHERE drug_class = 'statin'").fetchall()
         ref = {p for p, f in fills if p in first and f and 1 <= days(f, first[p]) <= 90}

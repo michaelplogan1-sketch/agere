@@ -158,6 +158,8 @@ def build(path):
         ('x1', 'P1', '2028-02-01', 'paid', 1000, None), ('x2', 'P1', '2028-03-01', 'paid', 2000, 'x3'),
         ('x3', 'P1', '2028-03-01', 'reversed', -2000, None), ('x4', 'P2', '2028-04-01', 'recouped', -300, None),
         ('x5', 'P2', '2028-04-02', 'rejected', 0, None), ('x6', 'P2', '2029-04-02', 'paid', 500, None)])
+    # Mike 2026-10-25: transaction deltas, including reversals; event dates are authored here as the fill dates.
+    db.execute('CREATE TABLE pharmacy_claim_event AS SELECT patient_id, fill_date AS event_date, plan_paid_cents AS payer_paid_delta_cents FROM payer_pharmacy_claim')
     db.executemany('INSERT INTO enrollment_span VALUES (?,?,?,?,?,?,?)', [
         ('e1', 'P1', 'commercial', 'commercial', '2027-06-01', None, 'PRAC-1'),
         ('e2', 'P2', 'medicaid', 'medicaid', '2028-03-15', '2028-08-31', 'PRAC-2'),
@@ -201,9 +203,9 @@ QUESTIONS = {
                    'immunizations, labs, notes).', 2),
     'renumbered': ('How many patients got a new chart number when their practice changed EHRs? Definition: Release-wide. Patients '
                    'whose MRN changed at an EHR go-live.', 1),
-    'paid_by_product': ("Break down 2028 medical claim payments by line of business. Definition: All patients. Sum of paid_amount "
-                        "over every payer medical claim adjudication with a paid date in 2028 (reversals and recoupments are negative; "
-                        "voids pay 0), by the claim's product.", {'commercial': 300.0, 'medicaid': 90.0}),
+    # Mike 2026-10-25: counted medical claims by service date; all pharmacy transaction deltas by event date.
+    'paid_by_product': ("Break down 2028 medical claim payments by line of business. Definition: All patients. Sum of paid_cents "
+                        "on counted payer medical claims with service_from in 2028, by the claim's product.", {'commercial': 310.0, 'medicaid': 50.0}),
     'pmpm_commercial': ('What was our commercial PMPM in 2028? Definition: Allowed amount on final-adjudication paid commercial medical '
                         'claims with service in 2028 / 2028 commercial member-months (delivered spans, through death).' + SCOPE, 56.67),
     'pmpm_total': ('What was our total medical PMPM in 2028? Definition: Allowed amount on final-adjudication paid medical claims with '
@@ -213,8 +215,8 @@ QUESTIONS = {
                   'adjudication is paid, service_from in 2028; CCLF payment amounts are not used.' + SCOPE +
                   " Native: patient responsibility is the payer's adjudicated member liability (835 CAS PR, flat member liability); "
                   'CCLF payment amounts are not used.', 30.0),
-    'rx': ('What did the plans pay for prescriptions in 2028? Definition: All patients. Sum of plan_paid on payer pharmacy claims with '
-           'fill date in 2028 (paid fills minus recoupments; reversed and rejected pay 0).', 7.0),
+    'rx': ('What did the plans pay for prescriptions in 2028? Definition: All patients. Sum of payer_paid_delta_cents on all pharmacy claim transactions with '
+           'event date in 2028 (reversals and recoupments netted).', 7.0),
     'recoup27': ('How many payments were taken back because coverage was terminated retroactively? Definition: All patients. Recouped '
                  'adjudications with CARC CO-27 through as_of.', 1),
     'member_months': ('How many member-months did we have in 2028 by line of business? Definition: Member-months in 2028 (covered on '
@@ -434,14 +436,21 @@ class CertificateTests(unittest.TestCase):
         self.assertEqual((high['status'], high['accept']), ('certified', True))
         self.assertEqual((low['status'], low['accept']), ('below_threshold', False))
 
-    def test_shipped_certificates_are_current(self):
-        """config/agere/cascade_thresholds.json certifies both tiers for the code as it is (refit after any edit)."""
+    def test_shipped_certificates_do_not_transfer_across_definition_changes(self):
+        """Mike 2026-10-25 changed VBC definitions; retain its old certificate as historical, never relabel it current."""
         with patch.dict(os.environ, {'AGERE_CASCADE_THRESHOLDS': str(cascade.FILE)}):
             cascade._CACHE.clear()
             for tier in ('dq_family', 'vbc_family'):
                 rec = cascade.record(tier)
                 self.assertIsNotNone(rec, tier)
                 self.assertTrue(rec['calibrated'])
+                if tier == 'vbc_family':
+                    self.assertNotEqual(rec['bind'], cascade.code_digest(tier))
+                    current = cascade.certify(tier, 1.0)
+                    self.assertEqual(current['status'], 'uncalibrated')
+                    self.assertFalse(current['certified'])
+                    self.assertIn('stale', current['reason'])
+                    continue
                 self.assertEqual(rec['bind'], cascade.code_digest(tier), f'{tier} certificate is stale: rerun tools/calibrate_cascades.py fit --write')
                 self.assertLessEqual(rec['bound'], rec['alpha'])
 
@@ -458,7 +467,7 @@ class CalibrationReferenceTests(Fixture):
                   {'family': 'roster_after_departure', 'unit': 'affiliations'},
                   {'family': 'paid', 'year': 2028, 'group': 'product'}, {'family': 'pmpm', 'year': 2028, 'prod': 'commercial'},
                   {'family': 'readmit', 'year': 2028, 'days': 30, 'rate': True}, {'family': 'repeat', 'n': 3, 'status': 'no_show'}]
-        expected = [2, 3, 3, 1, 2, 1, {'commercial': 300.0, 'medicaid': 90.0}, 56.67, 50.0, ['P1']]
+        expected = [2, 3, 3, 1, 2, 1, {'commercial': 310.0, 'medicaid': 50.0}, 56.67, 50.0, ['P1']]
         for t, e in zip(truths, expected):
             with self.subTest(t['family']):
                 got = ref.answer(t)

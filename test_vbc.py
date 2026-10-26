@@ -6,7 +6,8 @@ from test_aggregate_explain import build, pcp, visit
 
 
 def claim(pid, day, allowed, paid, status='paid', available=None):
-    return (pid, 'medical_claims', {'service_date': day, 'allowed_cents': allowed, 'payer_paid_cents': paid, 'status': status,
+    # Mike 2026-10-25: claim identity is required to project counted medical claims; do not sum anonymous raw payments.
+    return (pid, 'medical_claims', {'claim_id': f'{pid}-{day}', 'service_date': day, 'allowed_cents': allowed, 'payer_paid_cents': paid, 'status': status,
                                     'event_date': day, 'available_date': available or day})
 
 
@@ -29,6 +30,11 @@ class VBC(unittest.TestCase):
                 ('p2', 'vitals', {'blood_pressure_systolic': 128, 'blood_pressure_diastolic': 80, 'event_date': '2028-09-01'}),
                 claim('p1', '2028-02-10', 30000, 24000), claim('p2', '2028-03-10', 6000, 4000),
                 claim('p2', '2028-04-10', 6000, 0, status='denied'), claim('p4', '2028-05-10', 9999, 9999)]
+        # Mike 2026-10-25: paid-cost fixtures provide counted payer claims, rather than anonymous provider payments.
+        recs += [(pid, 'payer_medical_claims', {'payer_claim_id': r['claim_id'], 'service_from': r['service_date'],
+                  'service_to': r['service_date'], 'claim_status': r['status'], 'paid_amount': r['payer_paid_cents'] / 100,
+                  'allowed_amount': r['allowed_cents'] / 100, 'product': 'commercial', 'event_date': r['event_date'],
+                  'available_date': r['available_date']}) for pid, stream, r in recs if stream == 'medical_claims']
         cls.path = build(recs, patients)
         semantic_layer.build(cls.path)
         cls.period = {'start': '2028-01-01', 'end': '2028-12-31'}

@@ -141,7 +141,7 @@ class Rules(unittest.TestCase):
                 'group_by': 'none', 'leakage': 'organization', 'order': 1, 'discharge_events': True, 'referral_events': False, 'include_other': False}
         self.assertEqual(set(full), set(schema['properties']))
         p = pathway.validate(full)
-        self.assertEqual((p['expected'], p['targets'], p['horizons_days']), (None, ['emergency', 'inpatient'], [7, 30]))
+        self.assertEqual((p['expected'], p['targets'], p['horizons_days']), (None, ['emergency', 'hospital_stay'], [7, 30]))  # Mike 2026-10-25: generic hospital targets include observation.
 
     def test_acute_gap_detection(self):
         monthly = {f'2026-{m:02d}': (5, 300) for m in range(1, 11)}
@@ -239,7 +239,7 @@ class Compiler(unittest.TestCase):
         spec, p = self.route('Most common care paths for new diabetics')
         self.assertEqual((p['start'], p['index_concept'], p['anchor']), ('diagnosis', 'diabetes', 'first'))
         spec, p = self.route('Probability a CHF patient ends up admitted within 90 days starting from a PCP visit')
-        self.assertEqual((p['start'], p['targets'], p['window_days'], p['horizons_days']), ('primary_care', ['inpatient'], 90, [90]))
+        self.assertEqual((p['start'], p['targets'], p['window_days'], p['horizons_days']), ('primary_care', ['hospital_stay'], 90, [90]))  # Mike 2026-10-25: admitted includes observation.
         _, p = self.route('Show the patient journey after an urgent care visit by practice')
         self.assertEqual((p['start'], p['group_by']), ('urgent_care', 'practice'))
         _, p = self.route('Top 5 most common paths after an ED visit')

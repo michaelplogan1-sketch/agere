@@ -37,6 +37,7 @@ VERSION = 'demand/1'
 MEASURES = {
     'ed_visits': ('visit', 'emergency_visit', 'ED visits'),
     'inpatient_admissions': ('visit', 'inpatient_admission', 'inpatient admissions'),
+    'hospital_admissions': ('utilization_event', ('inpatient', 'observation'), 'hospital admissions'),
     'observation_stays': ('visit', 'observation_stay', 'observation stays'),
     'urgent_care_visits': ('visit', 'urgent_care_visit', 'urgent care visits'),
     'primary_care_visits': ('visit', 'primary_care_visit', 'primary care visits'),
@@ -129,7 +130,10 @@ def events(db, measure, patient_ids, as_of):
     members = set(patient_ids) if patient_ids is not None else None
     keep = lambda pid: members is None or pid in members
     rows, flags = [], Counter()
-    if source == 'visit':
+    if source == 'utilization_event':
+        for d, pid, org in db.execute("SELECT event_date, patient_id, organization_id FROM utilization_event WHERE kind IN ('inpatient', 'observation')"):
+            if keep(pid) and d and d[:10] <= as_of: rows.append((d[:10], pid, org, 1.0))
+    elif source == 'visit':
         for d, pid, org in db.execute('SELECT substr(event_date, 1, 10), patient_id, organization_id FROM visit WHERE type_concept = ?', (concept,)):
             if not keep(pid): continue
             if not d: flags['undated_visits'] += 1; continue

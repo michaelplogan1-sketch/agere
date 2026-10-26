@@ -41,6 +41,7 @@ ALIASES = {
     'emergency visits per 1,000': 'all_source_ed_visits_per_1000',
     'ed utilization per 1,000': 'all_source_ed_visits_per_1000',
     'inpatient admissions per 1,000': 'inpatient_admissions_per_1000',
+    'hospital admissions per 1,000': 'hospital_admissions_per_1000', 'admissions per 1,000': 'hospital_admissions_per_1000',
     'raf': 'cms_hcc_raf', 'average raf': 'cms_hcc_raf',
     'kidney health evaluation': 'kidney_health_evaluation_diabetes',
     'ked': 'kidney_health_evaluation_diabetes',

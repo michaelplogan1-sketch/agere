@@ -106,7 +106,23 @@ def execute(path, params, patient_ids=None, target=None, time_limit=None):
     limit = tier_remaining(time_limit or TIME_LIMIT_SECONDS)
     from . import decision_context  # the question's decision context: living patients and latest labs in the SQL that runs
     target = target or semantic_layer.ensure(path)
-    run_sql, dc_receipt = decision_context.enforce_sql(p['query'], p['returns'], _relations(target) if decision_context.current() else None)
+    state = decision_context.current()
+    token = None
+    # A compiled event-per-patient rate sums correlated event counts. Its denominator names patients, but the rate is
+    # event grain (Mike 2026-10-25). Keep lab enforcement and an outer composite answer's patient scope intact.
+    masked, _ = decision_context._mask(p['query'])
+    if (state is not None and p['returns'] != 'patient_set' and not decision_context.LIVING_ASK.search(state.question)
+            and not decision_context.PATIENT_COUNT.search(state.question)
+            and re.search(r'(?i)\bsum\s*\(\s*\(\s*select\s+count\s*\(', masked)
+            and re.search(r'(?i)\bfrom\s+"?(?:utilization_event|stay|fill|appointment)"?\b', masked)):
+        import copy
+        events = copy.copy(state)
+        events.population = {'living_only': False, 'reason': 'event rate: every patient and their events count (Mike 2026-10-25)'}
+        token = decision_context._SCOPE.set(events)
+    try:
+        run_sql, dc_receipt = decision_context.enforce_sql(p['query'], p['returns'], _relations(target) if state is not None else None)
+    finally:
+        if token is not None: decision_context._SCOPE.reset(token)
     shown = p
     p = {**p, 'query': run_sql}
     from . import duckdb_engine  # DuckDB serving (AGERE_SQL_ENGINE=duckdb) with SQLite fallback; shadow comparison

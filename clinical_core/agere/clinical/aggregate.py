@@ -182,7 +182,8 @@ def execute(path, patient_ids, params):
     members = set(patient_ids)
     # Fast path: encounter concepts read the semantic layer's typed encounter rows (concept already resolved)
     # instead of decoding every raw encounter payload; identical matching, dates and status.
-    fast = p['concept'] in concepts.ENCOUNTERS and p['measure'] in ('patients', 'events') and os.environ.get('AGERE_AGG_FAST', 'on') != 'off'
+    fast = p['concept'] in concepts.ENCOUNTERS and p['measure'] in ('patients', 'events') and (
+        p['concept'] == 'hospital_stay' or os.environ.get('AGERE_AGG_FAST', 'on') != 'off')
     raw_streams = streams - {'encounters', 'adt'} if fast else streams
     db = sqlite3.connect(f'file:{path / "stack.sqlite3"}?mode=ro', uri=True)
     try:
@@ -200,9 +201,17 @@ def execute(path, patient_ids, params):
                 npi_org = {n: o for n, o in sdb.execute('SELECT npi, min(organization_id) FROM organization WHERE npi IS NOT NULL GROUP BY 1')}
             except sqlite3.Error:
                 npi_org = {}
-            for pid, st, d, rd, ad, org, status, rid in sdb.execute(
+            if p['concept'] == 'hospital_stay':
+                # Mike 2026-10-25: all-source inpatient + observation events, including claims-only hospital stays.
+                query = ("SELECT e.patient_id, 'utilization_event', e.event_date, r.recorded_date, r.available_date, e.organization_id, 'completed', e.record_id "
+                         "FROM utilization_event e LEFT JOIN record r ON r.record_id = e.record_id WHERE e.kind IN ('inpatient', 'observation')")
+                params = ()
+            else:
+                query = (
                     'SELECT e.patient_id, e.source_table, e.event_date, r.recorded_date, r.available_date, e.organization_id, e.status, e.record_id '
-                    'FROM encounter e JOIN record r ON r.record_id = e.record_id WHERE e.type_concept = ?', (p['concept'],)):
+                    'FROM encounter e JOIN record r ON r.record_id = e.record_id WHERE e.type_concept = ?')
+                params = (p['concept'],)
+            for pid, st, d, rd, ad, org, status, rid in sdb.execute(query, params):
                 if pid in members:
                     if org and org.isdigit() and len(org) == 10: org = npi_org.get(org)  # unknown when no organization owns the NPI
                     records[pid].append({'source_table': st, 'event_date': d, 'recorded_date': rd, 'available_date': ad,

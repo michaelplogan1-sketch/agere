@@ -208,7 +208,7 @@ class AnswerShapes(unittest.TestCase):
         col = lambda q: next(c for p, c in analysis_graph.VBC_VALUE_COLUMNS if __import__('re').search(p, q))
         self.assertEqual(col('what was our medical pmpm on an allowed-amount basis for 2028?'), 'medical_allowed_pmpm')
         self.assertEqual(col('pharmacy pmpm, paid basis, 2028'), 'pharmacy_paid_pmpm')
-        self.assertEqual(col('what was our pmpm in 2028?'), 'allowed_pmpm')
+        self.assertEqual(col('what was our pmpm in 2028?'), 'paid_pmpm')  # Mike 2026-10-25: default spend is payer paid.
 
     def test_patient_list_question(self):
         self.assertTrue(analysis_graph.patient_list_question('Which members had their PHQ-9 rise by 5 or more points?'))

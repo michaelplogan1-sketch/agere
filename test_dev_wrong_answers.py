@@ -2,8 +2,7 @@
 
   1. a care-gap count ("diabetics haven't had an A1c") wrote its own death clause, which made the living filter stand down, so a second chart of
      a person was counted (b3-04, b3-21);
-  2. an event relation counted for a population (no-shows by practice) was not restricted to living patients, and a top-N cut at a tie had no
-     deterministic order (b3-29);
+  2. Mike 2026-10-25 superseded the living-only event rule: no-shows include every patient; top-N ties retain deterministic order (b3-29);
   3. the engine forms read condition evidence without the measurement table, so the diabetes / CKD lab rule never added anyone (b5-08, b5-24, b5-26);
   4. the preventive-gap labels named an age band the governed measure does not use.
 Expected numbers are computed here in plain Python from the rows, never copied from the SQL under test.
@@ -29,7 +28,8 @@ class Extra(Base):
                 db.execute("INSERT INTO appointment VALUES ('P05',?, 'no_show','no_show','PR2',5)", (f'2029-1{i}-05',))
             db.execute("INSERT INTO measurement VALUES ('mx1','P06','hba1c','2029-09-09',7.2,1,NULL,'labs')")
             db.execute("INSERT INTO measurement_latest VALUES ('P06','hba1c','2029-09-09',7.2,NULL,1,7.2,'mx1',NULL)")
-            for d in ('2030-02-01', '2030-03-01'):  # PR1 now has 3 no-shows, the same as PR2's living 3
+            # Mike 2026-10-25: deceased patients' no-shows count; tie PR1 and PR2 at six total events.
+            for d in ('2030-02-01', '2030-03-01', '2030-03-02', '2030-03-03', '2030-03-04'):
                 db.execute("INSERT INTO appointment VALUES ('P01',?, 'no_show','no_show','PR1',5)", (d,))
         self.catalog = R.Catalog.load(self.path)
 
@@ -49,19 +49,20 @@ class CareGapCountsEachPersonOnce(Extra):
         self.assertIn('duplicate_chart', sql)
 
 
-class EventRowsAreLivingPatientsAndTiesAreStable(Extra):
-    def test_no_shows_of_a_deceased_patient_are_not_counted(self):
+class EventRowsIncludeEveryoneAndTiesAreStable(Extra):
+    def test_no_shows_of_a_deceased_patient_are_counted(self):
         a = self.answer('Which practices had the most no-shows in the last year?')
         by = {}
         for p, d, s_, lead in APPTS:
-            if s_ == 'no_show' and in_win(d) and living(p): by['PR1' if p in ('P01', 'P02') else 'PR2'] = by.get('PR1' if p in ('P01', 'P02') else 'PR2', 0) + 1
-        by['PR1'] += 2  # the two no-shows added in setUp
-        self.assertEqual({r['organization_id']: r['count'] for r in a['table']}, by)  # P05's three PR2 no-shows are out
+            if s_ == 'no_show' and in_win(d): by['PR1' if p in ('P01', 'P02') else 'PR2'] = by.get('PR1' if p in ('P01', 'P02') else 'PR2', 0) + 1
+        by['PR1'] += 5
+        by['PR2'] += 3  # Mike 2026-10-25: P05's three deceased-patient events count.
+        self.assertEqual({r['organization_id']: r['count'] for r in a['table']}, by)
 
     def test_a_cut_at_a_tie_takes_the_first_group_by_id_every_time(self):
         for _ in range(3):
             a = self.answer('Which practice had the most no-shows in the last year?')
-            self.assertEqual([r['organization_id'] for r in a['table']], ['PR1'])  # PR1 and PR2 tie at 3: ties break by the group id
+            self.assertEqual([r['organization_id'] for r in a['table']], ['PR1'])  # Both practices have six events; ties break by group id.
 
     def test_the_event_rule_is_the_decision_contexts_not_a_special_case(self):
         self.assertIn('appointment', DC.EVENT_GRAIN_TABLES)

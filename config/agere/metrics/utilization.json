@@ -607,7 +607,7 @@
    "summary": "Distinct inpatient stays (stay.type = 'inpatient', collapsed by admit day and overlap) admitted in the period per 1,000 roster member-years.",
    "match": {
     "all": [
-     "admi|inpatient|hospitali",
+     "\\binpatient\\b",
      "per (?:1,?000|thousand)"
     ],
     "none": [
@@ -648,6 +648,62 @@
     "returns": "value"
    },
    "sql_template": "SELECT 1000.0 * (SELECT count(*) FROM stay WHERE type = 'inpatient' AND admit_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25) AS admits_per_1000_member_years"
+  },
+  {
+   "id": "hospital_admissions_per_1000",
+   "version": 1,
+   "name": "Hospital admissions per 1,000 member-years",
+   "status": "internal",
+   "definitions": [
+    "inpatient_admission",
+    "utilization_per_1000"
+   ],
+   "summary": "Distinct inpatient and observation hospital stays admitted in the period per 1,000 roster member-years; all patients and their events count.",
+   "match": {
+    "all": [
+     "admissions?|hospital (?:stays?|admissions?)|hospitali[sz]ations?",
+     "per (?:1,?000|thousand)"
+    ],
+    "none": [
+     "\\b(?:ed|er|emergency)\\b",
+     "\\binpatient\\b"
+    ]
+   },
+   "grain": {
+    "entity": "stay",
+    "key": "patient_id+admit_date",
+    "table": "stay"
+   },
+   "population": {
+    "summary": "Roster patients; member-years from roster headcount x period length."
+   },
+   "denominator": {
+    "summary": "Roster member-years / 1,000."
+   },
+   "numerator": {
+    "summary": "Inpatient and observation stays with admit_date in the period."
+   },
+   "time_anchor": {
+    "field": "stay.admit_date",
+    "mode": "period",
+    "default": "as_of_year"
+   },
+   "value_sets": {},
+   "unit": "per 1,000 member-years",
+   "expected_range": [
+    0,
+    2000
+   ],
+   "versioning": {
+    "rule": "latest_version_table",
+    "stream": "encounters",
+    "key": "encounter_id"
+   },
+   "output": {
+    "returns": "value"
+   },
+   "sql_template": "SELECT 1000.0 * (SELECT count(*) FROM stay WHERE type IN ('inpatient', 'observation') AND admit_date BETWEEN '{period_start}' AND '{period_end}') / ((SELECT count(*) FROM patient) * (julianday('{period_end}') - julianday('{period_start}') + 1) / 365.25) AS admits_per_1000_member_years",
+   "internal_reason": "Mike 2026-10-25: admissions and hospital stays include inpatient and observation."
   },
   {
    "id": "observation_stays",

@@ -29,14 +29,14 @@ from scipy.stats import beta as beta_dist, chi2, norm
 from . import concepts, semantic_layer
 
 VERSION = 'pathway/1'
-CARE_STATES = ('emergency', 'inpatient', 'observation', 'urgent_care', 'primary_care', 'specialty', 'telehealth', 'post_acute')
+CARE_STATES = ('emergency', 'inpatient', 'observation', 'hospital_stay', 'urgent_care', 'primary_care', 'specialty', 'telehealth', 'post_acute')
 EVENT_STATES = CARE_STATES + ('outside', 'other', 'discharge', 'referral', 'diagnosis')
 STATES = EVENT_STATES + ('end',)
-ACUTE = ('emergency', 'inpatient', 'observation')
+ACUTE = ('emergency', 'inpatient', 'observation', 'hospital_stay')
 GROUP_BY = ('none', 'practice', 'coverage_type')
 LEAKAGE = ('organization', 'organization_or_practice')
 ANCHORS = ('each', 'first')
-LABELS = {'emergency': 'ED', 'inpatient': 'inpatient', 'observation': 'observation', 'urgent_care': 'urgent care',
+LABELS = {'emergency': 'ED', 'inpatient': 'inpatient', 'observation': 'observation', 'hospital_stay': 'hospital stay (inpatient or observation)', 'urgent_care': 'urgent care',
           'primary_care': 'primary care', 'specialty': 'specialty', 'telehealth': 'telehealth', 'post_acute': 'post-acute',
           'outside': 'outside organisation', 'other': 'other', 'discharge': 'discharge', 'referral': 'referral',
           'diagnosis': 'diagnosis', 'end': 'no further contact'}
@@ -88,11 +88,14 @@ def validate(p):
     if not isinstance(per, dict) or set(per) - {'start', 'end'}: raise ValueError('period takes start/end')
     out['period'] = {'start': _iso(per.get('start', ''), 'period.start'), 'end': _iso(per.get('end', ''), 'period.end')}
     if all(out['period'].values()) and out['period']['start'] > out['period']['end']: raise ValueError('period start after end')
-    targets = p.get('targets') or ['emergency', 'inpatient']
+    targets = p.get('targets') or ['emergency', start if start in ('inpatient', 'observation') else 'hospital_stay']
     if not isinstance(targets, list) or not 1 <= len(targets) <= 4 or len(set(targets)) != len(targets) or \
             any(t not in EVENT_STATES or t == 'diagnosis' for t in targets):
         raise ValueError('targets: 1..4 distinct event states')
     out['targets'] = targets
+    named = {start, *targets, *((p.get('expected') or {}).get('to') or [])}
+    if 'hospital_stay' in named and named & {'inpatient', 'observation'}:
+        raise ValueError('Overlapping hospital-stay and inpatient/observation pathway states need separate analyses')
     ms = p.get('max_steps', 5)
     if type(ms) is not int or not 1 <= ms <= 20: raise ValueError('max_steps 1..20')
     out['max_steps'] = ms
@@ -303,6 +306,9 @@ def load(db, patient_ids, p):
 # ---- analysis ------------------------------------------------------------------------------
 def analyse(seqs, attrs, p, as_of, gaps=(), dropped=None, seed=0):
     """Pure computation over {patient: [(date, state), ...]} sorted sequences."""
+    # Mike 2026-10-25: the unqualified hospital state pools inpatient and observation transitions.
+    if p['start'] and 'hospital_stay' in [p['start'], *p['targets'], *((p.get('expected') or {}).get('to') or [])]:
+        seqs = {pid: [(d, 'hospital_stay' if s in ('inpatient', 'observation') else s) for d, s in seq] for pid, seq in seqs.items()}
     W, per = p['window_days'], p['period']
     gap_months = {m for g in gaps for m in _months(_d(g['start'] + '-01'), _d(g['end'] + '-01'))}
     exclude_gaps = p['gap_policy'] == 'exclude' and gap_months

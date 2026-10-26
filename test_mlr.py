@@ -30,12 +30,15 @@ def build(path):
     for m in range(1, 13):
         d = f'2029-{m:02d}-15'
         claims += [('C1', d, 40000, 30000, d, 'paid', 1), ('M1', d, 150000, 120000, d, 'paid', 1)]
-    claims += [('C2', '2029-03-01', 99999, 99999, '2029-03-02', 'denied', 1),       # denied: not incurred
+    claims += [('C2', '2029-03-01', 99999, 99999, '2029-03-02', 'denied', 1),       # Mike 2026-10-25: the received paid amount on a counted claim contributes, irrespective of final status
                ('C2', '2029-03-01', 50000, 50000, '2029-03-02', 'paid', 0),         # superseded version: not counted
                ('C1', '2028-06-01', 70000, 70000, '2028-06-02', 'paid', 1)]         # outside the year
     db.executemany('INSERT INTO payer_claim VALUES(?,?,?,?,?,?,?)', claims)
     db.executemany('INSERT INTO payer_pharmacy_claim VALUES(?,?,?,?,?,?,?)', [
         ('C2', '2029-05-05', 12000, 1000, '2029-05-06', 'paid', 1), ('C2', '2029-05-06', 50000, 0, '2029-05-06', 'paid', 0)])
+    # Mike 2026-10-25: payer pharmacy spend nets all transactions; the replaced payment has a matching reversal.
+    db.executescript("CREATE TABLE pharmacy_claim_event(patient_id TEXT, event_date TEXT, payer_paid_delta_cents INTEGER); "
+                     "INSERT INTO pharmacy_claim_event VALUES ('C2','2029-05-05',12000),('C2','2029-05-06',50000),('C2','2029-05-06',-50000);")
     db.commit(); db.close()
 
 
@@ -50,10 +53,10 @@ class MLR(unittest.TestCase):
     def test_break_even_without_premium(self):
         r = self.run_()
         com = next(x for x in r['rows'] if x['product'] == 'commercial')
-        # (12 x $300 + $120 pharmacy) / 24 member months = $155 PMPM; break-even = 155 / 0.85
+        # Mike 2026-10-25: all counted payer paid amounts count, including the received $999.99 on the denied counted row.
         self.assertEqual(com['member_months'], 24)
-        self.assertAlmostEqual(com['claims_pmpm'], 155.0)
-        self.assertAlmostEqual(com['break_even_premium_pmpm'], round(155 / 0.85, 2))
+        self.assertAlmostEqual(com['claims_pmpm'], round((3720 + 999.99) / 24, 2))
+        self.assertAlmostEqual(com['break_even_premium_pmpm'], round((3720 + 999.99) / 24 / 0.85, 2))
         self.assertIsNone(com['mlr'])
         self.assertTrue(any('Premium revenue is not received' in a for a in r['assumptions']))
         ma = next(x for x in r['rows'] if x['product'] == 'medicare_advantage')
@@ -62,7 +65,7 @@ class MLR(unittest.TestCase):
     def test_mlr_rebate_and_non_credible(self):
         r = self.run_(premium_pmpm={'commercial': 250, 'medicare_advantage': 1500}, qi_expense_pmpm=5)
         com = next(x for x in r['rows'] if x['product'] == 'commercial')
-        self.assertAlmostEqual(com['mlr'], round(160 / 250, 4))
+        self.assertAlmostEqual(com['mlr'], round(((3720 + 999.99) / 24 + 5) / 250, 4))
         self.assertFalse(com['credible'])  # 2 life-years < 1,000: deemed to meet, no rebate
         self.assertEqual(com['rebate_or_remittance'], 0.0)
         ma = next(x for x in r['rows'] if x['product'] == 'medicare_advantage')
@@ -76,7 +79,7 @@ class MLR(unittest.TestCase):
         r = self.run_(premium_pmpm={'all': 200}, commercial_market='small_group', taxes_fees_pct=0.1, products=['commercial'])
         com = r['rows'][0]
         self.assertEqual(com['threshold'], 0.80)
-        self.assertAlmostEqual(com['mlr'], round(155 / 180, 4))
+        self.assertAlmostEqual(com['mlr'], round((3720 + 999.99) / 24 / 180, 4))
 
     def test_credibility_table(self):
         self.assertIsNone(mlr.credibility_adjustment(999))

@@ -227,6 +227,10 @@ ENCOUNTERS = {
     'observation_stay': {'label': 'Hospital observation stay',
         'fields': {'encounters': {'type': r'^observation$'},
                    'adt': {'event': r'^(observation_start|transfer_to_observation)$', 'patient_class': r'observation'}}},
+    # Mike 2026-10-25: an unqualified admission/hospital stay includes observation.
+    'hospital_stay': {'label': 'Hospital admission / stay (inpatient or observation)',
+        'fields': {'encounters': {'type': r'^(inpatient.*|observation|l&d admission)$'},
+                   'adt': {'event': r'^(admission|observation_start|transfer_to_observation)$', 'patient_class': r'^(inpatient|observation)$'}}},
     'urgent_care_visit': {'label': 'Urgent care visit', 'fields': {'encounters': {'type': r'^urgent ?_?care$'}}},
     'primary_care_visit': {'label': 'Primary care / office visit (incl. wellness and pediatric office)',
         'fields': {'encounters': {'type': r'^(primary[_ ]care|office|office visit|pcp|wellness|annual physical|pediatric_office|peds|geri primary care|ambulatory|youth_health_supervision|adolescent med(icine)?)$'}}},

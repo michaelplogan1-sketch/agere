@@ -36,10 +36,10 @@ def pick_year(ctx, text):
     return y, [FULL_YEAR_NOTE.format(y=y, a=ctx.as_of[:4])]
 
 
-def living_events(ctx, kind, where):
-    """SQL: the utilization events of one kind of living patients under a condition."""
+def scoped_events(ctx, kind, where):
+    """SQL: the utilization events of one kind under the event population under a condition."""
     return (f"SELECT u.patient_id AS patient_id, u.event_date AS event_date, u.organization_id AS org, u.readmitted_30d AS readmitted "
-            f"FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = {q(kind)} AND {ctx.living} AND {where}")
+            f"FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE {ctx.event_kind(kind)} AND {ctx.event_population} AND {where}")
 
 
 # ============================================================================================================================
@@ -66,10 +66,10 @@ class ReadmissionDrivers:
         y = params['year'] or last_full_year(ctx)
         notes = [] if params['year'] else [FULL_YEAR_NOTE.format(y=y, a=ctx.as_of[:4])]
         year = f"substr(u.event_date, 1, 4) = {q(str(y))}"
-        base = living_events(ctx, 'inpatient', year)
+        base = scoped_events(ctx, 'hospital_stay', year)
         overall = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM(readmitted), 0) AS k FROM ({base})")[0]
         if not overall['n']:
-            return dict(headline=f'No living-patient admissions in {y}', facts=[fact('none', f'There are no admissions in {y}.')], read_back='', notes=notes)
+            return dict(headline=f'No hospital admissions in {y}', facts=[fact('none', f'There are no admissions in {y}.')], read_back='', notes=notes)
         facts = [fact('overall', f"The 30-day readmission rate on {y} admissions is {pct(overall['k'] / overall['n'])}% ({overall['k']:,} of {overall['n']:,} admissions) = {overall['k'] / overall['n']:.4f}.",
                       value=pct(overall['k'] / overall['n']), numerator=overall['k'], denominator=overall['n'], unit='%')]
         tables = {}
@@ -94,10 +94,10 @@ class ReadmissionDrivers:
         tables['by_hospital'] = [{'hospital': r['grp'], 'stays': r['n'], 'readmitted': r['k'], 'rate_percent': pct(r['rate'])} for r in hospitals]
         head = f"{y} 30-day readmission rate {pct(overall['k'] / overall['n'])}%" + (f"; highest among conditions: {ranked[0]['condition']} ({pct(ranked[0]['rate'])}%)" if ranked else '') \
             + (f"; highest hospital among those with at least {HOSPITAL_MIN_STAYS} stays: {hospitals[0]['grp']} ({pct(hospitals[0]['rate'])}%)" if hospitals else '')
-        notes += [f'Admissions are the all-source inpatient utilization_event rows of living patients, counted by admission year; a readmission is a new admission within 30 days of discharge (readmitted_30d).',
+        notes += [f'Admissions are the all-source inpatient and observation utilization_event rows of all patients, counted by admission year; a readmission is a new admission within 30 days of discharge (readmitted_30d).',
                   f'Hospitals are ranked with at least {HOSPITAL_MIN_STAYS} stays in the year; a patient counts in every condition group they have (canonical condition evidence).']
         return dict(headline=head, facts=facts, table=tables['by_condition'], tables=tables,
-                    read_back=f"30-day readmission rate for {y} admissions of living patients, by condition group and by hospital (hospitals with at least {HOSPITAL_MIN_STAYS} stays).", notes=notes)
+                    read_back=f"30-day readmission rate for {y} admissions of all patients, by condition group and by hospital (hospitals with at least {HOSPITAL_MIN_STAYS} stays).", notes=notes)
 
 
 # ============================================================================================================================
@@ -107,7 +107,7 @@ class UseConcentration:
     WORDS = set('''is our driven by a small group of patients how concentrated it how much comes from the few top volume do account for most handful drive generate
         make up are responsible majority bulk half'''.split())
     EVENTS = [(r'ed\s+(?:volume|visits?|use|utilization)|emergency(?:\s+(?:department|room))?\s+(?:volume|visits?|use|utilization)', 'ed_visit', 'ED visits'),
-              (r'(?:hospital\s+|inpatient\s+)?admissions?\s+volume|(?:hospital|inpatient)\s+(?:admissions|stays)', 'inpatient', 'admissions')]
+              (r'(?:hospital\s+|inpatient\s+)?admissions?\s+volume|(?:hospital|inpatient)\s+(?:admissions|stays)', 'hospital_stay', 'admissions')]
 
     @classmethod
     def parse(cls, text, catalog):
@@ -116,17 +116,17 @@ class UseConcentration:
                       r'(?:a\s+)?(?:few|handful\s+of|small\s+number\s+of)\s+patients\s+(?:account|drive|generate|make\s+up|are\s+responsible)\b[\w\s]*?(?:most|majority|bulk|half)\s+of')
         event = next(((span(t, p), kind, label) for p, kind, label in cls.EVENTS if span(t, p)), None)
         if not ask or not event: return None
-        return {'params': {'kind': event[1], 'label': event[2]}, 'quotes': [ask, event[0], span(t, r'driven\s+by') or '', span(t, r'small\s+group') or '', span(t, r'patients') or '']}
+        return {'params': {'kind': ('inpatient' if re.search(r'\binpatient\b', event[0], re.I) else 'hospital_stay') if event[1] == 'hospital_stay' else event[1], 'label': event[2]}, 'quotes': [ask, event[0], span(t, r'driven\s+by') or '', span(t, r'small\s+group') or '', span(t, r'patients') or '']}
 
     @classmethod
     def run(cls, ctx, params):
         kind, label = params['kind'], params['label']
-        rows = ctx.rows(f"SELECT u.patient_id AS patient_id, COUNT(*) AS n FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = {q(kind)} "
-                        f"AND {ctx.in_window('u.event_date')} AND {ctx.living} GROUP BY u.patient_id ORDER BY n DESC, u.patient_id")
+        rows = ctx.rows(f"SELECT u.patient_id AS patient_id, COUNT(*) AS n FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE {ctx.event_kind(kind)} "
+                        f"AND {ctx.in_window('u.event_date')} AND {ctx.event_population} GROUP BY u.patient_id ORDER BY n DESC, u.patient_id")
         users = len(rows)
         total = sum(r['n'] for r in rows)
         if not users:
-            return dict(headline=f'No {label} in the last 12 months', facts=[fact('none', f'No living patient has {label} in the last 12 months.')], read_back='', notes=[])
+            return dict(headline=f'No {label} in the last 12 months', facts=[fact('none', f'No patient has {label} in the last 12 months.')], read_back='', notes=[])
         facts = [fact('users', f"{users:,} patients had at least one of the {total:,} {label} in the last 12 months.", value=users, unit='patients', visits=total)]
         table = []
         for share in (0.01, 0.05, 0.10, 0.20):
@@ -147,8 +147,8 @@ class UseConcentration:
                           value=repeat, unit='patients'))
         return dict(headline=f"{cap(label)} are concentrated: the top 5% of users account for {pct(table[1]['share_percent'] / 100)}% and {half:,} of {users:,} users account for half",
                     facts=facts, table=table, tables={'concentration': table},
-                    read_back=f"Concentration of {label} in the 12 months ending {ctx.as_of} across living patients with at least one: share of visits by the top users and the number of users that account for half.",
-                    notes=[f'{label.capitalize()} are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated); counts are per living patient.'])
+                    read_back=f"Concentration of {label} in the 12 months ending {ctx.as_of} across all patients with at least one: share of visits by the top users and the number of users that account for half.",
+                    notes=[f'{label.capitalize()} are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated); event counts include all patients (Mike 2026-10-25).'])
 
 
 # ============================================================================================================================
@@ -261,10 +261,11 @@ SERIES_METRICS = [  # phrase -> key
     (r'pharmacy\s+(?:claims?|spend(?:ing)?|costs?|bill)|drug\s+spend', 'pharmacy'),
     (r'medical\s+pmpm|pmpm|per\s+member\s+per\s+month', 'pmpm'),
     (r'ed\s+visits?|emergency(?:\s+department)?\s+visits?', 'ed'),
-    (r'(?:hospital\s+|inpatient\s+)?admissions', 'admissions'),
+    (r'inpatient\s+(?:admissions|stays)', 'inpatient'),
+    (r'(?:hospital\s+)?admissions|hospital\s+stays|hospitali[sz]ations', 'admissions'),
 ]
-SERIES_LABELS = {'medical': ('medical claims paid', 'USD'), 'pharmacy': ('pharmacy plan-paid', 'USD'), 'pmpm': ('medical paid PMPM', 'USD per member month'),
-                 'ed': ('ED visits', 'visits'), 'admissions': ('hospital admissions', 'admissions')}
+SERIES_LABELS = {'medical': ('medical claims paid', 'USD'), 'pharmacy': ('net payer pharmacy spend', 'USD'), 'pmpm': ('medical paid PMPM', 'USD per member month'),
+                 'inpatient': ('inpatient admissions', 'admissions'), 'ed': ('ED visits', 'visits'), 'admissions': ('hospital admissions', 'admissions')}
 
 
 @family
@@ -301,8 +302,8 @@ class PeriodSeries:
             rows = ctx.rows(f"SELECT {bucket('c.service_from')} AS period, SUM(c.paid_cents) / 100.0 AS value FROM payer_claim c WHERE c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))} GROUP BY period ORDER BY period")
             notes.append('Medical paid is paid dollars on counted payer-adjudicated claims (current non-duplicate versions) by service date.')
         elif metric == 'pharmacy':
-            rows = ctx.rows(f"SELECT {bucket('fill_date')} AS period, SUM(plan_paid_cents) / 100.0 AS value FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND substr(fill_date, 1, 4) = {q(str(y))} GROUP BY period ORDER BY period")
-            notes.append('Pharmacy spend is plan-paid dollars on pharmacy claims that count as fills, by fill date.')
+            rows = ctx.rows(f"SELECT {bucket('event_date')} AS period, SUM(payer_paid_delta_cents) / 100.0 AS value FROM pharmacy_claim_event WHERE substr(event_date, 1, 4) = {q(str(y))} GROUP BY period ORDER BY period")
+            notes.append('Pharmacy spend is net payer dollars over all pharmacy transactions by event date, including reversals (Mike 2026-10-25).')
         elif metric == 'pmpm':
             rows = ctx.rows(f"WITH mm AS (SELECT {bucket('m.month')} AS period, COUNT(*) AS months FROM member_month m WHERE substr(m.month, 1, 4) = {q(str(y))} GROUP BY period), "
                             f"paid AS (SELECT {bucket('c.service_from')} AS period, SUM(c.paid_cents) / 100.0 AS dollars FROM payer_claim c JOIN member_month m ON m.patient_id = c.patient_id AND m.month = substr(c.service_from, 1, 7) "
@@ -310,8 +311,8 @@ class PeriodSeries:
                             f"SELECT mm.period AS period, COALESCE(paid.dollars, 0) / mm.months AS value FROM mm LEFT JOIN paid USING (period) ORDER BY period")
             notes.append('PMPM = paid dollars on counted claims incurred in an enrolled member month, over that period\'s member months (the governed paid PMPM rule).')
         else:
-            kind = 'ed_visit' if metric == 'ed' else 'inpatient'
-            rows = ctx.rows(f"SELECT {bucket('u.event_date')} AS period, COUNT(*) AS value FROM utilization_event u WHERE u.kind = {q(kind)} AND substr(u.event_date, 1, 4) = {q(str(y))} GROUP BY period ORDER BY period")
+            kind = 'ed_visit' if metric == 'ed' else 'inpatient' if metric == 'inpatient' else 'hospital_stay'
+            rows = ctx.rows(f"SELECT {bucket('u.event_date')} AS period, COUNT(*) AS value FROM utilization_event u WHERE {ctx.event_kind(kind)} AND substr(u.event_date, 1, 4) = {q(str(y))} GROUP BY period ORDER BY period")
             notes.append(f'{cap(label)} are the all-source utilization_event rows (EHR, ADT and claims, de-duplicated), by event date.')
         rows = [r for r in rows if r['value'] is not None]
         if len(rows) < 2: return dict(headline=f'Not enough {grain}s of {label} in {y}', facts=[fact('none', f'Fewer than two {grain}s of {label} exist in {y}.')], read_back='', notes=notes)
@@ -365,12 +366,12 @@ class CohortDefined:
         wants_count = bool(re.search(r'how\s+many|number\s+of', t, re.I))
         if not (wants_cost or wants_count): return None
         n = int(d['n']) if d['n'].isdigit() else NUM_WORDS[d['n'].lower()]
-        return {'params': {'n': n, 'cost': wants_cost, 'window': 'rolling_12_months'}, 'quotes': [t[:d.start()].strip(), d.group(), tail.strip(' ,—–')]}
+        return {'params': {'n': n, 'admission_kind': 'inpatient' if re.search(r'\binpatient\b', d.group(), re.I) else 'hospital_stay', 'cost': wants_cost, 'window': 'rolling_12_months'}, 'quotes': [t[:d.start()].strip(), d.group(), tail.strip(' ,—–')]}
 
     @classmethod
     def run(cls, ctx, params):
         n = params['n']
-        pop = f"{ctx.events('ed_visit', n)} AND NOT {ctx.events('inpatient', 1)}"
+        pop = f"{ctx.events('ed_visit', n)} AND NOT {ctx.events(params.get('admission_kind', 'hospital_stay'), 1)}"
         ids_sql = ctx.patients(pop)
         count = ctx.count(pop)
         facts = [fact('count', f"{count:,} patients had {n} or more ED visits in the last 12 months and no hospital admission in that time.", value=count, unit='patients')]
@@ -383,7 +384,7 @@ class CohortDefined:
             headline += f"; {usd(paid)} paid"
         ids = ctx.ids(pop)
         return dict(headline=headline, facts=facts, table=table, patient_ids=ids, cohort_role='listed',
-                    read_back=f"Living patients with {n} or more all-source ED visits and no inpatient event in the 12 months ending {ctx.as_of}" + (', and the medical paid dollars of those patients in the same window.' if params['cost'] else '.'),
+                    read_back=f"Living patients with {n} or more all-source ED visits and no hospital admission in the 12 months ending {ctx.as_of}" + (', and the medical paid dollars of those patients in the same window.' if params['cost'] else '.'),
                     notes=['ED visits and admissions are the all-source utilization_event rows; medical paid is paid dollars on counted payer-adjudicated claims by service date.'])
 
 
@@ -475,17 +476,17 @@ class DrugSpendDrivers:
         totals, part = {}, {}
         names = [r['drug_name'] for r in ctx.rows(f"SELECT DISTINCT drug_name FROM fill WHERE drug_class IN ({marks}) AND drug_name IS NOT NULL")]
         for y in (y0, y1):
-            totals[y] = (ctx.one(f"SELECT COALESCE(SUM(plan_paid_cents), 0) FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND substr(fill_date, 1, 4) = {q(str(y))}", 0) or 0) / 100.0
-            part[y] = (ctx.one(f"SELECT COALESCE(SUM(plan_paid_cents), 0) FROM payer_pharmacy_claim WHERE counts_as_fill = 1 AND substr(fill_date, 1, 4) = {q(str(y))} "
+            totals[y] = (ctx.one(f"SELECT COALESCE(SUM(payer_paid_delta_cents), 0) FROM pharmacy_claim_event WHERE substr(event_date, 1, 4) = {q(str(y))}", 0) or 0) / 100.0
+            part[y] = (ctx.one(f"SELECT COALESCE(SUM(payer_paid_delta_cents), 0) FROM pharmacy_claim_event WHERE substr(event_date, 1, 4) = {q(str(y))} "
                                f"AND drug_name IN ({','.join(q(n) for n in names) or q('')})", 0) or 0) / 100.0
         label = params.get('label') or ', '.join(c.replace('_', ' ') for c in params['classes'])
         d_total, d_part = totals[y1] - totals[y0], part[y1] - part[y0]
         share1, share0 = part[y1] / totals[y1] if totals[y1] else None, part[y0] / totals[y0] if totals[y0] else None
-        facts = [fact('total0', f"Plan-paid pharmacy spend in {y0} was {usd(totals[y0])}.", value=round(totals[y0], 2), unit='USD'),
-                 fact('total1', f"Plan-paid pharmacy spend in {y1} was {usd(totals[y1])}.", value=round(totals[y1], 2), unit='USD'),
-                 fact('total_change', f"Total plan-paid pharmacy spend {'rose' if d_total > 0 else 'fell'} by {usd(abs(d_total))} ({'+' if d_total > 0 else '-'}{abs(d_total) / totals[y0] * 100:.1f}%) from {y0} to {y1}.",
+        facts = [fact('total0', f"Net payer pharmacy spend in {y0} was {usd(totals[y0])}.", value=round(totals[y0], 2), unit='USD'),
+                 fact('total1', f"Net payer pharmacy spend in {y1} was {usd(totals[y1])}.", value=round(totals[y1], 2), unit='USD'),
+                 fact('total_change', f"Total net payer pharmacy spend {'rose' if d_total > 0 else 'fell'} by {usd(abs(d_total))} ({'+' if d_total > 0 else '-'}{abs(d_total) / totals[y0] * 100:.1f}%) from {y0} to {y1}.",
                       value=round(d_total, 2), unit='USD'),
-                 fact('class_share', f"The {label} drugs are {pct(share1)}% of {y1} plan-paid pharmacy dollars ({usd(part[y1])} of {usd(totals[y1])}) = {share1:.4f}.", value=pct(share1),
+                 fact('class_share', f"The {label} drugs are {pct(share1)}% of {y1} net payer pharmacy dollars ({usd(part[y1])} of {usd(totals[y1])}) = {share1:.4f}.", value=pct(share1),
                       numerator=round(part[y1], 2), denominator=round(totals[y1], 2), unit='%'),
                  fact('class_change', f"Spend on the {label} drugs {'rose' if d_part > 0 else 'fell'} by {usd(abs(d_part))} from {usd(part[y0])} in {y0} to {usd(part[y1])} in {y1}"
                       + (f" ({pct(share0)}% of {y0} spend)." if share0 is not None else '.'), value=round(d_part, 2), unit='USD')]
@@ -497,8 +498,8 @@ class DrugSpendDrivers:
         facts.insert(0, fact('answer', f"{verdict} Total spend went from {usd(totals[y0])} to {usd(totals[y1])}; the {label} drugs from {usd(part[y0])} to {usd(part[y1])}.", value=verdict))
         return dict(headline=f"{verdict.split(':')[0]}: pharmacy spend {y0} {usd(totals[y0])} to {y1} {usd(totals[y1])}; {label} {pct(share1)}% of {y1}", facts=facts,
                     table=[{'year': y0, 'pharmacy_plan_paid': round(totals[y0], 2), 'class_plan_paid': round(part[y0], 2)}, {'year': y1, 'pharmacy_plan_paid': round(totals[y1], 2), 'class_plan_paid': round(part[y1], 2)}],
-                    read_back=f"Plan-paid pharmacy spend for {y0} and {y1} and the share and change of the {label} drugs (fills whose received drug name belongs to those classes).",
-                    notes=notes + ['Pharmacy spend is plan-paid dollars on pharmacy claims that count as fills; a drug belongs to a class by the class assigned to its received drug name in the canonical fill table.'])
+                    read_back=f"Net payer pharmacy spend for {y0} and {y1} and the share and change of the {label} drugs (fills whose received drug name belongs to those classes).",
+                    notes=notes + ['Pharmacy spend is net payer dollars over all pharmacy transactions by event date, including reversals; a drug belongs to a class by the class assigned to its received drug name in the canonical fill table.'])
 
 
 # ============================================================================================================================
@@ -624,8 +625,8 @@ class NeedGap:
         from .insight_families import noshow_rate_sql
         need = params['need']
         window = ctx.in_window('a.scheduled_date')
-        pos = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND {ctx.social_need(need)}"))[0]
-        neg = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND NOT {ctx.social_need(need)}"))[0]
+        pos = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.event_population} AND {ctx.social_need(need)}"))[0]
+        neg = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.event_population} AND NOT {ctx.social_need(need)}"))[0]
         if not pos['resolved'] or not neg['resolved']: return dict(headline='No appointments to compare', facts=[fact('none', 'One of the two groups has no appointments with a known outcome.')], read_back='', notes=[])
         a, b = pos['missed'] / pos['resolved'], neg['missed'] / neg['resolved']
         facts = [fact('answer', f"{'Yes' if a > b else 'No'}: patients who screened positive for {need} no-show more often." if a > b else f"No: patients who screened positive for {need} do not no-show more often.", value=a > b),
@@ -634,7 +635,7 @@ class NeedGap:
         return dict(headline=f"{'Yes' if a > b else 'No'}: no-show rate {pct(a)}% for patients with a {need} need vs {pct(b)}% for everyone else", facts=facts,
                     table=[{'group': f'screened positive for {need}', 'appointments': pos['resolved'], 'no_shows': pos['missed'], 'no_show_rate_percent': pct(a)},
                            {'group': 'everyone else', 'appointments': neg['resolved'], 'no_shows': neg['missed'], 'no_show_rate_percent': pct(b)}],
-                    read_back=f"No-show rate on appointments of the last 12 months with a known outcome, for living patients who ever screened positive for {need} versus all other living patients.",
+                    read_back=f"No-show rate on appointments of the last 12 months with a known outcome, for patients who ever screened positive for {need} versus all other patients.",
                     notes=[f'Appointments scheduled in the 12 months to {ctx.as_of} whose outcome is known (no-show, fulfilled, attended or arrived); the rate is no-shows over those.'])
 
 
@@ -752,8 +753,8 @@ class SpendMix:
         notes = [] if params['year'] else [FULL_YEAR_NOTE.format(y=y, a=ctx.as_of[:4])]
         base = f"c.counts_in_metrics = 1 AND substr(c.service_from, 1, 4) = {q(str(y))}"
         r = ctx.rows(f"SELECT COALESCE(SUM(c.paid_cents), 0) AS total, COALESCE(SUM(CASE WHEN {params['condition']} THEN c.paid_cents END), 0) AS part, "
-                     f"SUM(CASE WHEN {params['condition']} THEN 1 ELSE 0 END) AS n, AVG(CASE WHEN {params['condition']} AND c.final_status = 'paid' THEN c.paid_cents END) AS avg_paid, "
-                     f"SUM(CASE WHEN {params['condition']} AND c.final_status = 'paid' THEN 1 ELSE 0 END) AS paid_n FROM payer_claim c WHERE {base}")[0]
+                     f"SUM(CASE WHEN {params['condition']} THEN 1 ELSE 0 END) AS n, AVG(CASE WHEN {params['condition']} THEN c.paid_cents END) AS avg_paid, "
+                     f"SUM(CASE WHEN {params['condition']} THEN 1 ELSE 0 END) AS paid_n FROM payer_claim c WHERE {base}")[0]
         if not r['total']: return dict(headline=f'No counted claims in {y}', facts=[fact('none', f'There are no counted medical claims in {y}.')], read_back='', notes=notes)
         share = r['part'] / r['total']
         label = params['label']
@@ -761,9 +762,9 @@ class SpendMix:
                       numerator=r['part'] / 100, denominator=r['total'] / 100, unit='%')]
         head = f"{cap(label)} claims are {pct(share)}% of {y} medical paid spend"
         if params['average'] and r['avg_paid'] is not None:
-            facts.append(fact('average', f"The average paid {label} claim is {usd(r['avg_paid'] / 100)} ({r['paid_n']:,} paid {label} claims).", value=round(r['avg_paid'] / 100, 2), unit='USD', claims=r['paid_n']))
+            facts.append(fact('average', f"The average paid {label} claim is {usd(r['avg_paid'] / 100)} ({r['paid_n']:,} counted {label} claims).", value=round(r['avg_paid'] / 100, 2), unit='USD', claims=r['paid_n']))
             head += f"; the average paid {label} claim is {usd(r['avg_paid'] / 100)}"
-        notes.append('Medical spend is paid dollars on counted payer-adjudicated claims by service date; a claim is inpatient when it carries an admission date; the average is over claims whose final status is paid.')
+        notes.append('Medical spend is paid dollars on counted payer-adjudicated claims by service date; a claim is inpatient when it carries an admission date; the average is over all counted claims (Mike 2026-10-25).')
         return dict(headline=head, facts=facts, table=[{'category': label, 'claims': r['n'], 'paid_dollars': round(r['part'] / 100, 2), 'total_paid_dollars': round(r['total'] / 100, 2), 'share_percent': pct(share)}],
                     read_back=f"Share of {y} counted medical paid dollars on {label} claims" + (f" and the average paid {label} claim." if params['average'] else '.'), notes=notes)
 
@@ -824,7 +825,7 @@ GROUP_MEASURES = [  # phrase -> key
 REST_WORDS = r'(?:everyone|everybody|all\s+(?:the\s+)?others?|the\s+rest|others|the\s+other\s+patients|other\s+patients)(?:\s+else)?'
 
 
-def cohort_ids(ctx, parser, where, quote):
+def cohort_ids(ctx, parser, where, quote, *, events=False):
     """The living patients a population predicate selects, read by the same compiler and decision context as a typed request."""
     from . import sql_query
     from .request_plan import Catalog, compile_request
@@ -834,8 +835,9 @@ def cohort_ids(ctx, parser, where, quote):
             'select': [{'kind': 'field', 'field': 'patient.patient_id', 'alias': 'patient_id', 'quote': noun}],
             'where': where, 'group_by': [], 'order_by': [], 'limit': None, 'unresolved': []}
     parser.bind_parent_quotes(where)
-    contract = compile_request(catalog, quote, plan)
-    return sql_query.execute(ctx.stack_path, {'query': contract['query'], 'returns': 'patient_set'}, target=catalog.target)['patient_ids']
+    contract = compile_request(catalog, quote, plan, population=ctx.ids('1') if events and ctx.event_population != '1' else
+                               [r['patient_id'] for r in ctx.rows('SELECT patient_id FROM patient')] if events else None)
+    return [r['patient_id'] for r in ctx.rows(contract['query'])]
 
 
 @family
@@ -866,7 +868,7 @@ class GroupVsRest:
         from .insight_families import noshow_rate_sql
         parser = Parser_for(ctx, params['group'])
         where = parser.population_phrase(params['group'])
-        ids = set(cohort_ids(ctx, parser, where, params['group']))
+        ids = set(cohort_ids(ctx, parser, where, params['group'], events=params['measure'] in ('no_show', 'ed', 'admissions')))
         if not ids: raise Declined('the group is empty')
         marks = ','.join(q(i) for i in sorted(ids))
         inside, outside = f"p.patient_id IN ({marks})", f"p.patient_id NOT IN ({marks})"
@@ -874,8 +876,8 @@ class GroupVsRest:
         facts, table = [], []
         if key == 'no_show':
             window = ctx.in_window('a.scheduled_date')
-            a = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND {inside}"))[0]
-            b = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.living} AND {outside}"))[0]
+            a = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.event_population} AND {inside}"))[0]
+            b = ctx.rows(noshow_rate_sql(f"{window} AND {ctx.event_population} AND {outside}"))[0]
             va, vb = (a['missed'] / a['resolved'] if a['resolved'] else None), (b['missed'] / b['resolved'] if b['resolved'] else None)
             if va is None or vb is None: raise Declined('no appointments with a known outcome')
             label, unit = 'no-show rate', '%'
@@ -883,17 +885,17 @@ class GroupVsRest:
             va_, vb_ = va, vb
             note = f'Appointments scheduled in the 12 months to {ctx.as_of} with a known outcome (no-show, fulfilled, attended or arrived); the rate is no-shows over those.'
         elif key in ('ed', 'admissions'):
-            kind, noun = ('ed_visit', 'ED visits') if key == 'ed' else ('inpatient', 'admissions')
+            kind, noun = ('ed_visit', 'ED visits') if key == 'ed' else ('hospital_stay', 'admissions')
             def rate(cond):
-                r = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM((SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND u.kind = {q(kind)} AND {ctx.in_window('u.event_date')})), 0) AS k "
-                             f"FROM patient p WHERE {ctx.living} AND {cond}")[0]
+                r = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM((SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND {ctx.event_kind(kind)} AND {ctx.in_window('u.event_date')})), 0) AS k "
+                             f"FROM patient p WHERE {ctx.event_population} AND {cond}")[0]
                 return r
             a, b = rate(inside), rate(outside)
             if not a['n'] or not b['n']: raise Declined('a group is empty')
             va_, vb_ = 1000.0 * a['k'] / a['n'], 1000.0 * b['k'] / b['n']
             label, unit = f'{noun} per 1,000 patients', ''
             texts = (f"{va_:,.0f} ({a['k']:,} {noun} among {a['n']:,} patients)", f"{vb_:,.0f} ({b['k']:,} {noun} among {b['n']:,} patients)")
-            note = f'{cap(noun)} are the all-source utilization_event rows in the 12 months ending {ctx.as_of}, per living patient.'
+            note = f'{cap(noun)} are the all-source utilization_event rows in the 12 months ending {ctx.as_of}, per patient, including deceased patients.'
         else:
             def avg(cond):
                 return ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM((SELECT SUM(c.paid_cents) FROM payer_claim c WHERE c.patient_id = p.patient_id AND c.counts_in_metrics = 1 AND {ctx.in_window('c.service_from')})), 0) / 100.0 AS dollars "
@@ -919,7 +921,9 @@ class GroupVsRest:
 class ConditionDrivers:
     NAME = 'condition_drivers'
     WORDS = set('''which chronic conditions account for the most of our in the last year'''.split())  # every canonical chronic condition is a candidate
-    WHAT = [(r'ed\s+visits|emergency(?:\s+department)?\s+visits', 'ed_visit', 'ED visits'), (r'(?:hospital\s+)?admissions|inpatient\s+stays', 'inpatient', 'admissions'),
+    WHAT = [(r'ed\s+visits|emergency(?:\s+department)?\s+visits', 'ed_visit', 'ED visits'),
+            (r'inpatient\s+(?:admissions|stays)', 'inpatient', 'inpatient admissions'),
+            (r'(?:hospital\s+)?admissions|hospital\s+stays|hospitali[sz]ations', 'hospital_stay', 'admissions'),
             (r'medical\s+spend(?:ing)?|medical\s+costs?|paid\s+spend', 'spend', 'medical paid dollars')]
 
     @classmethod
@@ -942,13 +946,13 @@ class ConditionDrivers:
         label_of = lambda n: CONDITION_LABELS.get(n, n.replace('_', ' '))
         if kind == 'spend':
             window = f"substr(c.service_from, 1, 4) = {q(str(year))}" if year else ctx.in_window('c.service_from')
-            base = f"FROM payer_claim c JOIN patient p ON p.patient_id = c.patient_id WHERE c.counts_in_metrics = 1 AND {window} AND {ctx.living}"
+            base = f"FROM payer_claim c JOIN patient p ON p.patient_id = c.patient_id WHERE c.counts_in_metrics = 1 AND {window} AND {ctx.event_population}"
             total = (ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) {base}", 0) or 0) / 100.0
             counts = {n: (ctx.one(f"SELECT COALESCE(SUM(c.paid_cents), 0) {base} AND {ctx.cond(n)}", 0) or 0) / 100.0 for n in names}
             fmt = usd
         else:
             window = f"substr(u.event_date, 1, 4) = {q(str(year))}" if year else ctx.in_window('u.event_date')
-            base = f"FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = {q(kind)} AND {window} AND {ctx.living}"
+            base = f"FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE {ctx.event_kind(kind)} AND {window} AND {ctx.event_population}"
             total = ctx.one(f"SELECT COUNT(*) {base}", 0)
             counts = {n: ctx.one(f"SELECT COUNT(*) {base} AND {ctx.cond(n)}", 0) for n in names}
             fmt = lambda v: f'{v:,.0f}'
@@ -961,7 +965,7 @@ class ConditionDrivers:
             facts.append(fact(f'c_{n}', f"{label_of(n)} patients: {pct(v / total)}% of {label} {period} ({fmt(v)} of {fmt(total)}) = {v / total:.4f}.", value=pct(v / total), numerator=v, denominator=total, unit='%'))
         return dict(headline=f"{label_of(ranked[0][0])} patients account for the most {label} {period} ({pct(ranked[0][1] / total)}%)", facts=facts,
                     table=[{'condition': label_of(n), label.replace(' ', '_'): round(v, 2), 'share_percent': pct(v / total)} for n, v in ranked],
-                    read_back=f"Share of {label} {period} that belongs to living patients with each chronic condition (a patient with several conditions counts in each).",
+                    read_back=f"Share of {label} {period} that belongs to patients with each chronic condition (a patient with several conditions counts in each).",
                     notes=['The conditions use the canonical condition evidence; the shares overlap because a patient can have several conditions.'])
 
 
@@ -991,8 +995,8 @@ class SegmentReadmission:
         out = []
         for label, column, values in (params['a'], params['b']):
             cond = f"p.{ {'line_of_business': 'line_of_business', 'product': 'line_of_business'}[column] } IN ({','.join(q(v) for v in sorted({ {'medicare_advantage': 'medicare', 'dual_ma': 'dual'}.get(x, x) for x in values }))})"
-            r = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM(u.readmitted_30d), 0) AS k FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind = 'inpatient' "
-                         f"AND substr(u.event_date, 1, 4) = {q(str(y))} AND {ctx.living} AND {cond}")[0]
+            r = ctx.rows(f"SELECT COUNT(*) AS n, COALESCE(SUM(u.readmitted_30d), 0) AS k FROM utilization_event u JOIN patient p ON p.patient_id = u.patient_id WHERE u.kind IN ('inpatient', 'observation') "
+                         f"AND substr(u.event_date, 1, 4) = {q(str(y))} AND {ctx.event_population} AND {cond}")[0]
             out.append((label, r))
         if not all(r['n'] for _, r in out): raise Declined('a segment has no admissions')
         (la, ra), (lb, rb) = out
@@ -1003,4 +1007,4 @@ class SegmentReadmission:
                  fact('b', f"{lb}: {pct(vb)}% ({rb['k']} of {rb['n']}) = {vb:.4f}.", value=pct(vb), numerator=rb['k'], denominator=rb['n'], unit='%')]
         return dict(headline=f"{'Yes' if bigger else 'No'}: {la} {pct(va)}% vs {lb} {pct(vb)}% 30-day readmission in {y}", facts=facts,
                     table=[{'segment': la, 'admissions': ra['n'], 'readmitted': ra['k'], 'rate_percent': pct(va)}, {'segment': lb, 'admissions': rb['n'], 'readmitted': rb['k'], 'rate_percent': pct(vb)}],
-                    read_back=f"30-day readmission rate on {y} admissions of living patients, {la} versus {lb}.", notes=notes + ['A segment is the patient\'s line of business; a readmission is a new admission within 30 days of discharge.'])
+                    read_back=f"30-day readmission rate on {y} admissions of all patients, {la} versus {lb}.", notes=notes + ['A segment is the patient\'s line of business; a readmission is a new admission within 30 days of discharge.'])

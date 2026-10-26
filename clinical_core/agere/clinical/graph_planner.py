@@ -80,7 +80,7 @@ CONTRACTS = {
                   'with last value, change vs prior month and 12-month baseline, Theil-Sen trend, volatility, z, beta to the network, drawdown; moves ranked by surprise '
                   '(-log2 p under the unit\'s baseline moved by the network) x impact, network-wide vs idiosyncratic, co-moving sectors; feed gaps excluded, small units shrunk. '
                   'Use for what-moved / market-view / tickers / movers / trending-worse / most-surprising-change questions (not control-chart questions).'},
-    'demand': {'inputs':['optional earlier_set'],'parameters':{'measure':'ed_visits|inpatient_admissions|observation_stays|urgent_care_visits|primary_care_visits|specialist_visits|appointments|discharges|bed_days',
+    'demand': {'inputs':['optional earlier_set'],'parameters':{'measure':'ed_visits|inpatient_admissions|hospital_admissions|observation_stays|urgent_care_visits|primary_care_visits|specialist_visits|appointments|discharges|bed_days',
         'frequency':'week|month','horizon':6,'group_by':'none|practice|facility|payer','target_occupancy':0.85,'peak_quantile':0.95,'staffing':False,
         'minutes_per_unit':None,'fte_hours_per_week':None,
         'hierarchy':'ordered list of facility|practice|payer levels to forecast together, e.g. ["facility","practice"]','reconcile':'mint_shrink|ols|wls|none (children sum to parents)'},

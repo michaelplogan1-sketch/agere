@@ -1135,6 +1135,7 @@ def build(path):
             if 'values' in b and r['kind'] == 'condition':
                 for v in b['values']: cond_labels[(b['stream'], b['field'], v)].add(c)
             elif 'values' in b:
+                if c == 'hospital_stay': continue  # union selector, not another physical encounter (Mike 2026-10-25)
                 for v in b['values']: enc_values[(b['stream'], b['field'], v)].add(c)
             elif 'names' in b:
                 for v in b['names']: meas_names[(b['stream'], v)].add(c)

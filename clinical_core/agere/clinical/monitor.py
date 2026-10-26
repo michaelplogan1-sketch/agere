@@ -627,11 +627,12 @@ def systemic_feed_events(reports, evaluated, months, share=0.25, min_streams=3):
 def event_type_gaps(db, months, series, keep=None):
     """An event type vanishing while its stream keeps flowing (coding or feed change, not care)."""
     lo, hi = f'{months[0]}-01', _month_end(months[-1])
-    concept = {'ed_rate': 'emergency_visit', 'admit_rate': 'inpatient_admission'}.get(series)
+    concept = {'ed_rate': 'emergency_visit', 'admit_rate': 'hospital_stay'}.get(series)
     if not concept: return None
     ev = defaultdict(int); flow = defaultdict(int)
-    for pid, m in db.execute("SELECT patient_id, substr(event_date, 1, 7) FROM visit WHERE type_concept = ? AND event_date BETWEEN ? AND ?",
-                             (concept, lo, hi)):
+    types = ('inpatient_admission', 'observation_stay') if series == 'admit_rate' else (concept,)
+    for pid, m in db.execute("SELECT patient_id, substr(event_date, 1, 7) FROM visit WHERE type_concept IN (%s) AND event_date BETWEEN ? AND ?" % ','.join('?' * len(types)),
+                             (*types, lo, hi)):
         if keep is None or pid in keep: ev[m] += 1
     for pid, m in db.execute("SELECT patient_id, substr(event_date, 1, 7) FROM visit WHERE event_date BETWEEN ? AND ?", (lo, hi)):
         if keep is None or pid in keep: flow[m] += 1

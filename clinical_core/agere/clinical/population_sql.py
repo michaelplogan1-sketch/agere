@@ -29,7 +29,11 @@ class Ctx:
             self.tables = {t: [r[1] for r in db.execute(f'PRAGMA table_info("{t}")')]
                            for t in ('condition', 'payer_claim_diagnosis', 'problem_list_entry', 'enrollment_span', 'measurement') if t in names}  # measurement: the diabetes / CKD lab rule
             has_segment = 'patient' in names and any(r[1] == 'data_segment' for r in db.execute('PRAGMA table_info(patient)'))
-        self.living = 'p.patient_id ' + decision_context.counted_predicate(has_segment)  # living, and each person once
+        living = 'p.patient_id ' + decision_context.counted_predicate(has_segment)
+        self.living = living if decision_context.population(question)['living_only'] else '1'
+        # Mike 2026-10-25: event volumes/rates include everyone, even in a composite answer that also lists living patients.
+        self.event_population = living if decision_context.LIVING_ASK.search(question) else '1'
+        self.patient_population = '1' if decision_context.asks_deceased(question) else living
         self.queries = []  # every statement run, for the answer's evidence
         self.population = None  # the saved cohort a bound form answers about (set by population_engines.execute)
 
@@ -80,8 +84,12 @@ class Ctx:
                 f"AND m.result_current = 1 AND m.excluded_reason IS NULL AND {self.in_window('m.event_date')})")
 
     def events(self, kind, minimum=1, start=None, end=None):
-        return (f"(SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND u.kind = {q(kind)} "
+        return (f"(SELECT COUNT(*) FROM utilization_event u WHERE u.patient_id = p.patient_id AND {self.event_kind(kind)} "
                 f"AND {self.in_window('u.event_date', start, end)}) >= {int(minimum)}")
+
+    @staticmethod
+    def event_kind(kind, column='u.kind'):
+        return f"{column} IN ('inpatient', 'observation')" if kind == 'hospital_stay' else f'{column} = {q(kind)}'
 
     def fill(self, classes, start=None, end=None):
         marks = ','.join(q(c) for c in classes)

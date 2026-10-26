@@ -18,7 +18,7 @@ import time
 from . import decision_context, population_sql
 from .request_plan import PlanError, fingerprint
 
-VERSION = 'population-engines/1'
+VERSION = 'population-engines/2'
 REVIEW = 'fully_consumed_engine_form'
 FAMILIES = []  # [(name, module-level class)] registered by insight_families
 

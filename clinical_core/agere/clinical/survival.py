@@ -360,8 +360,12 @@ def units(db, patient_ids, p, as_of):
     dated = defaultdict(list)
     if ev['type'] in ('encounter', 'followup'):
         types = FOLLOWUP_CONCEPTS if ev['type'] == 'followup' else (ev['concept'],)
-        for pid, d in db.execute('SELECT DISTINCT patient_id, substr(event_date, 1, 10) FROM encounter WHERE type_concept IN (%s) AND event_date IS NOT NULL'
-                                 % ','.join('?' * len(types)), types):
+        query = ('SELECT DISTINCT patient_id, substr(event_date, 1, 10) FROM encounter WHERE type_concept IN (%s) AND event_date IS NOT NULL'
+                 % ','.join('?' * len(types)))
+        if ev.get('concept') == 'hospital_stay':
+            query = "SELECT DISTINCT patient_id, event_date FROM utilization_event WHERE kind IN ('inpatient', 'observation') AND event_date IS NOT NULL"
+            types = ()
+        for pid, d in db.execute(query, types):
             if pid in members: dated[pid].append((d, None))
     elif ev['type'] == 'measurement':
         for pid, d, v in db.execute('SELECT patient_id, substr(event_date, 1, 10), value_canonical FROM measurement WHERE concept = ? '

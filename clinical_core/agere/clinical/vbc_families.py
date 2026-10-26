@@ -7,14 +7,10 @@ aside (scope, enrollment-span rules, appointment-version rules, native amount no
 one of the definition shapes below in full; any other clause declines (the question goes on to the next rung).
 
 Families and conventions (each renders one read-only SELECT):
-  claims_finance      paid: sum of signed paid amounts over every payer medical claim adjudication with a paid date in
-                      the year (reversals / recoupments negative, voids 0); allowed: allowed amount on final-adjudication
-                      paid claims (payer_claim final_status paid, counts_in_metrics = 1) with service_from in the year;
-                      member_liability: patient_responsibility on claims whose latest adjudication is paid, service_from
-                      in the year; pharmacy_paid: plan_paid on payer pharmacy claims with fill date in the year, paid fills
-                      not later reversed plus (negative) recoupments, reversed and rejected 0. Optional product /
-                      line-of-business filter or grouping. Claim allowed amount: the claim-level allowed amount, except
-                      inpatient DRG claims whose delivered allowed is 0: 835 paid amount + patient responsibility.
+  claims_finance      paid: payer paid on counted medical claims by service date; allowed: allowed on final paid counted
+                      medical claims by service date; member_liability: adjudicated patient responsibility on final paid
+                      counted claims; pharmacy_paid: net payer deltas over all pharmacy transactions by event date, including
+                      reversals and recoupments (Mike 2026-10-25). Optional medical product / line-of-business filtering.
   pmpm                allowed (as above, optional product filter) / member-months of the same product (or all primary
                       member-months), dollars per member-month
   member_months       distinct (person, month[, product]) covered on the 1st by a delivered enrollment span (current
@@ -68,7 +64,7 @@ import copy, os, re
 from . import family_common as fc
 from .family_common import q
 
-VERSION = 'agere-vbc-families/1'
+VERSION = 'agere-vbc-families/2'
 ROUTE = 'vbc_family'
 FAMILIES = ('claims_finance', 'pmpm', 'member_months', 'attribution_counts', 'top_n_cost_members', 'readmissions',
             'admissions', 'appointments', 'appointment_repeat', 'paid_line_visits', 'adjudication_count',
@@ -111,13 +107,10 @@ def _money(expr):
 def render_claims_finance(p, as_of):
     m, y, g = p['measure'], p['year'], p.get('group_by')
     if m == 'pharmacy_paid':
-        expr = ("CASE WHEN x.claim_status = 'paid' AND x.reversed_by_record_id IS NULL THEN x.plan_paid_cents "
-                "WHEN x.claim_status = 'recouped' THEN x.plan_paid_cents ELSE 0 END")
-        return f"SELECT {_money(expr)} AS plan_paid FROM payer_pharmacy_claim x WHERE {_year('x.fill_date', y)}"
+        return f"SELECT {_money('x.payer_paid_delta_cents')} AS plan_paid FROM pharmacy_claim_event x WHERE {_year('x.event_date', y)}"
     if m == 'paid':
-        frm = "payer_adjudication a JOIN payer_claim c ON c.payer_claim_id = a.payer_claim_id"
-        where = [_year('a.paid_date', y)] + _filter('c', p)
-        expr = "CASE WHEN a.claim_status = 'voided' THEN 0 ELSE a.paid_cents END"
+        # Mike 2026-10-25: medical spend is paid on counted claims, by service date.
+        frm, where, expr = 'payer_claim c', ['c.counts_in_metrics = 1', _year('c.service_from', y)] + _filter('c', p), 'c.paid_cents'
     elif m == 'allowed':
         frm, where, expr = "payer_claim c", [FINAL_PAID, _year('c.service_from', y)] + _filter('c', p), ALLOWED
     else:  # member_liability
@@ -488,16 +481,15 @@ BOILERPLATE = [
 _P = r'(?P<prod>commercial|marketplace|medicaid|medicare_ffs|medicare_advantage|dual_ffs|dual_ma|medigap|cob_secondary|medicare|dual)'
 _G = r"(?:,? by (?:the claim's )?(?P<group>product|line of business))?"
 SHAPES = [
-    ('claims_paid', rf"sum of paid_amount over every payer medical claim adjudication with a paid date in (?P<year>20\d\d) "
-                    rf"\(reversals and recoupments are negative; voids pay 0\){_G}\."),
+    ('claims_paid', rf"sum of (?:paid_amount|paid_cents) on counted payer medical claims with service(?:_from| date)? in (?P<year>20\d\d){_G}\."),
     ('pmpm', rf"allowed amount on final-adjudication paid (?:{_P} )?medical claims with service in (?P<year>20\d\d)(?: \(all products\))? / "
              rf"(?:(?P<y2>20\d\d) (?P<prod2>[a-z_]+) member-months \(delivered spans, through death\)|all (?P<y3>20\d\d) primary member-months)\."),
     ('claims_allowed', rf"(?:sum of )?allowed amount on final-adjudication paid (?:{_P} )?medical claims with service in (?P<year>20\d\d)"
                        rf"(?: \(all products\))?{_G}\."),
     ('member_liability', r"sum of patient_responsibility(?: \([^)]*\))? on payer medical claims whose (?:latest|final) adjudication is "
                          r"paid, service_from in (?P<year>20\d\d)(?:; cclf payment amounts are not used)?\."),
-    ('pharmacy_paid', r"sum of plan_paid on payer pharmacy claims with fill date in (?P<year>20\d\d) \(paid fills minus recoupments; "
-                      r"reversed and rejected pay 0\)\."),
+    ('pharmacy_paid', r"sum of payer_paid_delta_cents on all pharmacy claim transactions with event date in (?P<year>20\d\d) "
+                      r"\(reversals and recoupments netted\)\."),
     ('member_months', r"member-months in (?P<year>20\d\d) \(covered on the 1st, through death\)(?: by (?P<group>product|line of business))?, "
                       r"(?P<scope>all delivered spans including secondary products|primary spans only)(?:; a span version superseded by a "
                       r"later delivered version of the same coverage \(retro-termination, correction\) is replaced by it \(a span "

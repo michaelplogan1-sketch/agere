@@ -15,7 +15,7 @@ from collections import Counter, defaultdict
 
 from . import concepts, source_profile
 
-VERSION = 'local-question-compiler/1'
+VERSION = 'local-question-compiler/2'
 W = {'basis': 'all_observed', 'start': '', 'end': ''}
 
 # ---- vocabulary -----------------------------------------------------------------
@@ -67,9 +67,10 @@ MEASUREMENT_RANK = {c: i for i, c in enumerate(MEASUREMENT_ALIASES)}
 ENCOUNTER_ALIASES = {
     'emergency_visit': ['emergency department visits', 'emergency department visit', 'emergency department',
                         'ed visits', 'ed visit', 'er visits', 'er visit', 'emergency visits', 'emergency visit', 'ed use', 'ed utilization'],
-    'inpatient_admission': ['inpatient admissions', 'inpatient admission', 'hospitalizations', 'hospitalization',
-                            'hospital admissions', 'admissions', 'inpatient stays'],
-    'observation_stay': ['observation stays', 'observation stay'],
+    'inpatient_admission': ['inpatient admissions', 'inpatient admission', 'inpatient stays', 'inpatient stay', 'inpatient'],
+    'observation_stay': ['observation stays', 'observation stay', 'observation admissions', 'observation admission'],
+    'hospital_stay': ['hospitalizations', 'hospitalization', 'hospitalisations', 'hospitalisation',
+                      'hospital admissions', 'hospital admission', 'hospital stays', 'hospital stay', 'admissions', 'admission'],
     'urgent_care_visit': ['urgent care visits', 'urgent care'],
     'primary_care_visit': ['primary care visits', 'primary care visit', 'pcp visits', 'office visits', 'wellness visits'],
     'specialist_visit': ['specialist visits', 'specialty visits'],
@@ -2789,10 +2790,12 @@ def _survival_question(q, r, profile, as_of, info):
             if found: break
         if found: break
     if found: events.append(found)
-    for concept, aliases in ENCOUNTER_ALIASES.items():
-        hit = next((a for a in sorted(aliases, key=len, reverse=True) if re.search(_alias_pattern(a), low)), None)
-        if hit:
-            events.append(('encounter', {'type': 'encounter', 'concept': concept}, r'\b(?:a |an |the |their )?(?:first |next )?' + _alias_pattern(hit)))
+    hits = []
+    for concept, alias in sorted(((c, a) for c, aliases in ENCOUNTER_ALIASES.items() for a in aliases), key=lambda x: -len(x[1])):
+        match = re.search(_alias_pattern(alias), low)
+        if match and not any(a < match.end() and match.start() < b for a, b in hits):
+            hits.append(match.span())
+            events.append(('encounter', {'type': 'encounter', 'concept': concept}, r'\b(?:a |an |the |their )?(?:first |next )?' + _alias_pattern(alias)))
     if not events and (re.search(DEATH_WORDS, low) or re.search(r'\bsurviv', low)):  # survival of patients = mortality
         info.update(route='local_unsupported', unexplained=[])
         return {'interpretation': f'Unsupported by received data: {q}', 'coverage': 'unsupported', 'nodes': [],
@@ -2902,7 +2905,8 @@ DEMAND_MEASURES = [  # (measure, pattern) - order matters: specific settings bef
     ('specialist_visits', r"\bspecialt?(?:y|ist) (?:visits?|volumes?|demand|encounters?)\b"),
     ('bed_days', r"\b(?:inpatient |hospital |staffed )?beds?(?:[- ]days?)?\b|\b(?:inpatient |hospital |daily )?census\b|\boccupancy\b"),
     ('discharges', r"\b(?:hospital |inpatient )?discharges?\b"),
-    ('inpatient_admissions', r"\b(?:inpatient |hospital )?(?:admissions?|admits?|hospitali[sz]ations?)\b"),
+    ('inpatient_admissions', r"\binpatient (?:admissions?|admits?|stays?)\b"),
+    ('hospital_admissions', r"\b(?:hospital )?(?:admissions?|admits?|hospitali[sz]ations?)\b|\bhospital stays?\b"),
 ]
 DEMAND_WORDS = r'\b(?:visits?|volumes?|demand|encounters?|utili[sz]ation)\b'
 STAFF_WORDS = r"\b(?:nurses?|nursing(?: staff)?|rns?|care managers?|case managers?|staff(?:ing)?|ftes?|headcount|clinicians? needed)\b"
@@ -4005,9 +4009,10 @@ PATHWAY_STATES = [  # longest aliases first within each state
     ('emergency', ['emergency department visits', 'emergency department visit', 'emergency room visits', 'emergency room visit', 'emergency visits',
                    'emergency visit', 'emergency department', 'emergency room', 'ed visits', 'ed visit', 'er visits', 'er visit', 'ed', 'er']),
     ('discharge', ['hospital discharges', 'hospital discharge', 'inpatient discharge', 'discharges', 'discharge', 'being discharged', 'discharged']),
-    ('observation', ['observation stays', 'observation stay', 'observation']),
-    ('inpatient', ['inpatient admissions', 'inpatient admission', 'hospital admissions', 'hospital admission', 'hospitalizations', 'hospitalization',
-                   'hospitalisations', 'hospitalisation', 'inpatient stays', 'inpatient stay', 'admissions', 'admission', 'inpatient']),
+    ('observation', ['observation stays', 'observation stay', 'observation admissions', 'observation admission', 'observation']),
+    ('inpatient', ['inpatient admissions', 'inpatient admission', 'inpatient stays', 'inpatient stay', 'inpatient']),
+    ('hospital_stay', ['hospital admissions', 'hospital admission', 'hospitalizations', 'hospitalization', 'hospitalisations', 'hospitalisation',
+                       'hospital stays', 'hospital stay', 'admissions', 'admission']),
     ('urgent_care', ['urgent care visits', 'urgent care visit', 'urgent care']),
     ('primary_care', ['primary care visits', 'primary care visit', 'pcp visits', 'pcp visit', 'office visits', 'office visit', 'primary care', 'pcp']),
     ('specialty', ['specialist visits', 'specialist visit', 'specialty visits', 'specialty visit', 'specialty care', 'specialists', 'specialist']),
@@ -4068,9 +4073,11 @@ def _pathway_question(q, profile, as_of):
     if r.take(r'\b(?:return(?:s|ed|ing)?|come(?:s)? back|bounce(?:s|d)? back|go(?:es)? back|revisit(?:s)?)(?: visits?)? (?:to )?(?:the )?(?:ed|er|emergency(?: department| room)?)\b|'
               r'\b(?:ed|er) (?:returns?|revisits?|bounce[- ]?backs?)\b|\b(?:end|ends|ending) up (?:back )?in the (?:ed|er|emergency(?: department| room)?)\b', 'target emergency'):
         targets.append('emergency')
-    if r.take(r'\b(?:(?:end|ends|ending) up |being |get |gets |getting |is |are )?(?:admitted|hospitali[sz]ed|readmitted)\b|\b(?:re)?admissions?\b|'
-              r'\bhospitali[sz]ations?\b|\binpatient(?: stays?)?\b', 'target inpatient'):
+    if r.take(r'\binpatient(?: (?:stays?|admissions?))?\b', 'target inpatient'):
         targets.append('inpatient')
+    if r.take(r'\b(?:(?:end|ends|ending) up |being |get |gets |getting |is |are )?(?:admitted|hospitali[sz]ed|readmitted)\b|\b(?:re)?admissions?\b|'
+              r'\bhospitali[sz]ations?\b|\bhospital stays?\b', 'target hospital stay'):
+        targets.append('hospital_stay')
     expected = None
     fu = r.take(r'\b(?:(?:get|gets|getting|got|have|has|had|receive|received|see|seen|with) )?(?:an? )?(?:(primary care|pcp|specialist|specialty|telehealth)(?: visit)? )?'
                 + PATHWAY_FOLLOWUP, 'expected follow-up')

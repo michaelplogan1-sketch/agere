@@ -409,7 +409,16 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
             known={r[0] for r in db.execute('SELECT id FROM patients')}
             if set(patient_ids)-known:raise ValueError('Unknown patient in supplied membership')
         # Grounding raises GroundingError for predicates the data cannot support.
-        grounded, grounding_report = grounding.prepare(spec, source_profile.load(path))
+        profile = source_profile.load(path)
+        hospital = {g: [a for a in spec[g] if a.get('kind') == 'concept' and a.get('concept') == 'hospital_stay']
+                    for g in ('all', 'any', 'exclude')}
+        raw_spec = {g: [a for a in spec[g] if a not in hospital[g]] for g in ('all', 'any', 'exclude')}
+        grounded, grounding_report = grounding.prepare(raw_spec, profile)
+        for group, atoms in hospital.items():
+            for atom in atoms:
+                resolved = concepts.resolve('hospital_stay', profile)
+                resolved['bindings'] = [{'stream': 'utilization_event', 'field': 'kind', 'values': ['inpatient', 'observation'], 'system': 'source label'}]
+                grounded[group].append({**atom, '_resolved': resolved})
         from . import decision_context
         canon = decision_context.condition_membership(path, grounded)  # None outside a question scope
         key = digest([VERSION, code_identity(), meta['source_digest'], spec, patient, limit, patient_ids, decision_context.VERSION if canon else None])
@@ -425,6 +434,15 @@ def select(path, spec=None, *, patient=None, limit=10, patient_ids=None):
             streams = set(streams) | {'demographic_updates'}  # latest reported age supersedes the roster age
         # Same rows and per-patient order as `... WHERE stream IN (...) [AND patient=?] ORDER BY id` (record_store).
         records = record_store.load(path, streams, patient=patient or None, order='id')
+        if any(hospital.values()):
+            # Mike 2026-10-25: the union is grounded in all-source events, including claims-only stays.
+            from . import semantic_layer
+            with sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True) as events:
+                for pid, kind, day, rid in events.execute("SELECT patient_id, kind, event_date, record_id FROM utilization_event WHERE kind IN ('inpatient', 'observation')"):
+                    if pid not in records: records[pid] = []
+                    records[pid].append({'source_table': 'utilization_event', 'kind': kind, 'event_date': day,
+                                         'record_id': 'utilization_event:' + digest([pid, kind, day, rid]),
+                                         'source_record_id': rid, 'status': 'completed'})
         membership = {'matched': [], 'not_matched': [], 'unknown': []}; previews = {k: [] for k in membership}
         mix = EvidenceMix(grounded)
         for pid, p in roster:
