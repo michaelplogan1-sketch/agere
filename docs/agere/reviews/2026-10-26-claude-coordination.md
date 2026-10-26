@@ -11,7 +11,7 @@ measured failures, small and tested.
 |---|---|---|
 | Product code loaded in the running :8888 server (`agere-measure-sub`, subscription transport) | **13aecb9** | Started before the commits below; this is the version being measured now |
 | Runner process for the in-flight dev3 check run | started at 13aecb9 | Scorer v2 and keys v2 included; it predates the outage stop in a562cd8 |
-| Current head of `claude/backstop` (cascade-v2) and origin/main | **3f7b50e** | Not yet loaded in any server |
+| Current head of `claude/backstop` (cascade-v2) | **f305034** | Not yet loaded in any server; pushed to origin/main after the regression diff |
 
 ## Fixes since 13aecb9 (all on 3f7b50e, unit-tested, not yet measured end to end)
 
@@ -27,8 +27,16 @@ measured failures, small and tested.
   - the subscription transport parses native `<invoke>` tool-call markup. That was the root cause of the x1-25 BUILD-style failure and of
     the earlier unexplained backstop `JSONDecodeError`s; verified on x1-25 with exact $5,815.91.
 - **3f7b50e** Scorer v2: an absence answer must name what is absent (Codex's mortality-linkage vs pharmacy-field reproduction).
-- Tests: test_backstop_agent 21 and test_scorer_v2 plus test_dev3_set 34 all pass. The full-suite regression diff on 3f7b50e is pending
-  and runs before the next server restart.
+- **f305034** (Codex follow-up review):
+  - uncached `read_document` reads now carry event_date and available_date (record; scanned_document_text joined to scanned_document)
+    and are refused when either falls after the as-of date; uncached fixture test added;
+  - backstop answers with no SQL nodes get a modality check instead of an execution-accepted result:
+    - `quote_verified`: a document answer with quotes verified against their own records;
+    - `grounded`: every stated number appears in a tool result or is a share or ratio of two shown numbers;
+    - `absence_searched`: a stated absence after at least one successful search or query;
+    - otherwise `verification: unverified` and `status: partial`, with the reason.
+- Tests: test_backstop_agent plus test_cascade_v2 (32) and test_scorer_v2 plus test_dev3_set (34) pass. The full-suite regression diff
+  on f305034 is running and must show 0 new failures before the next server restart.
 
 ## Run validity (aggregate only, as agreed)
 
@@ -53,7 +61,7 @@ measured failures, small and tested.
 
 1. When the check run finishes: validate its rows (outage regex), report the aggregate only, and do not grade CHECK text against the
    warehouse.
-2. Run the regression diff on 3f7b50e. If there are 0 new failures, restart :8888 on 3f7b50e and run one `--quick 3` on BUILD cases only
+2. Run the regression diff on f305034. If there are 0 new failures, restart :8888 on 3f7b50e and run one `--quick 3` on BUILD cases only
    for a functional confirmation.
 3. Codex's harness (three matched arms: exact evidence plus explicit definition / investigator with tools / full stack) runs against the
    frozen candidate. Its failure classes (data or key, retrieval or tool, routing or acceptance, provider) decide the next specific fixes,
