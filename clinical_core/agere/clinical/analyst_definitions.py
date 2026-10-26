@@ -28,7 +28,7 @@ import sqlite3
 
 from . import decision_context as DC
 
-VERSION = 'analyst-definitions/1'
+VERSION = 'analyst-definitions/2'
 VIEW_NAMES = ('living_patient', 'condition_member', 'latest_lab', 'last_12_months', 'medicare_member')
 LIVING_VIEWS = ('living_patient', 'condition_member', 'latest_lab', 'medicare_member')  # living-only by construction
 _DATE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
@@ -72,6 +72,16 @@ def build_views(columns, as_of):
     if 'living_patient' in views and 'coverage_type' in patient:
         values = ','.join(f"'{v}'" for v in DC.MEDICARE_COVERAGE)
         views['medicare_member'] = f'SELECT patient_id, coverage_type, age FROM living_patient WHERE coverage_type IN ({values})'
+    # The investigator and compiler inherit the SAME owner definitions. A coded
+    # condition is not a substitute for a phenotype that also includes note evidence.
+    from .clinical_definitions import PHENOTYPES
+    for name, definition in PHENOTYPES.items():
+        required = definition.get('requires')
+        if 'living_patient' not in views or not required or not all(
+                set(fields) <= set(columns.get(table, [])) for table, fields in required.items()):
+            continue
+        views['phenotype_' + name] = ('SELECT h.* FROM ' + definition['build'](columns)
+                                     + ' h JOIN living_patient l USING(patient_id)')
     return views
 
 
@@ -103,6 +113,14 @@ def definitions_doc(names):
         lines.append("- medicare_member(patient_id, coverage_type, age): living patients with Medicare: coverage_type IN ('medicare','dual','medigap'). "
                      "Dual-eligible and Medigap members HAVE Medicare. Only 'traditional / original / fee-for-service / Medicare only' means "
                      "coverage_type = 'medicare' (use living_patient).")
+    from .clinical_definitions import PHENOTYPES
+    for name, definition in PHENOTYPES.items():
+        view = 'phenotype_' + name
+        if view in have:
+            lines.append(f'- {view}: ONE row per living patient qualifying for {definition["label"]}. '
+                         f'Owner definition v{definition["version"]}, {definition["decision"]}: '
+                         + definition['disclosure'] + ' Use this view for the phenotype; condition_member supplies coded '
+                         'condition membership only. The view preserves the compiler macro columns, including the evidence basis.')
     lines.append('These views exclude the deceased by construction. When the question asks about the deceased (died, death, mortality, "including '
                  'deceased", "all patients ever"), use the base tables and the death table instead and say so.')
     lines.append('SHARES, RATES AND AVERAGES: compute the numerator and the denominator as two single-value queries and report both '

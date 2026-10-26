@@ -1,5 +1,6 @@
 """Pinned offline encoders, complete token windows and content-addressed vectors."""
 from __future__ import annotations
+from contextlib import contextmanager
 
 import hashlib
 import json
@@ -10,6 +11,19 @@ from pathlib import Path
 import numpy as np
 
 from .contracts import digest
+
+
+@contextmanager
+def _model_use(instance, role):
+    from .agere.request_lineage import component
+    before = dict(instance.stats)
+    with component('local_model', role=role, model_identity=instance.identity,
+                   model=instance.manifest.get('repo') or instance.manifest.get('model_id') or instance.manifest.get('model')) as metrics:
+        try:
+            yield
+        finally:
+            metrics.update({k: instance.stats[k]-v for k,v in before.items()})
+            metrics['stat_scope'] = 'method counter delta; may overlap concurrent calls on a shared model'
 
 
 def verified_manifest(path):
@@ -75,6 +89,10 @@ class LocalEncoder:
         return result
 
     def encode(self, texts, *, batch_size=4):
+        with _model_use(self, 'retrieval_embedding'):
+            return self._encode(texts, batch_size=batch_size)
+
+    def _encode(self, texts, *, batch_size=4):
         if not texts:
             return np.empty((0, self.model.config.hidden_size), dtype=np.float32)
         keys = [digest([self.identity, text]) for text in texts]
@@ -140,6 +158,10 @@ class LocalReranker:
         self.db.close()
 
     def rank(self, query, evidence, *, top_k=8):
+        with _model_use(self, 'passage_reranking'):
+            return self._rank(query, evidence, top_k=top_k)
+
+    def _rank(self, query, evidence, *, top_k=8):
         ranked = []
         for item in evidence:
             key = digest([self.identity, query, item["text"]])
@@ -275,6 +297,10 @@ class PinnedSentenceEncoder:
         return self.encode(texts, prompt=self.document_prompt)
 
     def encode(self, texts, *, prompt=""):
+        with _model_use(self, 'secondary_embedding'):
+            return self._encode(texts, prompt=prompt)
+
+    def _encode(self, texts, *, prompt=""):
         texts = list(texts)
         if not texts:
             return np.empty((0, self.dimensions), dtype=np.float32)

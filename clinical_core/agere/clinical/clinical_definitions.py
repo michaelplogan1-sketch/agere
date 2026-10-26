@@ -27,6 +27,8 @@ PHENOTYPES = {
         'version': 1,
         'label': 'Heart failure with reduced ejection fraction',
         'decision': DECIDED_BY,
+        'requires': {'condition': ['patient_id'],
+                     'note_fact': ['patient_id', 'fact_type', 'negated', 'experiencer', 'value', 'event_date']},
         'disclosure': ('Reduced EF = a coded HFrEF diagnosis (EHR or counted payer claim), or a heart failure diagnosis with a '
                        'documented ejection fraction of 40% or less in notes (non-negated, about the patient, any date).'),
         # Returns patient_id plus the basis for each qualifying patient.

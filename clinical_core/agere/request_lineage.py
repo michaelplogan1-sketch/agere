@@ -4,11 +4,15 @@ No model inputs, credentials or responses are copied into this journal. Executio
 IDs are unique attempts, never cache keys. Historical reuse is not a new dispatch.
 """
 from contextvars import ContextVar
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import json
+import os
 import re
+import sqlite3
 import time
+import threading
 import uuid
 from ..contracts import digest
 
@@ -23,6 +27,73 @@ OPERATIONS = {
  '/api/stack/decision/statement-review-attach',
 }
 KEY = re.compile('[a-f0-9]{64}')
+_TRACE_LOCK = threading.Lock()
+
+
+def execution_observation(kind, **data):
+    """Operational observations, never inference success or clinical acceptance.
+
+    The optional JSONL sink also records worker threads, where a request context
+    may be absent. Exact SQL is opt-in and stays in the local diagnostic sink.
+    Failure of optional instrumentation must not change the tool's behavior.
+    """
+    active = ACTIVE.get()
+    if active is not None:
+        try:
+            observe(kind, **data)
+        except (OSError, sqlite3.Error) as exc:
+            data = {**data, 'lineage_recording_error': type(exc).__name__}
+    target = os.environ.get('AGERE_EXECUTION_TRACE')
+    if target:
+        event = {'at': datetime.now(timezone.utc).isoformat(), 'kind': kind,
+                 'execution_id': active.id if active is not None else None,
+                 'thread_id': threading.get_ident(), **data}
+        try:
+            with _TRACE_LOCK:
+                path = Path(target)
+                path.parent.mkdir(parents=True, exist_ok=True)
+                with path.open('a') as stream:
+                    stream.write(json.dumps(event, allow_nan=False) + '\n')
+        except (OSError, TypeError, ValueError):
+            pass  # optional local diagnostics cannot turn a successful tool into a failure
+
+
+@contextmanager
+def component(name, **identity):
+    """Record actual invocation and completion; loading a model is not usage."""
+    metrics = {}
+    if ACTIVE.get() is None and not os.environ.get('AGERE_EXECUTION_TRACE'):
+        yield metrics
+        return
+    invocation = uuid.uuid4().hex
+    execution_observation('component_started', component=name, invocation_id=invocation, **identity)
+    started = time.perf_counter()
+    error = None
+    try:
+        yield metrics
+    except BaseException as exc:
+        error = type(exc).__name__
+        raise
+    finally:
+        execution_observation('component_finished', component=name, invocation_id=invocation,
+                              status='failed' if error else 'completed', error_type=error,
+                              elapsed_seconds=time.perf_counter()-started, metrics=metrics, **identity)
+
+
+def trace_sql(db):
+    """Opt-in expanded SQL before execution, including a statement that stalls.
+
+    No progress handler, deadline or query transformation is installed here.
+    Callback text is local diagnostics, not an answer or a computation receipt.
+    """
+    if not os.environ.get('AGERE_EXECUTION_TRACE') or os.environ.get('AGERE_EXECUTION_SQL_TRACE') != 'on':
+        return db
+    def started(sql):
+        if sql.lstrip().upper().startswith(('SELECT', 'WITH')) and 'sqlite_master' not in sql:
+            execution_observation('sql_statement_started', component='sqlite', sql=sql,
+                                  query_digest=digest(sql), completion_not_established=True)
+    db.set_trace_callback(started)
+    return db
 
 
 def database(path):

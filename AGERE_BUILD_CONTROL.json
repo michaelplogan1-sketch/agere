@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-26T17:42:20.667164+00:00",
+  "updated_at": "2026-10-26T18:59:55.742626+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,24 +359,25 @@
     }
   ],
   "checkpoint": {
-    "kind": "assisted_user_delivery_product_gap_open",
+    "kind": "verified_shared_repairs_ordinary_workflow_incomplete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The physician-requested cohort review is available in a frozen, searchable frontier-generated service workspace with medication/dose evidence, dated note reasons, admissions, care-team evidence, proposed daily support and staged device fulfillment. This was assisted source investigation after the ordinary request stalled.",
-    "measured_failure_reduction": "Removed the hidden subscription timeout and repeat-generation behavior; caller deadlines are retained and an unbounded caller gets no invented limit. Focused engineering checks:265 passed,2 optional live skips. Full received-source artifact and browser checks completed; no automatic compound-query success claimed.",
+    "user_behavior_delta": "Mike accepted every answer in the delivered assisted Heartline workflow. Shared execution repair now keeps the original request intact, uses scoped FTS lookup, exposes existing owner phenotype definitions to the investigator, and records actual component invocation. Full ordinary execution is still being verified.",
+    "measured_failure_reduction": "Same73 ordered FTS passages in0.209s versus2.241s; existing owner phenotype57 living versus40 coded-only exposed to investigator; sender180s cutoff removed.219 distinct focused tests:218 pass,1 optional skip. Candidate3 completed358.9s without timeout but remained partial/unverified. Guarded batches have scripted evidence only.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
-      "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json"
+      "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
+      "artifacts/agere-execution-repair-2026-10-26/engineering-receipt.json"
     ],
-    "remaining_gap": "Ordinary compound request stalled in SQLite. Individualized current clinical decisions and service eligibility remain unqualified. The broad ten-area product charter remains open.",
-    "next_action": "Trace the ordinary compound-query execution plan and repair shared evidence execution; rerun Mike's original request through the existing product route without a disease-specific handler. Keep assisted-delivery evidence distinct from automatic completion and clinical qualification.",
-    "next": "Trace the ordinary compound-query execution plan and repair shared evidence execution; rerun Mike's original request through the existing product route without a disease-specific handler. Keep assisted-delivery evidence distinct from automatic completion and clinical qualification.",
+    "remaining_gap": "Automatic candidate3 ended no_progress after12 tools and9 reviews. It did not finish whole-note review, verified dose assessment or the service deliverable. Its findings do not replace Mike-accepted assisted Heartline. Broad qualification remains open.",
+    "next_action": "Connect unresolved requirements to further evidence acquisition and the existing deliverable workflow. Prevent wording-only repair from substituting for missing work. Preserve the complete question, computed results, source/scope, ten-area charter and known-good assisted delivery.",
+    "next": "Connect unresolved requirements to further evidence acquisition and the existing deliverable workflow. Prevent wording-only repair from substituting for missing work. Preserve the complete question, computed results, source/scope, ten-area charter and known-good assisted delivery.",
     "latest_review": {
-      "at": "2026-10-26T17:42:20.667164+00:00",
-      "kind": "Offline source/quote completeness, frozen export binding and actual browser workflow verification; not physician adjudication or automatic product acceptance",
+      "at": "2026-10-26T18:59:55.742626+00:00",
+      "kind": "219 distinct engineering tests; received-source FTS/phenotype checks; ordinary candidate3 remains partial; Mike acceptance scoped to prior assisted result",
       "evidence": [
-        "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
-        "artifacts/agere-hf-wraparound-2026-10-26/ui-verification.json"
+        "artifacts/agere-execution-repair-2026-10-26/engineering-receipt.json",
+        "artifacts/agere-execution-repair-2026-10-26/component-use-audit.json"
       ]
     },
     "coordination": {
@@ -1348,6 +1349,13 @@
       "basis": "Mike supplied a complete clinician workflow. The ordinary route stalled; received-source review and frontier composition produced a reviewable artifact with uncertainty and proposed-only execution retained.",
       "scope_impact": "No disease-specific product handler, protected evaluation, narrowed charter or clinical-readiness promotion. G3 active and full acceptance false. Synthetic artifacts remain local; source branch only may be pushed to the approved private PR.",
       "evidence": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json"
+    },
+    {
+      "at": "2026-10-26T18:51:17.445231+00:00",
+      "decision": "Repair measured shared FTS access order, incomplete-plan execution, definition handoff and sender cutoff; retain G3 active. Record actual model invocation and guarded literal continuation receipts.",
+      "basis": "Mike accepted the assisted workflow and authorized next steps. Normal-route trace reproduced global FTS scans, a coded-only cohort and an interrupted partial-answer repair.",
+      "scope_impact": "No disease-specific handler, new model weights, protected evaluation or main/default promotion. All ten areas retained; source and local diagnostic artifacts remain separate.",
+      "evidence": "artifacts/agere-execution-repair-2026-10-26/scoped-fts-comparison.json"
     }
   ]
 }

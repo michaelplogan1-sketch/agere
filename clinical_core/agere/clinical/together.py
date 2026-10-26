@@ -38,9 +38,10 @@ DEFAULT_SEMANTIC_MODEL = 'claude-haiku-5-5'   # semantic-analyst bake-off winner
 DEFAULT_RECONCILE_MODEL = 'claude-haiku-5-5'   # Haiku-first ladder (model_policy): a reconcile that errors or gives no verdict is retried once on Sonnet
 DEFAULT_BUDGET_S = 90.0
 DEFAULT_RECONCILE_BUDGET_S = 60.0
-SEND_TIMEOUT_S = 180
-# The documented semantic model is ~141K characters; the tool loop adds at most 8 tool results of <= 60K characters.
-REQUEST_MAX_BYTES = 1_200_000
+# No invented sender deadline or request-size ceiling. Explicit caller settings
+# remain available; the provider enforces its actual context window.
+SEND_TIMEOUT_S = None
+REQUEST_MAX_BYTES = None
 CONTRACT_KEYS = ('status', 'answer_type', 'count', 'patient_ids', 'value', 'table', 'unknown_count', 'missing', 'grounding', 'readings')
 STATUSES = ('answered', 'partial', 'unsupported', 'grounding_failed', 'clarify')
 TRANSPORT = None   # urlopen-compatible transport for context_student.send; tests install a fake (no paid calls)

@@ -31,6 +31,16 @@ from . import semantic_docs
 
 
 def bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
+    from ..request_lineage import component, trace_sql
+    from ...contracts import digest
+    trace_sql(db)
+    with component('investigator_sql', query_digest=digest([sql,params])) as metrics:
+        result = _bounded_query(db, sql, params, timeout_s, max_rows, max_chars)
+        metrics.update(rows=len(result['rows']), truncated=result['truncated'])
+        return result
+
+
+def _bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
     """Execute one read under a time limit; explicit truncation by rows and serialized size."""
     start = time.perf_counter()
     db.set_progress_handler(lambda: int(time.perf_counter() - start > timeout_s), 10000)
@@ -125,6 +135,10 @@ class SemanticWarehouse:
             # definition views define() created (their own reads of main tables are authorized as above).
             if database == 'temp' and (arg1 in cls.DEFINITION_VIEWS or arg1 == 'cohort' or re.fullmatch(r'agere_result_\d+', str(arg1))):
                 return sqlite3.SQLITE_OK  # only code-created, request-local cohort and executed-result views
+            if database == 'temp' and str(arg1).startswith('phenotype_'):
+                from .clinical_definitions import PHENOTYPES
+                if str(arg1)[len('phenotype_'):] in PHENOTYPES:
+                    return sqlite3.SQLITE_OK  # only registered owner definitions, never arbitrary temp tables
             return sqlite3.SQLITE_OK if database in (None, 'main') else sqlite3.SQLITE_DENY
         if action == sqlite3.SQLITE_FUNCTION:
             return sqlite3.SQLITE_DENY if str(arg2).lower() in cls.DENIED_FUNCTIONS else sqlite3.SQLITE_OK
@@ -141,14 +155,14 @@ class SemanticWarehouse:
         db.set_authorizer(None)
         db.execute('PRAGMA query_only=OFF')
         try:
-            for name in analyst_definitions.VIEW_NAMES:
+            for name in dict.fromkeys([*getattr(self._local, 'defined_names', []), *views]):
                 db.execute(f'DROP VIEW IF EXISTS temp.{name}')
-            for name in analyst_definitions.VIEW_NAMES:  # dependency order: living_patient before medicare_member
-                if name in views: db.execute(f'CREATE TEMP VIEW {name} AS {views[name]}')
+            for name, sql in views.items():  # dependency order: living_patient before its dependents
+                db.execute(f'CREATE TEMP VIEW {name} AS {sql}')
         finally:
             db.execute('PRAGMA query_only=ON')
             db.set_authorizer(self._authorize)
-        self._local.defined, self._local.defined_names = day, [n for n in analyst_definitions.VIEW_NAMES if n in views]
+        self._local.defined, self._local.defined_names = day, list(views)
         return self._local.defined_names
 
     def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
@@ -249,7 +263,7 @@ def successful_sql_calls(calls):
 
 
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
-              format_retries=0, review=None):
+              format_retries=0, review=None, continuation_guard=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -271,6 +285,13 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     try:
         while max_tools is None or turns < max_tools + 1 + format_retries + repairs:
             turns += 1
+            from ...contracts import digest
+            # Bind resolved future actions to the state the model actually saw.
+            # There is no learned action cache and no argument substitution.
+            guard_identity=None
+            if continuation_guard is not None:
+                try: guard_identity=digest(continuation_guard())
+                except (ValueError,OSError,sqlite3.Error): pass
             body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
             if deadline is not None and deadline - time.monotonic() <= 0:
@@ -354,9 +375,19 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 return result
             messages.append({'role': 'assistant', 'content': blocks})
             answers = []
-            for use in uses:
+            predecessor_failed=False
+            for index,use in enumerate(uses):
                 failure = False
-                if max_tools is not None and calls >= max_tools:
+                guarded=len(uses)>1 and continuation_guard is not None
+                current_guard=None
+                if guarded:
+                    try: current_guard=digest(continuation_guard())
+                    except (ValueError,OSError,sqlite3.Error): pass
+                blocked=guarded and (guard_identity is None or current_guard!=guard_identity or predecessor_failed)
+                if blocked:
+                    output={'error':'Resolved continuation not executed: source/scope changed, identity unavailable, or predecessor failed. Replan from the retained evidence.'}
+                    failure=True
+                elif max_tools is not None and calls >= max_tools:
                     output = {'error': 'SQL tool budget exhausted. Return the answer or explicit unsupported prerequisites.'}
                     failure = True
                 elif deadline is not None and time.monotonic() >= deadline:
@@ -368,10 +399,20 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     except (ValueError, sqlite3.Error) as exc:
                         output = {'error': str(exc)}
                         failure = True
+                failure=failure or (isinstance(output,dict) and bool(output.get('error')))
+                if guarded and index>0 and not failure:
+                    certificate={'decision_digest':digest([use.get('name'),use.get('input')]),
+                                 'guard_identity':guard_identity,'predecessor_receipt_digest':digest(result['tool_calls'][-1]),
+                                 'tool_receipt_digest':digest(output),'without_intervening_model_call':True,
+                                 'scope':'Literal actions from this model reply only; not clinical acceptance or a measured token saving'}
+                    result.setdefault('guarded_continuations',[]).append(certificate)
+                    from ..request_lineage import execution_observation
+                    execution_observation('guarded_continuation_executed',**certificate)
                 result['tool_calls'].append({'name': use.get('name'), 'input': use.get('input') or {},
                                             'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output})
                 answers.append({'type': 'tool_result', 'tool_use_id': use['id'],
                                 'content': json.dumps(output, allow_nan=False), 'is_error': failure})
+                predecessor_failed=predecessor_failed or failure
             messages.append({'role': 'user', 'content': answers})
             # Tool IDs are transport identifiers, not new investigative work.
             state = json.dumps([[u.get('name'), u.get('input')] for u in uses] +

@@ -15,6 +15,8 @@ from .dose import register as register_dose
 
 
 def register(db):
+    from ..request_lineage import trace_sql
+    trace_sql(db)
     from .clinical_inputs import register as register_clinical_inputs
     semantic_layer.ensure_diagnosis_view(db)  # a semantic.sqlite3 built before diagnosis_any gets it as a temp view
     semantic_layer.ensure_concept_view(db)  # ... and the condition rows of concept_patient at the same evidence definition
@@ -100,6 +102,16 @@ def _authorizer(action, *_):
 
 
 def execute(path, params, patient_ids=None, target=None, time_limit=None):
+    from ..request_lineage import component
+    from ...contracts import digest
+    with component('governed_sql', query_digest=digest(params),
+                   population_digest=digest(patient_ids), target=str(target or path)) as metrics:
+        result = _execute(path, params, patient_ids=patient_ids, target=target, time_limit=time_limit)
+        metrics.update(rows=result.get('row_count'), truncated=result.get('truncated'))
+        return result
+
+
+def _execute(path, params, patient_ids=None, target=None, time_limit=None):
     """target: an existing semantic.sqlite3 to read as-is (never rebuilt; used to replay against a read-only build)."""
     p = validate(params)
     from .answer_budget import tier_remaining  # a query inside a cascade tier never outlives the tier's time share (a runaway candidate SQL held a question for 19 minutes)

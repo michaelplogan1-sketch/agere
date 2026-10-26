@@ -15,6 +15,25 @@ from ..narrative_sources import text_fields, FORBIDDEN
 
 VERSION = 'warehouse-hybrid-retrieval/1'
 SCOPED_CONTENT_SQL = 'SELECT DISTINCT p.content FROM query_scope_passages qs CROSS JOIN passages p ON p.id=qs.id ORDER BY p.content'
+
+
+def lexical_query(*, scoped=False, patient=False, limit=80):
+    """Keep BM25 and tie order, but probe FTS by rowid after explicit scope.
+
+    An ordinary JOIN lets SQLite visit warehouse-wide token matches first for
+    each patient. CROSS JOIN fixes only that access order, never the evidence
+    filter or ranking. Global searches retain the FTS-first plan.
+    """
+    if type(limit) is not int or limit < 1:
+        raise ValueError('Positive lexical candidate count required')
+    if scoped:
+        source = 'query_scope_passages qs CROSS JOIN passages p ON p.id=qs.id CROSS JOIN search ON search.rowid=p.id'
+    elif patient:
+        source = 'passages p CROSS JOIN search ON search.rowid=p.id'
+    else:
+        source = 'search JOIN passages p ON p.id=search.rowid'
+    return ('SELECT p.id FROM '+source+' WHERE search MATCH ?'+(' AND p.patient=?' if patient else '')
+            +' ORDER BY bm25(search),p.id LIMIT '+str(limit))
 ROOT = Path(__file__).resolve().parents[3]
 ALIASES = {
  'kidney': ['renal', 'ckd', 'egfr', 'creatinine', 'nephrology'],
@@ -231,7 +250,7 @@ class Retriever:
         params=[expr];where=''
         if patient:where=' AND p.patient=?';params.append(patient)
         try:
-            ids=[r[0] for r in self.db.execute('SELECT p.id FROM search JOIN passages p ON p.id=search.rowid'+scope_join+' WHERE search MATCH ?'+where+' ORDER BY bm25(search),p.id LIMIT 40',params)]
+            ids=[r[0] for r in self.db.execute(lexical_query(scoped=bool(scope_join),patient=bool(patient),limit=40),params)]
         except sqlite3.OperationalError:
             return []
         out=[]
@@ -294,7 +313,7 @@ class Retriever:
         expression=' OR '.join('"'+x+'"' for x in terms)
         params=[expression];where=''
         if patient:where=' AND p.patient=?';params.append(patient)
-        lexical=[r[0] for r in self.db.execute('SELECT p.id FROM search JOIN passages p ON p.id=search.rowid'+scope_join+' WHERE search MATCH ?'+where+' ORDER BY bm25(search),p.id LIMIT 80',params)] if expression else []
+        lexical=[r[0] for r in self.db.execute(lexical_query(scoped=bool(scope_join),patient=bool(patient)),params)] if expression else []
         query_windows=self.encoder.windows(question,size=160,overlap=24)
         q=self.encoder.encode([w['text'] for w in query_windows]).mean(axis=0)
         q=q/max(float(np.linalg.norm(q)),1e-12)

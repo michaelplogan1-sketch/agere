@@ -538,9 +538,13 @@ class Cascade:
             if mx is not None: mx.clear_cache()  # freed GPU buffers go back to the system before the next tier loads a model
 
     def _timed(self, fn, name, limit):
+        from ..request_lineage import component
         t0 = time.perf_counter()  # measured after any local-model lock wait: the tier's own seconds feed its running median
         try:
-            return self._call_tier(fn, name, limit)
+            with component('proposer_tier', tier=name) as metrics:
+                result = self._call_tier(fn, name, limit)
+                metrics['outcome'] = 'declined' if result is None else 'proposal_or_held'
+                return result
         finally:
             self.measured.setdefault(name, []).append(time.perf_counter() - t0)
 
@@ -1291,9 +1295,19 @@ class Cascade:
         return self.graph('evidence_review', review_tier(self.stack, self.question, self.population))
     def tier_atomic_system_one(self):
         from .atomic_questions import tier
+        from . import system_one_gate
         def early(graph):  # System One is paid per patient: a plan the literal check will reject is declined before any call
             gaps = self.gaps(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
             if gaps: raise QuestionNotUnderstood('literal pre-check before any System One call: the plan drops ' + '; '.join(gaps)[:300])
+            try:
+                review=system_one_gate.check_plan(self.question, graph, stack=self.stack, ledger=self.ledger)
+                self.spend(review['calls'],review['cost_usd'])
+                self.note('atomic_system_one','plan_coverage',json.dumps(review),self.started)
+            except Exception as exc:
+                self.note('atomic_system_one','plan_coverage_unavailable',type(exc).__name__,self.started)
+                return  # provider failure must not remove execution/reasoning alternatives
+            if review['reject']:
+                raise QuestionNotUnderstood('System One plan coverage: '+review['label']+'; continue investigation of the complete request')
         return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger, early_check=early))
     def tier_hcc_suspecting(self):
         from .hcc_suspecting import tier

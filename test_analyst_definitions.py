@@ -75,6 +75,33 @@ class Base(unittest.TestCase):
 
 
 class Views(Base):
+    def test_owner_phenotype_matches_compiler_including_note_evidence_and_living_scope(self):
+        from clinical_core.agere.clinical.clinical_definitions import PHENOTYPES
+        self.wh.close()
+        with sqlite3.connect(self.path / 'semantic.sqlite3') as db:
+            db.executescript('''CREATE TABLE note_fact(patient_id TEXT, fact_type TEXT, negated INTEGER,
+                experiencer TEXT, value REAL, event_date TEXT);
+                INSERT INTO note_fact VALUES ('B','ejection_fraction',0,'patient',35,'2029-01-01'),
+                  ('C','ejection_fraction',1,'patient',30,'2029-01-01'),
+                  ('D','ejection_fraction',0,'patient',30,'2029-01-01'),
+                  ('E','ejection_fraction',0,'family',30,'2029-01-01'),
+                  ('F','ejection_fraction',0,'patient',45,'2029-01-01');''')
+            for pid in 'ABCDEFG':
+                code = 'I50.22' if pid in 'AG' else 'I50.9'
+                db.execute('INSERT INTO condition VALUES (?,?,?,?,?,?,?,?)',
+                           ('hf'+pid,pid,'conditions','heart_failure',code,'2028-01-01',1,None))
+        self.wh = SA.SemanticWarehouse(self.path / 'semantic.sqlite3');self.addCleanup(self.wh.close)
+        names = self.wh.define(AS_OF)
+        got = self.q('SELECT * FROM phenotype_hfref ORDER BY patient_id')
+        self.assertEqual([r['patient_id'] for r in got], ['A','B'])
+        macro = PHENOTYPES['hfref']['build'](self.wh.columns)
+        expected = self.q('SELECT h.* FROM '+macro+' h JOIN living_patient l USING(patient_id) ORDER BY patient_id')
+        self.assertEqual(got, expected)
+        docs = AD.definitions_doc(names)
+        self.assertIn('phenotype_hfref', docs)
+        self.assertIn(PHENOTYPES['hfref']['disclosure'], docs)
+        self.assertIn('coded condition membership only', docs)
+
     def test_views_exist_on_the_readonly_connection_and_are_never_written_to_the_stack(self):
         created = self.wh.define(AS_OF)
         self.assertEqual(set(created), set(AD.VIEW_NAMES))

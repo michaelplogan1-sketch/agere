@@ -18,6 +18,45 @@ def tool(name, args, ident='t1'):
 
 
 class Investigation(unittest.TestCase):
+    def test_guarded_literal_continuation_removes_an_intermediate_model_callback(self):
+        first=tool('query_sql',{'sql':'SELECT 1'})['content'][0]
+        second={**tool('query_sql',{'sql':'SELECT 2'},'t2')['content'][0]}
+        def run(replies,guard=lambda:{'source':'v1','cohort':['A'],'as_of':'2030-05-27'}):
+            sent=[];executed=[];replies=iter(replies)
+            def send(body):sent.append(body);return next(replies),.01,False
+            def execute(use):executed.append(use['input']);return {'value':int(use['input']['sql'][-1])}
+            result=S.tool_loop('question',[],[{'name':'query_sql'}],execute,send=send,model='scripted',max_tools=None,continuation_guard=guard)
+            return result,sent,executed
+        batched,sent,executed=run([{'content':[first,second]},final({'status':'answered','value':3})])
+        serial,serial_sent,serial_executed=run([{'content':[first]},{'content':[second]},final({'status':'answered','value':3})])
+        self.assertEqual(batched['answer'],serial['answer'])
+        self.assertEqual(executed,serial_executed)
+        self.assertEqual((len(sent),len(serial_sent)),(2,3))
+        certificate=batched['guarded_continuations'][0]
+        self.assertTrue(certificate['without_intervening_model_call'])
+        self.assertTrue(certificate['predecessor_receipt_digest'])
+
+    def test_guarded_continuation_returns_to_reasoning_when_source_changes(self):
+        replies=iter([{'content':[tool('query_sql',{'sql':'SELECT 1'})['content'][0],tool('query_sql',{'sql':'SELECT 2'},'t2')['content'][0]]},final({'status':'partial','missing':['source changed']})])
+        state={'source':'v1'};executed=[];sent=[]
+        def execute(use):executed.append(use['input']);state['source']='v2';return {'value':1}
+        def send(body):sent.append(body);return next(replies),.01,False
+        result=S.tool_loop('question',[],[{'name':'query_sql'}],execute,send=send,model='scripted',max_tools=None,continuation_guard=lambda:dict(state))
+        self.assertEqual(executed,[{'sql':'SELECT 1'}])
+        self.assertIn('source/scope changed',result['tool_calls'][1]['result']['error'])
+        self.assertEqual(result.get('guarded_continuations',[]),[])
+        self.assertEqual(result['answer']['status'],'partial')
+        self.assertEqual(len(sent),2)
+
+    def test_failed_predecessor_does_not_execute_resolved_success_continuation(self):
+        replies=iter([{'content':[tool('query_sql',{'sql':'SELECT 1'})['content'][0],tool('query_sql',{'sql':'SELECT 2'},'t2')['content'][0]]},final({'status':'partial'})])
+        executed=[]
+        def execute(use):executed.append(use);return {'error':'failed prerequisite'}
+        result=S.tool_loop('question',[],[{'name':'query_sql'}],execute,send=lambda body:(next(replies),.01,False),model='scripted',max_tools=None,continuation_guard=lambda:{'source':'v1'})
+        self.assertEqual(len(executed),1)
+        self.assertIn('predecessor failed',result['tool_calls'][1]['result']['error'])
+        self.assertNotIn('guarded_continuations',result)
+
     def run_loop(self, replies, review, execute=lambda use: {'value': 1}, max_tools=None):
         sent = []
         def send(body):

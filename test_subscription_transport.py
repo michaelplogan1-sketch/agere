@@ -10,6 +10,15 @@ from clinical_core.agere import subscription_transport as T
 
 
 class Translation(unittest.TestCase):
+    def test_literal_action_batch_preserves_arguments_and_has_distinct_native_ids(self):
+        calls=[{'name':'sql','input':{'query':'SELECT 1'}},{'name':'sql','input':{'query':'SELECT 2'}}]
+        with patch.object(T,'run_cli',return_value={'result':json.dumps({'tool_uses':calls}),'usage':{}}):
+            response=T.respond({'tools':[{'name':'sql'}]})
+        self.assertEqual(response['stop_reason'],'tool_use')
+        self.assertEqual([{'name':x['name'],'input':x['input']} for x in response['content']],calls)
+        self.assertEqual(len({x['id'] for x in response['content']}),2)
+        self.assertEqual(T._tool_calls(json.dumps({'tool_uses':[calls[0],{'name':'unknown','input':{}}]}),[{'name':'sql'}]),[])
+
     def test_caller_timeout_is_preserved_without_an_automatic_second_generation(self):
         with patch.dict(os.environ, {'AGERE_SUBSCRIPTION_TIMEOUT': ''}), \
              patch.object(T, 'run_cli', side_effect=subprocess.TimeoutExpired('scripted', 900)) as call:

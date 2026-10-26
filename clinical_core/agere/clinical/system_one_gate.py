@@ -191,6 +191,35 @@ def reject_threshold():
         return 0.85
 
 
+def check_plan(question, graph, *, stack, ledger=None):
+    """Check declared computation before expensive population execution.
+
+    A confidently incomplete proposal yields to the existing next proposer.
+    Uncertainty or an unavailable provider leaves the ordinary path available.
+    """
+    if not ready(stack, 'AGERE_S1_CHECK'):
+        return {'reject': False, 'label': 'not_run', 'calls': 0, 'cost_usd': 0.0}
+    from .literal_check import executable_text
+    text = '\n'.join(str(n['operation'])+'\n'+executable_text(n.get('parameters') or {})
+                     for n in graph.get('nodes', []))
+    options = {
+        'covers_all': 'The declared operations can produce every requested output for the exact scope and dates, without adding new operations.',
+        'covers_part': 'The operations address part of the request, but requested outputs or constraints have no declared computation.',
+        'different': 'The operations address a different request or population.',
+        'unknown': 'Coverage cannot be determined from the declared operations.'}
+    when = as_of(stack)
+    out = s1().decide('Original request: '+question+'\nDoes this proposed computation cover the entire request? '
+                     'Evaluate declared computations, not words echoed from the request. Checking one property does not also compute '
+                     'other requested relationships, calculations, aggregates or work. Unknown evidence is allowed; an unplanned output is missing.',
+                     options, [{'id':'declared_computation','text':text,'date':when}],
+                     as_of=when, task_key='s1_plan_coverage', ledger=ledger, allow_live=True)
+    probs = _probs(out);label=out.get('label') or 'unknown';p=float(probs.get(label,0))
+    calls,usd=cost(out)
+    return {'label':label,'p':p,'reject':bool(out.get('decided_by')) and label in ('covers_part','different') and p>=reject_threshold(),
+            'calls':calls,'cost_usd':usd,'probabilities':probs,'provider':out.get('decided_by'),
+            'request_hash':out.get('request_hash'),'cache_hit':bool(out.get('cache_hit'))}
+
+
 def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     """One System One typed question over the original question + render(graph, result).
     -> {'addresses_question': P(fully)+P(partially), 'label', 'p': P(label), 'probabilities', 'reasons', 'reject': bool,

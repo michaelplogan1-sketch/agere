@@ -23,6 +23,7 @@ human analyst would use and the conversation it belongs to.
 System One reviews completeness and evidence support before a final answer ends the investigation. Repairs retain the tool history.
 """
 import json
+import hashlib
 import os
 import re
 import time
@@ -171,6 +172,19 @@ class Tools:
             return out
         except TypeError as exc:  # a malformed call (unknown argument): a tool error the model can correct, not the end of the loop
             raise ValueError(f'bad arguments for {use.get("name")}: {exc}') from exc
+
+    def continuation_identity(self):
+        from ..deliverables.answer_context import source_identity
+        from . import decision_context, clinical_definitions, analyst_definitions
+        state=decision_context.current()
+        definitions=decision_context.receipt(state=state)
+        # Query observations change during execution; only meaning is a guard.
+        definitions.pop('rewrites',None);definitions.pop('problems',None)
+        return {'source':source_identity(self.stack.path),'as_of':self.as_of,
+                'cohort':self.cohort,'scope':sorted(self.scope) if self.scope is not None else None,
+                'definitions':definitions,'clinical_definitions':clinical_definitions.describe(),
+                'definition_views_version':analyst_definitions.VERSION,
+                'executor_code':hashlib.sha256(Path(__file__).read_bytes()).hexdigest()}
 
     def _call(self, use):
         name, args = use.get('name'), use.get('input') or {}
@@ -500,11 +514,11 @@ def as_tool_calls(send):
             cost = None if cost is None or cost2 is None else cost + cost2
             blocks = response.get('content') or []
         if body.get('tools') and blocks and not any(b.get('type') == 'tool_use' for b in blocks):
-            call = ST._tool_call('\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text'), body['tools'])
-            if call:
+            calls = ST._tool_calls('\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text'), body['tools'])
+            if calls:
                 response = {**response, 'stop_reason': 'tool_use',
-                            'content': [{'type': 'tool_use', 'id': 'toolu_bs_' + str(abs(hash(json.dumps(call, sort_keys=True))))[:16],
-                                         'name': call['name'], 'input': call['input']}]}
+                            'content': [{'type': 'tool_use', 'id': 'toolu_bs_' + str(index)+'_' + str(abs(hash(json.dumps(call, sort_keys=True))))[:16],
+                                         'name': call['name'], 'input': call['input']} for index,call in enumerate(calls)]}
         return response, cost, hit
     return wrapped
 
@@ -562,7 +576,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     graph = {'nodes': [{'id': f'query_{i}', 'operation': 'sql', 'parameters': {'query': (c.get('input') or {}).get('sql') or c['sql']}}
                        for i, c in enumerate(successful_sql_calls(calls))]}
     from .decision_context import prompt_block
-    request = question + '\nGoverned definitions:\n' + prompt_block()
+    from .clinical_definitions import describe
+    request = question + '\nGoverned definitions:\n' + prompt_block() + '\nClinical owner definitions:\n' + json.dumps(describe())
     if context: request += '\nRequest context (including follow-ups and selected population): ' + json.dumps(context, default=str)
     try:
         coverage = gate.check(request, graph, {'answer': answer}, stack=stack, ledger=ledger, as_of_date=as_of)
@@ -648,13 +663,14 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         return assessment
     run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=as_tool_calls(send or _send(stack, ledger, receipts)), model=model,
                                      max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'}}, format_retries=1, max_tokens=8192,
-                                     review=review)
+                                     review=review, continuation_guard=tools.continuation_identity)
     reviews = run.get('answer_reviews') or []
     review_cost = sum(r.get('cost_usd') or 0.0 for r in reviews)
     out = {'answer': run.get('answer') if isinstance(run.get('answer'), dict) else None, 'tool_calls': run.get('tool_calls') or [],
            'model': model, 'estimated_cost_usd': run['estimated_cost_usd'] + review_cost if run.get('estimated_cost_usd') is not None else None,
            'new_paid_api_calls': run.get('new_paid_api_calls', 0) + sum(r.get('calls') or 0 for r in reviews),
            'answer_reviews': reviews, 'review_stopped': run.get('review_stopped'),
+           'guarded_continuations':run.get('guarded_continuations',[]),
            'error': run.get('error'), 'final_text': run.get('final_text'), 'seconds': round(time.perf_counter() - started, 1), 'version': VERSION}
     a = out['answer']
     if a is not None:

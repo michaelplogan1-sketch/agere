@@ -75,10 +75,13 @@ def _text(content):
 
 TOOL_PROTOCOL = '''
 
-TOOLS (emulated). You may call one of these tools per reply:
+TOOLS (emulated). You may call these tools:
 {tools}
 To call a tool, reply with ONLY one JSON object and nothing else: {{"tool_use": {{"name": "<tool name>", "input": {{...arguments...}}}}}}
-The tool's result will come back in the next message. When you are done, reply with your final answer in the format the instructions above require
+When several read-only actions and all their exact arguments are already resolved, you may return
+{{"tool_uses": [{{"name": "<tool name>", "input": {{...literal arguments...}}}}, ...]}}.
+Do not batch an action whose arguments require new inference from an earlier result. The executor checks source and scope guards between actions.
+Tool results will come back in the next message. When you are done, reply with your final answer in the format the instructions above require
 (not a tool_use object).'''
 
 
@@ -159,6 +162,28 @@ def run_cli(model, system, user, timeout=None):
     return out
 
 
+def _tool_calls(text, tools):
+    """Native tool blocks for one literal action or an entirely valid action batch."""
+    single = _tool_call(text, tools)
+    if single:
+        return [single]
+    if not tools:
+        return []
+    raw=(text or '').strip()
+    if raw.startswith('```'):
+        raw=re.sub(r'^```(?:json)?\s*|\s*```$','',raw)
+    try:
+        obj=json.loads(raw)
+    except ValueError:
+        return []
+    calls=obj.get('tool_uses') if isinstance(obj,dict) else None
+    names={t.get('name') for t in tools}
+    if not isinstance(calls,list) or not calls or any(not isinstance(c,dict) or set(c)!={'name','input'}
+            or c['name'] not in names or not isinstance(c['input'],dict) for c in calls):
+        return []
+    return calls
+
+
 def respond(body, *, timeout=None):
     """A Messages API body -> a Messages API response dict, answered by the CLI."""
     model = body.get('model') or 'claude-haiku-5-5'
@@ -173,9 +198,9 @@ def respond(body, *, timeout=None):
     text = out.get('result') or ''
     usage = out.get('usage') or {}
     usage = {k: usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
-    call = _tool_call(text, body.get('tools'))
-    if call:
-        content, stop = [{'type': 'tool_use', 'id': 'toolu_' + uuid.uuid4().hex[:20], 'name': call['name'], 'input': call['input']}], 'tool_use'
+    calls = _tool_calls(text, body.get('tools'))
+    if calls:
+        content, stop = [{'type': 'tool_use', 'id': 'toolu_' + uuid.uuid4().hex[:20], 'name': call['name'], 'input': call['input']} for call in calls], 'tool_use'
     else:
         content, stop = [{'type': 'text', 'text': text}], 'end_turn'
     return {'id': 'msg_sub_' + uuid.uuid4().hex[:16], 'type': 'message', 'role': 'assistant', 'model': model, 'content': content,
