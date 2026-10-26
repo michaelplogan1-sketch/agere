@@ -30,6 +30,8 @@ def keys():
             os.environ.setdefault(key.strip(),value.strip().strip('\"\''))
     if os.environ.get('AGERE_CLAUDE','on')=='off':  # free-tier measurement: every Claude call fails at once, whatever the balance
         os.environ.pop('ANTHROPIC_API_KEY',None)
+    elif os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
+        os.environ['ANTHROPIC_API_KEY'] = 'subscription-transport'
 
 if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('--stack',type=Path,default=Path('artifacts/agere-cohort-stack-v2'))

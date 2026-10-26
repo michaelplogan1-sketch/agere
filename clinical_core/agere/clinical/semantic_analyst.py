@@ -243,7 +243,7 @@ def new_result(model):
 
 
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
-              format_retries=0):
+              format_retries=0, review=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -251,16 +251,22 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     request) costs nothing and is not a new paid call. deadline (time.monotonic() value) bounds wall clock: no provider
     call or SQL call starts after it (the sender bounds the call itself).
     format_retries (product analyst only; the bench baselines keep 0): when the final reply is not valid JSON, first try
-    the JSON object embedded in the text (free), then ask once more for only the JSON object (build log step 12)."""
+    the JSON object embedded in the text (free), then ask once more for only the JSON object (build log step 12).
+    review(answer, tool_calls) optionally returns an assessment with repair feedback. Repair continues in THIS conversation,
+    retaining every tool result. None for max_tools means no call quota. Repeated rejected answers with unchanged evidence
+    stop as explicitly partial; a provider or deadline failure retains the last rejected answer as unverified."""
     result = new_result(model)
     messages = [{'role': 'user', 'content': user}]
     calls = 0
     retries_left = format_retries
     force_text = False
+    turns, repairs, reviewed = 0, 0, set()
+    last_tools = None
     try:
-        for _ in range(max_tools + 1 + format_retries):
+        while max_tools is None or turns < max_tools + 1 + format_retries + repairs:
+            turns += 1
             body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages, 'tools': tools,
-                    'tool_choice': {'type': 'none' if calls >= max_tools or force_text else 'auto'}, **(extra or {})}
+                    'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
             try:
@@ -295,33 +301,56 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 def reject_constant(value):
                     raise ValueError('Non-finite JSON number: ' + value)
                 try:
-                    result['answer'] = json.loads(text, parse_constant=reject_constant)
-                    return result
+                    candidate = json.loads(text, parse_constant=reject_constant)
                 except ValueError:
                     if not format_retries:
                         raise
                     start, end = text.find('{'), text.rfind('}')
                     if 0 <= start < end:
                         try:
-                            result['answer'] = json.loads(text[start:end + 1], parse_constant=reject_constant)
+                            candidate = json.loads(text[start:end + 1], parse_constant=reject_constant)
                             result['format_repair'] = 'extracted'
-                            return result
                         except ValueError:
-                            pass
-                    if retries_left <= 0:
-                        raise
-                    retries_left -= 1
-                    result['format_repair'] = 'asked_again'
-                    force_text = True
-                    messages.append({'role': 'assistant', 'content': blocks})
-                    messages.append({'role': 'user', 'content': 'Your reply was not a valid JSON answer object. Reply with '
-                                     'ONLY the JSON answer object in the required contract, no other text.'})
-                    continue
+                            candidate = None
+                    else:
+                        candidate = None
+                    if candidate is None:
+                        if retries_left <= 0:
+                            raise
+                        retries_left -= 1
+                        result['format_repair'] = 'asked_again'
+                        force_text = True
+                        messages.append({'role': 'assistant', 'content': blocks})
+                        messages.append({'role': 'user', 'content': 'Your reply was not a valid JSON answer object. Reply with '
+                                         'ONLY the JSON answer object in the required contract, no other text.'})
+                        continue
+                if review is not None:
+                    assessment = review(candidate, result['tool_calls'])
+                    result.setdefault('answer_reviews', []).append(assessment)
+                    feedback = assessment.get('feedback')
+                    if feedback:
+                        # Counts do not establish progress: querying the same rows again must not reset this protection.
+                        evidence = sorted({json.dumps(c, sort_keys=True, default=str) for c in result['tool_calls']})
+                        key = json.dumps([candidate, evidence], sort_keys=True, default=str)
+                        result['answer'] = {**candidate, 'status': 'partial', 'verification': 'unverified',
+                                            'limitations': [*(candidate.get('limitations') or []), str(feedback)]} if isinstance(candidate, dict) else None
+                        if key in reviewed:
+                            result['review_stopped'] = 'no_progress'
+                            return result
+                        reviewed.add(key)
+                        repairs += 1
+                        force_text = False  # the repair may need more evidence, even after a JSON-format repair
+                        messages.append({'role': 'assistant', 'content': blocks})
+                        messages.append({'role': 'user', 'content': 'Continue the investigation using the evidence already gathered. '
+                                         'Repair the final answer, fetching or computing anything missing. ' + str(feedback)})
+                        continue
+                result['answer'] = candidate
+                return result
             messages.append({'role': 'assistant', 'content': blocks})
             answers = []
             for use in uses:
                 failure = False
-                if calls >= max_tools:
+                if max_tools is not None and calls >= max_tools:
                     output = {'error': 'SQL tool budget exhausted. Return the answer or explicit unsupported prerequisites.'}
                     failure = True
                 elif deadline is not None and time.monotonic() >= deadline:
@@ -333,10 +362,17 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     except (ValueError, sqlite3.Error) as exc:
                         output = {'error': str(exc)}
                         failure = True
-                result['tool_calls'].append({'sql': use.get('input', {}).get('sql'), 'result': output})
+                result['tool_calls'].append({'name': use.get('name'), 'input': use.get('input') or {},
+                                            'sql': use.get('input', {}).get('sql'), 'result': output})
                 answers.append({'type': 'tool_result', 'tool_use_id': use['id'],
                                 'content': json.dumps(output, allow_nan=False), 'is_error': failure})
             messages.append({'role': 'user', 'content': answers})
+            # Tool IDs are transport identifiers, not new investigative work.
+            state = json.dumps([[u.get('name'), u.get('input')] for u in uses] +
+                               [[a['content'], a['is_error']] for a in answers], sort_keys=True, default=str)
+            if max_tools is None and state == last_tools:
+                raise ValueError('Investigation made no progress: the same tools returned the same evidence again.')
+            last_tools = state
         raise ValueError('No final answer within the bounded tool loop')
     except Exception as exc:
         # Keep all measured usage from successful calls even if final parsing fails.

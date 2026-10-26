@@ -263,7 +263,7 @@ class ProviderUnavailable(RuntimeError):
 
 
 _PROVIDER_PATTERNS=(('billing',('credit balance','billing','insufficient credit','insufficient_quota','payment required','http 402')),
-                    ('rate_limit',('http 429','rate limit','rate_limit','too many requests')),
+                    ('rate_limit',('http 429','rate limit','rate_limit','too many requests','claude subscription limit reached')),
                     ('overloaded',('http 529','overloaded')),
                     ('server',('http 500','http 502','http 503','http 504','internal server error','service unavailable','bad gateway','api_error')),
                     ('timeout',('timed out','timeout','connection reset','connection refused','remote end closed','urlerror')))
@@ -316,6 +316,9 @@ def call_with_fallback(call,model,*,sleep=time.sleep,backoff=None,fallback=None)
                 kind=classify_provider_error(exc)
                 if kind is None:raise
                 attempts.append({'model':target,'kind':kind,'error':str(exc)[:300]})
+                if kind=='rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT')=='subscription' and str(target).startswith('claude'):
+                    raise ProviderUnavailable('Claude subscription limit reached; stopped without retry or API fallback: '+str(exc)[:200],
+                                              kind='rate_limit',attempts=attempts) from None
                 if retry or kind=='billing' or target!=model:break
                 if backoff>0:sleep(backoff)
     last=attempts[-1]

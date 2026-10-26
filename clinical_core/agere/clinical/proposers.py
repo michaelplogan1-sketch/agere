@@ -175,7 +175,6 @@ def second_look_fast_path(stack, question, graph, result, *, population=None, st
     if ((result or {}).get('answer') or {}).get('status') not in ('answered', 'partial'): return None
     c = Cascade(stack, request_plan.Catalog.load(stack.path), question, population=population)
     try:
-        if c.one_patient(): return None
         order = list(ORDER)
         found = ({'kind': 'checked_graph', 'graph': graph, 'executed': result}, {'interpreter': 'fast_path'})
         got, name = c.second_look(order, 'fast_path', found)
@@ -192,13 +191,22 @@ def second_look_fast_path(stack, question, graph, result, *, population=None, st
                 'graph': contract['graph'], 'answer': answer, 'request_contract': {k: v for k, v in contract.items() if k != 'executed'},
                 'planner_receipt': receipt, 'new_paid_api_calls': c.calls, 'planning_economics': economics(receipt),
                 'elapsed_seconds': (time.perf_counter() - started) if started else None, 'clinical_execution_authorized': False}
-    except Exception:  # noqa: BLE001 - a second look never takes the first answer down
+    except Exception as exc:  # a failed review preserves the first answer, except Mike's explicit subscription stop
+        if outage(exc) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription': raise
         return None
     finally:
         c.close()
 
 
 FAST_ONE_PATIENT = ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'chart_reader', 'data_domain_check')
+
+
+def backstop_limit():
+    """Only an explicitly configured investigation deadline; accuracy takes precedence over an invented time quota."""
+    raw = os.environ.get('AGERE_BACKSTOP_SECONDS', '').strip().lower()
+    if raw in ('', 'off', 'none', 'inf', 'unlimited'): return None
+    try: return max(0.0, float(raw))
+    except ValueError: return None
 
 
 def investigator_first_for_one_patient(order):
@@ -505,7 +513,7 @@ class Cascade:
         None when the budget is unlimited."""
         if budget.seconds == float('inf'): return None
         if name == 'backstop_agent':  # the final layer gets its own time, not a share of what the earlier layers left
-            return max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90')))
+            return backstop_limit()
         from .answer_budget import SHARE_BASE_SECONDS
         cap = max(budget.seconds, SHARE_BASE_SECONDS) * TIER_SHARE['heavy' if name in HEAVY or name in PAID else 'other']
         return max(0.5, min(cap, budget.remaining()))
@@ -570,9 +578,12 @@ class Cascade:
         except QuestionNotUnderstood as exc:
             self.note(name, 'declined', str(exc), started)
             cause = exc.__cause__ or exc.__context__  # a decline wrapping a provider outage still means Claude is down
+            if name in CLAUDE_TIERS and cause is not None and outage(cause) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription': raise cause
             if name in CLAUDE_TIERS and cause is not None and outage(cause): self.claude_down = self.claude_down or outage(cause)
             return None
         except Exception as exc:  # noqa: BLE001 - one component failing never stops the others (heal, don't block)
+            if name in CLAUDE_TIERS and outage(exc) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
+                raise  # Mike: a subscription limit ends the request; never try another Claude tier or the external API
             self.note(name, 'error', f'{type(exc).__name__}: {exc}', started)
             from ..fault_containment import on_tier_error  # a malformed state store is quarantined and recreated, not hit again
             healed = on_tier_error(getattr(self.stack, 'path', '.'), exc)
@@ -593,7 +604,7 @@ class Cascade:
         answer whose quotes were verified against their own records is not re-verified by the weaker generalist tiers (matched
         diagnostic 2026-10-26: ~50 s of verifiers on one-patient note answers, none comparable)."""
         a = ((found[0] or {}).get('executed') or {}).get('answer') or {} if isinstance(found, tuple) else {}
-        if name == 'backstop_agent' and a.get('verification') in ('quote_verified', 'checked'):
+        if name == 'backstop_agent' and a.get('verification') in ('quote_verified', 'checked', 'system_one_reviewed'):
             contract, interpretation = found
         else:
             contract, interpretation = claim_verification.verify(self, order, name, found)
@@ -706,7 +717,7 @@ class Cascade:
         if name in CERTIFIED_CHART and not unquoted_chart_answer(self.question, found[0]) and not self.system_one_disagrees(found[0]): return found, name
         if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
         if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
-        second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
+        second = self.attempt('backstop_agent', backstop_limit())
         if not isinstance(second, tuple): return found, name
         status = ((second[0] or {}).get('executed') or {}).get('answer', {}).get('status')
         if status in ('answered', 'partial') or unquoted_chart_answer(self.question, found[0]) or not quoted(found[0]): return second, 'backstop_agent'
@@ -748,7 +759,7 @@ class Cascade:
         it). 'answers partially' or 'a different question' (p >= AGERE_SECOND_LOOK_P, default 0.6) hands the question, with that answer and
         the verdict, to the backstop investigation; its answer replaces the first when it answers (audit 2026-10-25: confident wrong engine
         answers were accepted with no second look). -> (found, name)."""
-        if name == 'backstop_agent' or name in CERTIFIED_CHART or not isinstance(found, tuple) or self.one_patient(): return found, name
+        if name == 'backstop_agent' or not isinstance(found, tuple): return found, name
         if os.environ.get('AGERE_SECOND_LOOK', 'on') == 'off': return found, name
         if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
         if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
@@ -769,10 +780,9 @@ class Cascade:
         self.note('second_look', 'investigate' if flagged else 'stands', f'System One: {label} p={p:.2f} on {name}', time.perf_counter())
         if not flagged: return found, name
         a = result.get('answer') or {}
-        self.second_look_hint = {'earlier_answer': {'by': name, 'headline': a.get('headline'), 'value': a.get('value', a.get('count')),
-                                                    'method': a.get('method')},
+        self.second_look_hint = {'earlier_answer': {'by': name, 'answer': a, 'graph': contract.get('graph')},
                                  'system_one_verdict': f"{label.replace('_', ' ')} (p={p:.2f})"}
-        second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
+        second = self.attempt('backstop_agent', backstop_limit())
         if isinstance(second, tuple) and ((second[0] or {}).get('executed') or {}).get('answer', {}).get('status') in ('answered', 'partial'):
             return second, 'backstop_agent'
         return found, name
@@ -791,8 +801,8 @@ class Cascade:
     def reserved_backstop(self, order):
         """The final LLM backstop runs once before any decline (AGERE_BACKSTOP_SECONDS, default 90; 0 turns this off), when the budget ran out
         before it was asked. -> accept() result or None."""
-        name, seconds = 'backstop_agent', float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))
-        if seconds <= 0 or name not in order or not self.runnable(name) or not claude_available() or self.claude_down: return None
+        name, seconds = 'backstop_agent', backstop_limit()
+        if (seconds is not None and seconds <= 0) or name not in order or not self.runnable(name) or not claude_available() or self.claude_down: return None
         if any(e.get('proposer') == name and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return None
         self.deferred = [d for d in self.deferred if d.get('tier') != name]
         found = self.attempt(name, seconds)
@@ -807,6 +817,9 @@ class Cascade:
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
                                         hint=getattr(self, 'second_look_hint', None))
         self.spend(run.get('new_paid_api_calls', 0), run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+        if run.get('error') and outage(RuntimeError(run['error'])) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
+            from ..gateway import ProviderUnavailable
+            raise ProviderUnavailable(run['error'], kind='rate_limit')
         answer = run.get('answer')
         if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial', 'unsupported'):
             return self.reject('backstop_agent', [str(run.get('error') or 'no answer')[:300]])
@@ -816,9 +829,10 @@ class Cascade:
         sqls = [c.get('sql') for c in run.get('tool_calls') or [] if c.get('sql')]
         graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                  'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': q, 'returns': 'table'},
-                            'purpose': 'Backstop analyst query (executed)'} for i, q in enumerate(sqls[-6:])]}
+                            'purpose': 'Backstop analyst query (executed)'} for i, q in enumerate(sqls)]}
         receipt = {'route': 'backstop_agent', 'model': run.get('model'), 'new_paid_api_calls': run.get('new_paid_api_calls', 0),
-                   'backstop': {'version': run.get('version'), 'tool_calls': len(run.get('tool_calls') or []), 'seconds': run.get('seconds')}}
+                   'backstop': {'version': run.get('version'), 'tool_calls': len(run.get('tool_calls') or []), 'seconds': run.get('seconds'),
+                                'answer_reviews': run.get('answer_reviews'), 'review_stopped': run.get('review_stopped')}}
         notes = []
         try:  # the checks still run and are recorded, as annotations (never a veto at the last layer)
             misfit = shape_misfit(self.question, answer)
@@ -828,6 +842,12 @@ class Cascade:
         if notes: answer = {**answer, 'limitations': [*(answer.get('limitations') or []), *('Check note: ' + n for n in notes)]}
         answer.setdefault('patient_ids', answer.get('patient_ids') or [])
         result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0}
+        review = answer.get('investigation_review') or {}
+        if review and review.get('status') != 'confirmed':
+            answer = {**answer, 'verification': 'unverified', 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
+                      'limitations': [*(answer.get('limitations') or []), 'The final investigation review did not confirm the complete answer: ' +
+                                      str(review.get('feedback') or review.get('reason') or review.get('status'))]}
+            return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
         if answer.get('status') == 'not_available' or not graph['nodes']:
             # no SQL to gate (documents, governed metrics, an absence): the modality's own check (Codex review 2026-10-26). A document answer
             # needs a verified quote; a numeric answer's numbers must appear in what the tools returned; an absence needs a search behind it.
@@ -836,7 +856,8 @@ class Cascade:
             # of the requested meaning (Codex review 2026-10-26: a list_metrics call does not establish absent mortality data; a ratio of
             # unrelated numbers is not a verified denominator), so those ship unverified and partial with the provenance recorded.
             provenance, why = modality_check(answer, run.get('tool_calls') or [])
-            answer = {**answer, 'provenance': provenance, 'verification': 'quote_verified' if provenance == 'quote_verified' else 'unverified'}
+            answer = {**answer, 'provenance': provenance, 'verification': 'system_one_reviewed' if review.get('status') == 'confirmed' else
+                      'quote_verified' if provenance == 'quote_verified' else 'unverified'}
             if answer['verification'] == 'unverified':
                 answer = {**answer, 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
                           'limitations': [*(answer.get('limitations') or []), 'Unverified: ' + (why or

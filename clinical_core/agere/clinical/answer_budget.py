@@ -1,4 +1,4 @@
-"""End-to-end answer time budget (AGERE_ANSWER_BUDGET_SECONDS, default 120). Mike 2026-10-24: 30 s is not a hard cap, getting the
+"""End-to-end answer time budget (AGERE_ANSWER_BUDGET_SECONDS, unlimited unless explicitly configured). Mike: getting the
 question right comes first; fast routes stay fast by order (they answer in about a second), and a hard question may take longer.
 
 The cascade starts one budget per question and consults it between proposers. When time runs out it stops asking new
@@ -15,7 +15,7 @@ import math
 import os
 import time
 
-DEFAULT_SECONDS = 120.0  # was 30: held-out f2cbeb0, 15 of 27 refusals ran out of budget before the LLM layer
+DEFAULT_SECONDS = math.inf  # Mike: accuracy first; a deadline must be explicitly configured, not selected by the assistant
 SHARE_BASE_SECONDS = 120.0  # tier time shares are fractions of max(budget, this), so a short production budget does not shrink a tier's own cap
 VERSION = 'answer-time-budget/1'
 _current = contextvars.ContextVar('agere_answer_budget', default=None)
