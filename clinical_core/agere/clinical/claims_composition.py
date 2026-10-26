@@ -310,6 +310,9 @@ class ClaimFrames:
         else:
             default = DEFAULT_CLAIM_FILTER.get(table)
             if default and default[0] in self.catalog.tables[table]: base_atoms.append(atom(f'{table}.{default[0]}', default[1], default[2], base_quote))
+            if kind == 'avg' and field.endswith('paid_cents') and not any(a[0]['field'].endswith('final_status') for a, _ in conditions):
+                # Mike 2026-10-25 chose "paid on counted claims" with the paid-claims average ($12,343): a denial is not a payment of zero
+                base_atoms.append(atom(f'{table}.final_status', '=', 'paid', measure_span.group().strip()))
             if kind == 'sum' and field == 'patient_responsibility_cents' and not any(a[0]['field'].endswith('final_status') for a, _ in conditions):
                 base_atoms.append(atom(f'{table}.final_status', '=', 'paid', measure_span.group().strip()))  # member cost sits on paid claims; denials and reversals carry none
         where = [*base_atoms, *period_atoms, *[combine('and', a, q) for a, q in conditions]]
