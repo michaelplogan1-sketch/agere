@@ -255,7 +255,7 @@ class ContrastComposition(CompositionFixture):
     def test_trailing_versus_on_claims(self):
         rows = self.run_q("What's the average paid amount per medical claim in 2029, out of network versus in network?")
         got = {r['network_status']: r['avg_paid_cents'] for r in rows}
-        self.assertEqual(got, {'in_network': 10000, 'out_of_network': 30000})  # Mike 2026-10-25: counted zero-paid claims stay in cost per claim.
+        self.assertEqual(got, {'in_network': 15000, 'out_of_network': 30000})  # paid counted claims only (Mike 2026-10-25 chose the paid-claims average): in (10000, 20000), out (30000)
 
     def test_compare_a_rate_between_pharmacy_types(self):
         rows = self.run_q('Compare the rejected-claim rate for mail-order versus retail pharmacies in 2029.')
