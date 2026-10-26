@@ -146,9 +146,15 @@ def main(argv=None):
     ap.add_argument('--cold', action='store_true', help='run on a stack copy with no saved plans / answers / learning (no exact-wording cache hits)')
     ap.add_argument('--quiet', action='store_true')
     ap.add_argument('--half', choices=('build', 'check', 'all'), help='dev3 only: the build half (develop) or the check half (measure transfer only)')
+    ap.add_argument('--scorer', choices=('v1', 'v2'), default='v2', help='scoring rules (run.py --scorer)')
+    ap.add_argument('--answer-keys', choices=('v1', 'v2'), default='v2', help='dev3 only: answer keys v2 (definitions of 2026-10-25) or v1')
     ap.add_argument('--out')
     args = ap.parse_args(argv)
-    qs = read({'dev2': 'compose', 'dev3': 'dev3'}.get(args.split, args.set))
+    dev_run.set_scorer(args.scorer)
+    which = {'dev2': 'compose', 'dev3': 'dev3'}.get(args.split, args.set)
+    qs = read(which)
+    if which == 'dev3' and args.answer_keys == 'v2':
+        qs = dev_run.apply_keys_v2(qs)
     from tools.dev_set.halves import keep
     qs = keep(qs, args.half)
     if args.bucket:

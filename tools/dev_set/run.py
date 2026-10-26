@@ -43,6 +43,20 @@ TEXT_KEYS = ('answer', 'narrative', 'summary', 'explanation', 'insight', 'insigh
              'rows', 'program_results', 'workflow', 'grounding', 'missing')
 NUM = re.compile(r'(?<![\w.])-?\d[\d,]*\.?\d*')
 
+# Scorer version. v1 = the scorer of 2026-10-24 (kept byte-for-byte reproducible with --scorer v1). v2 (2026-10-25) closes three false positives an independent
+# audit reproduced: (a) a quoted passage that NEGATES the answered proposition no longer supports a yes answer (and an affirming passage no longer supports a
+# no); (b) a table's expected columns are bound to returned columns by name / key column order before values are compared; (c) a 'terms' direction fact fails when
+# the answer negates the term ("saying they fell is incorrect") or asserts the opposite motion in the same sentence.
+SCORER_VERSION = 2
+ACTIVE_SCORER = 'v2'
+
+
+def set_scorer(version):
+    global ACTIVE_SCORER
+    if version not in ('v1', 'v2'):
+        raise ValueError(f'unknown scorer {version!r}')
+    ACTIVE_SCORER = version
+
 
 # --- transport ----------------------------------------------------------------------------------------------------------
 def post(url, body, timeout=900):
@@ -160,8 +174,10 @@ def close(x, y, tol):
 
 
 # --- scoring ------------------------------------------------------------------------------------------------------------
-def score(q, resp):
-    """-> (correct: bool|None, detail: dict). correct is None only for a refused / unanswered item (counted in coverage)."""
+def score(q, resp, scorer=None):
+    """-> (correct: bool|None, detail: dict). correct is None only for a refused / unanswered item (counted in coverage).
+    scorer: 'v1' | 'v2' (default: the active scorer, v2)."""
+    v2 = (scorer or ACTIVE_SCORER) == 'v2'
     key, t = q['key'], q['answer_type']
     st = status_of(resp)
     answered = st in ANSWERED
@@ -197,6 +213,8 @@ def score(q, resp):
     if t == 'table':
         rows = a.get('table') if isinstance(a.get('table'), list) else []
         exp_rows = key['answer']
+        if v2:
+            return score_table_v2(key, rows, tol)
         used, hits, order = set(), 0, []
         for er in exp_rows:
             for i, r in enumerate(rows):
@@ -244,9 +262,9 @@ def score(q, resp):
         alts = {exp.lower(), exp.lower().replace('_', ' '), str(key.get('display_name') or '').lower()} - {''}
         return any(x in low.replace('_', ' ') or x in low for x in alts), {'expected': exp}
     if t == 'note':
-        return score_note(q, resp, text, low, a)
+        return score_note(q, resp, text, low, a, v2)
     if t == 'rubric':
-        return score_rubric(key['answer'], text, low)
+        return score_rubric(key['answer'], text, low, v2)
     return None, {'unscored_type': t}
 
 
@@ -260,9 +278,9 @@ def _lead_yes_no(low):
     return {'yes': True, 'no': False, 'not documented': False, 'undecided': UNDECIDED}[m.group(1)]
 
 
-def score_note(q, resp, text, low, a):
+def score_note(q, resp, text, low, a, v2=False):
     key, kind = q['key'], q['key']['kind']
-    ok = False
+    ok, claim = False, None
     if kind == 'yes_no':
         lead = _lead_yes_no(str((a or {}).get('headline') or '').lower())
         if lead == UNDECIDED:
@@ -274,6 +292,7 @@ def score_note(q, resp, text, low, a):
             no = re.search(r'\b(no|not|does not|did not|never|declin\w*|cannot|unable)\b', low)
             got = 'yes' if yes else 'no' if no else None
         ok = got == key['answer']
+        claim = {'yes': True, 'no': False}.get(got)
     elif kind == 'not_documented':
         ok = bool(re.search(r'not documented|no mention|not mentioned|does not (document|mention|address)|no documentation|nothing (documented|recorded)|not recorded|unknown', low))
     elif kind == 'value':
@@ -283,7 +302,7 @@ def score_note(q, resp, text, low, a):
     cited = [e['record_id'] for e in q['evidence']]
     allowed = list(dict.fromkeys(cited + list(key.get('scope_records') or [])))  # any record the key lists as in scope may be the one cited
     has_cite = (not cited) or any(r in text for r in allowed)
-    supported, why = (True, None) if not cited else passage_supports(q, resp)
+    supported, why = (True, None) if not cited else passage_supports(q, resp, claim if v2 else None)
     return ok and has_cite and supported, {'answer_match': ok, 'cited_supporting_record': has_cite, 'passage_supports_claim': supported, **({'passage_check': why} if why else {})}
 
 
@@ -326,11 +345,13 @@ def _content_tokens(text):
     return {w for w in re.findall(r'[a-z0-9]{4,}', ocr_norm(str(text).lower())) if w not in STOP}
 
 
-def passage_supports(q, resp):
+def passage_supports(q, resp, claim=None):
     """Does a QUOTED passage of a record the answer cites (a key evidence record or a scope record) itself contain the key's evidence?
     key_groups: every group must match in the pooled quotes of the cited, quoted records (a key can need two passages); a key with no groups
     (yes/no, value): a cited quoted passage must carry half of the content words of a key evidence quote, or the question's own subject word. A cited record with no quoted
-    passage proves nothing. Deterministic; the same for every contestant. -> (bool, why)"""
+    passage proves nothing. Deterministic; the same for every contestant. -> (bool, why)
+    claim (scorer v2, yes/no only): the answer's own polarity, True (yes) / False (no) / None. A passage that negates the subject word cannot support a yes;
+    one that affirms it cannot support a no."""
     key = q['key']
     ids = list(dict.fromkeys([e['record_id'] for e in q.get('evidence') or []] + list(key.get('scope_records') or [])))
     quotes = {i: v for i, v in quoted_passages(resp, ids).items() if v}
@@ -352,21 +373,93 @@ def passage_supports(q, resp):
         for v in vs:
             have = _content_tokens(v)
             if any(len(w & have) / len(w) >= 0.5 for w in want) or (anchors and anchors & have):
+                if claim is None:
+                    return True, None
+                pol = passage_polarity(v, (anchors & have) or set().union(*want) & have)
+                if (claim is True and pol == 'neg') or (claim is False and pol == 'pos'):
+                    conflict = f'quoted passage is {"negated" if pol == "neg" else "affirmed"} for the subject but the answer says {"yes" if claim else "no"}'
+                    continue
                 return True, None
+    if claim is not None and 'conflict' in locals():
+        return False, conflict
     return False, 'no cited quoted passage carries the key evidence'
+
+
+NEG_CUE = re.compile(r"\b(not|no|never|none|denies|denied|denying|stopped|discontinued|ceased|without|nor|cannot|unable|declin\w*|refus\w*)\b|n't\b|\bdoes not recogni[sz]e", re.I)
+AFFIRM_CUE = re.compile(r"\b(takes|taking|taken|continues?|continued|reports?|endorses|started|prescribed|active|current(?:ly)?|increased|bumped|on)\b", re.I)
+
+
+def passage_polarity(passage, anchors):
+    """'neg' | 'pos' | 'mixed' | None for the subject words (anchors) of a quoted passage: an occurrence is negated when a negation cue (not, no, denies,
+    stopped, discontinued, never, does not recognize, ...) sits within 6 words before it or 3 after it in the same sentence; 'pos' needs an affirming cue as well."""
+    neg = pos = 0
+    for sent in re.split(r'[.;\n!?]+', ocr_norm(str(passage).lower())):
+        words = list(re.finditer(r"[a-z0-9']+", sent))
+        for i, m in enumerate(words):
+            if m.group(0) not in anchors:
+                continue
+            ctx_before = sent[words[max(0, i - 6)].start():m.start()]
+            ctx_after = sent[m.end():words[min(len(words) - 1, i + 3)].end()]
+            if NEG_CUE.search(ctx_before) or NEG_CUE.search(ctx_after):
+                neg += 1
+            elif AFFIRM_CUE.search(sent):
+                pos += 1
+    if neg and not pos:
+        return 'neg'
+    if pos and not neg:
+        return 'pos'
+    return 'mixed' if neg and pos else None
+
+
+MOTION_UP = re.compile(r'\b(rose|rise|risen|rising|increas\w*|jump\w*|grew|grow\w*|growth|climb\w*|surg\w*|spik\w*|went up)\b', re.I)
+MOTION_DOWN = re.compile(r'\b(fell|fall|falls|fallen|falling|declin\w*|decreas\w*|dropp?\w*|dipp?\w*|shr[au]nk|shrink\w*|went down)\b', re.I)
+CMP_WORD = re.compile(r'\b(more|higher|greater|larger|less|lower|fewer|smaller)\b', re.I)
+NEG_BEFORE = re.compile(r"(\bnot|\bno(?!-)|\bnever|\bnor|n't|\brather than|\binstead of|\bopposite of|\bcontrary to|\bnot a|\bnot an)\W+(?:\w+\W+){0,4}$", re.I)
+NEG_AFTER = re.compile(r"^\W*(?:\w+\W+){0,6}?(incorrect|wrong|false|untrue|inaccurate|mistaken|not true|a myth)\b", re.I)
+
+
+def _sentence_bounds(text, pos):
+    start = max(text.rfind(c, 0, pos) for c in '.\n?!;') + 1
+    ends = [e for e in (text.find(c, pos) for c in '.\n?!;') if e >= 0]
+    return start, (min(ends) if ends else len(text))
+
+
+def _negated_at(text, m):
+    before = re.split(r'[.;:!?,\n]', text[max(0, m.start() - 60):m.start()])[-1]  # the clause the term sits in
+    return bool(NEG_BEFORE.search(before) or NEG_AFTER.search(text[m.end():m.end() + 80]))
+
+
+def _terms_hit_v2(pattern, text):
+    """Scorer v2: does `pattern` hit the answer as an ASSERTED term? A direction word (rose / fell / higher / lower ...) counts only when it is not negated
+    ("did not fall", "saying they fell is incorrect") and, for a motion word, when its sentence does not also assert the opposite motion.
+    A match that itself contains a negation ("did not jump") or a word that is not a direction word keeps the v1 meaning."""
+    for m in re.finditer(pattern, text, re.I):
+        w = m.group(0)
+        up, down, cmp_ = MOTION_UP.search(w), MOTION_DOWN.search(w), CMP_WORD.search(w)
+        if not (up or down or cmp_) or re.search(r"\b(not|no|never)\b|n't", w, re.I):
+            return True
+        if _negated_at(text, m):
+            continue
+        if up or down:
+            s0, s1 = _sentence_bounds(text, m.start())
+            opp = MOTION_DOWN if up else MOTION_UP
+            if any(not _negated_at(text, o) for o in opp.finditer(text, s0, s1)):
+                continue
+        return True
+    return False
 
 
 def _pat_in(text, pats):
     return any(re.search(p, text, re.I) for p in pats)
 
 
-def score_rubric(rub, text, low):
+def score_rubric(rub, text, low, v2=False):
     facts, results = rub['required_facts'], {}
     nums = numbers_in(text)
     for f in facts:
         ok = False
         if f['kind'] == 'terms':
-            hits = [bool(re.search(p, text, re.I)) for p in f['patterns']]
+            hits = [(_terms_hit_v2(p, text) if v2 else bool(re.search(p, text, re.I))) for p in f['patterns']]
             ok = all(hits) if f.get('mode') == 'all' else any(hits)
         elif f['kind'] == 'ranking':
             pos, last = [], -1
@@ -400,12 +493,113 @@ def score_rubric(rub, text, low):
     return (share == 1.0 and not contradictions), {'fact_share': round(share, 3), 'facts': results, 'contradicted': contradictions}
 
 
+# --- table scoring v2 ---------------------------------------------------------------------------------------------------
+def _col_tokens(name):
+    return {w for w in re.split(r'[^a-z0-9]+', str(name).lower()) if w and w not in ('usd', 'total', 'amount', 'n', 'of', 'the')}
+
+
+def _col_sim(a, b):
+    import difflib
+    ta, tb = _col_tokens(a), _col_tokens(b)
+    if str(a).lower() == str(b).lower():
+        return 1.0
+    jac = len(ta & tb) / len(ta | tb) if ta | tb else 0.0
+    return max(jac, difflib.SequenceMatcher(None, str(a).lower(), str(b).lower()).ratio() if (ta & tb) or str(a).lower() in str(b).lower() or str(b).lower() in str(a).lower() else 0.0)
+
+
+def bind_columns(exp_cols, got_cols, key_cols=None, sample=None, exp_sample=None):
+    """expected column -> returned column: exact (case-insensitive) name, else best name similarity (>= 0.34) among unclaimed columns of a compatible value
+    type, else the same position when the key lists its columns and the arity matches. None when a column cannot be bound."""
+    def kind(v):
+        return 'n' if isinstance(v, (int, float)) and not isinstance(v, bool) else 's'
+    bound, taken = {}, set()
+    for ec in exp_cols:
+        best, bs = None, 0.0
+        for gc in got_cols:
+            if gc in taken:
+                continue
+            if sample is not None and exp_sample is not None and kind(sample.get(gc)) != kind(exp_sample.get(ec)):
+                continue
+            sc = _col_sim(ec, gc)
+            if sc > bs:
+                best, bs = gc, sc
+        if best is not None and bs >= 0.34:
+            bound[ec] = best
+            taken.add(best)
+    if len(bound) < len(exp_cols) and key_cols and len(key_cols) == len(got_cols) and set(exp_cols) <= set(key_cols):
+        bound, taken = {}, set()
+        for ec in exp_cols:
+            gc = got_cols[list(key_cols).index(ec)]
+            if sample is not None and exp_sample is not None and kind(sample.get(gc)) != kind(exp_sample.get(ec)):
+                return None
+            bound[ec] = gc
+    return bound if len(bound) == len(exp_cols) else None
+
+
+def score_table_v2(key, rows, tol):
+    """Each expected row must match one returned row COLUMN BY COLUMN (expected column bound to a returned column by name, else key column order),
+    numbers within tolerance (a fraction key may match a percent), strings equal. Row count must equal; order checked when the key says so."""
+    exp_rows = key['answer']
+    exp_cols = list(exp_rows[0].keys()) if exp_rows else []
+    got_cols = list(rows[0].keys()) if rows and isinstance(rows[0], dict) else []
+    bound = bind_columns(exp_cols, got_cols, key.get('columns'), rows[0] if rows else None, exp_rows[0] if exp_rows else None) if exp_rows else {}
+    if exp_rows and bound is None:
+        return False, {'rows_expected': len(exp_rows), 'rows_matched': 0, 'rows_returned': len(rows), 'unbound_columns': exp_cols, 'returned_columns': got_cols}
+
+    def cell_ok(v, ev):
+        if isinstance(v, (int, float)) and isinstance(ev, (int, float)) and not isinstance(v, bool) and not isinstance(ev, bool):
+            if close(float(v), float(ev), tol):
+                return True
+            return isinstance(ev, float) and abs(float(ev)) <= 1.0 and close(float(v), float(ev) * 100, {**(tol or {}), 'abs': (tol or {}).get('abs', 0) * 100})
+        return isinstance(v, str) and isinstance(ev, str) and v.strip().lower() == ev.strip().lower()
+    used, hits, order = set(), 0, []
+    for er in exp_rows:
+        for i, r in enumerate(rows):
+            if i not in used and all(cell_ok(r.get(bound[ec]), ev) for ec, ev in er.items()):
+                used.add(i); hits += 1; order.append(i)
+                break
+    ok = hits == len(exp_rows) and len(rows) == len(exp_rows) and (not key.get('order_matters') or order == sorted(order))
+    return ok, {'rows_expected': len(exp_rows), 'rows_matched': hits, 'rows_returned': len(rows), 'column_binding': bound}
+
+
+# --- answer keys v2 -------------------------------------------------------------------------------------------------------
+def _walk(node, path):
+    """Resolve `a.b[id=x].c` below `node`; returns (parent, last key)."""
+    parts = re.findall(r'[^.\[\]]+(?:\[[^\]]+\])?', path)
+    for part in parts[:-1]:
+        m = re.fullmatch(r'(\w+)\[(\w+)=([^\]]+)\]', part)
+        if m:
+            node = next(x for x in node[m.group(1)] if x.get(m.group(2)) == m.group(3))
+        else:
+            node = node[part]
+    return node, parts[-1]
+
+
+def apply_keys_v2(qs, rows=None):
+    """A deep copy of the dev3 questions with the v2 key fields (tools/dev_set/dev3_keys_v2.jsonl) written over the v1 ones. dev3_questions.jsonl is untouched."""
+    import copy
+    from tools.dev_set.dev3_keys_v2 import read as read_v2
+    by_id = {}
+    for r in (rows if rows is not None else read_v2()):
+        by_id.setdefault(r['id'], []).append(r)
+    out = []
+    for q in qs:
+        if q['id'] in by_id:
+            q = copy.deepcopy(q)
+            for r in by_id[q['id']]:
+                parent, last = _walk(q, r['field'])
+                parent[last] = r['v2']
+        out.append(q)
+    return out
+
+
 # --- driver -------------------------------------------------------------------------------------------------------------
 def load_set(args):
     """All questions of the chosen set: tools/dev_set/questions.jsonl, or compose_questions.jsonl (--set compose / --split dev2)."""
     if args.set == 'dev3' or args.split == 'dev3':
         from tools.dev_set.dev3_keys import read as read_dev3
-        return read_dev3()
+        qs = read_dev3()
+        return apply_keys_v2(qs) if getattr(args, 'keys', 'v2') == 'v2' else qs
     if args.set == 'compose' or args.split == 'dev2':
         from tools.dev_set.compose_keys import read as read_compose
         return read_compose()
@@ -477,7 +671,7 @@ def run_chain(chain, args, run_id):
                      'usd': cr.get('usd'), 'paid_calls': cr.get('paid_calls', resp.get('new_paid_api_calls')), 'route': route_of(resp),
                      'followup_context': (resp.get('conversation') or {}).get('method') if is_follow else None,
                      'error': (resp.get('error') or '')[:300] if status_of(resp) not in ANSWERED else None,
-                     'trace': trace_of(resp)})
+                     'trace': trace_of(resp), 'response': resp})
         print(f"{q['id']:>6} {q['bucket'][:14]:14} {str(rows[-1]['status'])[:14]:14} correct={correct} {r['seconds']:.0f}s route={rows[-1]['route']}", flush=True)
     return rows
 
@@ -502,8 +696,45 @@ def report(rows):
               f"precision_on_answered={pct(sum(1 for r in ans if r['correct'] is True), len(ans))} refusals={len(rs) - len(ans)}\n"
               f"  cost_usd_known={sum(usd):.4f} over {len(usd)}/{len(rs)} questions; latency p50={statistics.median(secs):.1f}s p90={p(0.9):.1f}s\n"
               f"  routes={dict(Counter(r['route'] for r in rs))}")
+        shares = [r['detail']['fact_share'] for r in rs if isinstance(r.get('detail'), dict) and 'fact_share' in r['detail']]
+        if shares:
+            print(f"  rubric questions={len(shares)} mean fact_share={sum(shares) / len(shares):.3f} (fraction of required facts present; correct needs all)")
     allc = [r for r in rows if r['correct'] is True]
-    print(f"\nOVERALL n={len(rows)} accuracy={pct(len(allc), len(rows))} answered={pct(sum(r['answered'] for r in rows), len(rows))}")
+    print(f"\nscorer v{SCORER_VERSION if ACTIVE_SCORER == 'v2' else 1}")
+    print(f"OVERALL n={len(rows)} accuracy={pct(len(allc), len(rows))} answered={pct(sum(r['answered'] for r in rows), len(rows))}")
+
+
+def rescore(args):
+    """Re-score a saved run (rows carrying 'response') under --scorer / --keys. A row without a stored response keeps its saved verdict and is counted
+    as 'unrescored'. Questions are looked up in every set file by id."""
+    saved = json.loads(Path(args.rescore).read_text())
+    ns = argparse.Namespace(**{**vars(args), 'set': 'dev3', 'split': 'dev3'})
+    qs = {q['id']: q for q in load_set(ns)}
+    for name in ('compose',):  # the dev set file also holds held-out rows: never loaded here
+        try:
+            ns2 = argparse.Namespace(**{**vars(args), 'set': name, 'split': 'dev2'})
+            for q in load_set(ns2):
+                qs.setdefault(q['id'], q)
+        except Exception:  # noqa: BLE001
+            pass
+    rows, skipped, flips = [], 0, []
+    for r in saved:
+        q = qs.get(r['id'])
+        if q is None or 'response' not in r:
+            skipped += 1
+            rows.append(r)
+            continue
+        correct, detail = score(q, r['response'])
+        if correct != r.get('correct'):
+            flips.append((r['id'], r.get('correct'), correct))
+        rows.append({**r, 'correct': correct, 'detail': detail})
+    report(rows)
+    print(f"\nrescored {len(rows) - skipped}/{len(rows)} rows (scorer {args.scorer}, keys {args.keys}); {skipped} without a stored response keep their saved verdict")
+    for i, was, now in flips:
+        print(f"  changed {i}: {was} -> {now}")
+    if args.out:
+        Path(args.out).write_text(json.dumps(rows, indent=1))
+    return 0
 
 
 def main(argv=None):
@@ -518,11 +749,17 @@ def main(argv=None):
     ap.add_argument('--jobs', type=int, default=1, help='parallel chains (the live service is shared: keep 1 unless told otherwise)')
     ap.add_argument('--follow-ups', choices=('conversation', 'standalone'), default='conversation')
     ap.add_argument('--out', help='write per-question rows as JSON')
+    ap.add_argument('--scorer', choices=('v1', 'v2'), default='v2', help='scoring rules: v2 (default) closes the 2026-10-25 audit false positives; v1 reproduces the 2026-10-24 scorer')
+    ap.add_argument('--keys', choices=('v1', 'v2'), default='v2', help='dev3 answer keys: v2 (default) = definitions decided 2026-10-25 (dev3_keys_v2.jsonl); v1 = dev3_questions.jsonl as written')
+    ap.add_argument('--rescore', metavar='RUN_JSON', help='re-score the saved rows of a run (their stored responses) with --scorer / --keys; no service calls')
     ap.add_argument('--report-card', metavar='RUN_JSON', help='print the per-tier report card of a saved run and exit (no service calls)')
     args = ap.parse_args(argv)
     if args.report_card:
         from tools.dev_set import report_card
         return report_card.main([args.report_card])
+    set_scorer(args.scorer)
+    if args.rescore:
+        return rescore(args)
     all_qs = load_set(args)
     qs = select(args, all_qs)
     run_id = time.strftime('%Y%m%dT%H%M%S')
