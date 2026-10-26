@@ -1,0 +1,175 @@
+<title>Agere Miss Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a single review column of case cards, summary strip on top; the grade is the one bold color on each card. */
+:root {
+  --bg: #f6f7f5; --panel: #ffffff; --ink: #1d2320; --muted: #5d6a63; --line: #dfe4e0;
+  --accent: #1f6f5c;
+  --wrong: #b3261e; --wrong-bg: #fbeceb; --ok: #8a6d00; --ok-bg: #fbf4dc; --triv: #2f6db5; --triv-bg: #e8f0fb;
+  --quote-bg: #f1f4f2;
+  --sans: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121614; --panel: #1a201d; --ink: #e6ebe8; --muted: #9aa8a0; --line: #2c3530; --accent: #5fc2a6;
+  --wrong: #ff8a80; --wrong-bg: #3a1f1d; --ok: #e6c45a; --ok-bg: #352d14; --triv: #8ab8f0; --triv-bg: #1c2a3b; --quote-bg: #222a26; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121614; --panel: #1a201d; --ink: #e6ebe8; --muted: #9aa8a0; --line: #2c3530; --accent: #5fc2a6;
+  --wrong: #ff8a80; --wrong-bg: #3a1f1d; --ok: #e6c45a; --ok-bg: #352d14; --triv: #8ab8f0; --triv-bg: #1c2a3b; --quote-bg: #222a26; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font: 15px/1.5 var(--sans); }
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 28px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+h1 { font-size: 1.6rem; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+.sub { color: var(--muted); margin: 4px 0 0; max-width: 72ch; }
+.summary { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.stat { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-variant-numeric: tabular-nums; }
+.stat b { font-size: 1.15rem; margin-right: 4px; }
+.stat.wrong b { color: var(--wrong); } .stat.ok b { color: var(--ok); } .stat.triv b { color: var(--triv); }
+.headline-rate { font-size: 0.95rem; color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; color: var(--muted); font-size: 0.9rem; }
+select, textarea { font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.notice { background: var(--panel); border: 1px dashed var(--line); border-radius: 8px; padding: 10px 14px; color: var(--muted); font-size: 0.9rem; }
+.card { background: var(--panel); border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 10px; padding: 16px 18px; display: grid; gap: 12px; }
+.card[data-grade="wrong"] { border-left-color: var(--wrong); } .card[data-grade="acceptable"] { border-left-color: var(--ok); } .card[data-grade="trivial"] { border-left-color: var(--triv); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 0.82rem; color: var(--muted); }
+.chip { font-family: var(--mono); font-size: 0.78rem; border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.q { font-size: 1.05rem; font-weight: 600; margin: 0; }
+.parent { color: var(--muted); font-size: 0.88rem; margin: 0; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+.col { min-width: 0; display: grid; gap: 6px; align-content: start; }
+.label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+.answer { margin: 0; overflow-wrap: anywhere; }
+.data { font-family: var(--mono); font-size: 0.8rem; background: var(--quote-bg); border-radius: 6px; padding: 6px 8px; overflow-x: auto; white-space: pre-wrap; overflow-wrap: anywhere; margin: 0; }
+blockquote { margin: 0; background: var(--quote-bg); border-radius: 6px; padding: 6px 10px; font-size: 0.88rem; overflow-wrap: anywhere; }
+blockquote cite { display: block; font-style: normal; font-family: var(--mono); font-size: 0.74rem; color: var(--muted); }
+.why { background: var(--quote-bg); border-radius: 8px; padding: 8px 12px; font-size: 0.92rem; overflow-wrap: anywhere; }
+.grade { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.grade button { font: inherit; font-weight: 600; font-size: 0.9rem; border-radius: 8px; padding: 7px 14px; cursor: pointer; border: 1.5px solid var(--line); background: var(--panel); color: var(--ink); }
+.grade button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grade button[data-v="wrong"][aria-pressed="true"] { background: var(--wrong-bg); border-color: var(--wrong); color: var(--wrong); }
+.grade button[data-v="acceptable"][aria-pressed="true"] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.grade button[data-v="trivial"][aria-pressed="true"] { background: var(--triv-bg); border-color: var(--triv); color: var(--triv); }
+.grade .hint { color: var(--muted); font-size: 0.82rem; }
+.grade textarea { flex: 1 1 260px; min-height: 36px; resize: vertical; }
+.saved { font-size: 0.78rem; color: var(--muted); }
+.legend { display: grid; gap: 4px; font-size: 0.88rem; color: var(--muted); }
+.legend b.w { color: var(--wrong); } .legend b.a { color: var(--ok); } .legend b.t { color: var(--triv); }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .15s ease; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Agere miss review</h1>
+    <p class="sub" id="runline"></p>
+  </header>
+  <div class="legend">
+    <span><b class="w">Clinically wrong</b>: a clinician acting on this answer would be misled.</span>
+    <span><b class="a">Acceptable</b>: a reasonable answer (stated definition, rounding, extra detail); a careful clinician would be fine.</span>
+    <span><b class="t">Trivial</b>: the answer is right; it was marked wrong for a clerical reason (which record it quoted, format).</span>
+  </div>
+  <div class="summary" id="summary"></div>
+  <div class="notice" id="notice" hidden></div>
+  <div class="controls">
+    <label for="bucket">Bucket</label>
+    <select id="bucket"><option value="">All</option></select>
+    <label for="show">Show</label>
+    <select id="show"><option value="all">All misses</option><option value="ungraded">Ungraded only</option></select>
+  </div>
+  <main id="cards" class="wrap" style="padding:0"></main>
+</div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const MISSES = DATA.misses, BUCKETS = {single_patient_structured: 'One patient, structured', single_patient_unstructured: 'One patient, notes',
+  population_clinical_quality: 'Population quality', population_claims_pharmacy_sdoh: 'Claims / pharmacy / SDOH', insight: 'Insight'};
+const grades = {};           // id -> {grade, note}
+let db = null;
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const fmt = v => typeof v === 'string' ? v : JSON.stringify(v, null, 1);
+
+$('#runline').textContent = `${DATA.set}: ${DATA.total} questions, ${MISSES.length} not scored correct under ${DATA.scorer}. Candidate ${DATA.candidate}. ` +
+  'Grade each miss by clinical consequence; the clinically wrong count becomes the headline number.';
+for (const [k, v] of Object.entries(BUCKETS)) if (MISSES.some(m => m.bucket === k)) $('#bucket').insertAdjacentHTML('beforeend', `<option value="${k}">${esc(v)}</option>`);
+
+function summary() {
+  const n = MISSES.length, c = {wrong: 0, acceptable: 0, trivial: 0};
+  for (const m of MISSES) { const g = grades[m.id]?.grade; if (g in c) c[g]++; }
+  const graded = c.wrong + c.acceptable + c.trivial;
+  const rate = graded === n ? `Clinically right: ${DATA.total - c.wrong} of ${DATA.total} (${Math.round(1000 * (DATA.total - c.wrong) / DATA.total) / 10}%)` : `Grade all ${n} to see the clinical rate`;
+  $('#summary').innerHTML = `<span class="stat"><b>${graded}</b>of ${n} graded</span>
+    <span class="stat wrong"><b>${c.wrong}</b>clinically wrong</span><span class="stat ok"><b>${c.acceptable}</b>acceptable</span>
+    <span class="stat triv"><b>${c.trivial}</b>trivial</span><span class="headline-rate">${rate} · exact-match score was ${DATA.exact_score}</span>`;
+}
+
+function card(m) {
+  const a = m.agere, k = m.key;
+  const keyAnswer = Array.isArray(k.answer) ? '<ul style="margin:0;padding-left:18px">' + k.answer.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : `<p class="answer">${esc(fmt(k.answer))}</p>`;
+  const quotes = (list) => (list || []).map(s => `<blockquote>${esc(s.quote)}<cite>${esc(s.record_id)}</cite></blockquote>`).join('');
+  const g = grades[m.id] || {};
+  return `<article class="card" id="c-${esc(m.id)}" data-grade="${esc(g.grade || '')}">
+    <div class="meta"><span class="chip">${esc(m.id)}</span><span>${esc(BUCKETS[m.bucket] || m.bucket)}</span>${m.follow_up ? '<span class="chip">follow-up</span>' : ''}<span>route: ${esc(a.route || 'none')}</span></div>
+    ${m.parent ? `<p class="parent">Earlier in the conversation: “${esc(m.parent)}”</p>` : ''}
+    <p class="q">${esc(m.question)}</p>
+    <div class="cols">
+      <div class="col"><span class="label">Agere answered</span><p class="answer">${esc(a.headline)}</p>
+        ${a.value !== undefined && String(a.value) !== a.headline ? `<pre class="data">value: ${esc(fmt(a.value))}</pre>` : ''}
+        ${a.table ? `<pre class="data">${esc(a.table)}</pre>` : ''}${quotes(a.sources)}</div>
+      <div class="col"><span class="label">The answer key says</span>${keyAnswer}${quotes(k.evidence)}
+        ${k.definition ? `<pre class="data">${esc(k.definition)}</pre>` : ''}</div>
+    </div>
+    <div class="why"><span class="label">Why it was marked wrong</span><br>${esc(m.why)}</div>
+    <div class="grade" role="group" aria-label="Grade ${esc(m.id)}">
+      <button type="button" id="g-${esc(m.id)}-wrong" data-v="wrong" aria-pressed="${g.grade === 'wrong'}">Clinically wrong</button>
+      <button type="button" id="g-${esc(m.id)}-acceptable" data-v="acceptable" aria-pressed="${g.grade === 'acceptable'}">Acceptable</button>
+      <button type="button" id="g-${esc(m.id)}-trivial" data-v="trivial" aria-pressed="${g.grade === 'trivial'}">Trivial</button>
+      <textarea id="n-${esc(m.id)}" placeholder="Optional note: what makes it wrong or fine" aria-label="Note for ${esc(m.id)}">${esc(g.note || '')}</textarea>
+      <span class="saved" id="s-${esc(m.id)}"></span>
+    </div>
+  </article>`;
+}
+
+function render() {
+  const b = $('#bucket').value, show = $('#show').value;
+  const list = MISSES.filter(m => (!b || m.bucket === b) && (show !== 'ungraded' || !grades[m.id]?.grade));
+  $('#cards').innerHTML = list.map(card).join('') || '<p class="notice">Nothing left to grade in this view.</p>';
+  summary();
+}
+
+async function save(id, patch) {
+  grades[id] = {...(grades[id] || {}), ...patch};
+  const s = $(`#s-${CSS.escape(id)}`);
+  if (!db) { if (s) s.textContent = 'Not saved: this view cannot reach the review store.'; return; }
+  try {
+    await db.collection('grades').doc(id).set({grade: grades[id].grade || null, note: grades[id].note || '', question_id: id, at: new Date().toISOString()});
+    if (s) s.textContent = 'Saved';
+  } catch (e) { if (s) s.textContent = 'Not saved: ' + (e?.message || e?.code || 'error'); }
+}
+
+$('#cards').addEventListener('click', e => {
+  const btn = e.target.closest('.grade button'); if (!btn) return;
+  const id = btn.closest('.card').id.slice(2), v = btn.dataset.v;
+  const next = grades[id]?.grade === v ? null : v;
+  const card = btn.closest('.card'); card.dataset.grade = next || '';
+  card.querySelectorAll('.grade button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === next)));
+  save(id, {grade: next}).then(summary);
+});
+$('#cards').addEventListener('change', e => {
+  if (e.target.tagName !== 'TEXTAREA') return;
+  save(e.target.id.slice(2), {note: e.target.value});
+});
+$('#bucket').addEventListener('change', render);
+$('#show').addEventListener('change', render);
+render();
+
+(async () => {
+  db = await window.claude?.use?.('db');
+  if (!db) { const n = $('#notice'); n.hidden = false; n.textContent = 'Grades cannot be saved in this view (sign in to claude.ai to grade). You can still read every case.'; return; }
+  db.collection('grades').onSnapshot(snap => {
+    for (const d of snap.docs) { const x = d.data() || {}; grades[d.id] = {grade: x.grade || null, note: x.note || ''}; }
+    if (document.activeElement?.tagName === 'TEXTAREA') summary(); else render();  // never redraw under a note being typed
+  }, err => { const n = $('#notice'); n.hidden = false; n.textContent = 'Saved grades could not be loaded: ' + (err?.message || err?.code); });
+})();
+</script>
