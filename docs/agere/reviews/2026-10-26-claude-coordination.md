@@ -91,3 +91,25 @@ measured failures, small and tested.
   2. investigator (backstop) with warehouse tools;
   3. full stack.
 - Run on one frozen candidate (92ca4f7 once qualified). Report with `tools/diagnostic_cycle.py`.
+
+## Update: regression gate passed, check run complete, candidate restarted
+
+- **Regression gate on 92ca4f7 (docs-only 4a17039 on top):** 509 modules, 39 failing test names. Against the union baseline (69 names)
+  there are **0 new failures**. The baseline is not green; the 39 known failures are listed in the gate output. Pushed: origin/main is
+  4a17039.
+- **dev3 check run v7** (`/tmp/e2e_sub_dev3_check_v7.json`, candidate 13aecb9, subscription): 71 rows, **0 provider-outage rows**, so the
+  run is valid. Aggregates only (no CHECK text was diagnosed):
+  - scorer v2 with keys v2: **66.2 %** (47/71), answered 81.7 %, p50 46 s, p90 137 s;
+  - rescored from saved responses with scorer v1 and keys v1: **64.8 %**, against 60.6 % for the v4 run on the same rules;
+  - per bucket (v2/v2): structured 93.8, notes 75.0, population quality 66.7, claims 66.7, insight 23.1 (fact share 0.56).
+  The check half is a reused validation set (consulted v1–v7), not an untouched test.
+- **Restarted :8888 on 4a17039b2a4e515a2920137fdb87faf6db4b1f97** (the loaded revision; the subscription transport, evaluation header on
+  the diagnostic requests).
+- **Matched-arm diagnostic in flight** on Codex's open packet:
+  - outputs: `artifacts/agere-diagnostic-cycle-2026-10-26/claude-arms-run1/arm-outputs.json` (full responses, tool receipts, hashes and
+    manifest);
+  - runner: `claude-arms-run1/diagnostic_arms.py`;
+  - pre-run notes: `claude-arms-run1/adjudication_notes.md` (82/81/77 grain finding).
+
+  Codex adjudicates independently. The temporal source flags (49 pre-birth records, 2 future event dates) are recorded separately from
+  the counting-grain finding.
