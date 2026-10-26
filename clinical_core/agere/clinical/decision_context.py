@@ -29,8 +29,10 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/2'  # 2 (2026-10-24): diabetes / CKD by lab rule, duplicate charts once, on-medication = 12-month fill
-DECIDED_BY = 'Mike (clinical owner), 2026-10-23'
+VERSION = 'decision-context/3'  # 2 (2026-10-24): diabetes / CKD by lab rule, duplicate charts once, on-medication = 12-month fill
+# 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
+# stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
+DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
 
 # --- patients ------------------------------------------------------------------------------------------------------------------
 DECEASED_ASK = re.compile(
@@ -130,9 +132,28 @@ def asks_deceased(question):
     return bool(DECEASED_ASK.search(question or ''))
 
 
-def population(question):
-    """-> {'living_only': bool, 'reason': str}. Patients are living patients unless the question asks for the deceased."""
+# Event counts (Mike 2026-10-25, "everyone, everywhere"): a count, volume, rate or share of EVENTS (admissions, ED visits, stays, fills,
+# appointments, no-shows, discharges) includes every patient who had them; the living rule is for counts and lists of PATIENTS.
+EVENT_NOUN = (r'(?:admissions?|readmissions?|hospitali[sz]ations?|(?:ed|er|emergency(?: department| room)?|office|clinic|hospital|inpatient|'
+              r'observation|outpatient)?\s*visits?|stays?|encounters?|discharges?|fills?|refills?|appointments?|no-?shows?)')
+EVENT_COUNT = re.compile(r'\b(?:how many|number of|count of|total|volume of|share of|percent(?:age)? of|proportion of|rate of|of all|of our|'
+                         r'did|were|was)\s+(?:[\w%-]+\s+){0,4}?' + EVENT_NOUN + r'\b', re.I)
+PATIENT_COUNT = re.compile(r'\b(?:how many|number of|count of|share of|percent(?:age)? of|proportion of|list(?: of)?|which|who)\s+(?:[\w%-]+\s+){0,3}?'
+                           r'(?:patients|people|members|persons|individuals|adults|children|women|men|seniors)\b', re.I)
+
+
+def counts_events(question):
+    """Does the question count events, not patients? 'How many ED visits ...' yes; 'how many patients had an ED visit' no."""
     q = question or ''
+    return bool(EVENT_COUNT.search(q)) and not PATIENT_COUNT.search(q)
+
+
+def population(question):
+    """-> {'living_only': bool, 'reason': str}. Counts and lists of patients are living patients unless the question asks for the
+    deceased; counts of events include every patient who had them (Mike 2026-10-25)."""
+    q = question or ''
+    if counts_events(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'reason': 'a count of events, not of patients: the events of every patient count (Mike 2026-10-25)'}
     if asks_deceased(q):
         return {'living_only': False, 'reason': 'the question asks for the deceased (or death / mortality / all patients ever)'}
     if NAMED_PATIENT_QUESTION(q):
@@ -213,9 +234,10 @@ def prompt_block():
     """The definitions as a short block for every LLM planner prompt (hosted typed interpreter, hosted SQL, analysts, routers)."""
     return (
         f'DECISION CONTEXT ({VERSION}; decided by {DECIDED_BY}). These definitions hold for every answer; apply them unless the question says otherwise.\n'
-        '1. Patients are LIVING patients. Exclude anyone with a row in the death table: add patient_id NOT IN (SELECT patient_id FROM death) '
+        '1. Counts and lists of PATIENTS are LIVING patients. Exclude anyone with a row in the death table: add patient_id NOT IN (SELECT patient_id FROM death) '
         'to every patient-keyed table a patient count or list reads. Include the deceased only when the question asks (deceased, died, death, '
-        'mortality, "including deceased", "all patients ever").\n'
+        'mortality, "including deceased", "all patients ever"). Counts, volumes, rates and shares of EVENTS (admissions, ED visits, stays, fills, '
+        'appointments, no-shows, discharges) include every patient who had them: no living filter on events.\n'
         '2. Labs: the LATEST result per patient and concept (measurement_latest). Use measurement (every result) only when the question says ever, '
         'any, at any time, history of, at least once, highest, lowest or asks for a trend.\n'
         '3. A condition is documented by ONE evidence rule: an EHR diagnosis (condition with is_diagnosis = 1, plus problem-list rows whose flag is '
@@ -223,13 +245,17 @@ def prompt_block():
         'and CKD two current eGFR < 60 at least 90 days apart (measurement); rule-outs never count. By ICD-10 code use diagnosis_any (the same evidence); by library concept use concept_patient. '
         'Claims-only members count.\n'
         "4. ED visits, inpatient stays and observation stays are utilization_event rows (kind ed_visit | inpatient | observation: EHR, ADT and claims "
-        'together), never visit or encounter alone.\n'
+        'together), never visit or encounter alone. A "hospital stay", "admission" or "hospitalization" is inpatient OR observation '
+        "(kind IN ('inpatient', 'observation')); 'inpatient' alone means kind = 'inpatient'.\n"
         "5. 'last year', 'past year', 'last 12 months' = the 12 months ending at the as-of date: date > date(:as_of, '-12 months') AND date <= :as_of. "
         "A calendar year word ('in 2029') is that calendar year (date >= '2029-01-01' AND date <= '2029-12-31').\n"
         "6. 'Medicare' means coverage_type IN ('medicare', 'dual', 'medigap') (dual-eligible and Medigap members have Medicare); "
         "'traditional', 'original', 'fee-for-service' or 'Medicare only' means coverage_type = 'medicare'.\n"
         "7. 'On' / 'taking' a medication is current use: a picked-up fill (fill table) in the 12 months ending at the as-of date, unless the question gives its "
-        "own period or asks 'ever'. A drug that was only ordered or listed ('prescribed') is a received mention, not current use.")
+        "own period or asks 'ever'. A drug that was only ordered or listed ('prescribed') is a received mention, not current use.\n"
+        "8. Money: pharmacy spend = net payer spend over ALL pharmacy claim transactions, reversals and recoupments netted "
+        "(pharmacy_claim_event: SUM(payer_paid_delta_cents) by event_date). Medical spend and cost per claim = the payer paid amount on COUNTED "
+        "medical claims (payer_claim with counts_in_metrics = 1: final, non-duplicate) by service date.")
 
 
 # --- the scope an answer runs in -------------------------------------------------------------------------------------------------

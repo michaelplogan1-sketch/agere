@@ -22,7 +22,8 @@
     {
       "id": "frequent_ed_volume_denominator",
       "decision": "Include visits from living patients only in both numerator and denominator, unless deceased patients are explicitly requested.",
-      "human_answer": "Keep living-patient visits only"
+      "human_answer": "Keep living-patient visits only",
+      "superseded_by": "event_counts_include_everyone"
     },
     {
       "id": "medical_claim_count_scope",
@@ -33,6 +34,34 @@
         "eligible_insurer": 637
       },
       "implementation_status": "Typed count policy retained in ce09ee3; normal645/637context checks pass. Historicaldev94/100,paraphrases251/295; not95%clinical qualification."
+    },
+    {
+      "id": "event_counts_include_everyone",
+      "decision": "Counts, volumes, rates and shares of EVENTS (admissions, ED visits, stays, fills, appointments, no-shows, discharges) include every patient who had them; the living rule applies to counts and lists of patients. Supersedes frequent_ed_volume_denominator.",
+      "human_answer": "Everyone, everywhere (asked twice, conflict with frequent_ed_volume_denominator resolved by Mike in the build-owner conversation, evening)",
+      "disputed_example": {
+        "inpatient_admissions_2029_living": 476,
+        "inpatient_admissions_2029_everyone": 533
+      }
+    },
+    {
+      "id": "observation_is_a_hospital_stay",
+      "decision": "'Hospital stay', 'admission' and 'hospitalization' = inpatient OR observation; 'inpatient' alone = inpatient only.",
+      "human_answer": "Yes, both count"
+    },
+    {
+      "id": "pharmacy_spend_net_all_claims",
+      "decision": "Pharmacy spend = net payer spend over all pharmacy claim transactions, reversals and recoupments netted (pharmacy_claim_event.payer_paid_delta_cents by event_date).",
+      "human_answer": "Net of reversals, all claims",
+      "disputed_example": {
+        "net_all_claims_2029": 3810000,
+        "plan_paid_counted_fills_2029": 3116733
+      }
+    },
+    {
+      "id": "medical_spend_paid_counted_claims",
+      "decision": "Medical spend and cost per claim = payer paid amount on counted medical claims (payer_claim.counts_in_metrics = 1) by service date.",
+      "human_answer": "Paid on counted claims"
     }
   ]
 }
