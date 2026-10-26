@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import threading
 import statistics
 import sys
 import time
@@ -655,6 +656,31 @@ def chains(qs, all_qs):
     return out
 
 
+# A Claude outage is not an accuracy result (2026-10-26: a subscription weekly limit and an unfunded API key turned two runs into hours of
+# refusals). Two outage responses in a row stop the run with the provider's message instead of scoring it.
+OUTAGE = re.compile(r'claude CLI error|weekly limit|usage limit|rate limit|credit balance is too low|provider_unavailable|overloaded', re.I)
+_outages = {'streak': 0, 'last': None}
+_outage_lock = threading.Lock()
+
+
+class ProviderOutage(RuntimeError):
+    pass
+
+
+def outage_check(resp):
+    text = json.dumps({k: (resp or {}).get(k) for k in ('error', 'tiers_tried', 'stage_diagnostics')}, default=str)
+    m = OUTAGE.search(text)
+    with _outage_lock:
+        if m and status_of(resp) not in ANSWERED:
+            _outages['streak'] += 1
+            i = m.start()
+            _outages['last'] = text[max(0, i - 80): i + 220]
+        else:
+            _outages['streak'] = 0
+        if _outages['streak'] >= 2:
+            raise ProviderOutage('Claude is unavailable to the stack; the run stopped instead of scoring an outage: ' + str(_outages['last']))
+
+
 def run_chain(chain, args, run_id):
     rows, conv = [], f'devset-{run_id}-{chain[0]["id"]}'
     for q in chain:
@@ -664,6 +690,7 @@ def run_chain(chain, args, run_id):
         # a chain's first question also opens the conversation, so the service can link what follows
         r = ask(args.url, text, conv if (use_conv or (args.follow_ups == 'conversation' and len(chain) > 1)) else None)
         resp = r['resp']
+        outage_check(resp)
         correct, detail = score(q, resp)
         cr = resp.get('cost_receipt') or {}
         rows.append({'id': q['id'], 'bucket': q['bucket'], 'split': q['split'], 'asked': text, 'status': status_of(resp),
@@ -746,6 +773,7 @@ def main(argv=None):
     ap.add_argument('--half', choices=('build', 'check', 'all'), help='dev3 only: the build half (develop) or the check half (measure transfer only)')
     ap.add_argument('--ids', nargs='*')
     ap.add_argument('--limit', type=int, help='first N selected questions (smoke)')
+    ap.add_argument('--quick', type=int, help='quick check: the first N questions of each bucket (5 buckets x N)')
     ap.add_argument('--jobs', type=int, default=1, help='parallel chains (the live service is shared: keep 1 unless told otherwise)')
     ap.add_argument('--follow-ups', choices=('conversation', 'standalone'), default='conversation')
     ap.add_argument('--out', help='write per-question rows as JSON')
@@ -762,10 +790,17 @@ def main(argv=None):
         return rescore(args)
     all_qs = load_set(args)
     qs = select(args, all_qs)
+    if args.quick:  # a quick check: the first N questions of each bucket (chains keep their parents)
+        per = Counter()
+        qs = [q for q in sorted(qs, key=lambda q: q['id']) if per.update([q['bucket']]) or per[q['bucket']] <= args.quick]
     run_id = time.strftime('%Y%m%dT%H%M%S')
     cs = chains(qs, all_qs)
-    with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
-        rows = [r for part in ex.map(lambda c: run_chain(c, args, run_id), cs) for r in part]
+    try:
+        with ThreadPoolExecutor(max_workers=max(1, args.jobs)) as ex:
+            rows = [r for part in ex.map(lambda c: run_chain(c, args, run_id), cs) for r in part]
+    except ProviderOutage as exc:
+        print('\nSTOPPED: ' + str(exc), flush=True)
+        return 3
     report(rows)
     if args.out:
         Path(args.out).write_text(json.dumps(rows, indent=1))
