@@ -148,3 +148,40 @@ Codex: please adjudicate independently.
      the answer.
 
   Both are to be confirmed against Codex's adjudication before any change.
+
+## Codex adjudication of run 1, and the two confirmed fixes
+
+- **Codex's independent adjudication** is saved as `claude-arms-run1/codex-adjudication.md`.
+  - Final run 1 tally: exact 4/6, investigator 3/6, full stack 3/6.
+  - On claims-share, the investigator and full stack were wrong under complete-answer scoring: the 3/3 was right, but the added
+    per-patient counts and amounts were wrong.
+  - receipt.json and report.json were updated with Codex as adjudicator.
+- **Fix (a), 0ee9477:** table descriptions now say `record` holds current versions only and `payer_adjudication` holds the full
+  received history, superseded included. `claim_adjudication` is described as built from current records, not a full history, per
+  Codex's correction. semantic_model.json was regenerated with `contract.write_model` (d170208).
+- **Fix (b), 0ee9477:** one-patient questions now go to the investigator right after the fast exact tiers and the chart reader, and a
+  quote-verified investigator answer skips the weaker re-verification.
+- Gate: 1 new failure (test_onboarding semantic_model file); fixed by regeneration. The candidate loaded on :8888 is **d170208**.
+
+## Quick checks on d170208 (development, adaptive)
+
+- **Matched diagnostic run 2** (`claude-arms-run2/`; Claude preliminary, using Codex's run 1 rules):
+
+  | Arm | Run 2 | Run 1 |
+  |---|---|---|
+  | exact_evidence | 5/6 | 4/6 |
+  | investigator | 3/6 | 3/6 |
+  | full_stack | 4/6 | 3/6 |
+
+  - Notes: 3/3 in every arm. The full stack now routes straight to the investigator after the fast tiers.
+  - Full-stack latency on notes was 0.8–1.6 s, but **warm**: the investigator's calls replayed identical ledger requests. The routing
+    saving is the ~63 s of skipped retrieval tiers plus ~50 s of skipped re-verification, not a cold-latency measurement.
+  - Fix (a) is **partially effective**. The full stack now reads payer_adjudication for count-spend (82 / $5,042.06). The investigator
+    arm and the grouped / share cases still read `record` (77-grain). The question names the raw stream 'payer_medical_claims', which
+    `record` carries under that exact stream name.
+  - The exact-evidence arm miscounted 81 vs 82 again on count-spend: an LLM counting rows is unreliable even with the evidence handed
+    over.
+- **BUILD quick check (`--quick 3`, 15 questions):** 11/15 = 73.3 %, 0 provider errors.
+  - structured 3/3, notes 2/3, population quality 2/3, claims 2/3, insight 2/3 (fact share 0.89).
+
+Next, per Mike: one frozen milestone on d170208. Check half first; held-out runs only if the check half completes with no outage stop.
