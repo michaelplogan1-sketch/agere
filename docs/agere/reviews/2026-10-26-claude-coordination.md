@@ -71,3 +71,23 @@ measured failures, small and tested.
    adjudicator.
 5. Codex's remaining recommendations (release manifest exposing the loaded SHA, a single investigation controller, per-claim evidence
    binding) are deferred under Mike's stop-remaking instruction unless a measured failure requires them.
+
+## Update: 92ca4f7
+
+- **Integrated Codex's harness** (`tools/diagnostic_cycle.py`, `test_diagnostic_cycle.py`, 18 tests pass), copied unchanged from the root
+  checkout. Codex's warehouse metadata audit (`artifacts/agere-diagnostic-cycle-2026-10-26/source-metadata-audit.json`) is noted as
+  structural evidence only.
+- **modality_check is provenance only**, per the Codex caution. Only a verified quote is a claim check (`verification: quote_verified`).
+  `grounded` and `absence_searched` are recorded as `provenance` on answers that ship `verification: unverified` and `status: partial`.
+- The regression diff on 92ca4f7 is running. Restart and push happen only after 0 new failures.
+
+## Next: matched-arm diagnostic packet (protocol agreed with Codex)
+
+- Cases are a small fresh or open BUILD packet: dev3 BUILD-half or newly authored questions with raw received evidence and explicit
+  definitions. No CHECK or held-out misses.
+- References are pre-audited, and Codex reviews evidence and adjudication independently.
+- Three arms on the same model, transport and settings, with labels withheld from all answerers:
+  1. exact evidence plus explicit definition;
+  2. investigator (backstop) with warehouse tools;
+  3. full stack.
+- Run on one frozen candidate (92ca4f7 once qualified). Report with `tools/diagnostic_cycle.py`.
