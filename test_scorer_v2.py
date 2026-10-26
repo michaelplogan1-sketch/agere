@@ -119,5 +119,19 @@ class KeysV2(unittest.TestCase):
         self.assertTrue(rows())
 
 
+
+
+class AbsenceSubject(unittest.TestCase):
+    def test_an_absence_answer_must_name_what_is_absent(self):
+        from tools.dev_set import run as R
+        q = {'answer_type': 'absent', 'key': {'reason': 'There is no mortality linkage (no death index) in the warehouse.'}}
+        wrong = {'status': 'not_available', 'answer': {'answer_type': 'unsupported', 'headline': 'The pharmacy days-supply field is absent.'}}
+        right = {'status': 'not_available', 'answer': {'answer_type': 'unsupported', 'headline': 'No mortality linkage was received.'}}
+        self.assertFalse(R.score(q, wrong, scorer='v2')[0])
+        self.assertTrue(R.score(q, right, scorer='v2')[0])
+        self.assertTrue(R.score(q, wrong, scorer='v1')[0])
+
+
+
 if __name__ == '__main__':
     unittest.main()

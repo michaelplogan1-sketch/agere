@@ -174,6 +174,16 @@ def close(x, y, tol):
     return abs(x - y) <= tol.get('abs', 0)
 
 
+ABSENCE_STOP = frozenset('warehouse data exists exist anywhere records record holds received there that this with from notes note '
+                         'documents document scanned results result codes code fields field measure measures value values none '
+                         'other information content contains which their about'.split())
+
+
+def absence_subject(reason):
+    """The words naming what is absent in a refusal key ('No dialysis content exists ...' -> {'dialysis'})."""
+    return {w for w in re.findall(r'[a-z][a-z0-9]{2,}', str(reason).lower()) if w not in ABSENCE_STOP and len(w) >= 3} - {'the', 'and', 'any', 'for', 'per', 'not'}
+
+
 # --- scoring ------------------------------------------------------------------------------------------------------------
 def score(q, resp, scorer=None):
     """-> (correct: bool|None, detail: dict). correct is None only for a refused / unanswered item (counted in coverage).
@@ -190,7 +200,12 @@ def score(q, resp, scorer=None):
         # only a returned answer that states the data is absent counts; an error, a timeout or a generic refusal (not_understood,
         # internal_error, ...) does not (2026-10-24: an error/timeout used to count as correct here)
         stated = st in ABSENCE_STATUSES or a.get('answer_type') == 'unsupported'
-        return stated, {'expected': 'refusal: ' + key.get('reason', ''), 'status': st, 'stated_absent': stated}
+        detail = {'expected': 'refusal: ' + key.get('reason', ''), 'status': st, 'stated_absent': stated}
+        if stated and v2:  # the absence stated must be the one asked about, not another missing field (Codex review 2026-10-26)
+            subject = absence_subject(key.get('reason', ''))
+            detail['absence_subject_named'] = not subject or any(w in low for w in subject)
+            return detail['absence_subject_named'], detail
+        return stated, detail
     if not answered:
         return None, {'status': st}
     if t in ('count', 'value'):
