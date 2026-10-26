@@ -123,7 +123,8 @@ class SemanticWarehouse:
         if action == sqlite3.SQLITE_READ:
             # Reads of main tables, CTEs/subqueries (database None) and json_each/json_tree; the temp schema only for the
             # definition views define() created (their own reads of main tables are authorized as above).
-            if database == 'temp' and arg1 in cls.DEFINITION_VIEWS: return sqlite3.SQLITE_OK
+            if database == 'temp' and (arg1 in cls.DEFINITION_VIEWS or arg1 == 'cohort' or re.fullmatch(r'agere_result_\d+', str(arg1))):
+                return sqlite3.SQLITE_OK  # only code-created, request-local cohort and executed-result views
             return sqlite3.SQLITE_OK if database in (None, 'main') else sqlite3.SQLITE_DENY
         if action == sqlite3.SQLITE_FUNCTION:
             return sqlite3.SQLITE_DENY if str(arg2).lower() in cls.DENIED_FUNCTIONS else sqlite3.SQLITE_OK
@@ -363,7 +364,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         output = {'error': str(exc)}
                         failure = True
                 result['tool_calls'].append({'name': use.get('name'), 'input': use.get('input') or {},
-                                            'sql': use.get('input', {}).get('sql'), 'result': output})
+                                            'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output})
                 answers.append({'type': 'tool_result', 'tool_use_id': use['id'],
                                 'content': json.dumps(output, allow_nan=False), 'is_error': failure})
             messages.append({'role': 'user', 'content': answers})

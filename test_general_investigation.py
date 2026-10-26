@@ -79,6 +79,46 @@ class Investigation(unittest.TestCase):
 
 
 class ScopeAndEvidence(unittest.TestCase):
+    def test_prior_results_can_be_composed_in_sql_and_copied_without_model_transcription(self):
+        import sqlite3
+        from clinical_core.agere.clinical import note_evidence
+        class Warehouse:
+            _authorize = staticmethod(S.SemanticWarehouse._authorize)
+            def __init__(self):
+                self.db=sqlite3.connect(':memory:')
+                self.db.execute('CREATE TABLE patient(patient_id)')
+            def query(self, sql, **kw):
+                cur=self.db.execute(sql)
+                return {'columns':[x[0] for x in cur.description], 'rows':cur.fetchall(), 'truncated':False}
+        wh=Warehouse()
+        with patch.object(note_evidence,'connect',return_value=object()):
+            tools=B.Tools(SimpleNamespace(),wh,'2030-01-01')
+        first=tools({'name':'query_sql','input':{'sql':"SELECT 'O''Neil' AS payer, 100 AS prior, 125 AS current"}})
+        second=tools({'name':'query_sql','input':{'sql':f"SELECT payer, prior, current, current-prior AS change, 100.0*(current-prior)/prior AS percent_change FROM {first['result_view']}"}})
+        self.assertEqual(wh.query(second['executed_query'])['rows'],second['rows'])
+        calls=[{'sql':'computed SQL','result':second}]
+        answer={'answer_type':'table','table_from_tool':second['result_view']}
+        B.materialize_table(answer,calls)
+        self.assertEqual(answer['table'],[{'payer':"O'Neil",'prior':100,'current':125,'change':25,'percent_change':25.0}])
+        self.assertTrue(answer['table_binding']['copied_from_executed_result'])
+        # The same read-only authorizer permits the scoped cohort view, while SQL cannot change the source.
+        self.assertEqual(wh.query('SELECT COUNT(*) AS n FROM cohort')['rows'],[(0,)])
+        with self.assertRaises(sqlite3.DatabaseError): wh.query('DELETE FROM patient')
+        B.define_cohort(wh,None)
+        with self.assertRaises(sqlite3.DatabaseError): wh.query(f"SELECT * FROM {first['result_view']}")
+
+    def test_table_binding_requires_a_real_untruncated_tool_result(self):
+        with self.assertRaises(ValueError): B.materialize_table({'table_from_tool':'invented'},[])
+        with self.assertRaises(ValueError):
+            B.materialize_table({'table_from_tool':'agere_result_1'},[{'result':{'result_view':'agere_result_1','columns':['n'],'rows':[[1]],'truncated':True}}])
+
+    def test_a_compound_investigation_is_not_learned_as_its_first_subquery(self):
+        from clinical_core.agere.clinical import learning_hooks
+        result={'graph':{'nodes':[{'operation':'sql','parameters':{'query':'SELECT 1'}},{'operation':'sql','parameters':{'query':'SELECT 2'}}]}}
+        self.assertIsNone(learning_hooks.sql_pair(result))
+        result['graph']['nodes']=result['graph']['nodes'][:1]
+        self.assertEqual(learning_hooks.sql_pair(result)['query'],'SELECT 1')
+
     def test_named_patient_scopes_governed_tools_and_cannot_escape_a_selected_cohort(self):
         from clinical_core.agere.clinical import note_evidence
         with patch.object(note_evidence, 'connect', return_value=object()):

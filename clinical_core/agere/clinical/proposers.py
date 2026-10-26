@@ -813,9 +813,24 @@ class Cascade:
         accepted with the checks as annotations (heal, don't block): it is the last layer, and its document quotes are verified verbatim."""
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
         from . import backstop_agent
+        checked_in_loop = False
+        def validate_final(answer, calls):
+            nonlocal checked_in_loop
+            sqls = [c['sql'] for c in calls if c.get('sql')]
+            if not sqls or answer.get('status') == 'unsupported': return None
+            graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
+                     'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'table'},
+                                'purpose': 'Investigator query (executed)'} for i, sql in enumerate(sqls)]}
+            checked = answer_gate(self, 'backstop_agent', graph, {'route': 'backstop_agent'}, {'answer': answer, 'results': [], 'new_paid_api_calls': 0})
+            checked_in_loop = checked is not None
+            if checked is not None:
+                answer.update(checked['answer'])
+                return None
+            reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == 'backstop_agent' and e['outcome'] == 'rejected'), 'final answer checks did not pass')
+            return 'Final answer checks: ' + str(reasons) + '. Repair this in the current investigation using the existing tool results.'
         with model_policy.escalation():
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
-                                        hint=getattr(self, 'second_look_hint', None))
+                                        hint=getattr(self, 'second_look_hint', None), validate_final=validate_final)
         self.spend(run.get('new_paid_api_calls', 0), run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
         if run.get('error') and outage(RuntimeError(run['error'])) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
             from ..gateway import ProviderUnavailable
@@ -849,6 +864,9 @@ class Cascade:
             answer = {**answer, 'verification': 'unverified', 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
                       'limitations': [*(answer.get('limitations') or []), 'The final investigation review did not confirm the complete answer: ' +
                                       str(review.get('feedback') or review.get('reason') or review.get('status'))]}
+            return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
+        if checked_in_loop:
+            answer['verification'] = 'checked'
             return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
         if answer.get('status') == 'not_available' or not graph['nodes']:
             # no SQL to gate (documents, governed metrics, an absence): the modality's own check (Codex review 2026-10-26). A document answer

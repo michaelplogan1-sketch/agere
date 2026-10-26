@@ -114,8 +114,9 @@ def sql_pair(result):
     contract = (result or {}).get('request_contract') or {}
     graph = (result or {}).get('graph') or {}
     nodes = graph.get('nodes') or []
-    if nodes and all(n.get('operation') == 'sql' for n in nodes):
+    if len(nodes) == 1 and nodes[0].get('operation') == 'sql':
         p = nodes[0].get('parameters') or {}
+        if re.search(r'\bagere_result_\d+\b', str(p.get('query') or '')): return None
         if p.get('query'): return {'query': p['query'], 'returns': p.get('returns') or (result.get('answer') or {}).get('answer_type')}
     request = contract.get('request')
     if contract.get('query') and isinstance(request, dict) and not request.get('analyses') and not request.get('workflow'):
