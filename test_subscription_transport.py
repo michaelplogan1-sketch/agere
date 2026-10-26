@@ -1,6 +1,7 @@
 """The subscription transport (test runs on the Claude Code CLI): request translation, emulated tool use, and the urlopen intercept. No CLI is run."""
 import json
 import os
+import subprocess
 import unittest
 import urllib.request
 from unittest.mock import patch
@@ -9,6 +10,19 @@ from clinical_core.agere import subscription_transport as T
 
 
 class Translation(unittest.TestCase):
+    def test_caller_timeout_is_preserved_without_an_automatic_second_generation(self):
+        with patch.dict(os.environ, {'AGERE_SUBSCRIPTION_TIMEOUT': ''}), \
+             patch.object(T, 'run_cli', side_effect=subprocess.TimeoutExpired('scripted', 900)) as call:
+            with self.assertRaises(subprocess.TimeoutExpired): T.respond({'messages': []}, timeout=900)
+        self.assertEqual(call.call_count, 1)
+        self.assertEqual(call.call_args.kwargs['timeout'], 900)
+
+    def test_no_timeout_is_invented_for_an_unbounded_caller(self):
+        with patch.dict(os.environ, {'AGERE_SUBSCRIPTION_TIMEOUT': ''}), \
+             patch.object(T, 'run_cli', return_value={'result': '{}', 'usage': {}}) as call:
+            T.respond({'messages': []})
+        self.assertIsNone(call.call_args.kwargs['timeout'])
+
     def test_system_tools_and_transcript_become_one_prompt(self):
         body = {'model': 'claude-haiku-5-5', 'system': [{'type': 'text', 'text': 'Be exact.'}],
                 'tools': [{'name': 'sql', 'description': 'run SQL', 'input_schema': {'type': 'object'}}],
@@ -37,11 +51,12 @@ class Intercept(unittest.TestCase):
         real = urllib.request.urlopen
         try:
             with patch.dict(os.environ, {'AGERE_CLAUDE_TRANSPORT': 'subscription'}), \
-                 patch.object(T, 'respond', return_value={'content': [{'type': 'text', 'text': 'hi'}]}):
+                 patch.object(T, 'respond', return_value={'content': [{'type': 'text', 'text': 'hi'}]}) as respond:
                 self.assertTrue(T.install())
                 req = urllib.request.Request('https://api.anthropic.com/v1/messages', data=json.dumps({'messages': []}).encode(), method='POST')
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     self.assertEqual(json.load(resp)['content'][0]['text'], 'hi')
+                self.assertEqual(respond.call_args.kwargs['timeout'], 5)
         finally:
             urllib.request.urlopen = real; T._original.clear()
 

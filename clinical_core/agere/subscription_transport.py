@@ -136,7 +136,7 @@ def _tool_call(text, tools):
     return None
 
 
-def run_cli(model, system, user, timeout=300):
+def run_cli(model, system, user, timeout=None):
     """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure."""
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:
         f.write(system); path = f.name
@@ -159,16 +159,17 @@ def run_cli(model, system, user, timeout=300):
     return out
 
 
-def respond(body):
+def respond(body, *, timeout=None):
     """A Messages API body -> a Messages API response dict, answered by the CLI."""
     model = body.get('model') or 'claude-haiku-5-5'
     system, user = build_prompt(body)
-    # a CLI call normally takes seconds; a hung one (about 1 in 8 under load, 2026-10-25) is cut short and retried once
-    timeout = float(os.environ.get('AGERE_SUBSCRIPTION_TIMEOUT', '150'))
-    try:
-        out = run_cli(model, system, user, timeout=timeout)
-    except subprocess.TimeoutExpired:
-        out = run_cli(model, system, user, timeout=timeout)
+    # Preserve the caller's timeout instead of silently imposing a shorter CLI
+    # limit. An explicit environment override remains available. A timeout is
+    # reported once: replaying an interrupted generation can duplicate usage.
+    configured = os.environ.get('AGERE_SUBSCRIPTION_TIMEOUT')
+    if configured:
+        timeout = float(configured)
+    out = run_cli(model, system, user, timeout=timeout)
     text = out.get('result') or ''
     usage = out.get('usage') or {}
     usage = {k: usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
@@ -205,7 +206,7 @@ def install():
             if MESSAGES_URL in full:
                 payload = data if data is not None else (url.data if isinstance(url, urllib.request.Request) else None)
                 body = json.loads(payload.decode() if isinstance(payload, (bytes, bytearray)) else payload)
-                return _Response(json.dumps(respond(body)).encode())
+                return _Response(json.dumps(respond(body, timeout=timeout)).encode())
             return real(url, data, timeout, *args, **kwargs) if timeout is not None else real(url, data, *args, **kwargs)
         urllib.request.urlopen = urlopen
         os.environ.setdefault('ANTHROPIC_API_KEY', 'subscription-transport')  # Claude tiers check for a key; it is never sent
