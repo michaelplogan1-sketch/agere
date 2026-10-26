@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-26T15:31:17.733839+00:00",
+  "latest_checkpoint": "2026-10-26T15:35:18.674647+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -64,7 +64,7 @@
     "report": "AGERE_EXTERNAL_REVIEW_RESPONSE_2026-10-12.md"
   },
   "owner_agent": "Codex, sole integration/runtime owner; Mike takeover 2026-10-26",
-  "source_control": "git; codex/integration-20261026 from origin/main 27c354f; preserve original dirty checkout; remote push blocked by automatic approval review pending explicit destination approval.",
+  "source_control": "git; codex/integration-20261026 from origin/main 27c354f; branch pushed to existing private michaelplogan1-sketch/agere with explicit Mike approval; draft PR2. Original dirty checkout preserved.",
   "heartbeat_removal_authorization": "Mike 2026-10-19: \"i am here you dont need the continue building reminder\"; deleted through the Codex automation tool.",
   "live_runtime": {
     "workspace": "/private/tmp/agere-codex-integration-20261026",
@@ -251,5 +251,6 @@
     "tests": "test_source_citation_recovery.py",
     "activation": "Runtime service/UI/dispatcher changes restored; saved candidate copies only. No paid execution.",
     "latest_review": "AGERE_SCOPE_REASSESSMENT_2026-10-12.md"
-  }
+  },
+  "candidate_pull_request": "https://github.com/michaelplogan1-sketch/agere/pull/2"
 }

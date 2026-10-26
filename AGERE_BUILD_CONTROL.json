@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-26T15:31:17.733839+00:00",
+  "updated_at": "2026-10-26T15:35:18.674647+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -367,9 +367,9 @@
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json"
     ],
-    "remaining_gap": "General clinical correctness and broad coverage are not established. Full ten-area backlog and B1-B4 qualification gaps remain. Candidate is local on 8888; remote push rejected pending explicit destination approval; main/default checkout unchanged.",
-    "next_action": "Continue shared integration for arbitrary healthcare requests: retain whole-request scope, dated source evidence and governed definitions through all existing engines and document readers; investigate any failure at the shared boundary. Preserve the verified candidate and seek explicit destination approval only for the rejected GitHub push. Independent clinical qualification requires Mike-requested clinician-style evaluation; never inspect or test dev3/held-out keys. Stop on a Claude subscription limit.",
-    "next": "Continue shared integration for arbitrary healthcare requests: retain whole-request scope, dated source evidence and governed definitions through all existing engines and document readers; investigate any failure at the shared boundary. Preserve the verified candidate and seek explicit destination approval only for the rejected GitHub push. Independent clinical qualification requires Mike-requested clinician-style evaluation; never inspect or test dev3/held-out keys. Stop on a Claude subscription limit.",
+    "remaining_gap": "General clinical correctness and broad coverage are not established. Full ten-area backlog and B1-B4 qualification gaps remain. Candidate is local on 8888; branch pushed and draft PR2 open after explicit destination approval; main/default checkout unchanged.",
+    "next_action": "Review the shared investigation candidate in draft PR2 and continue shared integration for arbitrary healthcare requests, preserving the complete request, selected population, dated evidence and governed definitions across existing engines and document readers. No question-specific handlers or dev3/held-out keys. Independent clinical qualification requires Mike-requested clinician-style evaluation. Claude subscription only; stop on a subscription limit.",
+    "next": "Review the shared investigation candidate in draft PR2 and continue shared integration for arbitrary healthcare requests, preserving the complete request, selected population, dated evidence and governed definitions across existing engines and document readers. No question-specific handlers or dev3/held-out keys. Independent clinical qualification requires Mike-requested clinician-style evaluation. Claude subscription only; stop on a subscription limit.",
     "latest_review": {
       "at": "2026-10-26T15:31:17.733839+00:00",
       "kind": "Shared source checks, baseline differential regression, ordinary API workflow and actual browser rendering; engineering only",
@@ -448,7 +448,8 @@
       "source_commit": "2b29fc095239c8e27ca8542a8aa700604ed6d95f",
       "receipt": "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "runtime_url": "http://127.0.0.1:8888/ask?context=ANS-fc965058a9fea298d9659352",
-      "kind": "engineering workflow verification only; not clinical qualification"
+      "kind": "engineering workflow verification only; not clinical qualification",
+      "pull_request": "https://github.com/michaelplogan1-sketch/agere/pull/2"
     }
   },
   "decisions": [
@@ -1333,6 +1334,13 @@
       "basis": "Whole-request repair and code-bound composition verified; no dev3/held-out or accuracy-key evaluation. Automatic approval review rejected the GitHub export; local source preservation remains authorized.",
       "scope_impact": "Full ten-area charter retained. Main/default checkout untouched, clinical qualification open, no heartbeat or external clinical action.",
       "evidence": "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json"
+    },
+    {
+      "at": "2026-10-26T15:35:18.674647+00:00",
+      "decision": "Publish the verified source branch and open draft PR2 after explicit user approval of the exact private GitHub destination.",
+      "basis": "Mike answered Approve push and draft PR to the destination-specific request. Automatic approval review then permitted the push.",
+      "scope_impact": "Source/docs only; synthetic data and runtime evidence remain local. Main/default checkout unchanged; clinical qualification open.",
+      "evidence": "https://github.com/michaelplogan1-sketch/agere/pull/2"
     }
   ]
 }
