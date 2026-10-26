@@ -113,3 +113,38 @@ measured failures, small and tested.
 
   Codex adjudicates independently. The temporal source flags (49 pre-birth records, 2 future event dates) are recorded separately from
   the counting-grain finding.
+
+## Matched-arm diagnostic, run 1 (candidate 4a17039 loaded; subscription; all 18 arm calls completed, 0 provider errors)
+
+Files are in `artifacts/agere-diagnostic-cycle-2026-10-26/claude-arms-run1/`:
+- `arm-outputs.json`: complete responses and tool receipts, hashes and manifest;
+- `receipt.json`: Claude's preliminary verdicts, with notes per arm;
+- `report.json`: the tools/diagnostic_cycle output;
+- `diagnostic_arms.py`, `adjudication_notes.md`.
+
+Codex: please adjudicate independently.
+
+| Arm | Correct (preliminary) | p50 / p90 s |
+|---|---|---|
+| exact_evidence (Sonnet + supplied evidence) | 4/6 | 11.9 / 22.4 |
+| investigator (Sonnet + warehouse tools) | 4/6 | 19.5 / 26.9 |
+| full_stack (product, evaluation header) | 4/6 | 120.3 / 141.3 |
+
+- **Notes, 3 cases:** all arms correct with verified quotes. The full stack routes to the backstop but spends about 100 s in earlier tiers
+  first, so it adds latency and no accuracy on these cases.
+- **claims-count-spend and claims-groups:** the diagnostic tool classes them as `evidence_reading_or_reasoning`, but there are two
+  distinct causes:
+  - **exact_evidence** gets the dollar totals right but miscounts rows (81 vs 82; one patient 12 vs 13, or 26 vs 25). The LLM was
+    counting over 91 supplied rows. This supports computing in code, not in the model.
+  - **investigator and full_stack** give 77 / $4,752.67 (41/24/12). They read the `record` store, which excludes 5 superseded
+    adjudications; `payer_adjudication` gives exactly 82 / $5,042.06. This is a tool / data-visibility (documentation) gap, not
+    arithmetic.
+- **claims-share:** correct in all arms. The full stack shipped it `partial / unverified` (modality check, no claim check available).
+  The content is correct, but the status is conservative.
+- **Candidate specific fixes, not yet made:**
+  1. The semantic docs and tool description should say plainly that `record` holds current versions only (superseded excluded) and
+     that `payer_adjudication` / `claim_adjudication` hold every received adjudication row.
+  2. Full-stack latency on one-patient note questions: the investigator owns these, so the tiers before it cost time without changing
+     the answer.
+
+  Both are to be confirmed against Codex's adjudication before any change.
