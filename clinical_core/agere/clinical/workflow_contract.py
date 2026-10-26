@@ -86,7 +86,10 @@ def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=N
             if not any(selection['quote'] in q for q in bound):
                 raise PlanError('Work selection must bind to the analytical requirement computing that output')
             selection_words = set(re.findall(r'\w+', selection['quote'].lower()))
-        if step['kind'] != 'monitor' and not step['unresolved']:
+        if step['kind'] == 'simulation' and not step['unresolved']:
+            # Artifact briefs are content, not executable clinical policy. Their
+            # source-bound builder cannot change the cohort or perform actions.
+            # Keep this execution vocabulary check for simulated work only.
             # Only generic product intent is consumed by this workflow language.
             # Content describing a different population, eligibility or bespoke
             # program cannot become permission to act on the analytical output.
@@ -111,6 +114,15 @@ def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=N
             if extra:
                 step['unresolved'].append('Downstream wording needs an explicit scope or deliverable definition: '+', '.join(sorted(extra))+
                                           '. The analytical answer is preserved; this step will not execute.')
+        if step['kind'] == 'deliverable' and not step['unresolved']:
+            # Accept open presentation/service briefs, while retaining explicit
+            # upstream bindings for new cohort restrictions and calculations.
+            analytical = (re.search(r'\b(?:only|exclusively|restricted|limited)\s+(?:for|to)\b',quote,re.I)
+                or re.search(r'\b(?:for|to|among)\s+(?:\w+\s+){0,2}(?:patients|members|people)\s+(?:who|with|without|not|lacking|having|admitted|discharged|aged)\b',quote,re.I)
+                or re.search(r'\b(?:after|before|since|between|above|below|over|under)\s+\d',quote,re.I)
+                or re.search(r'\b(?:show(?:ing)?|compute|calculate|compare|report)\b.*\b(?:average|mean|median|cost|rate|percent|percentage|ratio|sum|total)\b',quote,re.I))
+            if analytical:
+                step['unresolved'].append('Bind the additional population restriction or calculation in the analytical request before building this artifact.')
         if step['kind'] == 'monitor':
             if step['scope'] not in ('query', 'result'):
                 raise PlanError('Monitor scope is query (original input scope) or result (frozen output patients)')

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-26T18:59:55.742626+00:00",
+  "updated_at": "2026-10-26T21:11:36.231539+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,25 +359,28 @@
     }
   ],
   "checkpoint": {
-    "kind": "verified_shared_repairs_ordinary_workflow_incomplete",
+    "kind": "offline_verified_automatic_workflow_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Mike accepted every answer in the delivered assisted Heartline workflow. Shared execution repair now keeps the original request intact, uses scoped FTS lookup, exposes existing owner phenotype definitions to the investigator, and records actual component invocation. Full ordinary execution is still being verified.",
-    "measured_failure_reduction": "Same73 ordered FTS passages in0.209s versus2.241s; existing owner phenotype57 living versus40 coded-only exposed to investigator; sender180s cutoff removed.219 distinct focused tests:218 pass,1 optional skip. Candidate3 completed358.9s without timeout but remained partial/unverified. Guarded batches have scripted evidence only.",
+    "user_behavior_delta": "General population whole-document review, existing governed dose/definition tools, complete native result binding and downstream deliverable handoff are wired through the existing investigator. Fixed-weight recursive execution candidate/validation/replay/retirement is opt-in.",
+    "measured_failure_reduction": "Connected authored non-HF workflow reaches a saved artifact; all 2505 native rows survive a large-result check; guarded RSI replay executes native tools with zero actor sends versus three in its scripted baseline. 281 checks pass and one optional live check skips with zero provider sends.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
-      "artifacts/agere-execution-repair-2026-10-26/engineering-receipt.json"
+      "artifacts/agere-execution-repair-2026-10-26/engineering-receipt.json",
+      "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json",
+      "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json"
     ],
-    "remaining_gap": "Automatic candidate3 ended no_progress after12 tools and9 reviews. It did not finish whole-note review, verified dose assessment or the service deliverable. Its findings do not replace Mike-accepted assisted Heartline. Broad qualification remains open.",
-    "next_action": "Connect unresolved requirements to further evidence acquisition and the existing deliverable workflow. Prevent wording-only repair from substituting for missing work. Preserve the complete question, computed results, source/scope, ten-area charter and known-good assisted delivery.",
-    "next": "Connect unresolved requirements to further evidence acquisition and the existing deliverable workflow. Prevent wording-only repair from substituting for missing work. Preserve the complete question, computed results, source/scope, ten-area charter and known-good assisted delivery.",
+    "remaining_gap": "Complete received-source automatic clinical answer and deliverable, browser inspection, physician acceptability and total-cost RSI baseline/reuse qualification after Claude subscription availability.",
+    "next_action": "After Claude subscription availability, run the prepared ordinary request on the frozen isolated runtime using the retained attempt1 ledger and a new attempt2 receipt directory. Finish every analytical requirement and artifact; inspect the saved browser result and obtain physician judgment. Then repeat into a new attempt3 directory to qualify RSI native reuse and complete-request costs. No automatic retry, protected evaluations or external Anthropic API key.",
+    "next": "After Claude subscription availability, run the prepared ordinary request on the frozen isolated runtime using the retained attempt1 ledger and a new attempt2 receipt directory. Finish every analytical requirement and artifact; inspect the saved browser result and obtain physician judgment. Then repeat into a new attempt3 directory to qualify RSI native reuse and complete-request costs. No automatic retry, protected evaluations or external Anthropic API key.",
     "latest_review": {
-      "at": "2026-10-26T18:59:55.742626+00:00",
-      "kind": "219 distinct engineering tests; received-source FTS/phenotype checks; ordinary candidate3 remains partial; Mike acceptance scoped to prior assisted result",
+      "at": "2026-10-26T21:11:36.231539+00:00",
+      "kind": "Frozen-source offline engineering verification; live workflow and clinical qualification pending",
       "evidence": [
-        "artifacts/agere-execution-repair-2026-10-26/engineering-receipt.json",
-        "artifacts/agere-execution-repair-2026-10-26/component-use-audit.json"
+        "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json",
+        "artifacts/agere-auto-workflow-2026-10-26/offline/tests.json",
+        "artifacts/agere-auto-workflow-2026-10-26/offline/resume-preflight.json"
       ]
     },
     "coordination": {
@@ -1356,6 +1359,26 @@
       "basis": "Mike accepted the assisted workflow and authorized next steps. Normal-route trace reproduced global FTS scans, a coded-only cohort and an interrupted partial-answer repair.",
       "scope_impact": "No disease-specific handler, new model weights, protected evaluation or main/default promotion. All ten areas retained; source and local diagnostic artifacts remain separate.",
       "evidence": "artifacts/agere-execution-repair-2026-10-26/scoped-fts-comparison.json"
+    },
+    {
+      "at": "2026-10-26T20:04:27.389968+00:00",
+      "decision": "Stop immediately at the Claude subscription weekly limit; preserve source and current-run receipts without an external API fallback.",
+      "basis": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your weekly limit \u00b7 resets Oct 28 at 6am (America/Chicago)",
+      "scope_impact": "No activation, completed-workflow claim or narrowed charter. G3 stays incomplete. No automatic retry or heartbeat created.",
+      "evidence": "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json"
+    },
+    {
+      "at": "2026-10-26T20:53:14.805706+00:00",
+      "decision": "Continue coding and offline verification only while Claude is limited.",
+      "basis": "Mike: keep working on general stack fixes and RSI without Claude; finish coding/offline testing for reset.",
+      "scope_impact": "No provider sends, runtime promotion or live qualification; all ten product areas retained."
+    },
+    {
+      "at": "2026-10-26T21:11:36.231539+00:00",
+      "decision": "Freeze the general workflow/RSI source candidate after connected offline verification and preserve a cache-retaining subscription-only resume command.",
+      "basis": "Mike explicitly authorized coding/offline testing without Claude. 281 passing checks, one optional live skip; zero provider sends; source fingerprint unchanged.",
+      "scope_impact": "G3 and full ten-area scope remain open. RSI default off; no main/default runtime promotion or clinical/cost-savings claim.",
+      "evidence": "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json"
     }
   ]
 }

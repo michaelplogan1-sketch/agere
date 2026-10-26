@@ -841,7 +841,7 @@ class Cascade:
         with model_policy.escalation():
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
                                         hint=getattr(self, 'second_look_hint', None), validate_final=validate_final)
-        self.spend(run.get('new_paid_api_calls', 0), run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+        self.spend(run.get('new_paid_api_calls', 0), run.get('known_cost_usd') or run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
         if run.get('error') and outage(RuntimeError(run['error'])) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
             from ..gateway import ProviderUnavailable
             raise ProviderUnavailable(run['error'], kind='rate_limit')
@@ -867,8 +867,12 @@ class Cascade:
         if notes: answer = {**answer, 'limitations': [*(answer.get('limitations') or []), *('Check note: ' + n for n in notes)]}
         answer.setdefault('patient_ids', answer.get('patient_ids') or [])
         result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0,
+                  'workflow':[{'index':i,**s,'status':'planned'} for i,s in enumerate(answer.get('workflow') or [])],
                   'investigation': {'model': run.get('model'), 'tool_calls': run.get('tool_calls') or [],
-                                    'answer_reviews': run.get('answer_reviews') or []}}
+                                    'answer_reviews': run.get('answer_reviews') or [],
+                                    'document_reviews':run.get('document_reviews') or [],
+                                    'guarded_continuations':run.get('guarded_continuations') or [],
+                                    'recursive_improvement':run.get('recursive_improvement')}}
         review = answer.get('investigation_review') or {}
         if review and review.get('status') != 'confirmed':
             answer = {**answer, 'verification': 'unverified', 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),

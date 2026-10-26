@@ -20,7 +20,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-VERSION = 'note-evidence/1'
+VERSION = 'note-evidence/2'
 MAX_PASSAGES = 12
 PER_RECORD = 3
 MAX_CHARS = 700
@@ -211,9 +211,12 @@ def _texts(db, patient_id, sources, as_of):
         streams += OTHER_STREAMS
     if streams:
         q = ','.join('?' * len(streams))
+        record_columns={c[1] for c in db.execute('pragma table_info(record)')}
+        availability=' AND substr(coalesce(available_date,event_date),1,10)<=?' if 'available_date' in record_columns else ''
         rows = db.execute(f"select record_id, stream, event_date, json_extract(payload,'$.text') t, "
                           f"coalesce(json_extract(payload,'$.note_type'), json_extract(payload,'$.document_type')) nt "
-                          f"from record where patient_id=? and stream in ({q}) and event_date<=?", (patient_id, *streams, as_of))
+                          f"from record where patient_id=? and stream in ({q}) and substr(event_date,1,10)<=?"+
+                          availability, (patient_id, *streams, as_of, *([as_of] if availability else [])))
         for r in rows:
             if r['t']:
                 src = 'clinical_note' if r['stream'] in NOTE_STREAMS else 'hie_document' if r['stream'] in HIE_STREAMS else 'other_text'
@@ -221,9 +224,10 @@ def _texts(db, patient_id, sources, as_of):
     if 'scanned_document_text' in want:
         cols = {c[1] for c in db.execute('pragma table_info(scanned_document)')}
         title = 'd.document_title' if 'document_title' in cols else "''"
+        availability=' AND substr(coalesce(d.available_date,d.event_date,?),1,10)<=?' if 'available_date' in cols else ''
         for r in db.execute(f'select t.record_id, t.text, d.document_type, d.event_date, t.text_source, {title} title from scanned_document_text t '
                             'left join scanned_document d on d.record_id=t.record_id where t.patient_id=? and '
-                            'coalesce(d.event_date, ?)<=?', (patient_id, as_of, as_of)):
+                            'substr(coalesce(d.event_date, ?),1,10)<=?'+availability, (patient_id, as_of, as_of, *([as_of,as_of] if availability else []))):
             if r['text']:
                 out.append((r['record_id'], 'scanned_document_text', r['text_source'] or 'scanned_document',
                             r['document_type'] or 'scanned_document', r['event_date'], r['text'], r['title'] or ''))

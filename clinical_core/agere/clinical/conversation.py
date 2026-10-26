@@ -1077,6 +1077,8 @@ def handle_compose(stack, body, hosted_factory=None):
                     # The user must see what was attempted even when it was not answered.
                     exc.args = (f'Resolved question: "{resolution["standalone"]}". {exc}',)
             from .learning_hooks import after_failure
+            from .harness_improvement import failed as failed_harness
+            failed_harness(stack.path,logged,exc)
             after_failure(stack, logged, exc)
             probe.mark('learning')
             exc.cost_telemetry = probe.finish(logged_failure, error=f'{type(exc).__name__}: {exc}')
@@ -1152,6 +1154,8 @@ def handle_compose(stack, body, hosted_factory=None):
     if isinstance(local, dict) and local.get('operator_router'):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
     from .learning_hooks import after_answer  # every answer feeds learning: saved pairs, question learning, training corpus
+    from .harness_improvement import finish as finish_harness
+    finish_harness(stack.path,result)
     result = {**result, 'learning': after_answer(stack, logged, result, body=body)}
     probe.mark('learning')
     telemetry = probe.finish(result)

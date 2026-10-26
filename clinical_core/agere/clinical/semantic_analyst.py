@@ -55,7 +55,7 @@ def _bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
         for row in cursor:
             item = dict(row)
             size = len(json.dumps(item, allow_nan=False))
-            if len(rows) >= max_rows or chars + size > max_chars:
+            if (max_rows is not None and len(rows) >= max_rows) or (max_chars is not None and chars + size > max_chars):
                 truncated = True
                 break
             rows.append(item)
@@ -110,6 +110,9 @@ class SemanticWarehouse:
         """A read-only connection without the authorizer (setup reads: meta, PRAGMA table_info)."""
         db = sqlite3.connect(self.path.as_uri() + '?mode=ro', uri=True, check_same_thread=False)
         db.row_factory = sqlite3.Row
+        from .dose import register as register_dose
+        from .clinical_inputs import register as register_inputs
+        register_inputs(register_dose(db))
         db.execute('PRAGMA query_only=ON')
         return db
 
@@ -166,8 +169,8 @@ class SemanticWarehouse:
         return self._local.defined_names
 
     def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
-        if not isinstance(sql, str) or not sql.strip() or len(sql) > 30000:
-            raise ValueError('A bounded SQL statement is required')
+        if not isinstance(sql, str) or not sql.strip():
+            raise ValueError('A read-only SQL statement is required')
         return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars)
 
     def close(self):
@@ -262,8 +265,31 @@ def successful_sql_calls(calls):
     return [c for c in calls if c.get('sql') and not (isinstance(c.get('result'), dict) and c['result'].get('error'))]
 
 
+def actor_result(value):
+    """A model preview, while native receipts and SQL result views retain ALL rows."""
+    if not isinstance(value,dict):return value
+    shown={k:v for k,v in value.items() if k not in ('executed_query','elapsed_s')}
+    if value.get('executed_query'):
+        from ...contracts import digest
+        shown['executed_query_digest']=digest(value['executed_query'])
+    rows=shown.get('rows')
+    if isinstance(rows,list) and len(json.dumps(shown,default=str))>12000:
+        preview=[]
+        for row in rows[:3]:
+            if len(json.dumps(preview+[row],default=str))>10000:break
+            preview.append(row)
+        shown.update(rows=preview,rows_computed=len(rows),preview_only=True,
+                     complete_result_available_in=shown.get('result_view'),
+                     instruction='The native receipt and result_view retain every row. Query the view for details/aggregates; use table_from_tool to copy a complete final result.')
+        if isinstance(shown.get('coverage'),list):
+            coverage=shown.pop('coverage')
+            shown['coverage_summary']={'patients':len(coverage),'received_documents':sum(x.get('received_documents',0) for x in coverage),
+                                       'unique_whole_documents':sum(x.get('unique_whole_documents',0) for x in coverage)}
+    return shown
+
+
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
-              format_retries=0, review=None, continuation_guard=None):
+              format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -277,11 +303,32 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     stop as explicitly partial; a provider or deadline failure retains the last rejected answer as unverified."""
     result = new_result(model)
     messages = [{'role': 'user', 'content': user}]
-    calls = 0
+    if initial_calls:
+        # Certified literal replay enters through the same native tool protocol.
+        # The actor sees actual current receipts, never a cached final answer.
+        blocks=[];answers=[]
+        for i,c in enumerate(initial_calls):
+            ident=f'replayed_{i}'
+            blocks.append({'type':'tool_use','id':ident,'name':c['name'],'input':c['input']})
+            answers.append({'type':'tool_result','tool_use_id':ident,'content':json.dumps(actor_result(c['result'])),
+                            'is_error':bool(c['result'].get('error')) if isinstance(c['result'],dict) else False})
+        messages += [{'role':'assistant','content':blocks},{'role':'user','content':answers}]
+        result['tool_calls']=list(initial_calls)
+    calls = len(initial_calls or [])
     retries_left = format_retries
     force_text = False
     turns, repairs, reviewed = 0, 0, set()
     last_tools = None
+    if initial_answer is not None and review is not None:
+        import copy
+        candidate=copy.deepcopy(initial_answer)
+        assessment=review(candidate,result['tool_calls'])
+        result.setdefault('answer_reviews',[]).append(assessment)
+        if assessment.get('status')=='confirmed' and not assessment.get('feedback'):
+            result.update(answer=candidate,final_decision_reused=True)
+            return result
+        messages += [{'role':'assistant','content':json.dumps(candidate)},
+                     {'role':'user','content':'Recheck the retained final draft against the current tool receipts; finish the unresolved work. '+str(assessment.get('feedback') or assessment.get('reason'))}]
     try:
         while max_tools is None or turns < max_tools + 1 + format_retries + repairs:
             turns += 1
@@ -409,9 +456,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     from ..request_lineage import execution_observation
                     execution_observation('guarded_continuation_executed',**certificate)
                 result['tool_calls'].append({'name': use.get('name'), 'input': use.get('input') or {},
-                                            'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output})
+                                            'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output,
+                                            'actor_callback_id':digest(body),'actor_turn':turns})
                 answers.append({'type': 'tool_result', 'tool_use_id': use['id'],
-                                'content': json.dumps(output, allow_nan=False), 'is_error': failure})
+                                 'content': json.dumps(actor_result(output), allow_nan=False), 'is_error': failure})
                 predecessor_failed=predecessor_failed or failure
             messages.append({'role': 'user', 'content': answers})
             # Tool IDs are transport identifiers, not new investigative work.
