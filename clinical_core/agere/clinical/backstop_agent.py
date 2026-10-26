@@ -403,7 +403,7 @@ def define_result(semantic, name, columns, rows):
 def materialize_table(answer, calls):
     name = answer.get('table_from_tool')
     if not name: return
-    call = next((c for c in calls if isinstance(c.get('result'), dict) and c['result'].get('result_view') == name), None)
+    call = next((c for c in calls if isinstance(c.get('result'), dict) and not c['result'].get('error') and c['result'].get('result_view') == name), None)
     if call is None: raise ValueError('table_from_tool must name an actually executed result_view')
     result = call['result']
     if result.get('truncated'): raise ValueError('The table source is truncated; compute the complete requested aggregation before returning it')
@@ -539,6 +539,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     """Review the complete proposed answer, then return actionable feedback to the SAME investigation, not a new planner.
     This is a recorded model judgment, not clinical qualification. Quote provenance and claim support remain distinct."""
     from . import system_one_gate as gate
+    from .semantic_analyst import successful_sql_calls
     assessment = {'status': 'unavailable', 'calls': 0, 'cost_usd': 0.0, 'feedback': None}
     if not isinstance(answer, dict):
         return {**assessment, 'status': 'repair', 'feedback': 'Return the required JSON answer object.'}
@@ -559,7 +560,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     if not gate.ready(stack, 'AGERE_S1_CHECK'):
         return {**assessment, 'reason': 'System One answer review unavailable', 'feedback': ' '.join(feedback) or None}
     graph = {'nodes': [{'id': f'query_{i}', 'operation': 'sql', 'parameters': {'query': (c.get('input') or {}).get('sql') or c['sql']}}
-                       for i, c in enumerate(calls) if c.get('sql')]}
+                       for i, c in enumerate(successful_sql_calls(calls))]}
     from .decision_context import prompt_block
     request = question + '\nGoverned definitions:\n' + prompt_block()
     if context: request += '\nRequest context (including follow-ups and selected population): ' + json.dumps(context, default=str)

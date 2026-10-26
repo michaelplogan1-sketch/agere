@@ -119,7 +119,20 @@ class ScopeAndEvidence(unittest.TestCase):
     def test_table_binding_requires_a_real_untruncated_tool_result(self):
         with self.assertRaises(ValueError): B.materialize_table({'table_from_tool':'invented'},[])
         with self.assertRaises(ValueError):
+            B.materialize_table({'table_from_tool':'agere_result_1'},[{'result':{'result_view':'agere_result_1','columns':['n'],'rows':[[1]],'error':'query failed'}}])
+        with self.assertRaises(ValueError):
             B.materialize_table({'table_from_tool':'agere_result_1'},[{'result':{'result_view':'agere_result_1','columns':['n'],'rows':[[1]],'truncated':True}}])
+
+    def test_failed_sql_is_retained_in_history_but_not_presented_as_computation(self):
+        calls=[{'sql':'CREATE TEMP VIEW forbidden AS SELECT 1','result':{'error':'not authorized'}},
+               {'sql':'SELECT 1 AS n','result':{'columns':['n'],'rows':[[1]]}}]
+        self.assertEqual(S.successful_sql_calls(calls),calls[1:])
+        model=SimpleNamespace(decide=lambda *a,**kw:{'label':'supported','decided_by':'jev'})
+        with patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=model), \
+             patch.object(G,'check',return_value={'label':'answers_fully','calls':0,'cost_usd':0}) as check:
+            B.review_final(SimpleNamespace(),'q',{'status':'answered','count':1},calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+        self.assertEqual([n['parameters']['query'] for n in check.call_args.args[1]['nodes']],['SELECT 1 AS n'])
+        self.assertEqual(len(calls),2)
 
     def test_a_compound_investigation_is_not_learned_as_its_first_subquery(self):
         from clinical_core.agere.clinical import learning_hooks

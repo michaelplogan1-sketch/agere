@@ -813,11 +813,12 @@ class Cascade:
         accepted with the checks as annotations (heal, don't block): it is the last layer, and its document quotes are verified verbatim."""
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
         from . import backstop_agent
+        from .semantic_analyst import successful_sql_calls
         checked_in_loop = False
         final_gate, final_binding = None, None
         def validate_final(answer, calls):
             nonlocal checked_in_loop, final_gate, final_binding
-            sqls = [c['sql'] for c in calls if c.get('sql')]
+            sqls = [c['sql'] for c in successful_sql_calls(calls)]
             if not sqls or answer.get('status') == 'unsupported': return None
             graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                      'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'table'},
@@ -846,7 +847,7 @@ class Cascade:
         if answer.get('answer_type') == 'note': answer['answer_type'] = 'note_answer'
         if answer.get('status') == 'unsupported':
             answer = {**answer, 'status': 'not_available', 'answer_type': 'unsupported', 'data_absence_established': False}
-        sqls = [c.get('sql') for c in run.get('tool_calls') or [] if c.get('sql')]
+        sqls = [c['sql'] for c in successful_sql_calls(run.get('tool_calls') or [])]
         graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                  'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': q, 'returns': 'table'},
                             'purpose': 'Investigator query (executed)'} for i, q in enumerate(sqls)]}

@@ -243,6 +243,11 @@ def new_result(model):
             'error': None, 'cost_scope': 'returned_provider_usage'}
 
 
+def successful_sql_calls(calls):
+    """Successful computation receipts only; failed attempts remain in the investigation history."""
+    return [c for c in calls if c.get('sql') and not (isinstance(c.get('result'), dict) and c['result'].get('error'))]
+
+
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
               format_retries=0, review=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
