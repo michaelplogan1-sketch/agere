@@ -120,9 +120,9 @@ FREE_STAGES = frozenset({'reuse_certified', 'system_one_choice', 'free_planners'
 
 
 def modality_check(answer, tool_calls):
-    """-> (verification, reason) for a backstop answer with no SQL to gate: 'quote_verified' (a document answer whose quotes were verified
-    against their own records), 'grounded' (every number it states appears in a tool result), 'absence_searched' (a stated absence after at
-    least one search or query), else 'unverified' with the reason."""
+    """-> (provenance, reason) for a backstop answer with no SQL to gate: 'quote_verified' (a document answer whose quotes were verified
+    against their own records: the only claim check here), 'grounded' (every number it states appears in, or is a share of, tool results:
+    provenance only), 'absence_searched' (a stated absence after at least one search or query: provenance only), else 'unverified'."""
     calls = [c for c in tool_calls if isinstance(c, dict) and not (isinstance(c.get('result'), dict) and c['result'].get('error'))]
     if answer.get('status') == 'not_available':
         return ('absence_searched', '') if calls else ('unverified', 'no document search or query stands behind the stated absence')
@@ -810,11 +810,15 @@ class Cascade:
             # no SQL to gate (documents, governed metrics, an absence): the modality's own check (Codex review 2026-10-26). A document answer
             # needs a verified quote; a numeric answer's numbers must appear in what the tools returned; an absence needs a search behind it.
             # A failed check ships the answer unverified and partial, never as a checked result.
-            verdict, why = modality_check(answer, run.get('tool_calls') or [])
-            answer = {**answer, 'verification': verdict}
-            if verdict == 'unverified':
+            # Only a verified quote is a claim check. Numbers found in tool results and a search behind an absence are provenance, not proof
+            # of the requested meaning (Codex review 2026-10-26: a list_metrics call does not establish absent mortality data; a ratio of
+            # unrelated numbers is not a verified denominator), so those ship unverified and partial with the provenance recorded.
+            provenance, why = modality_check(answer, run.get('tool_calls') or [])
+            answer = {**answer, 'provenance': provenance, 'verification': 'quote_verified' if provenance == 'quote_verified' else 'unverified'}
+            if answer['verification'] == 'unverified':
                 answer = {**answer, 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
-                          'limitations': [*(answer.get('limitations') or []), 'Unverified: ' + why]}
+                          'limitations': [*(answer.get('limitations') or []), 'Unverified: ' + (why or
+                              f'no claim check for this answer type; provenance: {provenance.replace("_", " ")}')]}
             return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
         # the same answer gate as every other proposal (Codex review 2026-10-26: the last layer bypassed it). A failure goes back to the agent
         # once with the reasons; if the repair also fails, the answer ships marked unverified and partial, never as a checked answer.
