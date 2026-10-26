@@ -25,12 +25,53 @@ class Quotes(unittest.TestCase):
         self.assertEqual(dropped, 2)
 
 
-class ShownRows(unittest.TestCase):
-    def test_a_quote_of_a_row_a_tool_returned_is_kept(self):
+class Provenance(unittest.TestCase):
+    def test_a_quote_of_a_row_is_kept_only_for_that_rows_own_record(self):
         tools = FakeTools({})
-        tools.seen = ['{"rows": [{"record_id": "R1", "payload": "{\\"medication_name_reported\\": \\"lisinopril 20 MG\\", \\"use\\": \\"reports_taking\\"}"}]}']
-        kept, dropped = B.verified_sources({'sources': [{'record_id': 'R1', 'quote': '"medication_name_reported": "lisinopril 20 MG"'}]}, tools)
+        tools.rows_by_record = {'R1': ['{"record_id": "R1", "payload": "{\\"medication_name_reported\\": \\"lisinopril 20 MG\\"}"}']}
+        quote = '"medication_name_reported": "lisinopril 20 MG"'
+        kept, dropped = B.verified_sources({'sources': [{'record_id': 'R1', 'quote': quote}]}, tools)
         self.assertEqual((len(kept), dropped), (1, 0))
+        kept, dropped = B.verified_sources({'sources': [{'record_id': 'R2', 'quote': quote}]}, tools)  # audit repro: right quote, wrong record
+        self.assertEqual((len(kept), dropped), (0, 1))
+
+    def test_rows_with_record(self):
+        self.assertEqual(B.rows_with_record({'columns': ['record_id', 'x'], 'rows': [['R1', 2]]}), [{'record_id': 'R1', 'x': 2}])
+        self.assertEqual(B.rows_with_record({'rows': [{'record_id': 'R9'}]}), [{'record_id': 'R9'}])
+
+
+class JudgeDocuments(unittest.TestCase):
+    def test_system_one_reads_each_whole_document_and_code_aggregates(self):
+        from clinical_core.agere.clinical import system_one
+        t = B.Tools.__new__(B.Tools)
+        t.as_of, t.ledger, t.stack, t.judged = '2030-05-27', None, SimpleNamespace(allow_live=True), []
+        t.read = {'N1': {'text': 'x' * 3000 + ' amLODIPine 2.5 MG: reported status: not using.', 'date': '2027-05-10', 'type': 'discharge_summary'},
+                  'N2': {'text': 'Unrelated visit.', 'date': '2026-01-01', 'type': 'progress'}}
+        calls = []
+        def decide(question, options, evidence, **kw):
+            calls.append(len(evidence))
+            hit = [e for e in evidence if 'not using' in e['text']]
+            return {'label': 'no' if hit else 'unknown', 'calibrated_probabilities': {'no': 0.97, 'unknown': 0.9}, 'evidence_ids': [hit[0]['id']] if hit else [],
+                    'decided_by': 'jev'}
+        with patch.object(system_one, 'decide', decide):
+            out = t.judge_documents('Was the patient reported to be using amlodipine?', {'yes': 'using', 'no': 'not using'}, ['N1', 'N2'])
+        self.assertEqual(calls[0], 2)  # the whole 3,000+ character document in chunks, not one snippet
+        self.assertEqual(out['latest']['record_id'], 'N1')
+        self.assertEqual(out['latest']['label'], 'no')
+        self.assertIn('not using', out['latest']['passage'])
+        self.assertEqual(out['unknown_documents'], 1)
+
+
+class Cohort(unittest.TestCase):
+    def test_the_saved_population_is_a_view_the_agent_joins_to(self):
+        import sqlite3
+        class W:
+            def __init__(self):
+                self.db = sqlite3.connect(':memory:')
+            def _authorize(self, *a): return sqlite3.SQLITE_OK
+        w = W()
+        B.define_cohort(w, ['P1', "O'Neil"])
+        self.assertEqual(sorted(r[0] for r in w.db.execute('SELECT patient_id FROM cohort')), ["O'Neil", 'P1'])
 
 
 class Snapping(unittest.TestCase):
@@ -54,17 +95,6 @@ class Shape(unittest.TestCase):
         from clinical_core.agere.clinical import answer_format
         answer_format._honest_unknown(a)
         self.assertEqual(a['headline'], '97 of 490 stays (19.8%)')
-
-
-class Supporting(unittest.TestCase):
-    def test_an_uncited_answer_gets_the_patients_own_supporting_sentence(self):
-        class T:
-            def _texts(self, pid):
-                return [('N1', 'clinical_note', 's', 'progress', '2029-03-02', 'Vitals stable. Metformin stopped because of diarrhea and GI upset. Return in 3 months.', '')]
-        got = B.supporting_passage(T(), 'SYN-1', 'Metformin was stopped because of diarrhea.')
-        self.assertEqual(got['record_id'], 'N1')
-        self.assertEqual(got['quote'], 'Metformin stopped because of diarrhea and GI upset.')
-        self.assertIsNone(B.supporting_passage(T(), 'SYN-1', 'Lisinopril dose increased.'))
 
 
 class ToolErrors(unittest.TestCase):

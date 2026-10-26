@@ -119,6 +119,14 @@ FREE_ONLY = _cv.ContextVar('agere_free_stages_only', default=False)
 FREE_STAGES = frozenset({'reuse_certified', 'system_one_choice', 'free_planners'})
 
 
+CERTIFIED_CHART = frozenset({'chart_reader', 'exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'data_domain_check'})
+
+
+def quoted(contract):
+    answer = ((contract or {}).get('executed') or {}).get('answer') or {}
+    return any(isinstance(s, dict) and s.get('record_id') and str(s.get('quote') or '').strip() for s in answer.get('sources') or [])
+
+
 def unquoted_chart_answer(question, contract):
     """Does this executed answer to a one-patient question (a patient id in it) cite no quoted passage while it is a note / document answer
     (note_answer, yes_no, or note sources)?"""
@@ -200,7 +208,7 @@ LOCAL_MODEL_TIERS = frozenset({'local_normalizer', 'qwen_rewrite_compiler', 'bot
 # cohort_family_early/late are not listed: they usually run no model, so they take LOCAL_MODEL_LOCK only around the bottled slot fill itself (bottled_cohort_hook)
 from .foreground_priority import LOCAL_MODEL_LOCK  # a priority lock: a foreground local tier is served before a queued background one
 FEEDBACK_READERS = ('hosted_typed_interpreter',)  # proposers whose prompt includes recorded corrections
-TYPED_WITH_POPULATION = {'spec_path', 'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
+TYPED_WITH_POPULATION = {'backstop_agent', 'spec_path', 'terminology_mapping', 'qwen_typed_interpreter', 'hosted_typed_interpreter', 'evidence_retrieval', 'evidence_review', 'atomic_system_one', 'hcc_suspecting'}  # the only tiers that honour a saved cohort
 
 # Components that are not proposers, and why (stack_runtime.model_roles reports these).
 NOT_PROPOSERS = {
@@ -609,15 +617,30 @@ class Cascade:
             self.close()
 
     def quoted_or_backstop(self, order, name, found):
-        """A one-patient chart answer that quotes no passage (dev3 check half: right answers scored wrong, wrong notes accepted early) asks
-        the backstop, which reads the documents and quotes them. Its answer replaces the first only when it carries a verified quote;
-        otherwise the first answer stands (heal, not block). -> (found, name)."""
-        if name == 'backstop_agent' or not isinstance(found, tuple) or not unquoted_chart_answer(self.question, found[0]): return found, name
+        """One owner for a one-patient chart investigation (audit 2026-10-25: retrieval answered "2 passages.", a pattern reader bound a status
+        to the wrong medication line, a yes/no question became a count). Unless the certified chart reader answered with a quoted passage,
+        the backstop investigates: it lists the patient's documents in scope, has System One judge each whole document, and quotes the
+        sentence. Its answer replaces the first when it answers; a decline replaces only an unquoted first answer. -> (found, name)."""
+        if name == 'backstop_agent' or not isinstance(found, tuple) or not self.one_patient(): return found, name
+        if name in CERTIFIED_CHART and not unquoted_chart_answer(self.question, found[0]): return found, name
         if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
         if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
         second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
-        if isinstance(second, tuple) and not unquoted_chart_answer(self.question, second[0]): return second, 'backstop_agent'
+        if not isinstance(second, tuple): return found, name
+        status = ((second[0] or {}).get('executed') or {}).get('answer', {}).get('status')
+        if status in ('answered', 'partial') or unquoted_chart_answer(self.question, found[0]) or not quoted(found[0]): return second, 'backstop_agent'
         return found, name
+
+    def one_patient(self):
+        """Is this question about one patient: an id in it, or a follow-up of a one-patient turn with no population wording?"""
+        if self.population is not None: return False
+        if requirement_ledger.PATIENT_ID.search(self.question or ''): return True
+        try:
+            from . import patient_ids
+            from .decision_context import _COHORT_WORDS
+            return bool((patient_ids.current_prior() or {}).get('patient_id')) and not _COHORT_WORDS.search(self.question or '')
+        except Exception:  # noqa: BLE001 - no conversation
+            return False
 
     def reserved_backstop(self, order):
         """The final LLM backstop runs once before any decline (AGERE_BACKSTOP_SECONDS, default 90; 0 turns this off), when the budget ran out
@@ -635,7 +658,7 @@ class Cascade:
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
         from . import backstop_agent
         with model_policy.escalation():
-            run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger)
+            run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population)
         self.spend(run.get('new_paid_api_calls', 0), run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
         answer = run.get('answer')
         if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial', 'unsupported'):

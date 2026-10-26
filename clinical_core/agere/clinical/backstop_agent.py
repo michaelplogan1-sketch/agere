@@ -10,7 +10,11 @@ human analyst would use and the conversation it belongs to.
                         latest_lab, last_12_months, medicare_member) created on the connection;
       list_documents    a patient's notes, HIE documents and scanned documents (record id, kind, type, date, title, length);
       search_documents  ranked passages of one patient's documents for some words (optionally within dates);
-      read_document     one document's full text.
+      read_document     one document's text, by offset to its end;
+      judge_documents   System One (Jev, then Perplexity) answers ONE atomic typed question per WHOLE document (chunked) and code aggregates
+                        (latest dated label, labels seen): the MGB Clinical System One pattern, the agent as planner;
+      ask_agere         one simple sub-question through the free governed engines (no LLM).
+  * A saved cohort becomes the view cohort(patient_id).
   * Context: the decision-context definitions, the documented semantic model, the conversation's recent turns (questions and answers) and the
     prior turn's patient.
   * Contract: the shared answer contract plus a complete headline (every requested part and fact), `facts`, and `sources` quoting the exact
@@ -24,10 +28,12 @@ import re
 import time
 from pathlib import Path
 
-VERSION = 'backstop-agent/1'
+VERSION = 'backstop-agent/2'  # 2 (2026-10-25 audit): judge_documents (Jev per whole document, MGB CS1), cohort view, per-record quote provenance
 MAX_TOOLS = int(os.environ.get('AGERE_BACKSTOP_TOOLS', '20'))
 DOC_SOURCES = ('clinical_note', 'hie_document', 'scanned_document_text', 'other_text')
 READ_CHARS = 9000
+JUDGE_CHUNK = 1800       # characters per evidence chunk handed to System One (a whole document is several chunks, not one ranked snippet)
+JUDGE_MAX_DOCS = 12
 
 TOOLS = [
     {'name': 'ask_agere', 'description': "Ask Agere's governed engines ONE simple, self-contained sub-question (one measure, one population, one "
@@ -48,20 +54,37 @@ TOOLS = [
      'input_schema': {'type': 'object', 'properties': {'patient_id': {'type': 'string'}, 'terms': {'type': 'string'},
                                                        'date_from': {'type': 'string'}, 'date_to': {'type': 'string'}},
                       'required': ['patient_id', 'terms'], 'additionalProperties': False}},
-    {'name': 'read_document', 'description': 'The full text of one document by record_id (truncated to about 9,000 characters).',
-     'input_schema': {'type': 'object', 'properties': {'record_id': {'type': 'string'}}, 'required': ['record_id'], 'additionalProperties': False}},
+    {'name': 'read_document', 'description': 'The text of one document by record_id, 9,000 characters from offset (default 0); the result says '
+     'the total length, so a long report is read to its end (an IMPRESSION or plan is often last).',
+     'input_schema': {'type': 'object', 'properties': {'record_id': {'type': 'string'}, 'offset': {'type': 'integer'}}, 'required': ['record_id'],
+                      'additionalProperties': False}},
+    {'name': 'judge_documents', 'description': "Ask System One (Jev, then Perplexity; calibrated closed-choice clinical readers) ONE atomic question "
+     "about each listed document, the whole document read: e.g. question 'At this visit, was the patient reported to be using amlodipine?' "
+     "with options {'yes': 'reported as using it', 'no': 'reported as not using it'}. 'unknown' is added. Returns, per document, the label, "
+     "its probability and the passage it rests on, plus the label of the latest dated document and the labels seen. Use it for every yes/no "
+     "or which-of question about what a note, report or letter says, then answer from its labels and quote the passage.",
+     'input_schema': {'type': 'object', 'properties': {'question': {'type': 'string'},
+                                                       'options': {'type': 'object', 'additionalProperties': {'type': 'string'}},
+                                                       'record_ids': {'type': 'array', 'items': {'type': 'string'}}},
+                      'required': ['question', 'options', 'record_ids'], 'additionalProperties': False}},
 ]
 
 RULES = '''You are the final analyst of Agere, a healthcare analytics system over synthetic clinical, claims and document data. Every other layer
 has already declined this question, so it is yours to answer completely and correctly. Work like a careful senior analyst:
 - Plan first: break the question into the simple facts it needs (each measure, population, period and comparison group). Get each number
   from ask_agere first (one simple sub-question per call; its governed definitions are the ones this system is judged by), and use
-  query_sql only for what ask_agere cannot answer or to break its result down further. Use list_documents / search_documents /
-  read_document for anything the notes, discharge summaries, letters, reports or scanned documents say.
+  query_sql only for what ask_agere cannot answer or to break its result down further.
+- Anything a note, discharge summary, letter, report or scanned document says: list_documents for the patient (narrow by date to the visit
+  asked about), then judge_documents with ONE atomic question and its options over the documents in scope (System One reads each whole
+  document), or read_document (to the end of a long report) for a value or a date; answer from what the documents say and quote the
+  exact sentence. The same drug, test or topic in another visit or another document type does not answer the question.
+- When a saved cohort is given (cohort_size in the input), the question is about those patients only: the view `cohort(patient_id)` holds them;
+  join every query to it.
 - A question can rest on a false premise ("why did X jump" when X fell): check the premise with the numbers and say so.
-- Follow the DECISION CONTEXT definitions below exactly (living patients, birth-date age, latest lab unless the question says ever/any,
-  condition evidence via condition_member, rolling 12 months, Medicare includes dual and Medigap, "on" a drug = a picked-up fill in the
-  last 12 months). Prefer the definition views and the governed measures documented below.
+- Follow the DECISION CONTEXT definitions below exactly (living patients for counts and lists of patients, every patient for counts of
+  events, observation stays are hospital stays, birth-date age, latest lab unless the question says ever/any, condition evidence via
+  condition_member, rolling 12 months, Medicare includes dual and Medigap, "on" a drug = a picked-up fill in the last 12 months, the money
+  rules). Prefer the definition views and the governed measures documented below.
 - Answer EVERY part the question asks. For an open question ("who should we prioritize", "where are the gaps", "what drove X", "compare A
   and B") give the specific findings with their numbers: the top and the bottom groups, their sizes, rates or amounts, and the comparison.
 - A question about one patient's notes or documents: find the passage, quote it exactly, and give its record_id and date in sources.
@@ -69,6 +92,8 @@ has already declined this question, so it is yours to answer completely and corr
 - If the data truly does not contain what is asked (no such field, no such document content), say so plainly: status unsupported, with
   what you checked in missing. Never guess; never answer from general medical knowledge.
 - You have at most {max_tools} tool calls; tools return explicit errors or truncation, never treat either as zero.
+- Before the final answer, check completeness: list (in grounding) every part the question asks for (each group, rate, count, amount,
+  date, comparison, direction) and make sure the headline or facts state each one with its number. Fetch what is missing first.
 Return ONLY one JSON object, no markdown:
 {{"status":"answered|partial|unsupported","answer_type":"count|patient_set|value|table|note|unsupported",
 "headline":"one or two sentences that state the complete answer with every requested fact and number",
@@ -100,16 +125,20 @@ def conversation_turns(stack, limit=4):
 class Tools:
     """The tool executor: SQL over the semantic warehouse (definition views), documents over the same database (read-only)."""
 
-    def __init__(self, stack, semantic, as_of):
+    def __init__(self, stack, semantic, as_of, *, cohort=None, ledger=None):
         from . import note_evidence
         self.semantic, self.as_of, self.NE = semantic, str(as_of)[:10], note_evidence
         self.db, self.stack, self.governed, self.seen = note_evidence.connect(stack), stack, [], []
-        self.read = {}
+        self.read, self.rows_by_record, self.judged, self.ledger = {}, {}, [], ledger
+        self.cohort = list(dict.fromkeys(cohort or [])) or None
+        if self.cohort and semantic is not None: define_cohort(semantic, self.cohort)
 
     def __call__(self, use):
         try:
             out = self._call(use)
-            self.seen.append(json.dumps(out, default=str))  # what the tools showed the model: a quote of a returned row is verified against it
+            self.seen.append(json.dumps(out, default=str))
+            for row in rows_with_record(out):  # a returned row that names its record: a quote of it is verified against that row only
+                self.rows_by_record.setdefault(str(row['record_id']), []).append(json.dumps(row, default=str))
             return out
         except TypeError as exc:  # a malformed call (unknown argument): a tool error the model can correct, not the end of the loop
             raise ValueError(f'bad arguments for {use.get("name")}: {exc}') from exc
@@ -123,6 +152,7 @@ class Tools:
         if name == 'list_documents': return self.list_documents(**args)
         if name == 'search_documents': return self.search_documents(**args)
         if name == 'read_document': return self.read_document(**args)
+        if name == 'judge_documents': return self.judge_documents(**args)
         raise ValueError(f'unknown tool {name}')
 
     def ask_agere(self, question):
@@ -186,7 +216,38 @@ class Tools:
                         break
         return {'patient_id': patient_id, 'terms': terms, 'passages': out[:15], 'total': len(out), 'truncated': len(out) > 15}
 
-    def read_document(self, record_id):
+    def judge_documents(self, question, options, record_ids):
+        """MGB CS1 pattern: the planner (this agent) states one atomic typed question; System One answers it per document over the WHOLE
+        document (chunked); code aggregates (latest dated label, labels seen). -> {'documents': [...], 'latest', 'labels'}."""
+        from . import system_one
+        if not isinstance(options, dict) or not options: raise ValueError('options must be a non-empty {label: meaning} object')
+        out = []
+        for rid in list(dict.fromkeys(record_ids or []))[:JUDGE_MAX_DOCS]:
+            doc = self._doc(rid)
+            text = doc.get('text') or ''
+            chunks = [text[i:i + JUDGE_CHUNK] for i in range(0, max(len(text), 1), JUDGE_CHUNK - 200)] or ['']
+            evidence = [{'id': f'{rid}#{k}', 'record_id': rid, 'text': c, 'date': (doc.get('date') or self.as_of)[:10]} for k, c in enumerate(chunks)]
+            r = system_one.decide(question, options, evidence, as_of=self.as_of, task_key='agere_chart_judgment', ledger=self.ledger,
+                                  allow_live=bool(getattr(self.stack, 'allow_live', False)))
+            used = [e['text'] for e in evidence if e['id'] in set(r.get('evidence_ids') or [])] or [chunks[0]]
+            label = r.get('label') or 'unknown'
+            p = (r.get('calibrated_probabilities') or r.get('probabilities') or {}).get(label)
+            out.append({'record_id': rid, 'date': (doc.get('date') or '')[:10], 'type': doc.get('type'), 'label': label,
+                        'probability': round(p, 3) if isinstance(p, (int, float)) else None, 'decided_by': r.get('decided_by') or r.get('provider'),
+                        'passage': used[0][:JUDGE_CHUNK]})
+        self.judged += out
+        known = sorted((d for d in out if d['label'] != 'unknown'), key=lambda d: d['date'] or '')
+        return {'question': question, 'documents': out, 'latest': known[-1] if known else None,
+                'labels': sorted({d['label'] for d in known}), 'unknown_documents': sum(d['label'] == 'unknown' for d in out)}
+
+    def _doc(self, record_id):
+        doc = self.read.get(record_id)
+        if doc is None:
+            self.read_document(record_id)
+            doc = self.read.get(record_id) or {}
+        return doc
+
+    def read_document(self, record_id, offset=0):
         doc = self.read.get(record_id)
         if doc is None:
             for table, col in (('record', "json_extract(payload,'$.text')"), ('scanned_document_text', 'text')):
@@ -198,16 +259,43 @@ class Tools:
                     doc = {'patient_id': row['patient_id'], 'text': row['t']}
                     break
         if doc is None: raise ValueError(f'no document {record_id}')
-        text = doc.get('text') or ''
+        self.read.setdefault(record_id, doc)
+        text, offset = doc.get('text') or '', max(0, int(offset or 0))
         return {'record_id': record_id, **{k: doc.get(k) for k in ('patient_id', 'source', 'type', 'date', 'title')},
-                'text': text[:READ_CHARS], 'truncated': len(text) > READ_CHARS}
+                'offset': offset, 'text': text[offset:offset + READ_CHARS], 'total_characters': len(text),
+                'truncated': offset + READ_CHARS < len(text)}
+
+
+def rows_with_record(out):
+    """The result rows of a tool output that carry a record_id (SQL rows as column lists or dicts; ask_agere tables)."""
+    if not isinstance(out, dict): return []
+    found = []
+    cols, rows = out.get('columns'), out.get('rows')
+    if isinstance(cols, list) and 'record_id' in cols and isinstance(rows, list):
+        found += [dict(zip(cols, r)) for r in rows if isinstance(r, (list, tuple))]
+    for r in (rows if isinstance(rows, list) else []) + (out.get('table') if isinstance(out.get('table'), list) else []):
+        if isinstance(r, dict) and r.get('record_id'): found.append(r)
+    return found
+
+
+def define_cohort(semantic, ids):
+    """A TEMP VIEW cohort(patient_id) of the saved population on the warehouse connection (read-only otherwise)."""
+    db = semantic.db
+    db.set_authorizer(None)
+    db.execute('PRAGMA query_only=OFF')
+    try:
+        db.execute('DROP VIEW IF EXISTS temp.cohort')
+        db.execute("CREATE TEMP VIEW cohort AS SELECT value AS patient_id FROM json_each(" + "'" + json.dumps(ids).replace("'", "''") + "')")
+    finally:
+        db.execute('PRAGMA query_only=ON')
+        db.set_authorizer(semantic._authorize)
 
 
 def verified_sources(answer, tools):
-    """Keep only cited passages that really are in the cited document (the quote is an exact substring, whitespace-folded); a fabricated quote
-    is dropped and noted. -> (sources, dropped count)."""
-    fold = lambda s: re.sub(r'\s+', ' ', re.sub(r'[\\"]', '', str(s or ''))).strip().lower()
-    shown = fold(' '.join(getattr(tools, 'seen', None) or []).replace('\\n', ' '))
+    """Keep only cited passages that really are in the CITED record: its document text, or a returned row of that same record (never another
+    record's output: audit 2026-10-25). A near-verbatim quote is healed to the document's own words; a fabricated one is dropped and noted.
+    -> (sources, dropped count)."""
+    fold = lambda s: re.sub(r'\s+', ' ', re.sub(r'[\\"]', '', str(s or '').replace('\\n', ' '))).strip().lower()
     kept, dropped = [], 0
     for s in answer.get('sources') or []:
         if not isinstance(s, dict) or not s.get('record_id') or not s.get('quote'): dropped += 1; continue
@@ -223,7 +311,8 @@ def verified_sources(answer, tools):
                 text = tools.read_document(s['record_id'])['text']
             except ValueError:
                 text = ''
-        if fold(s['quote']) and (fold(s['quote']) in fold(text) or fold(s['quote']) in shown):
+        own_rows = fold(' '.join((getattr(tools, 'rows_by_record', None) or {}).get(str(s['record_id']), [])))
+        if fold(s['quote']) and (fold(s['quote']) in fold(text) or fold(s['quote']) in own_rows):
             kept.append({k: s.get(k) for k in ('record_id', 'date', 'source', 'quote')})
             continue
         span = snap(s['quote'], text)  # heal: a near-verbatim quote (ellipsis, re-spacing, a dropped word) becomes the document's own words
@@ -282,29 +371,6 @@ def as_tool_calls(send):
     return wrapped
 
 
-STOP = frozenset('that this with from were have been which their there about after before when what into than then them they also only more '
-                 'some such will would could should does done patient note notes documented record chart visit date said says'.split())
-
-
-def supporting_passage(tools, patient_id, headline):
-    """-> a source {record_id, date, source, quote, found_by} for the sentence of the patient's own documents that shares the most content words
-    with the answer's headline (at least two), or None. Used only when a one-patient answer cites nothing: the answer then carries the passage
-    that supports it, found by search and labelled so."""
-    want = {w for w in re.findall(r'[a-z0-9]{4,}', str(headline or '').lower()) if w not in STOP and not w.startswith('syn')}
-    if len(want) < 2: return None
-    best = (1, None)
-    try:
-        rows = tools._texts(patient_id)
-    except Exception:  # noqa: BLE001 - no documents
-        return None
-    for rid, src, stream, kind, date, text, title in rows:
-        for sent in re.split(r'(?<=[.;\n])\s+', text or ''):
-            got = len(want & set(re.findall(r'[a-z0-9]{4,}', sent.lower())))
-            if got > best[0] and len(sent) <= 600:
-                best = (got, {'record_id': rid, 'date': (date or '')[:10], 'source': src, 'quote': sent.strip(), 'found_by': 'supporting search'})
-    return best[1]
-
-
 def shaped(a):
     """The agent's JSON in the product's answer shape: a {columns, rows} table becomes row dicts; empty value / count / table / patient_ids are
     left out (a null value reads downstream as "the value is absent" and would replace a headline that states the numbers); an answer whose
@@ -320,12 +386,12 @@ def shaped(a):
     return a
 
 
-def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
+def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, population=None):
     """-> {'answer': answer contract or None, 'tool_calls', 'model', 'estimated_cost_usd', 'new_paid_api_calls', 'error', 'seconds'}."""
     if ledger is None and send is None:  # a direct caller: charge the product ledger of a live stack
         from . import spec_exec
         with spec_exec.ledger_for(stack) as own:
-            if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of)
+            if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of, population=population)
     from . import semantic_analyst, together, analyst_definitions, decision_context, requirement_ledger
     from .legacy_proposers import _semantic_path, _send
     from .. import model_policy
@@ -340,9 +406,12 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
     system = [{'type': 'text', 'text': rules}, {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     from . import patient_ids
     prior = patient_ids.current_prior() or {}
-    user = json.dumps({'question': question, 'as_of': str(as_of)[:10], 'conversation_so_far': conversation_turns(stack),
-                       'prior_patient': prior.get('patient_id')}, default=str)
-    tools = Tools(stack, wh, as_of)
+    from .evidence_proposers import population_ids
+    cohort = population_ids(population) if population is not None else None
+    payload = {'question': question, 'as_of': str(as_of)[:10], 'conversation_so_far': conversation_turns(stack), 'prior_patient': prior.get('patient_id')}
+    if cohort: payload['cohort_size'] = len(cohort)
+    user = json.dumps(payload, default=str)
+    tools = Tools(stack, wh, as_of, cohort=cohort, ledger=ledger)
     receipts = []
     model = model or model_policy.claude_model(model_policy.SONNET, track=True)
     run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=as_tool_calls(send or _send(stack, ledger, receipts)), model=model,
@@ -354,12 +423,12 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None):
     if a is not None:
         a = shaped(dict(a))
         kept, dropped = verified_sources(a, tools)
-        pid = (a.get('patient_ids') or [None])[0] or next((m.group() for m in requirement_ledger.PATIENT_ID.finditer(question)), None) \
-            or prior.get('patient_id')
-        if not kept and pid and a.get('status') in ('answered', 'partial'):
-            found = supporting_passage(tools, pid, a.get('headline'))
-            if found: kept = [found]
+        if not kept and tools.judged and a.get('status') in ('answered', 'partial'):  # the passage System One's label rests on supports it
+            latest = sorted((d for d in tools.judged if d['label'] != 'unknown'), key=lambda d: d['date'] or '')
+            if latest: kept = [{'record_id': latest[-1]['record_id'], 'date': latest[-1]['date'], 'source': latest[-1]['type'],
+                                'quote': latest[-1]['passage'], 'found_by': 'System One judgment'}]
         a['sources'] = kept
+        if tools.judged: a['system_one_judgments'] = [{k: d[k] for k in ('record_id', 'date', 'label', 'probability', 'decided_by')} for d in tools.judged]
         notes = list(a.get('limitations') or [])
         if dropped: notes.append(f'{dropped} cited passage(s) were not found verbatim in their documents and were removed.')
         # the quotes travel in the visible text too ("RECORD_ID date: "quote""), so a reader sees the evidence with the answer
