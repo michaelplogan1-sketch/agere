@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-26T21:11:36.231539+00:00",
+  "updated_at": "2026-10-26T21:19:04.514954+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,28 +359,31 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_verified_automatic_workflow_candidate",
+    "kind": "offline_components_verified_live_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "General population whole-document review, existing governed dose/definition tools, complete native result binding and downstream deliverable handoff are wired through the existing investigator. Fixed-weight recursive execution candidate/validation/replay/retirement is opt-in.",
-    "measured_failure_reduction": "Connected authored non-HF workflow reaches a saved artifact; all 2505 native rows survive a large-result check; guarded RSI replay executes native tools with zero actor sends versus three in its scripted baseline. 281 checks pass and one optional live check skips with zero provider sends.",
+    "user_behavior_delta": "Shared investigator executes existing typed mathematical engines with exact population/snapshot and complete SQL/final-table binding. Opt-in automatic component learning consumes only new explicit supervision and connects comparison, candidate/release, runtime, correction, revision and rollback.",
+    "measured_failure_reduction": "451 checks pass, four optional/data-dependent skips, zero provider calls/blocked attempts. Actual received scope4115: trajectory output50->144 without a default top cap; queueing168 rows. Real MiniLM/UltraBERT/classical comparison and six pinned-encoder runtime decisions; automatic feedback-to-revision lifecycle verified. Stale-index guard and nested result-preview duplication repaired.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
       "artifacts/agere-execution-repair-2026-10-26/engineering-receipt.json",
       "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json",
-      "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json"
+      "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json",
+      "artifacts/agere-components-learning-2026-10-26/verification.json",
+      "artifacts/agere-components-learning-2026-10-26/received-verification.json"
     ],
-    "remaining_gap": "Complete received-source automatic clinical answer and deliverable, browser inspection, physician acceptability and total-cost RSI baseline/reuse qualification after Claude subscription availability.",
-    "next_action": "After Claude subscription availability, run the prepared ordinary request on the frozen isolated runtime using the retained attempt1 ledger and a new attempt2 receipt directory. Finish every analytical requirement and artifact; inspect the saved browser result and obtain physician judgment. Then repeat into a new attempt3 directory to qualify RSI native reuse and complete-request costs. No automatic retry, protected evaluations or external Anthropic API key.",
-    "next": "After Claude subscription availability, run the prepared ordinary request on the frozen isolated runtime using the retained attempt1 ledger and a new attempt2 receipt directory. Finish every analytical requirement and artifact; inspect the saved browser result and obtain physician judgment. Then repeat into a new attempt3 directory to qualify RSI native reuse and complete-request costs. No automatic retry, protected evaluations or external Anthropic API key.",
+    "remaining_gap": "Received-source automatic clinical answer/dose/deliverable and browser/physician acceptance remain pending subscription availability. Total-cost RSI qualification and broader model/clinical qualification remain open; automatic SLM adapter training needs reviewed task targets and replacement of legacy exact-key evaluation.",
+    "next_action": "After Claude subscription availability, execute the frozen ordinary request using artifacts/agere-components-learning-2026-10-26/resume-after-reset.txt, retained attempt1 ledger, new attempt2 output, RSI and candidate-only component learning. Complete full note review, dose/answer/artifact, inspect saved browser workflow and obtain physician acceptability. Then measure total-cost baseline/reuse with failed/validation/training/review costs. Stop on any subscription limit; no fallback/retry. Preserve full ten-area scope and local SLM qualification gap.",
+    "next": "After Claude subscription availability, execute the frozen ordinary request using artifacts/agere-components-learning-2026-10-26/resume-after-reset.txt, retained attempt1 ledger, new attempt2 output, RSI and candidate-only component learning. Complete full note review, dose/answer/artifact, inspect saved browser workflow and obtain physician acceptability. Then measure total-cost baseline/reuse with failed/validation/training/review costs. Stop on any subscription limit; no fallback/retry. Preserve full ten-area scope and local SLM qualification gap.",
     "latest_review": {
-      "at": "2026-10-26T21:11:36.231539+00:00",
-      "kind": "Frozen-source offline engineering verification; live workflow and clinical qualification pending",
+      "at": "2026-10-26T22:25:35.703297+00:00",
+      "kind": "Frozen source offline engineering verification; no clinical/default activation",
       "evidence": [
-        "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json",
-        "artifacts/agere-auto-workflow-2026-10-26/offline/tests.json",
-        "artifacts/agere-auto-workflow-2026-10-26/offline/resume-preflight.json"
+        "artifacts/agere-components-learning-2026-10-26/verification.json",
+        "artifacts/agere-components-learning-2026-10-26/tests.json",
+        "artifacts/agere-components-learning-2026-10-26/received-verification.json",
+        "artifacts/agere-components-learning-2026-10-26/resume-preflight.json"
       ]
     },
     "coordination": {
@@ -450,10 +453,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-26T17:20:24.126673+00:00",
-      "kind": "Explicit physician-requested complete HF service workflow in progress",
-      "receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
-      "ordinary_route_failure": true
+      "at": "2026-10-26T22:25:35.703297+00:00",
+      "kind": "Existing engine tools and automatic opt-in component learning verified offline",
+      "receipt": "artifacts/agere-components-learning-2026-10-26/verification.json",
+      "clinical_qualification": false
     }
   },
   "decisions": [
@@ -1379,6 +1382,19 @@
       "basis": "Mike explicitly authorized coding/offline testing without Claude. 281 passing checks, one optional live skip; zero provider sends; source fingerprint unchanged.",
       "scope_impact": "G3 and full ten-area scope remain open. RSI default off; no main/default runtime promotion or clinical/cost-savings claim.",
       "evidence": "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json"
+    },
+    {
+      "at": "2026-10-26T21:19:04.514954+00:00",
+      "decision": "Continue broad existing-component and recursive learning integration offline.",
+      "basis": "Mike explicitly requested existing mathematical components and full recursive learning loop; source inspection found missing investigator engine tools and prohibited legacy defaults in self_improve.",
+      "scope_impact": "Existing architecture and all ten areas retained; no providers or default runtime/model promotion. Source candidate fd9bfeb remains recoverable."
+    },
+    {
+      "at": "2026-10-26T22:25:35.703297+00:00",
+      "decision": "Freeze existing mathematical-engine and automatic component-learning integration as an offline-verified candidate; retain G3 active.",
+      "basis": "Mike explicitly authorized all offline coding/testing without Claude. 451 passing checks and four optional/data skips; real local encoder and all-received mathematical execution with zero provider calls. Default trajectory output cap and stale-index/preview regressions removed.",
+      "scope_impact": "Full ten-area charter, assisted acceptance and interrupted live ledger preserved. No default release, provider call, protected evaluation, clinical or cost-superiority claim. Local SLM training/evaluation gap remains explicit.",
+      "evidence": "artifacts/agere-components-learning-2026-10-26/verification.json"
     }
   ]
 }

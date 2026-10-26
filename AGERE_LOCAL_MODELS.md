@@ -1,6 +1,6 @@
 # Agere: local models and mathematical components running together
 
-Historical October 8 milestone. For current status, read
+Historical October 8 milestone, with the October 26 opt-in component-learning integration described in `docs/agere/COMPONENT_LEARNING_INTEGRATION_2026-10-26.md`. For current status, read
 `AGERE_STACK_RECONCILIATION.md`. Later receipts supersede this document's statements
 that task heads, OCR and tensor experiments had not yet been implemented. Those
 earlier experiments are not all connected to the current warehouse question path.
@@ -20,7 +20,7 @@ labels and autonomous execution remain separate, unfinished work.
 | Agere finite joint observation prototype | Learned distribution over simulator therapy, outside-channel and documentation states given observed evidence features | An experimental generative classifier, not a validated clinical latent-state model or new mathematical theorem |
 | CUSUM and EWMA | Monitor monthly volumes of visible notes, pharmacy and lab records | Alerts do not distinguish cause or establish worsening care |
 | Existing conditional kernel, source ledger and dependency cache | Preserve premises, source lineage, time and unknown states while reusing valid work | Extracted proposals do not become accepted clinical facts because a model agrees |
-| UltraBERT-Embed-150M (second pinned encoder, `local_encoders.PinnedSentenceEncoder`) | Only two jobs: dense re-ranking of the raw received catalog in `answer_guard` (probe + the SQL writer's raw-catalog slice; lexical first stage, RRF k=60 fusion, catalog embedded once per source digest) and a thresholded fallback for lab/condition labels that code and alias matching leave unresolved (`concepts.match_label`) | Not the stack encoder, learned router, semantic cache or dense index (all unchanged); cosine is not a mapping probability, so below-threshold proposals are reported, never bound |
+| UltraBERT-Embed-150M (second pinned encoder, `local_encoders.PinnedSentenceEncoder`) | Two existing default jobs: dense re-ranking of the raw received catalog in `answer_guard` (probe + the SQL writer's raw-catalog slice; lexical first stage, RRF k=60 fusion, catalog embedded once per source digest) and a thresholded fallback for lab/condition labels that code and alias matching leave unresolved (`concepts.match_label`) | Default stack encoder, router, semantic cache and dense index remain unchanged. The October 26 candidate additionally supports this pinned encoder in explicitly qualified routing/shape heads; no default release. Cosine is not a mapping probability, so below-threshold proposals are reported, never bound |
 
 The installed model manifests pin repository revisions, file sizes and SHA-256
 digests. Inference verifies model bytes, uses local files only, disables remote

@@ -1,0 +1,23 @@
+{
+  "schema": "component-learning-plan/1",
+  "jobs": [
+    {
+      "role": "router",
+      "partition": {"salt": "agere-new-routing-families-v1", "fit": 0.6, "calibration": 0.2, "verification": 0.2},
+      "include_machine": false,
+      "install": false
+    },
+    {
+      "role": "tier_router",
+      "partition": {"salt": "agere-new-tier-families-v1", "fit": 0.6, "calibration": 0.2, "verification": 0.2},
+      "include_machine": true,
+      "install": false
+    },
+    {
+      "role": "shape",
+      "partition": {"salt": "agere-new-shape-families-v1", "fit": 0.6, "calibration": 0.2, "verification": 0.2},
+      "include_machine": false,
+      "install": false
+    }
+  ]
+}

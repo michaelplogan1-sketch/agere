@@ -17,7 +17,8 @@ ROOT=Path(__file__).resolve().parent
 
 def source_fingerprint():
     h=hashlib.sha256()
-    for path in sorted([*ROOT.joinpath('clinical_core').rglob('*.py'),Path(__file__)]):
+    for path in sorted([*ROOT.joinpath('clinical_core').rglob('*.py'),*ROOT.joinpath('tools/training').rglob('*.py'),
+                        ROOT/'config/agere/learning/offline-candidates.json',Path(__file__)]):
         h.update(str(path.relative_to(ROOT)).encode());h.update(b'\0');h.update(path.read_bytes());h.update(b'\0')
     return h.hexdigest()
 
@@ -37,6 +38,9 @@ def parser():
     p.add_argument('--expect-source',help='Required with --execute; fingerprint printed by offline preflight')
     p.add_argument('--execute',action='store_true')
     p.add_argument('--rsi',action='store_true',help='Opt into candidate RSI qualification; default off')
+    p.add_argument('--component-learning',action='store_true',help='Collect new isolated learning observations without legacy stores')
+    p.add_argument('--component-release-root',type=Path,help='Explicit isolated component release registry; defaults to this runtime/component-learning when enabled')
+    p.add_argument('--learning-plan',type=Path,help='Explicit offline component-learning-plan/1; no automatic provider use')
     return p
 
 
@@ -45,12 +49,22 @@ def run(a):
     if not isinstance(request,dict) or not isinstance(request.get('question'),str) or not request['question'].strip():
         raise ValueError('Request must be an ordinary compose body with a nonempty question')
     if not (a.runtime/'semantic.sqlite3').is_file():raise ValueError('Received-source runtime semantic warehouse missing')
+    learning_plan=getattr(a,'learning_plan',None)
+    if learning_plan is not None:
+        if not getattr(a,'component_learning',False):raise ValueError('--learning-plan requires --component-learning')
+        plan=json.loads(learning_plan.read_text())
+        if plan.get('schema')!='component-learning-plan/1' or not isinstance(plan.get('jobs'),list):raise ValueError('Explicit component-learning-plan/1 required')
     fingerprint=source_fingerprint()
     if a.expect_source and a.expect_source!=fingerprint:raise ValueError('Source changed after offline verification; freeze and verify again')
     before=ledger_status(a.ledger)
+    release_root=getattr(a,'component_release_root',None) or (a.runtime/'component-learning' if getattr(a,'component_learning',False) else None)
     preflight={'schema':'automatic-workflow-run/1','status':'offline_preflight','source_fingerprint':fingerprint,
                'runtime':str(a.runtime.resolve()),'retained_cache_ledger':str(a.ledger.resolve()),'ledger_before':before,
                'provider_calls':0,'transport':'subscription','rsi':'candidate_on' if a.rsi else 'off',
+               'component_learning':bool(getattr(a,'component_learning',False)),
+               'component_release_root':str(release_root.resolve()) if release_root is not None else None,
+               'learning_plan':str(a.learning_plan.resolve()) if getattr(a,'learning_plan',None) is not None else None,
+               'learning_plan_sha256':hashlib.sha256(learning_plan.read_bytes()).hexdigest() if learning_plan is not None else None,
                'reuse':'Exact validated request matches only; changed prompts/source requirements must be recomputed'}
     if not a.execute:return preflight
     if not a.expect_source:raise ValueError('--execute requires the verified --expect-source fingerprint')
@@ -59,11 +73,16 @@ def run(a):
     (a.output/'preflight.json').write_text(json.dumps(preflight,indent=2)+'\n')
     # Set transport before key loading and sender imports. No external Claude
     # API fallback, scheduler, retry loop or automatic limit reset is installed.
-    for k,v in {'AGERE_CLAUDE_TRANSPORT':'subscription','AGERE_EVALUATION':'0','AGERE_LEARNED':'off',
+    for k,v in {'AGERE_CLAUDE':'on','AGERE_CLAUDE_TRANSPORT':'subscription','AGERE_EVALUATION':'0','AGERE_LEARNED':'off',
                 'AGERE_LOCAL_TYPED':'off','AGERE_LOCAL_NORMALIZER':'off','AGERE_LOCAL_QWEN':'off','AGERE_LOCAL_MODEL':'off',
                 'AGERE_LOCAL_SQL':'off','AGERE_BOTTLED':'off','AGERE_RECURSIVE_IMPROVEMENT':'on' if a.rsi else 'off',
+                'AGERE_COMPONENT_LEARNING':'on' if getattr(a,'component_learning',False) else 'off',
                 'AGERE_LEDGER_PATH':str(a.ledger.resolve()),'AGERE_EXECUTION_TRACE':str(a.output.resolve()/'components.jsonl'),
                 'AGERE_EXECUTION_SQL_TRACE':'on','AGERE_TRAINING_DIR':str(a.output.resolve()/'own-traffic')}.items():os.environ[k]=v
+    if release_root is not None:os.environ['AGERE_COMPONENT_RELEASE_ROOT']=str(release_root.resolve())
+    else:os.environ.pop('AGERE_COMPONENT_RELEASE_ROOT',None)
+    if getattr(a,'learning_plan',None) is not None:os.environ['AGERE_COMPONENT_LEARNING_PLAN']=str(a.learning_plan.resolve())
+    else:os.environ.pop('AGERE_COMPONENT_LEARNING_PLAN',None)
     started=time.monotonic();stack=None
     try:
         from run_integrated_stack import keys

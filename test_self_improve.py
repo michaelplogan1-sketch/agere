@@ -149,29 +149,12 @@ class TierRouter(unittest.TestCase):
 
 
 class Loop(unittest.TestCase):
-    def test_one_job_harvests_builds_retrains_and_promotes(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp) / 'training'
-            stackp = fixture(Path(tmp) / 'stack')
-            with mock.patch.dict(os.environ, {'AGERE_TRAINING_DIR': str(root)}):
-                hooks = Path(tmp) / 'live'; hooks.mkdir()
-                st = SimpleNamespace(path=hooks, allow_live=False)
-                (hooks / 'run.json').write_text(json.dumps({'source_digest': 'fixture', 'snapshot': {'as_of': '2030-05-27'}}))
-                for i in range(3):
-                    H.after_answer(st, f'How many members are on file number {i}?', cascade_result('typed_decider'))
-            seen = {}
-
-            def train(ds, out, stack, smoke, learners, allow_mlx, install, seed_stores):
-                seen.update(ds=ds, learners=learners, allow_mlx=allow_mlx)
-                return {'results': {'tier_router': {'decision': 'promoted'}, 'router': {'decision': 'not_promoted'}}}
-            with mock.patch.object(D, 'Bench', lambda questions=None: _Bench([])):
-                r1 = SI.run(root=root, stack=stackp, min_new=5, train=train, loop=False)
-                self.assertEqual(r1['steps']['harvest']['verified_rows'], 3); self.assertEqual(r1['steps']['harvest']['router_outcomes'], 3)
-                self.assertTrue(r1['steps']['due']['due']); self.assertEqual(r1['steps']['promoted'], ['tier_router'])
-                self.assertTrue((Path(seen['ds']) / 'tier_router' / 'manifest.json').exists())
-                self.assertFalse(seen['allow_mlx'])
-                r2 = SI.run(root=root, stack=stackp, min_new=5, train=train, loop=False)  # nothing new since: not due
-                self.assertFalse(r2['steps']['due']['due']); self.assertNotIn('retrain', r2['steps'])
+    def test_job_requires_explicit_approved_inputs_without_discovering_legacy_stores(self):
+        with mock.patch.object(D, 'build', side_effect=AssertionError('No default legacy dataset discovery')):
+            result=SI.run()
+        self.assertEqual(result['status'],'requires_approved_manifest')
+        self.assertEqual(result['provider_calls'],0)
+        # Full fitting/release/correction/rollback is connected in test_component_learning.
 
 
 class ActiveWarehouseHard(unittest.TestCase):

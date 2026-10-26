@@ -268,7 +268,7 @@ def successful_sql_calls(calls):
 def actor_result(value):
     """A model preview, while native receipts and SQL result views retain ALL rows."""
     if not isinstance(value,dict):return value
-    shown={k:v for k,v in value.items() if k not in ('executed_query','elapsed_s')}
+    shown={k:v for k,v in value.items() if k not in ('executed_query','elapsed_s','engine_result')}
     if value.get('executed_query'):
         from ...contracts import digest
         shown['executed_query_digest']=digest(value['executed_query'])
@@ -281,6 +281,13 @@ def actor_result(value):
         shown.update(rows=preview,rows_computed=len(rows),preview_only=True,
                      complete_result_available_in=shown.get('result_view'),
                      instruction='The native receipt and result_view retain every row. Query the view for details/aggregates; use table_from_tool to copy a complete final result.')
+        # Engine answers repeat their complete tables and memberships. Keep those
+        # in native receipts, rather than defeating the preview with nested copies.
+        if isinstance(shown.get('answer'),dict):
+            nested=shown['answer'];shown['answer']={k:v for k,v in nested.items() if k not in ('table','patient_ids','unknown_patient_ids')}
+            if isinstance(nested.get('table'),list):shown['answer']['table_rows_computed']=len(nested['table'])
+        for key in ('input_patient_ids','patient_ids','unknown_patient_ids'):
+            if isinstance(shown.get(key),list):shown[key+'_count']=len(shown.pop(key))
         if isinstance(shown.get('coverage'),list):
             coverage=shown.pop('coverage')
             shown['coverage_summary']={'patients':len(coverage),'received_documents':sum(x.get('received_documents',0) for x in coverage),

@@ -884,9 +884,13 @@ def validate(plan, as_of):
             assert_sealed(p['contract'])
             if not p['contract'].get('membership_query'): raise ValueError('Request has no patient membership')
         elif op == 'cohort':
-            if inputs or set(p) != {'specification'}:
+            if inputs or set(p)-{'patient_ids'} != {'specification'}:
                 raise ValueError('Cohort node needs its explicit specification')
-            p = {'specification': cohorts.validate(p['specification'], as_of)}
+            ids=p.get('patient_ids')
+            if 'patient_ids' in p and (not isinstance(ids,list) or any(not isinstance(x,str) or not x for x in ids)):
+                raise ValueError('Explicit received patient IDs required')
+            p = {'specification': cohorts.validate(p['specification'], as_of),
+                 **({'patient_ids':list(dict.fromkeys(ids))} if 'patient_ids' in p else {})}
         elif op == 'aggregate':
             from . import aggregate
             p = aggregate.validate(p)
@@ -1445,9 +1449,12 @@ def execute(stack, plan, *, question=None):
             # patients are living patients: the universe every membership is drawn from excludes the deceased (decision_context)
             with sqlite3.connect(f"file:{path / 'semantic.sqlite3'}?mode=ro", uri=True) as semantic_db:
                 universe = decision_context.living_universe(semantic_db, roster)
-        evidence_db, evidence_meta = evidence_connection(path, meta)
-        # Validate every narrative vocabulary before running any graph node.
-        observed = catalog(path)
+        # Structured mathematics must not require an unrelated narrative index.
+        # Narrative/longitudinal/forecast nodes retain their original validation.
+        needs_catalog=any(n['operation'] in ('evidence','sequence','longitudinal','forecast') for n in plan['nodes'])
+        evidence_meta={'model_identity':None}
+        if needs_catalog or (path/'annotation-link.json').is_file():evidence_db,evidence_meta=evidence_connection(path,meta)
+        observed=catalog(path) if needs_catalog else {'evidence_concepts':[]}
         concepts = {(r['source'], r['concept']) for r in observed['evidence_concepts']}
         for node in plan['nodes']:
             if node['operation'] == 'query_population':
@@ -1635,7 +1642,7 @@ def execute(stack, plan, *, question=None):
                 detail['request_id'] = c['id']
             elif op == 'cohort':
                 try:
-                    selected = cohorts.select(path, params['specification'])
+                    selected = cohorts.select(path, params['specification'],patient_ids=params.get('patient_ids'))
                 except grounding.GroundingError as exc:
                     # The data cannot support this predicate: report it, don't
                     # convert a binding failure into patient-level unknowns.

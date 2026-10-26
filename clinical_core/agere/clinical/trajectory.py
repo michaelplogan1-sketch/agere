@@ -39,7 +39,9 @@ def validate(p):
     if direction not in ('worse', 'better', 'up', 'down', 'any'): raise ValueError('direction: worse, better, up, down or any')
     mp = p.get('min_points', 3)
     if type(mp) is not int or not 3 <= mp <= 50: raise ValueError('min_points 3..50')
-    out = {'concept': p['concept'], 'direction': direction, 'min_points': mp, 'top': p.get('top', 50)}
+    top=p.get('top')
+    if top is not None and (type(top) is not int or top<1):raise ValueError('top must be a positive explicit limit or null for all results')
+    out = {'concept': p['concept'], 'direction': direction, 'min_points': mp, 'top': top}
     if 'threshold' in p: out.update(threshold=float(p['threshold']), horizon_days=p.get('horizon_days', 365))
     return out
 

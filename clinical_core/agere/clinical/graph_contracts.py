@@ -149,7 +149,7 @@ def parameter_schema(op, catalog):
     if op == 'trajectory':
         from . import trajectory
         return obj({'concept': string(trajectory.NOISE), 'direction': string(['worse', 'better', 'up', 'down', 'any']),
-                    'min_points': {'type': 'integer', 'minimum': 3, 'maximum': 50}, 'top': {'type': 'integer', 'minimum': 1, 'maximum': 200}})
+                    'min_points': {'type': 'integer', 'minimum': 3, 'maximum': 50}, 'top': {'type': ['integer','null'], 'minimum': 1,'description':'Explicit presentation limit; null returns all flagged patients'}})
     if op == 'survival':
         from . import survival, concepts as library
         return obj({'index': obj({'type': string(survival.INDEX_TYPES, 'Time zero: discharge (each stay with a received discharge), '
@@ -561,7 +561,9 @@ def parameter_schema(op, catalog):
             measurement['properties']['concept']=string(concept_library.MEASUREMENTS)
             if streams:record['properties']['stream']=string(streams)
             else:prop['items']={'anyOf':[patient,concept,measurement]}
-        return obj({'specification':spec})
+        result=obj({'specification':spec,'patient_ids':array(string(), 'Optional exact received membership; [] remains empty')})
+        result['required']=['specification']
+        return result
     if op == 'evidence':
         from .evidence_queries import FIELDS
         props={'source':string(['text','structured']), 'concept':{'type':'string','minLength':1,'maxLength':120},

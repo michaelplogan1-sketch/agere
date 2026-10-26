@@ -1064,7 +1064,7 @@ def handle_compose(stack, body, hosted_factory=None):
             probe.mark('compose')
             answer_log.record(stack.path, logged, result=logged_failure,
                               error=f'{type(exc).__name__}: {exc}', seconds=time.time() - t0, question_id=probe.question_id)
-            learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
+            if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on':learning.record_outcome(stack.path, logged, 'shared_planner' if getattr(stack, 'shared_request_planning', False) else failure(exc)['status'],
                                     failed['status'], str(exc),
                                     usage.get('new_paid_api_calls', 0)+hosted_calls,
                                     None if usage.get('api_cost_known') is False else usage.get('known_api_estimate_usd', 0)+hosted_usd)
@@ -1139,11 +1139,11 @@ def handle_compose(stack, body, hosted_factory=None):
     outcome_cost = economics.get('new_api_estimate_usd', economics.get('known_api_estimate_usd'))
     if not result.get('new_paid_api_calls') and outcome_cost is None:
         outcome_cost = 0
-    learning.record_outcome(stack.path, logged, pr.get('route') or 'unknown',
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on':learning.record_outcome(stack.path, logged, pr.get('route') or 'unknown',
                             (result.get('answer') or {}).get('status') or 'answered',
                             local.get('reason') if isinstance(local, dict) else None,
                             result.get('new_paid_api_calls') or 0, outcome_cost)
-    if pr.get('route') == 'hosted_verified_sql':
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on' and pr.get('route') == 'hosted_verified_sql':
         # FM-23: the verified pair is captured only now, after the answer was built and its checks ran; quarantine stays as a
         # backstop for pairs captured earlier (or by older code) that a later check flags.
         try:
@@ -1151,7 +1151,7 @@ def handle_compose(stack, body, hosted_factory=None):
         except (OSError, ValueError, KeyError, sqlite3.Error):
             pass  # capture is learning bookkeeping; it never fails an answer
         learning.quarantine(stack.path, logged, result.get('answer'))
-    if isinstance(local, dict) and local.get('operator_router'):
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')!='on' and isinstance(local, dict) and local.get('operator_router'):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
     from .learning_hooks import after_answer  # every answer feeds learning: saved pairs, question learning, training corpus
     from .harness_improvement import finish as finish_harness

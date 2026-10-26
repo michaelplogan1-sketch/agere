@@ -1,0 +1,80 @@
+"""Existing analytical engines on the investigator's native tool boundary.
+
+No new analytical formula or question handler. The shared graph validates and
+executes the existing operators; exact request scope travels as membership.
+"""
+from ...contracts import digest
+from ..request_lineage import component
+
+# Analytical reports only. Stateful identity decisions, monitors and care work
+# retain their own explicit workflows and are never certified read-only replay.
+ANALYTICAL={
+    'aggregate','trajectory','survival','queueing','profile','calibration','demand','program_effect','uplift',
+    'monitor','market','pathway','scheduling','early_signal','claims_review','network','contract_strategy',
+    'target_trial','line_of_therapy','trial_feasibility','risk_outcomes','diagnostic_delay','loop_closure','vbc',
+    'risk_adjustment','outreach_allocation','staffing_plan','mlr','star_rating','settlement_bridge',
+    'change_attribution','social_needs','denial_prediction','cdi_opportunity','contract_reimbursement',
+    'price_benchmark','prior_auth_rules','eligibility_340b','provider_network_graph','network_spread',
+    'upcoding_detection','benchmark_rebasing','survey_adjustment','scorecard_risk','visit_groups',
+    'capacity_simulation','discharge_forecast','flow_decomposition','or_block_optimization','hai_surveillance',
+    'antimicrobial_use','bundle_compliance','spatiotemporal_cluster','overbooking_fairness','network_adequacy',
+    'care_gap_closure','transitions_of_care','policy_evaluation','guideline_conformance','outreach_bandit','policy_search'}
+
+
+def list_analyses():
+    from .capability_registry import PRODUCT
+    return {'analyses':[{'operation':op,**PRODUCT[op]} for op in sorted(ANALYTICAL & PRODUCT.keys())],
+            'instruction':'Describe an operation for its typed parameters; execute it with the exact inherited or supplied population. No clinical actions are dispatched.'}
+
+
+def describe(operation):
+    from . import graph_contracts as G
+    if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
+    catalog={'cohort_fields':{'record_fields':{}},'evidence_catalog':{},'source_streams':[]}
+    return {'operation':operation,'parameters':G.parameter_schema(operation,catalog),
+            'population_contract':G.input_contract(operation),
+            'meaning':'The existing native validator remains authoritative. Parameters and assumptions are not inferred clinical facts.'}
+
+
+def population(tools,patient_ids=None,patient_query_sql=None):
+    if patient_ids is not None and patient_query_sql is not None:raise ValueError('Choose patient_ids or patient_query_sql')
+    if patient_query_sql is not None:
+        out=tools._call({'name':'query_sql','input':{'sql':patient_query_sql,'complete':True}})
+        if out.get('columns')!=['patient_id'] or out.get('truncated'):raise ValueError('Complete population query must return exactly patient_id')
+        patient_ids=[r['patient_id'] if isinstance(r,dict) else r[0] for r in out['rows']]
+    if patient_ids is None:return tools.cohort
+    if not isinstance(patient_ids,list) or any(not isinstance(p,str) or not p for p in patient_ids):raise ValueError('Use received patient IDs')
+    for pid in patient_ids:
+        tools.in_scope(pid)
+        if tools.db.execute('SELECT 1 FROM patient WHERE patient_id=?',(pid,)).fetchone() is None:raise ValueError('Unreceived patient: '+pid)
+    return list(dict.fromkeys(patient_ids))
+
+
+def execute(tools,operation,parameters,patient_ids=None,patient_query_sql=None):
+    from . import analysis_graph as A,graph_contracts as G,cohorts
+    if operation not in ANALYTICAL:raise ValueError('Choose an analytical operation from list_analyses')
+    if not isinstance(parameters,dict):raise ValueError('Supply typed analytical parameters')
+    ids=population(tools,patient_ids,patient_query_sql)
+    snapshot=tools.stack.retriever.meta['snapshot']['as_of']
+    if str(snapshot)[:10]!=tools.as_of:raise ValueError('Analytical snapshot differs from request date')
+    if G.input_contract(operation)['count'][1]<1:raise ValueError('This operation cannot inherit a patient population')
+    guard=digest(tools.continuation_identity())
+    plan={'interpretation':'Received-source analytical tool execution','coverage':'supported_observation','unmet_requirements':[],
+        'nodes':[{'id':'input','operation':'cohort','inputs':[],
+                  'parameters':{'specification':cohorts.empty(),**({'patient_ids':ids} if ids is not None else {})},'purpose':'Exact request population'},
+                 {'id':'analysis','operation':operation,'inputs':['input'],'parameters':parameters,'purpose':'Requested analytical calculation'}]}
+    plan=A.validate(plan,tools.as_of)  # even an empty input must not accept malformed parameters
+    if ids==[]:
+        return {'analysis':operation,'status':'no_matches','columns':[],'rows':[],'input_patient_ids':[],
+                'method':'Explicit empty population; no estimate computed and engine not executed'}
+    with component('analytical_engine',operation=operation,population_size=None if ids is None else len(ids)):
+        result=A.execute(tools.stack,plan)
+    if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope/definitions changed during analysis')
+    answer=result.get('answer') or {};rows=answer.get('table') or []
+    if not isinstance(rows,list):raise ValueError('Native analysis did not return a table')
+    columns=list(dict.fromkeys(k for row in rows for k in row)) if all(isinstance(r,dict) for r in rows) else []
+    from .harness_improvement import semantic_result
+    return {'analysis':operation,'status':answer.get('status'),'columns':columns,'rows':rows,'answer':answer,
+            'input_patient_ids':ids,'parameters':plan['nodes'][-1]['parameters'],'engine_result':result,
+            'method':answer.get('method'),'limitations':answer.get('limitations') or [],
+            'receipt_digest':digest(semantic_result(result)),'new_paid_api_calls':result.get('new_paid_api_calls',0)}

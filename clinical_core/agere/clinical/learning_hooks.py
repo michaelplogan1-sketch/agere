@@ -228,10 +228,22 @@ def after_answer(stack, question, result, *, body=None):
     receipt = {'version': VERSION, 'verified': False, 'saved_pair': None, 'corpus': None, 'quarantine': [], 'components': {}, 'errors': []}
     if _evaluating():  # a measured run learns nothing: no pair, corpus row, gap, trace, stability row, correction or learning task
         receipt['evaluation'] = True
+        if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':return receipt
         try:
             receipt['verified'], receipt['reasons'] = verified(stack, question, result)
         except Exception as exc:  # noqa: BLE001
             receipt['errors'].append(f'{type(exc).__name__}: {exc}'[:300])
+        return receipt
+    if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
+        # Explicit component-learning mode never reads the legacy learning,
+        # question-plan or answer stores. Observations need direct review before
+        # becoming training labels; model-generated learning_requests cannot approve themselves.
+        try:
+            from .component_learning import observe,run_plan
+            receipt['components']['component_learning']=observe(stack,question,result,body)
+            receipt['components']['learning_cycle']=run_plan(stack)
+        except Exception as exc:
+            receipt['errors'].append('component learning: '+type(exc).__name__+': '+str(exc)[:300])
         return receipt
     try:
         ok, reasons = verified(stack, question, result)
@@ -282,6 +294,9 @@ def after_failure(stack, question, exc):
     """A question nobody could answer: record it as a gap for grammar growth and training negatives. Never raises."""
     if _evaluating(): return None
     try:
+        if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
+            from .component_learning import observe
+            return observe(stack,question,{'answer':{'status':'failed'}})
         usage = getattr(exc, 'planner_receipt', {}) or {}
         return append('gaps', {'question': question, 'status': 'error', 'error': f'{type(exc).__name__}: {exc}'[:500],
                                'proposers': [{k: p.get(k) for k in ('proposer', 'outcome', 'detail')} for p in usage.get('proposers') or []][:24],

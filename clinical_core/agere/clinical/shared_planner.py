@@ -125,8 +125,9 @@ def policy_identity():
     from .request_vocabulary import definitions, concept_definitions
     from .general_analysis import governed_knowledge
     from .clinical_inputs import identity as clinical_input_identity
+    from .component_learning import active_identity
     return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(),
-        'clinical_input_policy': clinical_input_identity(),
+        'clinical_input_policy': clinical_input_identity(),'component_releases':active_identity(),
         'governed_knowledge': governed_knowledge(), 'financial_rulebook': rulebook_digest(),
         'answer_context.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'answer_context.py').read_text()), **{
         'deliverables/workflow.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'workflow.py').read_text())}, **{
@@ -143,7 +144,8 @@ def policy_identity():
                      'note_open.py', 'note_evidence.py', 'note_frames.py', 'note_questions.py', 'ocr_passages.py',
                      'atomic_questions.py', 'answer_shape.py', 'semantic_reader.py', 'answer_checks.py', 'system_one_gate.py',
                      'system_one_cross_check.py', 'acceptance_contract.py', 'requirement_ledger.py',
-                     'backstop_agent.py', 'document_review.py', 'semantic_analyst.py', 'harness_improvement.py')}})
+                     'backstop_agent.py', 'document_review.py', 'analysis_tools.py','component_learning.py',
+                     'learned_router.py','tier_router.py','learning_hooks.py','semantic_analyst.py', 'harness_improvement.py')}})
 
 # Rule text in named parts: the hosted planner sends them all (SYSTEM); the local shaper (local_prompt.py) sends the core and only
 # the parts a question needs.

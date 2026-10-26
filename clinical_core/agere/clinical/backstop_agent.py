@@ -36,6 +36,14 @@ READ_CHARS = 9000
 JUDGE_CHUNK = 1800       # characters per evidence chunk handed to System One (a whole document is several chunks, not one ranked snippet)
 
 TOOLS = [
+    {'name':'list_analyses','description':'Discover the existing analytical engines: trajectories, change detection, survival, forecasts, queueing, allocation, provider comparisons, causal designs and finance. These are native tools, not calculations to reproduce in prose.',
+     'input_schema':{'type':'object','properties':{},'additionalProperties':False}},
+    {'name':'describe_analysis','description':'Get an existing analytical engine\'s typed parameters, assumptions and population contract before calling it.',
+     'input_schema':{'type':'object','properties':{'operation':{'type':'string'}},'required':['operation'],'additionalProperties':False}},
+    {'name':'execute_analysis','description':'Execute an existing analytical engine through the shared graph with typed parameters and the exact inherited patient population. Optionally narrow with received patient_ids or complete patient_query_sql; [] remains empty. Returns native results and a composable result_view. Methods, assumptions, uncertainty and any engine output limits remain visible. Never substitute a mathematical estimate for observed facts.',
+     'input_schema':{'type':'object','properties':{'operation':{'type':'string'},'parameters':{'type':'object'},
+        'patient_ids':{'type':'array','items':{'type':'string'}},'patient_query_sql':{'type':'string'}},
+        'required':['operation','parameters'],'additionalProperties':False}},
     {'name': 'ask_agere', 'description': "Ask Agere's governed engines ONE simple, self-contained sub-question (one measure, one population, one "
      "period, one grouping, e.g. 'How many inpatient admissions were there in 2028?', 'Plan-paid pharmacy spend by year', 'ED visit rate by "
      "payer in the last 12 months'). They apply the governed definitions (decision context, counted claims and fills, utilization events, "
@@ -102,6 +110,10 @@ has already declined this question, so it is yours to answer completely and corr
   EVERY computed row; model previews do not limit the stored result or patient membership.
 - query_sql also accepts the existing governed macros documented below, including current_dose, medication_dose, care_team and
   phenotype. Use dose evidence with administration/frequency and formulation, not product strength alone. Compute comparisons in SQL.
+- For mathematical analysis, discover list_analyses, inspect describe_analysis, then execute_analysis with native typed parameters.
+  Use existing trajectory/change-point, survival, forecast, queueing, allocation, financial and causal engines when the question needs
+  them. Bind the exact population, keep uncertainty/assumptions and unavailable prerequisites, and compose their result_views in SQL.
+  Do not run models merely to populate a catalog or turn an association into a causal conclusion.
 - Separate analysis from requested downstream deliverables. Return workflow steps for the existing deliverable builder; it generates
   the artifact AFTER the checked analysis. Never replace a requested artifact with a prose outline. A proposed service design does
   not require inventing clinical eligibility or claiming actual enrollment, outreach, medication orders or device shipments.
@@ -200,7 +212,7 @@ class Tools:
 
     def continuation_identity(self):
         from ..deliverables.answer_context import source_identity
-        from . import decision_context, clinical_definitions, analyst_definitions
+        from . import decision_context, clinical_definitions, analyst_definitions,analysis_graph,component_learning
         state=decision_context.current()
         definitions=decision_context.receipt(state=state)
         # Query observations change during execution; only meaning is a guard.
@@ -211,10 +223,21 @@ class Tools:
                 'definition_views_version':analyst_definitions.VERSION,
                 'explicit_tool_quota':MAX_TOOLS,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','document_review.py','semantic_analyst.py','dose.py','note_evidence.py')}}
+                                 for name in ('backstop_agent.py','document_review.py','analysis_tools.py','semantic_analyst.py','dose.py','note_evidence.py')},
+                'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
         name, args = use.get('name'), use.get('input') or {}
+        if name in ('list_analyses','describe_analysis','execute_analysis'):
+            from . import analysis_tools
+            if name=='list_analyses':
+                if args:raise ValueError('list_analyses takes no arguments')
+                return analysis_tools.list_analyses()
+            if name=='describe_analysis':return analysis_tools.describe(**args)
+            out=analysis_tools.execute(self,**args)
+            self.subtool_accounting['new_paid_api_calls']+=out.get('new_paid_api_calls',0)
+            if out.get('new_paid_api_calls'):self.subtool_accounting['api_cost_known']=False
+            return out
         if name == 'query_sql':
             if set(args)-{'sql','complete'} or 'sql' not in args or type(args.get('complete',False)) is not bool:
                 raise ValueError('query_sql takes sql and optional complete boolean')
@@ -712,6 +735,9 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     from .evidence_proposers import population_ids
     cohort = (population_ids(population) or []) if population is not None else None
     payload = {'question': question, 'as_of': str(as_of)[:10], 'conversation_so_far': conversation_turns(stack), 'prior_patient': prior.get('patient_id')}
+    from .component_learning import shape_hint
+    learned_shape=shape_hint(stack,question)
+    if learned_shape is not None:payload['reviewed_component_shape_hint']=learned_shape
     if cohort is not None: payload['cohort_size'] = len(cohort)
     if hint: payload['second_look'] = {**hint, 'instruction': 'An earlier engine answered this; System One judged that its result does not fully answer the question as asked. Investigate independently and answer the question exactly as asked.'}
     user = json.dumps(payload, default=str)

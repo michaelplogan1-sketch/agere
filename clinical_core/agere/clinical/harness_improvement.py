@@ -14,8 +14,9 @@ from ...contracts import digest
 from ..request_lineage import execution_observation
 
 VERSION='recursive-harness/1'
-READ_ONLY={'query_sql','list_documents','read_document','review_documents','execute_metric','list_metrics'}
-VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','new_paid_api_calls','known_api_estimate_usd',
+READ_ONLY={'query_sql','list_documents','read_document','review_documents','execute_metric','list_metrics',
+           'list_analyses','describe_analysis','execute_analysis'}
+VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',
           'estimated_cost_usd','provider_receipts','typed_checks'}
 
 

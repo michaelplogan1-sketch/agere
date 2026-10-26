@@ -141,6 +141,15 @@ class AutomaticWorkflow(unittest.TestCase):
         self.assertEqual(reused['workflow'][0]['status'],'ready')
         self.assertEqual(reused['answer']['table'],baseline['answer']['table'])
 
+    def test_component_learning_records_full_workflow_without_legacy_learning_stores(self):
+        with patch.dict(os.environ,{'AGERE_COMPONENT_LEARNING':'on'}),patch(
+                'clinical_core.agere.clinical.learning.record_outcome',side_effect=AssertionError('No legacy learning store')),patch(
+                'clinical_core.agere.clinical.learning.corrected',side_effect=AssertionError('No legacy correction lookup')):
+            result=self.run_connected()
+        self.assertEqual(result['workflow'][0]['status'],'ready')
+        self.assertEqual(result['learning']['components']['component_learning']['status'],'recorded')
+        self.assertEqual(result['learning']['errors'],[])
+
     def test_complete_native_results_survive_model_preview_and_final_binding(self):
         wh=S.SemanticWarehouse(self.path/'semantic.sqlite3');self.addCleanup(wh.close)
         tools=B.Tools(self.stack,wh,'2030-05-27');self.addCleanup(tools.db.close)
