@@ -265,11 +265,12 @@ def build():
     # x5-14 average inpatient claim = paid over counted claims (R4); share v1 already follows R4
     C = D.SPEND_CLAIMS
     inst = one(f"SELECT SUM(paid_cents) FILTER (WHERE admission_date IS NOT NULL) * 1.0 / SUM(paid_cents) FROM ({C}) WHERE {D.in_year('service_from')}")
-    avg_ip = one(f"SELECT AVG(paid_cents) / 100.0 FROM ({C}) WHERE admission_date IS NOT NULL AND {D.in_year('service_from')}")
+    # Mike chose "paid on counted claims" with the $12,343 average shown (paid claims): the average is over counted claims that were paid
+    avg_ip = one(f"SELECT AVG(paid_cents) / 100.0 FROM ({C}) WHERE admission_date IS NOT NULL AND final_status = 'paid' AND {D.in_year('service_from')}")
     k.rubric('x5-14', [
         fact_n('share', f'Claims with an inpatient admission are {pct(inst)} of 2029 paid dollars', inst, abs_=0.02, unit='proportion', near=[r'inpatient|admission|hospital']),
         fact_n('avg', f'The average paid inpatient claim is ${avg_ip:,.0f}', avg_ip, rel=0.03, near=[r'average|avg|per claim|each'])],
-        'AVG(paid_cents)/100 over counted payer_claim rows (counts_in_metrics = 1) with an admission_date, service_from in 2029 (v1 kept only final_status = paid claims)', R4)
+        'AVG(paid_cents)/100 over counted, paid payer_claim rows (counts_in_metrics = 1, final_status = paid) with an admission_date, service_from in 2029 (Mike chose the $12,343 reading)', R4)
 
     # x5-18 / x5-28 rising risk: living patients (a patient count) with >= 2 ED visits and no hospital admission (inpatient or observation)
     rr_sql = (f"SELECT patient_id FROM utilization_event WHERE kind = 'ed_visit' AND {D.in_last_year('event_date')} AND {LIVQ} GROUP BY 1 HAVING COUNT(*) >= 2 "
