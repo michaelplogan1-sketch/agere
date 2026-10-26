@@ -291,18 +291,21 @@ class Tools:
 
     def read_document(self, record_id, offset=0):
         doc = self.read.get(record_id)
-        if doc is None:
-            for table, col in (('record', "json_extract(payload,'$.text')"), ('scanned_document_text', 'text')):
+        if doc is None:  # an uncached read carries its own event and availability dates, so the as-of check below applies to it too
+            for sql in ("SELECT patient_id, json_extract(payload,'$.text') AS t, event_date, available_date FROM record WHERE record_id=?",
+                        'SELECT t.patient_id, t.text AS t, d.event_date, d.available_date FROM scanned_document_text t '
+                        'LEFT JOIN scanned_document d ON d.record_id = t.record_id WHERE t.record_id=?'):
                 try:
-                    row = self.db.execute(f'SELECT patient_id, {col} AS t FROM {table} WHERE record_id=?', (record_id,)).fetchone()
+                    row = self.db.execute(sql, (record_id,)).fetchone()
                 except Exception:  # noqa: BLE001
                     row = None
                 if row and row['t']:
-                    doc = {'patient_id': row['patient_id'], 'text': row['t']}
+                    doc = {'patient_id': row['patient_id'], 'text': row['t'], 'date': row['event_date'], 'available': row['available_date']}
                     break
         if doc is None: raise ValueError(f'no document {record_id}')
         if doc.get('patient_id'): self.in_scope(doc['patient_id'])
-        if str(doc.get('date') or '')[:10] > self.as_of: raise ValueError(f'document {record_id} is dated after the as-of date {self.as_of}')
+        for k in ('date', 'available'):  # visible at the as-of date only when it had happened AND had been received
+            if str(doc.get(k) or '')[:10] > self.as_of: raise ValueError(f'document {record_id} is not visible at the as-of date {self.as_of}')
         self.read.setdefault(record_id, doc)
         text, offset = doc.get('text') or '', max(0, int(offset or 0))
         return {'record_id': record_id, **{k: doc.get(k) for k in ('patient_id', 'source', 'type', 'date', 'title')},

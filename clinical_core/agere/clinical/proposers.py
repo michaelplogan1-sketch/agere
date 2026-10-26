@@ -119,6 +119,31 @@ FREE_ONLY = _cv.ContextVar('agere_free_stages_only', default=False)
 FREE_STAGES = frozenset({'reuse_certified', 'system_one_choice', 'free_planners'})
 
 
+def modality_check(answer, tool_calls):
+    """-> (verification, reason) for a backstop answer with no SQL to gate: 'quote_verified' (a document answer whose quotes were verified
+    against their own records), 'grounded' (every number it states appears in a tool result), 'absence_searched' (a stated absence after at
+    least one search or query), else 'unverified' with the reason."""
+    calls = [c for c in tool_calls if isinstance(c, dict) and not (isinstance(c.get('result'), dict) and c['result'].get('error'))]
+    if answer.get('status') == 'not_available':
+        return ('absence_searched', '') if calls else ('unverified', 'no document search or query stands behind the stated absence')
+    if any(isinstance(s, dict) and s.get('record_id') and str(s.get('quote') or '').strip() for s in answer.get('sources') or []):
+        return 'quote_verified', ''
+    shown = json.dumps([c.get('result') for c in calls], default=str)
+    nums = set(re.findall(r'\d+(?:\.\d+)?', shown.replace(',', '')))
+    said = [n for n in re.findall(r'\d+(?:\.\d+)?', json.dumps([answer.get(k) for k in ('headline', 'value', 'count', 'facts')], default=str).replace(',', ''))
+            if not re.fullmatch(r'(?:19|20)\d\d', n)]
+    vals = sorted({float(n) for n in nums if float(n) != 0})[:300]
+
+    def derived(n):  # a share or ratio the agent computed from two shown numbers (e.g. 97 of 490 -> 19.8)
+        x = float(n)
+        return any(abs(a / b * k - x) <= max(0.051, abs(x) * 0.001) for a in vals for b in vals if a <= b for k in (1, 100))
+    if said and all(n in nums or str(float(n)) in nums or n.rstrip('0').rstrip('.') in nums or derived(n) for n in said):
+        return 'grounded', ''
+    if not said and calls:
+        return 'grounded', ''
+    return 'unverified', 'a stated number or claim is not found in any tool result and no verified quote supports it'
+
+
 CERTIFIED_CHART = frozenset({'chart_reader', 'exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'data_domain_check'})
 
 
@@ -782,7 +807,15 @@ class Cascade:
         answer.setdefault('patient_ids', answer.get('patient_ids') or [])
         result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0}
         if answer.get('status') == 'not_available' or not graph['nodes']:
-            return self.contract_of('backstop_agent', graph, receipt, result)
+            # no SQL to gate (documents, governed metrics, an absence): the modality's own check (Codex review 2026-10-26). A document answer
+            # needs a verified quote; a numeric answer's numbers must appear in what the tools returned; an absence needs a search behind it.
+            # A failed check ships the answer unverified and partial, never as a checked result.
+            verdict, why = modality_check(answer, run.get('tool_calls') or [])
+            answer = {**answer, 'verification': verdict}
+            if verdict == 'unverified':
+                answer = {**answer, 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
+                          'limitations': [*(answer.get('limitations') or []), 'Unverified: ' + why]}
+            return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
         # the same answer gate as every other proposal (Codex review 2026-10-26: the last layer bypassed it). A failure goes back to the agent
         # once with the reasons; if the repair also fails, the answer ships marked unverified and partial, never as a checked answer.
         checked = answer_gate(self, 'backstop_agent', graph, receipt, result)

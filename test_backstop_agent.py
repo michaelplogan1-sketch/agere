@@ -84,6 +84,34 @@ class Scope(unittest.TestCase):
         self.assertEqual(t.read_document('N2')['text'], 'other')  # a population question reads any patient
 
 
+class UncachedVisibility(unittest.TestCase):
+    def test_an_uncached_record_is_checked_against_its_event_and_availability_dates(self):
+        import sqlite3
+        db = sqlite3.connect(':memory:'); db.row_factory = sqlite3.Row
+        db.execute('CREATE TABLE record (record_id, patient_id, stream, event_date, recorded_date, available_date, organization_id, payload)')
+        db.execute('CREATE TABLE scanned_document_text (record_id, patient_id, text_source, text)')
+        db.execute('CREATE TABLE scanned_document (record_id, event_date, available_date)')
+        db.execute("INSERT INTO record VALUES ('R1','P1','note','2031-01-01',NULL,'2031-01-01',NULL,'{\"text\": \"future note\"}')")
+        db.execute("INSERT INTO record VALUES ('R2','P1','note','2030-05-01',NULL,'2030-06-30',NULL,'{\"text\": \"received later\"}')")
+        db.execute("INSERT INTO record VALUES ('R3','P1','note','2030-05-01',NULL,'2030-05-02',NULL,'{\"text\": \"visible\"}')")
+        t = B.Tools.__new__(B.Tools)
+        t.db, t.read, t.as_of, t.scope = db, {}, '2030-05-27', None
+        with self.assertRaises(ValueError): t.read_document('R1')  # Codex review 2026-10-26: uncached reads carried no date
+        with self.assertRaises(ValueError): t.read_document('R2')  # happened before as-of but received after it
+        self.assertEqual(t.read_document('R3')['text'], 'visible')
+
+
+class ModalityCheck(unittest.TestCase):
+    def test_answers_without_sql_get_their_own_check(self):
+        ok = [{'sql': None, 'result': {'count': 97, 'rows': [{'n': 490}]}}]
+        self.assertEqual(P.modality_check({'status': 'answered', 'headline': '97 of 490 stays (19.8%)'}, ok)[0], 'grounded')
+        self.assertEqual(P.modality_check({'status': 'answered', 'headline': '123 stays'}, ok)[0], 'unverified')
+        self.assertEqual(P.modality_check({'status': 'answered', 'headline': 'Stopped.', 'sources': [{'record_id': 'N1', 'quote': 'stopped'}]}, [])[0],
+                         'quote_verified')
+        self.assertEqual(P.modality_check({'status': 'not_available', 'headline': 'No dialysis.'}, [])[0], 'unverified')
+        self.assertEqual(P.modality_check({'status': 'not_available', 'headline': 'No dialysis.'}, ok)[0], 'absence_searched')
+
+
 class Metrics(unittest.TestCase):
     def test_metrics_are_typed_and_an_unknown_id_is_a_correctable_tool_error(self):
         t = B.Tools.__new__(B.Tools)
