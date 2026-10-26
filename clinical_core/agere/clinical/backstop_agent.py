@@ -420,12 +420,12 @@ def shaped(a):
     return a
 
 
-def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, population=None):
+def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, population=None, hint=None):
     """-> {'answer': answer contract or None, 'tool_calls', 'model', 'estimated_cost_usd', 'new_paid_api_calls', 'error', 'seconds'}."""
     if ledger is None and send is None:  # a direct caller: charge the product ledger of a live stack
         from . import spec_exec
         with spec_exec.ledger_for(stack) as own:
-            if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of, population=population)
+            if own is not None: return answer(stack, question, ledger=own, model=model, as_of=as_of, population=population, hint=hint)
     from . import semantic_analyst, together, analyst_definitions, decision_context, requirement_ledger
     from .legacy_proposers import _semantic_path, _send
     from .. import model_policy
@@ -444,6 +444,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     cohort = population_ids(population) if population is not None else None
     payload = {'question': question, 'as_of': str(as_of)[:10], 'conversation_so_far': conversation_turns(stack), 'prior_patient': prior.get('patient_id')}
     if cohort: payload['cohort_size'] = len(cohort)
+    if hint: payload['second_look'] = {**hint, 'instruction': 'An earlier engine answered this; System One judged that its result does not fully answer the question as asked. Investigate independently and answer the question exactly as asked.'}
     user = json.dumps(payload, default=str)
     tools = Tools(stack, wh, as_of, cohort=cohort, ledger=ledger)
     receipts = []

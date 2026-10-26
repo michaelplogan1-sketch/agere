@@ -1196,6 +1196,13 @@ def _compose_once(stack, question, *, population=None, parent=None, model=None, 
             result = execute_contract(stack, question, graph, receipt, population=population, parent=parent, started=started)
             from . import spec_path  # every typed answer carries its read-back; a spec-path answer its verification receipts
             spec_path.attach(result, receipt['interpretation'], receipt['request_contract'], request_plan.Catalog.load(stack.path), question)
+        if receipt['request_contract'].get('kind') != 'checked_graph' and parent is None:  # a fast-path answer gets System One's second look
+            from .proposers import second_look_fast_path
+            replaced = second_look_fast_path(stack, question, graph, result, population=population, started=started)
+            if replaced is not None:
+                from .answer_format import present
+                present(replaced, request_plan.Catalog.load(stack.path).target)
+                return replaced
         from . import acceptance_contract as AC
         if AC.mode() != 'off':
             interp = receipt.get('interpretation') or {}

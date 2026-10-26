@@ -140,6 +140,39 @@ def unquoted_chart_answer(question, contract):
     return bool(chartish) and not quoted
 
 
+def second_look_fast_path(stack, question, graph, result, *, population=None, started=None):
+    """The deterministic fast paths (compositional grammar, request programs, population engines, the typed spec) answer before the
+    cascade and never see its checks: System One judges their executed result against the question as asked, and a flagged answer goes to
+    the backstop investigation exactly as Cascade.second_look does. -> a replacement shared-planner result, or None (the answer stands).
+    Never for a free-stage sub-question (the backstop's own ask_agere), a one-patient question or a stack without Claude."""
+    if FREE_ONLY.get() or not getattr(stack, 'allow_live', False) or not claude_available() or os.environ.get('AGERE_SECOND_LOOK', 'on') == 'off':
+        return None
+    if ((result or {}).get('answer') or {}).get('status') not in ('answered', 'partial'): return None
+    c = Cascade(stack, request_plan.Catalog.load(stack.path), question, population=population)
+    try:
+        if c.one_patient(): return None
+        order = list(ORDER)
+        found = ({'kind': 'checked_graph', 'graph': graph, 'executed': result}, {'interpreter': 'fast_path'})
+        got, name = c.second_look(order, 'fast_path', found)
+        if name != 'backstop_agent': return None
+        contract, interpretation = got
+        out = dict(contract['executed'])
+        answer = dict(out.get('answer') or {})
+        answer['limitations'] = list(dict.fromkeys([*(answer.get('limitations') or []),
+            'Investigated by the backstop analyst after System One judged the first engine answer does not fully answer the question as asked.']))
+        from .shared_planner import economics
+        receipt = {'route': 'backstop_agent', 'second_look': getattr(c, 'second_look_hint', None), 'new_paid_api_calls': c.calls,
+                   'known_api_estimate_usd': c.usd, 'api_cost_known': c.cost_known, 'proposers': c.log}
+        return {**out, 'schema': 'shared-warehouse-planner/5', 'synthetic': True, 'question': question, 'route': 'shared_planner',
+                'graph': contract['graph'], 'answer': answer, 'request_contract': {k: v for k, v in contract.items() if k != 'executed'},
+                'planner_receipt': receipt, 'new_paid_api_calls': c.calls, 'planning_economics': economics(receipt),
+                'elapsed_seconds': (time.perf_counter() - started) if started else None, 'clinical_execution_authorized': False}
+    except Exception:  # noqa: BLE001 - a second look never takes the first answer down
+        return None
+    finally:
+        c.close()
+
+
 GENERALISTS = ('semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')
 
 
@@ -575,6 +608,7 @@ class Cascade:
                 found = self.attempt(name, self.tier_seconds(name, budget))
                 if found is None: continue
                 found, name = self.quoted_or_backstop(order, name, found)
+                found, name = self.second_look(order, name, found)
                 return self.accept(order, name, found)
             if free_only:
                 raise QuestionNotUnderstood('The rewording was not read by the free stages; the question as typed is tried next.')
@@ -661,6 +695,41 @@ class Cascade:
         except Exception:  # noqa: BLE001 - the check is a second reading; no reading leaves the answer as it is
             return False
 
+    def second_look(self, order, name, found):
+        """A population answer from any proposer but a certified reuse: System One judges whether what was computed answers the question as
+        asked (system_one_gate.check: the same typed question the answer checks ask, run here also for the spec-confirmed engines that skip
+        it). 'answers partially' or 'a different question' (p >= AGERE_SECOND_LOOK_P, default 0.6) hands the question, with that answer and
+        the verdict, to the backstop investigation; its answer replaces the first when it answers (audit 2026-10-25: confident wrong engine
+        answers were accepted with no second look). -> (found, name)."""
+        if name == 'backstop_agent' or name in CERTIFIED_CHART or not isinstance(found, tuple) or self.one_patient(): return found, name
+        if os.environ.get('AGERE_SECOND_LOOK', 'on') == 'off': return found, name
+        if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
+        if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
+        contract = found[0] or {}
+        result = contract.get('executed') or {}
+        if (result.get('answer') or {}).get('status') not in ('answered', 'partial'): return found, name
+        s1 = (result.get('answer_checks') or {}).get('system_one')
+        try:
+            if not s1:
+                from .system_one_gate import check, ready
+                if not ready(self.stack, 'AGERE_S1_CHECK'): return found, name
+                s1 = check(self.question, contract.get('graph') or {}, result, stack=self.stack, ledger=self.ledger)
+                self.spend(s1.get('calls', 0), s1.get('cost_usd', 0.0))
+        except Exception:  # noqa: BLE001 - no reading: the answer stands
+            return found, name
+        label, p = s1.get('label'), float(s1.get('p') or 0.0)
+        flagged = label in ('answers_partially', 'answers_a_different_question') and p >= float(os.environ.get('AGERE_SECOND_LOOK_P', '0.6'))
+        self.note('second_look', 'investigate' if flagged else 'stands', f'System One: {label} p={p:.2f} on {name}', time.perf_counter())
+        if not flagged: return found, name
+        a = result.get('answer') or {}
+        self.second_look_hint = {'earlier_answer': {'by': name, 'headline': a.get('headline'), 'value': a.get('value', a.get('count')),
+                                                    'method': a.get('method')},
+                                 'system_one_verdict': f"{label.replace('_', ' ')} (p={p:.2f})"}
+        second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
+        if isinstance(second, tuple) and ((second[0] or {}).get('executed') or {}).get('answer', {}).get('status') in ('answered', 'partial'):
+            return second, 'backstop_agent'
+        return found, name
+
     def one_patient(self):
         """Is this question about one patient: an id in it, or a follow-up of a one-patient turn with no population wording?"""
         if self.population is not None: return False
@@ -688,7 +757,8 @@ class Cascade:
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
         from . import backstop_agent
         with model_policy.escalation():
-            run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population)
+            run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
+                                        hint=getattr(self, 'second_look_hint', None))
         self.spend(run.get('new_paid_api_calls', 0), run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
         answer = run.get('answer')
         if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial', 'unsupported'):
