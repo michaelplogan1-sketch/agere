@@ -622,7 +622,7 @@ class Cascade:
         the backstop investigates: it lists the patient's documents in scope, has System One judge each whole document, and quotes the
         sentence. Its answer replaces the first when it answers; a decline replaces only an unquoted first answer. -> (found, name)."""
         if name == 'backstop_agent' or not isinstance(found, tuple) or not self.one_patient(): return found, name
-        if name in CERTIFIED_CHART and not unquoted_chart_answer(self.question, found[0]): return found, name
+        if name in CERTIFIED_CHART and not unquoted_chart_answer(self.question, found[0]) and not self.system_one_disagrees(found[0]): return found, name
         if 'backstop_agent' not in order or not self.runnable('backstop_agent') or not claude_available() or self.claude_down: return found, name
         if any(e.get('proposer') == 'backstop_agent' and e.get('outcome') not in ('skipped', 'deferred') for e in self.log): return found, name
         second = self.attempt('backstop_agent', max(0.5, float(os.environ.get('AGERE_BACKSTOP_SECONDS', '90'))))
@@ -630,6 +630,36 @@ class Cascade:
         status = ((second[0] or {}).get('executed') or {}).get('answer', {}).get('status')
         if status in ('answered', 'partial') or unquoted_chart_answer(self.question, found[0]) or not quoted(found[0]): return second, 'backstop_agent'
         return found, name
+
+    def system_one_disagrees(self, contract):
+        """A yes / no chart answer: System One (Jev, then Perplexity) reads the cited documents whole and answers the question itself; a
+        confident opposite label (p >= 0.8) sends the question to the backstop investigation (MGB CS1: the classifier reads each document)."""
+        answer = ((contract or {}).get('executed') or {}).get('answer') or {}
+        said = answer.get('yes_no', answer.get('value')) if answer.get('answer_type') == 'yes_no' else None
+        if said is None:
+            m = re.match(r'\s*(yes|no)\b', str(answer.get('headline') or ''), re.I)
+            said = None if not m else m.group(1).lower() == 'yes'
+        if not isinstance(said, bool) or os.environ.get('AGERE_CHART_S1_CHECK', 'on') == 'off': return False
+        try:
+            from . import system_one, note_evidence
+            db = note_evidence.connect(self.stack)
+            evidence = []
+            for src in (answer.get('sources') or [])[:4]:
+                rid = src.get('record_id') if isinstance(src, dict) else None
+                row = db.execute("SELECT json_extract(payload,'$.text') FROM record WHERE record_id=?", (rid,)).fetchone() if rid else None
+                text = (row[0] if row else None) or src.get('quote') or ''
+                evidence += [{'id': f'{rid}#{k}', 'record_id': rid, 'text': text[i:i + 1800], 'date': src.get('date')}
+                             for k, i in enumerate(range(0, max(len(text), 1), 1600))]
+            if not evidence: return False
+            r = system_one.decide(self.question, {'yes': 'yes, the documents say so', 'no': 'no, the documents say otherwise'}, evidence,
+                                  as_of=self.catalog.identity['as_of'], task_key='agere_chart_check', ledger=self.ledger,
+                                  allow_live=bool(getattr(self.stack, 'allow_live', False)))
+            p = (r.get('calibrated_probabilities') or {}).get(r.get('label'))
+            disagree = r.get('label') in ('yes', 'no') and (r['label'] == 'yes') != said and p is not None and p >= 0.8
+            self.note('system_one_chart_check', 'disagrees' if disagree else 'agrees or unsure', f"{r.get('label')} p={p}", time.perf_counter())
+            return disagree
+        except Exception:  # noqa: BLE001 - the check is a second reading; no reading leaves the answer as it is
+            return False
 
     def one_patient(self):
         """Is this question about one patient: an id in it, or a follow-up of a one-patient turn with no population wording?"""
