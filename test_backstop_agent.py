@@ -25,6 +25,15 @@ class Quotes(unittest.TestCase):
         self.assertEqual(dropped, 2)
 
 
+class Polarity(unittest.TestCase):
+    def test_a_repair_never_flips_negation(self):
+        tools = FakeTools({'N1': 'Patient does take insulin daily.'})
+        kept, dropped = B.verified_sources({'sources': [{'record_id': 'N1', 'quote': 'Patient does not take insulin daily.'}]}, tools)
+        self.assertEqual((kept, dropped), ([], 1))  # Codex review 2026-10-26 reproduction
+        self.assertIsNone(B.snap('metformin stopped', 'Metformin continued at 500 mg.'))
+        self.assertEqual(B.snap('Patient takes insulin  daily', 'Patient takes insulin daily.'), 'Patient takes insulin daily')
+
+
 class Provenance(unittest.TestCase):
     def test_a_quote_of_a_row_is_kept_only_for_that_rows_own_record(self):
         tools = FakeTools({})

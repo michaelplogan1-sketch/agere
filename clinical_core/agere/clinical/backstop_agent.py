@@ -372,13 +372,29 @@ def snap(quote, text, share=0.8):
     for i in range(len(toks)):
         window = toks[i:i + n + 2]
         if not window or window[0][0] not in want: continue
-        hit = len(want & {t for t, _, _ in window}) / len(want)
+        covered = want & {t for t, _, _ in window}
+        hit = len(covered) / len(want)
         if hit > best[0]:
-            last = max(j for j, (t, _, _) in enumerate(window) if t in want)
+            seen, last = set(), 0
+            for j, (t, _, _) in enumerate(window):  # end the span where the last NEW quote word appears, not at a repeat further on
+                if t in covered and t not in seen: seen.add(t); last = j
+                if seen == covered: break
             best = (hit, (window[0][1], window[last][2]))
     if best[0] < share: return None
     a, b = best[1]
-    return text[a:b]
+    span = text[a:b]
+    # a repair may fix spacing, an ellipsis or a dropped word, never the meaning: the quote and the document span must agree on negation
+    # and stopped / current status (Codex review 2026-10-26: "does not take insulin" snapped to "does take insulin" was kept)
+    return span if polarity(quote) == polarity(span) else None
+
+
+NEGATION = re.compile(r"\b(?:no|not|never|none|nor|without|negative|denies|denied|deny|declined|refused|stopped|discontinued|held|"
+                      r"cannot|can't|doesn't|don't|didn't|isn't|wasn't|hasn't|haven't|won't|n't)\b", re.I)
+
+
+def polarity(text):
+    """The negation / stop cues a passage carries (their sorted set): two passages agree in meaning only when these match."""
+    return tuple(sorted({m.group(0).lower().replace("n't", 'not') for m in NEGATION.finditer(str(text or ''))}))
 
 
 def as_tool_calls(send):
