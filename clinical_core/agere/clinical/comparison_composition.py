@@ -54,7 +54,7 @@ class ComparisonForms:
         base, groups = self.base, []
         try:
             for item in items:
-                if table in ('payer_claim', 'payer_pharmacy_claim'):
+                if table in ('payer_claim', 'payer_pharmacy_claim', 'pharmacy_claim_event'):
                     self.base = table
                     got = self.claim_category(table, item)
                     if got is None: return None

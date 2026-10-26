@@ -102,6 +102,9 @@ def build(path):
                             ('B5', 'medicare_advantage', '2025-01-01', '2031-12-31')])
     ins('cancer_screening', [('B2', 'bilateral_screening_mammography', '2029-06-01')])
     ins('death', [('H3', '2030-01-01', '2030-01-01')])
+    # Mike 2026-10-25: generic admissions/discharges use all-source inpatient + observation relations.
+    db.execute("CREATE TABLE utilization_event AS SELECT patient_id, admission_date AS event_date, 'inpatient' AS kind FROM payer_claim WHERE counts_in_metrics = 1 AND admission_date IS NOT NULL UNION SELECT patient_id, admit_date, 'inpatient' FROM adt_visit")
+    db.execute("CREATE TABLE stay AS SELECT patient_id, discharge_date, 'inpatient' AS type, 1 AS discharge_known FROM payer_claim WHERE counts_in_metrics = 1 AND discharge_date IS NOT NULL UNION SELECT patient_id, discharge_date, 'inpatient', 1 FROM adt_visit WHERE discharge_date IS NOT NULL")
     db.commit()
     db.close()
 

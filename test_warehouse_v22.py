@@ -401,7 +401,7 @@ class SpanMemberMonthsInVBC(unittest.TestCase):
         self.assertEqual(row['member_months'], 28)
         # X1 paid (100.00) counts; X2 ends reversed; X3 denied; m1's provider-side claim is superseded by the payer feed.
         self.assertAlmostEqual(row['allowed_pmpm'], round(100 / 28, 2))
-        self.assertAlmostEqual(row['paid_pmpm'], round(80 / 28, 2))
+        self.assertAlmostEqual(row['paid_pmpm'], round(40 / 28, 2))  # Mike 2026-10-25: sum the paid amount on every counted claim, including X2's final -$40.
 
 
 def migration_fixture():

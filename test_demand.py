@@ -240,8 +240,9 @@ class Compiler(unittest.TestCase):
         self.assertEqual((p['measure'], p['frequency'], p['horizon']), ('bed_days', 'month', 3))
         _, p = self.demand('Projected primary care appointment demand by practice')
         self.assertEqual((p['measure'], p['group_by']), ('appointments', 'practice'))
+        # Mike 2026-10-25: unqualified admissions include inpatient and observation.
         _, p = self.demand('Weekly admissions forecast with uncertainty')
-        self.assertEqual((p['measure'], p['frequency'], p['horizon']), ('inpatient_admissions', 'week', 13))
+        self.assertEqual((p['measure'], p['frequency'], p['horizon']), ('hospital_admissions', 'week', 13))
         _, p = self.demand("How many nurses do we need for next month's discharges?")
         self.assertEqual((p['measure'], p['horizon'], p['staffing'], p['minutes_per_unit']), ('discharges', 1, True, None))
         _, p = self.demand("How many care managers do we need for next month's discharges at 45 minutes per discharge and 36 hours per week?")

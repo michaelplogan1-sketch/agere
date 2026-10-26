@@ -149,6 +149,8 @@ def build(path):
         db.executemany('INSERT INTO cancer_screening VALUES (?,?,?)', MAMMO)
         db.executemany('INSERT INTO payer_claim VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', CLAIMS)
         db.executemany('INSERT INTO payer_pharmacy_claim VALUES (?,?,?,?,?,?,?)', PHARMACY)
+        # Mike 2026-10-25: pharmacy spend uses all transaction deltas by event date.
+        db.execute('CREATE TABLE pharmacy_claim_event AS SELECT patient_id, fill_date AS event_date, plan_paid_cents AS payer_paid_delta_cents, drug_name FROM payer_pharmacy_claim')
         for pid, d, st, lead in APPTS:
             db.execute('INSERT INTO appointment VALUES (?,?,?,?,?,?)', (pid, d, st, st, 'PR1' if pid in ('P01', 'P02') else 'PR2', lead))
         db.executemany('INSERT INTO social_need VALUES (?,?,?,?)', [(p, n_, pos, '2029-06-01') for p, n_, pos in NEEDS])
@@ -313,7 +315,7 @@ class GrammarForms(Base):
         self.assertEqual((rows[0]['payer_id'], rows[0]['proportion']), (best[1], round(best[0], 4)))
         pharmacy = [x for x in PHARMACY if x[1].startswith('2029') and x[2] in ('paid', 'rejected')]
         self.assertAlmostEqual(self.value('What share of pharmacy claims were rejected in 2029?'), round(100.0 * sum(x[2] == 'rejected' for x in pharmacy) / len(pharmacy), 2), places=2)
-        fills = [x for x in PHARMACY if x[1].startswith('2029') and x[4] == 1 and x[3] is not None]
+        fills = [x for x in PHARMACY if x[1].startswith('2029') and x[3] is not None]
         self.assertAlmostEqual(self.value("What's our generic dispensing rate on pharmacy claims in 2029?"), round(100.0 * sum(x[3] == 'generic' for x in fills) / len(fills), 2), places=2)
         self.assertEqual(self.value('How many prescriptions were returned to stock in 2029?'), 2)
 
@@ -352,10 +354,10 @@ class GrammarForms(Base):
         self.assertEqual({r['payer_id']: (r['rows'], r['proportion']) for r in rows}, {k: (len(v), round(sum(v) / len(v), 4)) for k, v in by.items()})
         self.assertEqual({r['payer_id']: r['percent'] for r in rows}, {k: round(100.0 * sum(v) / len(v), 2) for k, v in by.items()})
 
-    def test_pharmacy_spend_counts_fills_only_and_denied_claims_are_a_source(self):
+    def test_pharmacy_spend_counts_all_transactions_and_denied_claims_are_a_source(self):
         a = self.answer('What is the total paid on pharmacy claims in 2029?')
         self.assertAlmostEqual(a['value'] if a.get('value') is not None else a['table'][0][next(iter(a['table'][0]))],
-                               sum(x[5] for x in PHARMACY if x[1].startswith('2029') and x[4] == 1) / 100.0, places=2)
+                               sum(x[5] for x in PHARMACY if x[1].startswith('2029')) / 100.0, places=2)
         denied = [c for c in CLAIMS if c[14] == 1 and c[9] == 'denied']
         top = self.table('Which payer had the most claim denials for our payer report?')
         by = {}
@@ -433,7 +435,7 @@ class EngineForms(Base):
 
     def test_year_over_year_with_drug_movers(self):
         f, a = self.facts('Did pharmacy spend go up or down from 2028 to 2029, and which drugs moved it most?')
-        y = lambda yr: sum(x[5] for x in PHARMACY if x[1].startswith(yr) and x[4] == 1) / 100.0
+        y = lambda yr: sum(x[5] for x in PHARMACY if x[1].startswith(yr)) / 100.0
         self.assertAlmostEqual(f['y0']['value'], y('2028')); self.assertAlmostEqual(f['y1']['value'], y('2029'))
         self.assertEqual(f['direction']['value'], 'up' if y('2029') > y('2028') else 'down')
         self.assertIn('semaglutide', ' '.join(f['movers_up']['value']))
@@ -461,17 +463,17 @@ class EngineForms(Base):
             rows = [s_ for p, d, s_, lead in APPTS if p in pids and in_win(d) and s_ in resolved]
             return sum(s_ == 'no_show' for s_ in rows) / len(rows) if rows else None
         pos = {p for p, n_, pp in NEEDS if n_ == 'housing' and pp == 1}
-        others = {p for p in PATIENTS if living(p)} - pos
+        others = set(PATIENTS) - pos  # Mike 2026-10-25: no-show rates include every event owner.
         self.assertAlmostEqual(f['need_housing']['value'], round(100 * rate(pos), 1), places=1)
         f, a = self.facts('Does booking further out make people more likely to no-show?')
-        rows = [(lead, s_) for p, d, s_, lead in APPTS if living(p) and in_win(d) and s_ in resolved]
+        rows = [(lead, s_) for p, d, s_, lead in APPTS if in_win(d) and s_ in resolved]
         short = [s_ for lead, s_ in rows if lead <= 7]
         self.assertAlmostEqual(f['b0']['value'], round(100.0 * sum(s_ == 'no_show' for s_ in short) / len(short), 1), places=1)
 
     def test_segment_compare_and_frequent_users(self):
         f, a = self.facts('How does Medicaid compare with commercial on ED use?')
         for lob, key in (('medicaid', 'Medicaid_ed'), ('commercial', 'commercial_ed')):
-            pop = [p for p in PATIENTS if living(p) and PATIENTS[p][3] == lob]
+            pop = [p for p in PATIENTS if PATIENTS[p][3] == lob]  # Mike 2026-10-25: event-rate denominator includes all patients.
             n = sum(1 for p, d in ED if p in pop and in_win(d))
             self.assertAlmostEqual(f[key]['value'], round(1000.0 * n / len(pop), 1), places=1)
         f, a = self.facts('Who are our frequent ED users and how much of ED volume do they drive?')

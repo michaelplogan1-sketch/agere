@@ -59,6 +59,11 @@ class CompositionFixture(unittest.TestCase):
               ('A','retail_pharmacy','paid',1,2000,'generic','2029-10-01',30), ('A','mail_order_pharmacy','paid',1,90000,'brand','2029-11-01',90),
               ('B','retail_pharmacy','rejected',0,0,'generic','2029-10-05',30), ('B','retail_pharmacy','paid',1,3000,'generic','2029-12-05',30),
               ('C','mail_order_pharmacy','rejected',0,0,'brand','2029-10-07',30);
+            -- Mike 2026-10-25: pharmacy spend reads all transactions by event date; metadata stays on the exact source record.
+            ALTER TABLE payer_pharmacy_claim ADD COLUMN record_id TEXT;
+            UPDATE payer_pharmacy_claim SET record_id = 'rx' || rowid;
+            CREATE TABLE pharmacy_claim_event AS SELECT patient_id, record_id, fill_date AS event_date,
+                plan_paid_cents AS payer_paid_delta_cents, claim_status AS status FROM payer_pharmacy_claim;
             CREATE TABLE fill(patient_id TEXT, drug_class TEXT, fill_date TEXT);
             INSERT INTO fill VALUES ('A','statin','2029-08-01'),('A','statin','2029-09-01'),('A','statin','2029-10-01'),('B','insulin','2029-09-01'),
               ('D','antiplatelet','2029-09-01'),('D','antiplatelet','2029-10-01'),('E','statin','2028-01-01');
@@ -200,9 +205,9 @@ class GroupingComposition(CompositionFixture):
         c = self.contract('How do ED visits per 1,000 patients over the last year compare between COPD patients and heart failure patients?')
         rows = sql_query.execute(self.path, {'query': c['query'], 'returns': c['returns']}, target=self.catalog.target)['rows']
         by = {x['group']: x for x in rows}
-        self.assertEqual(by['copd']['patients'], 3)   # A B G; patient A is also in heart failure
+        self.assertEqual(by['copd']['patients'], 4)  # Mike 2026-10-25: A B G H; event rates include deceased H.
         self.assertEqual(by['heart_failure']['patients'], 2)  # A C
-        self.assertAlmostEqual(by['copd']['rate'], 1000 * 3 / 3, 1)  # A 2 + B 1 + G 0
+        self.assertAlmostEqual(by['copd']['rate'], 1000 * 3 / 4, 1)  # A 2 + B 1 + G 0
         self.assertAlmostEqual(by['heart_failure']['rate'], 1000 * 3 / 2, 1)  # A 2 + C 1
 
     def test_imperative_comparison_keeps_explicit_area_thresholds_and_zero_event_patients(self):
@@ -211,7 +216,7 @@ class GroupingComposition(CompositionFixture):
             'How do ED visits per 1,000 patients in the last year compare between high-SVI (75+) patients and low-SVI (under 25) patients?'):
             rows=self.run_q(question)
             by={r['patients']:r['rate'] for r in rows}
-            self.assertAlmostEqual(by[4],1000)  # A2+C1+D1+G0, four high-SVI patients
+            self.assertAlmostEqual(by[5],800)  # Mike 2026-10-25: A2+C1+D1+G0+H0 over five patients.
             self.assertAlmostEqual(by[2],500)   # B1+E0, two low-SVI patients
         self.declines('Compare ED visits per 1,000 patients between high-SVI and low-SVI patients.')
 
@@ -229,7 +234,7 @@ class GroupingComposition(CompositionFixture):
 class RateAndRank(CompositionFixture):
     def test_rate_per_thousand_counts_patients_without_events(self):
         v = self.run_q('ED visits per 1,000 patients over the last 12 months')
-        self.assertAlmostEqual(v, 1000 * 5 / 7, 1)  # 5 ED visits, 7 living patients
+        self.assertAlmostEqual(v, 1000 * 5 / 8, 1)  # Mike 2026-10-25: five ED visits over all eight patients.
 
     def test_top_n_by_a_rate(self):
         rows = self.run_q('Top two practices by ED visits per 1,000 patients over the last 12 months (patients = living patients of the practice).')
@@ -250,7 +255,7 @@ class ContrastComposition(CompositionFixture):
     def test_trailing_versus_on_claims(self):
         rows = self.run_q("What's the average paid amount per medical claim in 2029, out of network versus in network?")
         got = {r['network_status']: r['avg_paid_cents'] for r in rows}
-        self.assertEqual(got, {'in_network': 15000, 'out_of_network': 30000})  # paid claims only, counted rows: in (10000, 20000), out (30000)
+        self.assertEqual(got, {'in_network': 10000, 'out_of_network': 30000})  # Mike 2026-10-25: counted zero-paid claims stay in cost per claim.
 
     def test_compare_a_rate_between_pharmacy_types(self):
         rows = self.run_q('Compare the rejected-claim rate for mail-order versus retail pharmacies in 2029.')
@@ -372,7 +377,7 @@ class MoreWording(CompositionFixture):
 
     def test_a_rate_word_after_the_event(self):
         v = self.run_q('ED visit rate per 1,000 patients over the last 12 months')
-        self.assertAlmostEqual(v, 1000 * 5 / 7, 1)
+        self.assertAlmostEqual(v, 1000 * 5 / 8, 1)  # Mike 2026-10-25: all patients in event-rate denominator.
 
     def test_filled_the_most(self):
         rows = self.run_q('Which two drug classes were filled the most in the last 12 months?')

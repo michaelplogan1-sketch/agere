@@ -332,7 +332,7 @@ class FallbackForms:
 
 class RateForms:
     """Events per patient: "ED visits per 1,000 patients over the last 12 months" -> the events of each counted patient summed (count_related) over the
-    patients counted, scaled. The patients are the living, de-duplicated patients of the group (the base population), never only those with an event."""
+    patients counted, scaled. Event rates include every patient's events (Mike 2026-10-25), never only patients with an event."""
 
     PER = re.compile(r'\bper\s+(?P<n>1,?000|100|patient|member|capita)\b(?:\s+(?P<noun>patients?|members?|population|enrollees?))?', re.I)
     DEFINITION_NOTE = re.compile(r'\s*\(\s*(?:patients|members)\s*=\s*(?:living\s+)?(?:patients|members)(?:\s+of\s+(?:the|each)\s+\w+)?\s*\)', re.I)
@@ -366,7 +366,7 @@ class RateForms:
         ratio = {'kind': 'ratio', 'alias': 'rate', 'quote': [*([rate_word.group().strip()] if rate_word else []), unit_quote], 'scale': scale, 'round': 2,
                  'numerator': events, 'denominator': denominator}
         return {'source': {'table': 'patient', 'quote': noun or unit_quote}, 'select': [ratio], 'where': None, 'group_by': [], 'order_by': [], 'limit': None,
-                'unresolved': [], 'notes': [f'A rate of {event_quote} per {"patient" if scale == 1 else f"{scale:,} patients"}: the events of the living patients counted, over those patients '
+                'unresolved': [], 'notes': [f'A rate of {event_quote} per {"patient" if scale == 1 else f"{scale:,} patients"}: every patient and their events count unless living patients are explicitly requested '
                                             '(patients with no event stay in the denominator).']}
 
 

@@ -24,10 +24,10 @@ MONEY_PHRASES = [
     (r'(?:patient|member)s?\s+(?:responsibility|pay(?:ment)?s?|owe[ds]?)|owe[ds]?\s+out[- ]of[- ]pocket|out[- ]of[- ]pocket(?:\s+(?:cost|spend|amount|dollars))?|patients?\s+pay',
      {'payer_claim': 'patient_responsibility_cents', 'payer_pharmacy_claim': 'patient_pay_cents'}),
     (r'plan[- ]paid(?:\s+(?:(?:pharmacy|medical)\s+)?(?:amount|dollars|spend|cost))?|(?:does|do|did)\s+the\s+plan\s+pay|the\s+plan\s+pays?|cost(?:s|ing)?\s+the\s+plan',
-     {'payer_pharmacy_claim': 'plan_paid_cents', 'payer_claim': 'paid_cents'}),
+     {'payer_pharmacy_claim': 'plan_paid_cents', 'payer_claim': 'paid_cents', 'pharmacy_claim_event': 'payer_paid_delta_cents'}),
     (r'allowed(?:\s+(?:amount|dollars))?', {'payer_claim': 'allowed_cents'}),
     (r'billed(?:\s+(?:amount|dollars))?|charges?', {'payer_claim': 'charge_cents'}),
-    (r'paid(?:\s+(?:amount|dollars))?(?:\s+on)?|spend(?:ing)?|cost(?:s)?|payments?', {'payer_claim': 'paid_cents', 'payer_pharmacy_claim': 'plan_paid_cents'}),
+    (r'paid(?:\s+(?:amount|dollars))?(?:\s+on)?|spend(?:ing)?|cost(?:s)?|payments?', {'payer_claim': 'paid_cents', 'payer_pharmacy_claim': 'plan_paid_cents', 'pharmacy_claim_event': 'payer_paid_delta_cents'}),
 ]
 # conditions beyond claims_language.CLAIM_PREDICATES: phrase -> ((column, op, value), ...)
 EXTRA_PREDICATES = {
@@ -126,13 +126,13 @@ class ClaimFrames:
         pop = m['pop'].strip()
         concept = self.prefix(pop, {**self.conditions, **ADJECTIVE_CONDITIONS})
         if not concept or concept[2].strip(): return None
-        table = 'payer_pharmacy_claim' if re.search(r'pharmacy', m['what'], re.I) and 'payer_pharmacy_claim' in self.catalog.tables else 'payer_claim'
-        field = 'plan_paid_cents' if table == 'payer_pharmacy_claim' else 'paid_cents'
+        table = 'pharmacy_claim_event' if re.search(r'pharmacy', m['what'], re.I) else 'payer_claim'
+        if table not in self.catalog.tables: return None
+        field = 'payer_paid_delta_cents' if table == 'pharmacy_claim_event' else 'paid_cents'
         atoms, quotes, years = self.claim_period(table, m['win'] or '') if m['win'] else ([], [], [])
         if m['win'] and (not atoms or len(years) > 1): return None
         what_quote = m['what'].strip()
-        base = ([atom('payer_claim.counts_in_metrics', '=', 1, what_quote)] if table == 'payer_claim' else
-                [atom('payer_pharmacy_claim.counts_as_fill', '=', 1, what_quote)] if 'counts_as_fill' in self.catalog.tables[table] else [])
+        base = [atom('payer_claim.counts_in_metrics', '=', 1, what_quote)] if table == 'payer_claim' else []
         self.base = 'patient'
         head = t[:m.start('pop')].strip()
         cost_words = t[m.end('pop'):m.start('what')].strip()
@@ -249,6 +249,9 @@ class ClaimFrames:
                 self.base = tbl
                 return self.row_rate((tbl, numer, denom, label), rate.group().strip(), t, t)
         table = ('payer_pharmacy_claim' if PHARMACY_WORDS.search(t) else 'payer_claim' if CLAIM_WORDS.search(t) else None)
+        # Mike 2026-10-25: pharmacy payer spend nets ALL transactions by event date, never only counted fills.
+        if table == 'payer_pharmacy_claim' and not re.search(r'\bhow\s+many\b|\bnumber\s+of\b|\bcount\b|\bper\s+fill\b|days[\s\x27\u2019]+supply|patient\s+pay|member\s+pay|out[- ]of[- ]pocket', t, re.I) and re.search(r'paid|spend|cost|payments?|\bpay\b', t, re.I):
+            table = 'pharmacy_claim_event'
         if not table or table not in self.catalog.tables: return None
         if re.search(r'\bper\s+member\s+per\s+month\b|\bpmpm\b|\bper\s+(?:1,?000|100)\b', t, re.I): return None  # governed rates keep their own engines
         self.base = table
@@ -307,8 +310,6 @@ class ClaimFrames:
         else:
             default = DEFAULT_CLAIM_FILTER.get(table)
             if default and default[0] in self.catalog.tables[table]: base_atoms.append(atom(f'{table}.{default[0]}', default[1], default[2], base_quote))
-            if kind == 'avg' and field.endswith('paid_cents') and not any(a[0]['field'].endswith('final_status') for a, _ in conditions):
-                base_atoms.append(atom(f'{table}.final_status', '=', 'paid', measure_span.group().strip()))  # the average over claims that paid (a denial is not a payment of zero)
             if kind == 'sum' and field == 'patient_responsibility_cents' and not any(a[0]['field'].endswith('final_status') for a, _ in conditions):
                 base_atoms.append(atom(f'{table}.final_status', '=', 'paid', measure_span.group().strip()))  # member cost sits on paid claims; denials and reversals carry none
         where = [*base_atoms, *period_atoms, *[combine('and', a, q) for a, q in conditions]]
@@ -322,7 +323,8 @@ class ClaimFrames:
             group = ['year']
             measure = select[1]
             period_atoms_quote = None
-        notes = ['Counted payer-adjudicated claims (counts_in_metrics = 1), by service date; money is paid_cents / 100.' if table == 'payer_claim' else
+        notes = ['Net payer spend over all pharmacy transactions, including reversals and recoupments, by event date (Mike 2026-10-25).' if table == 'pharmacy_claim_event' else
+                 'Counted payer-adjudicated claims (counts_in_metrics = 1), by service date; money is paid_cents / 100.' if table == 'payer_claim' else
                  'Pharmacy claims by fill date; fills are the claims that count as fills (paid, not reversed or recouped).']
         return {'source': {'table': table, 'quote': noun.group().strip() if noun else base_quote}, 'select': select,
                 'where': combine('and', where, self.question) if where else None, 'group_by': group, 'order_by': [], 'limit': None, 'unresolved': [], 'notes': notes}

@@ -271,6 +271,15 @@ class Compiler:
                 raise PlanError('Payload fields require an explicitly selected received source stream')
             return f'json_extract({alias}.payload, {literal("$."+key)})'
         if table in scope: return scope[table] + '.' + identifier(column)
+        # A pharmacy transaction can read metadata on its exact payer source record. Never join by patient/drug (fanout).
+        if self.base == 'pharmacy_claim_event' and table == 'payer_pharmacy_claim' and all(
+                'record_id' in self.catalog.tables[t] for t in (self.base, table)):
+            if table not in self.joins:
+                with sqlite3.connect(f'file:{self.catalog.target}?mode=ro', uri=True) as db:
+                    duplicate = db.execute('SELECT record_id FROM payer_pharmacy_claim GROUP BY record_id HAVING count(*) > 1 LIMIT 1').fetchone()
+                if duplicate: raise PlanError('Pharmacy source metadata is not unique by record_id')
+                self.joins[table] = 'LEFT JOIN payer_pharmacy_claim AS pharmacy_metadata ON pharmacy_metadata.record_id = b.record_id'
+            return 'pharmacy_metadata.' + identifier(column)
         # Only the patient dimension can be implicitly joined. Other relationships
         # must be explicit EXISTS predicates; no guessed provider/claim joins.
         if table == 'patient' and 'patient_id' in self.catalog.tables[self.base]:
@@ -708,14 +717,19 @@ class Compiler:
         if self.population is not None or 'death' not in self.catalog.tables: return None
         if 'patient_id' not in self.catalog.tables.get(self.base, []) or self.base == 'death': return None
         if not decision_context.population(self.question)['living_only']: return None
+        # Mike 2026-10-25: event rates/shares are event grain too, even when their wording is not a count question.
+        # Patient counts/lists and explicitly living scopes retain the patient rule.
+        event_source = self.base in decision_context.EVENT_GRAIN_TABLES | {'stay', 'visit', 'encounter', 'returned_fill'}
+        event_rate = any(e.get('kind') == 'ratio' and (e.get('numerator') or {}).get('kind') == 'count_related' for e in plan['select'])
+        if (event_source or event_rate) and not decision_context.PATIENT_COUNT.search(self.question) and not decision_context.LIVING_ASK.search(self.question):
+            return None
         # a request that already reads `death` (the care-gap clause, "living") states the living half itself; each person still counts once
         # (b3-04: the care-gap clause alone left second charts in, 211 vs 206)
         own_death = decision_context.references_death(where)
         ends = lambda e: str(e.get('field') or '').endswith('.patient_id') or str(e.get('field') or '') == 'patient_id'
         kinds = [e for e in plan['select'] if isinstance(e, dict)]
-        # an event relation counted for a population (appointments, visits, stays) is a patient-level reading too: the answer's own
-        # defaults say "living patients", so the rows of a deceased patient are not counted (b3-29: no-shows by practice)
-        patients = self.base == 'patient' or self.base in decision_context.EVENT_GRAIN_TABLES or any(
+        # Explicit living event scopes and patient counts/lists retain the population rule.
+        patients = self.base == 'patient' or event_source or any(
             (e.get('kind') in ('field', 'count_distinct') and ends(e)) or (e.get('kind') == 'ratio' and any(
                 isinstance(x, dict) and x.get('kind') == 'count_distinct' and ends(x) for x in (e.get('numerator'), e.get('denominator'))))
             for e in kinds)

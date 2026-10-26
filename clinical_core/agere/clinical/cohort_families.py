@@ -224,7 +224,9 @@ def ed_events_sql(ed, a=None):
     return ' UNION '.join(parts)
 
 
-def admissions_sql():
+def admissions_sql(kind='hospital_stay'):
+    if kind == 'hospital_stay':
+        return "SELECT patient_id, event_date AS d FROM utilization_event WHERE kind IN ('inpatient', 'observation')"
     return ("SELECT patient_id, admission_date AS d FROM payer_claim WHERE counts_in_metrics = 1 "
             "AND substr(type_of_bill, 1, 3) IN ('011', '012') AND admission_date IS NOT NULL "
             "UNION SELECT patient_id, admit_date FROM adt_visit WHERE coalesce(final_patient_class, patient_class) = 'I'")
@@ -234,6 +236,11 @@ def discharges_sql(anchor):
     st, disp = anchor.get('claim_discharge_status'), anchor.get('adt_dispositions')
     c = f" AND discharge_status IN ({', '.join(q(s) for s in st)})" if st else ' AND discharge_date IS NOT NULL'
     d = f" AND discharge_disposition IN ({', '.join(q(s) for s in disp)})" if disp else ' AND discharge_date IS NOT NULL'
+    if anchor['kind'] == 'hospital_discharge':
+        known = (f"SELECT patient_id, discharge_date AS d FROM payer_claim WHERE counts_in_metrics = 1 AND admission_date IS NOT NULL{c} "
+                 f"UNION SELECT patient_id, discharge_date FROM adt_visit WHERE coalesce(final_patient_class, patient_class) IN ('I', 'O'){d}")
+        where = (f" AND EXISTS (SELECT 1 FROM ({known}) source WHERE source.patient_id = s.patient_id AND source.d = s.discharge_date)" if st or disp else '')
+        return "SELECT s.patient_id, s.discharge_date AS d FROM stay s WHERE s.discharge_known = 1 AND s.type IN ('inpatient', 'observation')" + where
     return (f"SELECT patient_id, discharge_date AS d FROM payer_claim WHERE counts_in_metrics = 1 "
             f"AND substr(type_of_bill, 1, 3) IN ('011', '012'){c} "
             f"UNION SELECT patient_id, discharge_date FROM adt_visit WHERE coalesce(final_patient_class, patient_class) = 'I'{d}")
@@ -299,7 +306,7 @@ def render_event_followup_gap(p, as_of, tables=None):
         anchor = f"SELECT patient_id, event_date AS d FROM measurement WHERE {_measure_where(an)}"
     elif an['kind'] == 'ed_visit':
         anchor = ed_events_sql(an)
-    elif an['kind'] == 'inpatient_discharge':
+    elif an['kind'] in ('inpatient_discharge', 'hospital_discharge'):
         anchor = discharges_sql(an)
     elif an['kind'] == 'procedure':
         anchor = f"SELECT patient_id, service_date AS d FROM procedure_line WHERE {_codes_clause('cpt', an['codes'])}"
@@ -310,7 +317,7 @@ def render_event_followup_gap(p, as_of, tables=None):
     where = _window('x.d', a, win) + population_filters('x.patient_id', p.get('population'), a, tables)
     if p.get('exclude_admission_within_days') is not None:
         k = int(p['exclude_admission_within_days'])
-        where.append(f"NOT EXISTS (SELECT 1 FROM ({admissions_sql()}) i WHERE i.patient_id = x.patient_id "
+        where.append(f"NOT EXISTS (SELECT 1 FROM ({admissions_sql(p.get('exclude_admission_kind', 'hospital_stay'))}) i WHERE i.patient_id = x.patient_id "
                      f"AND i.d BETWEEN x.d AND date(x.d, '+{k} day'))")
     where.append(f"NOT EXISTS (SELECT 1 FROM followup v WHERE v.patient_id = x.patient_id AND v.d > x.d "
                  f"AND v.d <= date(x.d, '+{n} day'))")
@@ -365,7 +372,7 @@ def render_therapy_class_gap(p, as_of, tables=None, returns='patient_set'):
 def render_utilization_threshold(p, as_of, tables=None):
     a = q(as_of)
     ev = p['event']
-    events = ed_events_sql(p.get('ed')) if ev == 'ed_visit' else admissions_sql()
+    events = ed_events_sql(p.get('ed')) if ev == 'ed_visit' else admissions_sql('hospital_stay' if ev == 'hospital_stay' else 'inpatient')
     where = _window('d', a, p.get('window')) + population_filters('patient_id', p.get('population'), a, tables)
     return (f"SELECT patient_id FROM ({events}) WHERE " + ' AND '.join(where)
             + f"\nGROUP BY patient_id HAVING count(DISTINCT d) >= {int(p['min_count'])}\nORDER BY patient_id")
@@ -432,7 +439,7 @@ def validate(spec):
     f = s['family']
     if f == 'event_followup_gap':
         an = p['anchor']
-        if an['kind'] not in ('ed_visit', 'inpatient_discharge', 'measurement', 'procedure'): raise ValueError('bad anchor kind')
+        if an['kind'] not in ('ed_visit', 'inpatient_discharge', 'hospital_discharge', 'measurement', 'procedure'): raise ValueError('bad anchor kind')
         if an['kind'] == 'measurement' and (an.get('op') not in OPS or not isinstance(an.get('value'), (int, float)) or not an.get('concept')):
             raise ValueError('measurement anchor needs concept, op and value')
         for x in an.get('dx_prefixes') or []:
@@ -449,7 +456,7 @@ def validate(spec):
             if not c.get('terms') or not all(isinstance(t, str) and re.fullmatch(r"[a-z0-9 /\-]{3,40}", t) for t in c['terms']):
                 raise ValueError(f"bad drug terms for {c.get('name')}")
     elif f == 'utilization_threshold':
-        if p.get('event') not in ('ed_visit', 'inpatient_admission'): raise ValueError('event must be ed_visit or inpatient_admission')
+        if p.get('event') not in ('ed_visit', 'inpatient_admission', 'hospital_stay'): raise ValueError('event must be ed_visit, inpatient_admission or hospital_stay')
         if not isinstance(p.get('min_count'), int) or not 1 <= p['min_count'] <= 365: raise ValueError('min_count 1..365')
         y = (p.get('window') or {}).get('year')
         if y is not None and (not isinstance(y, int) or not 1900 <= y <= 2100): raise ValueError('window year 1900..2100')
@@ -874,7 +881,7 @@ def parse(question, as_of):
     from . import decision_context
     # patients are living patients unless the question asks for the deceased (the question's own words: an inline definition that names a
     # death date to exclude is the same rule, not a request for the deceased)
-    alive = not decision_context.asks_deceased(qtext)
+    alive = decision_context.population(qtext)['living_only']
     death_source = 'cclf8' if re.search(r'cclf\s*8', al) else 'any'
     age = _age(dl) or _age(ql)
     sex = _sex(dl) or _sex(ql)
@@ -890,7 +897,7 @@ def parse(question, as_of):
             anchor.setdefault('sources', ['claims', 'ehr'])
             if def_dx: pop['condition_prefixes'] = def_dx
         elif re.search(r'discharg|hospitali[sz]|inpatient stay|left the hospital', ql) and not (meas and meas.get('op')):
-            anchor = {'kind': 'inpatient_discharge'}
+            anchor = {'kind': 'inpatient_discharge' if re.search(r'\binpatient\b', al) else 'hospital_discharge'}
             m = re.search(r'discharge status(?:es)?\s+((?:\d{2})(?:\s*(?:,|or|and)\s*\d{2})*)', al)
             anchor['claim_discharge_status'] = re.findall(r'\d{2}', m.group(1)) if m else ['01', '06']
             m = re.search(r'disposition\s+((?:home health|home|snf|skilled nursing|rehab\w*|hospice)(?:\s*(?:,|or|and)\s*(?:home health|home|snf|skilled nursing|rehab\w*|hospice))*)', al)
@@ -949,6 +956,7 @@ def parse(question, as_of):
         if anchor['kind'] == 'ed_visit' and re.search(r'discharged home|sent home|released home|treat(?:ed)? and release', al):
             nxt = re.search(r'(?:that|the same) day or the next|same or next day|next day', al)
             params['exclude_admission_within_days'] = 1 if nxt or not re.search(r'same day', al) else 0
+            if re.search(r'\binpatient\b', al): params['exclude_admission_kind'] = 'inpatient'
     elif family == 'therapy_class_gap':
         dx = def_dx or _conditions(ql)
         if dx: pop['condition_prefixes'] = dx
@@ -976,7 +984,8 @@ def parse(question, as_of):
             from .analysis_graph import patient_list_question
             if patient_list_question(qtext): returns = 'table'
     elif family == 'utilization_threshold':
-        params['event'] = 'ed_visit' if re.search(r'\b(?:ed|er|emergency(?: department| room)?)\b', ql) else 'inpatient_admission'
+        params['event'] = ('ed_visit' if re.search(r'\b(?:ed|er|emergency(?: department| room)?)\b', ql) else
+                           'inpatient_admission' if re.search(r'\binpatient\b', al) else 'hospital_stay')
         m = (re.search(r'(\d+)\s*(?:or more|\+|or greater)', ql) or re.search(r'at least\s+(\d+)', ql)
              or re.search(r'>=\s*(\d+)', dl))
         n = int(m.group(1)) if m else None

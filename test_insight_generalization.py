@@ -10,9 +10,11 @@ class InsightGeneralization(unittest.TestCase):
         self.f=F.EngineForms(); self.f.setUp(); self.addCleanup(self.f.doCleanups)
         self.catalog=R.Catalog.load(self.f.path)
 
-    def test_frequent_use_shapes_keep_living_visit_denominator(self):
+    def test_frequent_use_shapes_include_all_event_owners(self):
         counts=Counter(p for p,d in F.ED if F.living(p) and F.in_win(d))
         expected=sorted(p for p,n in counts.items() if n>=3)
+        # Mike 2026-10-25: patient lists stay living, but both event-share readings include deceased patients.
+        events=Counter(p for p,d in F.ED if F.in_win(d))
         for q in ('Identify frequent ED users and the share of ED volume they account for.',
                   'Which patients use the ED frequently, and what portion of all ED visits do they generate?',
                   'Frequent ED utilizers — who are they, and how much of ED volume comes from them?',
@@ -20,8 +22,8 @@ class InsightGeneralization(unittest.TestCase):
             with self.subTest(q=q):
                 a=self.f.answer(q);facts={v['id']:v for v in a['insight']['facts']}
                 self.assertEqual(a['patient_ids'],expected)
-                self.assertEqual(facts['visits']['denominator'],sum(counts.values()))
-                self.assertEqual(facts['visits']['numerator'],sum(counts[p] for p in expected))
+                self.assertEqual(facts['visits']['denominator'],sum(events.values()))
+                self.assertEqual(facts['visits']['numerator'],sum(n for n in events.values() if n>=3))
 
     def test_priority_wording_uses_same_existing_tiers(self):
         base=self.f.answer('Who should we prioritize for diabetes outreach?')

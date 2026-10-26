@@ -128,20 +128,19 @@ PROD_FILTERS = ['commercial', 'medicaid', 'medicare_advantage', 'medicare_ffs', 
 
 
 def vbc_variants(rng):
+    # Mike 2026-10-25: medical paid on counted service-date claims; pharmacy net over all event-date transactions.
     out = []
     years = [2027, 2028, 2029]
     for y in years + [2030]:
         for g in (None, 'product', 'line of business'):
-            d = (f"All patients. Sum of paid_amount over every payer medical claim adjudication with a paid date in {y} (reversals "
-                 f"and recoupments are negative; voids pay 0)" + (f", by the claim's {g}" if g else '') + '.')
+            d = (f"All patients. Sum of paid_cents on counted payer medical claims with service_from in {y}" + (f", by the claim's {g}" if g else '') + '.')
             out.append(_item('vbc_family', 'claims_finance', f'How much did payers pay on medical claims in {y}' + (f' by {g}' if g else '') + '?', d,
                              {'family': 'paid', 'year': y, 'group': g}, 'table' if g else 'value'))
         out.append(_item('vbc_family', 'claims_finance', f'How much did members owe out of pocket on {y} medical claims?',
                          f"All patients. Sum of patient_responsibility (the payer's adjudicated member liability) on payer medical claims "
                          f"whose latest adjudication is paid, service_from in {y}." + SCOPE, {'family': 'liability', 'year': y}, 'value'))
         out.append(_item('vbc_family', 'claims_finance', f'What did the plans pay for prescriptions in {y}?',
-                         f"All patients. Sum of plan_paid on payer pharmacy claims with fill date in {y} (paid fills minus recoupments; "
-                         f"reversed and rejected pay 0).", {'family': 'rx', 'year': y}, 'value'))
+                         f"All patients. Sum of payer_paid_delta_cents on all pharmacy claim transactions with event date in {y} (reversals and recoupments netted).", {'family': 'rx', 'year': y}, 'value'))
     for y in years:
         for prod in [None] + rng.sample(PROD_FILTERS, 3):
             out.append(_item('vbc_family', 'claims_finance', f'What were total allowed dollars on {prod or "all"} medical claims in {y}?',
@@ -390,13 +389,12 @@ class Reference:
         return c['product'] == prod if prod not in ('medicare', 'dual') else c['line_of_business'] == prod
 
     def paid(self, t):
-        prod = {c['payer_claim_id']: c for c in self.claims()}
+        # Mike 2026-10-25: reference arithmetic uses counted claims and service dates, not adjudication deltas.
         tot = defaultdict(int)
-        for a in self.rows('SELECT payer_claim_id, paid_date, claim_status, paid_cents FROM payer_adjudication'):
-            c = prod.get(a['payer_claim_id'])
-            if c is None or not self._in(a['paid_date'], t['year']): continue
+        for c in self.claims():
+            if not c['counts_in_metrics'] or not self._in(c['service_from'], t['year']): continue
             key = {'product': c['product'], 'line of business': c['line_of_business']}.get(t['group'], '_')
-            tot[key] += 0 if a['claim_status'] == 'voided' else (a['paid_cents'] or 0)
+            tot[key] += c['paid_cents'] or 0
         out = {k: round(v / 100.0, 2) for k, v in tot.items()}
         return out if t['group'] else out.get('_', 0.0)
 
@@ -408,12 +406,8 @@ class Reference:
         return round(sum(c['patient_responsibility_cents'] or 0 for c in self.claims() if self._final_paid(c) and self._in(c['service_from'], t['year'])) / 100.0, 2)
 
     def rx(self, t):
-        s = 0
-        for r in self.rows('SELECT fill_date, claim_status, reversed_by_record_id, plan_paid_cents FROM payer_pharmacy_claim'):
-            if not self._in(r['fill_date'], t['year']): continue
-            if r['claim_status'] == 'paid' and not r['reversed_by_record_id']: s += r['plan_paid_cents'] or 0
-            elif r['claim_status'] == 'recouped': s += r['plan_paid_cents'] or 0
-        return round(s / 100.0, 2)
+        return round(sum(r['payer_paid_delta_cents'] or 0 for r in self.rows('SELECT event_date, payer_paid_delta_cents FROM pharmacy_claim_event')
+                         if self._in(r['event_date'], t['year'])) / 100.0, 2)
 
     def _member_months(self, y, scope, prod=None, key=None):
         deaths = {r['patient_id']: r['death_date'] for r in self.rows('SELECT patient_id, death_date FROM death')}

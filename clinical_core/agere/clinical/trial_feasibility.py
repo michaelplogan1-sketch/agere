@@ -231,7 +231,10 @@ def evaluate(db, c, people, as_of_day, cache):
         return {pid: (len(days.get(pid, ())) >= c['min_fills'], min(days[pid]) if days.get(pid) else None) for pid in people}
     # encounter
     days = defaultdict(set)
-    for pid, d in db.execute('SELECT patient_id, substr(event_date,1,10) FROM visit WHERE type_concept = ? AND event_date IS NOT NULL', (c['concept'],)):
+    query, args = 'SELECT patient_id, substr(event_date,1,10) FROM visit WHERE type_concept = ? AND event_date IS NOT NULL', (c['concept'],)
+    if c['concept'] == 'hospital_stay':
+        query, args = "SELECT patient_id, event_date FROM utilization_event WHERE kind IN ('inpatient', 'observation') AND event_date IS NOT NULL", ()
+    for pid, d in db.execute(query, args):
         if pid in people and lo <= _day(d) <= as_of_day: days[pid].add(_day(d))
     return {pid: (len(days.get(pid, ())) >= c['min_count'], min(days[pid]) if days.get(pid) else None) for pid in people}
 

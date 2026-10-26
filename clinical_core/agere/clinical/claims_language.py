@@ -11,9 +11,9 @@ quoted fragment of the request or be a function word, and every number must be c
 
 Definitions used (each is stated in the answer's limitations):
   * medical claims are the payer-adjudicated claims with counts_in_metrics = 1 (current, non-duplicate version of each claim), dated by
-    service_from; money is paid_cents / 100 (reversals and recoupments net out in paid_cents);
+    service_from; money is the payer amount on that counted version (paid_cents / 100);
   * an ED claim is a claim with place of service 23 (emergency room, hospital); hospital claims are institutional claims;
-  * the average paid amount is over claims whose final status is paid (a denied claim is not a payment of zero);
+  * cost per claim averages payer paid over all counted claims, including zero-paid claims (Mike 2026-10-25);
   * a rate of claims is claims meeting the condition over all counted claims, except where a rate has its own denominator below.
 """
 import re
@@ -21,9 +21,10 @@ import re
 SRC_PHRASE = re.compile(r'\b(?:medical\s+claims?|payer[- ]feed\s+medical\s+claims|claims?|pharmacy\s+claims?|prescription\s+claims?|medical\s+spend(?:ing)?|'
                         r'paid\s+spend|spend(?:ing)?|pharmacy\s+spend(?:ing)?)\b', re.I)
 YEAR = re.compile(r'\b(20\d\d)\b')
-MONEY = {'payer_claim': ('paid_cents', 'paid_cents'), 'payer_pharmacy_claim': ('plan_paid_cents', 'plan_paid_cents')}  # cents in the plan; answer_format shows dollars
+MONEY = {'payer_claim': ('paid_cents', 'paid_cents'), 'payer_pharmacy_claim': ('plan_paid_cents', 'plan_paid_cents'),
+         'pharmacy_claim_event': ('payer_paid_delta_cents', 'payer_paid_delta_cents')}  # cents in the plan; answer_format shows dollars
 DEFAULT_CLAIM_FILTER = {'payer_claim': ('counts_in_metrics', '=', 1)}
-CLOCK = {'payer_claim': 'service_from', 'payer_pharmacy_claim': 'fill_date'}
+CLOCK = {'payer_claim': 'service_from', 'payer_pharmacy_claim': 'fill_date', 'pharmacy_claim_event': 'event_date'}
 
 # phrase -> conditions on the claim row ((column, operator, value), ...). Data, not question recipes.
 CLAIM_PREDICATES = {
@@ -48,6 +49,10 @@ CLAIM_PREDICATES = {
         (r'brand(?:[- ]name)?(?:s)?', (('formulary_tier', '=', 'brand'),)),
         (r'specialty', (('formulary_tier', '=', 'specialty'),)),
     ],
+    'pharmacy_claim_event': [(r'rejected', (('status', '=', 'rejected'),)),
+        (r'generics?', (('payer_pharmacy_claim.formulary_tier', '=', 'generic'),)),
+        (r'brand(?:[- ]name)?(?:s)?', (('payer_pharmacy_claim.formulary_tier', '=', 'brand'),)),
+        (r'specialty', (('payer_pharmacy_claim.formulary_tier', '=', 'specialty'),))],
 }
 
 # a rate of rows: name -> (table, numerator conditions, denominator conditions, label). The denominator is the rows the rate is defined over.
@@ -75,7 +80,8 @@ class ClaimForms:
         cache = getattr(self, '_drug_phrases', None)
         if cache is None:
             cache = self._drug_phrases = {}
-            names = self.observed_values('payer_pharmacy_claim', 'drug_name', limit=2000) if 'payer_pharmacy_claim' in self.catalog.tables else []
+            table = 'pharmacy_claim_event' if 'pharmacy_claim_event' in self.catalog.tables else 'payer_pharmacy_claim'
+            names = self.observed_values(table, 'drug_name', limit=2000) if table in self.catalog.tables else []
             for name in names:
                 tokens = [b.strip() for b in re.findall(r'\[([^\]]+)\]', name)]
                 ingredient = re.match(r'(?:[\d.]+\s*(?:ML|HR|DAY|ACTUAT|UNT)?\s*)*([A-Za-z][A-Za-z-]{4,})', name)
@@ -97,7 +103,8 @@ class ClaimForms:
     def claim_table(self, text, default=False):
         """The claims relation a text is about: pharmacy words -> pharmacy claims; claim / spend words -> medical claims; else None (or medical
         claims when the lead itself is about paying, default=True). A question about patients never becomes a claims question."""
-        if re.search(r'pharmacy|prescription', text, re.I) or self.drug_mentions(text): t = 'payer_pharmacy_claim'
+        if re.search(r'pharmacy|prescription', text, re.I) or self.drug_mentions(text):
+            t = 'pharmacy_claim_event' if re.search(r'\b(?:paid|pay|spend|spending|cost|costs|payments?)\b', text, re.I) else 'payer_pharmacy_claim'
         elif default or re.search(r'\bclaims?\b|\bspend(?:ing)?\b|\bpaid\s+(?:amount|dollars)\b|\bpayments?\b', text, re.I): t = 'payer_claim'
         else: return None
         return t if t in self.catalog.tables else None
@@ -139,17 +146,17 @@ class ClaimForms:
         out = []
         for pattern, conditions in CLAIM_PREDICATES.get(table, []):
             for m in re.finditer(r'(?<![\w-])(?:' + VERB + r'\s+)?' + pattern + r'(?![\w-])', text, re.I):
-                if not all(c in self.catalog.tables[table] for c, _, _ in conditions): continue
+                if not all((c.partition('.')[2] in self.catalog.tables.get(c.partition('.')[0], []) if '.' in c else c in self.catalog.tables[table]) for c, _, _ in conditions): continue
                 q = m.group().strip()
-                out.append((m.start(), [atom(f'{table}.{c}', op, v, q) for c, op, v in conditions], q))
-        if table == 'payer_pharmacy_claim' and 'drug_name' in self.catalog.tables[table]:
+                out.append((m.start(), [atom(c if '.' in c else f'{table}.{c}', op, v, q) for c, op, v in conditions], q))
+        if table in ('payer_pharmacy_claim', 'pharmacy_claim_event') and 'drug_name' in self.catalog.tables[table]:
             for start, quote in self.drug_mentions(text):  # a named drug: the claims whose received drug name contains it
                 out.append((start, [atom(f'{table}.drug_name', 'like', f'%{quote}%', quote)], quote))
         out.sort(key=lambda x: x[0])
         return out
 
     def base_claim_atoms(self, table, quote, amounts=False):
-        """The rows a claim question counts: counted medical claims; for pharmacy money, the claims that count as fills (paid, not rejected or reversed)."""
+        """Counted medical claims; all pharmacy transactions for payer spend. Explicit per-fill metrics keep their fill denominator."""
         from .request_language import atom
         col = DEFAULT_CLAIM_FILTER.get(table) or (('counts_as_fill', '=', 1) if amounts and table == 'payer_pharmacy_claim' else None)
         return [atom(f'{table}.{col[0]}', col[1], col[2], quote)] if col and col[0] in self.catalog.tables[table] else []
@@ -249,9 +256,7 @@ class ClaimForms:
         src_quote = noun.group() if noun else (preds[-1][2] if preds else rest.split()[0])
         where = [*self.base_claim_atoms(table, src_quote), *year_atoms, *[combine('and', a, q) for _, a, q in preds]]
         notes = ['Average over counted payer-adjudicated claims by service date.']
-        if kind == 'paid':
-            where.append(atom('payer_claim.final_status', '=', 'paid', src_quote))
-            notes.append('The average paid amount is over claims whose final status is paid (a denied claim is not a payment of zero).')
+        # Mike 2026-10-25: cost per claim uses all counted medical claims, including zero-paid claims.
         head = text[:m.start('rest')].strip()
         measure = {'kind': 'avg', 'field': f'payer_claim.{field}', 'alias': f'avg_{kind}_cents', 'quote': head}
         return {'source': {'table': table, 'quote': src_quote}, 'select': [measure], 'where': combine('and', where, self.question),

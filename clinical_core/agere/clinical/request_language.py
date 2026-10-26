@@ -24,15 +24,17 @@ SOURCES = {
     'patients': ('patient', None), 'people': ('patient', None), 'members': ('patient', None),
     'ed visits': ('utilization_event', ('kind', 'ed_visit')),
     'emergency department visits': ('utilization_event', ('kind', 'ed_visit')),
-    'hospital admissions': ('stay', ('type', 'inpatient')),
+    'hospital admissions': ('stay', None),
     'pharmacy claims': ('payer_pharmacy_claim', None),
     'er visits': ('utilization_event', ('kind', 'ed_visit')),
     'emergency visits': ('utilization_event', ('kind', 'ed_visit')),
     'inpatient admissions': ('stay', ('type', 'inpatient')), 'inpatient stays': ('stay', ('type', 'inpatient')),
     'observation stays': ('utilization_event', ('kind', 'observation')),
-    'admissions': ('stay', ('type', 'inpatient')), 'hospital stays': ('stay', None),
-    'inpatient discharges': ('stay', ('type', 'inpatient')), 'hospital discharges': ('stay', ('type', 'inpatient')),
-    'discharges': ('stay', ('type', 'inpatient')),
+    # Mike 2026-10-25: stay carries inpatient AND observation; only an explicit inpatient qualifier narrows it.
+    'admissions': ('stay', None), 'hospital stays': ('stay', None),
+    'hospitalizations': ('stay', None), 'hospitalisations': ('stay', None),
+    'inpatient discharges': ('stay', ('type', 'inpatient')), 'hospital discharges': ('stay', None),
+    'discharges': ('stay', None),
     # Mike, 2026-10-21: medical-claim finance questions use payer-adjudicated claims, counted rows only.
     'claims': ('payer_claim', ('counts_in_metrics', 1)), 'medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'visits': ('visit', None), 'appointments': ('appointment', None),
@@ -105,8 +107,9 @@ EVIDENCE = [
     # decision context: an inpatient stay is the all-source admission (stay), an observation stay the all-source utilization_event
     (r'(?:active|current)\s+(?:medications?|meds?|drugs?|prescriptions?)(?:\s+(?:on|in)\s+(?:their|the|his|her)\s+(?:medication\s+)?(?:list|profile))?', 'medication_list_entry', 'last_listed',
      [('list_status', '=', 'active')]),
-    (r'(?:(?:inpatient|hospital)\s+(?:admissions?|stays?))|admissions?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    (r'inpatient\s+(?:admissions?|stays?)', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
     (r'observation\s+(?:stays?|visits?|admissions?)', 'utilization_event', 'event_date', [('kind', '=', 'observation')]),
+    (r'(?:hospital\s+(?:admissions?|stays?))|admissions?|hospitali[sz]ations?|admitted(?:\s+to\s+the\s+hospital)?', 'stay', 'admit_date', [('type', 'in', ['inpatient', 'observation'])]),
     (r'(?:ed|er|emergency(?:\s+department)?)\s+visits?', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
     (r'(?:the\s+)?(?:ed|er|emergency\s+(?:department|room))(?!\s+visits?)', 'utilization_event', 'event_date', [('kind', '=', 'ed_visit')]),
     # an office visit is an in-person primary-care or specialist visit (visit.type_concept); telephone, telehealth, ED, urgent care and inpatient contacts are not
@@ -116,9 +119,11 @@ EVIDENCE = [
 ]
 # Dated events that can anchor or follow in a sequence: (pattern, table, date field, fixed predicates).
 SEQUENCE_EVENTS = [
-    (r'(?:an?\s+|their\s+|the\s+)?(?:(?:inpatient|hospital)\s+)?discharges?', 'stay', 'discharge_date',
+    (r'(?:an?\s+|their\s+|the\s+)?inpatient\s+discharges?', 'stay', 'discharge_date',
      [('type', '=', 'inpatient'), ('discharge_known', '=', 1)]),
-    (r'(?:an?\s+|their\s+|the\s+)?(?:inpatient|hospital)\s+(?:admissions?|stays?)', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    (r'(?:an?\s+|their\s+|the\s+)?(?:hospital\s+)?discharges?', 'stay', 'discharge_date', [('discharge_known', '=', 1)]),
+    (r'(?:an?\s+|their\s+|the\s+)?inpatient\s+(?:admissions?|stays?)', 'stay', 'admit_date', [('type', '=', 'inpatient')]),
+    (r'(?:an?\s+|their\s+|the\s+)?(?:hospital\s+)?(?:admissions?|stays?)|hospitali[sz]ations?', 'stay', 'admit_date', [('type', 'in', ['inpatient', 'observation'])]),
     (r'(?:their\s+)?death', 'death', 'death_date', []),
     # Mike, 2026-10-21: a primary care visit is an EHR primary-care visit or a counted payer claim for an office E/M
     # visit (CPT 99202-99215); both rows share the pattern, so either source satisfies the event.
@@ -192,7 +197,7 @@ FIELDS = {
     'admission date': 'stay.admit_date',
 }
 CLOCKS = {'utilization_event': 'event_date', 'visit': 'event_date', 'stay': 'admit_date', 'claim': 'service_date',
-          'payer_claim': 'service_from', 'note_fact': 'event_date', 'payer_pharmacy_claim': 'fill_date',
+          'payer_claim': 'service_from', 'note_fact': 'event_date', 'payer_pharmacy_claim': 'fill_date', 'pharmacy_claim_event': 'event_date',
           'prescription': 'ordered_date', 'fill': 'fill_date',
           'appointment': 'scheduled_date', 'medication': 'event_date',
           'measurement': 'event_date', 'condition': 'event_date', 'record': 'event_date',
@@ -312,7 +317,9 @@ class Parser(AnalystForms, SdohComposition, ComparisonForms, ClaimFrames, RateFo
         clock_aliases = {}
         if self.base == 'claim': fields['payer'] = 'claim.payer'
         if self.base == 'payer_claim': fields['payer'] = 'payer_claim.payer_id'
-        for table in ('patient', self.base):
+        dimensions = ('payer_pharmacy_claim',) if self.base == 'pharmacy_claim_event' and all(
+            'record_id' in self.catalog.tables.get(t, []) for t in ('pharmacy_claim_event', 'payer_pharmacy_claim')) else ()
+        for table in ('patient', *dimensions, self.base):
             for column in self.catalog.tables.get(table, []):
                 fields[column] = fields[column.replace('_', ' ')] = table+'.'+column
                 if column.endswith('_cents'):
