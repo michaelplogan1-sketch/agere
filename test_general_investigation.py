@@ -211,4 +211,31 @@ class SubscriptionBoundary(unittest.TestCase):
             with self.assertRaises(ProviderUnavailable): cascade.attempt('backstop_agent', None)
 
 
+class SharedGateway(unittest.TestCase):
+    def test_a_complete_document_larger_than_the_old_pilot_quota_reaches_system_one(self):
+        import io,tempfile
+        from pathlib import Path
+        from clinical_core.providers import EvidenceTask
+        from clinical_core.agere.gateway import BudgetLedger, PersistentGateway
+        content = 'Received document context. ' * 2000 + 'The last requested finding is here.'
+        task = EvidenceTask('Does the complete document support the finding?', '2030-01-01',
+                            {'supported': 'supported', 'unknown': 'unknown'},
+                            [{'id': 'document', 'text': content, 'date': '2029-01-01', 'note_id': 'N1'}])
+        seen = []
+        def transport(request, **kw):
+            body=json.loads(request.data); seen.append(body)
+            self.assertGreater(len(request.data),20000)
+            self.assertIn('The last requested finding is here.',body['state']['evidence'][0]['text'])
+            return io.BytesIO(json.dumps({'model': PersistentGateway.MODELS['jev'], 'answers': {
+                'reason': {'type':'choice','choice':'supported','probabilities':{'supported':1.0,'unknown':0.0}},
+                'support': {'type':'choice','choice':'document','probabilities':{'document':1.0,'unknown':0.0}}},
+                'usage': {'input_tokens':100,'output_tokens':0}}).encode())
+        with tempfile.TemporaryDirectory() as td, patch.dict(os.environ,{'TYPESAFE_API_KEY':'scripted-test-key'}):
+            ledger=BudgetLedger(Path(td)/'ledger.sqlite3')
+            try: result=PersistentGateway(ledger,allow_live=True,transport=transport).classify('jev',task)
+            finally: ledger.close()
+        self.assertEqual(result['label'],'supported')
+        self.assertEqual(len(seen),1)
+
+
 if __name__ == '__main__': unittest.main()

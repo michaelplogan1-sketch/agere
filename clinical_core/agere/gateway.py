@@ -175,7 +175,11 @@ class PersistentGateway:
         endpoint,variable=self.ENDPOINTS[provider];secret=os.environ.get(variable)
         if not secret:raise ValueError('Missing '+variable)
         encoded=json.dumps(body,allow_nan=False).encode()
-        if len(encoded)>20000:raise ValueError('Bounded request exceeds 20000 bytes; chunk explicitly')
+        # The old 20 KB pilot quota prevented whole-document and compound-answer review before a provider was called.
+        # Use the actual TypeSafe transport limit; other providers report their own context/transport constraints.
+        # https://docs.typesafe.ai/api/errors (verified 2026-10-26)
+        if provider=='jev' and len(encoded)>32*1024*1024:
+            raise ValueError('TypeSafe request exceeds its 32 MiB transport limit; partition the evidence explicitly')
         cached=self.ledger.reserve(key,provider,body['model'])
         if cached is not None:return self._parse(parser,task,cached)
         headers={'Content-Type':'application/json'}

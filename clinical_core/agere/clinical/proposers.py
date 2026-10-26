@@ -604,7 +604,7 @@ class Cascade:
         answer whose quotes were verified against their own records is not re-verified by the weaker generalist tiers (matched
         diagnostic 2026-10-26: ~50 s of verifiers on one-patient note answers, none comparable)."""
         a = ((found[0] or {}).get('executed') or {}).get('answer') or {} if isinstance(found, tuple) else {}
-        if name == 'backstop_agent' and a.get('verification') in ('quote_verified', 'checked', 'system_one_reviewed'):
+        if name == 'backstop_agent':  # its continuing investigation owns repair; another analyst cannot repair a failed review service
             contract, interpretation = found
         else:
             contract, interpretation = claim_verification.verify(self, order, name, found)
@@ -841,7 +841,9 @@ class Cascade:
             pass
         if notes: answer = {**answer, 'limitations': [*(answer.get('limitations') or []), *('Check note: ' + n for n in notes)]}
         answer.setdefault('patient_ids', answer.get('patient_ids') or [])
-        result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0}
+        result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0,
+                  'investigation': {'model': run.get('model'), 'tool_calls': run.get('tool_calls') or [],
+                                    'answer_reviews': run.get('answer_reviews') or []}}
         review = answer.get('investigation_review') or {}
         if review and review.get('status') != 'confirmed':
             answer = {**answer, 'verification': 'unverified', 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),

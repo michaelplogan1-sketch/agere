@@ -534,7 +534,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     wh.define(as_of)
     docs, _ = analyst_definitions.agere_context(wh, base)
     quota = f'The caller configured a quota of {MAX_TOOLS} tool calls.' if MAX_TOOLS is not None else 'There is no fixed tool-call quota.'
-    rules = RULES.format(tool_quota=quota) + '\n' + decision_context.prompt_block() + '\n' + analyst_definitions.CONTRACT_SUFFIX
+    rules = RULES.format(tool_quota=quota) + '\n' + decision_context.prompt_block()
     system = [{'type': 'text', 'text': rules}, {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     from . import patient_ids
     prior = patient_ids.current_prior() or {}
