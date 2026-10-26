@@ -62,6 +62,15 @@ class JudgeDocuments(unittest.TestCase):
         self.assertEqual(out['unknown_documents'], 1)
 
 
+class Metrics(unittest.TestCase):
+    def test_metrics_are_typed_and_an_unknown_id_is_a_correctable_tool_error(self):
+        t = B.Tools.__new__(B.Tools)
+        ids = {m['id'] for m in t.list_metrics()['metrics']}
+        self.assertIn('ed_visits', ids)
+        with self.assertRaises(ValueError):
+            t.execute_metric('not_a_metric', '2029-01-01', '2029-12-31')
+
+
 class Cohort(unittest.TestCase):
     def test_the_saved_population_is_a_view_the_agent_joins_to(self):
         import sqlite3

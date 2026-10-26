@@ -42,6 +42,16 @@ TOOLS = [
      "measure specs) and return the answer with its method, or say they could not read it. No language model; a few seconds. Prefer this for "
      "every number it can answer; use query_sql for what it cannot.",
      'input_schema': {'type': 'object', 'properties': {'question': {'type': 'string'}}, 'required': ['question'], 'additionalProperties': False}},
+    {'name': 'list_metrics', 'description': "Agere's governed metrics (HEDIS / CMS quality measures, utilization, PMPM, spend, denials, ...): "
+     "id, name, unit, what it counts. Call once when a question names or implies a standard measure.",
+     'input_schema': {'type': 'object', 'properties': {}, 'additionalProperties': False}},
+    {'name': 'execute_metric', 'description': "Run ONE governed metric by id for a period (YYYY-MM-DD, inclusive), optionally grouped by up to "
+     "three of payer, coverage_type, pcp, practice, sex, age_band. Its versioned definition is applied exactly (population, exclusions, "
+     "numerator, denominator); the saved cohort, if any, is its population. Returns the value or table with its method.",
+     'input_schema': {'type': 'object', 'properties': {'metric_id': {'type': 'string'}, 'period_start': {'type': 'string'},
+                                                       'period_end': {'type': 'string'},
+                                                       'group_by': {'type': 'array', 'items': {'type': 'string'}}},
+                      'required': ['metric_id', 'period_start', 'period_end'], 'additionalProperties': False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Results are capped (2000 rows / 60K characters); aggregate in SQL.",
      'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'}}, 'required': ['sql'], 'additionalProperties': False}},
@@ -72,8 +82,8 @@ TOOLS = [
 RULES = '''You are the final analyst of Agere, a healthcare analytics system over synthetic clinical, claims and document data. Every other layer
 has already declined this question, so it is yours to answer completely and correctly. Work like a careful senior analyst:
 - Plan first: break the question into the simple facts it needs (each measure, population, period and comparison group). Get each number
-  from ask_agere first (one simple sub-question per call; its governed definitions are the ones this system is judged by), and use
-  query_sql only for what ask_agere cannot answer or to break its result down further.
+  from a governed source first: execute_metric when a governed metric fits (list_metrics shows them), else ask_agere (one simple
+  sub-question per call); use query_sql for what neither answers or to break a result down further, following the decision context.
 - Anything a note, discharge summary, letter, report or scanned document says: list_documents for the patient (narrow by date to the visit
   asked about), then judge_documents with ONE atomic question and its options over the documents in scope (System One reads each whole
   document), or read_document (to the end of a long report) for a value or a date; answer from what the documents say and quote the
@@ -149,11 +159,35 @@ class Tools:
             if set(args) != {'sql'}: raise ValueError('query_sql takes one sql string')
             return self.semantic.query(args['sql'], as_of=self.as_of, max_rows=2000, max_chars=60000)
         if name == 'ask_agere': return self.ask_agere(**args)
+        if name == 'list_metrics': return self.list_metrics()
+        if name == 'execute_metric': return self.execute_metric(**args)
         if name == 'list_documents': return self.list_documents(**args)
         if name == 'search_documents': return self.search_documents(**args)
         if name == 'read_document': return self.read_document(**args)
         if name == 'judge_documents': return self.judge_documents(**args)
         raise ValueError(f'unknown tool {name}')
+
+    def list_metrics(self):
+        from .request_vocabulary import definitions
+        return {'metrics': [{'id': k, 'name': m.get('name'), 'unit': m.get('unit'), 'grain': (m.get('grain') or {}).get('entity'),
+                             'summary': str(m.get('summary') or '')[:220]} for k, m in definitions().items()]}
+
+    def execute_metric(self, metric_id, period_start, period_end, group_by=None):
+        """One governed metric, typed (audit 2026-10-25, Codex #2: no natural-language round trip). Patient-grain metrics read living patients
+        (the saved cohort when given); event, claim and member-month metrics read every patient (decision-context/3)."""
+        from . import request_vocabulary as RV
+        from .decision_context import COUNTED_PREDICATE
+        m = RV.definitions().get(metric_id)
+        if m is None: raise ValueError(f'unknown metric {metric_id}; call list_metrics')
+        p = {'id': metric_id, 'version': m['version'], 'definition_digest': RV.digest(m), 'period': {'start': period_start, 'end': period_end},
+             'group_by': list(group_by or [])}
+        ids = self.cohort
+        if ids is None and (m.get('grain') or {}).get('entity') == 'patient':
+            ids = [r[0] for r in self.db.execute(f'SELECT patient_id FROM patient WHERE patient_id {COUNTED_PREDICATE}')]
+        out = RV.execute(self.stack.path, ids, p, self.as_of)
+        a = out.get('answer') or {}
+        return {'metric_id': metric_id, 'name': m.get('name'), 'unit': m.get('unit'), 'period': p['period'],
+                **{k: a.get(k) for k in ('status', 'value', 'count', 'table', 'method', 'missing', 'limitations', 'analysis_population_count') if a.get(k) not in (None, [], '')}}
 
     def ask_agere(self, question):
         """One sub-question through the free governed stages only (proposers.FREE_ONLY: certified reuse, System One choosers, the
