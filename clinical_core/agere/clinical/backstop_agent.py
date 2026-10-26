@@ -135,12 +135,15 @@ def conversation_turns(stack, limit=4):
 class Tools:
     """The tool executor: SQL over the semantic warehouse (definition views), documents over the same database (read-only)."""
 
-    def __init__(self, stack, semantic, as_of, *, cohort=None, ledger=None):
+    def __init__(self, stack, semantic, as_of, *, cohort=None, ledger=None, patients=None):
         from . import note_evidence
         self.semantic, self.as_of, self.NE = semantic, str(as_of)[:10], note_evidence
         self.db, self.stack, self.governed, self.seen = note_evidence.connect(stack), stack, [], []
         self.read, self.rows_by_record, self.judged, self.ledger = {}, {}, [], ledger
         self.cohort = list(dict.fromkeys(cohort or [])) or None
+        # the request's patient scope, enforced here at the tool boundary (Codex review 2026-10-26), not left to the model: the named or
+        # prior patient(s), else the saved cohort; None = a population question, every patient in the warehouse is in scope
+        self.scope = set(patients or []) or (set(self.cohort) if self.cohort else None)
         if self.cohort and semantic is not None: define_cohort(semantic, self.cohort)
 
     def __call__(self, use):
@@ -218,7 +221,12 @@ class Tools:
         self.governed.append(out)
         return {k: v for k, v in out.items() if v not in (None, [], '')}
 
+    def in_scope(self, patient_id):
+        if self.scope is not None and patient_id not in self.scope:
+            raise ValueError(f'patient {patient_id} is outside this request (in scope: {", ".join(sorted(self.scope))[:200]})')
+
     def _texts(self, patient_id):
+        self.in_scope(patient_id)
         rows = self.NE._texts(self.db, patient_id, DOC_SOURCES, self.as_of)
         for rid, src, stream, kind, date, text, title in rows:
             self.read.setdefault(rid, {'patient_id': patient_id, 'source': src, 'type': kind, 'date': date, 'title': title, 'text': text})
@@ -293,6 +301,8 @@ class Tools:
                     doc = {'patient_id': row['patient_id'], 'text': row['t']}
                     break
         if doc is None: raise ValueError(f'no document {record_id}')
+        if doc.get('patient_id'): self.in_scope(doc['patient_id'])
+        if str(doc.get('date') or '')[:10] > self.as_of: raise ValueError(f'document {record_id} is dated after the as-of date {self.as_of}')
         self.read.setdefault(record_id, doc)
         text, offset = doc.get('text') or '', max(0, int(offset or 0))
         return {'record_id': record_id, **{k: doc.get(k) for k in ('patient_id', 'source', 'type', 'date', 'title')},
@@ -462,7 +472,9 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     if cohort: payload['cohort_size'] = len(cohort)
     if hint: payload['second_look'] = {**hint, 'instruction': 'An earlier engine answered this; System One judged that its result does not fully answer the question as asked. Investigate independently and answer the question exactly as asked.'}
     user = json.dumps(payload, default=str)
-    tools = Tools(stack, wh, as_of, cohort=cohort, ledger=ledger)
+    from .requirement_ledger import PATIENT_ID
+    patients = [m.group() for m in PATIENT_ID.finditer(question or '')] or ([prior['patient_id']] if prior.get('patient_id') else [])
+    tools = Tools(stack, wh, as_of, cohort=cohort, ledger=ledger, patients=patients)
     receipts = []
     model = model or model_policy.claude_model(model_policy.SONNET, track=True)
     run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=as_tool_calls(send or _send(stack, ledger, receipts)), model=model,

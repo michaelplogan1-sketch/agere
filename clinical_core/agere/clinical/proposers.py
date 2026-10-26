@@ -780,7 +780,25 @@ class Cascade:
             pass
         if notes: answer = {**answer, 'limitations': [*(answer.get('limitations') or []), *('Check note: ' + n for n in notes)]}
         answer.setdefault('patient_ids', answer.get('patient_ids') or [])
-        return self.contract_of('backstop_agent', graph, receipt, {'answer': answer, 'results': [], 'new_paid_api_calls': 0})
+        result = {'answer': answer, 'results': [], 'new_paid_api_calls': 0}
+        if answer.get('status') == 'not_available' or not graph['nodes']:
+            return self.contract_of('backstop_agent', graph, receipt, result)
+        # the same answer gate as every other proposal (Codex review 2026-10-26: the last layer bypassed it). A failure goes back to the agent
+        # once with the reasons; if the repair also fails, the answer ships marked unverified and partial, never as a checked answer.
+        checked = answer_gate(self, 'backstop_agent', graph, receipt, result)
+        if checked is not None:
+            checked['answer'] = {**checked['answer'], 'verification': 'checked'}
+            return self.contract_of('backstop_agent', graph, receipt, checked)
+        reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == 'backstop_agent' and e['outcome'] == 'rejected'), None)
+        if not getattr(self, 'backstop_repaired', False):
+            self.backstop_repaired = True
+            self.second_look_hint = {**(getattr(self, 'second_look_hint', None) or {}), 'check_failures': reasons,
+                                     'instruction': 'Your previous answer failed these checks; fix what they name and answer again.'}
+            again = self.tier_backstop_agent()
+            if isinstance(again, tuple): return again
+        answer = {**answer, 'verification': 'unverified', 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),
+                  'limitations': [*(answer.get('limitations') or []), f'Unverified: the answer checks did not pass ({str(reasons)[:200]}).']}
+        return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
 
     def reserved_analyst(self, order):
         """The LLM layer always gets a turn: when the answer budget ran out before the semantic analyst was asked (end-to-end held-out

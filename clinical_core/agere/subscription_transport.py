@@ -15,6 +15,7 @@ Not for the live product: subscription use is subject to the plan's usage limits
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -96,9 +97,30 @@ def build_prompt(body):
     return system, user
 
 
+INVOKE = re.compile(r'<invoke\s+name="([^"]+)"\s*>(.*?)(?:</invoke>|$)', re.S)
+PARAM = re.compile(r'<parameter\s+name="([^"]+)"\s*>(.*?)</parameter>', re.S)
+
+
+def _xml_call(text, names):
+    """The model's native tool-call markup (<invoke name="tool"><parameter name="p">value</parameter></invoke>), which it sometimes writes
+    instead of the JSON protocol (2026-10-26: x1-25 failed this way) -> {'name', 'input'} or None. A JSON-looking value is decoded."""
+    m = INVOKE.search(text or '')
+    if not m or m.group(1) not in names: return None
+    args = {}
+    for k, v in PARAM.findall(m.group(2)):
+        v = v.strip()
+        try:
+            args[k] = json.loads(v) if v[:1] in '[{' or v in ('true', 'false', 'null') or re.fullmatch(r'-?\d+(?:\.\d+)?', v) else v
+        except ValueError:
+            args[k] = v
+    return {'name': m.group(1), 'input': args}
+
+
 def _tool_call(text, tools):
-    """The reply as a tool call ({"tool_use": {...}}) when it is one, else None."""
+    """The reply as a tool call ({"tool_use": {...}}, or the model's native <invoke> markup) when it is one, else None."""
     if not tools: return None
+    xml = _xml_call(text, {t.get('name') for t in tools})
+    if xml: return xml
     s = (text or '').strip()
     if s.startswith('```'): s = s.strip('`').split('\n', 1)[-1].rsplit('```', 1)[0].strip()
     start = s.find('{"tool_use"')

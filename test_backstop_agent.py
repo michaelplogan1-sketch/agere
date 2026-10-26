@@ -71,6 +71,19 @@ class JudgeDocuments(unittest.TestCase):
         self.assertEqual(out['unknown_documents'], 1)
 
 
+class Scope(unittest.TestCase):
+    def test_document_tools_refuse_records_outside_the_request(self):
+        t = B.Tools.__new__(B.Tools)
+        t.as_of, t.scope = '2030-05-27', {'P1'}
+        t.read = {'N1': {'patient_id': 'P1', 'text': 'ok', 'date': '2029-01-01'}, 'N2': {'patient_id': 'P2', 'text': 'other', 'date': '2029-01-01'},
+                  'N3': {'patient_id': 'P1', 'text': 'later', 'date': '2031-01-01'}}
+        self.assertEqual(t.read_document('N1')['text'], 'ok')
+        with self.assertRaises(ValueError): t.read_document('N2')  # Codex review 2026-10-26: direct reads bypassed scope
+        with self.assertRaises(ValueError): t.read_document('N3')
+        t.scope = None
+        self.assertEqual(t.read_document('N2')['text'], 'other')  # a population question reads any patient
+
+
 class Metrics(unittest.TestCase):
     def test_metrics_are_typed_and_an_unknown_id_is_a_correctable_tool_error(self):
         t = B.Tools.__new__(B.Tools)
@@ -133,6 +146,12 @@ class EmulatedToolCalls(unittest.TestCase):
         text = '{"tool_use": {"name": "query_sql", "input": {"sql": "SELECT 1"}}}\nThen I will group by code.'
         self.assertEqual(ST._tool_call(text, self.TOOLS), {'name': 'query_sql', 'input': {'sql': 'SELECT 1'}})
         self.assertIsNone(ST._tool_call('{"status": "answered"}', self.TOOLS))
+
+    def test_native_invoke_markup_is_a_tool_call(self):
+        from clinical_core.agere import subscription_transport as ST
+        text = '<invoke name="query_sql">\n<parameter name="sql">SELECT 1</parameter>\n</invoke>'
+        self.assertEqual(ST._tool_call(text, self.TOOLS), {'name': 'query_sql', 'input': {'sql': 'SELECT 1'}})
+        self.assertIsNone(ST._tool_call('<invoke name="drop_table"><parameter name="x">1</parameter></invoke>', self.TOOLS))
 
     def test_a_text_reply_that_is_a_tool_call_is_run_as_one(self):
         reply = {'content': [{'type': 'text', 'text': '{"tool_use": {"name": "query_sql", "input": {"sql": "SELECT 1"}}}'}], 'stop_reason': 'end_turn'}
@@ -222,6 +241,22 @@ class Cascade(unittest.TestCase):
         with patch.object(P, 'claude_available', lambda: True), patch.object(P.Cascade, 'runnable', lambda self, n: True), \
                 patch.object(P.Cascade, 'attempt', lambda self, n, s: None):
             self.assertEqual(c.quoted_or_backstop(['chart_reader', 'backstop_agent'], 'chart_reader', bare), (bare, 'chart_reader'))
+
+    def test_the_backstop_answer_goes_through_the_answer_gate(self):
+        run = {'answer': {'status': 'answered', 'answer_type': 'count', 'headline': '97 stays', 'count': 97},
+               'tool_calls': [{'sql': 'SELECT 97'}], 'model': 'm', 'new_paid_api_calls': 1, 'estimated_cost_usd': 0.0}
+        with patch.object(P, 'claude_available', lambda: True), patch.object(B, 'answer', return_value=run), \
+                patch.object(P, 'answer_gate', lambda c, n, g, r, res: res):
+            contract, _ = self.cascade().tier_backstop_agent()
+        self.assertEqual(contract['executed']['answer']['verification'], 'checked')
+        c = self.cascade()
+        def reject(cascade, n, g, r, res):
+            cascade.log.append({'proposer': 'backstop_agent', 'outcome': 'rejected', 'detail': 'zero-result probe'}); return None
+        with patch.object(P, 'claude_available', lambda: True), patch.object(B, 'answer', return_value=run), patch.object(P, 'answer_gate', reject):
+            contract, _ = c.tier_backstop_agent()  # one repair attempt, then shipped unverified, never as checked
+        a = contract['executed']['answer']
+        self.assertEqual((a['verification'], a['status']), ('unverified', 'partial'))
+        self.assertTrue(any('zero-result probe' in l for l in a['limitations']))
 
     def test_off_switch(self):
         with patch.dict(os.environ, {'AGERE_BACKSTOP': 'off'}):
