@@ -371,7 +371,9 @@ SCHEMA_DOC = {
                        'count patients by ICD-10 code from diagnosis_any.',
     'link': 'Every record-to-record reference (fields ending _record_id/_record_ids): record_id/stream of the referring record, '
             'field name, target_record_id. Indexed on target_record_id - use it for linkage questions (e.g. orders without dispenses).',
-    'record': 'Every received record (all streams). Use json_extract(payload, \'$.field\') for fields of streams not modelled above. '
+    'record': 'The CURRENT version of every received record (all streams): a record superseded by a later correction of the same stream '
+              'is NOT here (current versions only). For every received payer medical adjudication, superseded versions included, read '
+              'payer_adjudication. Use json_extract(payload, \'$.field\') for fields of streams not modelled above. '
               'payload supersedes_record_id is set on a correction: the record replaces that earlier record of the same stream '
               '(corrections per feed = records with it set, by stream; current version = not superseded). '
               'event_date_precision = minute | day | month | year | unknown. Fields ending _record_id point at another '

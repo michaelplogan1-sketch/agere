@@ -109,6 +109,10 @@ SCHEMA_DOC = {
                    'amounts (cents) come from the highest sequence. first_status = status of the first adjudication, '
                    'adjudications = number of adjudication versions; on native workspaces both come from the full history '
                    '(payer_adjudication, superseded versions included). Statuses: paid, denied, denied_upheld, reversed.',
+    'payer_adjudication': 'One row per RECEIVED payer medical claim adjudication (every adjudication sequence), superseded versions '
+                          'INCLUDED (superseded = 1, superseded_by): the full received history. claim_status per row; adjudication_date = '
+                          'the received record\'s event date; paid_cents per row. Count or sum received adjudication rows here; '
+                          'payer_claim is one row per claim (final status).',
     'payer_claim_line': 'Payer medical claim lines: cpt/hcpcs (procedure code by system), revenue_code, units, charge/allowed cents.',
     'payer_pharmacy_claim': 'Payer pharmacy claims (NCPDP): fill_date, ndc, drug_name, days_supply, quantity, pharmacy NPI/name/type, '
                             'BIN/PCN/group routing, prescriber_npi, claim_status (paid | rejected), plan/patient paid cents.',

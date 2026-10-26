@@ -286,6 +286,12 @@ class Cascade(unittest.TestCase):
         self.assertEqual((a['verification'], a['status']), ('unverified', 'partial'))
         self.assertTrue(any('zero-result probe' in l for l in a['limitations']))
 
+    def test_one_patient_questions_reach_the_investigator_after_the_fast_tiers(self):
+        got = P.investigator_first_for_one_patient(('exact_local_plan', 'chart_reader', 'paraphrase_reuse', 'evidence_retrieval', 'evidence_review',
+                                                    'spec_path', 'backstop_agent', 'semantic_analyst'))
+        self.assertEqual(got, ('exact_local_plan', 'chart_reader', 'paraphrase_reuse', 'backstop_agent', 'evidence_retrieval', 'evidence_review',
+                               'spec_path', 'semantic_analyst'))
+
     def test_off_switch(self):
         with patch.dict(os.environ, {'AGERE_BACKSTOP': 'off'}):
             self.assertIsNone(self.cascade().tier_backstop_agent())

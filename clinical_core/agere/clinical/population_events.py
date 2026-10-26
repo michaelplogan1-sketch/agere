@@ -80,7 +80,8 @@ SCHEMA_DOC = {
     'cancer_screening': 'One row per cancer screening result (cancer_screening_results: test e.g. bilateral_screening_mammography, '
                         'result_status, event_date = performed_date) plus screening mammograms known only from a payer claim line '
                         '(77067 / G0202; source payer_claim_line, or claim_line for the client\'s own billing line, result_status claim_billed). Same patient within 1 day = one screen.',
-    'claim_adjudication': 'One row per adjudication of a medical claim from either source (claim_source medical_claims = our provider '
+    'claim_adjudication': 'Built from CURRENT records (superseded versions excluded), so not a full received history: for every received '
+                          'payer adjudication use payer_adjudication. One row per adjudication of a medical claim from either source (claim_source medical_claims = our provider '
                           'remittances, payer_medical_claims = the payer feed). payer_paid_delta_cents / allowed_delta_cents: '
                           'reversals negative, recoupments negative paid and 0 allowed, a void reverses the prior net; facility DRG '
                           'rows without deltas use their paid/allowed amounts. status paid | denied | reversed | voided | recouped ...; '

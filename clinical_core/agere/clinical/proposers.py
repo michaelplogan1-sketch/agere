@@ -198,6 +198,21 @@ def second_look_fast_path(stack, question, graph, result, *, population=None, st
         c.close()
 
 
+FAST_ONE_PATIENT = ('exact_local_plan', 'paraphrase_reuse', 'semantic_cache', 'learned_verified_sql', 'chart_reader', 'data_domain_check')
+
+
+def investigator_first_for_one_patient(order):
+    """A permutation for a one-patient question: the backstop investigator runs right after the fast exact tiers and the chart reader,
+    ahead of the passage retrieval / review / interpreter tiers whose one-patient answers it replaces anyway (matched diagnostic
+    2026-10-26, confirmed by Codex: ~100 s saved per note question, same answer). Every tier still runs after it when it declines."""
+    order = list(order)
+    if 'backstop_agent' not in order: return tuple(order)
+    order.remove('backstop_agent')
+    at = max([order.index(t) + 1 for t in FAST_ONE_PATIENT if t in order] or [0])
+    order.insert(at, 'backstop_agent')
+    return tuple(order)
+
+
 GENERALISTS = ('semantic_analyst', 'hybrid_analysts', 'frontier_graph_planner', 'stack_planner_propose', 'legacy_cost_ladder')
 
 
@@ -415,7 +430,8 @@ class Cascade:
         if (self.routing or {}).get('applied'):
             from .system_one_gate import ROUTES
             routed = tuple(t for t in ROUTES.get(self.routing.get('label'), ()) if stage_of(t) != len(STAGES) - 1)
-        return backstop_before_generalists(self.heavy_last(self.free_first(staged(order, routed))))
+        order = backstop_before_generalists(self.heavy_last(self.free_first(staged(order, routed))))
+        return investigator_first_for_one_patient(order) if self.one_patient() else order
 
     def heavy_last(self, order):
         """A permutation: the costly tiers (COSTLY) run only after the cheap ones (stages A-B and local_compiler), and among themselves
@@ -573,8 +589,14 @@ class Cascade:
         return found
 
     def accept(self, order, name, found):
-        """A proposal passed every check: an independent proposer verifies it unless certified / confirmed by System One."""
-        contract, interpretation = claim_verification.verify(self, order, name, found)
+        """A proposal passed every check: an independent proposer verifies it unless certified / confirmed by System One. A backstop
+        answer whose quotes were verified against their own records is not re-verified by the weaker generalist tiers (matched
+        diagnostic 2026-10-26: ~50 s of verifiers on one-patient note answers, none comparable)."""
+        a = ((found[0] or {}).get('executed') or {}).get('answer') or {} if isinstance(found, tuple) else {}
+        if name == 'backstop_agent' and a.get('verification') in ('quote_verified', 'checked'):
+            contract, interpretation = found
+        else:
+            contract, interpretation = claim_verification.verify(self, order, name, found)
         name = interpretation.get('verified_proposer') or name
         interpretation = {**interpretation, 'requirement_ledger': requirement_ledger.summary(
             requirement_ledger.check(self.question, self.evidence(contract)))}
