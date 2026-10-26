@@ -79,6 +79,15 @@ class Investigation(unittest.TestCase):
 
 
 class ScopeAndEvidence(unittest.TestCase):
+    def test_computed_tables_survive_presentation_even_with_unused_null_scalar_fields(self):
+        from clinical_core.agere.clinical import answer_format
+        answer={'status':'answered','answer_type':'table','headline':'Computed comparison.','value':None,'count':None,
+                'table':[{'group':'A','paid_dollars':125.25}]}
+        answer_format._honest_unknown(answer)
+        self.assertEqual(answer['headline'],'Computed comparison.')
+        absent={'status':'partial','headline':'Value unavailable.','value':None,'table':[{'reason':'not available from received data'}]}
+        answer_format._honest_unknown(absent)
+        self.assertFalse(absent['answerable'])
     def test_prior_results_can_be_composed_in_sql_and_copied_without_model_transcription(self):
         import sqlite3
         from clinical_core.agere.clinical import note_evidence
@@ -169,6 +178,32 @@ class ScopeAndEvidence(unittest.TestCase):
 
 
 class FinalReview(unittest.TestCase):
+    def test_bound_review_replaces_duplicate_model_judgments_but_keeps_hard_checks(self):
+        from clinical_core.agere.clinical import answer_checks as A
+        graph={'nodes':[{'id':'answer','operation':'sql','parameters':{'query':'SELECT 2 AS value','returns':'value'}}]}
+        answer={'status':'answered','answer_type':'value','value':2,'headline':'2'}
+        review={'status':'confirmed','coverage':{'label':'answers_fully'},'support':{'label':'supported','decided_by':'jev'}}
+        receipt={'route':'backstop_agent','investigation_review':review,'investigation_binding':A.investigation_binding('Give the value.',graph,answer)}
+        with patch.object(A,'_cross_check',side_effect=AssertionError('duplicate reviewer')), patch.object(G,'ready',return_value=False), \
+             patch.object(A,'zero_result_probe',return_value=None):
+            result=A.check(SimpleNamespace(allow_live=True,path='/nonexistent'),'Give the value.',graph,receipt,{'answer':answer},tier='backstop_agent',ledger=object())
+        self.assertTrue(result['accept'],result['reasons'])
+        for name in ('decision_context','acceptance_contract','filter_value_existence','answer_shape_review'):
+            self.assertIn(name,result['checks_run'])
+        self.assertEqual(result['system_one']['label'],'answers_fully')
+
+    def test_confirmed_review_is_bound_to_every_material_answer_and_plan_field(self):
+        from clinical_core.agere.clinical import answer_checks as A
+        graph={'nodes':[{'operation':'sql','parameters':{'query':'SELECT 2 AS n'}}]}
+        answer={'status':'answered','answer_type':'value','value':2,'headline':'Two.'}
+        receipt={'investigation_review':{'status':'confirmed','coverage':{'label':'answers_fully'},'support':{'label':'supported','decided_by':'jev'}},
+                 'investigation_binding':A.investigation_binding('q',graph,answer)}
+        self.assertTrue(A.investigation_confirmed('backstop_agent',receipt,'q',graph,answer))
+        self.assertFalse(A.investigation_confirmed('semantic_analyst',receipt,'q',graph,answer))
+        self.assertFalse(A.investigation_confirmed('backstop_agent',receipt,'different question',graph,answer))
+        self.assertFalse(A.investigation_confirmed('backstop_agent',receipt,'q',graph,{**answer,'value':3}))
+        self.assertFalse(A.investigation_confirmed('backstop_agent',receipt,'q',{'nodes':[]},answer))
+
     def review(self, coverage='answers_fully', support='supported'):
         tools = SimpleNamespace(read={'N1': {'text': 'Insulin was stopped.', 'date': '2029-01-01'}}, rows_by_record={})
         answer = {'status': 'answered', 'headline': 'Insulin continued.', 'sources': [{'record_id': 'N1', 'quote': 'Insulin was stopped.'}]}

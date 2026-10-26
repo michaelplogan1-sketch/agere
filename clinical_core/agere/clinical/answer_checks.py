@@ -923,6 +923,25 @@ def _guard(stack, question, graph, receipt, answer, profile, state, verdict):
         verdict['annotations'].append('answer guard: ' + '; '.join(f['message'] for f in found))
 
 
+def investigation_binding(question, graph, answer):
+    """Bind a completed evidence review to the actual question, computation and material answer, excluding gate annotations."""
+    import hashlib
+    fields = ('status', 'answer_type', 'headline', 'value', 'count', 'unit', 'table', 'table_binding', 'patient_ids', 'facts', 'sources', 'missing', 'sql')
+    material = {k: answer.get(k) for k in fields}
+    material['patient_ids'] = answer.get('patient_ids') or []
+    payload = [question, graph, material]
+    return hashlib.sha256(_json.dumps(payload, sort_keys=True, default=str).encode()).hexdigest()
+
+
+def investigation_confirmed(tier, receipt, question, graph, answer):
+    review = (receipt or {}).get('investigation_review') or {}
+    return bool(tier == 'backstop_agent' and review.get('status') == 'confirmed'
+                and (review.get('coverage') or {}).get('label') == 'answers_fully'
+                and (review.get('support') or {}).get('label') == 'supported'
+                and (review.get('support') or {}).get('decided_by')
+                and receipt.get('investigation_binding') == investigation_binding(question, graph, answer))
+
+
 def spec_confirmed(receipt):
     """True when the answer's spec was confirmed part by part by System One (spec_path); such an answer needs no result-summary cross-check."""
     spec = (receipt or {}).get('spec_verification') if isinstance(receipt, dict) else None
@@ -1202,7 +1221,12 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     # they are reported in the documented order below
     run('cascade_certificates', lambda: _certificates(receipt, state, verdict))
     verdict['checks_run'].remove('cascade_certificates')
-    if verdict['accept'] and audited_analyst(tier, receipt, graph):
+    reviewed = investigation_confirmed(tier, receipt, question, graph, answer)
+    if verdict['accept'] and reviewed:
+        verdict['annotations'].append('The complete answer and evidence were reviewed in the investigation; the bound review replaces duplicate result-summary judgments. Hard scope, definition, arithmetic and output checks still ran.')
+        verdict['system_one'] = receipt['investigation_review']['coverage']
+        state['zero_confirmed'] = state.get('zero_confirmed') or 'investigation_review'
+    elif verdict['accept'] and audited_analyst(tier, receipt, graph):
         verdict['annotations'].append('Cross-check: replaced by the deterministic definitions audit of the analyst\'s SQL '
                                       f"({receipt['definitions_audit'].get('action')}); free-form answer.")
     elif verdict['accept'] and tier in DETERMINISTIC_READERS:
@@ -1219,7 +1243,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
         stage = STAGES[stage_of(tier)][0] if tier is not None else None
         planner = (_route(receipt) == 'local_model_sql' or stage == 'free_planners'
                    or (stage == 'claude' and tier not in GOVERNED_CLAUDE_ROUTERS))
-        if not planner or state.get('certified') or not verdict['accept'] or spec_confirmed(receipt) or audited_analyst(tier, receipt, graph): return None
+        if not planner or state.get('certified') or not verdict['accept'] or reviewed or spec_confirmed(receipt) or audited_analyst(tier, receipt, graph): return None
         s1 = verdict.get('system_one_cross_check') or {}
         if s1.get('verdict') != 'confirmed':
             verdict['accept'] = False
@@ -1233,7 +1257,7 @@ def check(stack, question, graph, receipt, result, *, ledger=None, catalog=None,
     run('release_drift_guard', lambda: release_drift.annotate(stack, question, graph, answer))  # QC-DRIFT: definitions that drifted this release
     run('answer_shape_review', lambda: _shape(question, graph, result, verdict, receipt))
     run('source_defect_annotation', lambda: verdict['annotations'].extend(__import__(__package__ + '.dq_detectors', fromlist=['annotate']).annotate(stack, question, graph, answer)))
-    if verdict['accept'] and not spec_confirmed(receipt) and not audited_analyst(tier, receipt, graph): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
+    if verdict['accept'] and not reviewed and not spec_confirmed(receipt) and not audited_analyst(tier, receipt, graph): _s1_gate.apply_check(stack, question, graph, verdict, ledger=ledger)  # System One: answers the question as asked?
     from . import normalization_check as _norm  # Jev second check on the normalized codes the plan reads (annotation only)
     run('jev_normalization_check', lambda: _norm.annotate_verdict(stack, graph, answer, verdict, ledger=ledger))
     from . import answer_verifier as _av, semantic_entropy as _se, label_choice as _lc  # learned verifier, sampled-agreement entropy, score label

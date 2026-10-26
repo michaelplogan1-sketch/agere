@@ -814,16 +814,21 @@ class Cascade:
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
         from . import backstop_agent
         checked_in_loop = False
+        final_gate, final_binding = None, None
         def validate_final(answer, calls):
-            nonlocal checked_in_loop
+            nonlocal checked_in_loop, final_gate, final_binding
             sqls = [c['sql'] for c in calls if c.get('sql')]
             if not sqls or answer.get('status') == 'unsupported': return None
             graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                      'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': sql, 'returns': 'table'},
                                 'purpose': 'Investigator query (executed)'} for i, sql in enumerate(sqls)]}
-            checked = answer_gate(self, 'backstop_agent', graph, {'route': 'backstop_agent'}, {'answer': answer, 'results': [], 'new_paid_api_calls': 0})
+            from .answer_checks import investigation_binding
+            receipt = {'route': 'backstop_agent', 'investigation_review': answer.get('investigation_review'),
+                       'investigation_binding': investigation_binding(self.question, graph, answer)}
+            checked = answer_gate(self, 'backstop_agent', graph, receipt, {'answer': answer, 'results': [], 'new_paid_api_calls': 0})
             checked_in_loop = checked is not None
             if checked is not None:
+                final_gate, final_binding = checked.get('answer_checks'), receipt['investigation_binding']
                 answer.update(checked['answer'])
                 return None
             reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == 'backstop_agent' and e['outcome'] == 'rejected'), 'final answer checks did not pass')
@@ -844,7 +849,7 @@ class Cascade:
         sqls = [c.get('sql') for c in run.get('tool_calls') or [] if c.get('sql')]
         graph = {'interpretation': self.question, 'coverage': 'supported_observation', 'unmet_requirements': [],
                  'nodes': [{'id': f'backstop_{i}', 'operation': 'sql', 'inputs': [], 'parameters': {'query': q, 'returns': 'table'},
-                            'purpose': 'Backstop analyst query (executed)'} for i, q in enumerate(sqls)]}
+                            'purpose': 'Investigator query (executed)'} for i, q in enumerate(sqls)]}
         receipt = {'route': 'backstop_agent', 'model': run.get('model'), 'new_paid_api_calls': run.get('new_paid_api_calls', 0),
                    'backstop': {'version': run.get('version'), 'tool_calls': len(run.get('tool_calls') or []), 'seconds': run.get('seconds'),
                                 'answer_reviews': run.get('answer_reviews'), 'review_stopped': run.get('review_stopped')}}
@@ -867,7 +872,8 @@ class Cascade:
             return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
         if checked_in_loop:
             answer['verification'] = 'checked'
-            return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer})
+            receipt.update(answer_checks=final_gate, investigation_binding=final_binding)
+            return self.contract_of('backstop_agent', graph, receipt, {**result, 'answer': answer, 'answer_checks': final_gate})
         if answer.get('status') == 'not_available' or not graph['nodes']:
             # no SQL to gate (documents, governed metrics, an absence): the modality's own check (Codex review 2026-10-26). A document answer
             # needs a verified quote; a numeric answer's numbers must appear in what the tools returned; an absence needs a search behind it.

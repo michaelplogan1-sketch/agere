@@ -133,7 +133,7 @@ class JevProvider:
         return {"model": self.model, "state": state, "questions": {
             "reason": {"type": "choice", "instructions": instruction_for(task), "criteria": task.options},
             "support": {"type": "choice", "instructions": "Select the source passage most directly supporting the documented state of `subject`. Select unknown if none supports it.",
-                        "criteria": {"unknown": "No supporting passage", **{e["id"]: e["text"] for e in task.evidence}}}}}
+                        "criteria": {"unknown": "No supporting passage", **{e["id"]: f'Source {e["id"]}, note {e["note_id"]}, dated {e["date"]} (text in state.evidence)' for e in task.evidence}}}}}
 
     def classify(self, task):
         response = self.gateway.send(self.name, self.request(task))
