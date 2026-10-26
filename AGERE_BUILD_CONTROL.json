@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-26T15:35:18.674647+00:00",
+  "updated_at": "2026-10-26T17:42:20.667164+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,22 +359,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "engineering_workflow_verified_candidate",
+    "kind": "assisted_user_delivery_product_gap_open",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The existing investigator can combine SQL and governed results, retrieve complete documents, repair missing requirements with its full history, and return code-bound tables through whole-answer coverage/support review and existing hard checks.",
-    "measured_failure_reduction": "Removed shared evidence truncation/quota, scope loss, uncomposable tool results, numeric table transcription, duplicate final-review rejection and failed-SQL provenance defects. 263 focused tests, 2 optional live skips; 48 candidate versus 47 baseline modules, same one existing failure and no new failure names. Ordinary synthetic product workflow returned 21 computed payer rows and rendered in the real UI.",
+    "user_behavior_delta": "The physician-requested cohort review is available in a frozen, searchable frontier-generated service workspace with medication/dose evidence, dated note reasons, admissions, care-team evidence, proposed daily support and staged device fulfillment. This was assisted source investigation after the ordinary request stalled.",
+    "measured_failure_reduction": "Removed the hidden subscription timeout and repeat-generation behavior; caller deadlines are retained and an unbounded caller gets no invented limit. Focused engineering checks:265 passed,2 optional live skips. Full received-source artifact and browser checks completed; no automatic compound-query success claimed.",
     "evidence": [
-      "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json"
+      "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
+      "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json"
     ],
-    "remaining_gap": "General clinical correctness and broad coverage are not established. Full ten-area backlog and B1-B4 qualification gaps remain. Candidate is local on 8888; branch pushed and draft PR2 open after explicit destination approval; main/default checkout unchanged.",
-    "next_action": "Review the shared investigation candidate in draft PR2 and continue shared integration for arbitrary healthcare requests, preserving the complete request, selected population, dated evidence and governed definitions across existing engines and document readers. No question-specific handlers or dev3/held-out keys. Independent clinical qualification requires Mike-requested clinician-style evaluation. Claude subscription only; stop on a subscription limit.",
-    "next": "Review the shared investigation candidate in draft PR2 and continue shared integration for arbitrary healthcare requests, preserving the complete request, selected population, dated evidence and governed definitions across existing engines and document readers. No question-specific handlers or dev3/held-out keys. Independent clinical qualification requires Mike-requested clinician-style evaluation. Claude subscription only; stop on a subscription limit.",
+    "remaining_gap": "Ordinary compound request stalled in SQLite. Individualized current clinical decisions and service eligibility remain unqualified. The broad ten-area product charter remains open.",
+    "next_action": "Trace the ordinary compound-query execution plan and repair shared evidence execution; rerun Mike's original request through the existing product route without a disease-specific handler. Keep assisted-delivery evidence distinct from automatic completion and clinical qualification.",
+    "next": "Trace the ordinary compound-query execution plan and repair shared evidence execution; rerun Mike's original request through the existing product route without a disease-specific handler. Keep assisted-delivery evidence distinct from automatic completion and clinical qualification.",
     "latest_review": {
-      "at": "2026-10-26T15:31:17.733839+00:00",
-      "kind": "Shared source checks, baseline differential regression, ordinary API workflow and actual browser rendering; engineering only",
+      "at": "2026-10-26T17:42:20.667164+00:00",
+      "kind": "Offline source/quote completeness, frozen export binding and actual browser workflow verification; not physician adjudication or automatic product acceptance",
       "evidence": [
-        "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json"
+        "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
+        "artifacts/agere-hf-wraparound-2026-10-26/ui-verification.json"
       ]
     },
     "coordination": {
@@ -444,12 +446,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-26T15:31:17.733839+00:00",
-      "source_commit": "2b29fc095239c8e27ca8542a8aa700604ed6d95f",
-      "receipt": "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
-      "runtime_url": "http://127.0.0.1:8888/ask?context=ANS-fc965058a9fea298d9659352",
-      "kind": "engineering workflow verification only; not clinical qualification",
-      "pull_request": "https://github.com/michaelplogan1-sketch/agere/pull/2"
+      "at": "2026-10-26T17:20:24.126673+00:00",
+      "kind": "Explicit physician-requested complete HF service workflow in progress",
+      "receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
+      "ordinary_route_failure": true
     }
   },
   "decisions": [
@@ -1341,6 +1341,13 @@
       "basis": "Mike answered Approve push and draft PR to the destination-specific request. Automatic approval review then permitted the push.",
       "scope_impact": "Source/docs only; synthetic data and runtime evidence remain local. Main/default checkout unchanged; clinical qualification open.",
       "evidence": "https://github.com/michaelplogan1-sketch/agere/pull/2"
+    },
+    {
+      "at": "2026-10-26T17:42:20.667164+00:00",
+      "decision": "Deliver the requested service workspace as an explicitly assisted investigation and prioritize the ordinary SQL execution failure next.",
+      "basis": "Mike supplied a complete clinician workflow. The ordinary route stalled; received-source review and frontier composition produced a reviewable artifact with uncertainty and proposed-only execution retained.",
+      "scope_impact": "No disease-specific product handler, protected evaluation, narrowed charter or clinical-readiness promotion. G3 active and full acceptance false. Synthetic artifacts remain local; source branch only may be pushed to the approved private PR.",
+      "evidence": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json"
     }
   ]
 }
