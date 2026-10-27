@@ -109,6 +109,17 @@ class AdapterLearning(unittest.TestCase):
         (self.base/'model.safetensors').write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError,'base model changed'):A.pin_base(self.base)
 
+    def test_shared_sql_guard_changes_invalidate_the_adapter_contract(self):
+        with patch.object(T.Context,'deterministic',return_value=False):self.run_job(train=True,install=True)
+        self.assertIsNotNone(A.runtime_adapter('typed',self.base))
+        from clinical_core.agere.clinical import sql_query
+        guard=Path(sql_query.__file__).resolve();read=Path.read_bytes
+        def changed(path):
+            data=read(path)
+            return data+b'\n# changed shared execution guard\n' if path.resolve()==guard else data
+        with patch.object(Path,'read_bytes',changed):
+            self.assertIsNone(A.runtime_adapter('typed',self.base))
+
     def test_family_leaks_changed_inputs_and_invalid_native_targets_are_rejected(self):
         spec=json.loads(self.manifest.read_text());data=Path(spec['files'][0]['path']);rows=self.rows.copy();rows[-1]={**rows[-1],'family':rows[0]['family']}
         data.write_text(''.join(json.dumps(r)+'\n' for r in rows))

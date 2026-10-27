@@ -24,7 +24,7 @@ def contract(learner):
     role(learner)
     root=Path(__file__).resolve().parents[3]
     names=['clinical_core/agere/clinical/'+n for n in ('adapter_learning.py','component_learning.py','local_request_worker.py',
-        'local_normalizer.py','bottled.py','request_plan.py','request_language.py','general_analysis.py','literal_check.py','semantic_analyst.py')]
+        'local_normalizer.py','bottled.py','request_plan.py','request_language.py','general_analysis.py','literal_check.py','semantic_analyst.py','sql_query.py')]
     names += ['tools/training/adapter_tasks.py','tools/training/adapters.py','tools/training/datasets.py']
     names += ['clinical_core/agere/clinical/'+n for n in ('schema_prefetch.py','constrained_decoding.py',
         'request_program.py','cohort_families.py','nl2sql.py','source_profile.py','proposers.py','analysis_graph.py','answer_shape.py')]
