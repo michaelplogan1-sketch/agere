@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T14:55:27.207616+00:00",
+  "updated_at": "2026-10-27T15:37:49.896698+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -393,7 +393,7 @@
       "artifacts/agere-schema-repair-2026-10-27/verification.json"
     ],
     "remaining_gap": "Original typed study completed: first round126/208 acceptable but36wrong; sparse corrective round88/208 and48 regressed comparison cases; both unselected. Shared guards prevent16 first-round wrong query results without losing correct results, with20 wrong proposals still present. SQL recovery and combined typed/SQL studies on the amended full-fit-rehearsal protocol remain active/pending; inspect final source/parent comparisons before claiming gains. Automatic full-note/dose/answer/artifact and browser/physician acceptance, clinical/model qualification, total cost and all ten product areas remain open.",
-    "next_action": "Read artifacts/agere-schema-repair-2026-10-27/before-after.md and before-after.json for receipt-checked paired results and domain losses. Collector session84841 updates them at state/completion changes without inference. Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json and current SQL log, then artifacts/agere-schema-repair-2026-10-27/revised-status.json and revised-outcomes.md. Existing finite successor session82301 waits for completed SQL result/review, stops only the exact owned old process before queued fitting (or preserves it if fitting already began), then runs repaired-source typed and SQL studies from /private/tmp/agere-learning-schema-repair-20261027. Do not duplicate jobs, mutate either frozen source, use comparison questions for fitting or start providers. Each finished study receives fresh review; no default installation. On completion review real gains/regressions, integrate candidate0ee2d0d into the canonical branch, rerun only checks justified by any changes, refresh offline clinical preflight and update existing private draft PR. No automatic Claude continuation; manually resume subscription workflow only after availability, stopping on any limit. Preserve all negative/failed candidates, original source/config, G3/all ten areas,181/5 ledger and assisted Heartline.",
+    "next_action": "Read artifacts/agere-schema-repair-2026-10-27/before-after.md and before-after.json for receipt-checked paired results and domain losses. Collector session51065 updates them at state/completion changes without inference. Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json and current SQL log, then artifacts/agere-schema-repair-2026-10-27/revised-status.json and revised-outcomes.md. Existing finite successor session82301 waits for completed SQL result/review, stops only the exact owned old process before queued fitting (or preserves it if fitting already began), then runs repaired-source typed and SQL studies from /private/tmp/agere-learning-schema-repair-20261027. Do not duplicate jobs, mutate either frozen source, use comparison questions for fitting or start providers. Each finished study receives fresh review; no default installation. On completion review real gains/regressions, integrate descendant163d4d6 (includes0ee2d0d schema repair and native-classifier qualification) into the canonical branch, rerun only checks justified by any changes, refresh offline clinical preflight and update existing private draft PR. No automatic Claude continuation; manually resume subscription workflow only after availability, stopping on any limit. Preserve all negative/failed candidates, original source/config, G3/all ten areas,181/5 ledger and assisted Heartline.",
     "next": "Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json, recovery-outcomes.md and recovered-sql/combined-typed/combined-sql-result.json plus corresponding -review.json as the already-running PID12107/session58695 finishes the finite offline chain. Source is frozen at the final verified fingerprint; do not silently mutate its training contract. Full rehearsal retains all fit examples; comparison questions never enter fitting. The chain stops on failures, preserves completed evidence and never calls providers or activates defaults. Fix any actual infrastructure/audit failure offline with explicit preserved recovery. After subscription availability, manually use this evidence root resume-after-reset.txt for ordinary clinical workflow and browser review, stopping on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, permissions and all negative/failed candidates. No provider polling, retry or heartbeat.",
     "latest_review": {
       "at": "2026-10-27T13:43:29.043393+00:00",
@@ -471,12 +471,27 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-27T14:55:27.207616+00:00",
+      "at": "2026-10-27T15:37:49.896698+00:00",
       "gate": "G3",
-      "outcome": "Training continues; consolidated report distinguishes actual query gains/regressions from guards/schema coverage. No new model result or gate advancement claimed.",
-      "evidence": "artifacts/agere-schema-repair-2026-10-27/before-after.json"
+      "outcome": "Native classifier comparison corrects majority-only qualification: zero useful gains; old candidate quarantined, unchanged model bytes correctly not_selected. Frozen SLM runs continue; no new SLM gain claimed.",
+      "evidence": "artifacts/agere-schema-repair-2026-10-27/native-qualified-shape-result.json"
     },
-    "results_report": "artifacts/agere-schema-repair-2026-10-27/before-after.md"
+    "results_report": "artifacts/agere-schema-repair-2026-10-27/before-after.md",
+    "native_shape_followup": {
+      "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
+      "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
+      "workspace": "/private/tmp/agere-native-shape-qualification-20261027",
+      "source_fingerprint": "8c78097e89133ecd83dbe1a5ed3c988d872a220fc577d57031840111af43d9d1",
+      "kind": "classifier-native-baseline-qualification",
+      "adapter_serving_contracts_unchanged": true,
+      "tests": {
+        "run": 560,
+        "passed": 556,
+        "skipped": 4
+      },
+      "integration": "After frozen adapter studies; do not edit their source or restart fitting",
+      "no_default_activation": true
+    }
   },
   "decisions": [
     {
@@ -1469,6 +1484,12 @@
       "decision": "Do not train queued typed jobs on known incomplete serving schemas. Preserve active frozen SQL study to its reviewed completion; use a finite exact-process boundary handoff for the repaired-source successor. New schema hints never establish joins and no model/runtime defaults change.",
       "basis": "Mike explicitly requested completing revised offline learning and fixing regressions. All-question audit found349 omitted fitting schemas; repair restores6071/6071 full-bank schema coverage onthree fixtures, with554pass/four skips and zero providers/protected reads.",
       "scope_impact": "Shared planner/training consistency only. Architecture and all ten acceptance areas retained; no model accuracy or clinical qualification claim."
+    },
+    {
+      "at": "2026-10-27T15:37:49.896698+00:00",
+      "decision": "Compare shape learners with the actual native selector and require useful confident decisions beyond it. Preserve original strict-label scores, separately apply runtime scalar compatibility, quarantine the isolated majority-only candidate and stage the qualifier after frozen adapter studies.",
+      "basis": "Native rules304/315 correct,0wrong/11declined under existing scalar compatibility; learned head296 forced-choice correct,80 confident,zero useful accepted gains. Classifier model bytes identical. Fresh CPU qualification correctly not_selected;20focused and560broad checks (556pass/four skips), zero providers/protected reads.",
+      "scope_impact": "Existing architecture and all ten areas retained. Classifier-qualification-only code in isolated descendant163d4d6; adapter serving contracts unchanged. Do not interrupt/retune frozen SLM studies or claim new clinical/model accuracy."
     }
   ]
 }

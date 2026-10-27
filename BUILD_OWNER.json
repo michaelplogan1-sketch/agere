@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-27T14:55:27.207616+00:00",
+  "latest_checkpoint": "2026-10-27T15:37:49.896698+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -43,10 +43,25 @@
     "candidate_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
     "active_original_training": "artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json",
     "results_report": "artifacts/agere-schema-repair-2026-10-27/before-after.md",
-    "results_collector_session": 84841
+    "results_collector_session": 51065,
+    "qualification_followup": {
+      "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
+      "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
+      "workspace": "/private/tmp/agere-native-shape-qualification-20261027",
+      "source_fingerprint": "8c78097e89133ecd83dbe1a5ed3c988d872a220fc577d57031840111af43d9d1",
+      "kind": "classifier-native-baseline-qualification",
+      "adapter_serving_contracts_unchanged": true,
+      "tests": {
+        "run": 560,
+        "passed": 556,
+        "skipped": 4
+      },
+      "integration": "After frozen adapter studies; do not edit their source or restart fitting",
+      "no_default_activation": true
+    }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-10-27T14:55:27.207616+00:00",
+  "latest_continuity_checkpoint": "2026-10-27T15:37:49.896698+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
