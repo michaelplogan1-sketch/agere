@@ -216,3 +216,43 @@ subcases rather than nine independent clinical questions. Exact results and
 fixture hashes are retained in the measurement receipt. Subsequent review
 findings39–41 concern SQL fusion, constrained allocation comparisons and optional
 engine arithmetic; they remain pending in the same G3 sequence.
+
+## Execution equivalence and fair optimization comparisons
+
+SQL common-subquery elimination now matches text verbatim, preserving spaces in
+data literals and quoted identifiers. A live schema check must establish local
+column bindings, and only the supported deterministic subset is hoisted.
+Correlated/unresolved expressions, view bodies, CTE dependencies, unknown or
+volatile functions and comment-bearing queries retain the planned SQL. Generated
+CTE names avoid existing identifiers. Genuine eligible duplicates still fuse.
+The guarded execution path preserves the reproduced (7, 11) result; previously
+optimization silently changed it to (7, 7). These checks establish equivalence on
+the authored cases; no representative compute saving is measured.
+
+Allocation reports check the same population, horizon, weekly capacity and
+mandatory practice minimums before reporting lift over greedy. An infeasible
+greedy reference is labeled as relaxed and has no equivalent-policy lift. An
+infeasible requested minimum is retained, with no requested assignment claimed;
+a separate relaxed scenario can explain the constraint tradeoff. Default
+candidate truncation and the solver's unilateral 20-second cutoff are removed.
+An explicit caller-selected candidate limit remains available. Sparse constraints
+replace the quadratic dense matrix representation. The 801-candidate control
+retains the final practice rather than silently discarding it. Large-scale solver
+latency, worst-case complexity and total compute cost remain unqualified.
+
+Optional DuckDB serving retains SQLite when division's integer promotion or
+zero-denominator behavior is unproven. Explicit real arithmetic with a supported
+nonzero/NULLIF denominator can still use DuckDB. Nonfinite numeric outputs cannot
+be accepted by the DuckDB or governed SQLite result boundary. No blanket SQL
+division rewrite is performed. This boundary follows the documented difference
+between [SQLite arithmetic](https://www.sqlite.org/lang_expr.html#operators_and_parse_affecting_attributes)
+and [DuckDB division](https://duckdb.org/docs/2.0/sql/functions/numeric#division-and-modulo-operators),
+with the actual local runtimes checked separately. Other dialect behavior still
+requires qualification. Empty risk populations return no fitted score, and
+calibration omits empty quantiles instead of emitting NaN means.
+
+The final surrounding selection passes **482 of 484 checks**, with two optional
+live skips and zero errors/failures/provider calls/protected reads. Eleven
+additional authored optimization/numeric checks retain their old/new receipts,
+including passing controls. New received medication-quantity, unknown-supply and
+composite-empty-scope findings42–44 are queued in the same connected sequence.

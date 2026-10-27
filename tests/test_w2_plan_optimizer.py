@@ -24,7 +24,7 @@ def db():
 
 class Optimizer(unittest.TestCase):
     def test_sql_fusion_hoists_one_materialized_cte_and_keeps_the_result(self):
-        fused, r = O.fuse_sql(Q)
+        fused, r = O.fuse_sql(Q, db())
         self.assertEqual(r['fused'][0]['occurrences'], 3)
         self.assertEqual(fused.lower().count("concept = 'diabetes'"), 1)
         self.assertIn('AS MATERIALIZED', fused)
@@ -33,7 +33,7 @@ class Optimizer(unittest.TestCase):
 
     def test_existing_with_clause_is_extended_and_literals_are_not_split(self):
         q = f"WITH base AS (SELECT patient_id FROM patient WHERE age > 30) SELECT count(*) FROM base WHERE patient_id IN ({SUB}) OR patient_id IN ({SUB}) OR patient_id LIKE '(SELECT x FROM y WHERE a AND b AND c AND d AND e AND f AND g)' OR patient_id LIKE '(SELECT x FROM y WHERE a AND b AND c AND d AND e AND f AND g)'"
-        fused, r = O.fuse_sql(q)
+        fused, r = O.fuse_sql(q, db())
         self.assertTrue(r['fused']); self.assertTrue(fused.startswith('WITH _fused1'))
         d = db(); self.assertEqual(d.execute(q).fetchall(), d.execute(fused).fetchall())
 

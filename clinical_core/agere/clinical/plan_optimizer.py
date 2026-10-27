@@ -8,15 +8,16 @@ Two levels, both semantics-preserving and both receipted:
                        `WITH _fused1 AS MATERIALIZED (...)` and every occurrence reads it. Runs in sql_query.execute on the text
                        that is executed; the query recorded in the receipt stays the planned text. A fused query that fails
                        (for example a correlated sub-select that cannot stand alone) is re-run unfused: the optimizer heals, never blocks.
-AGERE_PLAN_OPTIMIZER=off disables both. Correlation is not parsed: a correlated sub-select either binds to its own table in both forms
-(same result) or fails standalone (fallback), so a wrong answer cannot be produced by the rewrite.
+AGERE_PLAN_OPTIMIZER=off disables both. SQL fusion requires a live schema check,
+verbatim subquery text and a supported deterministic, locally bound expression.
+Unproven correlation, views, CTE dependencies and volatile functions retain the original query.
 """
 import copy
 import json
 import os
 import re
 
-VERSION = 'plan-optimizer/1'
+VERSION = 'plan-optimizer/2'
 MIN_FUSE_CHARS = 40  # a repeated one-token sub-select is not worth a CTE
 
 
@@ -61,7 +62,11 @@ def _subselects(sql):
             if c == quote:
                 if sql[i + 1:i + 2] == quote: i += 1
                 else: quote = None
-        elif c in ("'", '"'): quote = c
+        elif sql[i:i+2]=='--':
+            newline=sql.find('\n',i+2);i=n if newline<0 else newline;continue
+        elif sql[i:i+2]=='/*':
+            end=sql.find('*/',i+2);i=n if end<0 else end+2;continue
+        elif c in ("'", '"', '`','['): quote = ']' if c=='[' else c
         elif c == '(':
             m = re.match(r'\(\s*select\b', sql[i:i + 20], re.I)
             stack.append((i, bool(m)))
@@ -72,13 +77,45 @@ def _subselects(sql):
     return out
 
 
-def _norm(text): return ' '.join(text.split())
+def _norm(text): return text.strip()  # whitespace within a literal or quoted identifier is data
 
 
-def fuse_sql(query):
+def _safe_subquery(inner, db):
+    """Prove the supported local/deterministic subset; otherwise execute the planned query unchanged."""
+    if db is None:return False
+    try:
+        from sqlglot import parse_one,exp
+        from sqlglot.optimizer.qualify import qualify
+        from sqlglot.optimizer.scope import traverse_scope
+        tree=parse_one(inner,read='sqlite')
+        if tree.find(exp.CTE):return False
+        pure={'COUNT','SUM','MIN','MAX','AVG','COALESCE','NULLIF','IF','LOWER','UPPER','LENGTH','TRIM',
+              'SUBSTRING','SUBSTR','ABS','ROUND','JSON_EXTRACT','CAST','TRY_CAST'}
+        for fn in tree.find_all(exp.Func):
+            if isinstance(fn,exp.Binary):continue
+            name=fn.name.upper() if isinstance(fn,exp.Anonymous) else fn.sql_name().upper()
+            if name not in pure:return False
+        schema={}
+        for table in tree.find_all(exp.Table):
+            if table.db or table.catalog or not isinstance(table.this,exp.Identifier):return False
+            name=table.name
+            kind=db.execute("SELECT type FROM sqlite_temp_master WHERE name=? UNION ALL SELECT type FROM sqlite_master WHERE name=? LIMIT 1",(name,name)).fetchone()
+            if not kind or kind[0]!='table':return False  # view bodies can hide volatile expressions or external scope
+            quoted='"'+name.replace('"','""')+'"'
+            cols=db.execute('SELECT * FROM '+quoted+' LIMIT 0').description
+            schema[name]={c[0]:'UNKNOWN' for c in cols}
+        qualified=qualify(tree.copy(),dialect='sqlite',schema=schema,
+                          validate_qualify_columns=True,quote_identifiers=False)
+        return all(not s.external_columns for s in traverse_scope(qualified))
+    except Exception:
+        return False
+
+
+def fuse_sql(query, db=None):
     """-> (fused_query, receipt). Unchanged text and fused=[] when no repeated sub-select exists."""
     none = (query, {'version': VERSION, 'fused': []})
     if not enabled() or not isinstance(query, str) or query.lower().count('select') < 3: return none
+    if '--' in query or '/*' in query:return none  # comment-bearing text is not in the qualified rewrite subset
     subs = _subselects(query)
     groups = {}
     for s, e, inner in subs:
@@ -87,16 +124,21 @@ def fuse_sql(query):
     if not repeated: return none
     taken, picks = [], []  # outermost repeated sub-selects first; occurrences inside an already-chosen span are covered by it
     for k in repeated:
+        if not _safe_subquery(groups[k][0][2],db):continue
         spans = [(s, e) for s, e, _ in groups[k] if not any(a <= s and e <= b for a, b in taken)]
         if len(spans) >= 2:
             picks.append((k, groups[k][0][2].strip(), spans)); taken += spans
     if not picks: return none
-    edits = sorted(((s, e, f'_fused{i + 1}') for i, (_, _, spans) in enumerate(picks) for s, e in spans), reverse=True)
+    names=[];index=1
+    for _ in picks:
+        while re.search(r'\b_fused'+str(index)+r'\b',query,re.I):index+=1
+        names.append(f'_fused{index}');index+=1
+    edits = sorted(((s, e, names[i]) for i, (_, _, spans) in enumerate(picks) for s, e in spans), reverse=True)
     body = query
     for s, e, name in edits: body = body[:s] + f'(SELECT * FROM {name})' + body[e:]
-    ctes = ', '.join(f'_fused{i + 1} AS MATERIALIZED ({inner})' for i, (_, inner, _) in enumerate(picks))
+    ctes = ', '.join(f'{names[i]} AS MATERIALIZED ({inner})' for i, (_, inner, _) in enumerate(picks))
     m = re.match(r'(?is)^\s*with\s+(recursive\s+)?', body)
     fused = f'{body[:m.end()]}{ctes}, {body[m.end():]}' if m else f'WITH {ctes} {body}'
-    return fused, {'version': VERSION, 'fused': [{'name': f'_fused{i + 1}', 'occurrences': len(sp), 'chars': len(inner)}
+    return fused, {'version': VERSION, 'fused': [{'name': names[i], 'occurrences': len(sp), 'chars': len(inner)}
                                                  for i, (_, inner, sp) in enumerate(picks)],
                    'chars_before': len(query), 'chars_after': len(fused)}

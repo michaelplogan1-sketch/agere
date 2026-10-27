@@ -7,7 +7,7 @@ functions (no writes, ATTACH, PRAGMA or schema changes); a progress handler
 enforces a time limit and results are capped. An upstream population, when
 given, is exposed to the query as the CTE `population(patient_id)`.
 """
-import json, re, sqlite3, time
+import json, math, re, sqlite3, time
 
 from . import semantic_layer
 from .age import register as register_age
@@ -231,7 +231,11 @@ def _execute(path, params, patient_ids=None, target=None, time_limit=None):
                                                             max_rows=MAX_ROWS)
         if columns is not None: return _result(p, columns, rows, started, engine_receipt, shown, dc_receipt)
     from . import plan_optimizer  # repeated sub-selects run once (fused CTE); an unfusable form is re-run as planned
-    query, fusion = plan_optimizer.fuse_sql(p['query'])
+    if re.search(r'\bpopulation\b',p['query'],re.I) and patient_ids is None:
+        raise ValueError('Query references population but no population input was given')
+    db = register(sqlite3.connect(f'file:{target}?mode=ro', uri=True))
+    if uses_views: define_definition_views(db)
+    query, fusion = plan_optimizer.fuse_sql(p['query'], db)
     unfused, args = p['query'], {}
     if re.search(r'\bpopulation\b', query, re.I):
         if patient_ids is None: raise ValueError('Query references population but no population input was given')
@@ -239,8 +243,6 @@ def _execute(path, params, patient_ids=None, target=None, time_limit=None):
         add = lambda q: (f'WITH {cte}, ' + q[4:].lstrip()) if re.match(r'(?is)^with\b', q) else f'WITH {cte} {q}'
         query, unfused = add(query), add(unfused)
         args['population'] = json.dumps(sorted(patient_ids))
-    db = register(sqlite3.connect(f'file:{target}?mode=ro', uri=True))
-    if uses_views: define_definition_views(db)
     deadline = time.perf_counter() + limit
     db.set_progress_handler(lambda: 1 if time.perf_counter() > deadline else 0, 10000)
     db.set_authorizer(_authorizer)
@@ -272,6 +274,8 @@ def _execute(path, params, patient_ids=None, target=None, time_limit=None):
 def _result(p, columns, rows, started, engine_receipt=None, shown=None, dc_receipt=None):
     truncated = len(rows) > MAX_ROWS
     rows = [list(r) for r in rows[:MAX_ROWS]]
+    if any(isinstance(v,float) and not math.isfinite(v) for row in rows for v in row):
+        raise ValueError('Nonfinite numeric result is not a verified answer; define compatible numeric and undefined-result handling')
     result = {'schema': VERSION, 'query': (shown or p)['query'], 'returns': p['returns'], 'columns': columns,
               'row_count': len(rows), 'truncated': truncated, 'elapsed_seconds': round(time.perf_counter() - started, 3)}
     if dc_receipt and dc_receipt.get('rewritten'): result['decision_context'] = {**dc_receipt, 'executed_query': p['query']}

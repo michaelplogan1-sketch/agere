@@ -458,6 +458,7 @@ def risk_scores(db, people, start, end):
     for pid, month, allowed, _, _, _ in claims:
         if month in people.get(pid, {}).get('months', ()): cost[pid] += allowed / 100
     pids = [pid for pid, info in people.items() if info['months']]
+    if not pids:return {},{'coefficients':{},'calibration_by_decile':[],'members':0,'status':'no_eligible_members'}
     bands = ['0-17', '18-44', '45-64', '65-74', '75+']
     cols = [f'age_{b}' for b in bands[1:]] + ['female'] + [f'has_{c}' for c in CHRONIC]
     X = np.array([[aggregate.age_band(people[p]['age']) == b for b in bands[1:]] + [people[p]['sex'] == 'F'] +
@@ -480,6 +481,7 @@ def risk_scores(db, people, start, end):
     order = np.argsort(score)
     deciles = []
     for i, chunk in enumerate(np.array_split(order, 10)):
+        if not len(chunk):continue  # an empty quantile has no mean; never emit NaN calibration
         deciles.append({'decile': i + 1, 'mean_score': round(float(score[chunk].mean()), 3),
                         'observed_to_expected': round(float((y[chunk].sum()) / max((exposure[chunk] * pred[chunk]).sum(), 1e-9)), 3)})
     return ({p: float(s) for p, s in zip(pids, score)},
