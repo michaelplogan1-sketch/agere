@@ -60,6 +60,7 @@ INTENSITY_STRATEGIES = {'high_intensity_statin': ('high',), 'moderate_intensity_
                         'lower_intensity_statin': ('moderate', 'low')}
 STRATEGIES = (*CLASSES, *INTENSITY_STRATEGIES)
 ASSUMPTIONS = [
+    'This emulation uses exact numeric lab results for covariates and outcomes; bounded results are excluded rather than substituted as boundary points. Threshold analyses are restricted to these exact results; ascertainment can differ from an interval-aware analysis.',
     'No unmeasured confounding: given the baseline covariates listed, the strategy initiated is as good as randomised '
     '(prescriber preference, frailty, adherence expectations and cost are not observed).',
     'Positivity: every eligible patient could have initiated either strategy (checked through propensity-score overlap).',
@@ -196,7 +197,7 @@ def _cols(db, table): return {r[1] for r in db.execute(f'PRAGMA table_info({tabl
 
 def _labs(db, concept_ids, keep):
     from .safety_data import usable_measurement_sql
-    extra = usable_measurement_sql(db)
+    extra = usable_measurement_sql(db,point_values=True)
     out = defaultdict(lambda: defaultdict(list))
     q = ','.join('?' * len(concept_ids))
     for pid, c, d, v in db.execute(f'SELECT patient_id, concept, event_date, value_canonical FROM measurement WHERE concept IN ({q}) '
@@ -380,7 +381,7 @@ def run(db, patient_ids, params, as_of):
     as_of_day = _day(as_of)
     keep = set(patient_ids) if patient_ids is not None else None
     arms, o = p['arms'], p['outcome']
-    rows, n_reversed = fill_rows(db, keep)
+    rows, n_reversed = fill_rows(db, keep, as_of)
     feed = min((r[1] for r in rows), default=None)
     fills = strategy_fills(rows, arms)
     people = {pid: (age, sex, cov, birth) for pid, age, sex, cov, birth in db.execute(

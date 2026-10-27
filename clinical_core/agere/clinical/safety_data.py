@@ -35,7 +35,7 @@ def columns(db, table):
     return {r[1] for r in db.execute(f'PRAGMA table_info({table})')}
 
 
-def usable_measurement_sql(db, alias=''):
+def usable_measurement_sql(db, alias='', *, point_values=False):
     """Eligibility of the received current measurement version, shared by engines.
 
     This is the semantic snapshot's version, not reconstruction of an earlier
@@ -43,7 +43,8 @@ def usable_measurement_sql(db, alias=''):
     """
     cols=columns(db,'measurement');prefix=(alias+'.') if alias else ''
     return (' AND coalesce('+prefix+'result_current,1)=1' if 'result_current' in cols else '') + (
-        ' AND '+prefix+'excluded_reason IS NULL' if 'excluded_reason' in cols else '')
+        ' AND '+prefix+'excluded_reason IS NULL' if 'excluded_reason' in cols else '') + (
+        " AND coalesce("+prefix+"value_censor,'')=''" if point_values and 'value_censor' in cols else '')
 
 
 def meta(db):

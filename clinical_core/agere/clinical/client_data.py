@@ -196,10 +196,12 @@ def _factor(concept, unit):
 
 
 def labs(out):
+    from ..canonical.versions import Version, replacement_issue
     _add(out, 'measurement', 'value_text TEXT', 'value_censor TEXT', 'excluded_reason TEXT', 'result_current INTEGER',
-         'superseded_by_record_id TEXT', 'supersede_reason TEXT', 'local_code TEXT', 'interface_message_id TEXT')
+         'superseded_by_record_id TEXT', 'supersede_reason TEXT', 'local_code TEXT', 'interface_message_id TEXT',
+         'correction_reference TEXT', 'correction_link_issue TEXT')
     out.execute('CREATE INDEX IF NOT EXISTS measurement_record ON measurement(record_id)')  # per-record updates below
-    out.execute('UPDATE measurement SET result_current = 1')
+    out.execute('UPDATE measurement SET result_current=1,superseded_by_record_id=NULL,supersede_reason=NULL,correction_reference=NULL,correction_link_issue=NULL')
     rows = out.execute("""SELECT record_id, patient_id, json_extract(payload,'$.value'), json_type(payload,'$.value'),
         json_extract(payload,'$.comment'), json_extract(payload,'$.result_status'), json_extract(payload,'$.replaces_result_record_id'),
         json_extract(payload,'$.interface_message_id'), json_extract(payload,'$.local_code'), json_extract(payload,'$.laboratory_order_record_id'),
@@ -212,6 +214,9 @@ def labs(out):
     groups = defaultdict(list)
     supersede = {}
     identity = defaultdict(list)  # (patient, analyte, collection minute) -> results from any feed
+    versions={r[0]:Version(r[0],person_id=r[1],stream='labs',observation={'loinc':r[15],'local_code':r[8],
+                 'laboratory_order_record_id':r[9],'name':r[10]}) for r in rows}
+    links=[]
     for rid, pid, value, vtype, comment, status, replaces, msg, lcode, order, name, unit, spec, d, av, loinc, system in rows:
         analyte = loinc or next((LOCAL_LAB_CODES[str(c).strip().upper()][0] for c in (lcode, name)
                                  if c and str(c).strip().upper() in LOCAL_LAB_CODES), None)
@@ -227,7 +232,10 @@ def labs(out):
             elif comment or status == 'not_calculated': excluded.append((rid, 'no_value_reported', None)); stats['no_value_reported'] += 1
         if lcode: local.append((rid, lcode, msg))
         elif msg: local.append((rid, None, msg))
-        if replaces and replaces != rid: supersede[replaces] = (rid, 'corrected'); stats['corrected_by_reference'] += 1
+        if replaces:
+            issue=replacement_issue(versions[rid],versions.get(replaces));links.append((replaces,issue,rid))
+            if issue:stats['unresolved_correction_reference']+=1
+            else:supersede[replaces] = (rid, 'corrected'); stats['corrected_by_reference'] += 1
         if order and name:
             groups[(pid, order, ' '.join(str(name).lower().split()), spec)].append((av or '', 0 if msg is None else 1, rid, status, value))
     for key, g in groups.items():
@@ -266,6 +274,7 @@ def labs(out):
             if first[1] != system: supersede[rid] = (first[0], 'duplicate_across_feeds'); stats['duplicate_across_feeds'] += 1
     out.executemany('UPDATE measurement SET result_current = 0, superseded_by_record_id = ?, supersede_reason = ? WHERE record_id = ?',
                     [(w, why, rid) for rid, (w, why) in supersede.items()])
+    out.executemany('UPDATE measurement SET correction_reference=?,correction_link_issue=? WHERE record_id=?',links)
     out.executemany('UPDATE measurement SET excluded_reason = ?, value_text = ?, value = NULL, value_canonical = NULL WHERE record_id = ?',
                     [(why, txt, rid) for rid, why, txt in excluded])
     out.executemany('UPDATE measurement SET local_code = ?, interface_message_id = ? WHERE record_id = ?', [(c, m, r) for r, c, m in local])

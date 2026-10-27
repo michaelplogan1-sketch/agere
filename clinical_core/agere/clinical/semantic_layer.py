@@ -13,7 +13,8 @@ import json, os, re, sqlite3, time
 
 from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile, therapy_barriers
 
-VERSION = 'semantic-layer/19'  # 19: ED encounter diagnoses (HL7 DG1 + ED claim dx; encounter_diagnosis.source/event_date), ED
+VERSION = 'semantic-layer/20'  # 20: rejected dictionary identities withheld; correction references validate patient/analyte
+# 19: ED encounter diagnoses (HL7 DG1 + ED claim dx; encounter_diagnosis.source/event_date), ED
 # disposition, procedure_line (provider + payer claim lines), death
 # (previous) 'semantic-layer/18'  # 18: lab results dated specimen > collected > event > recorded
 # (previous) 'semantic-layer/17'  # 17: population_events (payer claim services, unified claims, pharmacy events)
@@ -601,12 +602,13 @@ def _normalize(out):
     for col in ('component TEXT', 'lab_category TEXT'):
         out.execute(f'ALTER TABLE measurement ADD COLUMN {col}')
     # loinc / loinc_source were filled from source codes by _standards; the dictionary only fills the gaps.
+    accepted = {k for k,v in labs.items() if (v.get('confidence') or 0) >= 0.8 and k not in held['labs']}
     out.executemany("""UPDATE measurement SET loinc_dictionary = ?, component = ?, lab_category = ?, concept = coalesce(concept, ?),
                          loinc_source = CASE WHEN loinc IS NOT NULL THEN loinc_source WHEN ? IS NOT NULL THEN 'dictionary' END,
                          loinc = coalesce(loinc, ?) WHERE name = ?""",
-                    [(v.get('loinc'), v.get('component'), v.get('category'),
-                      v.get('agere_concept') if (v.get('confidence') or 0) >= 0.8 and k not in held['labs'] else None,
-                      v.get('loinc'), v.get('loinc'), k) for k, v in labs.items()])
+                    [(v.get('loinc'), v.get('component') if k in accepted else None, v.get('category') if k in accepted else None,
+                      v.get('agere_concept') if k in accepted else None,
+                      v.get('loinc') if k in accepted else None, v.get('loinc') if k in accepted else None, k) for k, v in labs.items()])
     # Source LOINC identifies the analyte even when the local name is not in the concept library or dictionary.
     by_loinc = defaultdict(set)
     for k, v in labs.items():

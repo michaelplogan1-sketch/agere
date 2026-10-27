@@ -168,6 +168,51 @@ that clinical definition. Current repairs remain staged outside the frozen
 adapter studies; automatic clinical completion, physician review, independent
 model/policy performance, total cost and company-product comparisons remain open.
 
-The next received review identifies shared normalization, correction identity and
-bounded-result failures (36–38). They remain pending, separately from the verified
-repairs above, and belong to the same G3 workflow sequence.
+## Measurement identity and numeric meaning
+
+Dictionary mappings rejected by the existing normalization review no longer
+activate an actionable LOINC, concept or category. Candidate dictionary codes and
+the stored verdict remain inspectable. Independently supported source codes and
+rule concepts remain usable. The semantic build version advances to 20 so an old
+projection is rebuilt when this candidate is integrated and its source is used.
+
+Lab correction references now validate patient and compatible analyte/order
+identity before invalidating an earlier record. The canonical resolver, canonical
+projection, semantic lab pass and correction-history reader use the same rules.
+Invalid/unresolved links remain in diagnostic fields/tables without erasing the
+target's evidence. Legitimate same-patient corrections retain their lineage.
+Unit, value or collection-date changes can themselves be corrections; a pointer
+does not justify a contradictory known patient, analyte or order identity.
+
+Measurement criteria retain comparator, received text/unit, canonical unit and
+record identity. Existing interval comparison determines true, false or unknown
+for <, <=, > and >=, including exact-boundary distinctions and unit conversion.
+An indeterminate measurement cannot become a satisfied criterion or a care gap.
+The complete measure stays partial/unknown with determinate observations retained
+under a known-subset label. Saved patient output includes unknown statuses and
+full provenance. Quality/settlement consumers retain unknown quality instead of
+scoring the incomplete subset as the full population.
+
+Continuous program-effect and target-trial inputs explicitly restrict lab values
+to exact numeric observations; they disclose exclusion of bounded results rather
+than substituting boundary points. This is an ascertainment restriction, not a
+new interval-censored statistical model. Other free-form statistical analyses and
+survival treatment of bounded measurements remain separate qualification work.
+The representation distinction is consistent with the [HL7 Quantity definition](https://hl7.org/fhir/datatypes.html#Quantity);
+this does not establish FHIR compliance or clinical qualification.
+
+The previous companion-code shortcut is also removed. Missing required companion
+evidence stays unresolved for that patient; another patient's billing pattern
+cannot change the result. A directly documented ratio or that patient's actual
+companion evidence resolves it. The KED configuration now states this source
+limitation while retaining its existing clinical test/window definitions and
+approximation status. Certified measure implementation remains unqualified.
+
+The connected selection passes **458 of 460 checks**, with two opt-in live skips,
+zero errors/failures/provider calls/protected reads. The focused measurement pass
+passes 58 checks. Paired copies of nine authored native tests fail on the old
+source and pass on this candidate; the old failures include multiple bounded
+subcases rather than nine independent clinical questions. Exact results and
+fixture hashes are retained in the measurement receipt. Subsequent review
+findings39–41 concern SQL fusion, constrained allocation comparisons and optional
+engine arithmetic; they remain pending in the same G3 sequence.

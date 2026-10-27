@@ -142,12 +142,14 @@ RECORD_DDL = """
 CREATE TABLE record_correction(record_id TEXT PRIMARY KEY, stream TEXT, patient_id TEXT, superseded_by TEXT,
   replacement_stream TEXT, link_field TEXT, event_date TEXT, available_date TEXT, replacement_available_date TEXT);
 CREATE INDEX record_correction_stream ON record_correction(stream);
+CREATE TABLE record_correction_unresolved(record_id TEXT, referenced_record_id TEXT, stream TEXT, reason TEXT);
 """
 
 
 def build_corrections(out, warehouse_path):
     """record_correction: every received record that a later record supersedes, across all streams (the semantic layer's
     record table keeps current versions only). Patient ids are mapped to the semantic layer's where it knows the record."""
+    from ..canonical.versions import Version,replacement_issue
     src = sqlite3.connect(Path(warehouse_path).resolve().as_uri() + '?mode=ro', uri=True)
     try:
         links = [(*r, 'supersedes_record_id') for r in src.execute(
@@ -156,21 +158,29 @@ def build_corrections(out, warehouse_path):
         links += [(*r, 'replaces_result_record_id') for r in src.execute(
             "SELECT id, json_extract(payload, '$.replaces_result_record_id'), stream, arrival FROM records "
             "WHERE stream = 'labs' AND json_extract(payload, '$.replaces_result_record_id') IS NOT NULL")]
-        olds = {old for _, old, _, _, _ in links}
-        info = {rid: (stream, pid, event, arrival) for rid, stream, pid, event, arrival in src.execute(
-            'SELECT id, stream, patient, event, arrival FROM records') if rid in olds}
-        rows = []
+        relevant = {rid for new,old,*_ in links for rid in (new,old)}
+        info={}
+        for chunk_start in range(0,len(relevant),800):
+            chunk=sorted(relevant)[chunk_start:chunk_start+800]
+            for rid,stream,pid,event,arrival,payload in src.execute('SELECT id,stream,patient,event,arrival,payload FROM records WHERE id IN ('+','.join('?' for _ in chunk)+')',chunk):
+                info[rid]=(stream,pid,event,arrival,json.loads(payload))
+        rows = [];unresolved=[]
         for new, old, stream, arrival, field in links:
-            o = info.get(old)
-            if o:
+            o,n = info.get(old),info.get(new)
+            identity=lambda rid,r:Version(rid,person_id=r[1],stream=r[0],observation=r[4] if r[0]=='labs' else None)
+            issue=replacement_issue(identity(new,n),identity(old,o) if o else None) if n else 'replacement_not_available'
+            if issue:unresolved.append((new,old,stream,issue))
+            else:
                 rows.append((old, o[0], o[1], new, stream, field, o[2], o[3], arrival))
     finally:
         src.close()
     known = {r[0] for r in out.execute('SELECT patient_id FROM patient')}
     out.execute('DROP TABLE IF EXISTS record_correction')
+    out.execute('DROP TABLE IF EXISTS record_correction_unresolved')
     out.executescript(RECORD_DDL)
     out.executemany('INSERT OR IGNORE INTO record_correction VALUES (?,?,?,?,?,?,?,?,?)', rows)
-    return {'corrections': len(rows), 'patients_known': sum(1 for r in rows if r[2] in known)}
+    out.executemany('INSERT INTO record_correction_unresolved VALUES (?,?,?,?)',unresolved)
+    return {'corrections': len(rows), 'patients_known': sum(1 for r in rows if r[2] in known),'unresolved_references':len(unresolved)}
 
 
 def apply_corrections(semantic_path):

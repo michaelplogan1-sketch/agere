@@ -62,6 +62,7 @@ MIN_COHORT = 3        # exposed patients per adoption-month cohort below which t
 MIN_DONORS = 5        # practice-level donor series needed for synthetic DiD
 SDID_PLACEBO_REPS = 200
 ASSUMPTIONS = [
+    'Continuous lab outcomes use exact numeric results only; bounded results (<, <=, >, >=) are excluded, never treated as measured boundary points. This restriction can change ascertainment and limit inference.',
     'No unmeasured confounding of program receipt beyond age band, sex, payer, pre-period outcome, pre-period utilization '
     'and chronic-condition count (receipt was not randomised; selection by care teams is not observed).',
     'Parallel trends: absent the program, exposed and matched comparison patients would have changed alike from pre to post.',
@@ -204,7 +205,7 @@ def _load(db, p, as_of_day, keep):
         if p['outcome'] == 'lab':
             from .safety_data import usable_measurement_sql
             for pid, d, v in db.execute('SELECT patient_id, event_date, value_canonical FROM measurement WHERE concept = ? AND '
-                                        'value_canonical IS NOT NULL AND event_date IS NOT NULL'+usable_measurement_sql(db), (p['lab'],)):
+                                        'value_canonical IS NOT NULL AND event_date IS NOT NULL'+usable_measurement_sql(db,point_values=True), (p['lab'],)):
                 if pid in people: outcome.values[pid].append((_day(d), float(v)))
         else:
             from . import vbc

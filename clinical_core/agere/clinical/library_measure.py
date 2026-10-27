@@ -88,7 +88,7 @@ def execute(path, patient_ids, params, as_of):
 def answer(report, plan, question):
     cite = '; '.join(c['url'] for c in report.get('citations') or [])
     used = f"Measure used ({report['measure_name']}, {report['measure_status']}): {report.get('certification') or ''}".strip()
-    if report.get('declined'):
+    if report.get('declined') and not report.get('partial'):
         return {'status': 'unsupported', 'answer_type': 'unsupported', 'value': report['reading'], 'headline': report['reading'],
                 'missing': report.get('missing_inputs') or [], 'patient_ids': [], 'limitations': [used]}
     o = report['overall']
@@ -96,11 +96,13 @@ def answer(report, plan, question):
     output=report['parameters']['output']
     table=(report.get('patient_rows') or []) if output=='patients' else report['rows']
     ids=sorted({r['patient_id'] for r in table if r.get('patient_id')}) if output=='patients' else gaps
-    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
-    missing=[]
+    partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('partial')
+    missing=list(report.get('missing_inputs') or [])
+    complete_projection=True
     if output=='patients' and 'patient_rows' not in report:
         table=report['rows']
         partial=True
+        complete_projection=False
         missing=['Complete patient-status rows were not computed for this measure output; aggregate observations are retained.']
     out = {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': table,
            'value': report['reading'], 'headline': report['reading'], 'method': report.get('method'),
@@ -113,7 +115,7 @@ def answer(report, plan, question):
                        'rate': o.get('rate'), 'excluded': o.get('excluded'), 'follow_up_days': report['parameters']['follow_up_days']}}
     if report['parameters']['output'] == 'rate' and o.get('rate') is not None and report['parameters']['group_by'] == 'none':
         out['value'] = round(o['rate'] * 100, 1); out['unit'] = 'percent'
-    if output != 'rate': out['count'] = None if missing else len(ids)
+    if output != 'rate': out['count'] = len(ids) if complete_projection else None
     return out
 
 

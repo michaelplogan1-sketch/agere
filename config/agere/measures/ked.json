@@ -218,7 +218,7 @@
       "days": 4
      }
     },
-    "note": "HEDIS KED uACR: Quantitative Urine Albumin Lab Test (82043) and Urine Creatinine Lab Test (82570) with service dates 4 or fewer days apart. Where a claim source never itemizes 82570, the quantitative albumin claim stands alone (the ratio is reported from the same specimen)."
+    "note": "The configured administrative approximation requires quantitative urine albumin (82043) and urine creatinine (82570 or the stated result code) within 4 days. A primary albumin code alone does not establish the ratio, including when the source never itemizes the companion; the criterion remains unresolved unless other qualifying evidence establishes it."
    }
   ]
  },
