@@ -130,7 +130,23 @@ class Context:
         elif learner=='normalizer':messages=N.prompt(q)
         elif learner=='narrow':messages=B.narrow_messages(q)
         else:messages=B.messages(q,source_profile.load(self.path),self.as_of)
-        if target:messages=[*messages,{'role':'assistant','content':row['target'] if isinstance(row['target'],str) else json.dumps(row['target'],sort_keys=True,separators=(',',':'))}]
+        if target:
+            if learner == 'typed':
+                # A native-valid label can still teach hallucination if the
+                # serving prompt omits its received relation. Validate the real
+                # prompt; never repair it with target-only schema information.
+                import sqlglot
+                from sqlglot import exp
+                from sqlglot.optimizer.scope import traverse_scope
+                text = row['target'] if isinstance(row['target'],str) else json.dumps(row['target'])
+                contract = self.compile(learner,row,text)
+                shown = json.loads(messages[-1]['content'])['tables']
+                relations = {source.name for scope in traverse_scope(sqlglot.parse_one(contract['query'],read='sqlite'))
+                             for source in scope.sources.values() if isinstance(source,exp.Table)}
+                missing = (relations & self.catalog.tables.keys()) - shown.keys()
+                if missing:
+                    raise ValueError('Typed serving prompt omits target source relations: '+', '.join(sorted(missing)))
+            messages=[*messages,{'role':'assistant','content':row['target'] if isinstance(row['target'],str) else json.dumps(row['target'],sort_keys=True,separators=(',',':'))}]
         return messages
 
     def query(self,sql,population=None,*,native=False):

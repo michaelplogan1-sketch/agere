@@ -20,7 +20,7 @@ import re
 
 from .request_plan import STOP_WORDS, fingerprint
 
-VERSION = 'schema-prefetch/1'
+VERSION = 'schema-prefetch/2'
 ALWAYS_KEEP = ('source',)  # the fragment always names what it reads from
 PATCH_INSTRUCTION = ('Your previous proposal is kept server-side; failing_fragment shows only the parts the review flagged. '
                      'Return {"patch": {"<top-level key>": <replacement value>, ...}} replacing only those keys (any key of '
@@ -51,10 +51,35 @@ def likely(catalog, question, *, tables=None, operations=None, streams=None):
     if not words: return out
     try:
         from .request_discovery import search, tokens
-        found = search(catalog, words, limit=60)['candidates']
+        found = search(catalog, words, limit=max(60, len(catalog.tables) + len(catalog.stream_fields)))['candidates']
         rel = [c for c in found if c['kind'] == 'relation' and c['name'] in catalog.tables]
         strm = [c for c in found if c['kind'] == 'received_stream' and c['name'] in catalog.stream_fields]
         out['tables'] = [c['name'] for c in rel[:tables]]
+        if tables:
+            # The ranked slice is a starting point, not an allowlist. Generic
+            # documentation words can outrank the relation explicitly named by
+            # the question or the relation holding its exact category value.
+            # Expand using received metadata only; no training target is read.
+            wanted = tokens(question)
+            named = [name for name in catalog.tables if tokens(name) and tokens(name) <= wanted]
+            categorical = []
+            for candidate in rel:
+                for values in candidate.get('matched_values', {}).values():
+                    if any(tokens(value) and tokens(value) <= wanted and
+                           any(not word.isdigit() for word in tokens(value)) for value in values):
+                        categorical.append(candidate['name'])
+                        break
+            selected = list(dict.fromkeys([*out['tables'], *named, *categorical]))
+            # A named identifier can point to a dimension omitted by ranking
+            # (e.g. account_id -> account). This is a schema-discovery hint,
+            # never a declared foreign key or permission to generate a join.
+            dimensions = [column[:-3] for name in selected for column in catalog.tables[name]
+                          if column.endswith('_id') and column[:-3] in catalog.tables and
+                          column in catalog.tables[column[:-3]]]
+            out['tables'] = list(dict.fromkeys([*selected, *dimensions]))
+            out['schema_expansion'] = {'named_relations': named,
+                'exact_category_relations': categorical, 'identifier_candidates': list(dict.fromkeys(dimensions)),
+                'joins_established': False}
         out['streams'] = [c['name'] for c in strm[:streams]]
         out['scores'].update({c['name']: c['score'] for c in rel[:tables] + strm[:streams]})
         from .graph_planner import CONTRACTS

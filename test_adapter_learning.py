@@ -120,6 +120,15 @@ class AdapterLearning(unittest.TestCase):
         with patch.object(Path,'read_bytes',changed):
             self.assertIsNone(A.runtime_adapter('typed',self.base))
 
+    def test_source_discovery_changes_invalidate_the_adapter_contract(self):
+        from clinical_core.agere.clinical import request_discovery
+        original=A.contract('typed');path=Path(request_discovery.__file__).resolve();read=Path.read_bytes
+        def changed(file):
+            data=read(file)
+            return data+b'\n# changed received-schema discovery\n' if file.resolve()==path else data
+        with patch.object(Path,'read_bytes',changed):
+            self.assertNotEqual(A.contract('typed'),original)
+
     def test_family_leaks_changed_inputs_and_invalid_native_targets_are_rejected(self):
         spec=json.loads(self.manifest.read_text());data=Path(spec['files'][0]['path']);rows=self.rows.copy();rows[-1]={**rows[-1],'family':rows[0]['family']}
         data.write_text(''.join(json.dumps(r)+'\n' for r in rows))
@@ -181,6 +190,32 @@ class AdapterLearning(unittest.TestCase):
             with patch('clinical_core.agere.clinical.source_profile.load',return_value={'streams':{}}),patch.dict(os.environ,{'AGERE_SCHEMA_RERANK':'off'}):
                 result=D.run(manifest,self.root,stack=self.path,base=self.base)
             self.assertEqual(result['status'],'prepared');self.assertEqual(result['learner'],learner)
+
+    def test_missing_serving_schema_cannot_reach_gradient_fitting(self):
+        original=W.short_messages
+        def omit(catalog,question):
+            messages,tables=original(catalog,question)
+            body=json.loads(messages[-1]['content']);body['tables'].pop('claim',None)
+            messages[-1]={'role':'user','content':json.dumps(body)}
+            return messages,list(body['tables'])
+        backend=ScriptedBackend()
+        with patch.object(W,'short_messages',side_effect=omit):
+            with self.assertRaisesRegex(ValueError,'serving prompt omits target source relations: claim'):
+                self.run_job(train=True,backend=backend)
+        self.assertEqual(backend.fits,[])
+        self.assertIsNone(C.active(self.root,'slm_typed'))
+
+    def test_prompt_coverage_resolves_ctes_instead_of_treating_them_as_received_tables(self):
+        q='Count patients where coverage_type = medicare'
+        sql="WITH claim AS (SELECT patient_id,coverage_type FROM patient) SELECT COUNT(*) AS patients FROM claim WHERE coverage_type='medicare'"
+        row={'question':q,'target':{'analysis':{'steps':[{'name':'answer_rows','purpose':q,'sql':sql}],
+            'final':'answer_rows','returns':'count','requirements':[{'quote':q,'applied_in':['answer_rows']}],'unresolved':[]}},
+            'reference_sql':sql,'acceptance':{'returns':'count','columns':{'patients':{'unit':'count'}}}}
+        ctx=T.Context(self.path);messages=ctx.messages('typed',row)
+        body=json.loads(messages[-1]['content']);body['tables']={'patient':body['tables']['patient']}
+        messages[-1]={'role':'user','content':json.dumps(body)}
+        with patch.object(W,'short_messages',return_value=(messages,['patient'])):
+            self.assertEqual(len(ctx.messages('typed',row,target=True)),3)
 
     def test_failed_generation_is_preserved_and_cannot_activate_a_release(self):
         class Broken(ScriptedBackend):
