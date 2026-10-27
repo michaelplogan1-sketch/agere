@@ -106,15 +106,40 @@ class Components(unittest.TestCase):
     def test_classical_head_wins_a_tie_and_runs_without_an_encoder(self):
         families={}
         for split in ('fit','calibration','verification'):
-            for word,label in [('How many patients','count'),('List patients','patient_set')]:
+            for word,label in [('Claims overview','table'),('Outreach roster','patient_set')]:
                 family=f'{split}-{label}';families[family]=split
                 H.after_answer(self.stack,word+' '+split,{'answer':{'status':'answered'}},body={'learning':{'component_review':{
                     'role':'shape','accepted':True,'accepted_labels':[label],'family':family,'note':'Authored shape classification'}}})
         manifest=C.export(self.root,self.path/'classical-data','shape',families)
         result=SI.run(root=self.root,manifest=manifest,encoder=Encoder(),install=True)
         self.assertEqual(result['qualification']['chosen']['encoder_calls_per_prediction'],0)
-        hint=C.shape_hint(SimpleNamespace(retriever=None),'How many patients today')
-        self.assertTrue(hint['confident']);self.assertEqual(hint['label'],'count')
+        hint=C.shape_hint(SimpleNamespace(retriever=None),'Claims overview today')
+        self.assertTrue(hint['confident']);self.assertEqual(hint['label'],'table')
+
+    def test_shape_head_cannot_qualify_for_questions_native_rules_already_answer(self):
+        families={}
+        for split in ('fit','calibration','verification'):
+            for question,label in [('How many patients','count'),('List patients','patient_set')]:
+                family=f'{split}-{label}';families[family]=split
+                H.after_answer(self.stack,question+' '+split,{'answer':{'status':'answered'}},body={'learning':{'component_review':{
+                    'role':'shape','accepted':True,'accepted_labels':[label],'family':family,'note':'Authored baseline qualification'}}})
+        manifest=C.export(self.root,self.path/'native-baseline-data','shape',families)
+        result=SI.run(root=self.root,manifest=manifest,encoder=Encoder(),install=True)
+        self.assertEqual(result['status'],'not_selected')
+        self.assertEqual(result['qualification']['baseline']['kind'],'native_shape_rules')
+        self.assertEqual(result['qualification']['baseline']['argmax_acceptability'],1)
+        self.assertTrue(all(m['native_useful_improvements']==0 for m in result['qualification']['comparisons']))
+        self.assertIsNone(C.active(self.root,'shape'))
+
+    def test_scalar_shape_compatibility_does_not_relax_other_component_labels(self):
+        row={'question':'Sum recorded minutes.','accepted_labels':['count']}
+        self.assertTrue(A.acceptable('value',row,shape=True))
+        self.assertFalse(A.acceptable('value',row))
+        self.assertFalse(A.acceptable('table',row,shape=True))
+        baseline=A.native_shape_baseline([row,{'question':'Analyze evidence and produce a presentation.','accepted_labels':['composite']}])
+        self.assertEqual(baseline['argmax_acceptability'],.5)
+        self.assertEqual(baseline['coverage'],.5)
+        self.assertEqual(baseline['wrong_confident'],0)
 
     def test_user_correction_retires_component_and_recursive_execution_reuse_together(self):
         from clinical_core.agere.clinical import harness_improvement as R

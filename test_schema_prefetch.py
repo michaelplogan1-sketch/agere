@@ -48,6 +48,48 @@ class Prefetch(unittest.TestCase):
         self.assertEqual(got['tables'][0], 'claim')
         self.assertNotIn('error', got)
 
+    def test_explicit_relation_survives_generic_documentation_ranking(self):
+        with sqlite3.connect(self.catalog.target) as db:
+            db.execute('CREATE TABLE adjudication(claim_id,patient_id,event_date,status)')
+        catalog = R.Catalog.load(self.tmp.name)
+        got = P.likely(catalog, 'Count received adjudication rows during 2029 for one claim by payer',
+                       tables=1, operations=0, streams=0)
+        self.assertIn('adjudication', got['tables'])
+        self.assertIn('adjudication', got['schema_expansion']['named_relations'])
+
+    def test_received_category_and_identifier_dimension_reach_real_typed_prompt(self):
+        with sqlite3.connect(self.catalog.target) as db:
+            db.executescript('''
+                CREATE TABLE signal_feed(patient_id,device,customer_account_id,event_date);
+                INSERT INTO signal_feed VALUES('A','bronze_patch','AC1','2029-01-01');
+                CREATE TABLE customer_account(customer_account_id,payer_id);
+                INSERT INTO customer_account VALUES('AC1','P1');
+            ''')
+        catalog = R.Catalog.load(self.tmp.name)
+        q = 'Count bronze_patch readings for payer P1 during 2029.'
+        got = P.likely(catalog, q, tables=1, operations=0, streams=0)
+        self.assertIn('signal_feed', got['tables'])
+        self.assertIn('customer_account', got['tables'])
+        self.assertFalse(got['schema_expansion']['joins_established'])
+        from clinical_core.agere.clinical.local_request_worker import short_messages
+        messages, _ = short_messages(catalog, q)
+        shown = json.loads(messages[-1]['content'])['tables']
+        self.assertEqual(shown['signal_feed'], catalog.tables['signal_feed'])
+        self.assertEqual(shown['customer_account'], catalog.tables['customer_account'])
+
+    def test_value_expansion_never_uses_fuzzy_category_as_exact_or_invents_table(self):
+        with sqlite3.connect(self.catalog.target) as db:
+            db.executescript('''
+                CREATE TABLE signal_feed(patient_id,device,phantom_id);
+                INSERT INTO signal_feed VALUES('A','bronze_patch','X');
+            ''')
+        catalog = R.Catalog.load(self.tmp.name)
+        got = P.likely(catalog, 'Count bronze readings', tables=1, operations=0, streams=0)
+        self.assertNotIn('signal_feed', got['schema_expansion']['exact_category_relations'])
+        self.assertNotIn('phantom', got['tables'])
+        disabled = P.likely(catalog, 'Count bronze_patch readings', tables=0, operations=0, streams=0)
+        self.assertEqual(disabled['tables'], [])
+
     def test_fragment_and_patch(self):
         prev = {'source': {'table': 'claim'}, 'select': [{'kind': 'count'}], 'where': None, 'group_by': [], 'limit': None}
         frag = P.fragment(prev, ['The question asks to group the result by payer; group_by is empty'])
