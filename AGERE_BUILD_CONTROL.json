@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T11:34:23.343596+00:00",
+  "updated_at": "2026-10-27T12:20:44.996822+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_guideline_source_candidate_training_running",
+    "kind": "offline_guideline_learning_verified_studies_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The existing explicit cited library now retrieves68 resources, including22 specialty-guidance records with version, final/draft status, jurisdiction, applicability, source-reading depth, grading and correction provenance in returned facts. No operative treatment rule/default knowledge/model/runtime is promoted.",
-    "measured_failure_reduction": "Nine focused guarded checks pass and all68 expected resources retrieve; zero provider sends, blocked attempts or protected question-corpus reads. Eight selected recommendation records from four sources retain their original grading schemes; two drafts and three unread hypertension corrections remain explicit. Edition/correction changes invalidate corpus identity and refresh retrieved provenance. Running adapter contract hashes remain unchanged; broad model gains remain unknown.",
+    "user_behavior_delta": "The explicit cited library preserves32 selected recommendation records and eight reviewed correction notices. Original documentary analytics extend the existing learners across20 new structures/11 conditions, retaining the full earlier curriculum. Existing classification learning now retains a useful qualified alternative when a higher-argmax variant has confident errors. No default runtime, knowledge directory or model pointer changed.",
+    "measured_failure_reduction": "Final532 guarded checks:528 pass/four optional-data skips; zero provider sends, blocked attempts or protected-corpus reads. All6071 targets per learner agree with independent Python/SQL/native checks on three sources. Real shape study exposed eight confident MiniLM errors versus zero among80 accepted lexical decisions; general selection repair retains the lexical candidate without activation. Original Qwen first typed fit is finished; broad comparisons and dependent training remain incomplete.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -378,17 +378,21 @@
       "artifacts/agere-healthcare-learning-2026-10-27/resume-preflight.json",
       "artifacts/agere-healthcare-learning-2026-10-27/research/reading-verification-v2.json",
       "artifacts/agere-guideline-learning-2026-10-27/verification.json",
-      "artifacts/agere-guideline-learning-2026-10-27/resume-preflight.json"
+      "artifacts/agere-guideline-learning-2026-10-27/resume-preflight.json",
+      "artifacts/agere-guideline-study-2026-10-27/verification.json",
+      "artifacts/agere-guideline-study-2026-10-27/resume-preflight.json",
+      "artifacts/agere-guideline-study-2026-10-27/queued-study.json"
     ],
-    "remaining_gap": "Full relevant guideline passages and known hypertension correction contents need review before source-specific clinical-rule adoption;18 new records are metadata-only. Guideline questions remain source-reading proposals, not physician-adjudicated labels or trained weights. Broader typed/bottled study is still running. Ordinary full-note/dose/final-answer/deliverable, browser/physician acceptance, full ten-area and clinical/model qualification remain open.",
-    "next_action": "Inspect the already-running offline typed/bottled two-round studies when result files complete; retain failed candidates and compare domain/family, parent, accepted wrong results, regressions, declines and total compute. Continue full primary-guideline/correction review into source-bound, qualified supervision while preserving draft status, applicability and permissions. When Claude is available, use artifacts/agere-guideline-learning-2026-10-27/resume-after-reset.txt to complete the ordinary subscription-only full-note/dose/answer/artifact workflow, stopping on any limit. No availability polling, retry or heartbeat; preserve G3/full ten-area scope, assisted Heartline and181/5 ledger.",
-    "next": "Inspect the already-running offline typed/bottled two-round studies when result files complete; retain failed candidates and compare domain/family, parent, accepted wrong results, regressions, declines and total compute. Continue full primary-guideline/correction review into source-bound, qualified supervision while preserving draft status, applicability and permissions. When Claude is available, use artifacts/agere-guideline-learning-2026-10-27/resume-after-reset.txt to complete the ordinary subscription-only full-note/dose/answer/artifact workflow, stopping on any limit. No availability polling, retry or heartbeat; preserve G3/full ten-area scope, assisted Heartline and181/5 ledger.",
+    "remaining_gap": "Broad Qwen model comparisons and dependent6071-question/124-family two-round studies are not complete; inspect all final receipts, parent comparisons, regressions, accepted wrong results, declines and compute before a gain claim. Targeted guideline reading is reference evidence, not independent clinical adjudication or medical-answer training labels. GOLD/GINA reuse, drafts and other unreviewed full-document branches remain explicit. Ordinary full-note/dose/final-answer/deliverable and browser/physician acceptance, full ten-area and clinical/model qualification remain open.",
+    "next_action": "Inspect the already-running original typed/bottled studies and the dependent local study in artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json. The local chain waits for PID6289 and both original completion receipts, then compares explicit transferred qualified candidates on all6071 source-checked tasks with full rehearsal and fit-only corrections; it stops on a dependency/training failure and never calls providers or installs defaults. After subscription availability, use this evidence root resume-after-reset.txt to complete ordinary full-note/dose/answer/artifact and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, source permissions and all negative candidates. No provider polling, retry or heartbeat.",
+    "next": "Inspect the already-running original typed/bottled studies and the dependent local study in artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json. The local chain waits for PID6289 and both original completion receipts, then compares explicit transferred qualified candidates on all6071 source-checked tasks with full rehearsal and fit-only corrections; it stops on a dependency/training failure and never calls providers or installs defaults. After subscription availability, use this evidence root resume-after-reset.txt to complete ordinary full-note/dose/answer/artifact and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, source permissions and all negative candidates. No provider polling, retry or heartbeat.",
     "latest_review": {
-      "at": "2026-10-27T11:34:23.343596+00:00",
-      "kind": "Versioned guideline-source intake and existing retrieval checks; no clinical/model promotion",
+      "at": "2026-10-27T12:20:44.996822+00:00",
+      "kind": "Targeted guideline/correction reading, actual shape-head comparison and guarded general-learning/native checks",
       "evidence": [
-        "artifacts/agere-guideline-learning-2026-10-27/verification.json",
-        "artifacts/agere-guideline-learning-2026-10-27/retrieval.json"
+        "artifacts/agere-guideline-study-2026-10-27/verification.json",
+        "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v2/tests.json",
+        "artifacts/agere-guideline-study-2026-10-27/shape-study-v2/result.json"
       ]
     },
     "coordination": {
@@ -458,10 +462,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-27T11:34:23.343596+00:00",
+      "at": "2026-10-27T12:20:44.996822+00:00",
       "gate": "G3",
-      "outcome": "Source-version/provenance increment verified; live clinical workflow and model studies incomplete",
-      "evidence": "artifacts/agere-guideline-learning-2026-10-27/verification.json"
+      "outcome": "Specific component-selection failure removed and general source-learning candidate verified; no automatic clinical workflow or broad model qualification claim",
+      "evidence": "artifacts/agere-guideline-study-2026-10-27/verification.json"
     }
   },
   "decisions": [
@@ -1432,6 +1436,13 @@
       "basis": "Mike supplied the2025 AHA/ACC hypertension guideline and requested specialty-society sources for recursive learning. Source review found three published corrections, current/draft KDIGO distinctions and differing clinical grading systems.",
       "scope_impact": "Existing architecture and full ten-area charter retained.22 candidate records, eight selected recommendations, no default rule/model/runtime installation or provider inference; running training contracts unchanged.",
       "evidence": "artifacts/agere-guideline-learning-2026-10-27/verification.json"
+    },
+    {
+      "at": "2026-10-27T12:20:44.996822+00:00",
+      "decision": "Use targeted guideline/errata review to build general documentary analytics supervision, while excluding unlicensed publisher material from model fitting; retain a qualified classifier alternative instead of rejecting all variants.",
+      "basis": "Mike explicitly requested continued guideline/correction review and SLM/recursive improvement without Claude. Full review identified units, interval, drug-class, interaction, risk-estimate and reference corrections. The real shape study reproduced an unsafe higher-argmax selection rejecting a useful calibrated alternative.",
+      "scope_impact": "Existing architecture, source protection and all ten areas retained. Full previous curriculum rehearsed in124-family local studies; immutable transfer and fit-only correction remain candidates. No providers, default installation, external care or clinical-superiority claim.",
+      "evidence": "artifacts/agere-guideline-study-2026-10-27/verification.json"
     }
   ]
 }

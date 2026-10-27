@@ -1,3 +1,5 @@
+> Historical11:34UTC checkpoint. The later targeted review, eight correction notices and source-linked learning work are recorded in [the current report](GUIDELINE_RECURSIVE_LEARNING_2026-10-27.md).
+
 # Specialty guidelines in Agere source learning — October27,2026
 
 Mike's example is the **2025 AHA/ACC adult high-blood-pressure guideline**, DOI `10.1161/CIR.0000000000001356`. The publisher hub and three correction records were checked. Direct publisher PDF access returned403; the correction texts have not been reviewed. No new blood-pressure thresholds were extracted or installed.

@@ -18,7 +18,7 @@ PRIMARY_HOSTS=('hbs.edu','harvard.edu','pressbooks.pub','uctv.tv','nih.gov','hhs
     'partners.org','bannerhealth.com','arizona.edu','uw.edu','acc.org',
     'heart.org','ahajournals.org','diabetes.org','diabetesjournals.org',
     'endocrine.org','aace.com','thoracic.org','goldcopd.org','ginasthma.org',
-    'kdigo.org','nice.org.uk','asco.org','uspreventiveservicestaskforce.org')
+    'kdigo.org','nice.org.uk','asco.org','uspreventiveservicestaskforce.org','academic.oup.com','endocrinepractice.org')
 
 
 def validate_guideline(card,guide):
@@ -28,7 +28,7 @@ def validate_guideline(card,guide):
         if not isinstance(guide.get(field),str) or not guide[field].strip():raise ValueError('Guideline needs '+field)
     if guide.get('publication_status') not in ('final','draft','superseded'):raise ValueError('Explicit final/draft/superseded status required')
     if guide.get('document_kind') not in ('guideline','standards','consensus','strategy_report','recommendation_statement'):raise ValueError('Do not conflate guideline and consensus document kinds')
-    if guide['review_depth'] not in ('publisher_metadata','selected_recommendations','indexed_recommendation_extract'):raise ValueError('Declare the actual guideline review depth')
+    if guide['review_depth'] not in ('publisher_metadata','selected_publisher_summary','selected_recommendations','indexed_recommendation_extract'):raise ValueError('Declare the actual guideline review depth')
     urls={c['url'] for c in card['citations']}
     if guide.get('source_url') not in urls:raise ValueError('Guideline source must retain its primary citation')
     if date.fromisoformat(guide['checked_on'])!=date.fromisoformat(card['last_verified']):raise ValueError('Guideline verification dates disagree')
@@ -45,12 +45,15 @@ def validate_guideline(card,guide):
     recommendations=guide.get('recommendations')
     if not isinstance(recommendations,list):raise ValueError('Reviewed recommendation list required')
     if recommendations and (guide['publication_status']!='final' or guide['review_depth']=='publisher_metadata'):raise ValueError('Unreviewed/draft recommendations cannot impersonate final clinical evidence')
-    if guide['review_depth']!='publisher_metadata' and not recommendations:raise ValueError('Recommendation review needs source locators')
+    if guide['review_depth'] in ('selected_recommendations','indexed_recommendation_extract') and not recommendations:raise ValueError('Recommendation review needs source locators')
+    if guide['review_depth']=='selected_publisher_summary' and not guide.get('reviewed_sections'):raise ValueError('Publisher summary review needs source sections')
     for rec in recommendations:
         if not all(rec.get(k) for k in ('locator','population','summary','required_patient_data')) or rec.get('url') not in urls:raise ValueError('Recommendation needs applicability and a cited source locator')
         grade=rec.get('grade',{});scheme=grade.get('scheme');strength=grade.get('strength');evidence=grade.get('evidence')
-        valid=(scheme=='GRADE' and strength in ('strong','conditional') and evidence in ('high','moderate','low','very_low')) or (scheme=='ADA' and strength is None and evidence in ('A','B','C','E')) or (scheme=='USPSTF' and strength in ('A','B','C','D','I') and evidence is None) or (scheme=='AHA_ACC' and strength in ('I','IIa','IIb','III_no_benefit','III_harm') and evidence in ('A','B-R','B-NR','C-LD','C-EO'))
+        valid=(scheme=='GRADE' and strength in ('strong','conditional') and evidence in ('high','moderate','low','very_low')) or (scheme=='ADA' and strength is None and evidence in ('A','B','C','E')) or (scheme=='USPSTF' and strength in ('A','B','C','D','I') and evidence is None) or (scheme=='AHA_ACC' and strength in ('I','IIa','IIb','III_no_benefit','III_harm') and evidence in ('A','B-R','B-NR','C-LD','C-EO')) or (scheme=='ASCO' and strength in ('strong','moderate','weak') and evidence in ('high','moderate','low','insufficient')) or (scheme=='ungraded' and strength is None and evidence is None)
         if not valid:raise ValueError('Keep recommendation strength and evidence in their original grading scheme')
+    reuse=guide.get('training_reuse')
+    if reuse is not None and (not isinstance(reuse,dict) or reuse.get('eligible') is not False or reuse.get('status') not in ('prohibited','permission_required','not_established','reference_only') or reuse.get('evidence_url') not in urls):raise ValueError('Reference guideline intake cannot grant unverified model-training permission')
     # These cards remain source-reading candidates, regardless of edition.
     if guide.get('operational_rule_approved') is not False:raise ValueError('Reading provenance is not clinical rule approval')
 
@@ -106,6 +109,23 @@ def validate(cards):
             if not lecture.get('recording_link_evidence_url') or lecture['recording_link_evidence_url'] not in [c['url'] for c in card['citations']]:raise ValueError('Recording link must retain its primary citation')
             if date.fromisoformat(lecture['event_date'])>date.fromisoformat(card['last_verified']):raise ValueError('A future event is not an available recorded lecture')
     return cards
+
+
+def training_material(cards):
+    """Explicit licensed summaries only; reference availability is not a license.
+
+    This exports educational input, never clinical answer labels or approval.
+    Existing adapter/classifier manifests still require their own source checks.
+    """
+    validate(cards);eligible=[];excluded=[]
+    for card in cards:
+        scope=card['education']
+        if scope['use_mode']=='cc_by_text_summary' and not scope.get('guideline'):
+            eligible.append({'id':card['id'],'text':card['summary'],'citations':card['citations'],
+                'license':scope['license'],'license_evidence_url':scope['license_evidence_url'],
+                'clinical_gold':False,'review_status':scope.get('review_status','educational source summary')})
+        else:excluded.append({'id':card['id'],'reason':'Reference/metadata only or full-text model-training permission not established'})
+    return {'eligible':eligible,'excluded':excluded,'identity':digest(cards),'provider_calls':0,'trained':False}
 
 
 def build(manifest,output):

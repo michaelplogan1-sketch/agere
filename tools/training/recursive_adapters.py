@@ -70,7 +70,7 @@ def probe_fit(manifest,root,revision,*,stack,base,backend=None):
     return {**result,'selection_split':'fit','revision':revision,'provider_calls':0,'local_decodes':stats,'offline_guard':guard}
 
 
-def run(manifest,root,*,stack,base,rounds=2,train=False,backend=None,corrections_per_family=8,rehearsal_per_family=2,corrective_epochs=2):
+def run(manifest,root,*,stack,base,rounds=2,train=False,backend=None,corrections_per_family=8,rehearsal_per_family=2,corrective_epochs=2,initial_revision=None):
     if type(rounds) is not int or rounds<1:raise ValueError('Predeclare a positive number of local study rounds')
     root=C.checked_path(root);root.mkdir(parents=True,exist_ok=True)
     manifest=C.checked_path(manifest);spec,by,dataset=T.load(manifest)
@@ -78,6 +78,11 @@ def run(manifest,root,*,stack,base,rounds=2,train=False,backend=None,corrections
         'fit_probe':'First approved task from each fit family; native source acceptability only',
         'corrections_per_family':corrections_per_family,'rehearsal_per_family':rehearsal_per_family,'corrective_epochs':corrective_epochs,
         'selection_uses_verification':False,'install':False,'provider_calls':0}
+    if initial_revision is not None:
+        # Explicit transfer preserves an existing immutable candidate and
+        # compares it on the new source/tasks before claiming a new gain.
+        A.training_revision(root,spec['learner'],initial_revision,base)
+        protocol['initial_revision']=initial_revision
     study=root/'recursive-studies'/digest(protocol);study.mkdir(parents=True,exist_ok=True)
     (study/'protocol.json').write_text(json.dumps(protocol,indent=2)+'\n')
     if not train:return {**protocol,'status':'prepared','study':str(study)}
@@ -85,7 +90,7 @@ def run(manifest,root,*,stack,base,rounds=2,train=False,backend=None,corrections
     with (root/'recursive-study.lock').open('a') as lock:
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:return {'schema':VERSION,'status':'busy','provider_calls':0}
-        started=time.monotonic();history=[];current=manifest;parent=None
+        started=time.monotonic();history=[];current=manifest;parent=initial_revision
         for index in range(rounds):
             saved=study/f'round-{index+1}.json'
             if saved.exists():

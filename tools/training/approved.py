@@ -122,7 +122,11 @@ def run(manifest,root,*,stack=None,encoder=None,install=False):
             variants.append((model,score(model,by['verification'],enc)))
         # Accuracy first, then reliable coverage, then avoiding an encoder call.
         quality=lambda item:(item[1]['argmax_acceptability'],-item[1]['wrong_confident'],item[1]['coverage'],-item[1]['encoder_calls_per_prediction'])
-        chosen,metric=max(variants,key=quality)
+        # A more accurate argmax can still make unsafe accepted decisions.
+        # Keep a useful calibrated alternative when another variant fails the
+        # existing zero-confident-error qualification, rather than reject all.
+        eligible=[item for item in variants if item[1]['coverage']>0 and item[1]['wrong_confident']==0]
+        chosen,metric=max(eligible or variants,key=quality)
         majority=max(allowed,key=lambda label:sum(r['label']==label for r in by['fit']))
         baseline={'kind':'majority','argmax_acceptability':sum(majority in r['accepted_labels'] for r in by['verification'])/len(by['verification']),
                   'coverage':1.0,'wrong_confident':sum(majority not in r['accepted_labels'] for r in by['verification']),'encoder_calls_per_prediction':0}
@@ -132,11 +136,12 @@ def run(manifest,root,*,stack=None,encoder=None,install=False):
             old_encoder=next((e for _,e in candidates if getattr(e,'identity',None)==old.get('encoder_identity')),None)
             if old.get('feature_kind')=='lexical' or old_encoder is not None:
                 baseline={**score(old,by['verification'],old_encoder),'kind':'current_release'}
-        selected=quality((chosen,metric))>quality((None,baseline)) and metric['coverage']>0 and metric['wrong_confident']==0
+        selected=bool(eligible) and quality((chosen,metric))>quality((None,baseline))
         qualification={'job':job,'dataset':dataset,'trainer_identity':trainer_identity,
             'feedback_revision':C.feedback_revision(root),
             'input_files':spec['files'],'provenance':spec['provenance'],
             'selected':selected,'baseline':baseline,'chosen':metric,
+            'selection_policy':'Compare useful variants meeting the existing zero-confident-error criterion before ranking argmax accuracy/coverage/cost; preserve all comparisons',
             'comparisons':[{'feature_kind':m['feature_kind'],'encoder_identity':m.get('encoder_identity'),**s} for m,s in variants],
             'family_counts':{k:len({r['family'] for r in v}) for k,v in by.items()},'threshold_fitted_on':'calibration only',
             'source_kinds':sorted({r['source_kind'] for rows in by.values() for r in rows}),

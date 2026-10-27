@@ -9,9 +9,9 @@
         "Which source and edition support 2025 AHA/ACC adult high blood pressure guideline?",
         "What is the review and publication status of 2025 AHA/ACC adult high blood pressure guideline?"
       ],
-      "summary": "2025 AHA/ACC adult high blood pressure guideline. The linked DOI CIR.0000000000001356 identifies this hypertension guideline. Three published corrections were identified; their changed passages have not been reviewed. Bind measurement method, clinical population, edition and correction status before interpreting a blood-pressure care gap. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2025 adult-hypertension summary supports standardized measurement, risk-sensitive treatment and team-supported home monitoring. All three identified correction texts were read, including the interaction-table columns and IV bolus interval. No whole-guideline or exhaustive errata-review claim is made. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The linked DOI CIR.0000000000001356 identifies this hypertension guideline. Three published corrections were identified; their changed passages have not been reviewed.",
+        "source_background": "The2025 adult-hypertension summary supports standardized measurement, risk-sensitive treatment and team-supported home monitoring. All three identified correction texts were read, including the interaction-table columns and IV bolus interval. No whole-guideline or exhaustive errata-review claim is made.",
         "authored_analytics_exercise": "Bind measurement method, clinical population, edition and correction status before interpreting a blood-pressure care gap.",
         "guideline_provenance": {
           "family": "aha-acc-hypertension-2025",
@@ -23,34 +23,56 @@
           "jurisdiction": "US",
           "population": "Adults with high blood pressure; special-population applicability requires full recommendation review",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "identified_content_pending",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
+          "correction_status": "contents_reviewed",
           "corrections": [
             {
               "url": "https://pubmed.ncbi.nlm.nih.gov/41212942/",
               "published_on": "2025-11-11",
               "doi": "10.1161/CIR.0000000000001396",
-              "review": "metadata_only"
+              "review": "content_reviewed",
+              "content_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+              "locator": "Table1 e118; resistant-hypertension discussion e177 and Figure8 e178",
+              "summary": "Corrects a new-recommendation label, stratifies aprocitentan fluid-retention findings by dose, and separates dual-ERA use from the direct-vasodilator co-medication qualifier.",
+              "access": "Normal browser full correction text reviewed"
             },
             {
               "url": "https://pubmed.ncbi.nlm.nih.gov/41973840/",
               "published_on": "2026-04-14",
               "doi": "10.1161/CIR.0000000000001436",
-              "review": "metadata_only"
+              "review": "content_reviewed",
+              "content_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001436",
+              "locator": "Table16 e158",
+              "summary": "Moves lithium into the interacting-drug column and thiazide-type diuretics/RAS blockers into the antihypertensive column.",
+              "access": "Normal browser full correction text reviewed"
             },
             {
               "url": "https://pubmed.ncbi.nlm.nih.gov/42189957/",
               "published_on": "2026-05-26",
               "doi": "10.1161/CIR.0000000000001448",
-              "review": "metadata_only"
+              "review": "content_reviewed",
+              "content_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001448",
+              "locator": "Table26 e182, IV labetalol row",
+              "summary": "Changes the repeat IV labetalol bolus interval from2 to10minutes; the infusion entry is unchanged.",
+              "access": "Normal browser full correction text reviewed"
             }
           ],
           "recommendations": [],
           "operational_rule_approved": false,
           "supersedes": [
             "2017 ACC/AHA high blood pressure guideline"
-          ]
+          ],
+          "reviewed_sections": [
+            "Publisher top-things summary1–10",
+            "All three identified Circulation correction notices"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -95,6 +117,34 @@
           "publisher": "US National Library of Medicine",
           "retrieved": "2026-10-27",
           "source_type": "government"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+          "title": "Hypertension guideline correction full text",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001436",
+          "title": "Hypertension guideline correction full text",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001448",
+          "title": "Hypertension guideline correction full text",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline/top-things-to-know",
+          "title": "2025 AHA/ACC adult high blood pressure guideline — reviewed source",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
         }
       ],
       "last_verified": "2026-10-27",
@@ -105,7 +155,7 @@
           "cardiovascular_risk",
           "home_monitoring"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline",
         "clinical_rule_approved": false,
@@ -114,7 +164,7 @@
         "analytics_objectives": [
           "Bind measurement method, clinical population, edition and correction status before interpreting a blood-pressure care gap."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "aha-acc-hypertension-2025",
           "edition": "2025",
@@ -125,34 +175,56 @@
           "jurisdiction": "US",
           "population": "Adults with high blood pressure; special-population applicability requires full recommendation review",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "identified_content_pending",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
+          "correction_status": "contents_reviewed",
           "corrections": [
             {
               "url": "https://pubmed.ncbi.nlm.nih.gov/41212942/",
               "published_on": "2025-11-11",
               "doi": "10.1161/CIR.0000000000001396",
-              "review": "metadata_only"
+              "review": "content_reviewed",
+              "content_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+              "locator": "Table1 e118; resistant-hypertension discussion e177 and Figure8 e178",
+              "summary": "Corrects a new-recommendation label, stratifies aprocitentan fluid-retention findings by dose, and separates dual-ERA use from the direct-vasodilator co-medication qualifier.",
+              "access": "Normal browser full correction text reviewed"
             },
             {
               "url": "https://pubmed.ncbi.nlm.nih.gov/41973840/",
               "published_on": "2026-04-14",
               "doi": "10.1161/CIR.0000000000001436",
-              "review": "metadata_only"
+              "review": "content_reviewed",
+              "content_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001436",
+              "locator": "Table16 e158",
+              "summary": "Moves lithium into the interacting-drug column and thiazide-type diuretics/RAS blockers into the antihypertensive column.",
+              "access": "Normal browser full correction text reviewed"
             },
             {
               "url": "https://pubmed.ncbi.nlm.nih.gov/42189957/",
               "published_on": "2026-05-26",
               "doi": "10.1161/CIR.0000000000001448",
-              "review": "metadata_only"
+              "review": "content_reviewed",
+              "content_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001448",
+              "locator": "Table26 e182, IV labetalol row",
+              "summary": "Changes the repeat IV labetalol bolus interval from2 to10minutes; the infusion entry is unchanged.",
+              "access": "Normal browser full correction text reviewed"
             }
           ],
           "recommendations": [],
           "operational_rule_approved": false,
           "supersedes": [
             "2017 ACC/AHA high blood pressure guideline"
-          ]
+          ],
+          "reviewed_sections": [
+            "Publisher top-things summary1–10",
+            "All three identified Circulation correction notices"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -164,9 +236,9 @@
         "Which source and edition support 2022 AHA/ACC/HFSA heart failure guideline?",
         "What is the review and publication status of 2022 AHA/ACC/HFSA heart failure guideline?"
       ],
-      "summary": "2022 AHA/ACC/HFSA heart failure guideline. The publisher overview identifies four medication classes for HFrEF and multidisciplinary advanced-HF care. Full recommendation and dose-table review is pending. Link dated EF, regimen, recorded tolerability, laboratory safety, patient goals and care-team evidence before assessing a medication or dose gap. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "For HFrEF, target-dose optimization is qualified by tolerability. The dosing table distinguishes classI/evidenceA target-dose advice from classIIa/expert-opinion timing advice. Symptoms, vital signs and laboratory findings affect optimization. Selected full-guideline text and the recommendation table were reviewed. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The publisher overview identifies four medication classes for HFrEF and multidisciplinary advanced-HF care. Full recommendation and dose-table review is pending.",
+        "source_background": "For HFrEF, target-dose optimization is qualified by tolerability. The dosing table distinguishes classI/evidenceA target-dose advice from classIIa/expert-opinion timing advice. Symptoms, vital signs and laboratory findings affect optimization. Selected full-guideline text and the recommendation table were reviewed.",
         "authored_analytics_exercise": "Link dated EF, regimen, recorded tolerability, laboratory safety, patient goals and care-team evidence before assessing a medication or dose gap.",
         "guideline_provenance": {
           "family": "aha-acc-hfsa-hf-2022",
@@ -178,13 +250,82 @@
           "jurisdiction": "US",
           "population": "People at risk for or living with HF; ejection-fraction phenotype matters",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "not_assessed",
-          "corrections": [],
-          "recommendations": [],
+          "review_depth": "selected_recommendations",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
+          "correction_status": "contents_reviewed",
+          "corrections": [
+            {
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001073",
+              "published_on": "2022-05-03",
+              "review": "content_reviewed",
+              "locator": "Section8.1 references; reviewer disclosure",
+              "summary": "Adds/renumbers an advanced-HF referral reference and updates a reviewer disclosure; the notice does not change the reviewed dosing recommendations."
+            },
+            {
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001097",
+              "published_on": "2022-09-27",
+              "review": "content_reviewed",
+              "locator": "Table1 legend",
+              "summary": "Corrects the expanded name of AAPA."
+            },
+            {
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001142",
+              "published_on": "2023-04-04",
+              "review": "content_reviewed",
+              "locator": "Table14 e938",
+              "summary": "Adds the cardiac-glycoside heading for digoxin, correcting its drug-class grouping."
+            }
+          ],
+          "recommendations": [
+            {
+              "locator": "7.3.8 recommendation1",
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063",
+              "population": "People with HFrEF",
+              "summary": "Optimize toward trial-supported target dosing unless not well tolerated.",
+              "grade": {
+                "scheme": "AHA_ACC",
+                "strength": "I",
+                "evidence": "A"
+              },
+              "required_patient_data": [
+                "current regimen",
+                "dose formulation/frequency",
+                "target source",
+                "tolerability",
+                "vital signs",
+                "laboratory safety"
+              ]
+            },
+            {
+              "locator": "7.3.8 recommendation2",
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063",
+              "population": "People with HFrEF undergoing GDMT optimization",
+              "summary": "Optimization frequency depends on symptoms, vital signs and laboratory findings.",
+              "grade": {
+                "scheme": "AHA_ACC",
+                "strength": "IIa",
+                "evidence": "C-EO"
+              },
+              "required_patient_data": [
+                "symptoms",
+                "vital signs",
+                "laboratory results",
+                "clinical follow-up"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Section7.3.8 synopsis and dosing recommendations; class/level table visually reviewed",
+            "Three identified Circulation corrections, full text"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -201,6 +342,42 @@
           "publisher": "American Heart Association / American College of Cardiology / HFSA",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063",
+          "title": "2022 AHA/ACC/HFSA heart failure guideline — reviewed source",
+          "publisher": "American Heart Association / American College of Cardiology / HFSA",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+          "title": "AHA publisher AI-training restriction, article footer",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association",
+          "section": "Publisher reuse terms only; not this card’s clinical recommendation source"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001073",
+          "title": "HF guideline correction full text",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001097",
+          "title": "HF guideline correction full text",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001142",
+          "title": "HF guideline correction full text",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
         }
       ],
       "last_verified": "2026-10-27",
@@ -211,7 +388,7 @@
           "gdmt",
           "care_teams"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://professional.heart.org/en/science-news/2022-guideline-for-the-management-of-heart-failure",
         "clinical_rule_approved": false,
@@ -220,7 +397,7 @@
         "analytics_objectives": [
           "Link dated EF, regimen, recorded tolerability, laboratory safety, patient goals and care-team evidence before assessing a medication or dose gap."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "aha-acc-hfsa-hf-2022",
           "edition": "2022",
@@ -231,13 +408,82 @@
           "jurisdiction": "US",
           "population": "People at risk for or living with HF; ejection-fraction phenotype matters",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "not_assessed",
-          "corrections": [],
-          "recommendations": [],
+          "review_depth": "selected_recommendations",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
+          "correction_status": "contents_reviewed",
+          "corrections": [
+            {
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001073",
+              "published_on": "2022-05-03",
+              "review": "content_reviewed",
+              "locator": "Section8.1 references; reviewer disclosure",
+              "summary": "Adds/renumbers an advanced-HF referral reference and updates a reviewer disclosure; the notice does not change the reviewed dosing recommendations."
+            },
+            {
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001097",
+              "published_on": "2022-09-27",
+              "review": "content_reviewed",
+              "locator": "Table1 legend",
+              "summary": "Corrects the expanded name of AAPA."
+            },
+            {
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001142",
+              "published_on": "2023-04-04",
+              "review": "content_reviewed",
+              "locator": "Table14 e938",
+              "summary": "Adds the cardiac-glycoside heading for digoxin, correcting its drug-class grouping."
+            }
+          ],
+          "recommendations": [
+            {
+              "locator": "7.3.8 recommendation1",
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063",
+              "population": "People with HFrEF",
+              "summary": "Optimize toward trial-supported target dosing unless not well tolerated.",
+              "grade": {
+                "scheme": "AHA_ACC",
+                "strength": "I",
+                "evidence": "A"
+              },
+              "required_patient_data": [
+                "current regimen",
+                "dose formulation/frequency",
+                "target source",
+                "tolerability",
+                "vital signs",
+                "laboratory safety"
+              ]
+            },
+            {
+              "locator": "7.3.8 recommendation2",
+              "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063",
+              "population": "People with HFrEF undergoing GDMT optimization",
+              "summary": "Optimization frequency depends on symptoms, vital signs and laboratory findings.",
+              "grade": {
+                "scheme": "AHA_ACC",
+                "strength": "IIa",
+                "evidence": "C-EO"
+              },
+              "required_patient_data": [
+                "symptoms",
+                "vital signs",
+                "laboratory results",
+                "clinical follow-up"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Section7.3.8 synopsis and dosing recommendations; class/level table visually reviewed",
+            "Three identified Circulation corrections, full text"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -249,9 +495,9 @@
         "Which source and edition support 2024 ACC HFrEF treatment expert consensus pathway?",
         "What is the review and publication status of 2024 ACC HFrEF treatment expert consensus pathway?"
       ],
-      "summary": "2024 ACC HFrEF treatment expert consensus pathway. This is an expert consensus decision pathway, complementary to the formal heart-failure guideline. It must retain its document type when used. Assess treatment initiation and optimization with documented barriers; a below-target dose alone does not establish inappropriate care. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2024 ACC expert-consensus summary favors early coverage of all core HFrEF therapies and individualized maximally tolerated dosing. It emphasizes coordination, shared decisions and addressing access barriers. This is a pathway summary, with no formal class/level invented. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "This is an expert consensus decision pathway, complementary to the formal heart-failure guideline. It must retain its document type when used.",
+        "source_background": "The2024 ACC expert-consensus summary favors early coverage of all core HFrEF therapies and individualized maximally tolerated dosing. It emphasizes coordination, shared decisions and addressing access barriers. This is a pathway summary, with no formal class/level invented.",
         "authored_analytics_exercise": "Assess treatment initiation and optimization with documented barriers; a below-target dose alone does not establish inappropriate care.",
         "guideline_provenance": {
           "family": "acc-hfref-ecdp-2024",
@@ -263,13 +509,59 @@
           "jurisdiction": "US",
           "population": "People with HFrEF",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Key points1–2",
+              "url": "https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2024/03/06/19/22/2024-acc-expert-consensus-hfref",
+              "population": "Chronic HFrEF; initiation/titration requires clinical stability and tolerability",
+              "summary": "Assess class coverage alongside tolerability; do not reduce optimization to a maximum-dose flag.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "HF phenotype",
+                "stability",
+                "regimen",
+                "tolerability",
+                "renal function",
+                "patient preferences"
+              ]
+            },
+            {
+              "locator": "Key points4–5",
+              "url": "https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2024/03/06/19/22/2024-acc-expert-consensus-hfref",
+              "population": "People receiving HF care",
+              "summary": "Use coordinated care and investigate individual adherence/access barriers.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "care-team responsibility",
+                "adherence evidence",
+                "cost/access barriers",
+                "patient goals"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Key points1–5"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.acc.org/Guidelines/Guidelines/2024/03/08/15/40/Treatment-of-Heart-Failure-With-Reduced-Ejection-Fraction-ECDP",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -286,6 +578,13 @@
           "publisher": "American College of Cardiology",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2024/03/06/19/22/2024-acc-expert-consensus-hfref",
+          "title": "2024 ACC HFrEF treatment expert consensus pathway — reviewed source",
+          "publisher": "American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
         }
       ],
       "last_verified": "2026-10-27",
@@ -296,7 +595,7 @@
           "gdmt",
           "titration"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://www.acc.org/Guidelines/Guidelines/2024/03/08/15/40/Treatment-of-Heart-Failure-With-Reduced-Ejection-Fraction-ECDP",
         "clinical_rule_approved": false,
@@ -305,7 +604,7 @@
         "analytics_objectives": [
           "Assess treatment initiation and optimization with documented barriers; a below-target dose alone does not establish inappropriate care."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "acc-hfref-ecdp-2024",
           "edition": "2024",
@@ -316,13 +615,59 @@
           "jurisdiction": "US",
           "population": "People with HFrEF",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Key points1–2",
+              "url": "https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2024/03/06/19/22/2024-acc-expert-consensus-hfref",
+              "population": "Chronic HFrEF; initiation/titration requires clinical stability and tolerability",
+              "summary": "Assess class coverage alongside tolerability; do not reduce optimization to a maximum-dose flag.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "HF phenotype",
+                "stability",
+                "regimen",
+                "tolerability",
+                "renal function",
+                "patient preferences"
+              ]
+            },
+            {
+              "locator": "Key points4–5",
+              "url": "https://www.acc.org/latest-in-cardiology/ten-points-to-remember/2024/03/06/19/22/2024-acc-expert-consensus-hfref",
+              "population": "People receiving HF care",
+              "summary": "Use coordinated care and investigate individual adherence/access barriers.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "care-team responsibility",
+                "adherence evidence",
+                "cost/access barriers",
+                "patient goals"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Key points1–5"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.acc.org/Guidelines/Guidelines/2024/03/08/15/40/Treatment-of-Heart-Failure-With-Reduced-Ejection-Fraction-ECDP",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -334,9 +679,9 @@
         "Which source and edition support 2026 ACC/AHA dyslipidemia guideline?",
         "What is the review and publication status of 2026 ACC/AHA dyslipidemia guideline?"
       ],
-      "summary": "2026 ACC/AHA dyslipidemia guideline. The 2026 publication replaces the 2018 cholesterol guideline. Specific risk thresholds and treatment tables have not been extracted. Separate primary and secondary prevention and bind lipid measurements and risk inputs to the applicable edition. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2026 lipid summary replaces older risk framing with PREVENT-based assessment in the specified primary-prevention age range, distinguishes risk categories and treatment goals, and retains clinician-patient discussion. This is selected publisher-summary review; detailed thresholds and tables remain outside this intake. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The 2026 publication replaces the 2018 cholesterol guideline. Specific risk thresholds and treatment tables have not been extracted.",
+        "source_background": "The2026 lipid summary replaces older risk framing with PREVENT-based assessment in the specified primary-prevention age range, distinguishes risk categories and treatment goals, and retains clinician-patient discussion. This is selected publisher-summary review; detailed thresholds and tables remain outside this intake.",
         "authored_analytics_exercise": "Separate primary and secondary prevention and bind lipid measurements and risk inputs to the applicable edition.",
         "guideline_provenance": {
           "family": "aha-acc-dyslipidemia-2026",
@@ -348,15 +693,24 @@
           "jurisdiction": "US",
           "population": "People evaluated for lipid management and ASCVD prevention",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
           "supersedes": [
             "2018 ACC/AHA cholesterol guideline"
-          ]
+          ],
+          "reviewed_sections": [
+            "Top-things summary1–6"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -373,6 +727,21 @@
           "publisher": "American Heart Association / American College of Cardiology",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://professional.heart.org/en/science-news/2026-guideline-on-the-management-of-dyslipidemia/top-things-to-know",
+          "title": "2026 ACC/AHA dyslipidemia guideline — reviewed source",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+          "title": "AHA publisher AI-training restriction, article footer",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association",
+          "section": "Publisher reuse terms only; not this card’s clinical recommendation source"
         }
       ],
       "last_verified": "2026-10-27",
@@ -383,7 +752,7 @@
           "ascvd",
           "prevention"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://professional.heart.org/en/guidelines-statements/2026-accahaaacvprabcacpmadaagsaphaaspcnlapcna-guideline-on-the-management-ofcir0000000000001423",
         "clinical_rule_approved": false,
@@ -392,7 +761,7 @@
         "analytics_objectives": [
           "Separate primary and secondary prevention and bind lipid measurements and risk inputs to the applicable edition."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "aha-acc-dyslipidemia-2026",
           "edition": "2026",
@@ -403,15 +772,24 @@
           "jurisdiction": "US",
           "population": "People evaluated for lipid management and ASCVD prevention",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
           "supersedes": [
             "2018 ACC/AHA cholesterol guideline"
-          ]
+          ],
+          "reviewed_sections": [
+            "Top-things summary1–6"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -423,9 +801,9 @@
         "Which source and edition support 2023 AHA/ACC chronic coronary disease guideline?",
         "What is the review and publication status of 2023 AHA/ACC chronic coronary disease guideline?"
       ],
-      "summary": "2023 AHA/ACC chronic coronary disease guideline. The publisher hub links the formal guideline and implementation resources for chronic coronary disease. This record is a source locator rather than a completed medication-rule review. Distinguish chronic coronary disease from an acute coronary syndrome and retain treatment indications, symptoms and patient preferences. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2023 CCD summary makes long-term beta-blocker advice dependent on prior MI timing, EF and other indications; it also distinguishes symptom therapy, prevention and rehabilitation. Disease name alone is insufficient for a universal medication-gap rule. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The publisher hub links the formal guideline and implementation resources for chronic coronary disease. This record is a source locator rather than a completed medication-rule review.",
+        "source_background": "The2023 CCD summary makes long-term beta-blocker advice dependent on prior MI timing, EF and other indications; it also distinguishes symptom therapy, prevention and rehabilitation. Disease name alone is insufficient for a universal medication-gap rule.",
         "authored_analytics_exercise": "Distinguish chronic coronary disease from an acute coronary syndrome and retain treatment indications, symptoms and patient preferences.",
         "guideline_provenance": {
           "family": "aha-acc-ccd-2023",
@@ -437,13 +815,22 @@
           "jurisdiction": "US",
           "population": "People with chronic coronary disease",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Top-things summary1–11"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -460,6 +847,21 @@
           "publisher": "American Heart Association / American College of Cardiology",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://professional.heart.org/en/science-news/2023-guideline-for-the-management-of-patients-with-chronic-coronary-disease/top-things-to-know",
+          "title": "2023 AHA/ACC chronic coronary disease guideline — reviewed source",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+          "title": "AHA publisher AI-training restriction, article footer",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association",
+          "section": "Publisher reuse terms only; not this card’s clinical recommendation source"
         }
       ],
       "last_verified": "2026-10-27",
@@ -470,7 +872,7 @@
           "secondary_prevention",
           "care_teams"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://professional.heart.org/en/guidelines-statements/2023-ahaaccaccpaspcnlapcna-guideline-for-the-management-of-patients-withcir0000000000001168",
         "clinical_rule_approved": false,
@@ -479,7 +881,7 @@
         "analytics_objectives": [
           "Distinguish chronic coronary disease from an acute coronary syndrome and retain treatment indications, symptoms and patient preferences."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "aha-acc-ccd-2023",
           "edition": "2023",
@@ -490,13 +892,22 @@
           "jurisdiction": "US",
           "population": "People with chronic coronary disease",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Top-things summary1–11"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -508,9 +919,9 @@
         "Which source and edition support 2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline?",
         "What is the review and publication status of 2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline?"
       ],
-      "summary": "2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline. Published June9,2026, this guideline links metabolic, kidney and cardiovascular health and replaces the 2013 overweight/obesity guideline. Recommendation-level review remains pending. Build a joined care-cycle view across obesity, diabetes, CKD and cardiovascular disease rather than counting overlapping patients as independent opportunities. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2026 CKM summary joins heart, kidney and metabolic care with social-needs assessment and a coordination point person. It requires comorbidity-sensitive treatment selection and uses both eGFR and albuminuria in kidney assessment. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "Published June9,2026, this guideline links metabolic, kidney and cardiovascular health and replaces the 2013 overweight/obesity guideline. Recommendation-level review remains pending.",
+        "source_background": "The2026 CKM summary joins heart, kidney and metabolic care with social-needs assessment and a coordination point person. It requires comorbidity-sensitive treatment selection and uses both eGFR and albuminuria in kidney assessment.",
         "authored_analytics_exercise": "Build a joined care-cycle view across obesity, diabetes, CKD and cardiovascular disease rather than counting overlapping patients as independent opportunities.",
         "guideline_provenance": {
           "family": "aha-acc-ada-asn-ckm-2026",
@@ -522,15 +933,24 @@
           "jurisdiction": "US",
           "population": "Patients across the cardiovascular-kidney-metabolic syndrome spectrum",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
           "supersedes": [
             "2013 AHA/ACC/TOS overweight and obesity guideline"
-          ]
+          ],
+          "reviewed_sections": [
+            "Top-things summary1–10"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -548,6 +968,21 @@
           "publisher": "American Heart Association / American College of Cardiology / ADA / ASN",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://professional.heart.org/en/science-news/2026-guideline-for-the-prevention-detection-evaluation-and-management-of-ckm-syndrome/top-things-to-know",
+          "title": "2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline — reviewed source",
+          "publisher": "American Heart Association / American College of Cardiology / ADA / ASN",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+          "title": "AHA publisher AI-training restriction, article footer",
+          "publisher": "American Heart Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association",
+          "section": "Publisher reuse terms only; not this card’s clinical recommendation source"
         }
       ],
       "last_verified": "2026-10-27",
@@ -559,7 +994,7 @@
           "ckd",
           "cardiovascular_risk"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://professional.heart.org/en/science-news/2026-guideline-for-the-prevention-detection-evaluation-and-management-of-ckm-syndrome",
         "clinical_rule_approved": false,
@@ -568,7 +1003,7 @@
         "analytics_objectives": [
           "Build a joined care-cycle view across obesity, diabetes, CKD and cardiovascular disease rather than counting overlapping patients as independent opportunities."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "aha-acc-ada-asn-ckm-2026",
           "edition": "2026",
@@ -579,15 +1014,24 @@
           "jurisdiction": "US",
           "population": "Patients across the cardiovascular-kidney-metabolic syndrome spectrum",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
-          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "review_depth": "selected_publisher_summary",
+          "reuse_status": "AHA journal explicitly prohibits AI-training extraction; reference-only use",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
           "supersedes": [
             "2013 AHA/ACC/TOS overweight and obesity guideline"
-          ]
+          ],
+          "reviewed_sections": [
+            "Top-things summary1–10"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "prohibited",
+            "evidence_url": "https://www.ahajournals.org/doi/10.1161/CIR.0000000000001396",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -599,9 +1043,9 @@
         "Which source and edition support ADA Standards of Care in Diabetes 2026?",
         "What is the review and publication status of ADA Standards of Care in Diabetes 2026?"
       ],
-      "summary": "ADA Standards of Care in Diabetes 2026. The official annual/living standards include population care, diagnosis, prevention, glycemic goals, technology, obesity, pharmacotherapy, cardiovascular and kidney care, and older adults. Chapter recommendations need their own locators. Use chapter1 for population/access context,3 for prediabetes prevention,6 for hypoglycemia,8 for weight management,9 for medicines,10 for cardiovascular care and11 for kidney care. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "Selected2026 population and prevention recommendations support stratified quality review, food-insecurity assessment, risk-sensitive prediabetes monitoring and appropriate technology-assisted prevention. Each recommendation retains its own population and evidence letter. Other chapters listed by the standards hub were not fully reviewed. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The official annual/living standards include population care, diagnosis, prevention, glycemic goals, technology, obesity, pharmacotherapy, cardiovascular and kidney care, and older adults. Chapter recommendations need their own locators.",
+        "source_background": "Selected2026 population and prevention recommendations support stratified quality review, food-insecurity assessment, risk-sensitive prediabetes monitoring and appropriate technology-assisted prevention. Each recommendation retains its own population and evidence letter. Other chapters listed by the standards hub were not fully reviewed.",
         "authored_analytics_exercise": "Use chapter1 for population/access context,3 for prediabetes prevention,6 for hypoglycemia,8 for weight management,9 for medicines,10 for cardiovascular care and11 for kidney care.",
         "guideline_provenance": {
           "family": "ada-standards-2026",
@@ -613,13 +1057,91 @@
           "jurisdiction": "US",
           "population": "People with diabetes and defined at-risk groups; each chapter has its own population",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Official hub reviewed; slide commercial reuse requires ADA permission; full-text model-training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "1.6",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690171/",
+              "population": "Health systems caring for people with diabetes",
+              "summary": "Stratify quality and outcome data to identify and address care disparities.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "B"
+              },
+              "required_patient_data": [
+                "quality denominator",
+                "insurance",
+                "language",
+                "social-needs documentation",
+                "outcomes"
+              ]
+            },
+            {
+              "locator": "1.7 food-insecurity component",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690171/",
+              "population": "People with diabetes during clinical encounters",
+              "summary": "Assess food insecurity as part of treatment context.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "A"
+              },
+              "required_patient_data": [
+                "food-insecurity assessment",
+                "patient context",
+                "local resources"
+              ]
+            },
+            {
+              "locator": "3.1",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/",
+              "population": "People with prediabetes",
+              "summary": "Monitor for progression at least annually, adjusted to individual risk.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "E"
+              },
+              "required_patient_data": [
+                "prediabetes evidence",
+                "last glycemic assessment",
+                "individual risk"
+              ]
+            },
+            {
+              "locator": "3.6",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/",
+              "population": "People considering type2 diabetes prevention",
+              "summary": "Consider certified technology-assisted prevention programs consistent with preference.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "B"
+              },
+              "required_patient_data": [
+                "risk assessment",
+                "program certification/availability",
+                "digital access",
+                "patient preference"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Chapter1 recommendations1.6–1.9",
+            "Chapter3 recommendations3.1 and3.6"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://professional.diabetes.org/standards-of-care",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -640,6 +1162,20 @@
           "publisher": "American Diabetes Association",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690171/",
+          "title": "ADA2026 chapter1 population care",
+          "publisher": "American Diabetes Association",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/",
+          "title": "ADA2026 chapter3 prevention",
+          "publisher": "American Diabetes Association",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
         }
       ],
       "last_verified": "2026-10-27",
@@ -654,7 +1190,7 @@
           "ckd",
           "cardiovascular_risk"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Official hub reviewed; slide commercial reuse requires ADA permission; full-text model-training permission not established",
         "license_evidence_url": "https://professional.diabetes.org/standards-of-care",
         "clinical_rule_approved": false,
@@ -663,7 +1199,7 @@
         "analytics_objectives": [
           "Use chapter1 for population/access context,3 for prediabetes prevention,6 for hypoglycemia,8 for weight management,9 for medicines,10 for cardiovascular care and11 for kidney care."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "ada-standards-2026",
           "edition": "2026",
@@ -674,13 +1210,91 @@
           "jurisdiction": "US",
           "population": "People with diabetes and defined at-risk groups; each chapter has its own population",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Official hub reviewed; slide commercial reuse requires ADA permission; full-text model-training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "1.6",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690171/",
+              "population": "Health systems caring for people with diabetes",
+              "summary": "Stratify quality and outcome data to identify and address care disparities.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "B"
+              },
+              "required_patient_data": [
+                "quality denominator",
+                "insurance",
+                "language",
+                "social-needs documentation",
+                "outcomes"
+              ]
+            },
+            {
+              "locator": "1.7 food-insecurity component",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690171/",
+              "population": "People with diabetes during clinical encounters",
+              "summary": "Assess food insecurity as part of treatment context.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "A"
+              },
+              "required_patient_data": [
+                "food-insecurity assessment",
+                "patient context",
+                "local resources"
+              ]
+            },
+            {
+              "locator": "3.1",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/",
+              "population": "People with prediabetes",
+              "summary": "Monitor for progression at least annually, adjusted to individual risk.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "E"
+              },
+              "required_patient_data": [
+                "prediabetes evidence",
+                "last glycemic assessment",
+                "individual risk"
+              ]
+            },
+            {
+              "locator": "3.6",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690170/",
+              "population": "People considering type2 diabetes prevention",
+              "summary": "Consider certified technology-assisted prevention programs consistent with preference.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "B"
+              },
+              "required_patient_data": [
+                "risk assessment",
+                "program certification/availability",
+                "digital access",
+                "patient preference"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Chapter1 recommendations1.6–1.9",
+            "Chapter3 recommendations3.1 and3.6"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://professional.diabetes.org/standards-of-care",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -692,9 +1306,9 @@
         "Which source and edition support ADA 2026 chapter9 pharmacologic approaches to glycemic treatment?",
         "What is the review and publication status of ADA 2026 chapter9 pharmacologic approaches to glycemic treatment?"
       ],
-      "summary": "ADA 2026 chapter9 pharmacologic approaches to glycemic treatment. Recommendation9.8 supports an SGLT2 inhibitor for glycemic management and prevention of HF hospitalization irrespective of A1C, evidence gradeA. Only this indexed primary-source excerpt was reviewed; direct full-page access returned403. For a patient whose A1C is at goal, still assess HF indication, current medicines, kidney function, safety, preferences and access; the A1C alone does not settle suitability. Review scope: indexed recommendation extract; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2026 chapter9 review preserves the HF-related SGLT2 indication independent of A1C, periodic reassessment, and financial-obstacle review. Recommendation9.8 has gradeA;9.14 and9.29 have gradeE. These grades must not be collapsed into equal evidence. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "Recommendation9.8 supports an SGLT2 inhibitor for glycemic management and prevention of HF hospitalization irrespective of A1C, evidence gradeA. Only this indexed primary-source excerpt was reviewed; direct full-page access returned403.",
+        "source_background": "The2026 chapter9 review preserves the HF-related SGLT2 indication independent of A1C, periodic reassessment, and financial-obstacle review. Recommendation9.8 has gradeA;9.14 and9.29 have gradeE. These grades must not be collapsed into equal evidence.",
         "authored_analytics_exercise": "For a patient whose A1C is at goal, still assess HF indication, current medicines, kidney function, safety, preferences and access; the A1C alone does not settle suitability.",
         "guideline_provenance": {
           "family": "ada-pharmacotherapy-2026",
@@ -706,16 +1320,16 @@
           "jurisdiction": "US",
           "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
           "checked_on": "2026-10-27",
-          "review_depth": "indexed_recommendation_extract",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [
             {
               "locator": "9.8",
-              "url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/",
               "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
-              "summary": "A1C at goal does not by itself remove the HF-related reason to consider an SGLT2 inhibitor.",
+              "summary": "A1C at goal alone does not remove the HF-related reason to review SGLT2 therapy.",
               "grade": {
                 "scheme": "ADA",
                 "strength": null,
@@ -724,15 +1338,58 @@
               "required_patient_data": [
                 "diabetes type",
                 "HF phenotype",
-                "current medications",
                 "renal function",
-                "contraindications and adverse effects",
-                "preferences and affordability"
+                "regimen",
+                "contraindications",
+                "patient goals"
+              ]
+            },
+            {
+              "locator": "9.14",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/",
+              "population": "People receiving diabetes medication management",
+              "summary": "Reassess treatment and medication-taking behavior regularly using individual context.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "E"
+              },
+              "required_patient_data": [
+                "current regimen",
+                "medication-taking behavior",
+                "goals",
+                "comorbidities"
+              ]
+            },
+            {
+              "locator": "9.29",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/",
+              "population": "People with diabetes",
+              "summary": "Assess financial obstacles and coordinate feasible access support.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "E"
+              },
+              "required_patient_data": [
+                "reported affordability obstacles",
+                "coverage evidence",
+                "patient preferences",
+                "available support"
               ]
             }
           ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Recommendations9.8,9.14–9.17,9.29–9.30"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -749,6 +1406,13 @@
           "publisher": "American Diabetes Association",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/",
+          "title": "ADA 2026 chapter9 pharmacologic approaches to glycemic treatment — reviewed source",
+          "publisher": "American Diabetes Association",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
         }
       ],
       "last_verified": "2026-10-27",
@@ -768,7 +1432,7 @@
         "analytics_objectives": [
           "For a patient whose A1C is at goal, still assess HF indication, current medicines, kidney function, safety, preferences and access; the A1C alone does not settle suitability."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "ada-pharmacotherapy-2026",
           "edition": "2026 chapter9",
@@ -779,16 +1443,16 @@
           "jurisdiction": "US",
           "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
           "checked_on": "2026-10-27",
-          "review_depth": "indexed_recommendation_extract",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
           "recommendations": [
             {
               "locator": "9.8",
-              "url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/",
               "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
-              "summary": "A1C at goal does not by itself remove the HF-related reason to consider an SGLT2 inhibitor.",
+              "summary": "A1C at goal alone does not remove the HF-related reason to review SGLT2 therapy.",
               "grade": {
                 "scheme": "ADA",
                 "strength": null,
@@ -797,15 +1461,58 @@
               "required_patient_data": [
                 "diabetes type",
                 "HF phenotype",
-                "current medications",
                 "renal function",
-                "contraindications and adverse effects",
-                "preferences and affordability"
+                "regimen",
+                "contraindications",
+                "patient goals"
+              ]
+            },
+            {
+              "locator": "9.14",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/",
+              "population": "People receiving diabetes medication management",
+              "summary": "Reassess treatment and medication-taking behavior regularly using individual context.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "E"
+              },
+              "required_patient_data": [
+                "current regimen",
+                "medication-taking behavior",
+                "goals",
+                "comorbidities"
+              ]
+            },
+            {
+              "locator": "9.29",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12690185/",
+              "population": "People with diabetes",
+              "summary": "Assess financial obstacles and coordinate feasible access support.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "E"
+              },
+              "required_patient_data": [
+                "reported affordability obstacles",
+                "coverage evidence",
+                "patient preferences",
+                "available support"
               ]
             }
           ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Recommendations9.8,9.14–9.17,9.29–9.30"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -817,7 +1524,7 @@
         "Which source and edition support Endocrine Society primary aldosteronism guideline 2025?",
         "What is the review and publication status of Endocrine Society primary aldosteronism guideline 2025?"
       ],
-      "summary": "Endocrine Society primary aldosteronism guideline 2025. Recommendation1 conditionally suggests PA screening across hypertension, with low-certainty evidence. Implementation depends on resources and expertise. Recommendation3 uses aldosterone and renin; potassium helps interpret aldosterone. Preserve conditional strength, testing context and medication interference. Normal potassium alone must not be treated as proof that PA screening is unnecessary. Review scope: selected recommendations; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2025 PA guideline conditionally suggests screening across hypertension, with low-certainty evidence and context-dependent feasibility. Aldosterone/renin testing requires assay, medication and potassium context. The identified correction changes direct-renin units to mU/L, a material unit distinction. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
         "source_background": "Recommendation1 conditionally suggests PA screening across hypertension, with low-certainty evidence. Implementation depends on resources and expertise. Recommendation3 uses aldosterone and renin; potassium helps interpret aldosterone.",
         "authored_analytics_exercise": "Preserve conditional strength, testing context and medication interference. Normal potassium alone must not be treated as proof that PA screening is unnecessary.",
@@ -833,8 +1540,16 @@
           "checked_on": "2026-10-27",
           "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "not_assessed",
-          "corrections": [],
+          "correction_status": "contents_reviewed",
+          "corrections": [
+            {
+              "url": "https://academic.oup.com/jcem/article/110/11/e3933/8244166",
+              "published_on": "2025-10-16",
+              "review": "content_reviewed",
+              "locator": "Figure1, page2457",
+              "summary": "Corrects direct-renin-concentration units from mU/mL to mU/L; standardizes the mL capitalization in the PRA unit."
+            }
+          ],
           "recommendations": [
             {
               "locator": "Recommendation1 and technical remarks",
@@ -876,6 +1591,16 @@
           "operational_rule_approved": false,
           "supersedes": [
             "2016 Endocrine Society primary aldosteronism guideline"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          },
+          "reviewed_sections": [
+            "Recommendations1 and3 and technical remarks",
+            "Full correction to Figure1 units"
           ]
         }
       },
@@ -891,6 +1616,13 @@
           "url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
           "title": "Endocrine Society primary aldosteronism guideline 2025",
           "publisher": "Endocrine Society",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://academic.oup.com/jcem/article/110/11/e3933/8244166",
+          "title": "Correction to2025 primary aldosteronism guideline",
+          "publisher": "Endocrine Society / Oxford University Press",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
         }
@@ -925,8 +1657,16 @@
           "checked_on": "2026-10-27",
           "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "not_assessed",
-          "corrections": [],
+          "correction_status": "contents_reviewed",
+          "corrections": [
+            {
+              "url": "https://academic.oup.com/jcem/article/110/11/e3933/8244166",
+              "published_on": "2025-10-16",
+              "review": "content_reviewed",
+              "locator": "Figure1, page2457",
+              "summary": "Corrects direct-renin-concentration units from mU/mL to mU/L; standardizes the mL capitalization in the PRA unit."
+            }
+          ],
           "recommendations": [
             {
               "locator": "Recommendation1 and technical remarks",
@@ -968,6 +1708,16 @@
           "operational_rule_approved": false,
           "supersedes": [
             "2016 Endocrine Society primary aldosteronism guideline"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          },
+          "reviewed_sections": [
+            "Recommendations1 and3 and technical remarks",
+            "Full correction to Figure1 units"
           ]
         }
       }
@@ -980,9 +1730,9 @@
         "Which source and edition support Endocrine Society high-risk hypoglycemia guideline?",
         "What is the review and publication status of Endocrine Society high-risk hypoglycemia guideline?"
       ],
-      "summary": "Endocrine Society high-risk hypoglycemia guideline. The official page distinguishes the December2022 online release from March2023 journal publication. It provides guideline recommendations and supporting resources for high-risk hypoglycemia. Retain medication exposure, prior hypoglycemia, monitoring access and education needs when building a diabetes safety review. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "Selected hypoglycemia recommendations distinguish T1D on multiple injections, higher-risk T2D outpatients and structured education for insulin users. CGM advice does not remove the need for confirmation when symptoms and sensor readings disagree. Strength and certainty differ by recommendation. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The official page distinguishes the December2022 online release from March2023 journal publication. It provides guideline recommendations and supporting resources for high-risk hypoglycemia.",
+        "source_background": "Selected hypoglycemia recommendations distinguish T1D on multiple injections, higher-risk T2D outpatients and structured education for insulin users. CGM advice does not remove the need for confirmation when symptoms and sensor readings disagree. Strength and certainty differ by recommendation.",
         "authored_analytics_exercise": "Retain medication exposure, prior hypoglycemia, monitoring access and education needs when building a diabetes safety review.",
         "guideline_provenance": {
           "family": "endocrine-hypoglycemia-2022-2023",
@@ -994,13 +1744,73 @@
           "jurisdiction": "US",
           "population": "Individuals with diabetes at high risk of hypoglycemia",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation1 and remarks",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+              "population": "T1D receiving multiple daily insulin injections",
+              "summary": "Prefer CGM with education and access to confirmatory fingerstick testing when needed.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "insulin regimen",
+                "CGM use/training",
+                "confirmatory testing access"
+              ]
+            },
+            {
+              "locator": "Recommendation3",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+              "population": "T2D outpatients using insulin/sulfonylureas and at risk for hypoglycemia",
+              "summary": "Consider real-time CGM in the stated higher-risk group.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "very_low"
+              },
+              "required_patient_data": [
+                "medication exposure",
+                "hypoglycemia risk",
+                "outpatient context",
+                "device access"
+              ]
+            },
+            {
+              "locator": "Recommendation9",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+              "population": "Adult/pediatric insulin-treated T1D or T2D outpatients",
+              "summary": "Provide structured education rather than unstructured advice.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "insulin exposure",
+                "education/referral/completion evidence",
+                "access needs"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Recommendations1,3 and9 and their remarks"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1027,7 +1837,7 @@
           "hypoglycemia",
           "diabetes_technology"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
         "clinical_rule_approved": false,
@@ -1036,7 +1846,7 @@
         "analytics_objectives": [
           "Retain medication exposure, prior hypoglycemia, monitoring access and education needs when building a diabetes safety review."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "endocrine-hypoglycemia-2022-2023",
           "edition": "Online December2022; JCEM March2023",
@@ -1047,13 +1857,73 @@
           "jurisdiction": "US",
           "population": "Individuals with diabetes at high risk of hypoglycemia",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation1 and remarks",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+              "population": "T1D receiving multiple daily insulin injections",
+              "summary": "Prefer CGM with education and access to confirmatory fingerstick testing when needed.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "insulin regimen",
+                "CGM use/training",
+                "confirmatory testing access"
+              ]
+            },
+            {
+              "locator": "Recommendation3",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+              "population": "T2D outpatients using insulin/sulfonylureas and at risk for hypoglycemia",
+              "summary": "Consider real-time CGM in the stated higher-risk group.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "very_low"
+              },
+              "required_patient_data": [
+                "medication exposure",
+                "hypoglycemia risk",
+                "outpatient context",
+                "device access"
+              ]
+            },
+            {
+              "locator": "Recommendation9",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+              "population": "Adult/pediatric insulin-treated T1D or T2D outpatients",
+              "summary": "Provide structured education rather than unstructured advice.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "insulin exposure",
+                "education/referral/completion evidence",
+                "access needs"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Recommendations1,3 and9 and their remarks"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1065,9 +1935,9 @@
         "Which source and edition support AACE obesity/adiposity-based chronic disease algorithm 2025?",
         "What is the review and publication status of AACE obesity/adiposity-based chronic disease algorithm 2025?"
       ],
-      "summary": "AACE obesity/adiposity-based chronic disease algorithm 2025. This consensus update emphasizes complications and person-centered care. Its document type and clinical purpose should remain visible rather than being treated as a generic weight-loss target. Connect symptoms, complications, patient goals and access to weight-management planning and resource analysis. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The AACE2025 consensus individualizes treatment by adiposity-related complications, health goals, response and access. Selected full-text care-plan and follow-up sections distinguish initial weight reduction from long-term maintenance; a lower tolerated maintenance dose can be appropriate. This reference review does not establish a universal drug/dose rule.",
       "facts": {
-        "source_background": "This consensus update emphasizes complications and person-centered care. Its document type and clinical purpose should remain visible rather than being treated as a generic weight-loss target.",
+        "source_background": "The AACE2025 consensus individualizes treatment by adiposity-related complications, health goals, response and access. Selected full-text care-plan and follow-up sections distinguish initial weight reduction from long-term maintenance; a lower tolerated maintenance dose can be appropriate. This reference review does not establish a universal drug/dose rule.",
         "authored_analytics_exercise": "Connect symptoms, complications, patient goals and access to weight-management planning and resource analysis.",
         "guideline_provenance": {
           "family": "aace-obesity-2025",
@@ -1079,13 +1949,61 @@
           "jurisdiction": "US",
           "population": "Adults with obesity/adiposity-based chronic disease",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Personalized Therapeutic Care Plan",
+              "url": "https://www.endocrinepractice.org/article/S1530-891X(25)00977-2/fulltext",
+              "population": "Adults receiving obesity/adiposity-based chronic-disease care",
+              "summary": "Set goals around individual complications, health and preferences.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "complications",
+                "function",
+                "health goals",
+                "patient preferences"
+              ]
+            },
+            {
+              "locator": "Long-Term Follow-Up",
+              "url": "https://www.endocrinepractice.org/article/S1530-891X(25)00977-2/fulltext",
+              "population": "Adults receiving obesity/adiposity-based chronic-disease care",
+              "summary": "Distinguish maintenance from initial treatment; follow response, tolerability and access.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "treatment phase",
+                "weight/health trajectory",
+                "tolerability",
+                "medication access",
+                "follow-up"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Abstract and scope",
+            "Personalized Therapeutic Care Plan",
+            "Long-Term Follow-Up",
+            "Individualization of Weight-Loss Targets"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "permission_required",
+            "evidence_url": "https://www.endocrinepractice.org/article/S1530-891X(25)00977-2/fulltext",
+            "reason": "Publisher reserves text/data-mining and AI-training rights; reference-only review"
+          }
         }
       },
       "entities": [
@@ -1102,6 +2020,13 @@
           "publisher": "American Association of Clinical Endocrinology",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.endocrinepractice.org/article/S1530-891X(25)00977-2/fulltext",
+          "title": "AACE2025 obesity algorithm, selected full-text sections",
+          "publisher": "American Association of Clinical Endocrinology / Elsevier",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
         }
       ],
       "last_verified": "2026-10-27",
@@ -1112,7 +2037,7 @@
           "complications",
           "patient_goals"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://pro.aace.com/clinical-guidance/aace-consensus-statement-algorithm-evaluation-and-treatment-adults",
         "clinical_rule_approved": false,
@@ -1121,7 +2046,7 @@
         "analytics_objectives": [
           "Connect symptoms, complications, patient goals and access to weight-management planning and resource analysis."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "aace-obesity-2025",
           "edition": "2025",
@@ -1132,13 +2057,61 @@
           "jurisdiction": "US",
           "population": "Adults with obesity/adiposity-based chronic disease",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Personalized Therapeutic Care Plan",
+              "url": "https://www.endocrinepractice.org/article/S1530-891X(25)00977-2/fulltext",
+              "population": "Adults receiving obesity/adiposity-based chronic-disease care",
+              "summary": "Set goals around individual complications, health and preferences.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "complications",
+                "function",
+                "health goals",
+                "patient preferences"
+              ]
+            },
+            {
+              "locator": "Long-Term Follow-Up",
+              "url": "https://www.endocrinepractice.org/article/S1530-891X(25)00977-2/fulltext",
+              "population": "Adults receiving obesity/adiposity-based chronic-disease care",
+              "summary": "Distinguish maintenance from initial treatment; follow response, tolerability and access.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "treatment phase",
+                "weight/health trajectory",
+                "tolerability",
+                "medication access",
+                "follow-up"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Abstract and scope",
+            "Personalized Therapeutic Care Plan",
+            "Long-Term Follow-Up",
+            "Individualization of Weight-Loss Targets"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "permission_required",
+            "evidence_url": "https://www.endocrinepractice.org/article/S1530-891X(25)00977-2/fulltext",
+            "reason": "Publisher reserves text/data-mining and AI-training rights; reference-only review"
+          }
         }
       }
     },
@@ -1170,7 +2143,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "permission_required",
+            "evidence_url": "https://goldcopd.org/2026-gold-report-and-pocket-guide/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1223,7 +2202,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "permission_required",
+            "evidence_url": "https://goldcopd.org/2026-gold-report-and-pocket-guide/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1255,7 +2240,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "permission_required",
+            "evidence_url": "https://ginasthma.org/2026-gina-strategy-report/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1308,7 +2299,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "permission_required",
+            "evidence_url": "https://ginasthma.org/2026-gina-strategy-report/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1320,9 +2317,9 @@
         "Which source and edition support ATS pharmacologic management of COPD guideline 2020?",
         "What is the review and publication status of ATS pharmacologic management of COPD guideline 2020?"
       ],
-      "summary": "ATS pharmacologic management of COPD guideline 2020. The official ATS implementation hub links the 2020 pharmacologic guideline, full text, summary and supporting material. It is distinct from the annual GOLD strategy report. Compare bronchodilator and inhaled-steroid questions against the actual recommendation population, keeping exacerbation history and potential harms visible. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The ATS recommendations distinguish symptomatic COPD needing dual bronchodilation, persistent symptoms with qualifying exacerbations for triple therapy, and potential ICS withdrawal after an exacerbation-free year. The linked erratum corrects a subgroup pneumonia-risk estimate without changing recommendations. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The official ATS implementation hub links the 2020 pharmacologic guideline, full text, summary and supporting material. It is distinct from the annual GOLD strategy report.",
+        "source_background": "The ATS recommendations distinguish symptomatic COPD needing dual bronchodilation, persistent symptoms with qualifying exacerbations for triple therapy, and potential ICS withdrawal after an exacerbation-free year. The linked erratum corrects a subgroup pneumonia-risk estimate without changing recommendations.",
         "authored_analytics_exercise": "Compare bronchodilator and inhaled-steroid questions against the actual recommendation population, keeping exacerbation history and potential harms visible.",
         "guideline_provenance": {
           "family": "ats-copd-pharmacology-2020",
@@ -1334,13 +2331,82 @@
           "jurisdiction": "US",
           "population": "Adults with COPD; individual recommendations have specific symptom and exacerbation scope",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "not_assessed",
-          "corrections": [],
-          "recommendations": [],
+          "correction_status": "contents_reviewed",
+          "corrections": [
+            {
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7491410/",
+              "published_on": "2020-09-15",
+              "review": "content_reviewed",
+              "locator": "Question2 discussion, pagee62",
+              "summary": "Subgroup pneumonia relative-risk increase corrected from39% to17%; conclusions and recommendations unchanged."
+            }
+          ],
+          "recommendations": [
+            {
+              "locator": "Summary/question1",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7193862/",
+              "population": "COPD with dyspnea or exercise intolerance",
+              "summary": "Prefer LABA/LAMA over either alone in the specified symptomatic population.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "COPD evidence",
+                "dyspnea/exercise intolerance",
+                "inhalers",
+                "tolerability"
+              ]
+            },
+            {
+              "locator": "Summary/question2",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7193862/",
+              "population": "Persistent symptomatic COPD despite LABA/LAMA with qualifying prior-year exacerbation",
+              "summary": "Consider ICS/LABA/LAMA with the stated exacerbation context.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "inhalers",
+                "symptoms",
+                "exacerbation dates/severity",
+                "harms"
+              ]
+            },
+            {
+              "locator": "Summary/question3",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7193862/",
+              "population": "COPD on triple therapy without exacerbation in the prior year",
+              "summary": "ICS withdrawal may be considered within the stated scope.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "triple therapy",
+                "prior-year exacerbations",
+                "individual risks"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Summary of recommendations and questions1–3",
+            "Full linked erratum"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.thoracic.org/statements/guideline-implementation-tools/pharmacologic-mgmt-of-copd.php",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1357,6 +2423,20 @@
           "publisher": "American Thoracic Society",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7491410/",
+          "title": "2020 ATS COPD guideline erratum",
+          "publisher": "American Thoracic Society",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7193862/",
+          "title": "ATS pharmacologic management of COPD guideline 2020 — reviewed source",
+          "publisher": "American Thoracic Society",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
         }
       ],
       "last_verified": "2026-10-27",
@@ -1367,7 +2447,7 @@
           "inhalers",
           "pulmonary"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://www.thoracic.org/statements/guideline-implementation-tools/pharmacologic-mgmt-of-copd.php",
         "clinical_rule_approved": false,
@@ -1376,7 +2456,7 @@
         "analytics_objectives": [
           "Compare bronchodilator and inhaled-steroid questions against the actual recommendation population, keeping exacerbation history and potential harms visible."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "ats-copd-pharmacology-2020",
           "edition": "2020",
@@ -1387,13 +2467,82 @@
           "jurisdiction": "US",
           "population": "Adults with COPD; individual recommendations have specific symptom and exacerbation scope",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
-          "correction_status": "not_assessed",
-          "corrections": [],
-          "recommendations": [],
+          "correction_status": "contents_reviewed",
+          "corrections": [
+            {
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7491410/",
+              "published_on": "2020-09-15",
+              "review": "content_reviewed",
+              "locator": "Question2 discussion, pagee62",
+              "summary": "Subgroup pneumonia relative-risk increase corrected from39% to17%; conclusions and recommendations unchanged."
+            }
+          ],
+          "recommendations": [
+            {
+              "locator": "Summary/question1",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7193862/",
+              "population": "COPD with dyspnea or exercise intolerance",
+              "summary": "Prefer LABA/LAMA over either alone in the specified symptomatic population.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "COPD evidence",
+                "dyspnea/exercise intolerance",
+                "inhalers",
+                "tolerability"
+              ]
+            },
+            {
+              "locator": "Summary/question2",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7193862/",
+              "population": "Persistent symptomatic COPD despite LABA/LAMA with qualifying prior-year exacerbation",
+              "summary": "Consider ICS/LABA/LAMA with the stated exacerbation context.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "inhalers",
+                "symptoms",
+                "exacerbation dates/severity",
+                "harms"
+              ]
+            },
+            {
+              "locator": "Summary/question3",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7193862/",
+              "population": "COPD on triple therapy without exacerbation in the prior year",
+              "summary": "ICS withdrawal may be considered within the stated scope.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "triple therapy",
+                "prior-year exacerbations",
+                "individual risks"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Summary of recommendations and questions1–3",
+            "Full linked erratum"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.thoracic.org/statements/guideline-implementation-tools/pharmacologic-mgmt-of-copd.php",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1461,7 +2610,13 @@
             }
           ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1552,7 +2707,13 @@
             }
           ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1564,9 +2725,9 @@
         "Which source and edition support KDIGO CKD evaluation and management guideline 2024?",
         "What is the review and publication status of KDIGO CKD evaluation and management guideline 2024?"
       ],
-      "summary": "KDIGO CKD evaluation and management guideline 2024. The publisher lists the March2024 final guideline and distinguishes graded recommendations from practice points. A 2027 medication-management focused update is currently a public-review draft. Keep eGFR, albuminuria, chronicity, medication safety and kidney-failure risk tied to the final guideline and its applicable population. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "Selected primary-PDF recommendation text was reviewed for SGLT2 scope, medication tolerability and monitoring. Initiation criteria, continuation context, temporary withholding and transplant exclusions must not be collapsed into a single kidney-function rule. PDF download/render attempts were unavailable; selected extracted text was used. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The publisher lists the March2024 final guideline and distinguishes graded recommendations from practice points. A 2027 medication-management focused update is currently a public-review draft.",
+        "source_background": "Selected primary-PDF recommendation text was reviewed for SGLT2 scope, medication tolerability and monitoring. Initiation criteria, continuation context, temporary withholding and transplant exclusions must not be collapsed into a single kidney-function rule. PDF download/render attempts were unavailable; selected extracted text was used.",
         "authored_analytics_exercise": "Keep eGFR, albuminuria, chronicity, medication safety and kidney-failure risk tied to the final guideline and its applicable population.",
         "guideline_provenance": {
           "family": "kdigo-ckd-2024",
@@ -1578,13 +2739,43 @@
           "jurisdiction": "International",
           "population": "People with CKD; recommendation-specific population restrictions apply",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation3.7.1",
+              "url": "https://kdigo.org/wp-content/uploads/2026/04/KDIGO-2024-CKD-Guideline.pdf",
+              "population": "People with T2D, CKD and eGFR at least20 mL/min/1.73m2; apply the source-specific transplant exclusions",
+              "summary": "Recommend an SGLT2 inhibitor in the stated T2D/CKD population.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "CKD evidence",
+                "eGFR",
+                "transplant/dialysis status",
+                "tolerability",
+                "current regimen"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "3.7.1",
+            "Associated practice points; KDIGO2024 practice points3.6.1–3.6.7 or KDIGO2022 practice points1.3.1–1.3.7"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1601,6 +2792,13 @@
           "publisher": "Kidney Disease: Improving Global Outcomes",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://kdigo.org/wp-content/uploads/2026/04/KDIGO-2024-CKD-Guideline.pdf",
+          "title": "KDIGO CKD evaluation and management guideline 2024 — reviewed source",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
         }
       ],
       "last_verified": "2026-10-27",
@@ -1611,7 +2809,7 @@
           "renal_risk",
           "medication_safety"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
         "clinical_rule_approved": false,
@@ -1620,7 +2818,7 @@
         "analytics_objectives": [
           "Keep eGFR, albuminuria, chronicity, medication safety and kidney-failure risk tied to the final guideline and its applicable population."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "kdigo-ckd-2024",
           "edition": "2024",
@@ -1631,13 +2829,43 @@
           "jurisdiction": "International",
           "population": "People with CKD; recommendation-specific population restrictions apply",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation3.7.1",
+              "url": "https://kdigo.org/wp-content/uploads/2026/04/KDIGO-2024-CKD-Guideline.pdf",
+              "population": "People with T2D, CKD and eGFR at least20 mL/min/1.73m2; apply the source-specific transplant exclusions",
+              "summary": "Recommend an SGLT2 inhibitor in the stated T2D/CKD population.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "CKD evidence",
+                "eGFR",
+                "transplant/dialysis status",
+                "tolerability",
+                "current regimen"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "3.7.1",
+            "Associated practice points; KDIGO2024 practice points3.6.1–3.6.7 or KDIGO2022 practice points1.3.1–1.3.7"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1669,7 +2897,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1722,7 +2956,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1734,9 +2974,9 @@
         "Which source and edition support KDIGO diabetes in CKD guideline 2022?",
         "What is the review and publication status of KDIGO diabetes in CKD guideline 2022?"
       ],
-      "summary": "KDIGO diabetes in CKD guideline 2022. As checked October27,2026, the publisher explicitly identifies the 2022 guideline as the current published diabetes/CKD guideline; a 2026 draft is being revised. Use the published edition for source review while tracking new evidence and the draft separately. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "As checked October27,2026, KDIGO2022 remains the current published diabetes/CKD guideline while the2026 draft is under revision. Selected primary-PDF recommendation text was reviewed for SGLT2 scope, medication tolerability and monitoring. Initiation criteria, continuation context, temporary withholding and transplant exclusions must not be collapsed into a single kidney-function rule. PDF download/render attempts were unavailable; selected extracted text was used. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "As checked October27,2026, the publisher explicitly identifies the 2022 guideline as the current published diabetes/CKD guideline; a 2026 draft is being revised.",
+        "source_background": "As checked October27,2026, KDIGO2022 remains the current published diabetes/CKD guideline while the2026 draft is under revision. Selected primary-PDF recommendation text was reviewed for SGLT2 scope, medication tolerability and monitoring. Initiation criteria, continuation context, temporary withholding and transplant exclusions must not be collapsed into a single kidney-function rule. PDF download/render attempts were unavailable; selected extracted text was used. This is a cited reference candidate, not patient-specific treatment approval.",
         "authored_analytics_exercise": "Use the published edition for source review while tracking new evidence and the draft separately.",
         "guideline_provenance": {
           "family": "kdigo-diabetes-ckd-2022",
@@ -1748,13 +2988,43 @@
           "jurisdiction": "International",
           "population": "People with diabetes and CKD",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation1.3.1",
+              "url": "https://kdigo.org/wp-content/uploads/2022/10/KDIGO-2022-Clinical-Practice-Guideline-for-Diabetes-Management-in-CKD.pdf",
+              "population": "People with T2D, CKD and eGFR at least20 mL/min/1.73m2; apply the source-specific transplant exclusions",
+              "summary": "Recommend an SGLT2 inhibitor in the stated population; transplant applicability is excluded by the associated practice point.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "CKD evidence",
+                "eGFR",
+                "transplant/dialysis status",
+                "tolerability",
+                "current regimen"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "1.3.1",
+            "Associated practice points; KDIGO2024 practice points3.6.1–3.6.7 or KDIGO2022 practice points1.3.1–1.3.7"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1771,6 +3041,13 @@
           "publisher": "Kidney Disease: Improving Global Outcomes",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://kdigo.org/wp-content/uploads/2022/10/KDIGO-2022-Clinical-Practice-Guideline-for-Diabetes-Management-in-CKD.pdf",
+          "title": "KDIGO diabetes in CKD guideline 2022 — reviewed source",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
         }
       ],
       "last_verified": "2026-10-27",
@@ -1781,7 +3058,7 @@
           "ckd",
           "cardiorenal"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://kdigo.org/guidelines/diabetes-ckd/",
         "clinical_rule_approved": false,
@@ -1790,7 +3067,7 @@
         "analytics_objectives": [
           "Use the published edition for source review while tracking new evidence and the draft separately."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "kdigo-diabetes-ckd-2022",
           "edition": "2022",
@@ -1801,13 +3078,43 @@
           "jurisdiction": "International",
           "population": "People with diabetes and CKD",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation1.3.1",
+              "url": "https://kdigo.org/wp-content/uploads/2022/10/KDIGO-2022-Clinical-Practice-Guideline-for-Diabetes-Management-in-CKD.pdf",
+              "population": "People with T2D, CKD and eGFR at least20 mL/min/1.73m2; apply the source-specific transplant exclusions",
+              "summary": "Recommend an SGLT2 inhibitor in the stated population; transplant applicability is excluded by the associated practice point.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "CKD evidence",
+                "eGFR",
+                "transplant/dialysis status",
+                "tolerability",
+                "current regimen"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "1.3.1",
+            "Associated practice points; KDIGO2024 practice points3.6.1–3.6.7 or KDIGO2022 practice points1.3.1–1.3.7"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1839,7 +3146,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1892,7 +3205,13 @@
           "corrections": [],
           "recommendations": [],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1904,9 +3223,9 @@
         "Which source and edition support NICE NG222 adult depression guideline?",
         "What is the review and publication status of NICE NG222 adult depression guideline?"
       ],
-      "summary": "NICE NG222 adult depression guideline. The indexed official record identifies adult-depression guidance and its review date. Direct page access returned403; recommendation-level review is pending. UK jurisdiction must remain explicit. Assess severity, patient preference, treatment response and harms; do not infer that every below-maximum antidepressant dose is a care gap. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "NG222 recommendation1.9.5 calls for shared treatment review after limited response; higher antidepressant doses can add harms without extra benefit. Assessment includes function and context, while collaborative care includes monitoring, case management and follow-up. UK jurisdiction remains explicit. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The indexed official record identifies adult-depression guidance and its review date. Direct page access returned403; recommendation-level review is pending. UK jurisdiction must remain explicit.",
+        "source_background": "NG222 recommendation1.9.5 calls for shared treatment review after limited response; higher antidepressant doses can add harms without extra benefit. Assessment includes function and context, while collaborative care includes monitoring, case management and follow-up. UK jurisdiction remains explicit.",
         "authored_analytics_exercise": "Assess severity, patient preference, treatment response and harms; do not infer that every below-maximum antidepressant dose is a care gap.",
         "guideline_provenance": {
           "family": "nice-depression-ng222",
@@ -1918,13 +3237,62 @@
           "jurisdiction": "UK",
           "population": "Adults with depression; UK service and treatment context",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "1.9.5",
+              "url": "https://www.nice.org.uk/guidance/ng222/chapter/Recommendations",
+              "population": "Adults with no/limited antidepressant response after other causes are considered",
+              "summary": "Discuss options and tolerability; a below-maximum dose alone is not proof of inappropriate care.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "symptom/function trajectory",
+                "duration/adherence",
+                "prior response",
+                "tolerability",
+                "patient preference",
+                "follow-up"
+              ]
+            },
+            {
+              "locator": "1.16.6–1.16.7",
+              "url": "https://www.nice.org.uk/guidance/ng222/chapter/Recommendations",
+              "population": "Adults for whom collaborative depression care is considered",
+              "summary": "Coordinate assessment, monitoring, case management and physical/mental healthcare.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "care-team roles",
+                "symptom monitoring",
+                "follow-up",
+                "patient agreement",
+                "social support"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "1.2.6–1.2.7",
+            "1.9.5",
+            "1.16.6–1.16.9"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.nice.org.uk/guidance/ng222",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -1941,6 +3309,13 @@
           "publisher": "National Institute for Health and Care Excellence",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.nice.org.uk/guidance/ng222/chapter/Recommendations",
+          "title": "NICE NG222 adult depression guideline — reviewed source",
+          "publisher": "National Institute for Health and Care Excellence",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
         }
       ],
       "last_verified": "2026-10-27",
@@ -1951,7 +3326,7 @@
           "mental_health",
           "patient_goals"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://www.nice.org.uk/guidance/ng222",
         "clinical_rule_approved": false,
@@ -1960,7 +3335,7 @@
         "analytics_objectives": [
           "Assess severity, patient preference, treatment response and harms; do not infer that every below-maximum antidepressant dose is a care gap."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "nice-depression-ng222",
           "edition": "2022; last reviewed September2024",
@@ -1971,13 +3346,62 @@
           "jurisdiction": "UK",
           "population": "Adults with depression; UK service and treatment context",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "1.9.5",
+              "url": "https://www.nice.org.uk/guidance/ng222/chapter/Recommendations",
+              "population": "Adults with no/limited antidepressant response after other causes are considered",
+              "summary": "Discuss options and tolerability; a below-maximum dose alone is not proof of inappropriate care.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "symptom/function trajectory",
+                "duration/adherence",
+                "prior response",
+                "tolerability",
+                "patient preference",
+                "follow-up"
+              ]
+            },
+            {
+              "locator": "1.16.6–1.16.7",
+              "url": "https://www.nice.org.uk/guidance/ng222/chapter/Recommendations",
+              "population": "Adults for whom collaborative depression care is considered",
+              "summary": "Coordinate assessment, monitoring, case management and physical/mental healthcare.",
+              "grade": {
+                "scheme": "ungraded",
+                "strength": null,
+                "evidence": null
+              },
+              "required_patient_data": [
+                "care-team roles",
+                "symptom monitoring",
+                "follow-up",
+                "patient agreement",
+                "social support"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "1.2.6–1.2.7",
+            "1.9.5",
+            "1.16.6–1.16.9"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.nice.org.uk/guidance/ng222",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -1989,9 +3413,9 @@
         "Which source and edition support ASCO geriatric assessment in oncology guideline update 2023?",
         "What is the review and publication status of ASCO geriatric assessment in oncology guideline update 2023?"
       ],
-      "summary": "ASCO geriatric assessment in oncology guideline update 2023. The indexed ASCO resource page identifies a 2023 update to its earlier geriatric-oncology guidance. Direct access returned403; the guideline text has not been reviewed. Retain function, cognition, nutrition, comorbidities and support needs as distinct assessment domains instead of treating a cancer diagnosis as a complete care plan. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "summary": "The2023 ASCO update uses geriatric-assessment findings to guide management in older people receiving systemic cancer therapy. Functional, cognitive, emotional, nutritional, medication and social domains remain separate. Selected recommendations1.1 and2.1 were read in the primary author manuscript. This is a cited reference candidate, not patient-specific treatment approval.",
       "facts": {
-        "source_background": "The indexed ASCO resource page identifies a 2023 update to its earlier geriatric-oncology guidance. Direct access returned403; the guideline text has not been reviewed.",
+        "source_background": "The2023 ASCO update uses geriatric-assessment findings to guide management in older people receiving systemic cancer therapy. Functional, cognitive, emotional, nutritional, medication and social domains remain separate. Selected recommendations1.1 and2.1 were read in the primary author manuscript.",
         "authored_analytics_exercise": "Retain function, cognition, nutrition, comorbidities and support needs as distinct assessment domains instead of treating a cancer diagnosis as a complete care plan.",
         "guideline_provenance": {
           "family": "asco-geriatric-oncology-2023",
@@ -2003,13 +3427,61 @@
           "jurisdiction": "US",
           "population": "Older adults receiving systemic cancer therapy; full guideline scope needs review",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "1.1 and1.1a",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12803700/",
+              "population": "Cancer patients aged65+ receiving systemic therapy with GA-identified impairments",
+              "summary": "Include GA-guided management in the care plan.",
+              "grade": {
+                "scheme": "ASCO",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "age",
+                "systemic therapy",
+                "GA findings",
+                "patient goals",
+                "care plan"
+              ]
+            },
+            {
+              "locator": "2.1",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12803700/",
+              "population": "Older people with cancer undergoing geriatric assessment",
+              "summary": "Assess physical/cognitive function, emotional health, comorbidities, polypharmacy, nutrition and social support.",
+              "grade": {
+                "scheme": "ASCO",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "function",
+                "cognition",
+                "emotional health",
+                "comorbidities",
+                "medications",
+                "nutrition",
+                "social support"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Updated recommendations1.1/1.1a and2.1; primary manuscript table"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.asco.org/news-initiatives/current-initiatives/cancer-care-initiatives/geriatric-oncology/resources",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -2027,6 +3499,13 @@
           "publisher": "American Society of Clinical Oncology",
           "retrieved": "2026-10-27",
           "source_type": "industry_association"
+        },
+        {
+          "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12803700/",
+          "title": "ASCO geriatric assessment in oncology guideline update 2023 — reviewed source",
+          "publisher": "American Society of Clinical Oncology",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
         }
       ],
       "last_verified": "2026-10-27",
@@ -2038,7 +3517,7 @@
           "function",
           "sdoh"
         ],
-        "use_mode": "link_metadata_only",
+        "use_mode": "public_reference_summary",
         "license": "Public reference; full-text commercial training permission not established",
         "license_evidence_url": "https://www.asco.org/news-initiatives/current-initiatives/cancer-care-initiatives/geriatric-oncology/resources",
         "clinical_rule_approved": false,
@@ -2047,7 +3526,7 @@
         "analytics_objectives": [
           "Retain function, cognition, nutrition, comorbidities and support needs as distinct assessment domains instead of treating a cancer diagnosis as a complete care plan."
         ],
-        "review_status": "Agere-authored source reading, not physician adjudication",
+        "review_status": "Selected primary-source sections reviewed by Codex; not physician adjudication",
         "guideline": {
           "family": "asco-geriatric-oncology-2023",
           "edition": "2023 update",
@@ -2058,13 +3537,61 @@
           "jurisdiction": "US",
           "population": "Older adults receiving systemic cancer therapy; full guideline scope needs review",
           "checked_on": "2026-10-27",
-          "review_depth": "publisher_metadata",
+          "review_depth": "selected_recommendations",
           "reuse_status": "Public reference; full-text commercial training permission not established",
           "correction_status": "not_assessed",
           "corrections": [],
-          "recommendations": [],
+          "recommendations": [
+            {
+              "locator": "1.1 and1.1a",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12803700/",
+              "population": "Cancer patients aged65+ receiving systemic therapy with GA-identified impairments",
+              "summary": "Include GA-guided management in the care plan.",
+              "grade": {
+                "scheme": "ASCO",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "age",
+                "systemic therapy",
+                "GA findings",
+                "patient goals",
+                "care plan"
+              ]
+            },
+            {
+              "locator": "2.1",
+              "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12803700/",
+              "population": "Older people with cancer undergoing geriatric assessment",
+              "summary": "Assess physical/cognitive function, emotional health, comorbidities, polypharmacy, nutrition and social support.",
+              "grade": {
+                "scheme": "ASCO",
+                "strength": "strong",
+                "evidence": "high"
+              },
+              "required_patient_data": [
+                "function",
+                "cognition",
+                "emotional health",
+                "comorbidities",
+                "medications",
+                "nutrition",
+                "social support"
+              ]
+            }
+          ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "reviewed_sections": [
+            "Updated recommendations1.1/1.1a and2.1; primary manuscript table"
+          ],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.asco.org/news-initiatives/current-initiatives/cancer-care-initiatives/geriatric-oncology/resources",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     },
@@ -2150,7 +3677,13 @@
             }
           ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       },
       "entities": [
@@ -2257,7 +3790,13 @@
             }
           ],
           "operational_rule_approved": false,
-          "supersedes": []
+          "supersedes": [],
+          "training_reuse": {
+            "eligible": false,
+            "status": "not_established",
+            "evidence_url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+            "reason": "Public reference availability does not grant model-training rights; this intake is excluded from gradient inputs"
+          }
         }
       }
     }

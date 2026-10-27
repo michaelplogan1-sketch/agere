@@ -51,7 +51,7 @@ class SpecialtyGuidelines(unittest.TestCase):
 
     def test_grade_systems_strength_and_certainty_cannot_be_interchanged(self):
         reviewed=[c for c in cards() if c['education']['guideline']['recommendations']]
-        self.assertEqual(sum(len(c['education']['guideline']['recommendations']) for c in reviewed),8)
+        self.assertEqual(sum(len(c['education']['guideline']['recommendations']) for c in reviewed),32)
         for card in reviewed:
             updated=copy.deepcopy(card);updated['education']['guideline']['recommendations'][0]['grade']['scheme']='universal_grade'
             updated['facts']['guideline_provenance']=copy.deepcopy(updated['education']['guideline'])
@@ -74,10 +74,14 @@ class SpecialtyGuidelines(unittest.TestCase):
     def test_unread_corrections_cannot_be_reported_as_resolved(self):
         hbp=next(c for c in cards() if c['id']=='guideline-aha-acc-hypertension-2025')
         guide=hbp['education']['guideline'];self.assertEqual(len(guide['corrections']),3)
-        self.assertEqual(guide['correction_status'],'identified_content_pending')
+        self.assertEqual(guide['correction_status'],'contents_reviewed')
+        self.assertTrue(all(c['review']=='content_reviewed' for c in guide['corrections']))
+        pending=copy.deepcopy(hbp)
+        for correction in pending['education']['guideline']['corrections']:correction['review']='metadata_only'
+        pending=change(pending,correction_status='identified_content_pending')
         for status in ('contents_reviewed','not_assessed'):
-            with self.assertRaisesRegex(ValueError,'correction'):E.validate([change(hbp,correction_status=status)])
-        altered=copy.deepcopy(hbp);altered['facts']['guideline_provenance']['correction_status']='contents_reviewed'
+            with self.assertRaisesRegex(ValueError,'correction'):E.validate([change(pending,correction_status=status)])
+        altered=copy.deepcopy(hbp);altered['facts']['guideline_provenance']['correction_status']='identified_content_pending'
         with self.assertRaisesRegex(ValueError,'Retrieved facts'):E.validate([altered])
 
     def test_edition_or_correction_evidence_change_invalidates_corpus_identity(self):
@@ -99,6 +103,16 @@ class SpecialtyGuidelines(unittest.TestCase):
         card=cards()[0]
         for updated in (change(card,population=''),change(card,jurisdiction=''),change(card,source_url='https://heart.org.attacker.example/guideline'),change(card,checked_on='2026-10-28'),change(card,operational_rule_approved=True)):
             with self.assertRaises(ValueError):E.validate([updated])
+
+    def test_reference_guidelines_cannot_enter_the_licensed_training_export(self):
+        academic=json.loads((ROOT/'config/agere/learning/academic-reading-cards.json').read_text())['cards']
+        exported=E.training_material(academic+cards())
+        self.assertEqual(len(exported['eligible']),10)
+        self.assertTrue(all(r['license']=='CC-BY-4.0' and not r['clinical_gold'] and r['citations'] for r in exported['eligible']))
+        self.assertTrue(all(any(r['id']==card['id'] for r in exported['excluded']) for card in cards()))
+        self.assertFalse(exported['trained'])
+        card=cards()[0];reuse={**card['education']['guideline']['training_reuse'],'eligible':True}
+        with self.assertRaisesRegex(ValueError,'training permission'):E.validate([change(card,training_reuse=reuse)])
 
 
 if __name__=='__main__':unittest.main()
