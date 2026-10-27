@@ -14,10 +14,11 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 import json
+import math
 from pathlib import Path
 import sqlite3
 
-VERSION = 'fill-events/2'  # /2: merging requires the same ingredient(s), not only the same class
+VERSION = 'fill-events/3'  # Unknown/conflicting durations cannot establish a supply end or gap.
 SAME_FILL_DAYS = 1
 WASHOUT_DAYS = 180
 
@@ -25,7 +26,8 @@ DDL = """
 CREATE TABLE fill(fill_id INTEGER PRIMARY KEY, patient_id TEXT, fill_date TEXT, days_supply INTEGER, supply_end TEXT,
   class_key TEXT, drug_class TEXT, therapeutic_category TEXT, rxnorm_ingredient TEXT, drug_name TEXT, sources TEXT,
   record_ids TEXT, class_fill_seq INTEGER, days_since_prev_class_fill INTEGER, gap_after_prev_supply INTEGER,
-  days_of_data_before INTEGER, new_user_180 INTEGER, last_class_fill INTEGER);
+  days_of_data_before INTEGER, new_user_180 INTEGER, last_class_fill INTEGER,
+  duration_status TEXT, supply_evidence TEXT);
 CREATE INDEX fill_patient_class ON fill(patient_id, class_key, fill_date);
 CREATE INDEX fill_class_date ON fill(class_key, fill_date);
 """
@@ -39,9 +41,11 @@ def _d(s):
 
 
 def _int(v):
+    if isinstance(v, bool): return None
     try:
-        return int(float(v))
-    except (TypeError, ValueError):
+        number = float(v)
+        return int(number) if math.isfinite(number) and number > 0 and number.is_integer() else None
+    except (TypeError, ValueError, OverflowError):
         return None
 
 
@@ -93,10 +97,13 @@ def build(out):
         if (last and last['pid'] == r[0] and last['key'] == r[1] and last['ing_key'] == r[10]
                 and (r[2] - last['date']).days <= SAME_FILL_DAYS and r[8] not in last['sources']):
             last['sources'].append(r[8]); last['rids'].append(r[9])
-            last['days'] = last['days'] or r[3]
+            last['durations'].append({'record_id': r[9], 'days_supply': r[3]})
+            known = {d['days_supply'] for d in last['durations'] if d['days_supply'] is not None}
+            last['days'] = next(iter(known)) if len(known) == 1 else None
             continue
         fills.append({'pid': r[0], 'key': r[1], 'ing_key': r[10], 'date': r[2], 'days': r[3], 'cls': r[4], 'cat': r[5],
-                      'ing': r[6], 'name': r[7], 'sources': [r[8]], 'rids': [r[9]]})
+                      'ing': r[6], 'name': r[7], 'sources': [r[8]], 'rids': [r[9]],
+                      'durations': [{'record_id': r[9], 'days_supply': r[3]}]})
     fills.sort(key=lambda f: (f['pid'], f['key'], f['date'], f['ing_key'], f['rids'][0]))
     rows = []
     prev = None
@@ -104,22 +111,27 @@ def build(out):
         same = prev is not None and prev['pid'] == f['pid'] and prev['key'] == f['key']
         f['seq'] = prev['seq'] + 1 if same else 1
         since = (f['date'] - prev['date']).days if same else None
-        prev_end = prev['date'] + timedelta(days=max((prev['days'] or 1) - 1, 0)) if same else None
-        gap = (f['date'] - prev_end).days - 1 if same else None
+        prev_end = prev.get('end') if same else None
+        gap = (f['date'] - prev_end).days - 1 if prev_end is not None else None
         before = (f['date'] - data_start).days if data_start else None
         new_user = int((not same or since > WASHOUT_DAYS) and before is not None and before >= WASHOUT_DAYS)
         nxt = fills[i + 1] if i + 1 < len(fills) else None
         last_of_class = int(not (nxt and nxt['pid'] == f['pid'] and nxt['key'] == f['key']))
-        end = f['date'] + timedelta(days=max((f['days'] or 1) - 1, 0))
-        rows.append((i + 1, f['pid'], f['date'].isoformat(), f['days'], end.isoformat(), f['key'], f['cls'], f['cat'], f['ing'],
+        try: end = f['date'] + timedelta(days=f['days'] - 1) if f['days'] is not None else None
+        except OverflowError: end = None  # An unrepresentable source duration is not a known coverage window.
+        f['end'] = end
+        known = {d['days_supply'] for d in f['durations'] if d['days_supply'] is not None}
+        status = 'reported' if end is not None else ('conflicting' if len(known) > 1 else 'unknown_or_invalid')
+        rows.append((i + 1, f['pid'], f['date'].isoformat(), f['days'], end.isoformat() if end else None, f['key'], f['cls'], f['cat'], f['ing'],
                      f['name'], ','.join(sorted(f['sources'])), ','.join(f['rids']), f['seq'], since, gap, before, new_user,
-                     last_of_class))
+                     last_of_class, status, json.dumps(f['durations'])))
         prev = f
     out.execute('DROP TABLE IF EXISTS fill')
     out.executescript(DDL)
-    out.executemany('INSERT INTO fill VALUES (' + ','.join('?' * 18) + ')', rows)
+    out.executemany('INSERT INTO fill VALUES (' + ','.join('?' * 20) + ')', rows)
     return {'version': VERSION, 'fills': len(rows), 'source_rows': len(raw), 'merged': len(raw) - len(rows),
-            'data_start': data_start.isoformat() if data_start else None}
+            'data_start': data_start.isoformat() if data_start else None,
+            'unknown_supply_windows': sum(f['end'] is None for f in fills)}
 
 
 def apply(semantic_path):

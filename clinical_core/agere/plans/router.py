@@ -249,7 +249,7 @@ class _GDMT:
         classes = sorted({c for p in pillars.values() for c in p.get('fill_classes') or []})
         self.fills = _group(db.by_patient(
             'fill', ids, f"(class_key IN ({','.join('?' * len(classes))}) OR drug_class IN ({','.join('?' * len(classes))})) "
-            "AND fill_date <= ? AND COALESCE(supply_end, fill_date) >= ?",
+            "AND fill_date <= ? AND (supply_end IS NULL OR supply_end >= ?)",
             tuple(classes) * 2 + (as_of.isoformat(), self.start.isoformat()),
             'fill_id, patient_id, fill_date, supply_end, class_key, drug_class, drug_name, record_ids')) \
             if classes and db.has('fill', 'class_key', 'drug_class', 'supply_end', 'record_ids') else {}
@@ -281,19 +281,25 @@ class _GDMT:
 
     def evaluate(self, pid, details):
         statuses = set(self.cfg.get('med_list_statuses') or ['active'])
-        present, missing, pillars = [], [], {}
+        present, missing, uncertain, pillars = [], [], [], {}
         for name, p in self.cfg['pillars'].items():
             classes = set(p.get('fill_classes') or [])
             fills = [f for f in self.fills.get(pid, []) if f.get('class_key') in classes or f.get('drug_class') in classes]
+            unknown_fills = [f for f in fills if not f.get('supply_end')]
+            fills = [f for f in fills if f.get('supply_end')]
             meds = [m for m in self.meds.get(pid, []) if (m.get('list_status') or '') in statuses and self._med_recent(m)
                     and _ingredient_hit(m, p.get('ingredients') or [])]
             src = [_src('fill', r.strip()) for f in fills for r in str(f.get('record_ids') or f.get('fill_id')).split(',')]
             src += [_src('medication_list_entry', m.get('record_id')) for m in meds]
             on = bool(fills or meds)
-            last_fill = max((f['fill_date'] for f in fills), default=None)
+            if not on and unknown_fills: on = None
+            last_fill = max((f['fill_date'] for f in fills + unknown_fills), default=None)
             pillars[name] = {'label': p.get('label'), 'on_therapy': F(on, src), 'last_fill_date': F(last_fill, src),
                              'evidence': ('fill' if fills else '') + ('+' if fills and meds else '') + ('med_list' if meds else '') or None}
-            (present if on else missing).append(name)
+            if unknown_fills:
+                pillars[name]['unknown_supply_fills'] = F(unknown_fills,
+                    [_src('fill', r.strip()) for f in unknown_fills for r in str(f.get('record_ids') or f.get('fill_id')).split(',')])
+            (uncertain if on is None else present if on else missing).append(name)
         # A missing pillar whose barriers explain it (every agent excluded, or a pillar-wide reason) is barrier_documented,
         # not an open gap. A pillar with a current barrier and an agent still possible stays an open gap with the barrier
         # attached (open_with_barrier); old barriers ride along as history (stale_barriers) and never close a gap.
@@ -321,21 +327,26 @@ class _GDMT:
                 pillars[name]['barrier_assessment'] = {k: a.get(k) for k in ('status', 'excluded_agents', 'usable_agents', 'flags', 'action')}
         for name in present:
             pillars[name]['status'] = 'on_therapy'
+        for name in uncertain:
+            pillars[name]['status'] = 'medication_reconciliation_required'
         dx_rows = self.dx.get(pid, [])
         dx_src = [_src('condition', c.get('record_id')) for c in dx_rows]
         barrier_src = [s for n in documented for s in pillars[n]['barriers']['sources']]
         open_barrier_src = [s for n in with_barrier if n not in documented for s in pillars[n]['barriers']['sources']]
         gap = {'type': self.gap_type,
-               'present': F(bool(missing), [s for v in pillars.values() for s in v['on_therapy']['sources']] + dx_src + barrier_src),
-               'missing_pillars': F(open_gaps), 'present_pillars': F(present), 'missing_pillar_count': F(len(open_gaps)),
+               'present': F(True if missing else None if uncertain else False,
+                            [s for v in pillars.values() for s in v['on_therapy']['sources']] + dx_src + barrier_src),
+               'missing_pillars': F(open_gaps), 'present_pillars': F(present),
+               'unknown_pillars': F(uncertain), 'missing_pillar_count': F(None if uncertain else len(open_gaps)),
                'barrier_documented_pillars': F(documented, barrier_src),
                'barrier_pillars': F(with_barrier, barrier_src + open_barrier_src),
                'stale_barrier_pillars': F(stale_pillars, [s for n in stale_pillars for s in pillars[n]['stale_barriers']['sources']]),
-               'all_missing_barrier_documented': bool(documented) and not open_gaps,
+               'all_missing_barrier_documented': bool(documented) and not open_gaps and not uncertain,
                'pillars': pillars, 'lookback_start': self.start.isoformat(),
                'hf_diagnosis': F(bool(dx_rows), dx_src),
-               'reason': None if missing else 'no_gap: all four GDMT pillars have a fill or active list entry in the lookback'}
-        metrics = {'missing_pillar_count': len(open_gaps), 'barrier_documented_count': len(with_barrier), 'always': 1}
+               'reason': None if missing else ('medication_reconciliation_required: reported supply duration is unknown'
+                         if uncertain else 'no_gap: all four GDMT pillars have a fill or active list entry in the lookback')}
+        metrics = {'missing_pillar_count': None if uncertain else len(open_gaps), 'barrier_documented_count': len(with_barrier), 'always': 1}
         _caller(gap, details, {'missing_pillars': open_gaps})
         return gap, metrics
 

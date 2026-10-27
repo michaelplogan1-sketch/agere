@@ -30,7 +30,8 @@ SHADOW_DB = 'duckdb-shadow.sqlite3'
 _UDFS = {'age_at': (('VARCHAR', 'VARCHAR'), 'BIGINT'), 'drug_key': (('VARCHAR',), 'VARCHAR'),
          'dose_mg': (('VARCHAR',), 'DOUBLE'), 'per_day': (('VARCHAR',), 'DOUBLE'), 'target_mg': (('VARCHAR',), 'DOUBLE'),
          'target_max_mg': (('VARCHAR',), 'DOUBLE'), 'statement_mg': (('VARCHAR', 'VARCHAR'), 'DOUBLE'),
-         'statement_per_day': (('VARCHAR', 'VARCHAR'), 'DOUBLE'), 'statement_status': (('VARCHAR',), 'VARCHAR'),
+         'statement_per_day': (('VARCHAR', 'VARCHAR'), 'DOUBLE'),
+         'statement_evidence': (('VARCHAR', 'VARCHAR'), 'VARCHAR'), 'statement_status': (('VARCHAR',), 'VARCHAR'),
          'statement_day': (('VARCHAR',), 'VARCHAR')}
 _SQLITE_ONLY_UDFS = ('clinical_measurements',)
 LINT = [

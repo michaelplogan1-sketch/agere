@@ -242,7 +242,9 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
     with class_key (drug_class, else ingredient), days_supply, supply_end, class_fill_seq, days_since_prev_class_fill,
     gap_after_prev_supply (days between the previous supply's end and this fill), days_of_data_before (pharmacy data
     starts 2026-09-01), new_user_180 and last_class_fill. Prefer it for adherence, gaps, restarts, new users and
-    switches; filter sources when a question names one feed.
+    switches; filter sources when a question names one feed. Unknown/invalid or conflicting days_supply leaves
+    supply_end and duration-dependent gaps NULL; a missing duration is never a one-day supply. duration_status and
+    supply_evidence preserve duration uncertainty and source record IDs. Pickup dates/counts remain observed.
   - New user of a class: a fill with no fill of that class in the prior 180 days AND at least 180 days of data before it.
   - Restart/gap: days without supply = next fill date minus (fill_date + days_supply) between consecutive fills of the
     same class (a fill on day 1 with 30 days covers days 1-30; a next fill on day 31 is a gap of 0). Every drug class

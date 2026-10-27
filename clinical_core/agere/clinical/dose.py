@@ -9,7 +9,7 @@ import json
 import math
 from datetime import date
 
-VERSION = 'medication-dose/3'
+VERSION = 'medication-dose/4'
 REFERENCE = {
     'id': 'aha-acc-hfsa-2022-table14', 'version': 1,
     'source': '2022 AHA/ACC/HFSA guideline, Table 14 (official slide set, slides 87–90)',
@@ -121,26 +121,83 @@ def _positive(value):
     return number if math.isfinite(number) and number > 0 else None
 
 
+def statement_evidence(payload, stream):
+    """Keep administration arithmetic and received fields together; no unit-count default."""
+    p = json.loads(payload)
+    fields = {k: p[k] for k in ('dose', 'dose_unit', 'strength', 'strength_unit', 'name',
+              'medication_name', 'product_description', 'medication_display', 'directions_text',
+              'frequency', 'times_per_day') if k in p}
+    evidence = {'received': fields, 'per_admin_mg': None, 'basis': 'interpretation_required'}
+    if stream == 'medication_orders':
+        unit = str(p.get('dose_unit') or '').strip().lower().rstrip('s')
+        amount = _positive(p.get('dose'))
+        if unit == 'mg':
+            evidence.update(per_admin_mg=amount, basis='explicit_mg' if amount else 'invalid_quantity')
+            return json.dumps(evidence)
+        strength = _positive(p.get('strength'))
+        strength_unit = str(p.get('strength_unit') or '').strip().lower().rstrip('s')
+        if unit in ('tablet', 'capsule') and strength_unit in ('mg/'+unit, 'mg') and amount and strength:
+            evidence.update(per_admin_mg=_positive(amount * strength), basis='strength_times_unit_count',
+                            strength_mg_per_unit=strength, unit_count=amount, unit=unit)
+        return json.dumps(evidence)
+    texts = [p.get(k) for k in ('dose', 'directions_text') if isinstance(p.get(k), str) and p[k].strip()]
+    text = '; '.join(texts)
+    # Do not turn a conditional, variable or conflicting regimen into a point dose.
+    if re.search(r'\b(?:prn|as needed|up to|alternat\w*|every other|except|taper\w*|then|weekly|or|ml)\b|'
+                 r'\d\s*(?:[-–]|to)\s*\d|(?<!\w)-\s*\.?\d|\d,\d', text.lower()):
+        evidence['basis'] = 'variable_or_ambiguous_instruction'
+        return json.dumps(evidence)
+    count_rx = r'(?<![\w./])((?:\d+(?:\.\d+)?|\.\d+)(?:\s*/\s*\d+(?:\.\d+)?)?|one|two|three|half)\s+(tablets?|capsules?)\b'
+    counts = []
+    for match in re.finditer(count_rx, text.lower()):
+        token = match.group(1)
+        words = {'one': 1, 'two': 2, 'three': 3, 'half': .5}
+        if token in words: amount = words[token]
+        elif '/' in token:
+            top, bottom = (_positive(v.strip()) for v in token.split('/'))
+            amount = _positive(top / bottom) if top and bottom else None
+        else: amount = _positive(token)
+        counts.append((amount, match.group(2).rstrip('s')))
+    if counts:
+        if len(set(counts)) != 1 or counts[0][0] is None:
+            evidence['basis'] = 'conflicting_or_invalid_unit_count'
+            return json.dumps(evidence)
+        amount, unit = counts[0]
+        # A milligram number beside an explicit unit count is a strength only
+        # when identified as per-unit. Otherwise it could be the total dose.
+        per_unit = re.findall(r'(?<![\d.])(\d+(?:\.\d+)?|\.\d+)\s*mg\s*(?:/|per\s+)\s*'+unit+r'\b', text.lower())
+        if per_unit:
+            strengths = {_positive(v) for v in per_unit}
+        elif re.search(r'\bmg\b', text.lower()):
+            strengths = set()
+        else:
+            names = [p.get(k) for k in ('name', 'product_description', 'medication_display') if p.get(k)]
+            strengths = {dose_mg(name) for name in names if len(re.findall(r'\bmg\b',name.lower())) == 1}
+        strengths.discard(None)
+        if len(strengths) == 1:
+            strength = next(iter(strengths))
+            evidence.update(per_admin_mg=_positive(strength * amount), basis='strength_times_unit_count',
+                            strength_mg_per_unit=strength, unit_count=amount, unit=unit)
+        else: evidence['basis'] = 'missing_or_ambiguous_product_strength'
+    elif re.search(r'\b(?:tablets?|capsules?)\b', text.lower()):
+        evidence['basis'] = 'missing_administration_unit_count'
+    else:
+        values = {dose_mg(t) for t in texts if len(re.findall(r'\bmg\b',t.lower())) == 1}
+        values.discard(None)
+        if len(values) == 1:
+            evidence.update(per_admin_mg=next(iter(values)), basis='explicit_mg')
+    return json.dumps(evidence)
+
+
 def statement_mg(payload, stream):
     """Administration quantity, never a product strength with an assumed unit count."""
-    p = json.loads(payload)
-    if stream == 'medication_orders':
-        unit = str(p.get('dose_unit') or '').lower()
-        amount = _positive(p.get('dose'))
-        if unit == 'mg': return amount
-        strength = _positive(p.get('strength'))
-        strength_unit = str(p.get('strength_unit') or '').lower()
-        if unit in ('tablet', 'capsule') and strength_unit in ('mg/'+unit, 'mg') and amount and strength:
-            return _positive(amount * strength)
-        return None
-    if stream == 'medication_lists': return dose_mg(p.get('dose'))
-    return dose_mg(p.get('directions_text'))
+    return json.loads(statement_evidence(payload, stream))['per_admin_mg']
 
 
 def statement_per_day(payload, stream):
     p = json.loads(payload)
     texts = [p.get(k) for k in ('frequency', 'directions_text', 'dose') if isinstance(p.get(k), str)]
-    if any(re.search(r'\b(?:prn|as needed|every other|except|alternat|weekly)\b|\d\s*[-–]\s*\d', t.lower()) for t in texts):
+    if any(re.search(r'\b(?:prn|as needed|every other|except|alternat\w*|weekly|hold|if|unless|taper\w*|then)\b|\d\s*[-–]\s*\d', t.lower()) for t in texts):
         return None
     frequencies = {_positive(p.get('times_per_day'))} if p.get('times_per_day') is not None else set()
     frequencies.update(per_day(t) for t in texts)
@@ -169,6 +226,7 @@ def register(db):
     db.create_function('target_mg', 1, target_mg, deterministic=True)
     db.create_function('target_max_mg', 1, target_max_mg, deterministic=True)
     db.create_function('statement_mg', 2, statement_mg, deterministic=True)
+    db.create_function('statement_evidence', 2, statement_evidence, deterministic=True)
     db.create_function('statement_per_day', 2, statement_per_day, deterministic=True)
     db.create_function('statement_status', 1, statement_status, deterministic=True)
     db.create_function('statement_day', 1, statement_day, deterministic=True)
@@ -178,7 +236,7 @@ def register(db):
 # Governed per-record dose evidence: one row per received dose statement with its source record.
 # A list/order statement without an event date is dated by when it was recorded (date_basis says which).
 MEDICATION_DOSE_SQL = """(SELECT patient_id, source_stream, record_id, event_date, date_basis, drug_text, status,
-  per_admin_mg, times_per_day, per_admin_mg * times_per_day AS daily_mg,
+  per_admin_mg, times_per_day, per_admin_mg * times_per_day AS daily_mg, dose_evidence,
   target_mg(drug_text) AS target_daily_mg, target_max_mg(drug_text) AS target_max_daily_mg
  FROM (SELECT patient_id, stream AS source_stream, record_id,
    statement_day(COALESCE(json_extract(payload,'$.event_date'), json_extract(payload,'$.recorded_date'))) AS event_date,
@@ -189,7 +247,8 @@ MEDICATION_DOSE_SQL = """(SELECT patient_id, source_stream, record_id, event_dat
      ELSE COALESCE(json_extract(payload,'$.product_description'),json_extract(payload,'$.medication_display')) END) AS drug_text,
    CASE stream WHEN 'medication_orders' THEN json_extract(payload,'$.status')
      WHEN 'medication_lists' THEN json_extract(payload,'$.list_status') ELSE 'label' END AS status,
-   statement_mg(payload, stream) AS per_admin_mg, statement_per_day(payload, stream) AS times_per_day
+   statement_mg(payload, stream) AS per_admin_mg, statement_per_day(payload, stream) AS times_per_day,
+   statement_evidence(payload, stream) AS dose_evidence
  FROM record WHERE stream IN ('medication_orders','medication_lists','medication_label_evidence'))
  WHERE drug_text IS NOT NULL)"""
 
@@ -205,7 +264,7 @@ def _structured_current_dose_sql(as_of, lookback_days):
     days = int(lookback_days)
     if days <= 0: raise ValueError('Positive current-dose lookback required')
     return ("(SELECT patient_id, drug_key, dose_date, drug_text, record_id, source_stream, source_record_ids, "
-            "statement_state, 0 AS current_use_established, "
+            "statement_state, dose_evidence, 0 AS current_use_established, "
             "CASE WHEN statement_state='active_documentation' THEN raw_daily_mg END AS daily_mg, target_daily_mg, target_max_daily_mg, "
             "'aha-acc-hfsa-2022-table14' AS target_reference, "
             "CASE WHEN statement_state!='active_documentation' THEN statement_state "
@@ -216,6 +275,8 @@ def _structured_current_dose_sql(as_of, lookback_days):
             "CASE WHEN count(*)=1 THEN min(record_id) END AS record_id, "
             "CASE WHEN count(DISTINCT source_stream)=1 THEN min(source_stream) ELSE 'multiple' END AS source_stream, "
             "json_group_array(record_id) AS source_record_ids, "
+            "json_group_array(json_object('record_id',record_id,'calculation',json(dose_evidence),"
+            "'times_per_day',times_per_day,'daily_mg',daily_mg)) AS dose_evidence, "
             "CASE WHEN max(undated)=1 THEN 'unknown_date' "
             "WHEN count(DISTINCT statement_status(status))>1 OR "
             "count(DISTINCT json_array(per_admin_mg,times_per_day))>1 THEN 'conflicting' "
@@ -257,7 +318,7 @@ def current_dose_sql(as_of, lookback_days, *, note_changes=False):
             "SELECT patient_id,drug_key FROM candidate_changes), "
             "combined AS (SELECT k.patient_id,k.drug_key,s.dose_date,s.drug_text,s.record_id,s.source_stream, "
             "s.source_record_ids,s.statement_state,s.daily_mg,s.target_daily_mg,s.target_max_daily_mg, "
-            "s.target_reference,s.dose_status, "
+            "s.target_reference,s.dose_status,s.dose_evidence, "
             "(SELECT json_group_array(json_object('record_id',n.record_id,'source_date',n.source_date, "
             "'action',n.action,'target',n.target,'evidence_text',n.evidence_text,'extractor',n.extractor, "
             "'authority','unreviewed_extraction','date_basis','source_statement_date')) "
@@ -273,7 +334,7 @@ def current_dose_sql(as_of, lookback_days, *, note_changes=False):
             "UNION SELECT json_extract(value,'$.record_id') AS rid FROM json_each(note_evidence)) ORDER BY rid) AS source_record_ids, "
             "CASE WHEN json_array_length(note_evidence)>0 THEN 'interpretation_required' ELSE statement_state END AS statement_state, "
             "0 AS current_use_established, CASE WHEN json_array_length(note_evidence)=0 THEN daily_mg END AS daily_mg, "
-            "target_daily_mg,target_max_daily_mg,target_reference, "
+            "target_daily_mg,target_max_daily_mg,target_reference,dose_evidence, "
             "CASE WHEN json_array_length(note_evidence)>0 THEN 'interpretation_required' ELSE dose_status END AS dose_status, "
             "statement_state AS documented_statement_state,daily_mg AS documented_daily_mg,dose_status AS documented_dose_status, "
             "1 AS note_scan_available,json_array_length(note_evidence)>0 AS note_review_required,note_evidence, "

@@ -285,7 +285,9 @@ def scope_options(context):
                    and not contract.get('analysis', {}).get('patient_selection'))
                # A non-empty count/table that retained no patient ids (event or provider rows) selects no cohort.
                or (answer.get('answer_type') in ('count', 'table') and bool(answer.get('count') or answer.get('table'))))
-    return {'result_scope_available': bool(context['patient_ids']) or not summary,
+    shared = (answer.get('answer_type') == 'composite' and answer.get('membership_role') == 'shared_selection'
+              and answer.get('shared_selection_established') is True)
+    return {'result_scope_available': bool(context['patient_ids']) or shared or not summary,
             'input_patients': None if context.get('input_patient_ids') is None else len(context['input_patient_ids'])}
 
 

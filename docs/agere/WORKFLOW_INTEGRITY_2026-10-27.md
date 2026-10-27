@@ -5,6 +5,25 @@ native results, saved evidence, final review and generated deliverables. It is
 staged in `/private/tmp/agere-workflow-integrity-20261027`; the canonical source
 used by the finite local adapter studies remains frozen at `495525e3`.
 
+The medication/scope follow-up repairs three shared representation failures.
+Explicit tablet/capsule quantities multiply the stated product strength; the
+current-dose relation retains the original fields, source record and arithmetic.
+Ambiguous or variable instructions retain an unknown dose. Product strength
+alone never supplies an assumed one-tablet administration. This establishes
+documented arithmetic, not ingestion, suitability or maximum tolerated dose.
+
+Unknown, invalid or conflicting supply duration leaves coverage end and the
+next duration-dependent gap unknown. Pickup dates/counts remain available.
+Interaction screening retains established pairs and reports relevant fills with
+unassessed concurrency. The existing therapy-gap reader retains uncertain fills
+for reconciliation rather than labelling their therapy present or absent.
+
+Composed answers compare all applicable patient selections, including empty
+ones, before exposing shared analytical follow-up membership. Different outputs
+keep their child contexts. Two matching empty selections retain an explicit
+empty follow-up; an unrelated aggregate selects no additional cohort. Composite
+answers continue to carry no authority to create patient work.
+
 Investigator SQL now scopes patient-linked inputs before aggregation and expands
 trusted views so a hidden aggregate cannot widen the population. Explicit empty
 membership stays empty, reference dimensions remain available, and qualified

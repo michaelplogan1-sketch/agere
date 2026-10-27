@@ -293,13 +293,23 @@ def execute(stack, question, graph, receipt, *, population=None, parent=None, st
         missing += (audit or {}).get('issues') or ['Request decomposition has not been accepted by review.']
     complete = all(s['answer']['status'] == 'answered' for s in sections) and not missing
     # Follow-ups narrow the one patient set every patient-level output selected; differing sets are never unioned.
-    chosen = [set(s['answer']['patient_ids']) for s in sections if s['answer'].get('patient_ids')]
-    shared = sorted(chosen[0]) if chosen and all(c == chosen[0] for c in chosen) else []
+    selections = [s['answer'] for s in sections if
+                  s['answer'].get('answer_type') == 'patient_set' or
+                  s['answer'].get('membership_role') in ('selected', 'shared_selection') or
+                  s['answer'].get('actionable_cohort') is True or
+                  any(isinstance(r, dict) and (r.get('patient_id') or r.get('patient'))
+                      for r in s['answer'].get('table') or [])]
+    from ..deliverables.answer_context import patient_rows
+    chosen = [{r['patient_id'] for r in patient_rows(a)} for a in selections]
+    established = bool(chosen) and all(c == chosen[0] for c in chosen) and all(
+        a.get('status') == 'answered' for a in selections)
+    shared = sorted(chosen[0]) if established else []
     answer = {'status': 'answered' if complete else 'partial', 'answer_type': 'composite',
               'headline': f"{sum(s['answer']['status'] == 'answered' for s in sections)} of {len(sections)} requested outputs answered",
               'sections': sections, 'missing': missing, 'limitations': [], 'patient_ids': shared,
-              'actionable_cohort': False, 'data_absence_established': False}
-    if shared: answer['membership_role'] = 'shared_selection'
+              'actionable_cohort': False, 'data_absence_established': False,
+              'shared_selection_established': established}
+    if established: answer['membership_role'] = 'shared_selection'
     row = scalar_row(sections, contract)
     if row and complete: answer['table'] = [row]  # independent single-number outputs read side by side: one row, one column per output
     child_calls = sum((p['result'] or {}).get('new_paid_api_calls', 0) for p in parts)
