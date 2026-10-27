@@ -223,9 +223,18 @@ class Retriever:
         if c['reranker']=='qwen' and not (RB.QWEN_PATH/'agere-model.json').exists():
             c={**c,'reranker':'bge','basis':c['basis']+'; Qwen3 reranker not installed: incumbent BGE'}
         graph=(self.path/MG.FILE).exists()
-        ident={'bge':self.reranker.identity if self.reranker else None,'qwen':'qwen3-reranker-0.6b:'+RB.VERSION}.get(c['reranker'])
+        selected=self._reranker(c['reranker'])
+        ident=selected.identity if selected else None
+        graph_identity=None
+        if graph:
+            stat=(self.path/MG.FILE).stat()
+            graph_identity={'version':MG.VERSION,'size':stat.st_size,'mtime_ns':stat.st_mtime_ns,'inode':stat.st_ino}
+            previous=getattr(self,'_graph_artifact_identity',None)
+            if previous is not None and previous!=graph_identity and getattr(self,'_graph',None):
+                self._graph.close();self._graph=None
+            self._graph_artifact_identity=graph_identity
         code=digest([hashlib.sha256(Path(m.__file__).read_bytes()).hexdigest() for m in (RB,PC,MG,EC)])
-        return {**c,'reranker_identity':ident,'graph_identity':MG.VERSION if graph else None,'code':code}
+        return {**c,'reranker_identity':ident,'graph_identity':graph_identity,'code':code}
     def _reranker(self,name):
         if not self.reranker or name is None:return None
         if self.reranker is not getattr(self,'_installed_reranker',self.reranker):return self.reranker  # an inspector's explicitly installed reranker
@@ -263,13 +272,16 @@ class Retriever:
                         'rrf_score':0.0,'protected_channel':{'channel':'exception','kinds':PC.kinds(content),'terms':PC.subject_terms(question)}})
             if len(out)>=PC.CHANNEL_CANDIDATES:break
         return out
-    def _graph_fallback(self,question,patient,membership,candidates):
+    def _graph_fallback(self,question,patient,membership,candidates,*,scoped=False):
         """Concept-graph candidates (med_graph_rag) fused with the hybrid candidates by reciprocal rank."""
         from . import med_graph_rag as MG
         if not (self.path/MG.FILE).exists():return None
         if getattr(self,'_graph',None) is None:
             self._graph=MG.GraphRetriever(self.path,stack_db=self.db)
-        found=self._graph.search(question,patient=patient,patient_ids=membership,limit=24)
+        found=self._graph.search(question,patient=patient,patient_ids=membership,limit=24,scoped_passages=scoped)
+        if scoped:
+            found={**found,'candidates':[c for c in found['candidates'] if self.db.execute(
+                'SELECT 1 FROM query_scope_passages WHERE id=?',(c['id'],)).fetchone()]}
         if not found['candidates']:return None
         fusion=Counter();byid={}
         for ranking in (candidates,found['candidates']):
@@ -306,6 +318,8 @@ class Retriever:
                 if window['start']:sql+=' AND '+field+'>=?';params.append(window['start'])
             self.db.execute(sql,params);self.db.commit()
             scope_join=' JOIN query_scope_passages qs ON qs.id=p.id'
+            if not self.db.execute('SELECT 1 FROM query_scope_passages LIMIT 1').fetchone():
+                return [],members,scope_join
         expanded=question.lower()
         for topic,aliases in ALIASES.items():
             if topic in expanded:expanded+=' '+' '.join(aliases)
@@ -368,9 +382,18 @@ class Retriever:
             raise ValueError('Explicit cohort membership required')
         scoped=patient_ids is not None or window['basis']!='all_observed'
         membership=sorted(set(patient_ids)) if patient_ids is not None else None
+        if membership==[] or (patient and membership is not None and patient not in membership):
+            return {'schema':VERSION,'synthetic':True,'question':question,'patient_id':patient,
+                    'evidence':[],'candidate_passages':0,'method':'Empty selected patient intersection; no retrieval or completion executed.',
+                    'evidence_set':None,'retrieval_policy':{'query_type':None,'reranker':None,'basis':'empty selected intersection',
+                        'graph_fallback':False,'graph_nodes':None,'exception_channel_candidates':0,'protected_selected':0,'protected_reserve':0},
+                    'snapshot':self.meta['snapshot'],'source_run':self.meta['source_run'],'cache_hit':False,'elapsed_seconds':0,
+                    'new_paid_api_calls':0,'complete_evidence_guarantee':False,'query_windows':0,'query_embedding':None,
+                    'analysis_window':window,'cohort_patient_count':0,'scope_applied_before_ranking':True,
+                    'scope':'Explicit empty intersection. No patient evidence was read.'}
         policy=self.policy(question)
         key=digest([VERSION,hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),self.meta['source_digest'],
-                    self.encoder.identity,policy['reranker_identity'],policy['graph_identity'],policy['code'],
+                    self.encoder.identity,policy,
                     getattr(self,'annotation_identity',None),question,patient,limit,membership,window,bool(complete)])
         t=time.perf_counter();old=self.db.execute('SELECT payload FROM result_cache WHERE id=?',(key,)).fetchone()
         if old:return {**json.loads(old[0]),'cache_hit':True,'elapsed_seconds':time.perf_counter()-t,'new_paid_api_calls':0}
@@ -380,7 +403,7 @@ class Retriever:
         candidates=candidates+channel
         graph_used=None
         if policy['graph_fallback'] or len(candidates)<limit:
-            graph_used=self._graph_fallback(question,patient,membership,candidates)
+            graph_used=self._graph_fallback(question,patient,membership,candidates,scoped=scoped)
             if graph_used: candidates=graph_used['candidates']
         PC.mark(question,candidates)
         reranker=self._reranker(policy['reranker'])
@@ -391,9 +414,9 @@ class Retriever:
             seen.add(group);by_patient[s['patient_id']]+=1;return True
         selected=PC.select(ranked,limit,patient,accept)
         evidence_set=None
-        if complete and patient:  # conclusion-guided: fetch the components of the conclusion the question asks for that the ranked set lacks
+        if complete and patient and (membership is None or patient in membership):
             from . import evidence_completeness as EC
-            selected,evidence_set=EC.complete(lambda q:self.search(q,patient=patient,limit=12,analysis_window=analysis_window,complete=False)['evidence'],question,selected,limit)
+            selected,evidence_set=EC.complete(lambda q:self.search(q,patient=patient,patient_ids=membership,limit=12,analysis_window=window,complete=False)['evidence'],question,selected,limit)
         if self.annotation_db:
             by_patient={}
             for row in selected:

@@ -57,3 +57,50 @@ completion, physician review, component ablations, total cost per correct
 completion and comparisons with company products remain unqualified. Additional
 received analytical/economics findings belong to the same G3 sequence; this
 candidate does not close the ten-area acceptance backlog.
+
+## Analytical, retrieval and cost follow-up
+
+Further repairs use the existing modules. Domain discovery cannot terminate a
+compound question before its supported parts execute, and schema/literal-search
+gaps do not establish comprehensive narrative absence. Measurement readers share
+current/not-excluded eligibility. Target-trial, provider and VBC readers use the
+governed all-source ED metric relation, preserving its event grain and declaring
+the legacy patient-day fallback. Utilization and exposure use the same enrolled
+months across grouping; historical attribution excludes future/ended assignments.
+Readmission risk sets exclude documented index deaths, preserve length-of-stay
+cases and disclose unavailable death evidence.
+
+Hospital-admission forecasts can complete their existing explanation. Discharge
+forecast reports identify the weekday baseline's score separately from the
+capacity twin; historical twin validation and interval coverage remain unmeasured.
+Contract repricing retains a computable scenario despite an unavailable current
+variance basis. These corrections do not establish causal or prospective validity.
+
+Graph retrieval, automatic fallback and conclusion-completion searches retain
+the same patient intersection and eligible dated passages. Empty intersections
+execute no retrieval. Result-cache identity includes the selected actual reranker,
+adopted policy and graph artifact metadata. An undated document remains unknown
+in typed evidence; the task's snapshot cutoff is a separate field.
+
+Overlapping cached questions now retain per-question reuse attribution, so one
+charged attempt is not assigned twice. Unreadable accounting remains unknown.
+Recursive feedback receives the complete request's API receipt after readers,
+reviews, repairs and artifacts. A cheaper actor cannot hide higher full-request
+API cost. Local compute/development/physician-review cost remains unpriced.
+
+The surrounding frozen selection passed **348 of 350** checks, with two opt-in
+live skips and zero errors/failures/provider or protected-corpus access. After a
+small discovery-cost disclosure correction, its 20 affected checks passed.
+Identical authored analytics/retrieval tests were copied to an unchanged
+`062bc298` checkout: **15 assertion failures and one genuine forecast exception
+before; all 16 pass after**. The copies' hashes, complete logs and source
+fingerprints are retained under `paired-before-v2` and `paired-after-v2`. An earlier
+paired fixture lacked an optional encounter identifier; that receipt remains
+preserved and is superseded by the corrected identical-fixture run. These are
+regression scenarios selected for demonstrated defects, not a clinical benchmark
+or a generalization percentage.
+
+Additional independently received findings about off-policy support, measure
+patient projection, unknown settlement quality and monitor receipts/recovery are
+pending reconciliation in the same G3 sequence. Current repairs are staged, not
+canonical/runtime promotion, while the finite adapter studies remain frozen.

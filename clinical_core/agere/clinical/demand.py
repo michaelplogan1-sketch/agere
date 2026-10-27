@@ -926,6 +926,7 @@ def _finish(p, path, as_of, label, freq, series, table, capacity, flags, recon):
     method = (f"{label.capitalize()} per {freq} ({'Monday-start weeks' if freq == 'week' else 'calendar months'}) from the semantic layer; "
               f"only complete {freq}s through the snapshot ({as_of}) are modelled; an in-progress {freq} is forecast and its count so far shown. ")
     method += {'visit': 'Visits = encounter rows of that setting on their event date. ',
+               'utilization_event':'Hospital admissions = governed all-source inpatient and observation events on their received event date. ',
                'appointment': 'Appointments counted on their scheduled date regardless of final status (demand, including no-shows); '
                               'appointments already booked for future periods are shown beside the forecast. ',
                'stay': ('Bed-days = nights of each hospital stay (same-day stays = 1) from admit to discharge. ' if p['measure'] == 'bed_days'

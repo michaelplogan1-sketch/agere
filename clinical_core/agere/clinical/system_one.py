@@ -69,7 +69,10 @@ def _evidence(evidence, as_of):
         if eid in seen:
             eid = f'{eid}#{i}'
         seen.add(eid)
-        out.append({'id': eid, 'text': str(e.get('text') or ''), 'date': str(e.get('date') or e.get('event_date') or as_of)[:10],
+        observed=e.get('date') or e.get('event_date')
+        # The typed task already carries its snapshot cutoff separately. Keep
+        # the source clock explicitly unknown within its existing string schema.
+        out.append({'id': eid, 'text': str(e.get('text') or ''), 'date':str(observed)[:10] if observed else 'unknown',
                     'note_id': str(e.get('note_id') or e.get('record_id') or eid)})
     return out
 

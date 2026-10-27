@@ -129,7 +129,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                             found=validate(parsed(raw),questions,batch)
                         # Review omissions too: an empty extraction cannot certify
                         # that the complete batch contains no relevant finding.
-                        evidence=[{'id':d['record_id'],'text':d['text'],'date':d['date'] or tools.as_of} for d in batch]
+                        evidence=[{'id':d['record_id'],'text':d['text'],'date':d['date'] or None,'snapshot_as_of':tools.as_of} for d in batch]
                         if evidence:
                             check=system_one.decide('Do these proposed findings completely and faithfully answer their narrative questions from ALL supplied patient documents, '
                                 'including date, experiencer, negation, uncertainty and contradictions? Check every requested field for missed evidence, '

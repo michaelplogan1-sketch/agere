@@ -1155,12 +1155,12 @@ def handle_compose(stack, body, hosted_factory=None):
         learning.record_routing(stack.path, logged, local['operator_router'], executed=pr.get('route') == 'operator_router')
     from .learning_hooks import after_answer  # every answer feeds learning: saved pairs, question learning, training corpus
     from .harness_improvement import finish as finish_harness
-    finish_harness(stack.path,result)
     result = {**result, 'learning': after_answer(stack, logged, result, body=body)}
     probe.mark('learning')
     telemetry = probe.finish(result)
     cost_telemetry.record(stack.path, telemetry)
     out = {**result, 'cost_telemetry': telemetry, 'cost_receipt': cost_telemetry.receipt(telemetry, result)}
+    finish_harness(stack.path,out)  # complete readers/reviews/artifacts cost, not actor-only savings
     if evaluation.active(): out['evaluation'] = evaluation.receipt()
     return out
 

@@ -1177,11 +1177,16 @@ def _compose(stack, question, *, population=None, parent=None, model=None, plann
 
 def _compose_once(stack, question, *, population=None, parent=None, model=None, planning='auto'):
     started = time.perf_counter()
-    if population is None and parent is None:
-        from . import data_domains
-        absent = data_domains.check(request_plan.Catalog.load(stack.path), question)
-        if absent: return data_domains.answer(question, *absent)  # nothing received could answer it
-    graph, receipt = plan(stack, question, population=population, model=model, planning=planning)
+    # An unmapped domain is a discovery clue, not authority to suppress the
+    # answerable requirements of a compound question or its narrative evidence.
+    try:
+        graph, receipt = plan(stack, question, population=population, model=model, planning=planning)
+    except QuestionNotUnderstood as exc:
+        if population is None and parent is None:
+            from . import data_domains
+            absent=data_domains.after_decline(stack.path,question,exc)
+            if absent:return absent
+        raise
     try:
         if receipt['request_contract'].get('kind') == 'checked_graph':
             from . import proposers

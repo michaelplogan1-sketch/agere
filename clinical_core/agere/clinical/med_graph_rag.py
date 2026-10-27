@@ -224,11 +224,13 @@ class GraphRetriever:
                 found[b] = max(found.get(b, 0.0), 0.5 * min(1.0, w))
         return found
 
-    def search(self, question, *, patient=None, patient_ids=None, limit=24):
+    def search(self, question, *, patient=None, patient_ids=None, limit=24, scoped_passages=False):
         """-> {'nodes', 'candidates': [{'id','text','source','note_id','start','protected','graph_score'}]}"""
         nodes = self.link(question)
         if not nodes: return {'nodes': {}, 'candidates': []}
-        scope = {patient} if patient else (set(patient_ids) if patient_ids is not None else None)
+        scope = set(patient_ids) if patient_ids is not None else None
+        if patient:scope={patient} if scope is None else scope & {patient}
+        if scope==set():return {'nodes':nodes,'candidates':[]}
         score = Counter(); patient_of = {}
         for node, w in nodes.items():
             if scope is not None and len(scope) <= 50:
@@ -239,14 +241,20 @@ class GraphRetriever:
                 if scope is not None and pid not in scope: continue
                 score[rid] += w; patient_of[rid] = pid
         if not score: return {'nodes': nodes, 'candidates': []}
-        top = sorted(score.items(), key=lambda kv: -kv[1])[:max(limit * 4, 48)]
+        top = sorted(score.items(), key=lambda kv: -kv[1])
+        if not scoped_passages:top=top[:max(limit * 4,48)]
         candidates = []
+        eligible_records=0
         for rid, s in top:
+            scope_sql=' AND p.id IN (SELECT id FROM temp.query_scope_passages)' if scoped_passages else ''
+            before=len(candidates)
             for pid_, content, source in self.stack.execute(
                     "SELECT p.id, c.text, p.source FROM passages p JOIN contents c ON c.id=p.content WHERE p.patient=? "
-                    "AND json_extract(p.source,'$.record_id')=? ORDER BY p.id LIMIT 2", (patient_of[rid], rid)):
+                    "AND json_extract(p.source,'$.record_id')=?"+scope_sql+" ORDER BY p.id LIMIT 2", (patient_of[rid], rid)):
                 src = json.loads(source)
                 candidates.append({'id': str(pid_), 'text': content, 'source': src, 'note_id': src['record_id'], 'start': src['start'],
                                    'protected': False, 'graph_score': round(s, 4)})
+            if len(candidates)>before:eligible_records+=1
+            if scoped_passages and eligible_records>=max(limit*4,48):break
         candidates.sort(key=lambda r: (-r['graph_score'], -(int((r['source'].get('event_date') or '0000')[:4]) if (r['source'].get('event_date') or '')[:4].isdigit() else 0), r['id']))
         return {'nodes': {k: round(v, 3) for k, v in nodes.items()}, 'candidates': candidates[:limit]}

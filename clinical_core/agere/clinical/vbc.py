@@ -166,6 +166,8 @@ def attribution(db, people, start, end, method='hybrid'):
         r = json.loads(payload)
         if r.get('role') in aggregate.PCP_ROLES and r.get('status') in (None, 'assigned'):
             key = r.get('effective_start') or r.get('event_date') or ''
+            if key and key[:10]>end[:10]:continue
+            if r.get('effective_end') and r['effective_end'][:10]<end[:10]:continue
             if pid not in assigned or key >= assigned[pid][0]:
                 assigned[pid] = (key, r.get('clinician_id'), r.get('organization_id'))
     visits = defaultdict(lambda: defaultdict(lambda: [0, '', None]))
@@ -270,10 +272,10 @@ def _beta_binomial(rows, num_key, den_key):
 def _utilization(db, people, attr, p, start, end):
     groups = defaultdict(lambda: {'members': 0, 'member_years': 0.0, 'ed_visits': 0, 'admissions': 0, 'index_stays': 0,
                                   'readmissions': 0, 'discharges_7d_eligible': 0, 'followup_7d': 0})
-    ed = defaultdict(set)
-    from .ed_definition import visits_sql  # the one governed ED definition (EHR + ADT + claims, one per patient-day)
-    for pid, d in db.execute(f"SELECT patient_id, event_date FROM ({visits_sql(db)}) WHERE event_date BETWEEN ? AND ?", (start, end)):
-        ed[pid].add(d)
+    ed = defaultdict(list)
+    from .ed_definition import metric_visits_sql
+    for pid, d in db.execute(f"SELECT patient_id, event_date FROM ({metric_visits_sql(db)}) WHERE event_date BETWEEN ? AND ?", (start, end)):
+        ed[pid].append(d)
     stays = defaultdict(list)
     for pid, a, dis, rd in db.execute("SELECT patient_id, admit_date, discharge_date, readmitted_30d FROM stay WHERE admit_date BETWEEN ? AND ?", (start, end)):
         stays[pid].append((a, dis, rd))
@@ -284,6 +286,7 @@ def _utilization(db, people, attr, p, start, end):
     timed = p['group_by'] in TIME_GROUPS
     for pid, info in people.items():
         if not info['months']: continue
+        enrolled = set(info['months'])
         if timed:  # each enrolled month, ED day, stay and discharge lands in its own calendar period
             enrolled = set(info['months'])
             for key in {_time_key(m, p['group_by']) for m in enrolled}: groups[key]['members'] += 1
@@ -295,8 +298,8 @@ def _utilization(db, people, attr, p, start, end):
         else:
             g = groups[_group_key(p['group_by'], pid, people, attr)]
             g['members'] += 1; g['member_years'] = round(g['member_years'] + len(info['months']) / 12, 4)
-            g['ed_visits'] += len(ed[pid])
-            keyed_stays = [(None, a, dis, rd) for a, dis, rd in stays[pid]]
+            g['ed_visits'] += sum(d and d[:7] in enrolled for d in ed[pid])
+            keyed_stays = [(None, a, dis, rd) for a, dis, rd in stays[pid] if a and a[:7] in enrolled]
         for month, a, dis, rd in keyed_stays:
             g = groups[_time_key(month, p['group_by'])] if timed else g
             g['admissions'] += 1; g['index_stays'] += 1; g['readmissions'] += rd

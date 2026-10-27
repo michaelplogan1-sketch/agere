@@ -368,8 +368,9 @@ def units(db, patient_ids, p, as_of):
         for pid, d in db.execute(query, types):
             if pid in members: dated[pid].append((d, None))
     elif ev['type'] == 'measurement':
+        from .safety_data import usable_measurement_sql
         for pid, d, v in db.execute('SELECT patient_id, substr(event_date, 1, 10), value_canonical FROM measurement WHERE concept = ? '
-                                    'AND value_canonical IS NOT NULL AND event_date IS NOT NULL', (ev['concept'],)):
+                                    'AND value_canonical IS NOT NULL AND event_date IS NOT NULL'+usable_measurement_sql(db), (ev['concept'],)):
             if pid in members: dated[pid].append((d, v))
     for v in dated.values(): v.sort()
     out = []

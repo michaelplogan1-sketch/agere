@@ -118,8 +118,8 @@ def attempts_since(path, hw, question_id):
         rows = db.execute('SELECT rowid,id,provider,model,status,response,error,seconds FROM calls WHERE rowid>? ORDER BY rowid', (hw,)).fetchall()
         owners, reuses = {}, []
         if tagged:
-            for key, qid in db.execute('SELECT q.id,q.question_id FROM call_questions q JOIN calls c ON c.id=q.id WHERE c.rowid>?', (hw,)):
-                owners.setdefault(key, set()).add(qid)
+            for key, qid, reused in db.execute('SELECT q.id,q.question_id,q.reused FROM call_questions q JOIN calls c ON c.id=q.id WHERE c.rowid>?', (hw,)):
+                owners.setdefault(key, {})[qid]=bool(reused)
             reuses = db.execute('SELECT c.id,c.provider,c.model,c.status,c.response,c.error,c.seconds FROM call_questions q '
                                 'JOIN calls c ON c.id=q.id WHERE q.question_id=? AND q.reused=1 AND c.rowid<=? ORDER BY q.at',
                                 (question_id, hw)).fetchall()
@@ -127,6 +127,7 @@ def attempts_since(path, hw, question_id):
         who = owners.get(key)
         if who and question_id not in who: continue  # another question made this call
         out.append(attempt_of(key, provider, model, status, response, error, seconds,
+                              reused=bool(who and who.get(question_id)),
                               attribution='tagged' if who else 'window'))
     out += [attempt_of(*r, reused=True) for r in reuses]
     return out
@@ -195,6 +196,11 @@ class Probe:
         self.started = time.perf_counter()
         self.marks = [('start', self.started)]
         self.hw = high_water(self.ledger_path)
+        self.accounting_complete=True
+        if Path(self.ledger_path).exists():
+            try:
+                with _ro(self.ledger_path) as db:db.execute('SELECT rowid FROM calls LIMIT 1').fetchall()
+            except (sqlite3.Error,ValueError,OSError):self.accounting_complete=False
         self._token = CURRENT.set(self.question_id)
         self._scope = model_policy.mark_question()  # Claude requests of this question resolve to the Haiku-first ladder (model_policy)
         return self
@@ -221,6 +227,7 @@ class Probe:
             attempts = attempts_since(self.ledger_path, self.hw, self.question_id)
         except (sqlite3.Error, ValueError, OSError) as exc:
             attempts = []
+            self.accounting_complete=False
             error = error or f'attempts unreadable: {type(exc).__name__}'
         seen = {a['attempt_id'] for a in attempts}
         interp = (((result or {}).get('planner_receipt') or {}).get('interpretation') or {})
@@ -231,10 +238,14 @@ class Probe:
                                  'cache_hit': True, 'input_tokens': 0, 'output_tokens': 0, 'cache_read_tokens': 0,
                                  'cache_write_tokens': 0, 'usd': 0.0, 'seconds': a.get('seconds'), 'error': None,
                                  'review': None, 'attribution': 'receipt'})
-        return {'version': VERSION, 'question_id': self.question_id,
+        summary=summarize(attempts,result,error)
+        complete=getattr(self,'accounting_complete',True)
+        if not complete:
+            summary.update(api_calls=None,api_usd=None,usd_known=False,no_paid_call=None,llm_free=None)
+        return {'version': VERSION, 'question_id': self.question_id,'accounting_complete':complete,
                 'question_sha': hashlib.sha256(self.question.encode()).hexdigest(), 'pricing_version': pricing_version(),
                 'ledger': str(self.ledger_path), 'attempts': attempts, 'attempt_ids': [a['attempt_id'] for a in attempts],
-                'stages': self.stages(result), **summarize(attempts, result, error), **({'error': str(error)[:300]} if error else {})}
+                'stages': self.stages(result), **summary, **({'error': str(error)[:300]} if error else {})}
 
 
 def start(question, **kw):
@@ -253,12 +264,14 @@ def receipt(telemetry, result=None, *, failed=False):
     planner = result if isinstance(result, dict) else {}
     reported = planner.get('new_paid_api_calls')
     calls = t.get('api_calls')
-    consistent = calls is not None and (reported is None or not isinstance(reported, int) or reported <= calls)
+    complete=t.get('accounting_complete',True)
+    consistent = complete and calls is not None and (reported is None or not isinstance(reported, int) or reported <= calls)
     usd = t.get('api_usd') if consistent and t.get('usd_known') else None
     interp = ((planner.get('planner_receipt') or {}).get('interpretation') or {}) if not failed else {}
     timing = ((planner.get('planner_receipt') or {}).get('answer_timing') or planner.get('answer_timing') or {})
     background = timing.get('background_continuation') or ((interp.get('answer_timing') or {}).get('background_continuation'))
-    return {'version': 'cost-receipt/1', 'paid_calls': calls if consistent else (reported if isinstance(reported, int) else None),
+    return {'version': 'cost-receipt/1','accounting_complete':complete,
+            'paid_calls': calls if consistent else (reported if complete and isinstance(reported, int) else None),
             'usd': usd, 'usd_known': usd is not None or (consistent and calls == 0), 'claude_calls': t.get('claude_calls'),
             'system_one_calls': t.get('system_one_calls'), 'calls_by_model': t.get('calls_by_model'),
             'claude_calls_by_model': t.get('claude_calls_by_model'),

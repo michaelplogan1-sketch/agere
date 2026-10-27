@@ -155,5 +155,21 @@ class Harness(unittest.TestCase):
         H.record_feedback(self.root,c['id'],accepted=False,reason='Observed mismatch on later review')
         self.assertIsNone(H.latest(self.root,H.identity(e,self.q,self.context,self.model)))
 
+    def test_cheaper_actor_cannot_hide_a_more_expensive_complete_workflow(self):
+        e,calls=self.trajectory(1)
+        c=H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor(),baseline_metrics={'estimated_cost_usd':.1})
+        H.finish(self.root,{'answer':{'status':'answered'},'workflow':[],
+                           'cost_receipt':{'usd':.2,'usd_known':True,'paid_calls':2},
+                           'investigation':{'recursive_improvement':{'candidate':c}}})
+        H.finish(self.root,{'answer':{'status':'answered'},'workflow':[],
+                           'cost_receipt':{'usd':.4,'usd_known':True,'paid_calls':3},
+                           'investigation':{'recursive_improvement':{'replay':{'used':c['id']},'actor_metrics':{'estimated_cost_usd':.01}}}})
+        self.assertIsNone(H.latest(self.root,H.identity(e,self.q,self.context,self.model)))
+        with H.database(self.root) as db:
+            feedback=json.loads(db.execute("SELECT payload FROM harness_candidate_events WHERE candidate=? AND kind='outcome' ORDER BY seq DESC LIMIT 1",(c['id'],)).fetchone()[0])
+        self.assertTrue(feedback['observed_full_request_api_cost_regression'])
+        self.assertFalse(feedback['observed_actor_cost_regression'])
+        self.assertFalse(feedback['total_cost_qualified'])
+
 
 if __name__=='__main__':unittest.main()

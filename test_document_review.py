@@ -52,6 +52,19 @@ class Review(unittest.TestCase):
                      {'findings':{'x':[{'value':'Cough','record_id':'other','quote':'Patient denies cough.'}]}}):
             with self.assertRaises(ValueError):D.validate(data,{'x':'cough'},docs)
 
+    def test_undated_document_remains_undated_in_support_review(self):
+        self.docs=[(*d[:4],'',*d[5:]) for d in self.docs]
+        seen=[]
+        def check(q,options,evidence,**kw):
+            seen.extend(evidence)
+            self.assertEqual(kw['as_of'],self.tools.as_of)
+            return {'label':'supported','decided_by':'scripted','steps':[]}
+        with patch('clinical_core.agere.clinical.together._ledgered_send',side_effect=self.sender),patch(
+                'clinical_core.agere.clinical.system_one.decide',side_effect=check):
+            D.review(self.tools,['A'],{'barriers':'What is documented?'})
+        self.assertTrue(seen);self.assertTrue(all(e['date'] is None for e in seen))
+        self.assertTrue(all(e['snapshot_as_of']==self.tools.as_of for e in seen))
+
     def test_unreceived_patient_rejected_before_a_provider_call(self):
         with self.assertRaisesRegex(ValueError,'received warehouse'):D.review(self.tools,['foreign'],{'x':'question'})
 

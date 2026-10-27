@@ -235,10 +235,14 @@ def check(catalog, question, stage='pre'):
         loaded = loaded or _vocabulary(catalog)
         vocab, stats = loaded
         if any(_held(vocab, h) for h in hints): continue  # something received could hold it: not absent (a later, narrower domain may still apply)
-        if opts.get('text') and any(_in_text(catalog, opts['text']).values()): continue  # mentioned in received notes / documents
+        # Every domain can arrive as narrative. Literal hits require investigation
+        # even when no registry author anticipated this specific source form.
+        terms=tuple(dict.fromkeys([*(opts.get('text') or ()),*(h.replace('_',' ') for h in hints),
+                                  *(m.group(0) for m in re.finditer(pattern,text,re.I))]))
+        if any(_in_text(catalog,terms).values()):continue
         checked = ', '.join(f'{n} {k}' for k, n in stats.items() if n)
-        reason = (f'The warehouse has no {label}: no received table, column or feed field matches ({", ".join(hints)})'
-                  + (f'; the received note and document text mentions none of: {", ".join(opts["text"])}' if opts.get('text') else '')
+        reason = (f'No mapped structured representation for {label}: no received table, column or feed field name matches ({", ".join(hints)})'
+                  + '; literal narrative searches found no matching terms, but comprehensive narrative absence is not established'
                   + f'. Checked {checked}.' + (f' Received instead: {opts["exists"]}.' if opts.get('exists') else ''))
         return label, reason
     as_of = catalog.identity.get('as_of')
@@ -253,17 +257,20 @@ def check(catalog, question, stage='pre'):
 
 def answer(question, label, reason, stage='pre', receipt=None):
     after = stage == 'post'
+    established=label=='data for that period'
     return {'schema': 'agere-data-absent/1', 'synthetic': True, 'question': question, 'route': 'shared_planner',
             'answer': {'status': 'not_available', 'answer_type': 'data_absent', 'answerable': False,
-                       'data_absence_established': True, 'headline': 'Not available: ' + reason,
+                       'data_absence_established': established, 'discovery_status':'period_outside_snapshot' if established else 'structured_representation_unmapped',
+                       'narrative_review_complete':False, 'headline': 'Not available: ' + reason,
                        'missing': [label], 'patient_ids': [], 'actionable_cohort': False,
-                       'limitations': ['Every answering layer declined this question, then the received catalog was checked for the named data; no query was run.'
-                                       if after else 'Checked against the received catalog; no query was run and no model was called.']},
+                       'limitations': ['No accepted complete answer was produced. Catalog names and literal narrative searches do not establish comprehensive data absence.'
+                                       if after else 'Catalog discovery only; narrative coverage and complete source absence are unestablished.']},
             'planner_receipt': {'route': 'shared_planner', 'interpretation': {'interpreter': 'data_domain_check', 'domain': label,
                                                                                'stage': 'after_decline' if after else 'before_planning'},
                                 'new_paid_api_calls': (receipt or {}).get('new_paid_api_calls', 0)},
             'new_paid_api_calls': (receipt or {}).get('new_paid_api_calls', 0),
-            'planning_economics': {'known_api_estimate_usd': (receipt or {}).get('known_api_estimate_usd', 0), 'api_cost_known': True}}
+            'planning_economics': {'known_api_estimate_usd': (receipt or {}).get('known_api_estimate_usd', 0),
+                                   'api_cost_known':(receipt or {}).get('api_cost_known',True)}}
 
 
 def after_decline(path, question, exc=None):

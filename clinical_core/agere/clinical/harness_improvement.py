@@ -239,20 +239,33 @@ def _finish(path,result):
             (s.get('kind'),s.get('quote')) for s in expected]
         regression=False
         actual=info.get('actor_metrics') or {}
+        receipt=result.get('cost_receipt') or {}
+        full_cost={'api_usd':receipt.get('usd'),'paid_calls':receipt.get('paid_calls'),
+                   'usd_known':bool(receipt.get('usd_known')),
+                   'scope':'All ledger-attributed API attempts for this workflow; local compute, development and physician review remain unpriced'}
+        baseline_full={};full_regression=False
         if used:
             stored=db.execute('SELECT payload FROM harness_candidates WHERE id=?',(used,)).fetchone()
             baseline=(json.loads(stored[0]).get('baseline_actor_metrics') or {}) if stored else {}
             old,new=baseline.get('estimated_cost_usd'),actual.get('estimated_cost_usd')
             regression=old is not None and new is not None and new>old+1e-12
+            previous=db.execute("SELECT payload FROM harness_candidate_events WHERE candidate=? AND kind='outcome' ORDER BY seq LIMIT 1",(used,)).fetchone()
+            baseline_full=(json.loads(previous[0]).get('full_request_cost') or {}) if previous else {}
+            old,new=baseline_full.get('api_usd'),full_cost.get('api_usd')
+            full_regression=(baseline_full.get('usd_known') and full_cost['usd_known'] and old is not None and new is not None and new>old+1e-12)
+        any_regression=bool(regression or full_regression)
         with db:
             event(db,ident,'outcome',{'complete_request':complete,'workflow_statuses':[s.get('status') for s in result.get('workflow',[])],
                                     'feedback':(result.get('answer') or {}).get('missing',[]),'actor_metrics':actual,
                                     'observed_actor_cost_regression':regression,
-                                    'cost_scope':'Actor stage only; full request cost and validation overhead remain in the normal provider/workflow receipts'})
+                                    'full_request_cost':full_cost,'baseline_full_request_cost':baseline_full,
+                                    'observed_full_request_api_cost_regression':bool(full_regression),
+                                    'total_cost_qualified':False,
+                                    'cost_scope':'API estimates include readers, review, repair, validation and artifacts when ledger attribution is complete. Total cost remains unmeasured.'})
             if candidate.get('status')=='validated_pending_complete_workflow':
-                event(db,ident,'selected' if complete and not regression else 'quarantined',{'reason':'Full request and native-output validation passed' if complete and not regression else 'Incomplete request or cost regression; retain known-good configuration'})
-            if used and (not complete or regression):
-                event(db,used,'quarantined',{'reason':'Complete request not established or actor cost regressed; resume the retained actor on the next request'})
+                event(db,ident,'selected' if complete and not any_regression else 'quarantined',{'reason':'Full request and native-output validation passed; total cost benefit remains unqualified' if complete and not any_regression else 'Incomplete request or observed cost regression; retain known-good configuration'})
+            if used and (not complete or any_regression):
+                event(db,used,'quarantined',{'reason':'Complete request not established or observed cost regressed; resume the retained actor on the next request'})
     finally:db.close()
 
 

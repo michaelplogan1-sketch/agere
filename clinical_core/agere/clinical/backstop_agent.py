@@ -318,10 +318,13 @@ class Tools:
             return {'question': question, 'answered': False, 'reason': str(a.get('headline') or a.get('status') or 'no answer')[:300]}
         table = a.get('table') or []
         out = {'question': question, 'answered': True, 'read_as': (result.get('graph') or {}).get('interpretation'),
+               'subquestion_status':a.get('status'),'missing':a.get('missing') or [],
+               'evidence_completeness':a.get('evidence_completeness'),
                'headline': a.get('headline'), 'value': a.get('value'), 'count': a.get('count'), 'unit': a.get('unit'),
                'table': table, 'table_rows': a.get('table_rows',len(table)),
                'truncated': bool(a.get('truncated') or a.get('preview_only') or a.get('table_rows',len(table))>len(table)),
-               'method': a.get('method'), 'definitions': a.get('limitations') or []}
+               'method': a.get('method'), 'definitions': a.get('definitions') or [],
+               'limitations':a.get('limitations') or [],'computed_as':a.get('computed_as')}
         self.governed.append(out)
         return {k: v for k, v in out.items() if v not in (None, [], '')}
 
@@ -375,7 +378,7 @@ class Tools:
             doc = self._doc(rid)
             text = doc.get('text') or ''
             chunks = [text[i:i + JUDGE_CHUNK] for i in range(0, max(len(text), 1), JUDGE_CHUNK - 200)] or ['']
-            evidence = [{'id': f'{rid}#{k}', 'record_id': rid, 'text': c, 'date': (doc.get('date') or self.as_of)[:10]} for k, c in enumerate(chunks)]
+            evidence = [{'id': f'{rid}#{k}', 'record_id': rid, 'text': c, 'date': (doc.get('date') or '')[:10]} for k, c in enumerate(chunks)]
             r = system_one.decide(question, options, evidence, as_of=self.as_of, task_key='agere_chart_judgment', ledger=self.ledger,
                                   allow_live=bool(getattr(self.stack, 'allow_live', False)))
             from .system_one_gate import cost

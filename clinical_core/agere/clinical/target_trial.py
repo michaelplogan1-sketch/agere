@@ -195,8 +195,8 @@ def _cols(db, table): return {r[1] for r in db.execute(f'PRAGMA table_info({tabl
 
 
 def _labs(db, concept_ids, keep):
-    cols = _cols(db, 'measurement')
-    extra = (' AND coalesce(result_current, 1) = 1' if 'result_current' in cols else '') + (' AND excluded_reason IS NULL' if 'excluded_reason' in cols else '')
+    from .safety_data import usable_measurement_sql
+    extra = usable_measurement_sql(db)
     out = defaultdict(lambda: defaultdict(list))
     q = ','.join('?' * len(concept_ids))
     for pid, c, d, v in db.execute(f'SELECT patient_id, concept, event_date, value_canonical FROM measurement WHERE concept IN ({q}) '
@@ -211,7 +211,10 @@ def _events(db, kind, concept, keep):
     out = defaultdict(list)
     if kind == 'admission':
         sql, args = 'SELECT patient_id, admit_date FROM stay WHERE admit_date IS NOT NULL', ()
-    elif kind in ('ed_visit', 'encounter'):
+    elif kind == 'ed_visit':
+        from .ed_definition import metric_visits_sql
+        sql,args=metric_visits_sql(db),()
+    elif kind == 'encounter':
         sql = "SELECT DISTINCT patient_id, substr(event_date,1,10) FROM encounter WHERE type_concept = ? AND event_date IS NOT NULL"
         args = ('emergency_visit' if kind == 'ed_visit' else concept,)
     else:
@@ -682,7 +685,8 @@ def protocol(p, feed):
          'emulation': f"Same, also ended by the snapshot; per-protocol censors at switching to the other strategy or a supply lapse > {p['grace_days']} days"},
         {'component': 'Outcome', 'target_trial': describe_outcome(o),
          'emulation': {'lab_change': f"Result closest to day {o['horizon_days']} within +/- {o.get('window_days')} days minus the last result before time zero",
-                       'admission': 'Hospital stays (all-cause; stays carry no linked diagnosis)', 'ed_visit': 'ED encounters, one per day',
+                       'admission': 'Hospital stays (all-cause; stays carry no linked diagnosis)',
+                       'ed_visit': 'Governed all-source ED event rows; older snapshots without that relation use the all-source patient-day definition',
                        'condition': 'First documented record after time zero; patients with an earlier record are not at risk',
                        'encounter': 'First encounter of the concept after time zero'}.get(o['type'], 'First result past the threshold after time zero '
                                                                                                    '(detected only when tested)')},

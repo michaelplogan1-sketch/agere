@@ -35,6 +35,17 @@ def columns(db, table):
     return {r[1] for r in db.execute(f'PRAGMA table_info({table})')}
 
 
+def usable_measurement_sql(db, alias=''):
+    """Eligibility of the received current measurement version, shared by engines.
+
+    This is the semantic snapshot's version, not reconstruction of an earlier
+    availability state. Missing optional flags retain legacy-source behavior.
+    """
+    cols=columns(db,'measurement');prefix=(alias+'.') if alias else ''
+    return (' AND coalesce('+prefix+'result_current,1)=1' if 'result_current' in cols else '') + (
+        ' AND '+prefix+'excluded_reason IS NULL' if 'excluded_reason' in cols else '')
+
+
 def meta(db):
     try:
         return dict(db.execute('SELECT key, value FROM meta').fetchall())
