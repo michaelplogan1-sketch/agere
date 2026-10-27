@@ -15,7 +15,44 @@ VERSION='academic-reading-cards/1'
 USE_MODES=('cc_by_text_summary','public_reference_summary','link_metadata_only')
 PRIMARY_HOSTS=('hbs.edu','harvard.edu','pressbooks.pub','uctv.tv','nih.gov','hhs.gov',
     'emory.edu','mayo.edu','cuanschutz.edu','texasheart.org','houstonmethodist.org',
-    'partners.org','bannerhealth.com','arizona.edu','uw.edu','acc.org')
+    'partners.org','bannerhealth.com','arizona.edu','uw.edu','acc.org',
+    'heart.org','ahajournals.org','diabetes.org','diabetesjournals.org',
+    'endocrine.org','aace.com','thoracic.org','goldcopd.org','ginasthma.org',
+    'kdigo.org','nice.org.uk','asco.org','uspreventiveservicestaskforce.org')
+
+
+def validate_guideline(card,guide):
+    """Preserve source status and grading without creating executable rules."""
+    if not isinstance(guide,dict):raise ValueError('Structured guideline provenance required')
+    for field in ('family','edition','publisher','jurisdiction','population','review_depth','reuse_status'):
+        if not isinstance(guide.get(field),str) or not guide[field].strip():raise ValueError('Guideline needs '+field)
+    if guide.get('publication_status') not in ('final','draft','superseded'):raise ValueError('Explicit final/draft/superseded status required')
+    if guide.get('document_kind') not in ('guideline','standards','consensus','strategy_report','recommendation_statement'):raise ValueError('Do not conflate guideline and consensus document kinds')
+    if guide['review_depth'] not in ('publisher_metadata','selected_recommendations','indexed_recommendation_extract'):raise ValueError('Declare the actual guideline review depth')
+    urls={c['url'] for c in card['citations']}
+    if guide.get('source_url') not in urls:raise ValueError('Guideline source must retain its primary citation')
+    if date.fromisoformat(guide['checked_on'])!=date.fromisoformat(card['last_verified']):raise ValueError('Guideline verification dates disagree')
+    corrections=guide.get('corrections')
+    if not isinstance(corrections,list):raise ValueError('Correction review must be explicit')
+    states={'not_assessed','identified_content_pending','contents_reviewed'}
+    if guide.get('correction_status') not in states:raise ValueError('Explicit correction review status required')
+    for correction in corrections:
+        if not isinstance(correction,dict) or correction.get('url') not in urls or correction.get('review') not in ('metadata_only','content_reviewed'):raise ValueError('Correction provenance/review missing')
+        if date.fromisoformat(correction['published_on'])>date.fromisoformat(guide['checked_on']):raise ValueError('Future correction cannot have been verified')
+    if corrections and guide['correction_status']=='not_assessed':raise ValueError('Identified corrections cannot be hidden')
+    if guide['correction_status']=='contents_reviewed' and (not corrections or any(c['review']!='content_reviewed' for c in corrections)):raise ValueError('Unreviewed correction contents cannot claim resolution')
+    if guide['correction_status']=='identified_content_pending' and (not corrections or not any(c['review']=='metadata_only' for c in corrections)):raise ValueError('Pending corrections need identified evidence')
+    recommendations=guide.get('recommendations')
+    if not isinstance(recommendations,list):raise ValueError('Reviewed recommendation list required')
+    if recommendations and (guide['publication_status']!='final' or guide['review_depth']=='publisher_metadata'):raise ValueError('Unreviewed/draft recommendations cannot impersonate final clinical evidence')
+    if guide['review_depth']!='publisher_metadata' and not recommendations:raise ValueError('Recommendation review needs source locators')
+    for rec in recommendations:
+        if not all(rec.get(k) for k in ('locator','population','summary','required_patient_data')) or rec.get('url') not in urls:raise ValueError('Recommendation needs applicability and a cited source locator')
+        grade=rec.get('grade',{});scheme=grade.get('scheme');strength=grade.get('strength');evidence=grade.get('evidence')
+        valid=(scheme=='GRADE' and strength in ('strong','conditional') and evidence in ('high','moderate','low','very_low')) or (scheme=='ADA' and strength is None and evidence in ('A','B','C','E')) or (scheme=='USPSTF' and strength in ('A','B','C','D','I') and evidence is None) or (scheme=='AHA_ACC' and strength in ('I','IIa','IIb','III_no_benefit','III_harm') and evidence in ('A','B-R','B-NR','C-LD','C-EO'))
+        if not valid:raise ValueError('Keep recommendation strength and evidence in their original grading scheme')
+    # These cards remain source-reading candidates, regardless of edition.
+    if guide.get('operational_rule_approved') is not False:raise ValueError('Reading provenance is not clinical rule approval')
 
 
 def primary_url(value):
@@ -36,6 +73,9 @@ def validate(cards):
             raise ValueError('Reading cards must not impersonate treatment approval, full text or watched transcripts')
         if 'learning' in card:raise ValueError('Academic background cannot impersonate an approved operational fact lesson')
         if not scope.get('analytics_objectives') or not scope.get('topics'):raise ValueError('Reading needs topics and concrete analytics learning objectives')
+        if 'guideline' in scope:
+            validate_guideline(card,scope['guideline'])
+            if card['facts'].get('guideline_provenance')!=scope['guideline']:raise ValueError('Retrieved facts must preserve guideline provenance')
         lecture=scope.get('lecture')
         for citation in card['citations']:
             # A hospital's own video page is also primary metadata. Retain the
@@ -78,6 +118,7 @@ def build(manifest,output):
     receipt={'schema':VERSION,'entries':len(loaded),'topics':sorted({topic for c in cards for topic in c['education']['topics']}),
         'input':str(manifest),'manifest_identity':digest(spec),'corpus_digest':K.corpus_digest(output),
         'default_knowledge_directory_changed':False,'provider_calls':0,'model_weights_trained_on_cards':False,'clinical_qualification':False,
+        'guideline_entries':sum('guideline' in c['education'] for c in cards),
         'use':'Existing vbc_knowledge.answer(..., directory=explicit_library) supports cited offline retrieval; clinical rules need separate reviewed evidence and applicability.'}
     (output/'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n');return receipt
 

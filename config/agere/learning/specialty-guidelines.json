@@ -1,0 +1,2265 @@
+{
+  "schema": "academic-reading-cards/1",
+  "cards": [
+    {
+      "id": "guideline-aha-acc-hypertension-2025",
+      "topic": "evidence",
+      "title": "2025 AHA/ACC adult high blood pressure guideline",
+      "questions": [
+        "Which source and edition support 2025 AHA/ACC adult high blood pressure guideline?",
+        "What is the review and publication status of 2025 AHA/ACC adult high blood pressure guideline?"
+      ],
+      "summary": "2025 AHA/ACC adult high blood pressure guideline. The linked DOI CIR.0000000000001356 identifies this hypertension guideline. Three published corrections were identified; their changed passages have not been reviewed. Bind measurement method, clinical population, edition and correction status before interpreting a blood-pressure care gap. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The linked DOI CIR.0000000000001356 identifies this hypertension guideline. Three published corrections were identified; their changed passages have not been reviewed.",
+        "authored_analytics_exercise": "Bind measurement method, clinical population, edition and correction status before interpreting a blood-pressure care gap.",
+        "guideline_provenance": {
+          "family": "aha-acc-hypertension-2025",
+          "edition": "2025",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "source_url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with high blood pressure; special-population applicability requires full recommendation review",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "identified_content_pending",
+          "corrections": [
+            {
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41212942/",
+              "published_on": "2025-11-11",
+              "doi": "10.1161/CIR.0000000000001396",
+              "review": "metadata_only"
+            },
+            {
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41973840/",
+              "published_on": "2026-04-14",
+              "doi": "10.1161/CIR.0000000000001436",
+              "review": "metadata_only"
+            },
+            {
+              "url": "https://pubmed.ncbi.nlm.nih.gov/42189957/",
+              "published_on": "2026-05-26",
+              "doi": "10.1161/CIR.0000000000001448",
+              "review": "metadata_only"
+            }
+          ],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2017 ACC/AHA high blood pressure guideline"
+          ]
+        }
+      },
+      "entities": [
+        "2025 AHA/ACC adult high blood pressure guideline",
+        "American Heart Association / American College of Cardiology",
+        "hypertension",
+        "cardiovascular_risk",
+        "home_monitoring"
+      ],
+      "citations": [
+        {
+          "url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline",
+          "title": "2025 AHA/ACC adult high blood pressure guideline",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://www.ahajournals.org/doi/pdf/10.1161/CIR.0000000000001356",
+          "title": "Mike-supplied original PDF; direct access returned403",
+          "publisher": "AHA",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        },
+        {
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41212942/",
+          "title": "Published correction metadata",
+          "publisher": "US National Library of Medicine",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
+        },
+        {
+          "url": "https://pubmed.ncbi.nlm.nih.gov/41973840/",
+          "title": "Published correction metadata",
+          "publisher": "US National Library of Medicine",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
+        },
+        {
+          "url": "https://pubmed.ncbi.nlm.nih.gov/42189957/",
+          "title": "Published correction metadata",
+          "publisher": "US National Library of Medicine",
+          "retrieved": "2026-10-27",
+          "source_type": "government"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hypertension",
+          "cardiovascular_risk",
+          "home_monitoring"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Bind measurement method, clinical population, edition and correction status before interpreting a blood-pressure care gap."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "aha-acc-hypertension-2025",
+          "edition": "2025",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "source_url": "https://professional.heart.org/en/science-news/2025-high-blood-pressure-guideline",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with high blood pressure; special-population applicability requires full recommendation review",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "identified_content_pending",
+          "corrections": [
+            {
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41212942/",
+              "published_on": "2025-11-11",
+              "doi": "10.1161/CIR.0000000000001396",
+              "review": "metadata_only"
+            },
+            {
+              "url": "https://pubmed.ncbi.nlm.nih.gov/41973840/",
+              "published_on": "2026-04-14",
+              "doi": "10.1161/CIR.0000000000001436",
+              "review": "metadata_only"
+            },
+            {
+              "url": "https://pubmed.ncbi.nlm.nih.gov/42189957/",
+              "published_on": "2026-05-26",
+              "doi": "10.1161/CIR.0000000000001448",
+              "review": "metadata_only"
+            }
+          ],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2017 ACC/AHA high blood pressure guideline"
+          ]
+        }
+      }
+    },
+    {
+      "id": "guideline-aha-acc-hfsa-hf-2022",
+      "topic": "evidence",
+      "title": "2022 AHA/ACC/HFSA heart failure guideline",
+      "questions": [
+        "Which source and edition support 2022 AHA/ACC/HFSA heart failure guideline?",
+        "What is the review and publication status of 2022 AHA/ACC/HFSA heart failure guideline?"
+      ],
+      "summary": "2022 AHA/ACC/HFSA heart failure guideline. The publisher overview identifies four medication classes for HFrEF and multidisciplinary advanced-HF care. Full recommendation and dose-table review is pending. Link dated EF, regimen, recorded tolerability, laboratory safety, patient goals and care-team evidence before assessing a medication or dose gap. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The publisher overview identifies four medication classes for HFrEF and multidisciplinary advanced-HF care. Full recommendation and dose-table review is pending.",
+        "authored_analytics_exercise": "Link dated EF, regimen, recorded tolerability, laboratory safety, patient goals and care-team evidence before assessing a medication or dose gap.",
+        "guideline_provenance": {
+          "family": "aha-acc-hfsa-hf-2022",
+          "edition": "2022",
+          "publisher": "American Heart Association / American College of Cardiology / HFSA",
+          "source_url": "https://professional.heart.org/en/science-news/2022-guideline-for-the-management-of-heart-failure",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People at risk for or living with HF; ejection-fraction phenotype matters",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "2022 AHA/ACC/HFSA heart failure guideline",
+        "American Heart Association / American College of Cardiology / HFSA",
+        "heart_failure",
+        "gdmt",
+        "care_teams"
+      ],
+      "citations": [
+        {
+          "url": "https://professional.heart.org/en/science-news/2022-guideline-for-the-management-of-heart-failure",
+          "title": "2022 AHA/ACC/HFSA heart failure guideline",
+          "publisher": "American Heart Association / American College of Cardiology / HFSA",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "gdmt",
+          "care_teams"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://professional.heart.org/en/science-news/2022-guideline-for-the-management-of-heart-failure",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Link dated EF, regimen, recorded tolerability, laboratory safety, patient goals and care-team evidence before assessing a medication or dose gap."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "aha-acc-hfsa-hf-2022",
+          "edition": "2022",
+          "publisher": "American Heart Association / American College of Cardiology / HFSA",
+          "source_url": "https://professional.heart.org/en/science-news/2022-guideline-for-the-management-of-heart-failure",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People at risk for or living with HF; ejection-fraction phenotype matters",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-acc-hfref-ecdp-2024",
+      "topic": "evidence",
+      "title": "2024 ACC HFrEF treatment expert consensus pathway",
+      "questions": [
+        "Which source and edition support 2024 ACC HFrEF treatment expert consensus pathway?",
+        "What is the review and publication status of 2024 ACC HFrEF treatment expert consensus pathway?"
+      ],
+      "summary": "2024 ACC HFrEF treatment expert consensus pathway. This is an expert consensus decision pathway, complementary to the formal heart-failure guideline. It must retain its document type when used. Assess treatment initiation and optimization with documented barriers; a below-target dose alone does not establish inappropriate care. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "This is an expert consensus decision pathway, complementary to the formal heart-failure guideline. It must retain its document type when used.",
+        "authored_analytics_exercise": "Assess treatment initiation and optimization with documented barriers; a below-target dose alone does not establish inappropriate care.",
+        "guideline_provenance": {
+          "family": "acc-hfref-ecdp-2024",
+          "edition": "2024",
+          "publisher": "American College of Cardiology",
+          "source_url": "https://www.acc.org/Guidelines/Guidelines/2024/03/08/15/40/Treatment-of-Heart-Failure-With-Reduced-Ejection-Fraction-ECDP",
+          "document_kind": "consensus",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with HFrEF",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "2024 ACC HFrEF treatment expert consensus pathway",
+        "American College of Cardiology",
+        "heart_failure",
+        "gdmt",
+        "titration"
+      ],
+      "citations": [
+        {
+          "url": "https://www.acc.org/Guidelines/Guidelines/2024/03/08/15/40/Treatment-of-Heart-Failure-With-Reduced-Ejection-Fraction-ECDP",
+          "title": "2024 ACC HFrEF treatment expert consensus pathway",
+          "publisher": "American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "gdmt",
+          "titration"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://www.acc.org/Guidelines/Guidelines/2024/03/08/15/40/Treatment-of-Heart-Failure-With-Reduced-Ejection-Fraction-ECDP",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Assess treatment initiation and optimization with documented barriers; a below-target dose alone does not establish inappropriate care."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "acc-hfref-ecdp-2024",
+          "edition": "2024",
+          "publisher": "American College of Cardiology",
+          "source_url": "https://www.acc.org/Guidelines/Guidelines/2024/03/08/15/40/Treatment-of-Heart-Failure-With-Reduced-Ejection-Fraction-ECDP",
+          "document_kind": "consensus",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with HFrEF",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-aha-acc-dyslipidemia-2026",
+      "topic": "evidence",
+      "title": "2026 ACC/AHA dyslipidemia guideline",
+      "questions": [
+        "Which source and edition support 2026 ACC/AHA dyslipidemia guideline?",
+        "What is the review and publication status of 2026 ACC/AHA dyslipidemia guideline?"
+      ],
+      "summary": "2026 ACC/AHA dyslipidemia guideline. The 2026 publication replaces the 2018 cholesterol guideline. Specific risk thresholds and treatment tables have not been extracted. Separate primary and secondary prevention and bind lipid measurements and risk inputs to the applicable edition. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The 2026 publication replaces the 2018 cholesterol guideline. Specific risk thresholds and treatment tables have not been extracted.",
+        "authored_analytics_exercise": "Separate primary and secondary prevention and bind lipid measurements and risk inputs to the applicable edition.",
+        "guideline_provenance": {
+          "family": "aha-acc-dyslipidemia-2026",
+          "edition": "2026",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "source_url": "https://professional.heart.org/en/guidelines-statements/2026-accahaaacvprabcacpmadaagsaphaaspcnlapcna-guideline-on-the-management-ofcir0000000000001423",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People evaluated for lipid management and ASCVD prevention",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2018 ACC/AHA cholesterol guideline"
+          ]
+        }
+      },
+      "entities": [
+        "2026 ACC/AHA dyslipidemia guideline",
+        "American Heart Association / American College of Cardiology",
+        "hyperlipidemia",
+        "ascvd",
+        "prevention"
+      ],
+      "citations": [
+        {
+          "url": "https://professional.heart.org/en/guidelines-statements/2026-accahaaacvprabcacpmadaagsaphaaspcnlapcna-guideline-on-the-management-ofcir0000000000001423",
+          "title": "2026 ACC/AHA dyslipidemia guideline",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hyperlipidemia",
+          "ascvd",
+          "prevention"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://professional.heart.org/en/guidelines-statements/2026-accahaaacvprabcacpmadaagsaphaaspcnlapcna-guideline-on-the-management-ofcir0000000000001423",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Separate primary and secondary prevention and bind lipid measurements and risk inputs to the applicable edition."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "aha-acc-dyslipidemia-2026",
+          "edition": "2026",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "source_url": "https://professional.heart.org/en/guidelines-statements/2026-accahaaacvprabcacpmadaagsaphaaspcnlapcna-guideline-on-the-management-ofcir0000000000001423",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People evaluated for lipid management and ASCVD prevention",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2018 ACC/AHA cholesterol guideline"
+          ]
+        }
+      }
+    },
+    {
+      "id": "guideline-aha-acc-ccd-2023",
+      "topic": "evidence",
+      "title": "2023 AHA/ACC chronic coronary disease guideline",
+      "questions": [
+        "Which source and edition support 2023 AHA/ACC chronic coronary disease guideline?",
+        "What is the review and publication status of 2023 AHA/ACC chronic coronary disease guideline?"
+      ],
+      "summary": "2023 AHA/ACC chronic coronary disease guideline. The publisher hub links the formal guideline and implementation resources for chronic coronary disease. This record is a source locator rather than a completed medication-rule review. Distinguish chronic coronary disease from an acute coronary syndrome and retain treatment indications, symptoms and patient preferences. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The publisher hub links the formal guideline and implementation resources for chronic coronary disease. This record is a source locator rather than a completed medication-rule review.",
+        "authored_analytics_exercise": "Distinguish chronic coronary disease from an acute coronary syndrome and retain treatment indications, symptoms and patient preferences.",
+        "guideline_provenance": {
+          "family": "aha-acc-ccd-2023",
+          "edition": "2023",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "source_url": "https://professional.heart.org/en/guidelines-statements/2023-ahaaccaccpaspcnlapcna-guideline-for-the-management-of-patients-withcir0000000000001168",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with chronic coronary disease",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "2023 AHA/ACC chronic coronary disease guideline",
+        "American Heart Association / American College of Cardiology",
+        "coronary_artery_disease",
+        "secondary_prevention",
+        "care_teams"
+      ],
+      "citations": [
+        {
+          "url": "https://professional.heart.org/en/guidelines-statements/2023-ahaaccaccpaspcnlapcna-guideline-for-the-management-of-patients-withcir0000000000001168",
+          "title": "2023 AHA/ACC chronic coronary disease guideline",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "coronary_artery_disease",
+          "secondary_prevention",
+          "care_teams"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://professional.heart.org/en/guidelines-statements/2023-ahaaccaccpaspcnlapcna-guideline-for-the-management-of-patients-withcir0000000000001168",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Distinguish chronic coronary disease from an acute coronary syndrome and retain treatment indications, symptoms and patient preferences."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "aha-acc-ccd-2023",
+          "edition": "2023",
+          "publisher": "American Heart Association / American College of Cardiology",
+          "source_url": "https://professional.heart.org/en/guidelines-statements/2023-ahaaccaccpaspcnlapcna-guideline-for-the-management-of-patients-withcir0000000000001168",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with chronic coronary disease",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-aha-acc-ada-asn-ckm-2026",
+      "topic": "evidence",
+      "title": "2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline",
+      "questions": [
+        "Which source and edition support 2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline?",
+        "What is the review and publication status of 2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline?"
+      ],
+      "summary": "2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline. Published June9,2026, this guideline links metabolic, kidney and cardiovascular health and replaces the 2013 overweight/obesity guideline. Recommendation-level review remains pending. Build a joined care-cycle view across obesity, diabetes, CKD and cardiovascular disease rather than counting overlapping patients as independent opportunities. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "Published June9,2026, this guideline links metabolic, kidney and cardiovascular health and replaces the 2013 overweight/obesity guideline. Recommendation-level review remains pending.",
+        "authored_analytics_exercise": "Build a joined care-cycle view across obesity, diabetes, CKD and cardiovascular disease rather than counting overlapping patients as independent opportunities.",
+        "guideline_provenance": {
+          "family": "aha-acc-ada-asn-ckm-2026",
+          "edition": "2026",
+          "publisher": "American Heart Association / American College of Cardiology / ADA / ASN",
+          "source_url": "https://professional.heart.org/en/science-news/2026-guideline-for-the-prevention-detection-evaluation-and-management-of-ckm-syndrome",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Patients across the cardiovascular-kidney-metabolic syndrome spectrum",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2013 AHA/ACC/TOS overweight and obesity guideline"
+          ]
+        }
+      },
+      "entities": [
+        "2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline",
+        "American Heart Association / American College of Cardiology / ADA / ASN",
+        "obesity",
+        "diabetes",
+        "ckd",
+        "cardiovascular_risk"
+      ],
+      "citations": [
+        {
+          "url": "https://professional.heart.org/en/science-news/2026-guideline-for-the-prevention-detection-evaluation-and-management-of-ckm-syndrome",
+          "title": "2026 AHA/ACC/ADA/ASN cardiovascular-kidney-metabolic syndrome guideline",
+          "publisher": "American Heart Association / American College of Cardiology / ADA / ASN",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "obesity",
+          "diabetes",
+          "ckd",
+          "cardiovascular_risk"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://professional.heart.org/en/science-news/2026-guideline-for-the-prevention-detection-evaluation-and-management-of-ckm-syndrome",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Build a joined care-cycle view across obesity, diabetes, CKD and cardiovascular disease rather than counting overlapping patients as independent opportunities."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "aha-acc-ada-asn-ckm-2026",
+          "edition": "2026",
+          "publisher": "American Heart Association / American College of Cardiology / ADA / ASN",
+          "source_url": "https://professional.heart.org/en/science-news/2026-guideline-for-the-prevention-detection-evaluation-and-management-of-ckm-syndrome",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Patients across the cardiovascular-kidney-metabolic syndrome spectrum",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2013 AHA/ACC/TOS overweight and obesity guideline"
+          ]
+        }
+      }
+    },
+    {
+      "id": "guideline-ada-standards-2026",
+      "topic": "evidence",
+      "title": "ADA Standards of Care in Diabetes 2026",
+      "questions": [
+        "Which source and edition support ADA Standards of Care in Diabetes 2026?",
+        "What is the review and publication status of ADA Standards of Care in Diabetes 2026?"
+      ],
+      "summary": "ADA Standards of Care in Diabetes 2026. The official annual/living standards include population care, diagnosis, prevention, glycemic goals, technology, obesity, pharmacotherapy, cardiovascular and kidney care, and older adults. Chapter recommendations need their own locators. Use chapter1 for population/access context,3 for prediabetes prevention,6 for hypoglycemia,8 for weight management,9 for medicines,10 for cardiovascular care and11 for kidney care. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The official annual/living standards include population care, diagnosis, prevention, glycemic goals, technology, obesity, pharmacotherapy, cardiovascular and kidney care, and older adults. Chapter recommendations need their own locators.",
+        "authored_analytics_exercise": "Use chapter1 for population/access context,3 for prediabetes prevention,6 for hypoglycemia,8 for weight management,9 for medicines,10 for cardiovascular care and11 for kidney care.",
+        "guideline_provenance": {
+          "family": "ada-standards-2026",
+          "edition": "2026",
+          "publisher": "American Diabetes Association",
+          "source_url": "https://professional.diabetes.org/standards-of-care",
+          "document_kind": "standards",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with diabetes and defined at-risk groups; each chapter has its own population",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Official hub reviewed; slide commercial reuse requires ADA permission; full-text model-training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "ADA Standards of Care in Diabetes 2026",
+        "American Diabetes Association",
+        "diabetes",
+        "prediabetes",
+        "obesity",
+        "hypoglycemia",
+        "sdoh",
+        "ckd",
+        "cardiovascular_risk"
+      ],
+      "citations": [
+        {
+          "url": "https://professional.diabetes.org/standards-of-care",
+          "title": "ADA Standards of Care in Diabetes 2026",
+          "publisher": "American Diabetes Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes",
+          "prediabetes",
+          "obesity",
+          "hypoglycemia",
+          "sdoh",
+          "ckd",
+          "cardiovascular_risk"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Official hub reviewed; slide commercial reuse requires ADA permission; full-text model-training permission not established",
+        "license_evidence_url": "https://professional.diabetes.org/standards-of-care",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Use chapter1 for population/access context,3 for prediabetes prevention,6 for hypoglycemia,8 for weight management,9 for medicines,10 for cardiovascular care and11 for kidney care."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "ada-standards-2026",
+          "edition": "2026",
+          "publisher": "American Diabetes Association",
+          "source_url": "https://professional.diabetes.org/standards-of-care",
+          "document_kind": "standards",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with diabetes and defined at-risk groups; each chapter has its own population",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Official hub reviewed; slide commercial reuse requires ADA permission; full-text model-training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-ada-pharmacotherapy-2026",
+      "topic": "evidence",
+      "title": "ADA 2026 chapter9 pharmacologic approaches to glycemic treatment",
+      "questions": [
+        "Which source and edition support ADA 2026 chapter9 pharmacologic approaches to glycemic treatment?",
+        "What is the review and publication status of ADA 2026 chapter9 pharmacologic approaches to glycemic treatment?"
+      ],
+      "summary": "ADA 2026 chapter9 pharmacologic approaches to glycemic treatment. Recommendation9.8 supports an SGLT2 inhibitor for glycemic management and prevention of HF hospitalization irrespective of A1C, evidence gradeA. Only this indexed primary-source excerpt was reviewed; direct full-page access returned403. For a patient whose A1C is at goal, still assess HF indication, current medicines, kidney function, safety, preferences and access; the A1C alone does not settle suitability. Review scope: indexed recommendation extract; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "Recommendation9.8 supports an SGLT2 inhibitor for glycemic management and prevention of HF hospitalization irrespective of A1C, evidence gradeA. Only this indexed primary-source excerpt was reviewed; direct full-page access returned403.",
+        "authored_analytics_exercise": "For a patient whose A1C is at goal, still assess HF indication, current medicines, kidney function, safety, preferences and access; the A1C alone does not settle suitability.",
+        "guideline_provenance": {
+          "family": "ada-pharmacotherapy-2026",
+          "edition": "2026 chapter9",
+          "publisher": "American Diabetes Association",
+          "source_url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+          "document_kind": "standards",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
+          "checked_on": "2026-10-27",
+          "review_depth": "indexed_recommendation_extract",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "9.8",
+              "url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+              "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
+              "summary": "A1C at goal does not by itself remove the HF-related reason to consider an SGLT2 inhibitor.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "A"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "HF phenotype",
+                "current medications",
+                "renal function",
+                "contraindications and adverse effects",
+                "preferences and affordability"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "ADA 2026 chapter9 pharmacologic approaches to glycemic treatment",
+        "American Diabetes Association",
+        "diabetes",
+        "heart_failure",
+        "gdmt"
+      ],
+      "citations": [
+        {
+          "url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+          "title": "ADA 2026 chapter9 pharmacologic approaches to glycemic treatment",
+          "publisher": "American Diabetes Association",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes",
+          "heart_failure",
+          "gdmt"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "For a patient whose A1C is at goal, still assess HF indication, current medicines, kidney function, safety, preferences and access; the A1C alone does not settle suitability."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "ada-pharmacotherapy-2026",
+          "edition": "2026 chapter9",
+          "publisher": "American Diabetes Association",
+          "source_url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+          "document_kind": "standards",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
+          "checked_on": "2026-10-27",
+          "review_depth": "indexed_recommendation_extract",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "9.8",
+              "url": "https://diabetesjournals.org/care/article/49/Supplement_1/S183/163934/9-Pharmacologic-Approaches-to-Glycemic-Treatment",
+              "population": "Adults with type2 diabetes and HF, reduced or preserved EF",
+              "summary": "A1C at goal does not by itself remove the HF-related reason to consider an SGLT2 inhibitor.",
+              "grade": {
+                "scheme": "ADA",
+                "strength": null,
+                "evidence": "A"
+              },
+              "required_patient_data": [
+                "diabetes type",
+                "HF phenotype",
+                "current medications",
+                "renal function",
+                "contraindications and adverse effects",
+                "preferences and affordability"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-endocrine-aldosteronism-2025",
+      "topic": "evidence",
+      "title": "Endocrine Society primary aldosteronism guideline 2025",
+      "questions": [
+        "Which source and edition support Endocrine Society primary aldosteronism guideline 2025?",
+        "What is the review and publication status of Endocrine Society primary aldosteronism guideline 2025?"
+      ],
+      "summary": "Endocrine Society primary aldosteronism guideline 2025. Recommendation1 conditionally suggests PA screening across hypertension, with low-certainty evidence. Implementation depends on resources and expertise. Recommendation3 uses aldosterone and renin; potassium helps interpret aldosterone. Preserve conditional strength, testing context and medication interference. Normal potassium alone must not be treated as proof that PA screening is unnecessary. Review scope: selected recommendations; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "Recommendation1 conditionally suggests PA screening across hypertension, with low-certainty evidence. Implementation depends on resources and expertise. Recommendation3 uses aldosterone and renin; potassium helps interpret aldosterone.",
+        "authored_analytics_exercise": "Preserve conditional strength, testing context and medication interference. Normal potassium alone must not be treated as proof that PA screening is unnecessary.",
+        "guideline_provenance": {
+          "family": "endocrine-aldosteronism-2025",
+          "edition": "2025",
+          "publisher": "Endocrine Society",
+          "source_url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with hypertension; feasibility and interpretation depend on context",
+          "checked_on": "2026-10-27",
+          "review_depth": "selected_recommendations",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation1 and technical remarks",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+              "population": "People with hypertension",
+              "summary": "Broader screening is a conditional suggestion, with feasibility determined by local context.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "hypertension status",
+                "available testing resources",
+                "local expertise",
+                "patient context"
+              ]
+            },
+            {
+              "locator": "Recommendation3 and technical remarks",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+              "population": "People with hypertension being evaluated for PA",
+              "summary": "Use aldosterone and renin with contextual interpretation; potassium alone is not the screening test.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "aldosterone assay",
+                "renin method",
+                "potassium",
+                "medications",
+                "renal function",
+                "sample conditions"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2016 Endocrine Society primary aldosteronism guideline"
+          ]
+        }
+      },
+      "entities": [
+        "Endocrine Society primary aldosteronism guideline 2025",
+        "Endocrine Society",
+        "hypertension",
+        "endocrinology",
+        "primary_aldosteronism"
+      ],
+      "citations": [
+        {
+          "url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+          "title": "Endocrine Society primary aldosteronism guideline 2025",
+          "publisher": "Endocrine Society",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hypertension",
+          "endocrinology",
+          "primary_aldosteronism"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Preserve conditional strength, testing context and medication interference. Normal potassium alone must not be treated as proof that PA screening is unnecessary."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "endocrine-aldosteronism-2025",
+          "edition": "2025",
+          "publisher": "Endocrine Society",
+          "source_url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "People with hypertension; feasibility and interpretation depend on context",
+          "checked_on": "2026-10-27",
+          "review_depth": "selected_recommendations",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation1 and technical remarks",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+              "population": "People with hypertension",
+              "summary": "Broader screening is a conditional suggestion, with feasibility determined by local context.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "hypertension status",
+                "available testing resources",
+                "local expertise",
+                "patient context"
+              ]
+            },
+            {
+              "locator": "Recommendation3 and technical remarks",
+              "url": "https://www.endocrine.org/clinical-practice-guidelines/primary-aldosteronism-2",
+              "population": "People with hypertension being evaluated for PA",
+              "summary": "Use aldosterone and renin with contextual interpretation; potassium alone is not the screening test.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "conditional",
+                "evidence": "low"
+              },
+              "required_patient_data": [
+                "aldosterone assay",
+                "renin method",
+                "potassium",
+                "medications",
+                "renal function",
+                "sample conditions"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": [
+            "2016 Endocrine Society primary aldosteronism guideline"
+          ]
+        }
+      }
+    },
+    {
+      "id": "guideline-endocrine-hypoglycemia-2022-2023",
+      "topic": "evidence",
+      "title": "Endocrine Society high-risk hypoglycemia guideline",
+      "questions": [
+        "Which source and edition support Endocrine Society high-risk hypoglycemia guideline?",
+        "What is the review and publication status of Endocrine Society high-risk hypoglycemia guideline?"
+      ],
+      "summary": "Endocrine Society high-risk hypoglycemia guideline. The official page distinguishes the December2022 online release from March2023 journal publication. It provides guideline recommendations and supporting resources for high-risk hypoglycemia. Retain medication exposure, prior hypoglycemia, monitoring access and education needs when building a diabetes safety review. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The official page distinguishes the December2022 online release from March2023 journal publication. It provides guideline recommendations and supporting resources for high-risk hypoglycemia.",
+        "authored_analytics_exercise": "Retain medication exposure, prior hypoglycemia, monitoring access and education needs when building a diabetes safety review.",
+        "guideline_provenance": {
+          "family": "endocrine-hypoglycemia-2022-2023",
+          "edition": "Online December2022; JCEM March2023",
+          "publisher": "Endocrine Society",
+          "source_url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Individuals with diabetes at high risk of hypoglycemia",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "Endocrine Society high-risk hypoglycemia guideline",
+        "Endocrine Society",
+        "diabetes",
+        "hypoglycemia",
+        "diabetes_technology"
+      ],
+      "citations": [
+        {
+          "url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+          "title": "Endocrine Society high-risk hypoglycemia guideline",
+          "publisher": "Endocrine Society",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes",
+          "hypoglycemia",
+          "diabetes_technology"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Retain medication exposure, prior hypoglycemia, monitoring access and education needs when building a diabetes safety review."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "endocrine-hypoglycemia-2022-2023",
+          "edition": "Online December2022; JCEM March2023",
+          "publisher": "Endocrine Society",
+          "source_url": "https://www.endocrine.org/clinical-practice-guidelines/high-risk-for-hypoglycemia",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Individuals with diabetes at high risk of hypoglycemia",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-aace-obesity-2025",
+      "topic": "evidence",
+      "title": "AACE obesity/adiposity-based chronic disease algorithm 2025",
+      "questions": [
+        "Which source and edition support AACE obesity/adiposity-based chronic disease algorithm 2025?",
+        "What is the review and publication status of AACE obesity/adiposity-based chronic disease algorithm 2025?"
+      ],
+      "summary": "AACE obesity/adiposity-based chronic disease algorithm 2025. This consensus update emphasizes complications and person-centered care. Its document type and clinical purpose should remain visible rather than being treated as a generic weight-loss target. Connect symptoms, complications, patient goals and access to weight-management planning and resource analysis. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "This consensus update emphasizes complications and person-centered care. Its document type and clinical purpose should remain visible rather than being treated as a generic weight-loss target.",
+        "authored_analytics_exercise": "Connect symptoms, complications, patient goals and access to weight-management planning and resource analysis.",
+        "guideline_provenance": {
+          "family": "aace-obesity-2025",
+          "edition": "2025",
+          "publisher": "American Association of Clinical Endocrinology",
+          "source_url": "https://pro.aace.com/clinical-guidance/aace-consensus-statement-algorithm-evaluation-and-treatment-adults",
+          "document_kind": "consensus",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with obesity/adiposity-based chronic disease",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "AACE obesity/adiposity-based chronic disease algorithm 2025",
+        "American Association of Clinical Endocrinology",
+        "obesity",
+        "complications",
+        "patient_goals"
+      ],
+      "citations": [
+        {
+          "url": "https://pro.aace.com/clinical-guidance/aace-consensus-statement-algorithm-evaluation-and-treatment-adults",
+          "title": "AACE obesity/adiposity-based chronic disease algorithm 2025",
+          "publisher": "American Association of Clinical Endocrinology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "obesity",
+          "complications",
+          "patient_goals"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://pro.aace.com/clinical-guidance/aace-consensus-statement-algorithm-evaluation-and-treatment-adults",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Connect symptoms, complications, patient goals and access to weight-management planning and resource analysis."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "aace-obesity-2025",
+          "edition": "2025",
+          "publisher": "American Association of Clinical Endocrinology",
+          "source_url": "https://pro.aace.com/clinical-guidance/aace-consensus-statement-algorithm-evaluation-and-treatment-adults",
+          "document_kind": "consensus",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with obesity/adiposity-based chronic disease",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-gold-copd-2026",
+      "topic": "evidence",
+      "title": "GOLD COPD strategy report and pocket guide 2026",
+      "questions": [
+        "Which source and edition support GOLD COPD strategy report and pocket guide 2026?",
+        "What is the review and publication status of GOLD COPD strategy report and pocket guide 2026?"
+      ],
+      "summary": "GOLD COPD strategy report and pocket guide 2026. The official hub provides the 2026 report, pocket guide, change summary and teaching slides. This record locates the current strategy edition; specific treatment algorithms are not extracted. Join spirometry, symptoms, exacerbation history, inhaler exposure and documented barriers before assessing COPD care. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The official hub provides the 2026 report, pocket guide, change summary and teaching slides. This record locates the current strategy edition; specific treatment algorithms are not extracted.",
+        "authored_analytics_exercise": "Join spirometry, symptoms, exacerbation history, inhaler exposure and documented barriers before assessing COPD care.",
+        "guideline_provenance": {
+          "family": "gold-copd-2026",
+          "edition": "2026",
+          "publisher": "Global Initiative for Chronic Obstructive Lung Disease",
+          "source_url": "https://goldcopd.org/2026-gold-report-and-pocket-guide/",
+          "document_kind": "strategy_report",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People evaluated for COPD; diagnosis and clinical subgroup matter",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Link metadata only; teaching slides explicitly noncommercial education; commercial full-text training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "GOLD COPD strategy report and pocket guide 2026",
+        "Global Initiative for Chronic Obstructive Lung Disease",
+        "copd",
+        "exacerbations",
+        "pulmonary"
+      ],
+      "citations": [
+        {
+          "url": "https://goldcopd.org/2026-gold-report-and-pocket-guide/",
+          "title": "GOLD COPD strategy report and pocket guide 2026",
+          "publisher": "Global Initiative for Chronic Obstructive Lung Disease",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "copd",
+          "exacerbations",
+          "pulmonary"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Link metadata only; teaching slides explicitly noncommercial education; commercial full-text training permission not established",
+        "license_evidence_url": "https://goldcopd.org/2026-gold-report-and-pocket-guide/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Join spirometry, symptoms, exacerbation history, inhaler exposure and documented barriers before assessing COPD care."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "gold-copd-2026",
+          "edition": "2026",
+          "publisher": "Global Initiative for Chronic Obstructive Lung Disease",
+          "source_url": "https://goldcopd.org/2026-gold-report-and-pocket-guide/",
+          "document_kind": "strategy_report",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People evaluated for COPD; diagnosis and clinical subgroup matter",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Link metadata only; teaching slides explicitly noncommercial education; commercial full-text training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-gina-asthma-2026",
+      "topic": "evidence",
+      "title": "GINA asthma strategy report 2026",
+      "questions": [
+        "Which source and edition support GINA asthma strategy report 2026?",
+        "What is the review and publication status of GINA asthma strategy report 2026?"
+      ],
+      "summary": "GINA asthma strategy report 2026. The official page identifies the 2026 strategy report and October23 executive-summary release. GINA requires approval for commercial use; this intake retains source metadata only. Preserve asthma diagnosis, age, symptom control, exacerbations, inhaler technique, adherence and access as separate evidence fields. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The official page identifies the 2026 strategy report and October23 executive-summary release. GINA requires approval for commercial use; this intake retains source metadata only.",
+        "authored_analytics_exercise": "Preserve asthma diagnosis, age, symptom control, exacerbations, inhaler technique, adherence and access as separate evidence fields.",
+        "guideline_provenance": {
+          "family": "gina-asthma-2026",
+          "edition": "2026",
+          "publisher": "Global Initiative for Asthma",
+          "source_url": "https://ginasthma.org/2026-gina-strategy-report/",
+          "document_kind": "strategy_report",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People with asthma; age and severity-specific applicability requires report review",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Link metadata only; GINA explicitly requires approval for commercial/promotional use; no copied report or model-training use",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "GINA asthma strategy report 2026",
+        "Global Initiative for Asthma",
+        "asthma",
+        "exacerbations",
+        "pulmonary"
+      ],
+      "citations": [
+        {
+          "url": "https://ginasthma.org/2026-gina-strategy-report/",
+          "title": "GINA asthma strategy report 2026",
+          "publisher": "Global Initiative for Asthma",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "asthma",
+          "exacerbations",
+          "pulmonary"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Link metadata only; GINA explicitly requires approval for commercial/promotional use; no copied report or model-training use",
+        "license_evidence_url": "https://ginasthma.org/2026-gina-strategy-report/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Preserve asthma diagnosis, age, symptom control, exacerbations, inhaler technique, adherence and access as separate evidence fields."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "gina-asthma-2026",
+          "edition": "2026",
+          "publisher": "Global Initiative for Asthma",
+          "source_url": "https://ginasthma.org/2026-gina-strategy-report/",
+          "document_kind": "strategy_report",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People with asthma; age and severity-specific applicability requires report review",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Link metadata only; GINA explicitly requires approval for commercial/promotional use; no copied report or model-training use",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-ats-copd-pharmacology-2020",
+      "topic": "evidence",
+      "title": "ATS pharmacologic management of COPD guideline 2020",
+      "questions": [
+        "Which source and edition support ATS pharmacologic management of COPD guideline 2020?",
+        "What is the review and publication status of ATS pharmacologic management of COPD guideline 2020?"
+      ],
+      "summary": "ATS pharmacologic management of COPD guideline 2020. The official ATS implementation hub links the 2020 pharmacologic guideline, full text, summary and supporting material. It is distinct from the annual GOLD strategy report. Compare bronchodilator and inhaled-steroid questions against the actual recommendation population, keeping exacerbation history and potential harms visible. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The official ATS implementation hub links the 2020 pharmacologic guideline, full text, summary and supporting material. It is distinct from the annual GOLD strategy report.",
+        "authored_analytics_exercise": "Compare bronchodilator and inhaled-steroid questions against the actual recommendation population, keeping exacerbation history and potential harms visible.",
+        "guideline_provenance": {
+          "family": "ats-copd-pharmacology-2020",
+          "edition": "2020",
+          "publisher": "American Thoracic Society",
+          "source_url": "https://www.thoracic.org/statements/guideline-implementation-tools/pharmacologic-mgmt-of-copd.php",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with COPD; individual recommendations have specific symptom and exacerbation scope",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "ATS pharmacologic management of COPD guideline 2020",
+        "American Thoracic Society",
+        "copd",
+        "inhalers",
+        "pulmonary"
+      ],
+      "citations": [
+        {
+          "url": "https://www.thoracic.org/statements/guideline-implementation-tools/pharmacologic-mgmt-of-copd.php",
+          "title": "ATS pharmacologic management of COPD guideline 2020",
+          "publisher": "American Thoracic Society",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "copd",
+          "inhalers",
+          "pulmonary"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://www.thoracic.org/statements/guideline-implementation-tools/pharmacologic-mgmt-of-copd.php",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Compare bronchodilator and inhaled-steroid questions against the actual recommendation population, keeping exacerbation history and potential harms visible."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "ats-copd-pharmacology-2020",
+          "edition": "2020",
+          "publisher": "American Thoracic Society",
+          "source_url": "https://www.thoracic.org/statements/guideline-implementation-tools/pharmacologic-mgmt-of-copd.php",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with COPD; individual recommendations have specific symptom and exacerbation scope",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-ats-pulmonary-rehab-2023",
+      "topic": "evidence",
+      "title": "ATS pulmonary rehabilitation guideline 2023",
+      "questions": [
+        "Which source and edition support ATS pulmonary rehabilitation guideline 2023?",
+        "What is the review and publication status of ATS pulmonary rehabilitation guideline 2023?"
+      ],
+      "summary": "ATS pulmonary rehabilitation guideline 2023. The ATS summary gives strong recommendations with moderate-certainty evidence for pulmonary rehabilitation in stable COPD and following COPD-exacerbation hospitalization. Referral opportunity and actual service availability remain separate. Find eligible review candidates after exacerbation, then check referral, enrollment, barriers and local service capacity. Review scope: selected recommendations; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The ATS summary gives strong recommendations with moderate-certainty evidence for pulmonary rehabilitation in stable COPD and following COPD-exacerbation hospitalization. Referral opportunity and actual service availability remain separate.",
+        "authored_analytics_exercise": "Find eligible review candidates after exacerbation, then check referral, enrollment, barriers and local service capacity.",
+        "guideline_provenance": {
+          "family": "ats-pulmonary-rehab-2023",
+          "edition": "2023",
+          "publisher": "American Thoracic Society",
+          "source_url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with chronic respiratory disease; recommendation populations differ",
+          "checked_on": "2026-10-27",
+          "review_depth": "selected_recommendations",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "COPD Recommendation1",
+              "url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+              "population": "Adults with stable COPD",
+              "summary": "Recommend participation in pulmonary rehabilitation.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "COPD status",
+                "clinical stability",
+                "rehabilitation participation",
+                "patient goals",
+                "local access"
+              ]
+            },
+            {
+              "locator": "COPD Recommendation2",
+              "url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+              "population": "Adults after hospitalization for a COPD exacerbation",
+              "summary": "Recommend participation in pulmonary rehabilitation after exacerbation hospitalization.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "hospitalization date and reason",
+                "COPD diagnosis",
+                "rehabilitation referral and participation",
+                "patient context and access"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "ATS pulmonary rehabilitation guideline 2023",
+        "American Thoracic Society",
+        "copd",
+        "rehabilitation",
+        "post_discharge",
+        "access"
+      ],
+      "citations": [
+        {
+          "url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+          "title": "ATS pulmonary rehabilitation guideline 2023",
+          "publisher": "American Thoracic Society",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "copd",
+          "rehabilitation",
+          "post_discharge",
+          "access"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Find eligible review candidates after exacerbation, then check referral, enrollment, barriers and local service capacity."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "ats-pulmonary-rehab-2023",
+          "edition": "2023",
+          "publisher": "American Thoracic Society",
+          "source_url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Adults with chronic respiratory disease; recommendation populations differ",
+          "checked_on": "2026-10-27",
+          "review_depth": "selected_recommendations",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "COPD Recommendation1",
+              "url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+              "population": "Adults with stable COPD",
+              "summary": "Recommend participation in pulmonary rehabilitation.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "COPD status",
+                "clinical stability",
+                "rehabilitation participation",
+                "patient goals",
+                "local access"
+              ]
+            },
+            {
+              "locator": "COPD Recommendation2",
+              "url": "https://site.thoracic.org/about-us/news/pulmonary-rehabilitation-earns-strong-recommendation-in-new-clinical-practice-guideline",
+              "population": "Adults after hospitalization for a COPD exacerbation",
+              "summary": "Recommend participation in pulmonary rehabilitation after exacerbation hospitalization.",
+              "grade": {
+                "scheme": "GRADE",
+                "strength": "strong",
+                "evidence": "moderate"
+              },
+              "required_patient_data": [
+                "hospitalization date and reason",
+                "COPD diagnosis",
+                "rehabilitation referral and participation",
+                "patient context and access"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-kdigo-ckd-2024",
+      "topic": "evidence",
+      "title": "KDIGO CKD evaluation and management guideline 2024",
+      "questions": [
+        "Which source and edition support KDIGO CKD evaluation and management guideline 2024?",
+        "What is the review and publication status of KDIGO CKD evaluation and management guideline 2024?"
+      ],
+      "summary": "KDIGO CKD evaluation and management guideline 2024. The publisher lists the March2024 final guideline and distinguishes graded recommendations from practice points. A 2027 medication-management focused update is currently a public-review draft. Keep eGFR, albuminuria, chronicity, medication safety and kidney-failure risk tied to the final guideline and its applicable population. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The publisher lists the March2024 final guideline and distinguishes graded recommendations from practice points. A 2027 medication-management focused update is currently a public-review draft.",
+        "authored_analytics_exercise": "Keep eGFR, albuminuria, chronicity, medication safety and kidney-failure risk tied to the final guideline and its applicable population.",
+        "guideline_provenance": {
+          "family": "kdigo-ckd-2024",
+          "edition": "2024",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People with CKD; recommendation-specific population restrictions apply",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "KDIGO CKD evaluation and management guideline 2024",
+        "Kidney Disease: Improving Global Outcomes",
+        "ckd",
+        "renal_risk",
+        "medication_safety"
+      ],
+      "citations": [
+        {
+          "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+          "title": "KDIGO CKD evaluation and management guideline 2024",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "ckd",
+          "renal_risk",
+          "medication_safety"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Keep eGFR, albuminuria, chronicity, medication safety and kidney-failure risk tied to the final guideline and its applicable population."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "kdigo-ckd-2024",
+          "edition": "2024",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People with CKD; recommendation-specific population restrictions apply",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-kdigo-ckd-update-draft-2027",
+      "topic": "evidence",
+      "title": "KDIGO CKD medications focused update 2027 public-review draft",
+      "questions": [
+        "Which source and edition support KDIGO CKD medications focused update 2027 public-review draft?",
+        "What is the review and publication status of KDIGO CKD medications focused update 2027 public-review draft?"
+      ],
+      "summary": "KDIGO CKD medications focused update 2027 public-review draft. The official hub says public review runs through November4,2026. This is a draft available in 2026, not a finalized 2027 replacement. Draft recommendations were not extracted. Recognize future-edition draft metadata without silently replacing the published 2024 guideline. Review scope: publisher metadata; publication status: draft. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The official hub says public review runs through November4,2026. This is a draft available in 2026, not a finalized 2027 replacement. Draft recommendations were not extracted.",
+        "authored_analytics_exercise": "Recognize future-edition draft metadata without silently replacing the published 2024 guideline.",
+        "guideline_provenance": {
+          "family": "kdigo-ckd-update-draft-2027",
+          "edition": "2027 public-review draft",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+          "document_kind": "guideline",
+          "publication_status": "draft",
+          "jurisdiction": "International",
+          "population": "Draft medication-management update; excludes established kidney failure on dialysis and kidney transplant recipients",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "KDIGO CKD medications focused update 2027 public-review draft",
+        "Kidney Disease: Improving Global Outcomes",
+        "ckd",
+        "draft_guidance",
+        "medication_safety"
+      ],
+      "citations": [
+        {
+          "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+          "title": "KDIGO CKD medications focused update 2027 public-review draft",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "ckd",
+          "draft_guidance",
+          "medication_safety"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Recognize future-edition draft metadata without silently replacing the published 2024 guideline."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "kdigo-ckd-update-draft-2027",
+          "edition": "2027 public-review draft",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+          "document_kind": "guideline",
+          "publication_status": "draft",
+          "jurisdiction": "International",
+          "population": "Draft medication-management update; excludes established kidney failure on dialysis and kidney transplant recipients",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-kdigo-diabetes-ckd-2022",
+      "topic": "evidence",
+      "title": "KDIGO diabetes in CKD guideline 2022",
+      "questions": [
+        "Which source and edition support KDIGO diabetes in CKD guideline 2022?",
+        "What is the review and publication status of KDIGO diabetes in CKD guideline 2022?"
+      ],
+      "summary": "KDIGO diabetes in CKD guideline 2022. As checked October27,2026, the publisher explicitly identifies the 2022 guideline as the current published diabetes/CKD guideline; a 2026 draft is being revised. Use the published edition for source review while tracking new evidence and the draft separately. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "As checked October27,2026, the publisher explicitly identifies the 2022 guideline as the current published diabetes/CKD guideline; a 2026 draft is being revised.",
+        "authored_analytics_exercise": "Use the published edition for source review while tracking new evidence and the draft separately.",
+        "guideline_provenance": {
+          "family": "kdigo-diabetes-ckd-2022",
+          "edition": "2022",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People with diabetes and CKD",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "KDIGO diabetes in CKD guideline 2022",
+        "Kidney Disease: Improving Global Outcomes",
+        "diabetes",
+        "ckd",
+        "cardiorenal"
+      ],
+      "citations": [
+        {
+          "url": "https://kdigo.org/guidelines/diabetes-ckd/",
+          "title": "KDIGO diabetes in CKD guideline 2022",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes",
+          "ckd",
+          "cardiorenal"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Use the published edition for source review while tracking new evidence and the draft separately."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "kdigo-diabetes-ckd-2022",
+          "edition": "2022",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "International",
+          "population": "People with diabetes and CKD",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-kdigo-diabetes-ckd-draft-2026",
+      "topic": "evidence",
+      "title": "KDIGO diabetes in CKD guideline 2026 public-review draft",
+      "questions": [
+        "Which source and edition support KDIGO diabetes in CKD guideline 2026 public-review draft?",
+        "What is the review and publication status of KDIGO diabetes in CKD guideline 2026 public-review draft?"
+      ],
+      "summary": "KDIGO diabetes in CKD guideline 2026 public-review draft. The publisher says the work group is revising the public-review draft before final publication. Its newer year alone does not supersede the published 2022 guideline. Preserve draft status in retrieval and prevent a draft from being represented as adopted clinical authority. Review scope: publisher metadata; publication status: draft. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The publisher says the work group is revising the public-review draft before final publication. Its newer year alone does not supersede the published 2022 guideline.",
+        "authored_analytics_exercise": "Preserve draft status in retrieval and prevent a draft from being represented as adopted clinical authority.",
+        "guideline_provenance": {
+          "family": "kdigo-diabetes-ckd-draft-2026",
+          "edition": "2026 public-review draft",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+          "document_kind": "guideline",
+          "publication_status": "draft",
+          "jurisdiction": "International",
+          "population": "Draft update addressing prevention/risk, monitoring and pharmacotherapy",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "KDIGO diabetes in CKD guideline 2026 public-review draft",
+        "Kidney Disease: Improving Global Outcomes",
+        "diabetes",
+        "ckd",
+        "draft_guidance"
+      ],
+      "citations": [
+        {
+          "url": "https://kdigo.org/guidelines/diabetes-ckd/",
+          "title": "KDIGO diabetes in CKD guideline 2026 public-review draft",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes",
+          "ckd",
+          "draft_guidance"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Preserve draft status in retrieval and prevent a draft from being represented as adopted clinical authority."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "kdigo-diabetes-ckd-draft-2026",
+          "edition": "2026 public-review draft",
+          "publisher": "Kidney Disease: Improving Global Outcomes",
+          "source_url": "https://kdigo.org/guidelines/diabetes-ckd/",
+          "document_kind": "guideline",
+          "publication_status": "draft",
+          "jurisdiction": "International",
+          "population": "Draft update addressing prevention/risk, monitoring and pharmacotherapy",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-nice-depression-ng222",
+      "topic": "evidence",
+      "title": "NICE NG222 adult depression guideline",
+      "questions": [
+        "Which source and edition support NICE NG222 adult depression guideline?",
+        "What is the review and publication status of NICE NG222 adult depression guideline?"
+      ],
+      "summary": "NICE NG222 adult depression guideline. The indexed official record identifies adult-depression guidance and its review date. Direct page access returned403; recommendation-level review is pending. UK jurisdiction must remain explicit. Assess severity, patient preference, treatment response and harms; do not infer that every below-maximum antidepressant dose is a care gap. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The indexed official record identifies adult-depression guidance and its review date. Direct page access returned403; recommendation-level review is pending. UK jurisdiction must remain explicit.",
+        "authored_analytics_exercise": "Assess severity, patient preference, treatment response and harms; do not infer that every below-maximum antidepressant dose is a care gap.",
+        "guideline_provenance": {
+          "family": "nice-depression-ng222",
+          "edition": "2022; last reviewed September2024",
+          "publisher": "National Institute for Health and Care Excellence",
+          "source_url": "https://www.nice.org.uk/guidance/ng222",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "UK",
+          "population": "Adults with depression; UK service and treatment context",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "NICE NG222 adult depression guideline",
+        "National Institute for Health and Care Excellence",
+        "depression",
+        "mental_health",
+        "patient_goals"
+      ],
+      "citations": [
+        {
+          "url": "https://www.nice.org.uk/guidance/ng222",
+          "title": "NICE NG222 adult depression guideline",
+          "publisher": "National Institute for Health and Care Excellence",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "depression",
+          "mental_health",
+          "patient_goals"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://www.nice.org.uk/guidance/ng222",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Assess severity, patient preference, treatment response and harms; do not infer that every below-maximum antidepressant dose is a care gap."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "nice-depression-ng222",
+          "edition": "2022; last reviewed September2024",
+          "publisher": "National Institute for Health and Care Excellence",
+          "source_url": "https://www.nice.org.uk/guidance/ng222",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "UK",
+          "population": "Adults with depression; UK service and treatment context",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-asco-geriatric-oncology-2023",
+      "topic": "evidence",
+      "title": "ASCO geriatric assessment in oncology guideline update 2023",
+      "questions": [
+        "Which source and edition support ASCO geriatric assessment in oncology guideline update 2023?",
+        "What is the review and publication status of ASCO geriatric assessment in oncology guideline update 2023?"
+      ],
+      "summary": "ASCO geriatric assessment in oncology guideline update 2023. The indexed ASCO resource page identifies a 2023 update to its earlier geriatric-oncology guidance. Direct access returned403; the guideline text has not been reviewed. Retain function, cognition, nutrition, comorbidities and support needs as distinct assessment domains instead of treating a cancer diagnosis as a complete care plan. Review scope: publisher metadata; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The indexed ASCO resource page identifies a 2023 update to its earlier geriatric-oncology guidance. Direct access returned403; the guideline text has not been reviewed.",
+        "authored_analytics_exercise": "Retain function, cognition, nutrition, comorbidities and support needs as distinct assessment domains instead of treating a cancer diagnosis as a complete care plan.",
+        "guideline_provenance": {
+          "family": "asco-geriatric-oncology-2023",
+          "edition": "2023 update",
+          "publisher": "American Society of Clinical Oncology",
+          "source_url": "https://www.asco.org/news-initiatives/current-initiatives/cancer-care-initiatives/geriatric-oncology/resources",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Older adults receiving systemic cancer therapy; full guideline scope needs review",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "ASCO geriatric assessment in oncology guideline update 2023",
+        "American Society of Clinical Oncology",
+        "cancer",
+        "older_adults",
+        "function",
+        "sdoh"
+      ],
+      "citations": [
+        {
+          "url": "https://www.asco.org/news-initiatives/current-initiatives/cancer-care-initiatives/geriatric-oncology/resources",
+          "title": "ASCO geriatric assessment in oncology guideline update 2023",
+          "publisher": "American Society of Clinical Oncology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "cancer",
+          "older_adults",
+          "function",
+          "sdoh"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://www.asco.org/news-initiatives/current-initiatives/cancer-care-initiatives/geriatric-oncology/resources",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Retain function, cognition, nutrition, comorbidities and support needs as distinct assessment domains instead of treating a cancer diagnosis as a complete care plan."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "asco-geriatric-oncology-2023",
+          "edition": "2023 update",
+          "publisher": "American Society of Clinical Oncology",
+          "source_url": "https://www.asco.org/news-initiatives/current-initiatives/cancer-care-initiatives/geriatric-oncology/resources",
+          "document_kind": "guideline",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Older adults receiving systemic cancer therapy; full guideline scope needs review",
+          "checked_on": "2026-10-27",
+          "review_depth": "publisher_metadata",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    },
+    {
+      "id": "guideline-uspstf-colorectal-2021",
+      "topic": "evidence",
+      "title": "USPSTF colorectal cancer screening final recommendation 2021",
+      "questions": [
+        "Which source and edition support USPSTF colorectal cancer screening final recommendation 2021?",
+        "What is the review and publication status of USPSTF colorectal cancer screening final recommendation 2021?"
+      ],
+      "summary": "USPSTF colorectal cancer screening final recommendation 2021. The final statement distinguishes screening ages45–49,50–75 and76–85. For ages76–85 the decision is selective, considering overall health, prior screening and preferences. A missing test alone does not prove an inappropriate omission. Calculate screening opportunities only within the applicable average-risk population and retain prior screening, health status and preference evidence. Review scope: selected recommendations; publication status: final. This source-reading candidate does not establish patient-specific treatment suitability.",
+      "facts": {
+        "source_background": "The final statement distinguishes screening ages45–49,50–75 and76–85. For ages76–85 the decision is selective, considering overall health, prior screening and preferences. A missing test alone does not prove an inappropriate omission.",
+        "authored_analytics_exercise": "Calculate screening opportunities only within the applicable average-risk population and retain prior screening, health status and preference evidence.",
+        "guideline_provenance": {
+          "family": "uspstf-colorectal-2021",
+          "edition": "2021",
+          "publisher": "US Preventive Services Task Force",
+          "source_url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+          "document_kind": "recommendation_statement",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Asymptomatic, average-risk adults; excludes prior colorectal cancer, adenomatous polyps, IBD and relevant inherited syndromes",
+          "checked_on": "2026-10-27",
+          "review_depth": "selected_recommendations",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation Summary ages45–49",
+              "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+              "population": "Asymptomatic average-risk adults aged45–49",
+              "summary": "Offer colorectal screening within the recommendation scope.",
+              "grade": {
+                "scheme": "USPSTF",
+                "strength": "B",
+                "evidence": null
+              },
+              "required_patient_data": [
+                "age",
+                "symptoms",
+                "risk history",
+                "prior screening"
+              ]
+            },
+            {
+              "locator": "Recommendation Summary ages50–75",
+              "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+              "population": "Asymptomatic average-risk adults aged50–75",
+              "summary": "Recommend colorectal screening within the recommendation scope.",
+              "grade": {
+                "scheme": "USPSTF",
+                "strength": "A",
+                "evidence": null
+              },
+              "required_patient_data": [
+                "age",
+                "symptoms",
+                "risk history",
+                "prior screening"
+              ]
+            },
+            {
+              "locator": "Recommendation Summary ages76–85",
+              "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+              "population": "Asymptomatic average-risk adults aged76–85",
+              "summary": "Selectively offer screening with health, prior screening and preference considered.",
+              "grade": {
+                "scheme": "USPSTF",
+                "strength": "C",
+                "evidence": null
+              },
+              "required_patient_data": [
+                "age",
+                "symptoms",
+                "risk history",
+                "prior screening",
+                "overall health",
+                "patient preferences"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      },
+      "entities": [
+        "USPSTF colorectal cancer screening final recommendation 2021",
+        "US Preventive Services Task Force",
+        "cancer",
+        "screening",
+        "prevention"
+      ],
+      "citations": [
+        {
+          "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+          "title": "USPSTF colorectal cancer screening final recommendation 2021",
+          "publisher": "US Preventive Services Task Force",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "cancer",
+          "screening",
+          "prevention"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "Public reference; full-text commercial training permission not established",
+        "license_evidence_url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Calculate screening opportunities only within the applicable average-risk population and retain prior screening, health status and preference evidence."
+        ],
+        "review_status": "Agere-authored source reading, not physician adjudication",
+        "guideline": {
+          "family": "uspstf-colorectal-2021",
+          "edition": "2021",
+          "publisher": "US Preventive Services Task Force",
+          "source_url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+          "document_kind": "recommendation_statement",
+          "publication_status": "final",
+          "jurisdiction": "US",
+          "population": "Asymptomatic, average-risk adults; excludes prior colorectal cancer, adenomatous polyps, IBD and relevant inherited syndromes",
+          "checked_on": "2026-10-27",
+          "review_depth": "selected_recommendations",
+          "reuse_status": "Public reference; full-text commercial training permission not established",
+          "correction_status": "not_assessed",
+          "corrections": [],
+          "recommendations": [
+            {
+              "locator": "Recommendation Summary ages45–49",
+              "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+              "population": "Asymptomatic average-risk adults aged45–49",
+              "summary": "Offer colorectal screening within the recommendation scope.",
+              "grade": {
+                "scheme": "USPSTF",
+                "strength": "B",
+                "evidence": null
+              },
+              "required_patient_data": [
+                "age",
+                "symptoms",
+                "risk history",
+                "prior screening"
+              ]
+            },
+            {
+              "locator": "Recommendation Summary ages50–75",
+              "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+              "population": "Asymptomatic average-risk adults aged50–75",
+              "summary": "Recommend colorectal screening within the recommendation scope.",
+              "grade": {
+                "scheme": "USPSTF",
+                "strength": "A",
+                "evidence": null
+              },
+              "required_patient_data": [
+                "age",
+                "symptoms",
+                "risk history",
+                "prior screening"
+              ]
+            },
+            {
+              "locator": "Recommendation Summary ages76–85",
+              "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/colorectal-cancer-screening",
+              "population": "Asymptomatic average-risk adults aged76–85",
+              "summary": "Selectively offer screening with health, prior screening and preference considered.",
+              "grade": {
+                "scheme": "USPSTF",
+                "strength": "C",
+                "evidence": null
+              },
+              "required_patient_data": [
+                "age",
+                "symptoms",
+                "risk history",
+                "prior screening",
+                "overall health",
+                "patient preferences"
+              ]
+            }
+          ],
+          "operational_rule_approved": false,
+          "supersedes": []
+        }
+      }
+    }
+  ]
+}
