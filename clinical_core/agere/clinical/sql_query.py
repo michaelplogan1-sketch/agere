@@ -88,7 +88,7 @@ def date_arithmetic_issues(db, query):
     from sqlglot.optimizer.scope import Scope, traverse_scope
     try:
         tree = sqlglot.parse_one(query, read='sqlite')
-    except sqlglot.errors.ParseError:
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError):
         # SQLite remains the syntax authority for extensions this parser cannot
         # represent. No type finding is inferred from an unsuccessful parse.
         return []

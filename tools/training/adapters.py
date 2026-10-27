@@ -57,6 +57,24 @@ def configuration(value):
     return cfg
 
 
+def serving_sequence(tokenizer,messages):
+    """Exact served prompt followed by approved completion tokens and one EOS.
+
+    Rendering an assistant turn with a model's chat template can insert hidden
+    reasoning text even when enable_thinking=False. Such text is not part of
+    the governed completion. Never teach a different prefix from inference.
+    """
+    if len(messages)<2 or messages[-1].get('role')!='assistant' or not isinstance(messages[-1].get('content'),str):
+        raise ValueError('Training sequence needs a final approved assistant completion')
+    prompt=tokenizer.apply_chat_template(messages[:-1],add_generation_prompt=True,tokenize=False,enable_thinking=False)
+    prefix=list(tokenizer.encode(prompt,add_special_tokens=False))
+    completion=list(tokenizer.encode(messages[-1]['content'],add_special_tokens=False))
+    eos=getattr(tokenizer,'eos_token_id',None)
+    if not prefix or not completion or type(eos) is not int or eos<0:
+        raise ValueError('Nonempty serving prefix/completion and an explicit EOS are required')
+    return [*prefix,*completion,eos],len(prefix)
+
+
 class Mlx:
     def __init__(self,base):self.base=base
 
@@ -66,14 +84,13 @@ class Mlx:
         from mlx_lm.tuner.datasets import ChatDataset
         from mlx_lm.utils import load
         model,tok=load(str(self.base),trust_remote_code=False)
-        class ServingTokenizer:
-            def __getattr__(self,name):return getattr(tok,name)
-            def apply_chat_template(self,*a,**kw):return tok.apply_chat_template(*a,**{**kw,'enable_thinking':False})
+        class ServingDataset(ChatDataset):
+            def process(self,row):return serving_sequence(self.tokenizer,row[self.chat_key])
         datasets=[];maximum=0;counts={}
         for split in ('train','valid'):
             rows=[json.loads(line) for line in (data/(split+'.jsonl')).read_text().splitlines()]
             counts[split]=len(rows)
-            ds=ChatDataset(rows,ServingTokenizer(),mask_prompt=True)
+            ds=ServingDataset(rows,tok,mask_prompt=True)
             for row in rows:maximum=max(maximum,len(ds.process(row)[0]))
             datasets.append(ds)
         maximum,length=sequence_length([maximum],cfg.get('max_seq_length'))
@@ -90,20 +107,21 @@ class Mlx:
             del model,tok,datasets
             import gc
             gc.collect();mx.clear_cache()
-        return {'maximum_complete_sequence_tokens':maximum,'max_seq_length':length,'training_rows':counts,'truncated':False}
+        return {'maximum_complete_sequence_tokens':maximum,'max_seq_length':length,'training_rows':counts,'truncated':False,
+                'serialization':'exact-serving-prefix+approved-completion+eos/1','hidden_reasoning_added':False}
 
     @contextmanager
     def generator(self,learner,adapter,ctx,cfg):
         import mlx.core as mx
         from mlx_lm import load,generate
         from mlx_lm.sample_utils import make_sampler
-        from clinical_core.agere.clinical import constrained_decoding as G,bottled as B
+        from clinical_core.agere.clinical import constrained_decoding as G
         model,tok=load(str(self.base),adapter_path=str(adapter) if adapter else None,trust_remote_code=False)
         def call(row):
             messages=ctx.messages(learner,row)
             prompt=tok.apply_chat_template(messages,add_generation_prompt=True,tokenize=False,enable_thinking=False)
-            grammar=G.JsonGrammar(root='object') if learner=='typed' else G.LineGrammar() if learner=='normalizer' else B.slot_grammar() if learner=='narrow' else B.sql_grammar(ctx.path)
-            try:return generate(model,tok,prompt=prompt,max_tokens=cfg['max_tokens'],sampler=make_sampler(temp=0.0),verbose=False,
+            grammar=ctx.output_grammar(learner)
+            try:return generate(model,tok,prompt=tok.encode(prompt,add_special_tokens=False),max_tokens=cfg['max_tokens'],sampler=make_sampler(temp=0.0),verbose=False,
                 logits_processors=G.processors(tok,grammar))
             finally:mx.clear_cache()
         try:yield call

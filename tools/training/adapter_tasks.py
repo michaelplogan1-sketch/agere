@@ -146,8 +146,26 @@ class Context:
                 missing = (relations & self.catalog.tables.keys()) - shown.keys()
                 if missing:
                     raise ValueError('Typed serving prompt omits target source relations: '+', '.join(sorted(missing)))
-            messages=[*messages,{'role':'assistant','content':row['target'] if isinstance(row['target'],str) else json.dumps(row['target'],sort_keys=True,separators=(',',':'))}]
+            content = row['target'] if isinstance(row['target'],str) else json.dumps(row['target'],sort_keys=True,separators=(',',':'))
+            if learner == 'bottled':
+                # The served SQL rung requests and constrains a fenced block.
+                # A native-valid raw SELECT is the calculation target, but is
+                # not the completion format that the model must learn.
+                sql = self.compile(learner,row,content)['query']
+                content = B.messages(q,source_profile.load(self.path),self.as_of,sql=sql)[-1]['content']
+            from clinical_core.agere.clinical import constrained_decoding as G
+            if not G.check(self.output_grammar(learner),content):
+                raise ValueError('Approved completion is outside the serving output grammar')
+            messages=[*messages,{'role':'assistant','content':content}]
         return messages
+
+    def output_grammar(self,learner):
+        from clinical_core.agere.clinical import constrained_decoding as G,bottled as B
+        if learner == 'typed':return G.JsonGrammar(root='object')
+        if learner == 'normalizer':return G.LineGrammar()
+        if learner == 'narrow':return B.slot_grammar()
+        if learner == 'bottled':return B.sql_grammar(self.path)
+        raise ValueError('Unknown adapter learner')
 
     def query(self,sql,population=None,*,native=False):
         from clinical_core.agere.clinical import semantic_analyst as S,backstop_agent as B

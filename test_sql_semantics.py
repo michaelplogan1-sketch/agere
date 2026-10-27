@@ -69,6 +69,13 @@ class SqlSemantics(unittest.TestCase):
         result = Q.execute(self.path, {'query': good[3], 'returns': 'value'}, target=self.catalog.target)
         self.assertEqual(result['value'], 4.0)
 
+    def test_malformed_tokens_reach_sqlite_authority_without_crashing_the_type_guard(self):
+        malformed='SELECT 1 - `unterminated'
+        with sqlite3.connect(self.catalog.target) as db:
+            self.assertEqual(Q.date_arithmetic_issues(db,malformed),[])
+        reader=S.SemanticWarehouse(self.catalog.target);self.addCleanup(reader.close);reader.define()
+        with self.assertRaises(sqlite3.Error):reader.query(malformed)
+
     def test_actual_types_are_checked_again_after_source_values_change(self):
         with sqlite3.connect(self.catalog.target) as db:
             query = 'SELECT closed-opened FROM episodes'

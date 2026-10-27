@@ -73,6 +73,54 @@ class AdapterLearning(unittest.TestCase):
         self.assertEqual({p.name for p in files},{'train.jsonl','valid.jsonl'})
         self.assertNotIn(self.rows[-1]['question'],''.join(p.read_text() for p in files))
 
+    def test_training_uses_exact_serving_prefix_without_hidden_assistant_reasoning(self):
+        class Tokenizer:
+            eos_token_id=999
+            def apply_chat_template(self,messages,**kw):
+                # Reproduce templates that insert reasoning into assistant
+                # turns despite the enable_thinking flag.
+                if messages[-1]['role']=='assistant':
+                    return 'PROMPT<think>hidden</think>'+messages[-1]['content']
+                self.assert_options=kw
+                return 'SERVED PROMPT:'
+            def encode(self,text,**kw):
+                self.encode_options=kw
+                return [ord(c) for c in text]
+        tok=Tokenizer();messages=[{'role':'user','content':'Count received rows.'},
+                                 {'role':'assistant','content':'{"count":4}'}]
+        sequence,offset=D.serving_sequence(tok,messages)
+        self.assertEqual(sequence[:offset],[ord(c) for c in 'SERVED PROMPT:'])
+        self.assertEqual(sequence[offset:-1],[ord(c) for c in messages[-1]['content']])
+        self.assertEqual(sequence[-1],999)
+        self.assertEqual(tok.assert_options,{'add_generation_prompt':True,'tokenize':False,'enable_thinking':False})
+        self.assertEqual(tok.encode_options,{'add_special_tokens':False})
+        with self.assertRaisesRegex(ValueError,'final approved assistant'):
+            D.serving_sequence(tok,messages[:-1])
+
+    def test_bottled_supervision_matches_the_served_fenced_sql_format(self):
+        _,rows=task_manifest(self.path,'bottled');ctx=T.Context(self.path)
+        from clinical_core.agere.clinical import constrained_decoding as G
+        for row in rows:
+            serving=ctx.messages('bottled',row)
+            training=ctx.messages('bottled',row,target=True)
+            self.assertEqual(training[:-1],serving)
+            text=training[-1]['content']
+            self.assertTrue(text.startswith('```sql\n'))
+            self.assertTrue(G.check(ctx.output_grammar('bottled'),text))
+            self.assertTrue(ctx.assess('bottled',row,text)['acceptable'])
+
+    def test_native_valid_but_out_of_grammar_supervision_is_rejected_before_fitting(self):
+        manifest,rows=task_manifest(self.path,'normalizer')
+        spec=json.loads(manifest.read_text());file=Path(spec['files'][0]['path'])
+        rows[0]['target']+='\nUnrequested rationale'
+        self.assertTrue(T.Context(self.path).assess('normalizer',rows[0],rows[0]['target'])['acceptable'])
+        file.write_text(''.join(json.dumps(row)+'\n' for row in rows))
+        spec['files'][0]['sha256']=A.file_hash(file);manifest.write_text(json.dumps(spec))
+        backend=ScriptedBackend()
+        with self.assertRaisesRegex(ValueError,'outside the serving output grammar'):
+            D.run(manifest,self.root,stack=self.path,base=self.base,backend=backend,train=True)
+        self.assertEqual(backend.fits,[])
+
     def test_fit_release_runtime_correction_refit_and_rollback(self):
         with patch.object(T.Context,'deterministic',return_value=False):first=self.run_job(train=True,install=True)
         self.assertEqual(first['status'],'activated')

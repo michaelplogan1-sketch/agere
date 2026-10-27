@@ -75,6 +75,19 @@ class GrammarTests(unittest.TestCase):
 
 
 class ProcessorTests(unittest.TestCase):
+    def test_empty_decoded_non_eos_tokens_cannot_bypass_any_grammar(self):
+        cases=[(C.JsonGrammar(root='object'),'{"answer":1}'),
+               (C.SqlGrammar(fenced=True),'```sql\nSELECT 1\n```'),
+               (C.LineGrammar(),'A canonical question\n'),
+               (C.TemplateGrammar([('lit','answer=1')]),'answer=1')]
+        for grammar,target in cases:
+            with self.subTest(grammar=grammar.name):
+                tok=CharTokenizer(['',target])
+                proc=C.GrammarProcessor(tok,grammar)
+                self.assertEqual(greedy(tok,proc,[1,2,0]),target)
+                self.assertTrue(proc.report()['complete'])
+                self.assertEqual(proc.report()['violations'],0)
+
     def test_masks_invalid_json_tokens(self):
         tok = CharTokenizer(['x', '{', '}', '"', 'a', ':', '1', ' ', 'hello'])
         ids = {p: i for i, p in enumerate(tok.pieces)}
