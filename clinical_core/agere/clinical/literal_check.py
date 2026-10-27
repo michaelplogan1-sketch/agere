@@ -15,7 +15,7 @@ import re
 
 from . import local_normalizer as N
 
-VERSION = 'literal-question-check/2'
+VERSION = 'literal-question-check/3'
 
 # Executable-side spellings of each qualifier/concept, in addition to the question-side pattern (local_normalizer).
 ALIASES = {
@@ -107,6 +107,47 @@ def predicate_negation_question(question):
     return REPORTING_CAUTION.sub(keep_patient_clause,question)
 
 
+def aggregate_misfit(question, query):
+    """Catch an unambiguous count substituted for a requested percent/average.
+
+    Aliases and copied measure words are not arithmetic. This deliberately checks only a single explicit count
+    projection; it does not infer arbitrary SQL semantics, rewrite denominators, or certify queries it does not flag.
+    """
+    from .answer_shape import requested, shape_wording
+    req = requested(question)
+    if req['shape'] != 'value' or not (req['percent'] or AVERAGE_ASKED.search(shape_wording(question))):
+        return None
+    import sqlglot
+    from sqlglot import exp
+    try:
+        tree = sqlglot.parse_one(query, read='sqlite')
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError):
+        return None  # Native SQL remains the syntax authority; no guessed semantic finding.
+    if not isinstance(tree, exp.Select) or len(tree.expressions) != 1:
+        return None
+    value = tree.expressions[0]
+    while isinstance(value, (exp.Alias, exp.Paren, exp.Cast, exp.TryCast, exp.Filter)):
+        value = value.this
+    if isinstance(value, exp.Count):
+        measure = 'a percentage' if req['percent'] else 'an average or median'
+        return ('the question asks for ' + measure + '; the SQL projects only a count. '
+                'Compute the requested measure from its source and denominator, or explicitly report it unavailable.')
+    return None
+
+
+def _single_query(evidence):
+    """Recover one SQL value from executable_text without treating an alias as a measure."""
+    if re.match(r'(?is)^\s*(?:select|with)\b', evidence):
+        return evidence
+    starts = list(re.finditer(r'(?m)^"(?:query|sql)"\s*:\s*"', evidence))
+    if len(starts) != 1:
+        return None  # Multiple steps need their compiled final query, not a guessed final operation.
+    tail = evidence[starts[0].end():]
+    end = re.search(r'(?m)\n"[a-zA-Z_]\w*"\s*:', tail)
+    value = (tail[:end.start()] if end else tail).rstrip()
+    return value[:-1] if value.endswith('"') else None
+
+
 def missing(question, evidence):
     """Literal elements of the question absent from the executable evidence text (a list of readable reasons)."""
     q, text = AS_OF_CLAUSE.sub(' ', question), evidence.lower()
@@ -131,6 +172,10 @@ def missing(question, evidence):
         gaps.append('the question asks for a rate or share; the plan has no denominator')
     if AVERAGE_ASKED.search(q) and not AVERAGE_DONE.search(text):
         gaps.append('the question asks for an average; the plan computes none')
+    query = _single_query(evidence)
+    misfit = aggregate_misfit(q, query) if query else None
+    if misfit:
+        gaps.append(misfit)
     if SUPERLATIVE.search(q) and not ORDERED.search(text):
         gaps.append('the question asks for a ranking; the plan has no ordering')
     windows = [m.group(0).lower() for m in RELATIVE_TIME.finditer(q)]

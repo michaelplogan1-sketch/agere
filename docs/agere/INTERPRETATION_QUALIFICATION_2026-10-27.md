@@ -1,0 +1,18 @@
+# General interpretation and qualification follow-up
+
+Candidate changes continue G3 without changing the running SQL study or its completion process. They reuse the existing calibrator, literal checks and shared interpreter.
+
+The independent review's findings 45–46 are repaired: statistical fitting/evaluation now uses one prespecified representative per declared independent source group, while retaining raw row/error counts; an unresolved reference remains ungraded rather than becoming a negative label. Group members marked blind stay out of calibration, including across routes. Representative selection does not use scores or correctness. Group definitions and exchangeability still require justification; different identifiers do not prove independence. This choice targets the declared representative population and does not certify every paraphrase. The [Learn then Test paper](https://arxiv.org/html/2110.01052v4) supplies the statistical framework, not clinical qualification for this product.
+
+Reader reporting separates decided answers, compared settled references, unresolved references and abstentions. An uncertain reference no longer dilutes the error denominator. Certificates bind to the calibrator/statistical code as well as route code, so earlier policy bindings become stale. Existing uncalibrated runtime behavior is retained; no blanket paid escalation or new risk/spending cap is introduced.
+
+The shared SQL boundary also rejects a clear count substituted for a requested percentage, average or median, even when aliases or restated measure words look correct. Existing interpreter feedback repairs the proposal. The check deliberately covers a single explicit count projection, including casts/filters; it is not a proof of arbitrary SQL semantics. Valid ratios, averages, received percentage columns and count questions remain supported.
+
+Evidence on the candidate core `b8568c203695772728cb8c87ce3e2388bd1e23a176aa97faba2d6e126b142e0e`:
+
+- 604 guarded checks: 602 passed, two optional live checks skipped; no failures/errors, provider calls, model calls, protected-store reads or blocked attempts. One Node-dependent check remains separate.
+- The same authored before/after probes reproduce the false independent-sample and unknown-as-negative certificates on old code. The genuinely distinct-group positive control still certifies after repair. An agreeing scripted model review can no longer authorize a count labelled as a percentage; the existing repair path computes the independently expected percentage.
+- Three preexisting legacy-cascade fixtures were calling the newer public shared-planner entry with legacy mocks and failed for missing catalog concepts. Their fixture now calls the explicit legacy entry it stubs. This test-harness correction is not a new product accuracy gain.
+- Replaying the same 782 saved outputs from the two completed typed students against three explicit synthetic source snapshots changes no comparison outcomes: round one remains 185 correct / 33 wrong / 86 declined, round two 185 / 42 / 77 on 304 verification questions. All 391 approved target answers remain acceptable on each source. These repeated questions/source variants are not independent clinical observations. No student is activated.
+
+The SQL study and its final native review are still pending. These fixes improve qualification integrity and one narrow arithmetic interpretation failure; they do not establish a newly trained-model gain, complete clinical correctness, company superiority or cost savings. Further forecast-uncertainty findings are being reviewed separately. Full automatic question/evidence/answer/artifact qualification remains open and Claude remains off.

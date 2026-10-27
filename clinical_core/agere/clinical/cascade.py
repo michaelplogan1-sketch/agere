@@ -72,11 +72,13 @@ def code_digest(tier):
     """Digest of the files a tier's certificate is bound to (None for an unknown tier)."""
     names = TIER_CODE.get(tier)
     if not names: return None
-    key = tuple((n, (HERE / n).stat().st_mtime_ns if (HERE / n).exists() else None) for n in names)
+    # A route's old certificate cannot silently survive a changed calibrator or statistical policy.
+    paths = [(n, HERE / n) for n in (*names, 'cascade.py', 'conformal.py')]
+    paths.append(('tools/calibrate_cascades.py', ROOT / 'tools/calibrate_cascades.py'))
+    key = tuple((n, p.stat().st_mtime_ns if p.exists() else None) for n, p in paths)
     if _DIGESTS.get(tier, (None,))[0] != key:
         h = hashlib.sha256()
-        for n in names:
-            p = HERE / n
+        for n, p in paths:
             h.update(n.encode()); h.update(p.read_bytes() if p.exists() else b'<absent>')
         _DIGESTS[tier] = (key, h.hexdigest()[:16])
     return _DIGESTS[tier][1]
@@ -128,6 +130,8 @@ def fit(tier, scores, errors, *, alpha=DEFAULT_ALPHA, delta=DEFAULT_DELTA, grid=
            'calibrated': res['threshold'] is not None, 'method': 'Learn-then-Test (fixed-sequence exact binomial tests)',
            'bind': bind if bind is not None else code_digest(tier), 'data': data or {}, 'score': score_definition,
            'fitted_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}
+    if data and data.get('sampling'):
+        rec['sampling'] = data['sampling']
     if res['threshold'] is not None:
         n, k = res['n_accepted'], res['errors_accepted']
         rec.update(n_accepted=n, errors_accepted=k, coverage=res['coverage'], p_value=res['p_value'],
@@ -175,7 +179,8 @@ def statement(cert):
     if cert.get('status') == 'certified':
         return (f"this tier ({cert['tier']}) answered because its calibrated error bound at confidence {1 - cert['delta']:.0%} is "
                 f"{cert['bound']:.1%} <= alpha {cert['alpha']:.0%} (Learn-then-Test on {cert['n_calibration']} labelled cases; "
-                f"score {cert['score']:.3g} >= threshold {cert['threshold']:.3g}; exchangeability assumed)")
+                f"score {cert['score']:.3g} >= threshold {cert['threshold']:.3g}; exchangeability assumed)"
+                + (f"; calibration population: {cert['sampling']}" if cert.get('sampling') else ''))
     if cert.get('status') == 'not_certified':
         return (f"{cert['tier']} deferred: measured on {cert.get('n_calibration')} labelled cases, it cannot be certified at alpha "
                 f"{cert['alpha']:.0%} (confidence {1 - cert['delta']:.0%})")
@@ -209,6 +214,8 @@ def certify(tier, score, path=None):
     else:
         cert = {**base, 'alpha': rec['alpha'], 'delta': rec['delta'], 'bound': rec['bound'], 'n_calibration': rec['n_calibration'],
                 'threshold': rec['threshold']}
+        if rec.get('sampling'):
+            cert['sampling'] = rec['sampling']
         ok = score is not None and float(score) >= float(rec['threshold'])
         out = {**cert, 'status': 'certified' if ok else 'below_threshold', 'accept': ok, 'certified': ok}
     out['statement'] = statement(out)

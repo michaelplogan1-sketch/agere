@@ -636,6 +636,10 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
     else:
         query = 'WITH ' + ', '.join(f'{n} AS ({s})' for n, s in parts) + f' SELECT * FROM {final}'
     sql_query.validate({'query': query, 'returns': returns})
+    from .literal_check import aggregate_misfit
+    measure_gap = aggregate_misfit(question, query)
+    if measure_gap:
+        raise PlanError(measure_gap)
     if population is not None:
         db=register(sqlite3.connect(f'file:{catalog.target}?mode=ro',uri=True))
         try:
