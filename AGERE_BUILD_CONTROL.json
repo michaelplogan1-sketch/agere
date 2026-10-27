@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_schema_consistency_repair_verified_original_sql_active_revised_queue_armed",
+    "kind": "offline_serving_serialization_repaired_revised_studies_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Candidate shared schema discovery retains explicitly named relations, exact received category matches and identifier schema hints. Real typed supervision checks serving-schema availability before fitting; no new runtime route or default activation.",
-    "measured_failure_reduction": "All-question source-schema coverage improves5331/5680to5680/5680 fit,84/87to87/87 calibration and296/304to304/304 verification across3 sources;6071 targets per source remain native-valid. Final558 checks:554pass/four skips, zero sends/blocked attempts/protected reads. Previous wrong-query guard reduction36to20 retained; model gains from revised training remain unmeasured.",
+    "user_behavior_delta": "Shared SLM supervision now uses exact inference prefix without template-added reasoning, SQL completions use served fences and empty-decoded non-EOS tokens cannot bypass output grammar; malformed SQL tokenization reaches native syntax handling.",
+    "measured_failure_reduction": "Real pinned-tokenizer audit: unwanted reasoning prefixes5680to0 fit and87to0 calibration per adapter onthree sources; SQL grammar-compatible supervision0to5680 fit and0to87 calibration. Prior source-schema349omission repair and16wrong-result guard prevention retained. Full570checks:566pass/four skips; zero providers/protected reads. No revised model-answer gain yet.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -390,18 +390,21 @@
       "artifacts/agere-semantic-fixes-2026-10-27/native-preflight.json",
       "artifacts/agere-semantic-fixes-2026-10-27/recovery-plan.json",
       "artifacts/agere-semantic-fixes-2026-10-27/resume-preflight.json",
-      "artifacts/agere-schema-repair-2026-10-27/verification.json"
+      "artifacts/agere-schema-repair-2026-10-27/verification.json",
+      "artifacts/agere-schema-repair-2026-10-27/serialization-audit.json",
+      "artifacts/agere-schema-repair-2026-10-27/format-verification/tests.json",
+      "artifacts/agere-semantic-fixes-2026-10-27/recovered-sql-format-stop.json"
     ],
-    "remaining_gap": "Original typed study completed: first round126/208 acceptable but36wrong; sparse corrective round88/208 and48 regressed comparison cases; both unselected. Shared guards prevent16 first-round wrong query results without losing correct results, with20 wrong proposals still present. SQL recovery and combined typed/SQL studies on the amended full-fit-rehearsal protocol remain active/pending; inspect final source/parent comparisons before claiming gains. Automatic full-note/dose/answer/artifact and browser/physician acceptance, clinical/model qualification, total cost and all ten product areas remain open.",
-    "next_action": "Read artifacts/agere-schema-repair-2026-10-27/before-after.md and before-after.json for receipt-checked paired results and domain losses. Collector session51065 updates them at state/completion changes without inference. Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json and current SQL log, then artifacts/agere-schema-repair-2026-10-27/revised-status.json and revised-outcomes.md. Existing finite successor session82301 waits for completed SQL result/review, stops only the exact owned old process before queued fitting (or preserves it if fitting already began), then runs repaired-source typed and SQL studies from /private/tmp/agere-learning-schema-repair-20261027. Do not duplicate jobs, mutate either frozen source, use comparison questions for fitting or start providers. Each finished study receives fresh review; no default installation. On completion review real gains/regressions, integrate descendant163d4d6 (includes0ee2d0d schema repair and native-classifier qualification) into the canonical branch, rerun only checks justified by any changes, refresh offline clinical preflight and update existing private draft PR. No automatic Claude continuation; manually resume subscription workflow only after availability, stopping on any limit. Preserve all negative/failed candidates, original source/config, G3/all ten areas,181/5 ledger and assisted Heartline.",
-    "next": "Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json, recovery-outcomes.md and recovered-sql/combined-typed/combined-sql-result.json plus corresponding -review.json as the already-running PID12107/session58695 finishes the finite offline chain. Source is frozen at the final verified fingerprint; do not silently mutate its training contract. Full rehearsal retains all fit examples; comparison questions never enter fitting. The chain stops on failures, preserves completed evidence and never calls providers or activates defaults. Fix any actual infrastructure/audit failure offline with explicit preserved recovery. After subscription availability, manually use this evidence root resume-after-reset.txt for ordinary clinical workflow and browser review, stopping on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, permissions and all negative/failed candidates. No provider polling, retry or heartbeat.",
+    "remaining_gap": "Frozen SQL attempt failed its decoding-format contract and was explicitly stopped, weights andpartial comparisons preserved. Revised typed/SQL studies now run on repaired contract; no final comparison or model promotion. Full automatic clinical note/dose/answer/artifact, browser/physician acceptance, total cost and all ten acceptance areas remain open.",
+    "next_action": "Inspect artifacts/agere-schema-repair-2026-10-27/revised-status.json, format-training.log, format-plan.json and before-after.md/json while PID29583/session7315 completes the two finite local studies. Canonical source495525e39de88b63ce3cb71654b5b78b50a72a14590a2f6dff195113882b8810 is frozen; do not mutate core, duplicate GPU jobs, use comparison questions for fitting or call providers. Original PID12107 and successor13478 were exactly verified and explicitly stopped after14 punctuation-only SQL outputs; their source/weights/failed state/diagnostics remain. First new studytyped, thenSQL; full fit rehearsal, one correction epoch, up to2rounds, install=false. Each complete study receives fresh native review. Collector83290 preserves paired/domain gains and losses, marks partial failed SQL unscored; final preserve.py snapshots all evidence. On completion inspect regressions and selection, update actual-results report and private draftPR. No automatic Claude continuation. Offline clinical preflight is refreshed at this source; manual subscription-only continuation after user authorization/availability must stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and all negative candidates.",
+    "next": "Inspect artifacts/agere-schema-repair-2026-10-27/revised-status.json, format-training.log, format-plan.json and before-after.md/json while PID29583/session7315 completes the two finite local studies. Canonical source495525e39de88b63ce3cb71654b5b78b50a72a14590a2f6dff195113882b8810 is frozen; do not mutate core, duplicate GPU jobs, use comparison questions for fitting or call providers. Original PID12107 and successor13478 were exactly verified and explicitly stopped after14 punctuation-only SQL outputs; their source/weights/failed state/diagnostics remain. First new studytyped, thenSQL; full fit rehearsal, one correction epoch, up to2rounds, install=false. Each complete study receives fresh native review. Collector83290 preserves paired/domain gains and losses, marks partial failed SQL unscored; final preserve.py snapshots all evidence. On completion inspect regressions and selection, update actual-results report and private draftPR. No automatic Claude continuation. Offline clinical preflight is refreshed at this source; manual subscription-only continuation after user authorization/availability must stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and all negative candidates.",
     "latest_review": {
-      "at": "2026-10-27T13:43:29.043393+00:00",
-      "kind": "Completed typed recursive review and verified general SQL/schema/full-rehearsal recovery",
+      "at": "2026-10-27T17:40:46.048326+00:00",
+      "kind": "Actual format-failure diagnosis, whole-bank tokenizer audit and offline regression verification",
       "evidence": [
-        "artifacts/agere-semantic-fixes-2026-10-27/verification.json",
-        "artifacts/agere-semantic-fixes-2026-10-27/guard-replay-final-v2.json",
-        "artifacts/agere-semantic-fixes-2026-10-27/verification-final/tests.json"
+        "artifacts/agere-schema-repair-2026-10-27/serialization-audit.json",
+        "artifacts/agere-schema-repair-2026-10-27/format-verification/tests.json",
+        "artifacts/agere-semantic-fixes-2026-10-27/recovered-sql-format-stop.json"
       ]
     },
     "coordination": {
@@ -471,10 +474,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-27T15:37:49.896698+00:00",
+      "at": "2026-10-27T17:40:46.048326+00:00",
       "gate": "G3",
-      "outcome": "Native classifier comparison corrects majority-only qualification: zero useful gains; old candidate quarantined, unchanged model bytes correctly not_selected. Frozen SLM runs continue; no new SLM gain claimed.",
-      "evidence": "artifacts/agere-schema-repair-2026-10-27/native-qualified-shape-result.json"
+      "outcome": "Actual frozen SQL decoding exposed general training/inference format defects. Shared repairs verified acrossall fitting/calibration targets and570checks; corrected finite model studies running, no model-answer gain claimed.",
+      "evidence": "artifacts/agere-schema-repair-2026-10-27/serialization-audit.json"
     },
     "results_report": "artifacts/agere-schema-repair-2026-10-27/before-after.md",
     "native_shape_followup": {
@@ -489,7 +492,7 @@
         "passed": 556,
         "skipped": 4
       },
-      "integration": "After frozen adapter studies; do not edit their source or restart fitting",
+      "integration": "Integrated; source contract updated by separately verified serving-format repair",
       "no_default_activation": true
     }
   },
@@ -1490,6 +1493,12 @@
       "decision": "Compare shape learners with the actual native selector and require useful confident decisions beyond it. Preserve original strict-label scores, separately apply runtime scalar compatibility, quarantine the isolated majority-only candidate and stage the qualifier after frozen adapter studies.",
       "basis": "Native rules304/315 correct,0wrong/11declined under existing scalar compatibility; learned head296 forced-choice correct,80 confident,zero useful accepted gains. Classifier model bytes identical. Fresh CPU qualification correctly not_selected;20focused and560broad checks (556pass/four skips), zero providers/protected reads.",
       "scope_impact": "Existing architecture and all ten areas retained. Classifier-qualification-only code in isolated descendant163d4d6; adapter serving contracts unchanged. Do not interrupt/retune frozen SLM studies or claim new clinical/model accuracy."
+    },
+    {
+      "at": "2026-10-27T17:40:46.048326+00:00",
+      "decision": "Stop the exactly verified frozen SQL and queued processes after a real shared serving-format failure, preserve incomplete output without an accuracy score, integrate reviewed schema/native qualifier and explicitly replace the two queued adapter studies under exact serving-prefix/fenced-target contracts.",
+      "basis": "All14 candidate SQL outputs were punctuation-only, while finite weights and raw SQL on an approved fit request isolate serialization/decoding. Real-tokenizer audit confirms unwanted reasoning in all5680fit examples and raw SQL outside fenced grammar.570guarded checks pass withfour skips; no providers/protected reads.",
+      "scope_impact": "Same question splits, source calculations, units, architecture and all ten product areas retained. Fresh pinned-base starts; full rehearsal and fit-only selection unchanged. No default activation or clinical superiority claim."
     }
   ]
 }
