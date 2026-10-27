@@ -117,7 +117,15 @@ def verify(manifest,output):
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True,type=Path);p.add_argument('--count',type=int,default=10000);p.add_argument('--reference',type=Path);p.add_argument('--verify',action='store_true');a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--output',required=True,type=Path);p.add_argument('--count',type=int,default=10000);p.add_argument('--reference',type=Path);p.add_argument('--verify',action='store_true')
+    p.add_argument('--healthcare',action='store_true',help='Broader independently checked authored healthcare analytics structures')
+    p.add_argument('--fit-per-family',type=int,default=80);p.add_argument('--calibration-per-family',type=int,default=3);p.add_argument('--verification-per-family',type=int,default=8)
+    a=p.parse_args()
+    if a.healthcare:
+        from tools.training import healthcare_curriculum as H
+        result=H.build(a.output,fit_per_family=a.fit_per_family,calibration_per_family=a.calibration_per_family,verification_per_family=a.verification_per_family)
+        if a.verify:result['native_verification']={learner:H.verify(a.output,learner) for learner in ('typed','bottled')}
+        print(json.dumps(result,indent=2));return
     path,result=build(a.output,count=a.count,reference=a.reference)
     if a.verify:result['native_verification']=verify(path,a.output/'native-verification.json')
     print(json.dumps(result,indent=2))

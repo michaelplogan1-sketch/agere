@@ -181,6 +181,12 @@ def requested_shape(question):
     q = shape_wording(question).lower()
     # Evidential 'going by the last two results' does not request grouped rows.
     q = re.sub(r'\b(?:going|judging)\s+by\b', 'using', q)
+    q = re.sub(r'\bmultiplied\s+by\b', 'times', q)
+    # A hyphenated dose/goal modifier and a rate denominator do not request
+    # separate output rows. Preserve actual "per patient" / "by payer" asks.
+    q = re.sub(r'\bper-(?:patient|member|person)\b', 'individual', q)
+    q = re.sub(r'\bper\s+(?:(?:received|recorded|covered|eligible|attributed|enrolled)\s+)?member(?:[- ]month|\s+per\s+month)s?\b', 'pmpm', q)
+    q = re.sub(r'\bcount(?:ing)?\s+each\s+(?:claim|record|patient|member|visit|encounter|stay|event|fill)s?\s+once\b', 'count distinct records', q)
     if re.search(r'\b(?:by|per|for each|each|break(?:s)? ?(?:it )?(?:down|out)|split|tabulate|monthly|quarterly|weekly|trend)\b'
                  r'(?! 1,?000\b)(?! (?:at least|at most|more than|less than|over|under|about|around|up to|\$?\d))', q) and \
             not re.search(r'\bper 1,?000\b(?!.*\bby\b)', q):

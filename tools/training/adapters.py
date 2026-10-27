@@ -154,7 +154,7 @@ def cached_generator(generate,ctx,learner,root,model_identity,cfg,stats):
     return call
 
 
-def _run(manifest,root,*,stack,base,train=False,install=False,backend=None,candidate_adapter=None):
+def _run(manifest,root,*,stack,base,train=False,install=False,backend=None,candidate_adapter=None,warm_start_revision=None):
     started=time.monotonic();root=C.checked_path(root);spec,by,dataset=T.load(manifest);learner=spec['learner'];role=A.role(learner)
     ctx=T.Context(stack);pinned=A.pin_base(base);cfg=configuration(spec.get('training'))
     if spec.get('source_identity')!=ctx.identity:raise ValueError('Task manifest and source snapshot differ')
@@ -166,14 +166,22 @@ def _run(manifest,root,*,stack,base,train=False,install=False,backend=None,candi
     contract=A.contract(learner);feedback=C.last_feedback(root,role);prior=[m for m in C.models(root) if m['role']==role];parent=prior[-1] if prior else None
     if parent and feedback and feedback['accepted'] is False and dataset==parent['qualification'].get('dataset') and feedback['revision']>parent['qualification'].get('feedback_revision',0):
         return {'status':'review_required','provider_calls':0,'reason':'Rejected supervision must be corrected before retraining'}
-    job=digest([dataset,ctx.identity,pinned['identity'],cfg,contract,C.feedback_revision(root)])
-    if parent and parent['qualification'].get('job')==job:
-        if install and parent['qualification'].get('selected') and parent['state']=='candidate':
-            model=json.loads(Path(parent['model_path']).read_text())
+    warm=A.training_revision(root,learner,warm_start_revision,base) if warm_start_revision else None
+    if warm and candidate_adapter is not None:raise ValueError('Choose training initialization or an existing finished candidate, not both')
+    if warm:
+        old=json.loads((warm['adapter']/'adapter_config.json').read_text())
+        if old.get('num_layers')!=cfg['num_layers'] or old.get('lora_parameters')!={k:cfg[k] for k in ('rank','scale','dropout','keys')}:
+            raise ValueError('Warm-start adapter projection/rank/layer configuration differs')
+    job=digest([dataset,ctx.identity,pinned['identity'],cfg,contract,C.feedback_revision(root),warm_start_revision])
+    matching=next((m for m in reversed(prior) if m['qualification'].get('job')==job),None)
+    if matching:
+        A.training_revision(root,learner,matching['id'],base)
+        if install and matching['qualification'].get('selected') and matching['state']=='candidate':
+            model=json.loads(Path(matching['model_path']).read_text())
             for name,entry in model['files'].items():
                 if A.file_hash(A.checked_child(Path(model['adapter']),name))!=entry['sha256']:raise ValueError('Qualified candidate bytes changed')
-            C.rollback(root,role,parent['id'],'Explicit activation of unchanged qualified adapter candidate')
-        return {'status':'unchanged','revision':parent['id'],'provider_calls':0}
+            C.rollback(root,role,matching['id'],'Explicit activation of unchanged qualified adapter candidate')
+        return {'status':'unchanged','revision':matching['id'],'qualification':matching['qualification'],'provider_calls':0}
     directory=root/'adapter-jobs'/job;data=directory/'data';data.mkdir(parents=True,exist_ok=True)
     # Validate the supplied targets against received source calculations. An
     # invalid target is a dataset problem, never a reason to train a wrong label.
@@ -188,18 +196,24 @@ def _run(manifest,root,*,stack,base,train=False,install=False,backend=None,candi
     prepared={'schema':VERSION,'status':'prepared','job':job,'learner':learner,'dataset':dataset,'source_identity':ctx.identity,
         'base_identity':pinned['identity'],'configuration':cfg,'task_counts':{s:len(r) for s,r in by.items()},
         'source_variants':[{'path':str(v.path),'identity':v.identity} for v in variants],
-        'family_counts':{s:len({r['family'] for r in rows}) for s,rows in by.items()},'provider_calls':0,'clinical_qualification':False}
+        'family_counts':{s:len({r['family'] for r in rows}) for s,rows in by.items()},'provider_calls':0,'clinical_qualification':False,
+        'warm_start_revision':warm_start_revision,'initialization_artifact':warm['artifact_identity'] if warm else None}
     (directory/'prepared.json').write_text(json.dumps(prepared,indent=2)+'\n')
     if not train and candidate_adapter is None:return prepared
     backend=backend or Mlx(pinned['path']);candidate=C.checked_path(candidate_adapter) if candidate_adapter else directory/'candidate'
+    if train and candidate_adapter is None and (candidate/'adapters.safetensors').exists():
+        raise ValueError('Preserve existing unfinished training weights; evaluate the explicit candidate path or declare a new job')
     released=A.release_identity(learner,root=root,base=base)
     current=Path(released['adapter']) if released else None
     with offline() as guard:
-        fit=backend.train(data,candidate,cfg,resume=current) if train and candidate_adapter is None else {
+        fit=backend.train(data,candidate,cfg,resume=warm['adapter'] if warm else current) if train and candidate_adapter is None else {
             'existing_explicit_candidate':str(candidate),'adapter_config':json.loads((candidate/'adapter_config.json').read_text()),
             'weights_sha256':A.file_hash(candidate/'adapters.safetensors')}
         comparisons={};local_cache={'generated':0,'reused':0}
-        for name,adapter in (('baseline',current),('candidate',candidate)):
+        compare_models=[('baseline',current)]
+        if warm:compare_models.append(('parent_candidate',warm['adapter']))
+        compare_models.append(('candidate',candidate))
+        for name,adapter in compare_models:
             with backend.generator(learner,adapter,ctx,cfg) as generate:
                 model_identity=digest([pinned['identity'],A.file_hash(adapter/'adapters.safetensors') if adapter else None])
                 cached=cached_generator(generate,ctx,learner,root,model_identity,cfg,local_cache)
@@ -209,15 +223,17 @@ def _run(manifest,root,*,stack,base,train=False,install=False,backend=None,candi
         base_results=comparisons['baseline']['verification'];candidate_results=comparisons['candidate']['verification']
         useful=[i for i,done in enumerate(deterministic) if not done]
         gained=sum(candidate_results['details'][i]['acceptable'] and not base_results['details'][i]['acceptable'] for i in useful)
-        regressions=sum(b['acceptable'] and not c['acceptable'] for split in ('calibration','verification')
-            for b,c in zip(comparisons['baseline'][split]['details'],comparisons['candidate'][split]['details']))
-        selected=gained>0 and regressions==0 and all(comparisons['candidate'][s]['guarded_wrong']==0 for s in ('calibration','verification'))
+        previous=comparisons.get('parent_candidate',comparisons['baseline'])['verification']
+        incremental_gained=sum(candidate_results['details'][i]['acceptable'] and not previous['details'][i]['acceptable'] for i in useful)
+        regressions=sum(b['acceptable'] and not c['acceptable'] for prior in ('baseline','parent_candidate') if prior in comparisons
+            for split in ('calibration','verification') for b,c in zip(comparisons[prior][split]['details'],comparisons['candidate'][split]['details']))
+        selected=gained>0 and incremental_gained>0 and regressions==0 and all(comparisons['candidate'][s]['guarded_wrong']==0 for s in ('calibration','verification'))
         if T.Context(stack).identity!=ctx.identity:raise ValueError('Source changed during adapter qualification')
         if any(T.Context(v.path).identity!=v.identity for v in variants):raise ValueError('Source variant changed during qualification')
         if A.contract(learner)!=contract:raise ValueError('Adapter implementation changed during qualification')
         if guard['blocked_attempts']:raise RuntimeError('A blocked network/child-process attempt invalidated offline qualification')
         qualification={**prepared,'selected':selected,'job':job,'feedback_revision':C.feedback_revision(root),'training':fit,
-            'comparisons':comparisons,'deterministic_already_acceptable':sum(deterministic),'useful_improvements':gained,
+            'comparisons':comparisons,'deterministic_already_acceptable':sum(deterministic),'useful_improvements':gained,'improvements_over_parent':incremental_gained,
             'local_decodes':local_cache,
             'regressions':regressions,'offline_guard':guard,'reason':'Candidate must improve tasks beyond deterministic/current coverage without a measured regression or guarded wrong answer',
             'provenance':spec['provenance'],'input_files':spec['files'],'contract':contract,
@@ -251,7 +267,8 @@ def main():
     for arg in ('manifest','root','stack','base'):parser.add_argument('--'+arg,required=True,type=Path)
     parser.add_argument('--train',action='store_true');parser.add_argument('--install',action='store_true')
     parser.add_argument('--candidate-adapter',type=Path)
-    args=parser.parse_args();print(json.dumps(run(args.manifest,args.root,stack=args.stack,base=args.base,train=args.train,install=args.install,candidate_adapter=args.candidate_adapter),indent=2))
+    parser.add_argument('--warm-start-revision',help='Explicit immutable prior revision in this isolated registry; compares against both original and parent, never activates it')
+    args=parser.parse_args();print(json.dumps(run(args.manifest,args.root,stack=args.stack,base=args.base,train=args.train,install=args.install,candidate_adapter=args.candidate_adapter,warm_start_revision=args.warm_start_revision),indent=2))
 
 
 if __name__=='__main__':main()

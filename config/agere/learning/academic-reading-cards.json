@@ -1,0 +1,942 @@
+{
+  "schema": "academic-reading-cards/1",
+  "cards": [
+    {
+      "id": "academic-porter-value",
+      "topic": "thought_leaders",
+      "title": "Harvard: value-based healthcare delivery curriculum",
+      "questions": [
+        "How does Michael Porter define value-based healthcare?",
+        "How should patient outcomes and cost be linked in value-based care?"
+      ],
+      "summary": "The Harvard curriculum frames value around patient health outcomes relative to the resources used to achieve them. Practice binding an explicitly defined patient population, outcome observation and cost period; a lower cost alone does not establish improved patient value. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "The Harvard curriculum frames value around patient health outcomes relative to the resources used to achieve them.",
+        "authored_analytics_exercise": "Practice binding an explicitly defined patient population, outcome observation and cost period; a lower cost alone does not establish improved patient value."
+      },
+      "entities": [
+        "Harvard: value-based healthcare delivery curriculum",
+        "value_based_care",
+        "Harvard Business School, Institute for Strategy and Competitiveness"
+      ],
+      "citations": [
+        {
+          "url": "https://www.isc.hbs.edu/health-care/health-care-courses/Pages/health-care-curriculum.aspx",
+          "title": "Harvard: value-based healthcare delivery curriculum",
+          "publisher": "Harvard Business School, Institute for Strategy and Competitiveness",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "value_based_care"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "full-text training permission not established",
+        "license_evidence_url": "https://www.isc.hbs.edu/health-care/health-care-courses/Pages/health-care-curriculum.aspx",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice binding an explicitly defined patient population, outcome observation and cost period; a lower cost alone does not establish improved patient value."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-porter-tdabc",
+      "topic": "thought_leaders",
+      "title": "Harvard: TDABC project starter kit",
+      "questions": [
+        "What is time-driven activity-based costing in healthcare?",
+        "Which inputs are needed for a care-cycle TDABC calculation?"
+      ],
+      "summary": "Harvard material links patient-reported outcomes, clinical results and the cost of a condition-specific care cycle. Practice calculating recorded activity costs from time and capacity cost rates, retaining missing cost inputs and separating charges, paid claims and resource costs. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "Harvard material links patient-reported outcomes, clinical results and the cost of a condition-specific care cycle.",
+        "authored_analytics_exercise": "Practice calculating recorded activity costs from time and capacity cost rates, retaining missing cost inputs and separating charges, paid claims and resource costs."
+      },
+      "entities": [
+        "Harvard: TDABC project starter kit",
+        "value_based_care",
+        "activity_costing",
+        "Harvard Business School, Institute for Strategy and Competitiveness"
+      ],
+      "citations": [
+        {
+          "url": "https://www.isc.hbs.edu/Documents/pdf/2020_TDABC_Project_Starter_Kit.pdf",
+          "title": "Harvard: TDABC project starter kit",
+          "publisher": "Harvard Business School, Institute for Strategy and Competitiveness",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "value_based_care",
+          "activity_costing"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "full-text training permission not established",
+        "license_evidence_url": "https://www.isc.hbs.edu/Documents/pdf/2020_TDABC_Project_Starter_Kit.pdf",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice calculating recorded activity costs from time and capacity cost rates, retaining missing cost inputs and separating charges, paid claims and resource costs."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-porter-teams",
+      "topic": "thought_leaders",
+      "title": "Harvard: value-based healthcare core concepts",
+      "questions": [
+        "What does an integrated practice unit coordinate?",
+        "How do value-based care teams relate to follow-up analytics?"
+      ],
+      "summary": "The core-concepts presentation discusses coordination across an integrated practice unit, including clinical teams, handoffs and outcome review. Practice distinguishing assigned clinical responsibility, a referral, a completed encounter and ongoing follow-up; none of these records alone proves the others. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "The core-concepts presentation discusses coordination across an integrated practice unit, including clinical teams, handoffs and outcome review.",
+        "authored_analytics_exercise": "Practice distinguishing assigned clinical responsibility, a referral, a completed encounter and ongoing follow-up; none of these records alone proves the others."
+      },
+      "entities": [
+        "Harvard: value-based healthcare core concepts",
+        "value_based_care",
+        "integrated_care",
+        "Harvard Business School, Institute for Strategy and Competitiveness"
+      ],
+      "citations": [
+        {
+          "url": "https://www.isc.hbs.edu/Documents/pdf/2019-Value-Based-Health-Care-Delivery-Core-Concepts-Porter.pdf",
+          "title": "Harvard: value-based healthcare core concepts",
+          "publisher": "Harvard Business School, Institute for Strategy and Competitiveness",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "value_based_care",
+          "integrated_care"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "full-text training permission not established",
+        "license_evidence_url": "https://www.isc.hbs.edu/Documents/pdf/2019-Value-Based-Health-Care-Delivery-Core-Concepts-Porter.pdf",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice distinguishing assigned clinical responsibility, a referral, a completed encounter and ongoing follow-up; none of these records alone proves the others."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-heart-failure",
+      "topic": "evidence",
+      "title": "Heart failure",
+      "questions": [
+        "What educational concepts support heart failure analytics?"
+      ],
+      "summary": "Heart failure education includes symptom and fluid-status monitoring, documented medications, follow-up and psychosocial support. Practice distinguishing a documented diagnosis from phenotype evidence, active medication documentation from a held order, and a missing rationale from an explicit contraindication. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "Heart failure education includes symptom and fluid-status monitoring, documented medications, follow-up and psychosocial support.",
+        "authored_analytics_exercise": "Practice distinguishing a documented diagnosis from phenotype evidence, active medication documentation from a held order, and a missing rationale from an explicit contraindication."
+      },
+      "entities": [
+        "Heart failure",
+        "heart_failure",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/5-8-heart-failure/",
+          "title": "Heart failure",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice distinguishing a documented diagnosis from phenotype evidence, active medication documentation from a held order, and a missing rationale from an explicit contraindication."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-diabetes",
+      "topic": "evidence",
+      "title": "Diabetes mellitus",
+      "questions": [
+        "What educational concepts support diabetes analytics?"
+      ],
+      "summary": "Diabetes education connects glucose monitoring with medication management, foot care, eye and kidney monitoring, and individualized self-management support. Practice preserving measurement units and dates, distinguishing repeated laboratory rows from distinct patients, and reporting documented service uptake without inferring eligibility. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "Diabetes education connects glucose monitoring with medication management, foot care, eye and kidney monitoring, and individualized self-management support.",
+        "authored_analytics_exercise": "Practice preserving measurement units and dates, distinguishing repeated laboratory rows from distinct patients, and reporting documented service uptake without inferring eligibility."
+      },
+      "entities": [
+        "Diabetes mellitus",
+        "diabetes",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/7-5-diabetes-mellitus/",
+          "title": "Diabetes mellitus",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice preserving measurement units and dates, distinguishing repeated laboratory rows from distinct patients, and reporting documented service uptake without inferring eligibility."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-copd",
+      "topic": "evidence",
+      "title": "COPD",
+      "questions": [
+        "What educational concepts support copd analytics?"
+      ],
+      "summary": "COPD educational material discusses respiratory symptoms, spirometry, functional limitation and self-management support. Practice retaining the date and provenance of lung-function measurements, documented exacerbations and admissions. Treatment and oxygen recommendations in general educational material are not adopted as automated clinical rules. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "COPD educational material discusses respiratory symptoms, spirometry, functional limitation and self-management support.",
+        "authored_analytics_exercise": "Practice retaining the date and provenance of lung-function measurements, documented exacerbations and admissions. Treatment and oxygen recommendations in general educational material are not adopted as automated clinical rules."
+      },
+      "entities": [
+        "COPD",
+        "copd",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/6-6-copd/",
+          "title": "COPD",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "copd"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice retaining the date and provenance of lung-function measurements, documented exacerbations and admissions. Treatment and oxygen recommendations in general educational material are not adopted as automated clinical rules."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-asthma",
+      "topic": "evidence",
+      "title": "Asthma",
+      "questions": [
+        "What educational concepts support asthma analytics?"
+      ],
+      "summary": "Asthma education discusses symptoms, triggers, lung-function assessment, action plans and disparities in access and outcomes. Practice separating documented asthma, symptom observations, visits and environmental or access barriers; show missing information explicitly. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "Asthma education discusses symptoms, triggers, lung-function assessment, action plans and disparities in access and outcomes.",
+        "authored_analytics_exercise": "Practice separating documented asthma, symptom observations, visits and environmental or access barriers; show missing information explicitly."
+      },
+      "entities": [
+        "Asthma",
+        "asthma",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/6-5-asthma/",
+          "title": "Asthma",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "asthma"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice separating documented asthma, symptom observations, visits and environmental or access barriers; show missing information explicitly."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-cad",
+      "topic": "evidence",
+      "title": "Coronary artery disease",
+      "questions": [
+        "What educational concepts support coronary artery disease analytics?"
+      ],
+      "summary": "Coronary artery disease education relates atherosclerosis and impaired coronary blood flow to symptoms and clinical assessment. Practice distinguishing historical disease documentation, current symptoms, completed investigations and recorded follow-up; source data must support the requested time window. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "Coronary artery disease education relates atherosclerosis and impaired coronary blood flow to symptoms and clinical assessment.",
+        "authored_analytics_exercise": "Practice distinguishing historical disease documentation, current symptoms, completed investigations and recorded follow-up; source data must support the requested time window."
+      },
+      "entities": [
+        "Coronary artery disease",
+        "coronary_artery_disease",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/5-7-coronary-artery-disease/",
+          "title": "Coronary artery disease",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "coronary_artery_disease"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice distinguishing historical disease documentation, current symptoms, completed investigations and recorded follow-up; source data must support the requested time window."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-hypertension",
+      "topic": "evidence",
+      "title": "Hypertension",
+      "questions": [
+        "What educational concepts support hypertension analytics?"
+      ],
+      "summary": "Hypertension education covers blood-pressure assessment, risk factors and ongoing management. Practice preserving measurement units, repeat observations and dates; report recorded values separately from a confirmed diagnosis or a reviewed treatment target. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "Hypertension education covers blood-pressure assessment, risk factors and ongoing management.",
+        "authored_analytics_exercise": "Practice preserving measurement units, repeat observations and dates; report recorded values separately from a confirmed diagnosis or a reviewed treatment target."
+      },
+      "entities": [
+        "Hypertension",
+        "hypertension",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/5-5-hypertension/",
+          "title": "Hypertension",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hypertension"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice preserving measurement units, repeat observations and dates; report recorded values separately from a confirmed diagnosis or a reviewed treatment target."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-lipids",
+      "topic": "evidence",
+      "title": "Atherosclerosis and lipid context",
+      "questions": [
+        "What educational concepts support hyperlipidemia analytics?"
+      ],
+      "summary": "The atherosclerosis chapter discusses arterial plaque, cholesterol and LDL in cardiovascular disease. Practice retaining the specific lipid measure, unit and date, along with documented disease and medication status; a risk factor alone does not establish a coronary event. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "The atherosclerosis chapter discusses arterial plaque, cholesterol and LDL in cardiovascular disease.",
+        "authored_analytics_exercise": "Practice retaining the specific lipid measure, unit and date, along with documented disease and medication status; a risk factor alone does not establish a coronary event."
+      },
+      "entities": [
+        "Atherosclerosis and lipid context",
+        "hyperlipidemia",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/5-6-arteriosclerosis-atherosclerosis/",
+          "title": "Atherosclerosis and lipid context",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hyperlipidemia"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice retaining the specific lipid measure, unit and date, along with documented disease and medication status; a risk factor alone does not establish a coronary event."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-cancer",
+      "topic": "evidence",
+      "title": "Cancer",
+      "questions": [
+        "What educational concepts support cancer analytics?"
+      ],
+      "summary": "The malignancy chapter provides educational context for cancer and its assessment. Practice preserving documented cancer type and status, dates, care-team relationships, patient-reported outcomes and observed costs; a broad cancer code cannot supply missing stage or treatment intent. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "The malignancy chapter provides educational context for cancer and its assessment.",
+        "authored_analytics_exercise": "Practice preserving documented cancer type and status, dates, care-team relationships, patient-reported outcomes and observed costs; a broad cancer code cannot supply missing stage or treatment intent."
+      },
+      "entities": [
+        "Cancer",
+        "cancer",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthalts/chapter/4-3-cancer/",
+          "title": "Cancer",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "cancer"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthalts/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice preserving documented cancer type and status, dates, care-team relationships, patient-reported outcomes and observed costs; a broad cancer code cannot supply missing stage or treatment intent."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-obesity",
+      "topic": "evidence",
+      "title": "Adult overweight and obesity",
+      "questions": [
+        "What educational concepts support obesity analytics?"
+      ],
+      "summary": "NIDDK describes weight-related health context and measurements used to assess overweight and obesity. Practice preserving height and weight units, measurement dates and explicit diagnosis status; distinguish missing measurements, observed trends and patient-specific treatment decisions. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "NIDDK describes weight-related health context and measurements used to assess overweight and obesity.",
+        "authored_analytics_exercise": "Practice preserving height and weight units, measurement dates and explicit diagnosis status; distinguish missing measurements, observed trends and patient-specific treatment decisions."
+      },
+      "entities": [
+        "Adult overweight and obesity",
+        "obesity",
+        "National Institute of Diabetes and Digestive and Kidney Diseases"
+      ],
+      "citations": [
+        {
+          "url": "https://www.niddk.nih.gov/health-information/weight-management/adult-overweight-obesity/definition-facts",
+          "title": "Adult overweight and obesity",
+          "publisher": "National Institute of Diabetes and Digestive and Kidney Diseases",
+          "retrieved": "2026-10-27",
+          "source_type": "government",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "obesity"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "full-text training permission not established",
+        "license_evidence_url": "https://www.niddk.nih.gov/copyright",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice preserving height and weight units, measurement dates and explicit diagnosis status; distinguish missing measurements, observed trends and patient-specific treatment decisions."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-prediabetes",
+      "topic": "evidence",
+      "title": "Insulin resistance and prediabetes",
+      "questions": [
+        "What educational concepts support prediabetes analytics?"
+      ],
+      "summary": "NIDDK distinguishes insulin resistance and prediabetes from established type 2 diabetes and describes prevention-oriented care. Practice separating documented conditions, laboratory observations and enrollment in prevention services; use an explicit reviewed definition before applying a diagnostic threshold. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "NIDDK distinguishes insulin resistance and prediabetes from established type 2 diabetes and describes prevention-oriented care.",
+        "authored_analytics_exercise": "Practice separating documented conditions, laboratory observations and enrollment in prevention services; use an explicit reviewed definition before applying a diagnostic threshold."
+      },
+      "entities": [
+        "Insulin resistance and prediabetes",
+        "prediabetes",
+        "National Institute of Diabetes and Digestive and Kidney Diseases"
+      ],
+      "citations": [
+        {
+          "url": "https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance",
+          "title": "Insulin resistance and prediabetes",
+          "publisher": "National Institute of Diabetes and Digestive and Kidney Diseases",
+          "retrieved": "2026-10-27",
+          "source_type": "government",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "prediabetes"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "full-text training permission not established",
+        "license_evidence_url": "https://www.niddk.nih.gov/copyright",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice separating documented conditions, laboratory observations and enrollment in prevention services; use an explicit reviewed definition before applying a diagnostic threshold."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-depression",
+      "topic": "evidence",
+      "title": "Depression",
+      "questions": [
+        "What educational concepts support depression analytics?"
+      ],
+      "summary": "The depression chapter discusses symptoms, functioning, assessment, screening and treatment context. Practice distinguishing a screening result, a recorded diagnosis, referral and completed follow-up. Missing screening documentation is not a negative screen. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "The depression chapter discusses symptoms, functioning, assessment, screening and treatment context.",
+        "authored_analytics_exercise": "Practice distinguishing a screening result, a recorded diagnosis, referral and completed follow-up. Missing screening documentation is not a negative screen."
+      },
+      "entities": [
+        "Depression",
+        "depression",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthpromo/chapter/7-11-depression/",
+          "title": "Depression",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "depression"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthpromo/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice distinguishing a screening result, a recorded diagnosis, referral and completed follow-up. Missing screening documentation is not a negative screen."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-sdoh",
+      "topic": "evidence",
+      "title": "Social determinants and mental health context",
+      "questions": [
+        "What educational concepts support sdoh analytics?"
+      ],
+      "summary": "The chapter discusses how economic stability, housing, food access, social context and access to healthcare can affect mental health and care experiences. Practice distinguishing confirmed needs, absent needs, unassessed domains, declined assistance, referral and actual service enrollment. Denominators must state whose needs were assessed. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "The chapter discusses how economic stability, housing, food access, social context and access to healthcare can affect mental health and care experiences.",
+        "authored_analytics_exercise": "Practice distinguishing confirmed needs, absent needs, unassessed domains, declined assistance, referral and actual service enrollment. Denominators must state whose needs were assessed."
+      },
+      "entities": [
+        "Social determinants and mental health context",
+        "sdoh",
+        "Open RN / Wisconsin Technical College System"
+      ],
+      "citations": [
+        {
+          "url": "https://wtcs.pressbooks.pub/healthpromo/chapter/5-2-basic-concepts-of-mental-health-and-mental-illness/",
+          "title": "Social determinants and mental health context",
+          "publisher": "Open RN / Wisconsin Technical College System",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "sdoh"
+        ],
+        "use_mode": "cc_by_text_summary",
+        "license": "CC-BY-4.0",
+        "license_evidence_url": "https://wtcs.pressbooks.pub/healthpromo/front-matter/preface/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Practice distinguishing confirmed needs, absent needs, unassessed domains, declined assistance, referral and actual service enrollment. Denominators must state whose needs were assessed."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-uc-diabetes-video",
+      "topic": "evidence",
+      "title": "University of California lecture: Managing Diabetes",
+      "questions": [
+        "Where is the University of California Managing Diabetes lecture?"
+      ],
+      "summary": "University of California Television lists Managing Diabetes with Robert Baron, published August 8, 2025, with a 57-minute duration. Use the official lecture link for educational review. This record indexes the title and metadata; its video and transcript were not downloaded, watched or used for weight training. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "University of California Television lists Managing Diabetes with Robert Baron, published August 8, 2025, with a 57-minute duration.",
+        "authored_analytics_exercise": "Use the official lecture link for educational review. This record indexes the title and metadata; its video and transcript were not downloaded, watched or used for weight training."
+      },
+      "entities": [
+        "University of California lecture: Managing Diabetes",
+        "diabetes",
+        "academic_video",
+        "University of California Television"
+      ],
+      "citations": [
+        {
+          "url": "https://www.uctv.tv/shows/40756",
+          "title": "University of California lecture: Managing Diabetes",
+          "publisher": "University of California Television",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes",
+          "academic_video"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "full-text training permission not established",
+        "license_evidence_url": "https://www.uctv.tv/shows/40756",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Use the official lecture link for educational review. This record indexes the title and metadata; its video and transcript were not downloaded, watched or used for weight training."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-uc-heart-video",
+      "topic": "evidence",
+      "title": "University of California heart failure lecture catalog",
+      "questions": [
+        "Where can I find the University of California heart failure lecture?"
+      ],
+      "summary": "The official University of California cardiology catalog lists Heart Failure: What it Means and the Many Effective Treatments Now Available, dated January 21, 2023. Use the official catalog to locate the lecture and check its date. This is a metadata reference; the lecture and transcript were not ingested into the learning weights. These are source-linked educational concepts and Agere-authored analytics exercises. Patient-specific diagnosis, treatment suitability and dosing still require applicable evidence and review.",
+      "facts": {
+        "source_background": "The official University of California cardiology catalog lists Heart Failure: What it Means and the Many Effective Treatments Now Available, dated January 21, 2023.",
+        "authored_analytics_exercise": "Use the official catalog to locate the lecture and check its date. This is a metadata reference; the lecture and transcript were not ingested into the learning weights."
+      },
+      "entities": [
+        "University of California heart failure lecture catalog",
+        "heart_failure",
+        "academic_video",
+        "University of California Television"
+      ],
+      "citations": [
+        {
+          "url": "https://www.uctv.tv/cardiology/",
+          "title": "University of California heart failure lecture catalog",
+          "publisher": "University of California Television",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Public educational overview; source-specific treatment thresholds not adopted"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "academic_video"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "full-text training permission not established",
+        "license_evidence_url": "https://www.uctv.tv/cardiology/",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Use the official catalog to locate the lecture and check its date. This is a metadata reference; the lecture and transcript were not ingested into the learning weights."
+        ],
+        "excluded_components": [
+          "images",
+          "embedded videos",
+          "interactive assessments",
+          "publisher answer sets"
+        ],
+        "review_status": "primary_source_reading_and_educational_design; not physician adjudication"
+      }
+    },
+    {
+      "id": "academic-acc-hf-gdmt-deck",
+      "topic": "evidence",
+      "title": "ACC HF in a Box: GDMT teaching deck",
+      "questions": [
+        "Which ACC teaching slides discuss GDMT implementation and medication tolerability?"
+      ],
+      "summary": "The ACC teaching deck discusses medication classes, sequencing and practical tolerability issues. Its selected slides distinguish target-dose discussions from individual blood-pressure tolerance and monitoring considerations. The Agere-authored analytics exercise is to assess documented class coverage and dose exposure separately, bind reasons to dated source evidence, and leave maximum tolerated dose unresolved when it is not documented. This is an attributed educational summary of selected slides, not an adopted patient treatment protocol.",
+      "facts": {
+        "reading_scope": "Selected slide text and references inspected, particularly slides 30-31 and 35-37; no claim of full visual or clinical adjudication.",
+        "authored_analytics_exercise": "Keep medication class coverage, dose exposure, documented tolerance and dated safety observations distinct."
+      },
+      "entities": [
+        "ACC",
+        "heart failure",
+        "GDMT",
+        "dose",
+        "tolerability",
+        "monitoring"
+      ],
+      "citations": [
+        {
+          "url": "https://www.acc.org/-/media/Non-Clinical/Files-PDFs-Excel-MS-Word-etc/Education-and-Meeting/Features/HF-in-a-Box/1-HF-GDMT-Lecture-English.pptx",
+          "title": "HF GDMT lecture, English",
+          "publisher": "American College of Cardiology",
+          "retrieved": "2026-10-27",
+          "source_type": "industry_association",
+          "section": "Selected slide text and references: slides 30-31 and 35-37; deck linked from HF in a Box"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "gdmt",
+          "medication_barriers"
+        ],
+        "use_mode": "public_reference_summary",
+        "license": "Public downloadable teaching material; permission for full-text commercial training not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Keep medication class coverage, dose exposure, documented tolerance and dated safety observations distinct."
+        ],
+        "review_status": "Selected slide text and references inspected; applicability and treatment rules require separate evidence review.",
+        "source_sha256": "27ad8744c2af9b0a52de8bde05dff4e56e139b525cc2e082d736b3ae3472ccb7",
+        "source_slide_count": 73,
+        "clinical_rule_exclusions": [
+          "Dosing and titration instructions",
+          "Patient eligibility",
+          "Unqualified trial effect-size transfer",
+          "Full-text training",
+          "Copied figures and assessments"
+        ]
+      }
+    }
+  ],
+  "policy": "Own-word source-linked reading summaries and authored analytics objectives; no clinical-rule promotion, full lecture copying or video transcript ingestion."
+}

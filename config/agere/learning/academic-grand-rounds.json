@@ -1,0 +1,1690 @@
+{
+  "schema": "academic-reading-cards/1",
+  "cards": [
+    {
+      "id": "lecture-emory-fonarow-gdmt",
+      "topic": "evidence",
+      "title": "Optimal Implementation of GDMT for Heart Failure",
+      "questions": [
+        "Where can I find the lecture Optimal Implementation of GDMT for Heart Failure?"
+      ],
+      "summary": "Gregg C. Fonarow, MD presented this clinician education session on 2025-09-22. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Measure documented medication gaps separately from documented contraindications, access barriers and unresolved evidence; retain the exact eligible denominator. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Measure documented medication gaps separately from documented contraindications, access barriers and unresolved evidence; retain the exact eligible denominator."
+      },
+      "entities": [
+        "heart_failure",
+        "gdmt",
+        "implementation",
+        "Emory University",
+        "Gregg C. Fonarow, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "title": "Optimal Implementation of GDMT for Heart Failure",
+          "publisher": "Emory University",
+          "date": "2025-09-22",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "gdmt",
+          "implementation"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Measure documented medication gaps separately from documented contraindications, access barriers and unresolved evidence; retain the exact eligible denominator."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Gregg C. Fonarow, MD",
+          "event_date": "2025-09-22",
+          "institution": "Emory University",
+          "institution_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "recording_url": "https://www.youtube.com/watch?v=tN0sseDAaj4",
+          "recording_link_evidence_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "access": "public_player_verified",
+          "access_evidence": "Public Emory Cardiology player and description observed; duration 1:05:32; transcript button opened but remained loading.",
+          "content_review": "metadata_only",
+          "transcript_status": "button_opened_load_stalled",
+          "full_lecture_watched": false,
+          "reference_selected_by": "Mike supplied this recording as the example of desired depth."
+        }
+      }
+    },
+    {
+      "id": "lecture-emory-yancy-hf",
+      "topic": "evidence",
+      "title": "Heart Failure 2026: Update on Therapy",
+      "questions": [
+        "Where can I find the lecture Heart Failure 2026: Update on Therapy?"
+      ],
+      "summary": "Clyde W. Yancy, MD, MSc presented this clinician education session on 2026-03-09. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Keep phenotype, guideline version, medication exposure date and evidence date visible when comparing treatment coverage over time. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Keep phenotype, guideline version, medication exposure date and evidence date visible when comparing treatment coverage over time."
+      },
+      "entities": [
+        "heart_failure",
+        "gdmt",
+        "Emory University",
+        "Clyde W. Yancy, MD, MSc"
+      ],
+      "citations": [
+        {
+          "url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "title": "Heart Failure 2026: Update on Therapy",
+          "publisher": "Emory University",
+          "date": "2026-03-09",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "gdmt"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Keep phenotype, guideline version, medication exposure date and evidence date visible when comparing treatment coverage over time."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Clyde W. Yancy, MD, MSc",
+          "event_date": "2026-03-09",
+          "institution": "Emory University",
+          "institution_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "recording_url": "https://www.youtube.com/watch?v=ibEQhMPKRjo",
+          "recording_link_evidence_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-emory-advanced-hf",
+      "topic": "evidence",
+      "title": "Beyond GDMT: Heart Transplantation and LVAD Therapy for Advanced Heart Failure",
+      "questions": [
+        "Where can I find the lecture Beyond GDMT: Heart Transplantation and LVAD Therapy for Advanced Heart Failure?"
+      ],
+      "summary": "Mahmoud Abdou, MD and Annie van Beuningen, MD presented this clinician education session on 2025-09-29. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Distinguish a documented advanced-therapy referral, an evaluation and a completed specialist visit; do not infer candidacy from a low ejection fraction alone. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Distinguish a documented advanced-therapy referral, an evaluation and a completed specialist visit; do not infer candidacy from a low ejection fraction alone."
+      },
+      "entities": [
+        "heart_failure",
+        "advanced_therapy",
+        "Emory University",
+        "Mahmoud Abdou, MD and Annie van Beuningen, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "title": "Beyond GDMT: Heart Transplantation and LVAD Therapy for Advanced Heart Failure",
+          "publisher": "Emory University",
+          "date": "2025-09-29",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "advanced_therapy"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Distinguish a documented advanced-therapy referral, an evaluation and a completed specialist visit; do not infer candidacy from a low ejection fraction alone."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Mahmoud Abdou, MD and Annie van Beuningen, MD",
+          "event_date": "2025-09-29",
+          "institution": "Emory University",
+          "institution_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "recording_url": "https://www.youtube.com/watch?v=mUFlB703w_8",
+          "recording_link_evidence_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-emory-cad",
+      "topic": "evidence",
+      "title": "Management of Chronic CAD: Low Tech Interventions in a High Tech World",
+      "questions": [
+        "Where can I find the lecture Management of Chronic CAD: Low Tech Interventions in a High Tech World?"
+      ],
+      "summary": "Beth L. Abramson, MD presented this clinician education session on 2026-05-04. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Reconcile recorded secondary-prevention care and completed follow-up, preserving missing care evidence rather than classifying it as absent care. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Reconcile recorded secondary-prevention care and completed follow-up, preserving missing care evidence rather than classifying it as absent care."
+      },
+      "entities": [
+        "coronary_artery_disease",
+        "prevention",
+        "Emory University",
+        "Beth L. Abramson, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "title": "Management of Chronic CAD: Low Tech Interventions in a High Tech World",
+          "publisher": "Emory University",
+          "date": "2026-05-04",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "coronary_artery_disease",
+          "prevention"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Reconcile recorded secondary-prevention care and completed follow-up, preserving missing care evidence rather than classifying it as absent care."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Beth L. Abramson, MD",
+          "event_date": "2026-05-04",
+          "institution": "Emory University",
+          "institution_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "recording_url": "https://www.youtube.com/watch?v=St_TTMo_9_k",
+          "recording_link_evidence_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-emory-lpa",
+      "topic": "evidence",
+      "title": "Lipoprotein(a): The Next Frontier in Preventive Cardiology",
+      "questions": [
+        "Where can I find the lecture Lipoprotein(a): The Next Frontier in Preventive Cardiology?"
+      ],
+      "summary": "Harpreet S. Bhatia, MD, MAS presented this clinician education session on 2026-03-02. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Retain assay units, measurement dates and missingness when describing lipid-related risk-factor testing; do not substitute one assay for another. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Retain assay units, measurement dates and missingness when describing lipid-related risk-factor testing; do not substitute one assay for another."
+      },
+      "entities": [
+        "hyperlipidemia",
+        "prevention",
+        "Emory University",
+        "Harpreet S. Bhatia, MD, MAS"
+      ],
+      "citations": [
+        {
+          "url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "title": "Lipoprotein(a): The Next Frontier in Preventive Cardiology",
+          "publisher": "Emory University",
+          "date": "2026-03-02",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hyperlipidemia",
+          "prevention"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Retain assay units, measurement dates and missingness when describing lipid-related risk-factor testing; do not substitute one assay for another."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Harpreet S. Bhatia, MD, MAS",
+          "event_date": "2026-03-02",
+          "institution": "Emory University",
+          "institution_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "recording_url": "https://www.youtube.com/watch?v=t1wbA269uzE",
+          "recording_link_evidence_url": "https://med.aws.emory.edu/departments/medicine/divisions/cardiology/cme/cme-archives.html",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mayo-foundations-gdmt",
+      "topic": "evidence",
+      "title": "Foundations of GDMT",
+      "questions": [
+        "Where can I find the lecture Foundations of GDMT?"
+      ],
+      "summary": "Melissa Lyle, MD presented this clinician education session on 2026-02-24. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Separate medication class coverage, prescribed dose, recorded treatment goal and documented maximum tolerated dose in the same patient-level evidence table. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Separate medication class coverage, prescribed dose, recorded treatment goal and documented maximum tolerated dose in the same patient-level evidence table."
+      },
+      "entities": [
+        "heart_failure",
+        "gdmt",
+        "Mayo Clinic",
+        "Melissa Lyle, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "title": "Foundations of GDMT",
+          "publisher": "Mayo Clinic",
+          "date": "2026-02-24",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "gdmt"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Separate medication class coverage, prescribed dose, recorded treatment goal and documented maximum tolerated dose in the same patient-level evidence table."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Melissa Lyle, MD",
+          "event_date": "2026-02-24",
+          "institution": "Mayo Clinic",
+          "institution_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "recording_url": "https://mssvideoupload.mayo.edu/media/Foundations+of+GDMT/1_itu8xdri",
+          "recording_link_evidence_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "access": "public_player_verified",
+          "access_evidence": "Public Mayo recording page opened as GUEST with title, upload date and Play control; no login needed to reach player.",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mayo-gdmt-not-enough",
+      "topic": "evidence",
+      "title": "When GDMT is not enough",
+      "questions": [
+        "Where can I find the lecture When GDMT is not enough?"
+      ],
+      "summary": "Juan Leoni, MD presented this clinician education session on 2026-03-31. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Reconstruct admissions, documented symptoms, treatment limitations and referrals across time, leaving unsupported suitability judgments unresolved. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Reconstruct admissions, documented symptoms, treatment limitations and referrals across time, leaving unsupported suitability judgments unresolved."
+      },
+      "entities": [
+        "heart_failure",
+        "advanced_therapy",
+        "Mayo Clinic",
+        "Juan Leoni, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "title": "When GDMT is not enough",
+          "publisher": "Mayo Clinic",
+          "date": "2026-03-31",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "advanced_therapy"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Reconstruct admissions, documented symptoms, treatment limitations and referrals across time, leaving unsupported suitability judgments unresolved."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Juan Leoni, MD",
+          "event_date": "2026-03-31",
+          "institution": "Mayo Clinic",
+          "institution_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "recording_url": "https://mssvideoupload.mayo.edu/media/When+GDMT+is+not+enough/1_co0f26t5",
+          "recording_link_evidence_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mayo-cardiorenal",
+      "topic": "evidence",
+      "title": "Cardiorenal Syndrome: Understanding the Heart-Kidney Connection",
+      "questions": [
+        "Where can I find the lecture Cardiorenal Syndrome: Understanding the Heart-Kidney Connection?"
+      ],
+      "summary": "Lyle Baker, MD presented this clinician education session on 2026-01-27. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Pair medication changes with dated kidney-function and potassium evidence and the documented reason; temporal proximity alone does not establish causation. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Pair medication changes with dated kidney-function and potassium evidence and the documented reason; temporal proximity alone does not establish causation."
+      },
+      "entities": [
+        "heart_failure",
+        "kidney_disease",
+        "medication_barriers",
+        "Mayo Clinic",
+        "Lyle Baker, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "title": "Cardiorenal Syndrome: Understanding the Heart-Kidney Connection",
+          "publisher": "Mayo Clinic",
+          "date": "2026-01-27",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "kidney_disease",
+          "medication_barriers"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Pair medication changes with dated kidney-function and potassium evidence and the documented reason; temporal proximity alone does not establish causation."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Lyle Baker, MD",
+          "event_date": "2026-01-27",
+          "institution": "Mayo Clinic",
+          "institution_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "recording_url": "https://mssvideoupload.mayo.edu/media/Cardiorenal+Syndrome/1_46tdvtig",
+          "recording_link_evidence_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mayo-devices",
+      "topic": "evidence",
+      "title": "The Role of Devices in Heart Failure Management",
+      "questions": [
+        "Where can I find the lecture The Role of Devices in Heart Failure Management?"
+      ],
+      "summary": "Jose Ruiz, MD presented this clinician education session on 2026-08-18. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Keep a device order, shipping, patient receipt, active use and received monitoring data as separate observed states. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Keep a device order, shipping, patient receipt, active use and received monitoring data as separate observed states."
+      },
+      "entities": [
+        "heart_failure",
+        "devices",
+        "remote_monitoring",
+        "Mayo Clinic",
+        "Jose Ruiz, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "title": "The Role of Devices in Heart Failure Management",
+          "publisher": "Mayo Clinic",
+          "date": "2026-08-18",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "devices",
+          "remote_monitoring"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Keep a device order, shipping, patient receipt, active use and received monitoring data as separate observed states."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Jose Ruiz, MD",
+          "event_date": "2026-08-18",
+          "institution": "Mayo Clinic",
+          "institution_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "recording_url": "https://mssvideoupload.mayo.edu/media/The+Role+of+Devices+in+Heart+Failure+Management/1_28yfus8k",
+          "recording_link_evidence_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mayo-community-hf",
+      "topic": "evidence",
+      "title": "Managing A Heart Failure Clinic in the Community Setting",
+      "questions": [
+        "Where can I find the lecture Managing A Heart Failure Clinic in the Community Setting?"
+      ],
+      "summary": "Toinetta Coolie, DNP, APRN, FNP-BC presented this clinician education session on 2024-09-19. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Measure the complete referral-to-enrollment-to-follow-up pathway, including waitlists, patient preferences, buyer capacity and unresolved payer requirements. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Measure the complete referral-to-enrollment-to-follow-up pathway, including waitlists, patient preferences, buyer capacity and unresolved payer requirements."
+      },
+      "entities": [
+        "heart_failure",
+        "care_coordination",
+        "service_enrollment",
+        "Mayo Clinic",
+        "Toinetta Coolie, DNP, APRN, FNP-BC"
+      ],
+      "citations": [
+        {
+          "url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "title": "Managing A Heart Failure Clinic in the Community Setting",
+          "publisher": "Mayo Clinic",
+          "date": "2024-09-19",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "care_coordination",
+          "service_enrollment"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Measure the complete referral-to-enrollment-to-follow-up pathway, including waitlists, patient preferences, buyer capacity and unresolved payer requirements."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Toinetta Coolie, DNP, APRN, FNP-BC",
+          "event_date": "2024-09-19",
+          "institution": "Mayo Clinic",
+          "institution_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "recording_url": "https://mssvideoupload.mayo.edu/media/Managing+a+Heart+Failure+Clinic+in+the+Community+Setting+-+Toinetta+Coolie%2C+DNP%2C+APRN%2C+FNP-BC/1_xuvbrvvh",
+          "recording_link_evidence_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mayo-health-equity",
+      "topic": "evidence",
+      "title": "Achieving Health Equity",
+      "questions": [
+        "Where can I find the lecture Achieving Health Equity?"
+      ],
+      "summary": "Clyde Yancy, MD presented this clinician education session on 2025-07-18. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Stratify observed access and outcomes with explicit population denominators and missingness; avoid inferring an individual social need from group membership. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Stratify observed access and outcomes with explicit population denominators and missingness; avoid inferring an individual social need from group membership."
+      },
+      "entities": [
+        "sdoh",
+        "equity",
+        "Mayo Clinic",
+        "Clyde Yancy, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "title": "Achieving Health Equity",
+          "publisher": "Mayo Clinic",
+          "date": "2025-07-18",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "sdoh",
+          "equity"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Stratify observed access and outcomes with explicit population denominators and missingness; avoid inferring an individual social need from group membership."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Clyde Yancy, MD",
+          "event_date": "2025-07-18",
+          "institution": "Mayo Clinic",
+          "institution_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "recording_url": "https://videoexchange.mayo.edu/media/Dr.+Yancy+Grand+Rounds+7+18+25/1_nn7z65zs",
+          "recording_link_evidence_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mayo-bariatric",
+      "topic": "evidence",
+      "title": "Bariatric Medicine Updates and What Cardiologists Need to Know",
+      "questions": [
+        "Where can I find the lecture Bariatric Medicine Updates and What Cardiologists Need to Know?"
+      ],
+      "summary": "Victoria Gomez, MD presented this clinician education session on 2025-02-11. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Follow documented goals, treatment exposure, weight observations and patient-reported outcomes with dates and appropriate denominators. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Follow documented goals, treatment exposure, weight observations and patient-reported outcomes with dates and appropriate denominators."
+      },
+      "entities": [
+        "obesity",
+        "cardiometabolic",
+        "Mayo Clinic",
+        "Victoria Gomez, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "title": "Bariatric Medicine Updates and What Cardiologists Need to Know",
+          "publisher": "Mayo Clinic",
+          "date": "2025-02-11",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "obesity",
+          "cardiometabolic"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Follow documented goals, treatment exposure, weight observations and patient-reported outcomes with dates and appropriate denominators."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Victoria Gomez, MD",
+          "event_date": "2025-02-11",
+          "institution": "Mayo Clinic",
+          "institution_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "recording_url": "https://mssvideoupload.mayo.edu/media/Bariatric+Medicine+Updates+and+What+Cardiologists+Need+to+Know+-+2+11+2025/1_j9suquoi",
+          "recording_link_evidence_url": "https://ce.mayo.edu/transplant-medicine/content/mayo-clinic-advanced-heart-failure-lecture-series",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-colorado-ckm-inertia",
+      "topic": "evidence",
+      "title": "Introducing Cardiac Kidney Metabolic Syndrome: GDMT & Confronting Clinical Inertia",
+      "questions": [
+        "Where can I find the lecture Introducing Cardiac Kidney Metabolic Syndrome: GDMT & Confronting Clinical Inertia?"
+      ],
+      "summary": "Sophia Ambruso, DO presented this clinician education session on 2025-09-10. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Investigate cross-condition care opportunities and documented barriers without treating every medication omission as clinician inertia. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Investigate cross-condition care opportunities and documented barriers without treating every medication omission as clinician inertia."
+      },
+      "entities": [
+        "heart_failure",
+        "diabetes",
+        "kidney_disease",
+        "clinical_inertia",
+        "University of Colorado Anschutz",
+        "Sophia Ambruso, DO"
+      ],
+      "citations": [
+        {
+          "url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "title": "Introducing Cardiac Kidney Metabolic Syndrome: GDMT & Confronting Clinical Inertia",
+          "publisher": "University of Colorado Anschutz",
+          "date": "2025-09-10",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "diabetes",
+          "kidney_disease",
+          "clinical_inertia"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Investigate cross-condition care opportunities and documented barriers without treating every medication omission as clinician inertia."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Sophia Ambruso, DO",
+          "event_date": "2025-09-10",
+          "institution": "University of Colorado Anschutz",
+          "institution_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "recording_url": "https://www.youtube.com/watch?v=Zkq_72ndZbQ",
+          "recording_link_evidence_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-colorado-diabetes-heterogeneity",
+      "topic": "evidence",
+      "title": "Precision Medicine in Diabetes - Using Genetics to Understand Disease Heterogeneity",
+      "questions": [
+        "Where can I find the lecture Precision Medicine in Diabetes - Using Genetics to Understand Disease Heterogeneity?"
+      ],
+      "summary": "Jose Florez, MD, PhD presented this clinician education session on 2025-10-29. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Preserve documented subtype, uncertain classification and missing testing when constructing diabetes cohorts; do not invent a genetic subtype. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Preserve documented subtype, uncertain classification and missing testing when constructing diabetes cohorts; do not invent a genetic subtype."
+      },
+      "entities": [
+        "diabetes",
+        "phenotypes",
+        "University of Colorado Anschutz",
+        "Jose Florez, MD, PhD"
+      ],
+      "citations": [
+        {
+          "url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "title": "Precision Medicine in Diabetes - Using Genetics to Understand Disease Heterogeneity",
+          "publisher": "University of Colorado Anschutz",
+          "date": "2025-10-29",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "diabetes",
+          "phenotypes"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Preserve documented subtype, uncertain classification and missing testing when constructing diabetes cohorts; do not invent a genetic subtype."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Jose Florez, MD, PhD",
+          "event_date": "2025-10-29",
+          "institution": "University of Colorado Anschutz",
+          "institution_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "recording_url": "https://www.youtube.com/watch?v=y2uqOSF2bw4",
+          "recording_link_evidence_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-colorado-copd",
+      "topic": "evidence",
+      "title": "COPD 2026: Guideline Updates, New Agents, and Ongoing Challenges",
+      "questions": [
+        "Where can I find the lecture COPD 2026: Guideline Updates, New Agents, and Ongoing Challenges?"
+      ],
+      "summary": "Trevor Steinbach, MD, ATSF presented this clinician education session on 2026-10-15. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Bind respiratory diagnosis, testing, exacerbation dates, medication documentation and follow-up to the original population and time window. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Bind respiratory diagnosis, testing, exacerbation dates, medication documentation and follow-up to the original population and time window."
+      },
+      "entities": [
+        "copd",
+        "respiratory",
+        "University of Colorado Anschutz",
+        "Trevor Steinbach, MD, ATSF"
+      ],
+      "citations": [
+        {
+          "url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "title": "COPD 2026: Guideline Updates, New Agents, and Ongoing Challenges",
+          "publisher": "University of Colorado Anschutz",
+          "date": "2026-10-15",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "copd",
+          "respiratory"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Bind respiratory diagnosis, testing, exacerbation dates, medication documentation and follow-up to the original population and time window."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Trevor Steinbach, MD, ATSF",
+          "event_date": "2026-10-15",
+          "institution": "University of Colorado Anschutz",
+          "institution_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "recording_url": "https://www.youtube.com/watch?v=pwGwq0IAmWE",
+          "recording_link_evidence_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-colorado-homelessness",
+      "topic": "evidence",
+      "title": "Homelessness: Causes, Consequences, Solutions",
+      "questions": [
+        "Where can I find the lecture Homelessness: Causes, Consequences, Solutions?"
+      ],
+      "summary": "Margot Kushel, MD presented this clinician education session on 2026-10-21. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Identify directly documented housing needs and subsequent support completion without inferring housing status from a ZIP code or a billing balance. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Identify directly documented housing needs and subsequent support completion without inferring housing status from a ZIP code or a billing balance."
+      },
+      "entities": [
+        "sdoh",
+        "housing",
+        "access",
+        "University of Colorado Anschutz",
+        "Margot Kushel, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "title": "Homelessness: Causes, Consequences, Solutions",
+          "publisher": "University of Colorado Anschutz",
+          "date": "2026-10-21",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "sdoh",
+          "housing",
+          "access"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Identify directly documented housing needs and subsequent support completion without inferring housing status from a ZIP code or a billing balance."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Margot Kushel, MD",
+          "event_date": "2026-10-21",
+          "institution": "University of Colorado Anschutz",
+          "institution_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "recording_url": "https://www.youtube.com/watch?v=0Emgzg0pry0",
+          "recording_link_evidence_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-colorado-bp-older-adults",
+      "topic": "evidence",
+      "title": "To Be More or Less Aggressive with Medical Management in Older Adults: Lessons from a Blood Pressure Trial",
+      "questions": [
+        "Where can I find the lecture To Be More or Less Aggressive with Medical Management in Older Adults: Lessons from a Blood Pressure Trial?"
+      ],
+      "summary": "Joachim Ix, MD, MAS presented this clinician education session on 2025-03-12. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Retain documented goals, age, orthostasis, falls and treatment limitations when describing blood-pressure management; observational differences do not establish trial effects. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Retain documented goals, age, orthostasis, falls and treatment limitations when describing blood-pressure management; observational differences do not establish trial effects."
+      },
+      "entities": [
+        "hypertension",
+        "older_adults",
+        "University of Colorado Anschutz",
+        "Joachim Ix, MD, MAS"
+      ],
+      "citations": [
+        {
+          "url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "title": "To Be More or Less Aggressive with Medical Management in Older Adults: Lessons from a Blood Pressure Trial",
+          "publisher": "University of Colorado Anschutz",
+          "date": "2025-03-12",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hypertension",
+          "older_adults"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Retain documented goals, age, orthostasis, falls and treatment limitations when describing blood-pressure management; observational differences do not establish trial effects."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Joachim Ix, MD, MAS",
+          "event_date": "2025-03-12",
+          "institution": "University of Colorado Anschutz",
+          "institution_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "recording_url": "https://www.youtube.com/watch?v=lWiDmS5EViU",
+          "recording_link_evidence_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-colorado-lpa",
+      "topic": "evidence",
+      "title": "Lipoprotein(a): From Risk Factor to Target of Treatment",
+      "questions": [
+        "Where can I find the lecture Lipoprotein(a): From Risk Factor to Target of Treatment?"
+      ],
+      "summary": "Gregory Schwartz, MD, PhD presented this clinician education session on 2024-12-18. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Separate observed test results, risk-marker associations, treatment exposure and clinically established outcome benefit. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Separate observed test results, risk-marker associations, treatment exposure and clinically established outcome benefit."
+      },
+      "entities": [
+        "hyperlipidemia",
+        "prevention",
+        "University of Colorado Anschutz",
+        "Gregory Schwartz, MD, PhD"
+      ],
+      "citations": [
+        {
+          "url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "title": "Lipoprotein(a): From Risk Factor to Target of Treatment",
+          "publisher": "University of Colorado Anschutz",
+          "date": "2024-12-18",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "hyperlipidemia",
+          "prevention"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Separate observed test results, risk-marker associations, treatment exposure and clinically established outcome benefit."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Gregory Schwartz, MD, PhD",
+          "event_date": "2024-12-18",
+          "institution": "University of Colorado Anschutz",
+          "institution_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "recording_url": "https://www.youtube.com/watch?v=d3TzuzqAPZg",
+          "recording_link_evidence_url": "https://medschool.cuanschutz.edu/medicine/calendar/grand-rounds/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mgb-asthma-pft",
+      "topic": "evidence",
+      "title": "Update on Pulmonary Function Test Interpretation",
+      "questions": [
+        "Where can I find the lecture Update on Pulmonary Function Test Interpretation?"
+      ],
+      "summary": "Nancy Lange-Vaidya, MD, MPH and Barry Shea, MD presented this clinician education session on 2025-06-06. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Keep the original test values, units, interpretation, test date and missing inputs separate when describing respiratory evidence. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Keep the original test values, units, interpretation, test date and missing inputs separate when describing respiratory evidence."
+      },
+      "entities": [
+        "asthma",
+        "copd",
+        "lung_function",
+        "Mass General Brigham",
+        "Nancy Lange-Vaidya, MD, MPH and Barry Shea, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "title": "Update on Pulmonary Function Test Interpretation",
+          "publisher": "Mass General Brigham",
+          "date": "2025-06-06",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "asthma",
+          "copd",
+          "lung_function"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Keep the original test values, units, interpretation, test date and missing inputs separate when describing respiratory evidence."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Nancy Lange-Vaidya, MD, MPH and Barry Shea, MD",
+          "event_date": "2025-06-06",
+          "institution": "Mass General Brigham",
+          "institution_url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "recording_url": "https://bwhav.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=9e44e38b-f013-4581-9166-b3050126115c",
+          "recording_link_evidence_url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mgb-asthma-metabolic",
+      "topic": "evidence",
+      "title": "Diabetes, Metabolic Dysregulation and Asthma",
+      "questions": [
+        "Where can I find the lecture Diabetes, Metabolic Dysregulation and Asthma?"
+      ],
+      "summary": "Dinah Foer, MD presented this clinician education session on 2024-06-07. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Compose cross-condition populations and outcomes without presenting a descriptive association as an established treatment effect. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Compose cross-condition populations and outcomes without presenting a descriptive association as an established treatment effect."
+      },
+      "entities": [
+        "asthma",
+        "diabetes",
+        "obesity",
+        "Mass General Brigham",
+        "Dinah Foer, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "title": "Diabetes, Metabolic Dysregulation and Asthma",
+          "publisher": "Mass General Brigham",
+          "date": "2024-06-07",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "asthma",
+          "diabetes",
+          "obesity"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Compose cross-condition populations and outcomes without presenting a descriptive association as an established treatment effect."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Dinah Foer, MD",
+          "event_date": "2024-06-07",
+          "institution": "Mass General Brigham",
+          "institution_url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "recording_url": "https://bwhav.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=f3e5d67c-a825-4389-8ea0-b18b01160cca",
+          "recording_link_evidence_url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-mgb-asthma-telemedicine",
+      "topic": "evidence",
+      "title": "Assessing the Effect of Telemedicine and Home Monitoring on Asthma Outcomes",
+      "questions": [
+        "Where can I find the lecture Assessing the Effect of Telemedicine and Home Monitoring on Asthma Outcomes?"
+      ],
+      "summary": "Tregony Simoneau, MD presented this clinician education session on 2023-09-08. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Distinguish device delivery and virtual visit access from actual use, completed encounters and measured outcomes; label any effectiveness comparison as descriptive unless its design supports more. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Distinguish device delivery and virtual visit access from actual use, completed encounters and measured outcomes; label any effectiveness comparison as descriptive unless its design supports more."
+      },
+      "entities": [
+        "asthma",
+        "remote_monitoring",
+        "virtual_care",
+        "Mass General Brigham",
+        "Tregony Simoneau, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "title": "Assessing the Effect of Telemedicine and Home Monitoring on Asthma Outcomes",
+          "publisher": "Mass General Brigham",
+          "date": "2023-09-08",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "asthma",
+          "remote_monitoring",
+          "virtual_care"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Distinguish device delivery and virtual visit access from actual use, completed encounters and measured outcomes; label any effectiveness comparison as descriptive unless its design supports more."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Tregony Simoneau, MD",
+          "event_date": "2023-09-08",
+          "institution": "Mass General Brigham",
+          "institution_url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "recording_url": "https://bwhedtech.media.partners.org/programs2/asthma2/simoneau20230908asthma/",
+          "recording_link_evidence_url": "https://bwhedtech.media.partners.org/programs/asthma/",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-banner-asthma",
+      "topic": "evidence",
+      "title": "Advances in Asthma Management - 2025",
+      "questions": [
+        "Where can I find the lecture Advances in Asthma Management - 2025?"
+      ],
+      "summary": "Christian Bime, MD, MSc, ATSF presented this clinician education session on 2025-09-05. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Compare documented diagnostic evidence, medication exposure, recorded exacerbations and specialist follow-up while preserving unresolved eligibility criteria. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Compare documented diagnostic evidence, medication exposure, recorded exacerbations and specialist follow-up while preserving unresolved eligibility criteria."
+      },
+      "entities": [
+        "asthma",
+        "respiratory",
+        "Banner - University Medical Center",
+        "Christian Bime, MD, MSc, ATSF"
+      ],
+      "citations": [
+        {
+          "url": "https://library.bannerhealth.com/IMGR/20252026",
+          "title": "Advances in Asthma Management - 2025",
+          "publisher": "Banner - University Medical Center",
+          "date": "2025-09-05",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "asthma",
+          "respiratory"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Compare documented diagnostic evidence, medication exposure, recorded exacerbations and specialist follow-up while preserving unresolved eligibility criteria."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Christian Bime, MD, MSc, ATSF",
+          "event_date": "2025-09-05",
+          "institution": "Banner - University Medical Center",
+          "institution_url": "https://library.bannerhealth.com/IMGR/20252026",
+          "recording_url": "https://www.youtube.com/watch?v=wRZiSt90bKM",
+          "recording_link_evidence_url": "https://library.bannerhealth.com/IMGR/20252026",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-banner-weight-cvd",
+      "topic": "evidence",
+      "title": "Weight Management & Cardiovascular Disease: GLP-1 Evidence",
+      "questions": [
+        "Where can I find the lecture Weight Management & Cardiovascular Disease: GLP-1 Evidence?"
+      ],
+      "summary": "Roderick Tung, MD presented this clinician education session on 2026-05-08. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Align treatment exposure, baseline measurements, follow-up outcomes and discontinuation reasons; do not label an untreated comparison group as a randomized control. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Align treatment exposure, baseline measurements, follow-up outcomes and discontinuation reasons; do not label an untreated comparison group as a randomized control."
+      },
+      "entities": [
+        "obesity",
+        "cardiometabolic",
+        "coronary_artery_disease",
+        "Banner - University Medical Center",
+        "Roderick Tung, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://library.bannerhealth.com/IMGR/20252026",
+          "title": "Weight Management & Cardiovascular Disease: GLP-1 Evidence",
+          "publisher": "Banner - University Medical Center",
+          "date": "2026-05-08",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "obesity",
+          "cardiometabolic",
+          "coronary_artery_disease"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Align treatment exposure, baseline measurements, follow-up outcomes and discontinuation reasons; do not label an untreated comparison group as a randomized control."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Roderick Tung, MD",
+          "event_date": "2026-05-08",
+          "institution": "Banner - University Medical Center",
+          "institution_url": "https://library.bannerhealth.com/IMGR/20252026",
+          "recording_url": "https://www.youtube.com/watch?v=ZFqAqJdD7so",
+          "recording_link_evidence_url": "https://library.bannerhealth.com/IMGR/20252026",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-banner-colorectal-screening",
+      "topic": "evidence",
+      "title": "Colorectal Cancer Screening",
+      "questions": [
+        "Where can I find the lecture Colorectal Cancer Screening?"
+      ],
+      "summary": "Aaron Goldberg, MD presented this clinician education session on 2026-02-20. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Separate a screening order, a completed test, its result, prior history and follow-up completion; use a dated applicable specification for eligibility. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Separate a screening order, a completed test, its result, prior history and follow-up completion; use a dated applicable specification for eligibility."
+      },
+      "entities": [
+        "cancer",
+        "screening",
+        "Banner - University Medical Center",
+        "Aaron Goldberg, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://library.bannerhealth.com/IMGR/20252026",
+          "title": "Colorectal Cancer Screening",
+          "publisher": "Banner - University Medical Center",
+          "date": "2026-02-20",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "cancer",
+          "screening"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Separate a screening order, a completed test, its result, prior history and follow-up completion; use a dated applicable specification for eligibility."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Aaron Goldberg, MD",
+          "event_date": "2026-02-20",
+          "institution": "Banner - University Medical Center",
+          "institution_url": "https://library.bannerhealth.com/IMGR/20252026",
+          "recording_url": "https://www.youtube.com/watch?v=fRFSn5tqBxg",
+          "recording_link_evidence_url": "https://library.bannerhealth.com/IMGR/20252026",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-arizona-depression",
+      "topic": "evidence",
+      "title": "Let's Triumph Over Treatment-Resistant Depression!",
+      "questions": [
+        "Where can I find the lecture Let's Triumph Over Treatment-Resistant Depression!?"
+      ],
+      "summary": "Eric Lenze, MD presented this clinician education session on 2025-12-03. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Track documented treatment trials, duration, follow-up scores, tolerability and access barriers; a medication list alone does not establish adequate prior treatment. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Track documented treatment trials, duration, follow-up scores, tolerability and access barriers; a medication list alone does not establish adequate prior treatment."
+      },
+      "entities": [
+        "depression",
+        "behavioral_health",
+        "University of Arizona",
+        "Eric Lenze, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://medicine.arizona.edu/psychiatry/grand-rounds-archive",
+          "title": "Let's Triumph Over Treatment-Resistant Depression!",
+          "publisher": "University of Arizona",
+          "date": "2025-12-03",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "depression",
+          "behavioral_health"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Track documented treatment trials, duration, follow-up scores, tolerability and access barriers; a medication list alone does not establish adequate prior treatment."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Eric Lenze, MD",
+          "event_date": "2025-12-03",
+          "institution": "University of Arizona",
+          "institution_url": "https://medicine.arizona.edu/psychiatry/grand-rounds-archive",
+          "recording_url": "https://arizona.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=b492cd16-45cc-4812-a93d-b359015a502b",
+          "recording_link_evidence_url": "https://medicine.arizona.edu/psychiatry/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-arizona-cancer-demoralization",
+      "topic": "evidence",
+      "title": "Not Just Depression: Identifying and Treating Demoralization in Cancer Patients",
+      "questions": [
+        "Where can I find the lecture Not Just Depression: Identifying and Treating Demoralization in Cancer Patients?"
+      ],
+      "summary": "Kelly Habib, MD presented this clinician education session on 2025-12-17. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Preserve the clinician-documented distinction between depression, distress and demoralization and connect recorded goals to follow-up needs. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Preserve the clinician-documented distinction between depression, distress and demoralization and connect recorded goals to follow-up needs."
+      },
+      "entities": [
+        "cancer",
+        "depression",
+        "patient_goals",
+        "University of Arizona",
+        "Kelly Habib, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://medicine.arizona.edu/psychiatry/grand-rounds-archive",
+          "title": "Not Just Depression: Identifying and Treating Demoralization in Cancer Patients",
+          "publisher": "University of Arizona",
+          "date": "2025-12-17",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "cancer",
+          "depression",
+          "patient_goals"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Preserve the clinician-documented distinction between depression, distress and demoralization and connect recorded goals to follow-up needs."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Kelly Habib, MD",
+          "event_date": "2025-12-17",
+          "institution": "University of Arizona",
+          "institution_url": "https://medicine.arizona.edu/psychiatry/grand-rounds-archive",
+          "recording_url": "https://arizona.hosted.panopto.com/Panopto/Pages/Viewer.aspx?id=78b6feb2-cf65-425f-9e95-b398013a776a",
+          "recording_link_evidence_url": "https://medicine.arizona.edu/psychiatry/grand-rounds-archive",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    },
+    {
+      "id": "lecture-methodist-kittleson-gdmt",
+      "topic": "evidence",
+      "title": "GDMT in Heart Failure - The Power of Pills: Opportunities and Challenges",
+      "questions": [
+        "Where can I find the lecture GDMT in Heart Failure - The Power of Pills: Opportunities and Challenges?"
+      ],
+      "summary": "The publisher describes a clinician lecture on HFrEF medication therapy, interpreting trials and practical implementation. Its description, chapter headings, presenter and recording date were inspected; the full lecture and transcript were not reviewed. The proposed analytics exercise is to distinguish medication coverage, documented barriers and patient applicability from observed outcomes. Chapter navigation identifies the teaching on foundational medication classes beginning at 4:46. Clinical rules still require applicable evidence before patient-level use.",
+      "facts": {
+        "analytics_exercise": "Investigate medication coverage and implementation barriers, retaining the difference between trial eligibility, patient applicability and observed warehouse outcomes.",
+        "publisher_description": "HFrEF medication therapy, trial interpretation and practical implementation."
+      },
+      "entities": [
+        "heart_failure",
+        "gdmt",
+        "trial_interpretation",
+        "Houston Methodist DeBakey Heart & Vascular Center",
+        "Michelle Kittleson, MD"
+      ],
+      "citations": [
+        {
+          "url": "https://www.youtube.com/watch?v=8JLncF1IpAs",
+          "title": "GDMT in Heart Failure - The Power of Pills: Opportunities and Challenges",
+          "publisher": "Houston Methodist DeBakey Heart & Vascular Center",
+          "date": "2024-02-29",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "gdmt",
+          "trial_interpretation"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Investigate medication coverage and implementation barriers, retaining the difference between trial eligibility, patient applicability and observed warehouse outcomes."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Michelle Kittleson, MD",
+          "event_date": "2024-02-29",
+          "institution": "Houston Methodist DeBakey Heart & Vascular Center",
+          "institution_url": "https://learn.houstonmethodist.org/2025-debakey-heart-vascular-center-grand-rounds/series/2025-debakey-heart-vascular-center-grand-rounds",
+          "recording_url": "https://www.youtube.com/watch?v=8JLncF1IpAs",
+          "recording_link_evidence_url": "https://www.youtube.com/watch?v=8JLncF1IpAs",
+          "access": "public_player_verified",
+          "access_evidence": "Official DeBakeyCVEdu publisher page observed, duration 1:07:34; description and chapter headings read; full recording not watched.",
+          "content_review": "description_and_chapters_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false,
+          "publisher_channel": "https://www.youtube.com/@DeBakeyCVEdu",
+          "publisher_identity_evidence": "Observed publisher name and channel on the public recording page; description identifies Houston Methodist DeBakey Heart & Vascular Center.",
+          "chapter_start_seconds": 286
+        }
+      }
+    },
+    {
+      "id": "lecture-texas-myocardial-recovery",
+      "topic": "evidence",
+      "title": "Myocardial Recovery: The Next Frontier in Heart Failure",
+      "questions": [
+        "Where can I find the lecture Myocardial Recovery: The Next Frontier in Heart Failure?"
+      ],
+      "summary": "Arvind Bhimaraj, MD, MPH presented this clinician education session on 2025-10-24. The institutional source identifies the recording and its subject. Agere has reviewed publisher metadata, not the full lecture or a usable transcript. The proposed analytics exercise is: Reconstruct serial ejection-fraction measurements, treatment exposure and patient outcomes without equating improved measurement with a documented cure. Treatment criteria must be checked against applicable clinical evidence before becoming patient-level rules.",
+      "facts": {
+        "analytics_exercise": "Reconstruct serial ejection-fraction measurements, treatment exposure and patient outcomes without equating improved measurement with a documented cure."
+      },
+      "entities": [
+        "heart_failure",
+        "recovery",
+        "longitudinal_outcomes",
+        "Texas Heart Institute at Baylor College of Medicine",
+        "Arvind Bhimaraj, MD, MPH"
+      ],
+      "citations": [
+        {
+          "url": "https://www.texasheart.org/education/grand-rounds-2025-2026/",
+          "title": "Myocardial Recovery: The Next Frontier in Heart Failure",
+          "publisher": "Texas Heart Institute at Baylor College of Medicine",
+          "date": "2025-10-24",
+          "retrieved": "2026-10-27",
+          "source_type": "academic",
+          "section": "Published lecture metadata and recording link; content not fully reviewed"
+        }
+      ],
+      "last_verified": "2026-10-27",
+      "confidence": "medium",
+      "education": {
+        "topics": [
+          "heart_failure",
+          "recovery",
+          "longitudinal_outcomes"
+        ],
+        "use_mode": "link_metadata_only",
+        "license": "Public reference; full-text commercial training permission not established",
+        "clinical_rule_approved": false,
+        "copied_full_text": false,
+        "video_transcript_ingested": false,
+        "analytics_objectives": [
+          "Reconstruct serial ejection-fraction measurements, treatment exposure and patient outcomes without equating improved measurement with a documented cure."
+        ],
+        "review_status": "Primary publisher metadata checked; educational proposals are Agere-authored, not physician-adjudicated targets.",
+        "lecture": {
+          "presenter": "Arvind Bhimaraj, MD, MPH",
+          "event_date": "2025-10-24",
+          "institution": "Texas Heart Institute at Baylor College of Medicine",
+          "institution_url": "https://www.texasheart.org/education/grand-rounds-2025-2026/",
+          "recording_url": "https://player.vimeo.com/video/1130960227",
+          "recording_link_evidence_url": "https://www.texasheart.org/education/grand-rounds-2025-2026/",
+          "access": "publisher_recording_link",
+          "access_evidence": "",
+          "content_review": "metadata_only",
+          "transcript_status": "not_read",
+          "full_lecture_watched": false
+        }
+      }
+    }
+  ]
+}

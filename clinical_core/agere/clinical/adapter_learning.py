@@ -27,7 +27,7 @@ def contract(learner):
         'local_normalizer.py','bottled.py','request_plan.py','request_language.py','general_analysis.py','literal_check.py','semantic_analyst.py')]
     names += ['tools/training/adapter_tasks.py','tools/training/adapters.py','tools/training/datasets.py']
     names += ['clinical_core/agere/clinical/'+n for n in ('schema_prefetch.py','constrained_decoding.py',
-        'request_program.py','cohort_families.py','nl2sql.py','source_profile.py','proposers.py')]
+        'request_program.py','cohort_families.py','nl2sql.py','source_profile.py','proposers.py','analysis_graph.py','answer_shape.py')]
     return digest({'learner':learner,'schema':VERSION,'code':{n:hashlib.sha256((root/n).read_bytes()).hexdigest() for n in names}})
 
 
@@ -101,6 +101,23 @@ def release_identity(learner,root=None,base=None):
 def runtime_adapter(learner,base):
     value=release_identity(learner,base=base)
     return Path(value['adapter']) if value else None
+
+
+def training_revision(root,learner,revision,base):
+    """Explicit immutable initialization only; this never changes runtime pointers."""
+    from . import component_learning as C
+    found=next((m for m in C.models(root) if m['id']==revision and m['role']==role(learner)),None)
+    if not found or found['state']=='quarantined':raise ValueError('An explicit non-quarantined local adapter revision is required')
+    path=C.checked_path(found['model_path'])
+    if found['contract']!=contract(learner) or file_hash(path)!=found['model_sha256']:raise ValueError('Training revision source contract or metadata changed')
+    model=json.loads(path.read_text());pinned=pin_base(base)
+    if model.get('schema')!=VERSION or model.get('learner')!=learner or model['base']['identity']!=pinned['identity']:raise ValueError('Training revision base or role differs')
+    directory=C.checked_path(model['adapter'])
+    if set(model['files'])!={'adapter_config.json','adapters.safetensors'}:raise ValueError('Training revision files differ')
+    for name,entry in model['files'].items():
+        p=checked_child(directory,name)
+        if p.stat().st_size!=entry['bytes'] or file_hash(p)!=entry['sha256']:raise ValueError('Training revision artifact changed')
+    return {'revision':revision,'adapter':directory,'artifact_identity':model['artifact_identity']}
 
 
 def export(root,output,learner,family_splits):

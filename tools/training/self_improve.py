@@ -28,6 +28,11 @@ def run(*,root=None,stack=None,manifest=None,encoder=None,review_splits=None,rol
         return {'version':VERSION,'status':'requires_approved_manifest','provider_calls':0,
                 'reason':'Supply an approved manifest or explicit newly reviewed observations and family splits. Legacy store and benchmark discovery is disabled.'}
     if json.loads(C.checked_path(manifest).read_text()).get('schema')=='approved-adapter-data/1':
+        if options.get('recursive_rounds'):
+            if options.get('install'):raise ValueError('Recursive experiments produce candidates only; installation is a separate qualified decision')
+            from tools.training.recursive_adapters import run as recursive_run
+            if stack is None or not options.get('base'):raise ValueError('Recursive adapter learning requires explicit source stack and pinned base')
+            return recursive_run(manifest,root or C.root_for(stack),stack=stack,base=options['base'],rounds=options['recursive_rounds'],train=bool(options.get('train_adapters')),backend=options.get('backend'))
         from tools.training.adapters import run as adapter_run
         if stack is None or not options.get('base'):raise ValueError('Adapter learning requires explicit source stack and pinned base')
         return adapter_run(manifest,root or C.root_for(stack),stack=stack,base=options['base'],train=bool(options.get('train_adapters',False)),
@@ -44,6 +49,7 @@ def main(argv=None):
     ap.add_argument('--role',choices=('router','tier_router','shape'));ap.add_argument('--install',action='store_true')
     ap.add_argument('--include-machine-supervision',action='store_true')
     ap.add_argument('--base');ap.add_argument('--train-adapters',action='store_true');ap.add_argument('--learning-plan')
+    ap.add_argument('--recursive-rounds',type=int,help='Predeclared offline fit-only residual learning rounds; candidate releases only')
     args=ap.parse_args(argv)
     from clinical_core.agere.clinical.component_learning import checked_path
     if args.learning_plan:
@@ -58,7 +64,7 @@ def main(argv=None):
         return
     splits=json.loads(checked_path(args.review_splits).read_text()) if args.review_splits else None
     print(json.dumps(run(root=args.root,stack=args.stack,manifest=args.manifest,review_splits=splits,
-                         role=args.role,include_machine=args.include_machine_supervision,install=args.install,base=args.base,train_adapters=args.train_adapters),indent=2))
+                         role=args.role,include_machine=args.include_machine_supervision,install=args.install,base=args.base,train_adapters=args.train_adapters,recursive_rounds=args.recursive_rounds),indent=2))
 
 
 if __name__=='__main__':main()

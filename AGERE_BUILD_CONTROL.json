@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T00:19:59.452604+00:00",
+  "updated_at": "2026-10-27T11:13:21.462770+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_slm_verified_live_pending",
+    "kind": "offline_broad_recursive_learning_training_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Direct context-bound correct/correction reviews can supervise the existing opt-in SLM loop: explicit manifests, family-separated training, native acceptability comparison, immutable candidate/release, four runtime adapter pointers, quarantine/revision/rollback. Heavy jobs queue without blocking answers; all seven plan jobs remain candidates.",
-    "measured_failure_reduction": "488 primary checks passed, four optional/data skips; 15 isolated routing/Metal checks and one import-only check passed (four grammar checks overlap the primary suite). Zero provider sends/blocked attempts and zero protected-corpus attempts in final tests. Real typed LoRA verification 0/6->3/6, three declined, zero accepted wrong on two frozen sources; only two verification families, all gains in one. Real adapter loaded through the typed worker in an isolated retired test release. 1307 native targets verified; not model accuracy.",
+    "user_behavior_delta": "Existing typed/native scalar output checks preserve PMPM denominators, per-patient modifiers, distinct grain and reversal fields. Explicit broad analytics tasks support independent source validation and immutable fit-only corrective SLM rounds. An explicit academic library retrieves 46 cited resources without installing clinical rules. No automatic clinical workflow acceptance or default promotion.",
+    "measured_failure_reduction": "516 guarded checks pass, four optional/data skips; zero provider sends, blocked attempts or protected-corpus reads. All 5447 unique targets per learner agree with independent Python source calculations and native execution on three fixtures across104 families/13 domains. Real broader typed/bottled studies are running; model/recursive gains not yet known. All46 reading resources retrieve; metadata cannot impersonate watched content or approved clinical rules.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -373,20 +373,21 @@
       "artifacts/agere-components-learning-2026-10-26/verification.json",
       "artifacts/agere-components-learning-2026-10-26/received-verification.json",
       "artifacts/agere-slm-learning-2026-10-26/verification.json",
-      "artifacts/agere-slm-learning-2026-10-26/resume-preflight.json"
+      "artifacts/agere-slm-learning-2026-10-26/resume-preflight.json",
+      "artifacts/agere-healthcare-learning-2026-10-27/verification.json",
+      "artifacts/agere-healthcare-learning-2026-10-27/resume-preflight.json",
+      "artifacts/agere-healthcare-learning-2026-10-27/research/reading-verification-v2.json"
     ],
-    "remaining_gap": "The ordinary received-source complete-note/dose/final-answer/deliverable workflow and browser/physician acceptance remain pending Claude subscription availability. Broader clinical/model qualification, independently reviewed data and measured training for other SLM roles, and total-cost RSI comparison remain open. No default runtime or model promotion.",
-    "next_action": "After Claude subscription availability (observed Oct28 06:00 America/Chicago), use artifacts/agere-slm-learning-2026-10-26/resume-after-reset.txt to execute the frozen-source original ordinary request with its retained attempt1 ledger. Complete note review, dose assessment, final answer and artifact; inspect saved browser/exports and obtain physician acceptability. Then compare guarded RSI reuse with all training, failed/rejected candidates, validation and review costs. Candidate SLM weights remain uninstalled; qualify appropriate reviewed tasks before any proposed clinical/default release. Stop on a subscription limit; no API fallback, wakeup or retry. Preserve G3/full ten-area charter.",
-    "next": "After Claude subscription availability (observed Oct28 06:00 America/Chicago), use artifacts/agere-slm-learning-2026-10-26/resume-after-reset.txt to execute the frozen-source original ordinary request with its retained attempt1 ledger. Complete note review, dose assessment, final answer and artifact; inspect saved browser/exports and obtain physician acceptability. Then compare guarded RSI reuse with all training, failed/rejected candidates, validation and review costs. Candidate SLM weights remain uninstalled; qualify appropriate reviewed tasks before any proposed clinical/default release. Stop on a subscription limit; no API fallback, wakeup or retry. Preserve G3/full ten-area charter.",
+    "remaining_gap": "Broader local training/comparison is still running and must be inspected by domain/family, including parent comparisons, accepted wrong results, regressions, declines and total compute. Full ordinary received-source note/dose/final-answer/deliverable and browser/physician acceptance still await subscription availability. Lecture transcripts/full content are not ingested; selected educational summaries remain candidates. Full ten-area and clinical/model qualification remain open.",
+    "next_action": "Inspect the already-running offline typed and bottled two-round studies when their result files complete; retain failed candidates and qualify only independently checked gains, without default promotion. Continue source-linked academic reading into reviewed lessons and original clinical-style questions. When Claude is available, use the new source-bound subscription-only resume command to complete and inspect the ordinary full-note/dose/answer/artifact workflow; stop on any subscription limit. Preserve G3/full ten-area scope, assisted Heartline and interrupted181/5 ledger; no availability polling or heartbeat.",
+    "next": "Inspect the already-running offline typed and bottled two-round studies when their result files complete; retain failed candidates and qualify only independently checked gains, without default promotion. Continue source-linked academic reading into reviewed lessons and original clinical-style questions. When Claude is available, use the new source-bound subscription-only resume command to complete and inspect the ordinary full-note/dose/answer/artifact workflow; stop on any subscription limit. Preserve G3/full ten-area scope, assisted Heartline and interrupted181/5 ledger; no availability polling or heartbeat.",
     "latest_review": {
-      "at": "2026-10-27T00:19:59.452604+00:00",
-      "kind": "Offline SLM training and runtime engineering verification; live clinical acceptance pending",
+      "at": "2026-10-27T11:13:21.462770+00:00",
+      "kind": "Broader offline source/native checks and source-reading intake; actual SLM training still running",
       "evidence": [
-        "artifacts/agere-slm-learning-2026-10-26/verification.json",
-        "artifacts/agere-slm-learning-2026-10-26/tests.json",
-        "artifacts/agere-slm-learning-2026-10-26/scaled-gpu-verification.json",
-        "artifacts/agere-slm-learning-2026-10-26/runtime-compatibility.json",
-        "artifacts/agere-slm-learning-2026-10-26/resume-preflight.json"
+        "artifacts/agere-healthcare-learning-2026-10-27/verification.json",
+        "artifacts/agere-healthcare-learning-2026-10-27/resume-preflight.json",
+        "artifacts/agere-healthcare-learning-2026-10-27/research/reading-verification-v2.json"
       ]
     },
     "coordination": {
@@ -456,9 +457,9 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-27T00:19:59.452604+00:00",
-      "kind": "Existing SLM learning/review/runtime loop implemented and exercised offline",
-      "receipt": "artifacts/agere-slm-learning-2026-10-26/verification.json",
+      "at": "2026-10-27T11:13:21.462770+00:00",
+      "kind": "Broad authored source-checked curriculum and fit-only recursive adapter training; model comparison pending",
+      "receipt": "artifacts/agere-healthcare-learning-2026-10-27/verification.json",
       "clinical_qualification": false
     }
   },
@@ -1411,6 +1412,18 @@
       "basis": "Mike authorized finishing all offline work while stepping away. Real typed adapter improves three of six verification cases from two engineering families with no accepted wrong result; 488 primary checks plus isolated checks pass. Public NLM terminology used with provenance. Legacy file-reading unit fixtures were excluded from final verification; final corpus guard recorded zero reads.",
       "scope_impact": "All ten areas and accepted assisted Heartline remain preserved. No provider inference, default runtime/model promotion, clinical/general-intelligence or cost-superiority claim. Live clinical workflow and reviewed multi-family model qualification remain open.",
       "evidence": "artifacts/agere-slm-learning-2026-10-26/verification.json"
+    },
+    {
+      "at": "2026-10-27T10:08:58.271434+00:00",
+      "decision": "Continue offline SLM/recursive learning with a much larger and more varied healthcare analytics curriculum.",
+      "basis": "Mike explicitly requested this work on October27 while awaiting Claude reset. Prior verification had only two families and gains in one, so prioritize breadth and independent source calculations over duplicate volume.",
+      "scope_impact": "Existing architecture and original source/configuration preserved; no providers, protected evaluations, new services or default model/runtime promotion."
+    },
+    {
+      "at": "2026-10-27T11:13:21.462770+00:00",
+      "decision": "Use Mike's Emory Fonarow lecture as the depth reference for primary academic reading, alongside broader offline SLM learning.",
+      "basis": "Mike requested Harvard/Porter and chronic-disease academic teaching, then supplied tN0sseDAaj4 and asked for comparable grand rounds. Broad independently checked analytics training is already running; source reading does not substitute for completed model comparisons.",
+      "scope_impact": "28 lecture records and18 educational cards use the existing explicit cited retriever. Current medical rules, default knowledge directory, runtime and model pointers remain unpromoted. Full ten-area charter, provider pause and protected-source boundaries retained."
     }
   ]
 }
