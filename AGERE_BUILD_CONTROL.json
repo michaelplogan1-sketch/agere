@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T15:37:49.896698+00:00",
+  "updated_at": "2026-10-27T20:00:45.204194+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -393,11 +393,12 @@
       "artifacts/agere-schema-repair-2026-10-27/verification.json",
       "artifacts/agere-schema-repair-2026-10-27/serialization-audit.json",
       "artifacts/agere-schema-repair-2026-10-27/format-verification/tests.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/recovered-sql-format-stop.json"
+      "artifacts/agere-semantic-fixes-2026-10-27/recovered-sql-format-stop.json",
+      "artifacts/agere-schema-repair-2026-10-27/workflow-followup/fcbc798/workflow-receipt.json"
     ],
     "remaining_gap": "Frozen SQL attempt failed its decoding-format contract and was explicitly stopped, weights andpartial comparisons preserved. Revised typed/SQL studies now run on repaired contract; no final comparison or model promotion. Full automatic clinical note/dose/answer/artifact, browser/physician acceptance, total cost and all ten acceptance areas remain open.",
-    "next_action": "Inspect artifacts/agere-schema-repair-2026-10-27/revised-status.json, format-training.log, format-plan.json and before-after.md/json while PID29583/session7315 completes the two finite local studies. Canonical source495525e39de88b63ce3cb71654b5b78b50a72a14590a2f6dff195113882b8810 is frozen; do not mutate core, duplicate GPU jobs, use comparison questions for fitting or call providers. Original PID12107 and successor13478 were exactly verified and explicitly stopped after14 punctuation-only SQL outputs; their source/weights/failed state/diagnostics remain. First new studytyped, thenSQL; full fit rehearsal, one correction epoch, up to2rounds, install=false. Each complete study receives fresh native review. Collector83290 preserves paired/domain gains and losses, marks partial failed SQL unscored; final preserve.py snapshots all evidence. On completion inspect regressions and selection, update actual-results report and private draftPR. No automatic Claude continuation. Offline clinical preflight is refreshed at this source; manual subscription-only continuation after user authorization/availability must stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and all negative candidates.",
-    "next": "Inspect artifacts/agere-schema-repair-2026-10-27/revised-status.json, format-training.log, format-plan.json and before-after.md/json while PID29583/session7315 completes the two finite local studies. Canonical source495525e39de88b63ce3cb71654b5b78b50a72a14590a2f6dff195113882b8810 is frozen; do not mutate core, duplicate GPU jobs, use comparison questions for fitting or call providers. Original PID12107 and successor13478 were exactly verified and explicitly stopped after14 punctuation-only SQL outputs; their source/weights/failed state/diagnostics remain. First new studytyped, thenSQL; full fit rehearsal, one correction epoch, up to2rounds, install=false. Each complete study receives fresh native review. Collector83290 preserves paired/domain gains and losses, marks partial failed SQL unscored; final preserve.py snapshots all evidence. On completion inspect regressions and selection, update actual-results report and private draftPR. No automatic Claude continuation. Offline clinical preflight is refreshed at this source; manual subscription-only continuation after user authorization/availability must stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and all negative candidates.",
+    "next_action": "Inspect artifacts/agere-schema-repair-2026-10-27/revised-status.json, format-training.log, format-plan.json and before-after.md/json while PID29583/session7315 completes the two finite local studies. Canonical source495525e39de88b63ce3cb71654b5b78b50a72a14590a2f6dff195113882b8810 is frozen; do not mutate core, duplicate GPU jobs, use comparison questions for fitting or call providers. Original PID12107 and successor13478 were exactly verified and explicitly stopped after14 punctuation-only SQL outputs; their source/weights/failed state/diagnostics remain. First new studytyped, thenSQL; full fit rehearsal, one correction epoch, up to2rounds, install=false. Each complete study receives fresh native review. Collector83290 preserves paired/domain gains and losses, marks partial failed SQL unscored; final preserve.py snapshots all evidence. On completion inspect regressions and selection, update actual-results report and private draftPR. No automatic Claude continuation. Offline clinical preflight is refreshed at this source; manual subscription-only continuation after user authorization/availability must stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and all negative candidates. Independently reviewed workflow repairs are staged at fcbc798 in /private/tmp/agere-workflow-integrity-20261027, separate from frozen canonical core. Continue the same G3 increment there: reconcile received analytical/economics defects, preserve actual before/after evidence and qualify total-path cost. Do not interrupt studies, infer competitor superiority or promote models. Integrate/requalify only after frozen studies finish; current adapter source contracts must remain explicit.",
+    "next": "Inspect artifacts/agere-schema-repair-2026-10-27/revised-status.json, format-training.log, format-plan.json and before-after.md/json while PID29583/session7315 completes the two finite local studies. Canonical source495525e39de88b63ce3cb71654b5b78b50a72a14590a2f6dff195113882b8810 is frozen; do not mutate core, duplicate GPU jobs, use comparison questions for fitting or call providers. Original PID12107 and successor13478 were exactly verified and explicitly stopped after14 punctuation-only SQL outputs; their source/weights/failed state/diagnostics remain. First new studytyped, thenSQL; full fit rehearsal, one correction epoch, up to2rounds, install=false. Each complete study receives fresh native review. Collector83290 preserves paired/domain gains and losses, marks partial failed SQL unscored; final preserve.py snapshots all evidence. On completion inspect regressions and selection, update actual-results report and private draftPR. No automatic Claude continuation. Offline clinical preflight is refreshed at this source; manual subscription-only continuation after user authorization/availability must stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and all negative candidates. Independently reviewed workflow repairs are staged at fcbc798 in /private/tmp/agere-workflow-integrity-20261027, separate from frozen canonical core. Continue the same G3 increment there: reconcile received analytical/economics defects, preserve actual before/after evidence and qualify total-path cost. Do not interrupt studies, infer competitor superiority or promote models. Integrate/requalify only after frozen studies finish; current adapter source contracts must remain explicit.",
     "latest_review": {
       "at": "2026-10-27T17:40:46.048326+00:00",
       "kind": "Actual format-failure diagnosis, whole-bank tokenizer audit and offline regression verification",
@@ -448,9 +449,15 @@
         "title": "Review Agere end-to-end workflow",
         "authorization": "Mike explicitly requested starting the proposed independent review chat on2026-10-27",
         "scope": "Read-only general workflow/component integration review; notes only in its chat or dedicatedtmpdirectory; no source/control edits, model/GPU/provider jobs, signals, deployment or messaging other chats",
-        "status": "started",
+        "status": "review_received_owner_staging_fixes",
         "primary_integration_owner": "01a1787b-6c4f-7683-9967-6fedb2f1ff7a",
-        "at": "2026-10-27T19:05:19.644805+00:00"
+        "at": "2026-10-27T19:05:19.644805+00:00",
+        "handoff_authorization": "Mike explicitly asked the review chat to send findings here and authorized further independent review; direct first handoff authorization verified through read_thread.",
+        "reports": [
+          "/private/tmp/agere-workflow-review-20261027/REVIEW.md",
+          "/private/tmp/agere-workflow-review-20261027/ANALYTICAL_REVIEW.md",
+          "/private/tmp/agere-workflow-review-20261027/VBC_COST_REVIEW.md"
+        ]
       }
     },
     "remaining_blockers": [
@@ -504,6 +511,16 @@
       },
       "integration": "Integrated; source contract updated by separately verified serving-format repair",
       "no_default_activation": true
+    },
+    "workflow_followup": {
+      "workspace": "/private/tmp/agere-workflow-integrity-20261027",
+      "branch": "codex/workflow-integrity-20261027",
+      "commit": "fcbc798",
+      "status": "staged_offline_verified_not_integrated",
+      "receipt": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/fcbc798/workflow-receipt.json",
+      "scope": "Selected-population SQL, complete native/saved evidence, checked follow-up lineage, complete review inputs, report meaning/repair, nested usage and monitor initialization",
+      "evidence": "238 surrounding checks:237passed/one opt-in live skip;19 document/monitor checks after final boundary change;local Node parity passed. Scripted judgments only. Earlier failed attempts retained.",
+      "remaining": "Model/clinical review and real automatic workflow still require manual subscription-only continuation. Source-specific adapter contracts must be reviewed after integration; no default activation."
     }
   },
   "decisions": [
@@ -1509,6 +1526,13 @@
       "decision": "Stop the exactly verified frozen SQL and queued processes after a real shared serving-format failure, preserve incomplete output without an accuracy score, integrate reviewed schema/native qualifier and explicitly replace the two queued adapter studies under exact serving-prefix/fenced-target contracts.",
       "basis": "All14 candidate SQL outputs were punctuation-only, while finite weights and raw SQL on an approved fit request isolate serialization/decoding. Real-tokenizer audit confirms unwanted reasoning in all5680fit examples and raw SQL outside fenced grammar.570guarded checks pass withfour skips; no providers/protected reads.",
       "scope_impact": "Same question splits, source calculations, units, architecture and all ten product areas retained. Fresh pinned-base starts; full rehearsal and fit-only selection unchanged. No default activation or clinical superiority claim."
+    },
+    {
+      "at": "2026-10-27T20:00:45.204194+00:00",
+      "gate": "G3",
+      "decision": "Stage independently reviewed shared workflow fixes outside the frozen training source",
+      "basis": "Mike authorized parallel review and sent its workflow/component/company qualification approach back to the build owner. First measured increment preserves selected patients, full evidence and report meaning; findings9\u201321 remain within the connected G3 sequence. No new architecture or protected evaluation.",
+      "impact": "Canonical source495525e3 and PID29583 remain unchanged; provider calls0, runtime/default models unpromoted. Staged commit fcbc798 and offline receipts preserve progress."
     }
   ]
 }

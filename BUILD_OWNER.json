@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-27T17:40:46.048326+00:00",
+  "latest_checkpoint": "2026-10-27T20:00:45.204194+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -58,10 +58,20 @@
       },
       "integration": "Integrated by merge before format repair; no classifier candidate activated",
       "no_default_activation": true
+    },
+    "workflow_followup": {
+      "workspace": "/private/tmp/agere-workflow-integrity-20261027",
+      "branch": "codex/workflow-integrity-20261027",
+      "commit": "fcbc798",
+      "status": "staged_offline_verified_not_integrated",
+      "receipt": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/fcbc798/workflow-receipt.json",
+      "scope": "Selected-population SQL, complete native/saved evidence, checked follow-up lineage, complete review inputs, report meaning/repair, nested usage and monitor initialization",
+      "evidence": "238 surrounding checks:237passed/one opt-in live skip;19 document/monitor checks after final boundary change;local Node parity passed. Scripted judgments only. Earlier failed attempts retained.",
+      "remaining": "Model/clinical review and real automatic workflow still require manual subscription-only continuation. Source-specific adapter contracts must be reviewed after integration; no default activation."
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-10-27T17:40:46.048326+00:00",
+  "latest_continuity_checkpoint": "2026-10-27T20:00:45.204194+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
