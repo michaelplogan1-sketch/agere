@@ -68,6 +68,7 @@ QUALIFIERS = {
     'positive': r'\bpositive\b|\bscreened\s*\+|\+\s*screen', 'living': r'\b(?:living|alive|not deceased)\b',
     'deceased': r'\b(?:deceased|died|dead|death)\b', 'medicaid': r'\bmedicaid\b', 'medicare': r'\bmedicare\b',
     'commercial': r'\bcommercial\b', 'kept': r'\bkept\b', 'cancelled': r'\bcancel(?:l)?ed\b', 'rejected': r'\breject(?:ed|ion)?\b',
+    'inpatient': r'\binpatients?\b', 'outpatient': r'\boutpatients?\b',
     'reversed': r'\brevers(?:ed|al)\b', 'started': r'\b(?:start|started|starting|began|initiat\w*|new\s+(?:start|user))\b',
     'by_group': r'\b(?:by|per|split\s+(?:by|out\s+by)|broken\s+down\s+by)\s+(?:payer|sex|gender|coverage|language|month|specialty|line of business|pcp|practice)\b',
 }

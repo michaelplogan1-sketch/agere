@@ -17,10 +17,11 @@ from tools.training import adapter_tasks as T, adapters as D
 VERSION='offline-recursive-adapter-study/1'
 
 
-def correction_manifest(manifest,probe,output,*,corrections_per_family=8,rehearsal_per_family=2,epochs=2):
+def correction_manifest(manifest,probe,output,*,corrections_per_family=8,rehearsal_per_family=2,epochs=2,full_rehearsal=False):
     """Choose only from fit families, using their own native execution failures."""
     if any(type(n) is not int or n<1 for n in (corrections_per_family,rehearsal_per_family,epochs)):
         raise ValueError('Choose explicit positive correction/rehearsal/epoch study sizes')
+    if type(full_rehearsal) is not bool: raise ValueError('full_rehearsal must be explicit boolean')
     spec,by,_=T.load(manifest)
     fit={digest([r['question'],r['family']]):r for r in by['fit']}
     if not probe or any(r['task'] not in fit or r['family']!=fit[r['task']]['family'] for r in probe):
@@ -28,9 +29,9 @@ def correction_manifest(manifest,probe,output,*,corrections_per_family=8,rehears
     failed={r['family'] for r in probe if not r['acceptable']}
     families=defaultdict(list)
     for row in by['fit']:families[row['family']].append(row)
-    selected=[]
+    selected=list(by['fit']) if full_rehearsal else []
     for family,rows in families.items():
-        amount=corrections_per_family if family in failed else rehearsal_per_family
+        amount=corrections_per_family if family in failed else 0 if full_rehearsal else rehearsal_per_family
         selected.extend(rows[:amount])
     # Fixed study allocation, not a runtime patient/query cap. No split is
     # reassigned and no generated output becomes a target.
@@ -44,6 +45,9 @@ def correction_manifest(manifest,probe,output,*,corrections_per_family=8,rehears
     audit={'schema':VERSION,'selection_split':'fit','probe_tasks':len(probe),'failed_families':sorted(failed),'fit_tasks':len(selected),
         'all_fit_families_retained':len(families),'calibration_unchanged':digest(by['calibration']),
         'verification_unchanged':digest(by['verification']),'generated_targets':0,'manifest':str(path)}
+    if full_rehearsal:
+        audit.update(full_rehearsal=True,original_fit_tasks_retained=len(by['fit']),
+                     corrective_repeats=len(selected)-len(by['fit']))
     (output/'selection.json').write_text(json.dumps(audit,indent=2)+'\n');return path,audit
 
 
@@ -70,14 +74,16 @@ def probe_fit(manifest,root,revision,*,stack,base,backend=None):
     return {**result,'selection_split':'fit','revision':revision,'provider_calls':0,'local_decodes':stats,'offline_guard':guard}
 
 
-def run(manifest,root,*,stack,base,rounds=2,train=False,backend=None,corrections_per_family=8,rehearsal_per_family=2,corrective_epochs=2,initial_revision=None):
+def run(manifest,root,*,stack,base,rounds=2,train=False,backend=None,corrections_per_family=8,rehearsal_per_family=2,corrective_epochs=2,initial_revision=None,full_rehearsal=False):
     if type(rounds) is not int or rounds<1:raise ValueError('Predeclare a positive number of local study rounds')
+    if type(full_rehearsal) is not bool: raise ValueError('full_rehearsal must be explicit boolean')
     root=C.checked_path(root);root.mkdir(parents=True,exist_ok=True)
     manifest=C.checked_path(manifest);spec,by,dataset=T.load(manifest)
     protocol={'schema':VERSION,'initial_manifest':str(manifest),'dataset':dataset,'rounds':rounds,
         'fit_probe':'First approved task from each fit family; native source acceptability only',
         'corrections_per_family':corrections_per_family,'rehearsal_per_family':rehearsal_per_family,'corrective_epochs':corrective_epochs,
         'selection_uses_verification':False,'install':False,'provider_calls':0}
+    if full_rehearsal: protocol['full_rehearsal']=True
     if initial_revision is not None:
         # Explicit transfer preserves an existing immutable candidate and
         # compares it on the new source/tasks before claiming a new gain.
@@ -105,7 +111,7 @@ def run(manifest,root,*,stack,base,rounds=2,train=False,backend=None,corrections
             folder=study/f'correction-{index+1}'
             if (folder/'manifest.json').exists():
                 current=folder/'manifest.json';T.load(current)
-            else:current,audit=correction_manifest(manifest,probe['details'],folder,corrections_per_family=corrections_per_family,rehearsal_per_family=rehearsal_per_family,epochs=corrective_epochs)
+            else:current,audit=correction_manifest(manifest,probe['details'],folder,corrections_per_family=corrections_per_family,rehearsal_per_family=rehearsal_per_family,epochs=corrective_epochs,full_rehearsal=full_rehearsal)
             parent=result['revision']
         receipt={**protocol,'status':'completed','study':str(study),'completed_rounds':len(history),'seconds':time.monotonic()-started,
             'revisions':[r['revision'] for r in history],'outcomes':[r['status'] for r in history],'clinical_qualification':False}

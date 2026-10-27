@@ -161,8 +161,10 @@ def review_study(result, *, stack):
                     [r['family'] for r in probe['details']] != list(first)):
                 raise ValueError('Recursive correction probe is not the declared fit-only probe')
             failed = {r['family'] for r in probe['details'] if not r['acceptable']}
-            expected = [row for family, rows in families.items() for row in rows[:
-                        protocol['corrections_per_family'] if family in failed else protocol['rehearsal_per_family']]]
+            full = protocol.get('full_rehearsal', False)
+            expected = list(original['fit']) if full else []
+            expected += [row for family, rows in families.items() for row in rows[:
+                         protocol['corrections_per_family'] if family in failed else 0 if full else protocol['rehearsal_per_family']]]
             if digest(expected) != digest(correction['fit']):
                 raise ValueError('Recursive fitting differs from the declared correction/rehearsal allocation')
         rounds.append(review_round(manifest, study / f'round-{index+1}.json', stack=stack))

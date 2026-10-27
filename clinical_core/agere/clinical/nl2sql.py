@@ -219,6 +219,13 @@ def retrieve_streams(question, profile, k=4):
 def schema_for(question, profile, extra=(), path=None):
     """Schema slice for the hosted ladder. AGERE_SCHEMA_RERANK=on|off chooses the learned schema reranker
     (schema_rerank.py: ordered slice within the legacy prompt size) or the legacy lexical slice."""
+    if profile.get('source_kind') == 'received_sqlite_relations':
+        # A bare warehouse may have entirely different tables/columns. Never
+        # hand its SQL writer the hard-coded native schema or invented streams.
+        lines = [name + '(' + ', '.join(spec['fields']) + ') -- received rows: ' + str(spec['records']) +
+                 '; non-NULL counts: ' + json.dumps({c:f['populated'] for c,f in spec['fields'].items()},separators=(',',':'))
+                 for name,spec in profile['relations'].items()]
+        return list(profile['relations']), 'RECEIVED RELATIONS (only these tables and fields exist)\n' + '\n'.join(lines)
     if os.environ.get('AGERE_SCHEMA_RERANK', 'on') != 'off':
         try:
             from . import schema_rerank

@@ -30,21 +30,25 @@ from . import semantic_docs
 # --- read-only access ---------------------------------------------------------------------------------------------------
 
 
-def bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
+def bounded_query(db, sql, params, timeout_s, max_rows, max_chars, *, check_date_types=False):
     from ..request_lineage import component, trace_sql
     from ...contracts import digest
     trace_sql(db)
     with component('investigator_sql', query_digest=digest([sql,params])) as metrics:
-        result = _bounded_query(db, sql, params, timeout_s, max_rows, max_chars)
+        result = _bounded_query(db, sql, params, timeout_s, max_rows, max_chars, check_date_types=check_date_types)
         metrics.update(rows=len(result['rows']), truncated=result['truncated'])
         return result
 
 
-def _bounded_query(db, sql, params, timeout_s, max_rows, max_chars):
+def _bounded_query(db, sql, params, timeout_s, max_rows, max_chars, *, check_date_types=False):
     """Execute one read under a time limit; explicit truncation by rows and serialized size."""
     start = time.perf_counter()
     db.set_progress_handler(lambda: int(time.perf_counter() - start > timeout_s), 10000)
     try:
+        if check_date_types:
+            from .sql_query import date_arithmetic_issues
+            issues = date_arithmetic_issues(db, sql)
+            if issues: raise ValueError('; '.join(issues))
         cursor = db.execute(sql, params)
         if cursor.description is None:
             raise ValueError('Query must return rows')
@@ -171,7 +175,11 @@ class SemanticWarehouse:
     def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
         if not isinstance(sql, str) or not sql.strip():
             raise ValueError('A read-only SQL statement is required')
-        return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars)
+        # Product investigation uses governed definitions; the standalone reader
+        # remains independent of product compiler imports and type checks share
+        # the query's existing timeout.
+        return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars,
+                             check_date_types=bool(getattr(self._local, 'defined', None)))
 
     def close(self):
         with self._lock:

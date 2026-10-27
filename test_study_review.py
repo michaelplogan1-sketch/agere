@@ -125,7 +125,7 @@ class StudyReview(unittest.TestCase):
                     json.dumps(row['target']))
         root = self.path / 'recursive-registry'
         result = R.run(self.manifest, root, stack=self.path, base=self.base,
-                       rounds=2, train=True, backend=Backend())
+                       rounds=2, train=True, backend=Backend(), full_rehearsal=True)
         path = self.path / 'recursive-result.json'; path.write_text(json.dumps(result))
         reviewed = S.review_study(path, stack=self.path)
         self.assertEqual(len(reviewed['rounds']), 2)
@@ -141,6 +141,31 @@ class StudyReview(unittest.TestCase):
         spec['files'][0]['sha256'] = A.file_hash(data); correction.write_text(json.dumps(spec))
         with self.assertRaisesRegex(ValueError, 'correction/rehearsal allocation'):
             S.review_study(path, stack=self.path)
+
+    def test_full_rehearsal_keeps_every_approved_fit_example_and_only_upweights_fit_failures(self):
+        from clinical_core.contracts import digest
+        from clinical_core.agere.clinical import adapter_learning as A
+        from tools.training import adapter_tasks as T
+        spec = json.loads(self.manifest.read_text()); data = Path(spec['files'][0]['path'])
+        rows = [json.loads(line) for line in data.read_text().splitlines()]
+        # Several wordings in each fit family make truncating to a pair lose
+        # legitimate original supervision. Comparisons retain separate families.
+        original = rows[0]
+        fits = [{**original, 'question': original['question'] + ' ' * i,
+                 'family': family} for family in ('first-fit', 'second-fit') for i in range(1, 6)]
+        data.write_text(''.join(json.dumps(r)+'\n' for r in [*fits,*rows[1:]]))
+        spec['files'][0]['sha256'] = A.file_hash(data); self.manifest.write_text(json.dumps(spec))
+        probe = [{'task': digest([r['question'],r['family']]), 'family': r['family'],
+                  'acceptable': r['family'] != 'first-fit'} for r in (fits[0],fits[5])]
+        manifest, audit = R.correction_manifest(self.manifest, probe, self.path/'full-rehearsal',
+            corrections_per_family=2, rehearsal_per_family=1, epochs=1, full_rehearsal=True)
+        _, before, _ = T.load(self.manifest); _, after, _ = T.load(manifest)
+        self.assertEqual(after['fit'][:10], before['fit'])
+        self.assertEqual(after['fit'][10:], before['fit'][:2])
+        self.assertEqual(after['calibration'], before['calibration'])
+        self.assertEqual(after['verification'], before['verification'])
+        self.assertEqual(audit['original_fit_tasks_retained'],10)
+        self.assertEqual(audit['corrective_repeats'],2)
 
 
 if __name__ == '__main__':

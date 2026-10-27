@@ -23,7 +23,7 @@ def register(db):
     semantic_layer.ensure_sdoh_latest_view(db)  # the latest matched purchased-SDOH delivery per patient
     return register_clinical_inputs(register_dose(register_age(db)))
 
-VERSION = 'semantic-sql/1'
+VERSION = 'semantic-sql/2'
 RETURNS = ('count', 'value', 'patient_set', 'table')
 MAX_ROWS = 200000
 TIME_LIMIT_SECONDS = 600
@@ -71,6 +71,91 @@ def validate(p):
     if re.search(r'\bage_latest\b', code, re.I):
         raise ValueError('Stale feed age is not an analytical field; use age_at(birth_date, as_of).')
     return {'query': q, 'returns': p['returns']}
+
+
+def date_arithmetic_issues(db, query):
+    """Detect SQLite's silent numeric coercion of received ISO date text.
+
+    Resolve ordinary columns and CTE aliases through the installed SQL parser.
+    A data column is temporal only when every non-NULL received value is ISO
+    date text; numeric epochs and explicitly numeric conversions remain valid.
+    This checks types, not clinical meaning, and never rewrites the calculation.
+    """
+    if not any(op in query for op in ('-', '+', '*', '/', '%')):
+        return []
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import Scope, traverse_scope
+    try:
+        tree = sqlglot.parse_one(query, read='sqlite')
+    except sqlglot.errors.ParseError:
+        # SQLite remains the syntax authority for extensions this parser cannot
+        # represent. No type finding is inferred from an unsuccessful parse.
+        return []
+    profiles, schemas = {}, {}
+    def quoted(name):
+        return '"' + name.replace('"', '""') + '"'
+    def columns(table):
+        if table not in schemas:
+            try:
+                cur = db.execute('SELECT * FROM ' + quoted(table) + ' LIMIT 0')
+                schemas[table] = {d[0].casefold(): d[0] for d in cur.description or []}
+            except sqlite3.DatabaseError as exc:
+                if 'interrupt' in str(exc).lower(): raise
+                schemas[table] = {}
+        return schemas[table]
+    def temporal_column(table, name):
+        actual = columns(table).get(name.casefold())
+        if actual is None: return False
+        key = (table, actual)
+        if key not in profiles:
+            col = quoted(actual)
+            # Exact counterexample search, not sampled type inference: one
+            # numeric/mixed value disproves the date-text type immediately.
+            invalid = db.execute(
+                f"SELECT 1 FROM {quoted(table)} WHERE {col} IS NOT NULL AND NOT (typeof({col})='text' AND "
+                f"{col} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*' "
+                f"AND julianday({col}) IS NOT NULL) LIMIT 1").fetchone()
+            profiles[key] = invalid is None and db.execute(
+                f'SELECT 1 FROM {quoted(table)} WHERE {col} IS NOT NULL LIMIT 1').fetchone() is not None
+        return profiles[key]
+    def from_source(source, name, seen):
+        if isinstance(source, exp.Table):
+            return temporal_column(source.name, name)
+        if isinstance(source, Scope):
+            for index, item in enumerate(source.expression.selects):
+                alias = source.outer_columns[index] if index < len(source.outer_columns) else item.alias_or_name
+                if alias.casefold() == name.casefold():
+                    return temporal(item.this if isinstance(item, exp.Alias) else item, source, seen)
+                if item.is_star:
+                    return temporal(exp.column(name, table=item.table if isinstance(item, exp.Column) else None), source, seen)
+        return False
+    def temporal(node, scope, seen=None):
+        seen = set() if seen is None else seen
+        if isinstance(node, exp.Paren): return temporal(node.this, scope, seen)
+        if isinstance(node, exp.Literal):
+            return node.is_string and bool(re.match(r'^\d{4}-\d{2}-\d{2}(?:$|[ T])', node.this))
+        if isinstance(node, exp.Date) or (isinstance(node, exp.Anonymous) and node.name.casefold() in ('date', 'datetime')):
+            return True
+        if not isinstance(node, exp.Column): return False
+        key = (id(scope), node.table.casefold(), node.name.casefold())
+        if key in seen: return False
+        seen = seen | {key}
+        sources = [source for alias, source in scope.sources.items()
+                   if not node.table or alias.casefold() == node.table.casefold()]
+        # Unqualified columns need one received source; ambiguity is left to
+        # SQLite rather than guessed from a similarly named field.
+        if len(sources) != 1 and not node.table:
+            sources = [s for s in sources if isinstance(s, exp.Table) and node.name.casefold() in columns(s.name)]
+        return len(sources) == 1 and from_source(sources[0], node.name, seen)
+    issues = []
+    for scope in traverse_scope(tree):
+        for node in scope.expression.find_all(exp.Sub, exp.Add, exp.Mul, exp.Div, exp.Mod):
+            if node.find_ancestor(exp.Select) is not scope.expression: continue
+            if temporal(node.this, scope) or temporal(node.expression, scope):
+                issues.append('Raw arithmetic on ISO date text would use SQLite numeric coercion: ' + node.sql(dialect='sqlite') +
+                              '. Use julianday for elapsed days or unixepoch for elapsed seconds, then convert units explicitly.')
+    return list(dict.fromkeys(issues))
 
 
 _DEFINITION_VIEW = re.compile(r'(?i)\b(?:living_patient|condition_member|latest_lab|last_12_months|medicare_member)\b')
@@ -161,6 +246,8 @@ def _execute(path, params, patient_ids=None, target=None, time_limit=None):
     db.set_authorizer(_authorizer)
     started = time.perf_counter()
     try:
+        issues = date_arithmetic_issues(db, unfused)
+        if issues: raise ValueError('; '.join(issues))
         try:
             cursor = db.execute(query, args)
             columns = [c[0] for c in cursor.description or []]

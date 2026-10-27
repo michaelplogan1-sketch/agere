@@ -458,6 +458,9 @@ def _inspect(catalog, query, population, *, trace=None):
             cte = 'population(patient_id) AS (SELECT value FROM json_each(:population))'
             text = ('WITH ' + cte + ', ' + text[4:].lstrip()) if re.match(r'(?is)^with\b', text) else 'WITH ' + cte + ' ' + text
             args['population'] = json.dumps(sorted(population or []))
+        issues = sql_query.date_arithmetic_issues(db, text)
+        if issues:
+            raise PlanError('; '.join(issues))
         db.set_authorizer(authorize)
         cursor = db.execute('SELECT * FROM (' + text + ') LIMIT 0', args)
         columns = [c[0] for c in cursor.description]
