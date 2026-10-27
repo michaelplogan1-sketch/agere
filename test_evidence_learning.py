@@ -56,8 +56,8 @@ class EvidenceLearning(unittest.TestCase):
         data=self.path/'shape.jsonl';data.write_text(''.join(json.dumps(r)+'\n' for r in rows))
         manifest=self.path/'manifest.json';manifest.write_text(json.dumps({'schema':'approved-component-data/1','role':'shape','files':[{'path':str(data),'sha256':A.file_hash(data)}],'provenance':'Authored classifier selection regression'}))
         common={'cases':20,'accepted_decision_acceptability':1.0}
-        safe={**common,'argmax_acceptability':.8,'coverage':.4,'wrong_confident':0,'encoder_calls_per_prediction':0}
-        unsafe={**common,'argmax_acceptability':.95,'coverage':.9,'wrong_confident':1,'encoder_calls_per_prediction':1}
+        safe={**common,'argmax_acceptability':.8,'coverage':.4,'wrong_confident':0,'encoder_calls_per_prediction':0,'native_useful_improvements':2}
+        unsafe={**common,'argmax_acceptability':.95,'coverage':.9,'wrong_confident':1,'encoder_calls_per_prediction':1,'native_useful_improvements':3}
         with patch.object(P,'score',side_effect=[safe,unsafe]):result=P.run(manifest,self.path/'registry',encoder=Encoder(),install=False)
         self.assertEqual(result['status'],'qualified_candidate')
         self.assertEqual(result['qualification']['chosen'],safe)

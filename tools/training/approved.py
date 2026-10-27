@@ -64,19 +64,43 @@ def probabilities(model,rows,encoder):
     return softmax((matrix(rows,encoder,model['feature_kind'])@np.asarray(model['weights']).T+np.asarray(model['bias']))/model['temperature'])
 
 
+def acceptable(label,row,*,shape=False):
+    accepted=row['accepted_labels']
+    # Native answer checking accepts either scalar representation. A numeric
+    # quantity must not become a format error merely because it was labelled
+    # count rather than value. Source units/arithmetic remain downstream checks.
+    return label in accepted or bool(shape and label in ('count','value') and set(accepted)&{'count','value'})
+
+
+def native_shape_baseline(rows):
+    from clinical_core.agere.clinical.analysis_graph import requested_shape
+    labels=[requested_shape(row['question']) for row in rows]
+    correct=[acceptable(label,row,shape=True) for label,row in zip(labels,rows)]
+    return {'kind':'native_shape_rules','cases':len(rows),'argmax_acceptability':sum(correct)/len(rows),
+        'coverage':sum(label is not None for label in labels)/len(rows),
+        'wrong_confident':sum(label is not None and not ok for label,ok in zip(labels,correct)),
+        'encoder_calls_per_prediction':0}
+
+
 def score(model,rows,encoder):
     p=probabilities(model,rows,encoder);best=p.argmax(1)
-    correct=np.array([model['labels'][i] in row['accepted_labels'] for i,row in zip(best,rows)])
+    shape=model.get('version')=='answer-shape-head/1'
+    correct=np.array([acceptable(model['labels'][i],row,shape=shape) for i,row in zip(best,rows)])
     used=p.max(1)>=model['threshold']
-    return {'cases':len(rows),'argmax_acceptability':float(correct.mean()),'coverage':float(used.mean()),
+    result={'cases':len(rows),'argmax_acceptability':float(correct.mean()),'coverage':float(used.mean()),
         'accepted_decision_acceptability':float(correct[used].mean()) if used.any() else None,
         'wrong_confident':int((used & ~correct).sum()),'encoder_calls_per_prediction':int(model['feature_kind']!='lexical')}
+    if shape:
+        from clinical_core.agere.clinical.analysis_graph import requested_shape
+        native=np.array([acceptable(requested_shape(row['question']),row,shape=True) for row in rows])
+        result['native_useful_improvements']=int((used & correct & ~native).sum())
+    return result
 
 
 def threshold(model,rows,encoder):
     """Calibrate only on calibration families; verification never tunes a threshold."""
     p=probabilities(model,rows,encoder);best=p.argmax(1);confidence=p.max(1)
-    correct=np.array([model['labels'][i] in row['accepted_labels'] for i,row in zip(best,rows)])
+    correct=np.array([acceptable(model['labels'][i],row,shape=model.get('version')=='answer-shape-head/1') for i,row in zip(best,rows)])
     candidates=[float(t) for t in sorted(set(confidence)) if correct[confidence>=t].all()]
     return min(candidates) if candidates else 1.01
 
@@ -125,23 +149,27 @@ def run(manifest,root,*,stack=None,encoder=None,install=False):
         # A more accurate argmax can still make unsafe accepted decisions.
         # Keep a useful calibrated alternative when another variant fails the
         # existing zero-confident-error qualification, rather than reject all.
-        eligible=[item for item in variants if item[1]['coverage']>0 and item[1]['wrong_confident']==0]
+        eligible=[item for item in variants if item[1]['coverage']>0 and item[1]['wrong_confident']==0 and
+                  (role!='shape' or item[1]['native_useful_improvements']>0)]
         chosen,metric=max(eligible or variants,key=quality)
         majority=max(allowed,key=lambda label:sum(r['label']==label for r in by['fit']))
-        baseline={'kind':'majority','argmax_acceptability':sum(majority in r['accepted_labels'] for r in by['verification'])/len(by['verification']),
-                  'coverage':1.0,'wrong_confident':sum(majority not in r['accepted_labels'] for r in by['verification']),'encoder_calls_per_prediction':0}
+        majority_baseline={'kind':'majority','argmax_acceptability':sum(acceptable(majority,r,shape=role=='shape') for r in by['verification'])/len(by['verification']),
+                  'coverage':1.0,'wrong_confident':sum(not acceptable(majority,r,shape=role=='shape') for r in by['verification']),'encoder_calls_per_prediction':0}
+        baseline=native_shape_baseline(by['verification']) if role=='shape' else majority_baseline
         current=C.runtime_model(role,root)
         if current:
             old=json.loads(current.read_text())
             old_encoder=next((e for _,e in candidates if getattr(e,'identity',None)==old.get('encoder_identity')),None)
             if old.get('feature_kind')=='lexical' or old_encoder is not None:
                 baseline={**score(old,by['verification'],old_encoder),'kind':'current_release'}
-        selected=bool(eligible) and quality((chosen,metric))>quality((None,baseline))
+        # An adjunct shape hint must add safe decisions beyond the existing
+        # rules. Its unserved low-confidence argmaxes need not replace rules.
+        selected=bool(eligible) and (baseline['kind']=='native_shape_rules' or quality((chosen,metric))>quality((None,baseline)))
         qualification={'job':job,'dataset':dataset,'trainer_identity':trainer_identity,
             'feedback_revision':C.feedback_revision(root),
             'input_files':spec['files'],'provenance':spec['provenance'],
-            'selected':selected,'baseline':baseline,'chosen':metric,
-            'selection_policy':'Compare useful variants meeting the existing zero-confident-error criterion before ranking argmax accuracy/coverage/cost; preserve all comparisons',
+            'selected':selected,'baseline':baseline,'majority_baseline':majority_baseline,'chosen':metric,
+            'selection_policy':'Require zero confident errors; shape hints must add accepted correct decisions beyond native rules. Compare eligible variants, preserve all comparisons and the majority reference.',
             'comparisons':[{'feature_kind':m['feature_kind'],'encoder_identity':m.get('encoder_identity'),**s} for m,s in variants],
             'family_counts':{k:len({r['family'] for r in v}) for k,v in by.items()},'threshold_fitted_on':'calibration only',
             'source_kinds':sorted({r['source_kind'] for rows in by.values() for r in rows}),
