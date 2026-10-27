@@ -43,6 +43,8 @@ class FrontierDelivery(unittest.TestCase):
         text = body['messages'][0]['content']
         self.assertIn(self.question, text)
         self.assertNotIn('OUTSIDE', text)
+        if body['model']==C.SMALL_MODEL:
+            return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.01}}
         rid = re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"', text).group(1)
         return {'content': [{'type': 'text', 'text': (
             f'TITLE: Evidence lens\n```html\n<h1>Evidence lens</h1><p>Synthetic saved evidence</p>'
@@ -62,8 +64,8 @@ class FrontierDelivery(unittest.TestCase):
         self.assertEqual(repeated['known_api_estimate_usd'], 0)
         self.assertEqual(result['steps'][0]['status'], 'ready')
         self.assertEqual(result['steps'][0]['generation'], 'frontier')
-        self.assertEqual(result['new_paid_api_calls'], 1)
-        self.assertEqual(result['known_api_estimate_usd'], 0.25)
+        self.assertEqual(result['new_paid_api_calls'], 2)
+        self.assertEqual(result['known_api_estimate_usd'], 0.26)
         self.assertFalse(result['external_dispatch_performed'])
         self.assertIn('REQUEST: create an interactive evidence explorer', self.calls[0]['messages'][0]['content'])
         ws = A.workspace(self.path, A.load(self.path, self.key))
@@ -128,6 +130,8 @@ class FrontierDelivery(unittest.TestCase):
         bundle_file.write_text(json.dumps(legacy))
         def revise(body):
             self.assertEqual(body['tool_choice'], {'type': 'none'})
+            if body['model']==C.SMALL_MODEL:
+                return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cache_hit':True}
             return {'content': [{'type': 'text', 'text': '```json\n[{"find":"Evidence lens</h1>","replace":"Saved evidence</h1>"}]\n```'}]}, {'cache_hit': True}
         with patch.object(C.toolsmod.ToolContext, 'call', side_effect=AssertionError('No new evidence')):
             revised = C.revise(ws, out['id'], 'Add a pharmacy plan for everyone and rename the view', send=revise)

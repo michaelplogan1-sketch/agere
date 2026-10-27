@@ -246,6 +246,8 @@ class Tools:
                 from .general_analysis import _expand
                 from .request_plan import Catalog
                 sql = _expand(sql, Catalog.load(self.stack.path), set())
+            from .general_analysis import scope_sql
+            sql = scope_sql(self.semantic.db, sql, self.cohort)
             complete=args.get('complete',False)
             out = self.semantic.query(sql, as_of=self.as_of, max_rows=None if complete else 2000, max_chars=None if complete else 60000)
             out['executed_query'] = sql
@@ -317,8 +319,9 @@ class Tools:
         table = a.get('table') or []
         out = {'question': question, 'answered': True, 'read_as': (result.get('graph') or {}).get('interpretation'),
                'headline': a.get('headline'), 'value': a.get('value'), 'count': a.get('count'), 'unit': a.get('unit'),
-               'table': table[:40], 'table_rows': len(table), 'method': a.get('method'),
-               'definitions': (a.get('limitations') or [])[:6]}
+               'table': table, 'table_rows': a.get('table_rows',len(table)),
+               'truncated': bool(a.get('truncated') or a.get('preview_only') or a.get('table_rows',len(table))>len(table)),
+               'method': a.get('method'), 'definitions': a.get('limitations') or []}
         self.governed.append(out)
         return {k: v for k, v in out.items() if v not in (None, [], '')}
 
@@ -375,6 +378,15 @@ class Tools:
             evidence = [{'id': f'{rid}#{k}', 'record_id': rid, 'text': c, 'date': (doc.get('date') or self.as_of)[:10]} for k, c in enumerate(chunks)]
             r = system_one.decide(question, options, evidence, as_of=self.as_of, task_key='agere_chart_judgment', ledger=self.ledger,
                                   allow_live=bool(getattr(self.stack, 'allow_live', False)))
+            from .system_one_gate import cost
+            calls,usd=cost(r)
+            accounting=getattr(self,'subtool_accounting',None)
+            if accounting is None:
+                accounting=self.subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0.0}
+            accounting['new_paid_api_calls']+=calls
+            accounting['estimated_cost_usd']+=usd
+            if any(s.get('error') or (s.get('provider') in ('jev','perplexity') and not s.get('cache_hit') and s.get('cost_usd') is None)
+                   for s in r.get('steps') or []):accounting['api_cost_known']=False
             used = [e['text'] for e in evidence if e['id'] in set(r.get('evidence_ids') or [])] or [chunks[0]]
             label = r.get('label') or 'unknown'
             p = (r.get('calibrated_probabilities') or r.get('probabilities') or {}).get(label)
@@ -484,6 +496,8 @@ def materialize_table(answer, calls):
     if result.get('truncated'): raise ValueError('The table source is truncated; compute the complete requested aggregation before returning it')
     columns, rows = output_table(result)
     if not columns: raise ValueError('The referenced tool result is not a table')
+    if type(result.get('table_rows')) is int and result['table_rows']!=len(rows):
+        raise ValueError('The table source row count differs from its complete receipt; retrieve all rows before binding it')
     answer['table'] = [dict(zip(columns, row)) for row in rows]
     answer['table_binding'] = {'result_view': name, 'rows': len(rows), 'columns': columns, 'query': call.get('sql'), 'copied_from_executed_result': True}
 
@@ -668,21 +682,15 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             observed = c.get('result')
             if isinstance(observed, dict):
                 observed = {k: v for k, v in observed.items() if k not in ('executed_query','accounting','elapsed_s')}
-                if observed.get('result_view')==bound:
-                    from .semantic_analyst import actor_result
-                    observed=actor_result(observed)
-                if bound and observed.get('result_view') != bound and observed.get('result_view'):
-                    cols, rows = output_table(observed)
-                    observed = {'result_view': observed['result_view'], 'columns': cols, 'rows_computed': len(rows),
-                                'truncated': observed.get('truncated'), 'role': 'intermediate input to the code-computed final table'}
             evidence.append({'id': f'tool_{i}', 'date': as_of, 'text': json.dumps({'tool': c.get('name'), 'input': c.get('input'), 'result': observed}, default=str)})
         evidence += [{'id': f'document_{rid}', 'date': as_of,
                       'text': json.dumps({'record_id': rid, **tools.read.get(rid, {})}, default=str)} for rid in dict.fromkeys(s['record_id'] for s in kept)]
         interpretation = dict(answer)
         for i,r in enumerate(getattr(tools,'document_reviews',[])):
             evidence.append({'id':f'whole_review_{i}','date':as_of,'text':json.dumps({
-                'questions':r['questions'],'scope':r['scope'],'manifest':r['manifest'],
-                'method':'All scoped whole texts supplied; findings copied into the executed result view with exact source quotes'})})
+                **r,'method':'Whole-document review receipt, including coverage and unresolved findings'})})
+        assessment['evidence_coverage'] = {'tool_results':len(calls), 'full_results_supplied':True,
+                                           'final_table_rows':len(answer.get('table') or [])}
         if answer.get('table_binding'):
             interpretation['table'] = {k: v for k, v in answer['table_binding'].items() if k != 'query'}
             interpretation['table_binding'] = interpretation['table']  # the final rows are supplied once, in their actual tool result

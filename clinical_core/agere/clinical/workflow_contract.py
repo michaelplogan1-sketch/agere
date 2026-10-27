@@ -13,6 +13,16 @@ FIELDS = {
 }
 
 
+def initialized(step):
+    """A completed initialization has different states for work and monitors.
+
+    Watching establishes a monitor's baseline, not future successful care or
+    an improved clinical outcome. Later feedback can still retire reuse.
+    """
+    states={'deliverable':{'ready','complete'},'simulation':{'ready','complete','no_matches'},'monitor':{'watching'}}
+    return isinstance(step,dict) and not step.get('unresolved') and step.get('status') in states.get(step.get('kind'),set())
+
+
 def _refers_to_selected_patients(question, action_quote, criterion_quote, patient_selection):
     """Resolve an explicit recipient pronoun to a single earlier patient list.
 

@@ -153,9 +153,10 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
             self.assertEqual(result['answer']['status'], 'partial')
             self.assertFalse(result['answer']['actionable_cohort'])
             flow = W.materialize(self.path, ctx['id'])
-            self.assertEqual([s['status'] for s in flow['steps']], ['ready', 'blocked', 'blocked'])
+            invalid=A.load(self.path,ctx['id'])['invalidated']
+            self.assertEqual([s['status'] for s in flow['steps']], ['blocked' if invalid else 'ready', 'blocked', 'blocked'])
             self.assertEqual(A.inspect(self.path, ctx['id'])['items'], [])
-            self.assertIn('patient work remains blocked', flow['steps'][0]['reason'])
+            self.assertIn('invalidated' if invalid else 'patient work remains blocked', flow['steps'][0]['reason'])
 
     def test_uncomputed_metric_and_downstream_filter_remain_unresolved(self):
         spec = patient_spec()
@@ -234,10 +235,9 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         self.assertIn('patient work is blocked', ' '.join(result['answer']['missing']))
         self.assertEqual(A.inspect(self.path, ctx['id'])['items'], [])
         flow = W.materialize(self.path, ctx['id'])
-        self.assertEqual([s['status'] for s in flow['steps']], ['ready', 'blocked', 'blocked'])
-        compose = importlib.import_module('clinical_core.agere.deliverables.compose')
-        _, _, _, doc = compose.load(A.workspace(self.path, A.load(self.path, ctx['id'])), flow['steps'][0]['deliverable_id'])
-        self.assertIn('Partial evidence · patient work blocked', doc)
+        self.assertEqual([s['status'] for s in flow['steps']], ['blocked', 'blocked', 'blocked'])
+        self.assertTrue(flow['refresh_required'])
+        self.assertEqual(A.load(self.path,ctx['id'])['answer']['table'],result['answer']['table'])
 
     def test_partial_answer_cannot_trigger_frontier_generation_or_work(self):
         spec = patient_spec(); spec['patient_selection']['quote'] = 'invented patients'
@@ -258,7 +258,7 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         self.assertIn('Requested workflow step was not compiled', ' '.join(result['answer']['missing']))
         flow = W.materialize(self.path, ctx['id'])
         self.assertEqual([s['kind'] for s in flow['steps']], ['deliverable', 'monitor'])
-        self.assertEqual([s['status'] for s in flow['steps']], ['ready', 'blocked'])
+        self.assertEqual([s['status'] for s in flow['steps']], ['blocked', 'blocked'])
         self.assertEqual(A.inspect(self.path, ctx['id'])['items'], [])
 
     def test_scope_is_enforced_even_when_model_omits_population(self):
@@ -420,6 +420,8 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         self.stack.allow_live = True; self.stack.receipts = self.path
         def sender(body):
             prompt = body['messages'][0]['content']
+            if body['model']==composer.SMALL_MODEL:
+                return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.01}}
             rid = re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"', prompt).group(1)
             return {'content': [{'type': 'text', 'text': 'TITLE: Utilization brief\n```html\n<h1>Utilization brief</h1>'
                     '<p>Synthetic evidence</p><p data-bind="'+rid+':answer.headline"></p>\n```'}],
@@ -431,8 +433,8 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
             replay = conversation.handle_compose(self.stack, {'question': QUESTION, 'scope': 'warehouse'})
         self.assertNotIn('action_context_error', result)
         self.assertEqual([s['status'] for s in result['workflow']], ['ready', 'ready', 'watching'])
-        self.assertEqual(result['new_paid_api_calls'], 3)
-        self.assertAlmostEqual(result['planning_economics']['new_api_estimate_usd'], .55)
+        self.assertEqual(result['new_paid_api_calls'], 4)
+        self.assertAlmostEqual(result['planning_economics']['new_api_estimate_usd'], .56)
         self.assertEqual(replay['new_paid_api_calls'], 0)
         self.assertEqual(replay['action_context']['id'], result['action_context']['id'])
         ctx = result['action_context']['id']

@@ -39,6 +39,8 @@ def describe(operation):
 def population(tools,patient_ids=None,patient_query_sql=None):
     if patient_ids is not None and patient_query_sql is not None:raise ValueError('Choose patient_ids or patient_query_sql')
     if patient_query_sql is not None:
+        from .sql_query import validate as validate_sql
+        validate_sql({'query':patient_query_sql,'returns':'patient_set'})
         out=tools._call({'name':'query_sql','input':{'sql':patient_query_sql,'complete':True}})
         if out.get('columns')!=['patient_id'] or out.get('truncated'):raise ValueError('Complete population query must return exactly patient_id')
         patient_ids=[r['patient_id'] if isinstance(r,dict) else r[0] for r in out['rows']]

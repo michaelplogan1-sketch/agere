@@ -149,11 +149,14 @@ class Bundle:
 def trim(v, max_list=6, max_str=300):
     """Long lists cut to max_list items (count kept), long strings cut; dicts capped at 60 keys."""
     if isinstance(v, dict):
-        return {k: trim(x, max_list, max_str) for k, x in list(v.items())[:60]}
+        items = v.items() if max_list is None else list(v.items())[:60]
+        return {k: trim(x, max_list, max_str) for k, x in items}
     if isinstance(v, list):
+        if max_list is None:
+            return [trim(x, max_list, max_str) for x in v]
         head = [trim(x, max_list, max_str) for x in v[:max_list]]
         return head + ([f'... {len(v) - max_list} more items (length {len(v)})'] if len(v) > max_list else [])
-    if isinstance(v, str) and len(v) > max_str:
+    if isinstance(v, str) and max_str is not None and len(v) > max_str:
         return v[:max_str] + '...'
     return v
 
@@ -163,9 +166,12 @@ def digest(bundle, max_list=6, max_str=300, max_chars=60000):
     long lists truncated (the item count kept). The artifact embeds the full data; this only teaches the shape."""
     out = []
     for rid, rec in bundle.receipts.items():
-        out.append({'receipt': rid, 'tool': rec['tool'], 'args': rec['args'], 'definition': (rec.get('definition') or '')[:400],
+        definition = rec.get('definition') or ''
+        out.append({'receipt': rid, 'tool': rec['tool'], 'args': rec['args'], 'definition': definition if max_str is None else definition[:400],
                     'data': trim(bundle.results[rid], max_list, max_str)})
     text = json.dumps(out, default=str, separators=(',', ':'))
+    if max_chars is None:
+        return text
     if len(text) > max_chars and max_list > 2:
         return digest(bundle, max_list=max(2, max_list // 2), max_str=max_str // 2, max_chars=max_chars)
     return text[:max_chars * 2]

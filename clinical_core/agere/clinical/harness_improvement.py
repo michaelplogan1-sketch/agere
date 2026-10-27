@@ -228,8 +228,8 @@ def _finish(path,result):
     ident=candidate.get('id') or used
     # Incomplete investigations are feedback even if no configuration exists
     # yet. They cannot produce a selected execution path or a correct-answer key.
-    complete=(result.get('answer') or {}).get('status')=='answered' and all(
-        s.get('status') in ('ready','no_matches','complete') for s in result.get('workflow',[]))
+    from .workflow_contract import initialized
+    complete=(result.get('answer') or {}).get('status')=='answered' and all(initialized(s) for s in result.get('workflow',[]))
     db=database(path)
     try:
         stored=db.execute('SELECT payload FROM harness_candidates WHERE id=?',(ident,)).fetchone() if ident else None

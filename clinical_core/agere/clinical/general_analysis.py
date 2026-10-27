@@ -471,6 +471,97 @@ def _inspect(catalog, query, population, *, trace=None):
     return {t: sorted(c) for t, c in sorted(reads.items()) if t in catalog.tables}, columns
 
 
+def scope_sql(db, query, population, *, views_only=False):
+    """Scope patient-linked inputs before aggregation, including inputs hidden in views.
+
+    Resolve real relations using SQL scope, so user CTEs keep their meaning. Views
+    are expanded from this connection's schema; filtering only their output would
+    miss aggregates over patients they no longer expose. Reference dimensions
+    remain available. None and an explicitly empty membership are distinct.
+    """
+    if population is None:
+        return query
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import traverse_scope
+    from .request_plan import identifier
+
+    def parse(text):
+        statements = sqlglot.parse(text, read='sqlite')
+        if len(statements) != 1 or not isinstance(statements[0], exp.Query):
+            raise ValueError('Use one read-only SELECT or WITH statement')
+        return statements[0]
+
+    try:
+        tree = parse(query)
+        if any(t.db or t.catalog for t in tree.find_all(exp.Table)):
+            raise ValueError('Use unqualified source tables so selected population scope can be applied')
+        # Metadata is read by code, never supplied by the model. The existing
+        # authorizer is restored before any analytical statement can execute.
+        db.set_authorizer(None)
+        try:
+            relations = {}
+            for schema in ('main', 'temp'):
+                for name, kind, definition in db.execute(
+                        f"SELECT name,type,sql FROM {schema}.sqlite_master WHERE type IN ('table','view')"):
+                    cols = [r[1] for r in db.execute(f'PRAGMA {schema}.table_info({identifier(name)})')]
+                    relations[(schema,name.lower())] = (schema, name, kind, definition, cols)
+        finally:
+            from .semantic_analyst import SemanticWarehouse
+            db.set_authorizer(SemanticWarehouse._authorize)
+
+        membership = json.dumps(sorted(set(population)), allow_nan=False).replace("'", "''")
+        # A literal relation is portable in the saved execution receipt and cannot
+        # be shadowed by a model-supplied cohort/population CTE.
+        predicate = "patient_id IN (SELECT value FROM json_each('" + membership + "'))"
+
+        def rewrite(node, ancestors=(), view_schema=None):
+            for scope in traverse_scope(node) or []:
+                for _, (reference, source) in scope.selected_sources.items():
+                    if not isinstance(source, exp.Table) or not isinstance(reference, exp.Table):
+                        continue
+                    schemas = (source.db.lower(),) if source.db else ('main',) if view_schema=='main' else ('temp','main')
+                    relation = next((relations[(s,source.name.lower())] for s in schemas
+                                     if (s,source.name.lower()) in relations), None)
+                    if relation is None:
+                        continue  # SQLite diagnoses unknown names/table functions.
+                    schema, name, kind, definition, cols = relation
+                    if source.db and source.db.lower() != schema:
+                        raise ValueError('A view references an unavailable source schema')
+                    alias = reference.alias or reference.name
+                    if kind == 'view':
+                        identity = (schema, name.lower())
+                        if identity in ancestors:
+                            raise ValueError('Recursive source view cannot establish selected population scope')
+                        created = sqlglot.parse_one(definition, read='sqlite')
+                        inner = created.expression
+                        if not isinstance(inner, exp.Query):
+                            raise ValueError('Source view has no readable query')
+                        inner = rewrite(inner, (*ancestors, identity), schema)
+                        # SQLite views can declare names different from their
+                        # SELECT expressions. Keep that exact output contract.
+                        target = created.this
+                        if isinstance(target, exp.Schema):
+                            declared = ','.join(identifier(c.name) for c in target.expressions)
+                            inner = parse('WITH scoped_view(' + declared + ') AS (' + inner.sql(dialect='sqlite') +
+                                          ') SELECT * FROM scoped_view')
+                        if any(c.lower()=='patient_id' for c in cols):
+                            inner = parse('SELECT * FROM (' + inner.sql(dialect='sqlite') + ') WHERE ' + predicate)
+                        replacement = inner.subquery(alias=alias)
+                    elif any(c.lower() == 'patient_id' for c in cols):
+                        if views_only and not ancestors:
+                            continue  # prepare() already scopes direct tables through named CTEs.
+                        replacement = parse(f'SELECT * FROM {schema}.{identifier(name)} WHERE {predicate}').subquery(alias=alias)
+                    else:
+                        continue
+                    reference.replace(replacement)
+            return node
+
+        return rewrite(tree).sql(dialect='sqlite')
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError, sqlglot.errors.OptimizeError) as exc:
+        raise ValueError('Cannot establish selected population scope: ' + str(exc)) from exc
+
+
 def prepare(catalog, question, spec, *, population=None, relaxed=False):
     """Validate and seal a model-proposed analysis. Raises PlanError with repairable feedback."""
     if not isinstance(spec, dict) or set(spec) - {'steps', 'final', 'returns', 'requirements', 'definitions', 'unresolved', 'workflow', 'patient_selection', 'parameters'}:
@@ -545,6 +636,14 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
     else:
         query = 'WITH ' + ', '.join(f'{n} AS ({s})' for n, s in parts) + f' SELECT * FROM {final}'
     sql_query.validate({'query': query, 'returns': returns})
+    if population is not None:
+        db=register(sqlite3.connect(f'file:{catalog.target}?mode=ro',uri=True))
+        try:
+            query=scope_sql(db,query,population,views_only=True)
+        except ValueError as exc:
+            raise PlanError(str(exc)) from exc
+        finally:
+            db.close()
     trace = {}
     sources, columns = _inspect(catalog, query, population, trace=trace)
     if population is not None:

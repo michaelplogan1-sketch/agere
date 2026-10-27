@@ -62,15 +62,8 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
     if (patient_ids is None)==(patient_query_sql is None):
         raise ValueError('Choose explicit patient_ids OR a complete patient_query_sql')
     if patient_query_sql is not None:
-        from .sql_query import validate as validate_sql
-        from .general_analysis import _expand
-        from .request_plan import Catalog
-        sql=_expand(patient_query_sql,Catalog.load(tools.stack.path),set()) if '{{' in patient_query_sql else patient_query_sql
-        validate_sql({'query':sql,'returns':'patient_set'})
-        cur=tools.semantic.db.execute(sql,{'as_of':tools.as_of})
-        if [d[0] for d in cur.description or []]!=['patient_id']:
-            raise ValueError('The population query must return exactly patient_id')
-        patient_ids=[r[0] for r in cur]
+        from .analysis_tools import population
+        patient_ids=population(tools,patient_query_sql=patient_query_sql)
     if not isinstance(patient_ids,list) or any(not isinstance(p,str) or not p for p in patient_ids):
         raise ValueError('Use explicit received patient IDs')
     ids = list(dict.fromkeys(patient_ids))

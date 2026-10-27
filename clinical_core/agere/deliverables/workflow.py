@@ -98,7 +98,18 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
     if generation not in ('frontier', 'local_template'):
         raise ValueError('Choose frontier or local_template generation')
     with _lock:
-        c = A.load(path, key, current=True)
+        try:
+            c = A.load(path, key, current=True)
+        except ValueError as exc:
+            historical = A.load(path,key)
+            if not (historical.get('stale') or historical.get('invalidated')):
+                raise
+            # Historical evidence remains readable. Do not silently reuse an
+            # old initialized workflow or write new work from invalid premises.
+            return {'context_id':key,'initialized':False,
+                    'steps':[{**s,'status':'blocked','reason':str(exc)} for s in historical.get('workflow',[])],
+                    'new_paid_api_calls':0,'known_api_estimate_usd':0,'api_cost_known':True,
+                    'external_dispatch_performed':False,'refresh_required':True}
         saved = read(path, key)
         if saved.get('initialized'):
             # Keep original attempt costs on the steps, but do not charge them

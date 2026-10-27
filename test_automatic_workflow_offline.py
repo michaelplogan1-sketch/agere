@@ -81,6 +81,8 @@ class AutomaticWorkflow(unittest.TestCase):
         return {'content':[out],'usage':{'input_tokens':10,'output_tokens':10}},.001,False
 
     def artifact(self,body):
+        if body['model']==composer.SMALL_MODEL:
+            return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.001}}
         self.assertEqual(body['tool_choice'],{'type':'none'})
         rid=re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"',body['messages'][0]['content']).group(1)
         return {'content':[{'type':'text','text':'TITLE: Navigation service\n```html\n<h1>Daily navigation</h1>'

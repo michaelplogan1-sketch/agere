@@ -1185,7 +1185,7 @@ def _compose_once(stack, question, *, population=None, parent=None, model=None, 
     try:
         if receipt['request_contract'].get('kind') == 'checked_graph':
             from . import proposers
-            result = proposers.execute(stack, question, graph, receipt, started=started)
+            result = proposers.execute(stack, question, graph, receipt, started=started,population=population,parent=parent)
         elif receipt['request_contract'].get('kind') == 'request_program':
             result = request_program.execute(stack, question, graph, receipt, population=population,
                                              parent=parent, started=started)

@@ -69,6 +69,16 @@ def patient_rows(answer):
     return list(rows.values())
 
 
+def investigation_evidence(investigation):
+    """Stable evidence identity; retain business amounts inside returned rows."""
+    source=investigation or {}
+    metadata={'accounting','elapsed_s','seconds','new_paid_api_calls','estimated_cost_usd','cost_usd','api_cost_known'}
+    return {'tool_calls':[{'name':c.get('name'),'input':c.get('input'),
+                           'result':{k:v for k,v in c['result'].items() if k not in metadata} if isinstance(c.get('result'),dict) else c.get('result')}
+                          for c in source.get('tool_calls') or []],
+            'document_reviews':[{k:v for k,v in r.items() if k not in metadata} for r in source.get('document_reviews') or []]}
+
+
 def capture(path, question, result, *, original_question=None):
     """Persist a server-produced result; no client-provided IDs enter this boundary."""
     answer = result.get('answer') or {}
@@ -76,10 +86,10 @@ def capture(path, question, result, *, original_question=None):
         return None
     source = source_identity(path)
     produced = result.get('execution_snapshot')
-    contract = (result.get('planner_receipt') or {}).get('request_contract')
+    contract = (result.get('planner_receipt') or {}).get('request_contract') or result.get('request_contract')
     if produced and produced != source:
         raise ValueError('Warehouse changed between execution and capture; ask again against the new snapshot')
-    if contract:
+    if contract and contract.get('source_identity'):
         identity = contract['source_identity']
         if (identity.get('source_digest') != source['source_digest'] or identity.get('as_of') != source['as_of']
                 or identity.get('version') != source['semantic_version']):
@@ -88,7 +98,7 @@ def capture(path, question, result, *, original_question=None):
     if not answer.get('patient_ids') and (contract or result.get('request_contract') or {}).get('kind') == 'checked_graph':
         # Every patient-level count keeps who it counted (stored, not shown) so follow-ups can narrow it.
         from ..clinical.membership import from_graph
-        kept = from_graph(path, result.get('graph'), answer)
+        kept = from_graph(path, result.get('graph'), answer,population=(contract or {}).get('population'))
         if kept: answer = {**answer, 'patient_ids': kept['patient_ids'], 'membership_role': kept['role']}
     rows = patient_rows(answer)
     inherited = result.get('cohort_patient_rows')
@@ -110,6 +120,7 @@ def capture(path, question, result, *, original_question=None):
     data = {'schema': 'agere-answer-context/1', 'context_policy_identity': context_policy, 'question': question,
             'original_question': original_question or question, 'source': source,
             'answer': answer, 'graph': result.get('graph'), 'results': result.get('results'),
+            'investigation': result.get('investigation'),
             'planner_receipt': result.get('planner_receipt'), 'planning_economics': result.get('planning_economics'),
             'cohort_transform': result.get('cohort_transform'),
             'workflow': result.get('workflow', []),
@@ -122,7 +133,7 @@ def capture(path, question, result, *, original_question=None):
     # cache state or cost. Keep the first complete execution receipt immutable.
     graph = data.get('graph') or {}
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
-    key = 'ANS-' + fingerprint({'version': 6, 'context_policy_identity': context_policy,
+    key = 'ANS-' + fingerprint({'version': 7, 'context_policy_identity': context_policy,
                                'input_patient_ids': input_ids,
                                'feedback_identity': (data.get('planner_receipt') or {}).get('feedback_identity'),
                                'procedural_memory_identity': ((data.get('planner_receipt') or {}).get('interpretation', {}).get('procedural_memory') or {}).get('identity'),
@@ -131,6 +142,7 @@ def capture(path, question, result, *, original_question=None):
                                'answer_policy_version': (result.get('planner_receipt') or {}).get('version'),
                                'answer_policy_identity': (result.get('planner_receipt') or {}).get('policy_identity'),
                                'cohort_transform': data.get('cohort_transform'),
+                               'investigation_evidence': investigation_evidence(data.get('investigation')),
                                'observation_dependencies': data['dependencies']['observation']})[:24]
     d = root(path) / key
     d.mkdir(parents=True, exist_ok=True)
@@ -173,7 +185,7 @@ def load(path, key, *, current=False, follow_up=False):
     for _ in range(32):
         check = answer_dependencies.validate(path, ancestor, source=current_source, policy=active_policy, check_probes=current)
         dependency_checks.append({'context_id': ancestor.get('id'), **check})
-        invalidated = invalidated or not check['derivation_current']
+        invalidated = invalidated or not check['derivation_current'] or not check['evidence_complete'] or not check['premises_current']
         stale = stale or not check['observation_current']
         invalidated = invalidated or ancestor.get('context_policy_identity') != active_policy
         r = ancestor.get('planner_receipt') or {}

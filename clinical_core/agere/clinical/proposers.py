@@ -1386,9 +1386,15 @@ def recompile(catalog, question, contract, population):
     return request_plan.compile_request(catalog, question, contract['request'], population=population)
 
 
-def execute(stack, question, graph, receipt, *, started):
+def execute(stack, question, graph, receipt, *, started,population=None,parent=None):
     """The checked proposal was executed inside the cascade; present that exact result."""
-    contract = receipt['request_contract']
+    contract = dict(receipt['request_contract'])
+    scope=None if population is None else sorted(set(population))
+    if contract.get('population') is not None and contract['population']!=scope:
+        raise request_plan.PlanError('Checked proposal population differs from the execution context')
+    if parent is not None and scope is None:
+        raise request_plan.PlanError('A saved follow-up requires its explicit input membership')
+    contract['population']=scope
     result = dict(contract['executed'])
     answer = dict(result.get('answer') or {})
     answer.setdefault('missing', [])
@@ -1402,8 +1408,22 @@ def execute(stack, question, graph, receipt, *, started):
         value = answer.get('count', answer.get('value'))
         answer['headline'] = str(value) if value is not None else f"{len(answer.get('table') or [])} rows"
     from .shared_planner import economics
-    return {**result, 'schema': 'shared-warehouse-planner/5', 'synthetic': True, 'question': question,
+    if scope is not None and not set(answer.get('patient_ids') or [])<=set(scope):
+        raise request_plan.PlanError('Checked proposal output escaped the selected population')
+    compact={k:v for k,v in contract.items() if k!='executed'}
+    out={**result, 'schema': 'shared-warehouse-planner/5', 'synthetic': True, 'question': question,
             'route': 'shared_planner', 'graph': graph, 'answer': answer, 'request_contract': {k: v for k, v in contract.items() if k != 'executed'},
-            'planner_receipt': {k: v for k, v in receipt.items() if k != 'request_contract'},
+            'planner_receipt': {**{k:v for k,v in receipt.items() if k!='request_contract'},'request_contract':compact},
             'new_paid_api_calls': receipt['new_paid_api_calls'], 'planning_economics': economics(receipt),
             'elapsed_seconds': time.perf_counter() - started, 'clinical_execution_authorized': False}
+    if parent is not None:
+        from ..deliverables.answer_context import supports_patient_work
+        out['planner_receipt']['origin_request_contract']=((parent.get('planner_receipt') or {}).get('origin_request_contract')
+                                                         or (parent.get('planner_receipt') or {}).get('request_contract'))
+        answer['actionable_cohort']=bool(answer.get('actionable_cohort')) and supports_patient_work(parent)
+        out['cohort_transform']={'parent_context_id':parent['id'],'input_patient_ids':scope,
+                                 'operations':['Apply checked proposal to exact saved membership']}
+        if answer.get('patient_ids'):
+            old={r['patient_id']:r for r in parent.get('patient_rows',[])}
+            out['cohort_patient_rows']=[old.get(pid,{'patient_id':pid}) for pid in answer['patient_ids']]
+    return out

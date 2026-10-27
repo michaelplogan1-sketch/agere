@@ -99,8 +99,15 @@ def as_of(stack):
 def cost(out):
     """(new paid calls, usd) of one choice/decide result: decide's steps when present, else the result itself; cache hits are free."""
     steps = (out or {}).get('steps') or [out or {}]
-    calls = sum(1 for s in steps if isinstance(s, dict) and not s.get('cache_hit') and s.get('provider') and not s.get('error') and s.get('status') != 'prepared')
-    usd = sum(float(s.get('cost_usd') or 0.0) for s in steps if isinstance(s, dict))
+    paid=[s for s in steps if isinstance(s,dict) and s.get('provider') and s.get('provider')!='local_student' and not s.get('cache_hit')
+          and (not s.get('error') or s.get('cost_usd') is not None) and s.get('status')!='prepared']
+    # Equal input hashes can represent separate charged retries. Deduplicate only
+    # an actual provider attempt/receipt identity, never the prompt alone.
+    calls=len({s.get('attempt_id') or s.get('receipt_id') or ('unidentified',i) for i,s in enumerate(paid)})
+    seen=set();usd=0.0
+    for i,s in enumerate(paid):
+        identity=s.get('attempt_id') or s.get('receipt_id') or ('unidentified',i)
+        if identity not in seen:usd+=float(s.get('cost_usd') or 0.0);seen.add(identity)
     return calls, usd
 
 

@@ -144,5 +144,16 @@ class Harness(unittest.TestCase):
         self.assertEqual(len(feedback['failed_request_feedback_events']),1)
         self.assertIsNone(H.latest(self.root,H.identity(e,self.q,self.context,self.model)))
 
+    def test_monitor_initialization_qualifies_execution_then_adverse_feedback_retires_it(self):
+        e,calls=self.trajectory(1)
+        step={'kind':'monitor','quote':'monitor the result','mode':'answer','scope':'result','unresolved':[]}
+        c=H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor(),
+                    final_answer={'status':'answered','workflow':[step]})
+        H.finish(self.root,{'answer':{'status':'answered'},'workflow':[{**step,'status':'watching'}],
+                           'investigation':{'recursive_improvement':{'candidate':c}}})
+        self.assertEqual(H.latest(self.root,H.identity(e,self.q,self.context,self.model))['id'],c['id'])
+        H.record_feedback(self.root,c['id'],accepted=False,reason='Observed mismatch on later review')
+        self.assertIsNone(H.latest(self.root,H.identity(e,self.q,self.context,self.model)))
+
 
 if __name__=='__main__':unittest.main()

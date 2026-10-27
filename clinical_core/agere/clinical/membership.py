@@ -173,7 +173,7 @@ def disclose(found):
     return f'{len(found["patient_ids"])} patient IDs retained as {what}, so follow-up questions can narrow this exact set.'
 
 
-def from_graph(path, graph, answer):
+def from_graph(path, graph, answer, population=None):
     """Retained membership for an executed answer whose graph ran stand-alone SQL (e.g. voted analyst queries) but whose
     answer kept no ids: re-run the SQL read-only, require the same scalar, then derive. None when nothing qualifies."""
     from pathlib import Path
@@ -186,10 +186,10 @@ def from_graph(path, graph, answer):
         params = node.get('parameters') or {}
         if node.get('operation') != 'sql' or node.get('inputs') or not isinstance(params.get('query'), str): continue
         try:
-            report = sql_query.execute(path, {'query': params['query'], 'returns': kind}, target=target)
+            report = sql_query.execute(path, {'query': params['query'], 'returns': kind}, target=target,patient_ids=population)
         except (ValueError, KeyError, TypeError):
             continue
         if report.get('value') != answer.get(kind): continue
-        found = derive(path, {'query': params['query']}, report, target=target)
+        found = derive(path, {'query': params['query']}, report, target=target,population=population)
         if found: return found
     return None

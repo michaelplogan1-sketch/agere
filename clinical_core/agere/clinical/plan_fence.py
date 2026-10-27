@@ -40,19 +40,23 @@ def premises(graph):
     """-> {'tables': [...], 'columns': [(table, column)], 'text'} the executable plan depends on."""
     from .literal_check import executable_text
     sqls = _sqls(graph)
-    ctes, aliases = set(), {}
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import traverse_scope
+    tables, cols = set(), set()
     for sql in sqls:
-        ctes |= {c.lower() for c in _CTE.findall(sql)}
-        for t, a in re.findall(r'\b(?:from|join)\s+"?([A-Za-z_]\w*)"?\s+(?:as\s+)?([A-Za-z_]\w*)', sql, re.I):
-            aliases[a.lower()] = t.lower()
-    tables = sorted({t.lower() for sql in sqls for t in _TABLE.findall(sql)} - ctes - {'json_each', 'json_tree', 'select'})
-    cols = set()
-    for sql in sqls:
-        code = re.sub(r"'(?:[^']|'')*'", "''", sql)
-        for a, c in _QUALIFIED.findall(code.lower()):
-            t = aliases.get(a, a)
-            if t in tables: cols.add((t, c))
-    return {'tables': tables, 'columns': sorted(cols), 'text': executable_text([n.get('parameters') for n in (graph or {}).get('nodes') or []])}
+        # A schema-qualified table is not a table named "main"; quoted CTEs,
+        # nested aliases and the bound population relation are not missing feeds.
+        tree=sqlglot.parse_one(sql,read='sqlite')
+        for scope in traverse_scope(tree) or []:
+            for _,(_,source) in scope.selected_sources.items():
+                if isinstance(source,exp.Table) and isinstance(source.this,exp.Identifier) and source.name.lower()!='population':
+                    tables.add(source.name.lower())
+            for column in scope.columns:
+                source=scope.sources.get(column.table)
+                if isinstance(source,exp.Table) and source.name.lower() in tables:
+                    cols.add((source.name.lower(),column.name.lower()))
+    return {'tables': sorted(tables), 'columns': sorted(cols), 'text': executable_text([n.get('parameters') for n in (graph or {}).get('nodes') or []])}
 
 
 def _schema(path):

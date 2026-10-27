@@ -73,7 +73,13 @@ class Review(unittest.TestCase):
         self.assertEqual(result['rows'][0]['review_status'],'needs_review')
 
     def test_complete_cohort_sql_empty_population_and_scope_enforcement(self):
-        self.tools.semantic=SimpleNamespace(db=self.db)
+        from clinical_core.agere.clinical import backstop_agent as B,semantic_analyst as S
+        self.db.row_factory=sqlite3.Row
+        self.db.set_authorizer(S.SemanticWarehouse._authorize)
+        self.tools.cohort=None;self.tools.result_sources={}
+        self.tools.semantic=SimpleNamespace(db=self.db,query=lambda sql,**kw:S.bounded_query(
+            self.db,sql,{'as_of':kw['as_of']},30,kw['max_rows'],kw['max_chars']))
+        self.tools._call=lambda use:B.Tools._call(self.tools,use)
         out=D.review(self.tools,questions={'x':'Any evidence?'},patient_query_sql='SELECT patient_id FROM patient WHERE 0')
         self.assertEqual(out['rows'],[])
         def scope(pid):
@@ -83,6 +89,10 @@ class Review(unittest.TestCase):
             D.review(self.tools,questions={'x':'Any evidence?'},patient_query_sql='SELECT patient_id FROM patient')
         with self.assertRaises(ValueError):
             D.review(self.tools,questions={'x':'Any evidence?'},patient_query_sql='DELETE FROM patient')
+        self.tools.cohort=['B'];self.tools.in_scope=lambda p:None
+        out=D.review(self.tools,questions={'x':'Any evidence?'},patient_query_sql='SELECT patient_id FROM patient')
+        self.assertEqual([r['patient_id'] for r in out['rows']],['B'])
+        self.assertEqual(out['rows'][0]['review_status'],'no_documents')
 
     def test_subscription_limit_is_not_swallowed_or_retried_on_another_model(self):
         from clinical_core.agere.gateway import ProviderUnavailable
