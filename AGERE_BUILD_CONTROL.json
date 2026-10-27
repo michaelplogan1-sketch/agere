@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T12:54:36.399130+00:00",
+  "updated_at": "2026-10-27T13:43:29.043393+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_model_review_first_round_unselected_runs_active",
+    "kind": "offline_general_semantic_repair_original_typed_complete_recovery_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Offline learning completion now freshly reproduces every saved query across the original source variants, verifies fit-only corrective allocations, reports source-specific failures and keeps wrong results distinct from declines. Receipt-based dependency completion prevents a reused PID from stalling the finite local training chain. No default runtime or model behavior changed.",
-    "measured_failure_reduction": "The first actual broad typed round improves126/208 verification queries over zero for the base, but36 wrong results disqualify it and46 decline. All247 saved outputs per model reproduce on three sources. Source-specific reporting fixes a primary-success message masking a variant failure; eight corruption/native/dependency regressions pass. Final540 guarded checks:536pass/four skips, zero provider sends/blocked attempts/protected reads. No G3 acceptance claim.",
+    "user_behavior_delta": "The candidate detects raw ISO-date arithmetic with repair feedback across planner/executor/product investigator; explicit inpatient/outpatient wording remains executable. Bare SQLite SQL prompts now use received relations and availability rather than an assumed raw store/native schema. Full-fit rehearsal is available for residual learning, and stale adapter qualification is invalidated by shared SQL guard changes. No default deployment or model activation.",
+    "measured_failure_reduction": "Original typed study is complete:126/208 first-round passes; sparse correction falls to88 with48 regressed comparison cases. Fresh posthoc guard replay reduces wrong first-round results36to20, preserving126 correct results; second-round wrong31to15, preserving88. Authored repair workflow computes4 elapsed days correctly after feedback. SQL profile pre-fit failure repaired. Final549 guarded checks:545pass/four skips, zero provider sends/blocked attempts/protected reads;23 corrected-fixture provider/math checks pass. Recovered5447 SQL and6071 combined targets per learner pass three-source/native checks; actual new model gains remain pending.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -383,18 +383,24 @@
       "artifacts/agere-guideline-study-2026-10-27/resume-preflight.json",
       "artifacts/agere-guideline-study-2026-10-27/queued-study.json",
       "artifacts/agere-guideline-study-2026-10-27/typed-first-round-review-v2.json",
-      "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v4/tests.json"
+      "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v4/tests.json",
+      "artifacts/agere-semantic-fixes-2026-10-27/verification.json",
+      "artifacts/agere-semantic-fixes-2026-10-27/guard-replay-final-v2.json",
+      "artifacts/agere-semantic-fixes-2026-10-27/verification-final/tests.json",
+      "artifacts/agere-semantic-fixes-2026-10-27/native-preflight.json",
+      "artifacts/agere-semantic-fixes-2026-10-27/recovery-plan.json",
+      "artifacts/agere-semantic-fixes-2026-10-27/resume-preflight.json"
     ],
-    "remaining_gap": "First broad typed model improves126/208 unfamiliar verification queries but has36 wrong query results and46 declines and is not selected. Fit-only second round, SQL learner and combined6071-question studies remain incomplete; inspect fresh final baseline/parent/source comparisons before any further gain claim. Ordinary automatic full-note/dose/answer/deliverable and browser/physician acceptance remain pending subscription continuation. Clinical/model qualification, total cost, source permissions and full ten-area product scope remain open.",
-    "next_action": "Let the already-running original PID6289/session49786 and audited dependent PID10418/session78003 finish their declared finite local studies. Inspect typed/bottled-recursive-result.json and source-reproduced prior-typed/prior-bottled/typed/bottled-study-review.json plus study-outcomes.md in artifacts/agere-guideline-study-2026-10-27. The supervisor stops on failures, preserves a final evidence snapshot and never calls providers or installs defaults. Investigate any failed audit or remaining model errors without fitting on comparison questions. After subscription availability, use the latest source-bound resume-after-reset.txt for ordinary clinical workflow and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and every negative candidate. No provider polling, retry or heartbeat.",
-    "next": "Let the already-running original PID6289/session49786 and audited dependent PID10418/session78003 finish their declared finite local studies. Inspect typed/bottled-recursive-result.json and source-reproduced prior-typed/prior-bottled/typed/bottled-study-review.json plus study-outcomes.md in artifacts/agere-guideline-study-2026-10-27. The supervisor stops on failures, preserves a final evidence snapshot and never calls providers or installs defaults. Investigate any failed audit or remaining model errors without fitting on comparison questions. After subscription availability, use the latest source-bound resume-after-reset.txt for ordinary clinical workflow and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and every negative candidate. No provider polling, retry or heartbeat.",
+    "remaining_gap": "Original typed study completed: first round126/208 acceptable but36wrong; sparse corrective round88/208 and48 regressed comparison cases; both unselected. Shared guards prevent16 first-round wrong query results without losing correct results, with20 wrong proposals still present. SQL recovery and combined typed/SQL studies on the amended full-fit-rehearsal protocol remain active/pending; inspect final source/parent comparisons before claiming gains. Automatic full-note/dose/answer/artifact and browser/physician acceptance, clinical/model qualification, total cost and all ten product areas remain open.",
+    "next_action": "Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json, recovery-outcomes.md and recovered-sql/combined-typed/combined-sql-result.json plus corresponding -review.json as the already-running PID12107/session58695 finishes the finite offline chain. Source is frozen at the final verified fingerprint; do not silently mutate its training contract. Full rehearsal retains all fit examples; comparison questions never enter fitting. The chain stops on failures, preserves completed evidence and never calls providers or activates defaults. Fix any actual infrastructure/audit failure offline with explicit preserved recovery. After subscription availability, manually use this evidence root resume-after-reset.txt for ordinary clinical workflow and browser review, stopping on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, permissions and all negative/failed candidates. No provider polling, retry or heartbeat.",
+    "next": "Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json, recovery-outcomes.md and recovered-sql/combined-typed/combined-sql-result.json plus corresponding -review.json as the already-running PID12107/session58695 finishes the finite offline chain. Source is frozen at the final verified fingerprint; do not silently mutate its training contract. Full rehearsal retains all fit examples; comparison questions never enter fitting. The chain stops on failures, preserves completed evidence and never calls providers or activates defaults. Fix any actual infrastructure/audit failure offline with explicit preserved recovery. After subscription availability, manually use this evidence root resume-after-reset.txt for ordinary clinical workflow and browser review, stopping on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, permissions and all negative/failed candidates. No provider polling, retry or heartbeat.",
     "latest_review": {
-      "at": "2026-10-27T12:54:36.399130+00:00",
-      "kind": "Actual first large typed-model review, source-specific diagnostic repair and guarded offline checks",
+      "at": "2026-10-27T13:43:29.043393+00:00",
+      "kind": "Completed typed recursive review and verified general SQL/schema/full-rehearsal recovery",
       "evidence": [
-        "artifacts/agere-guideline-study-2026-10-27/typed-first-round-review-v2.json",
-        "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v4/tests.json",
-        "artifacts/agere-guideline-study-2026-10-27/verification.json"
+        "artifacts/agere-semantic-fixes-2026-10-27/verification.json",
+        "artifacts/agere-semantic-fixes-2026-10-27/guard-replay-final-v2.json",
+        "artifacts/agere-semantic-fixes-2026-10-27/verification-final/tests.json"
       ]
     },
     "coordination": {
@@ -464,10 +470,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-27T12:54:36.399130+00:00",
+      "at": "2026-10-27T13:43:29.043393+00:00",
       "gate": "G3",
-      "outcome": "Large-model gains and disqualifying errors measured; completion audit repaired, no clinical/default acceptance",
-      "evidence": "artifacts/agere-guideline-study-2026-10-27/verification.json"
+      "outcome": "Sixteen wrong proposals prevented without correct-answer loss; recursive regression exposed and SQL pre-fit failure repaired; new model studies pending",
+      "evidence": "artifacts/agere-semantic-fixes-2026-10-27/verification.json"
     }
   },
   "decisions": [
@@ -1450,6 +1456,11 @@
       "at": "2026-10-27T12:54:36.399130+00:00",
       "decision": "Keep existing runtime and training contracts frozen while the explicitly requested finite local studies run. Reproduce completed model outputs and correct source-specific reporting/dependency failures rather than add another runtime component or tune on verification errors. First broad candidate remains unselected.",
       "scope_impact": "No acceptance area removed; G3 and all ten areas remain open."
+    },
+    {
+      "at": "2026-10-27T13:43:29.043393+00:00",
+      "decision": "Measured sparse corrective learning regressed and the SQL learner failed before fitting. Preserve both outcomes; fix shared date/scope checks and actual received-schema portability, then amend queued correction to full approved-fit rehearsal with one epoch. No inference from fitting loss to clinical accuracy, no fitting on comparison questions and no default model promotion. Temporary code checkout fast-forwarded into the canonical candidate and removed after original processes exited.",
+      "scope_impact": "Retains architecture, G3 and all ten acceptance areas; no runtime layer or disease-specific handler."
     }
   ]
 }

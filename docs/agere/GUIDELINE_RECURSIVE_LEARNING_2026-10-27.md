@@ -1,5 +1,7 @@
 # Guideline review and recursive learning — October27,2026
 
+Latest model/runtime continuation: [SLM and recursive learning repair](SLM_RECURSIVE_REPAIR_2026-10-27.md). The original typed study is now complete, its corrective round regressed, and the original SQL job failed before fitting. The new report records those outcomes, shared semantic repairs and the amended active recovery; earlier running-state paragraphs below are historical. Guideline review content remains unchanged.
+
 The targeted review now retains **32 recommendation records across14 guidance sources**, plus four publisher-summary reviews. Two draft KDIGO documents and the restricted GOLD/GINA records remain metadata-only. This is a review of the identified relevant sections, not every page, cited trial, disease subtype or future correction in every specialty guideline.
 
 **Eight identified correction notices were read in full:** three hypertension, three HF, one primary-aldosteronism and one ATS COPD notice. Corrections vary in consequence: source/reference corrections, drug-class grouping, an interacting-drug column, units, a dosing interval and a risk estimate must not be treated as interchangeable changes.
