@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T12:20:44.996822+00:00",
+  "updated_at": "2026-10-27T12:54:36.399130+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_guideline_learning_verified_studies_running",
+    "kind": "offline_model_review_first_round_unselected_runs_active",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The explicit cited library preserves32 selected recommendation records and eight reviewed correction notices. Original documentary analytics extend the existing learners across20 new structures/11 conditions, retaining the full earlier curriculum. Existing classification learning now retains a useful qualified alternative when a higher-argmax variant has confident errors. No default runtime, knowledge directory or model pointer changed.",
-    "measured_failure_reduction": "Final532 guarded checks:528 pass/four optional-data skips; zero provider sends, blocked attempts or protected-corpus reads. All6071 targets per learner agree with independent Python/SQL/native checks on three sources. Real shape study exposed eight confident MiniLM errors versus zero among80 accepted lexical decisions; general selection repair retains the lexical candidate without activation. Original Qwen first typed fit is finished; broad comparisons and dependent training remain incomplete.",
+    "user_behavior_delta": "Offline learning completion now freshly reproduces every saved query across the original source variants, verifies fit-only corrective allocations, reports source-specific failures and keeps wrong results distinct from declines. Receipt-based dependency completion prevents a reused PID from stalling the finite local training chain. No default runtime or model behavior changed.",
+    "measured_failure_reduction": "The first actual broad typed round improves126/208 verification queries over zero for the base, but36 wrong results disqualify it and46 decline. All247 saved outputs per model reproduce on three sources. Source-specific reporting fixes a primary-success message masking a variant failure; eight corruption/native/dependency regressions pass. Final540 guarded checks:536pass/four skips, zero provider sends/blocked attempts/protected reads. No G3 acceptance claim.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -381,18 +381,20 @@
       "artifacts/agere-guideline-learning-2026-10-27/resume-preflight.json",
       "artifacts/agere-guideline-study-2026-10-27/verification.json",
       "artifacts/agere-guideline-study-2026-10-27/resume-preflight.json",
-      "artifacts/agere-guideline-study-2026-10-27/queued-study.json"
+      "artifacts/agere-guideline-study-2026-10-27/queued-study.json",
+      "artifacts/agere-guideline-study-2026-10-27/typed-first-round-review-v2.json",
+      "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v4/tests.json"
     ],
-    "remaining_gap": "Broad Qwen model comparisons and dependent6071-question/124-family two-round studies are not complete; inspect all final receipts, parent comparisons, regressions, accepted wrong results, declines and compute before a gain claim. Targeted guideline reading is reference evidence, not independent clinical adjudication or medical-answer training labels. GOLD/GINA reuse, drafts and other unreviewed full-document branches remain explicit. Ordinary full-note/dose/final-answer/deliverable and browser/physician acceptance, full ten-area and clinical/model qualification remain open.",
-    "next_action": "Inspect the already-running original typed/bottled studies and the dependent local study in artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json. The local chain waits for PID6289 and both original completion receipts, then compares explicit transferred qualified candidates on all6071 source-checked tasks with full rehearsal and fit-only corrections; it stops on a dependency/training failure and never calls providers or installs defaults. After subscription availability, use this evidence root resume-after-reset.txt to complete ordinary full-note/dose/answer/artifact and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, source permissions and all negative candidates. No provider polling, retry or heartbeat.",
-    "next": "Inspect the already-running original typed/bottled studies and the dependent local study in artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json. The local chain waits for PID6289 and both original completion receipts, then compares explicit transferred qualified candidates on all6071 source-checked tasks with full rehearsal and fit-only corrections; it stops on a dependency/training failure and never calls providers or installs defaults. After subscription availability, use this evidence root resume-after-reset.txt to complete ordinary full-note/dose/answer/artifact and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, source permissions and all negative candidates. No provider polling, retry or heartbeat.",
+    "remaining_gap": "First broad typed model improves126/208 unfamiliar verification queries but has36 wrong query results and46 declines and is not selected. Fit-only second round, SQL learner and combined6071-question studies remain incomplete; inspect fresh final baseline/parent/source comparisons before any further gain claim. Ordinary automatic full-note/dose/answer/deliverable and browser/physician acceptance remain pending subscription continuation. Clinical/model qualification, total cost, source permissions and full ten-area product scope remain open.",
+    "next_action": "Let the already-running original PID6289/session49786 and audited dependent PID10418/session78003 finish their declared finite local studies. Inspect typed/bottled-recursive-result.json and source-reproduced prior-typed/prior-bottled/typed/bottled-study-review.json plus study-outcomes.md in artifacts/agere-guideline-study-2026-10-27. The supervisor stops on failures, preserves a final evidence snapshot and never calls providers or installs defaults. Investigate any failed audit or remaining model errors without fitting on comparison questions. After subscription availability, use the latest source-bound resume-after-reset.txt for ordinary clinical workflow and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and every negative candidate. No provider polling, retry or heartbeat.",
+    "next": "Let the already-running original PID6289/session49786 and audited dependent PID10418/session78003 finish their declared finite local studies. Inspect typed/bottled-recursive-result.json and source-reproduced prior-typed/prior-bottled/typed/bottled-study-review.json plus study-outcomes.md in artifacts/agere-guideline-study-2026-10-27. The supervisor stops on failures, preserves a final evidence snapshot and never calls providers or installs defaults. Investigate any failed audit or remaining model errors without fitting on comparison questions. After subscription availability, use the latest source-bound resume-after-reset.txt for ordinary clinical workflow and browser review; stop on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline and every negative candidate. No provider polling, retry or heartbeat.",
     "latest_review": {
-      "at": "2026-10-27T12:20:44.996822+00:00",
-      "kind": "Targeted guideline/correction reading, actual shape-head comparison and guarded general-learning/native checks",
+      "at": "2026-10-27T12:54:36.399130+00:00",
+      "kind": "Actual first large typed-model review, source-specific diagnostic repair and guarded offline checks",
       "evidence": [
-        "artifacts/agere-guideline-study-2026-10-27/verification.json",
-        "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v2/tests.json",
-        "artifacts/agere-guideline-study-2026-10-27/shape-study-v2/result.json"
+        "artifacts/agere-guideline-study-2026-10-27/typed-first-round-review-v2.json",
+        "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v4/tests.json",
+        "artifacts/agere-guideline-study-2026-10-27/verification.json"
       ]
     },
     "coordination": {
@@ -462,9 +464,9 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-27T12:20:44.996822+00:00",
+      "at": "2026-10-27T12:54:36.399130+00:00",
       "gate": "G3",
-      "outcome": "Specific component-selection failure removed and general source-learning candidate verified; no automatic clinical workflow or broad model qualification claim",
+      "outcome": "Large-model gains and disqualifying errors measured; completion audit repaired, no clinical/default acceptance",
       "evidence": "artifacts/agere-guideline-study-2026-10-27/verification.json"
     }
   },
@@ -1443,6 +1445,11 @@
       "basis": "Mike explicitly requested continued guideline/correction review and SLM/recursive improvement without Claude. Full review identified units, interval, drug-class, interaction, risk-estimate and reference corrections. The real shape study reproduced an unsafe higher-argmax selection rejecting a useful calibrated alternative.",
       "scope_impact": "Existing architecture, source protection and all ten areas retained. Full previous curriculum rehearsed in124-family local studies; immutable transfer and fit-only correction remain candidates. No providers, default installation, external care or clinical-superiority claim.",
       "evidence": "artifacts/agere-guideline-study-2026-10-27/verification.json"
+    },
+    {
+      "at": "2026-10-27T12:54:36.399130+00:00",
+      "decision": "Keep existing runtime and training contracts frozen while the explicitly requested finite local studies run. Reproduce completed model outputs and correct source-specific reporting/dependency failures rather than add another runtime component or tune on verification errors. First broad candidate remains unselected.",
+      "scope_impact": "No acceptance area removed; G3 and all ten areas remain open."
     }
   ]
 }
