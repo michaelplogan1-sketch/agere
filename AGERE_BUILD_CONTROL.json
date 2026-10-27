@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T13:43:29.043393+00:00",
+  "updated_at": "2026-10-27T14:17:54.175306+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_general_semantic_repair_original_typed_complete_recovery_running",
+    "kind": "offline_schema_consistency_repair_verified_original_sql_active_revised_queue_armed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The candidate detects raw ISO-date arithmetic with repair feedback across planner/executor/product investigator; explicit inpatient/outpatient wording remains executable. Bare SQLite SQL prompts now use received relations and availability rather than an assumed raw store/native schema. Full-fit rehearsal is available for residual learning, and stale adapter qualification is invalidated by shared SQL guard changes. No default deployment or model activation.",
-    "measured_failure_reduction": "Original typed study is complete:126/208 first-round passes; sparse correction falls to88 with48 regressed comparison cases. Fresh posthoc guard replay reduces wrong first-round results36to20, preserving126 correct results; second-round wrong31to15, preserving88. Authored repair workflow computes4 elapsed days correctly after feedback. SQL profile pre-fit failure repaired. Final549 guarded checks:545pass/four skips, zero provider sends/blocked attempts/protected reads;23 corrected-fixture provider/math checks pass. Recovered5447 SQL and6071 combined targets per learner pass three-source/native checks; actual new model gains remain pending.",
+    "user_behavior_delta": "Candidate shared schema discovery retains explicitly named relations, exact received category matches and identifier schema hints. Real typed supervision checks serving-schema availability before fitting; no new runtime route or default activation.",
+    "measured_failure_reduction": "All-question source-schema coverage improves5331/5680to5680/5680 fit,84/87to87/87 calibration and296/304to304/304 verification across3 sources;6071 targets per source remain native-valid. Final558 checks:554pass/four skips, zero sends/blocked attempts/protected reads. Previous wrong-query guard reduction36to20 retained; model gains from revised training remain unmeasured.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -389,10 +389,11 @@
       "artifacts/agere-semantic-fixes-2026-10-27/verification-final/tests.json",
       "artifacts/agere-semantic-fixes-2026-10-27/native-preflight.json",
       "artifacts/agere-semantic-fixes-2026-10-27/recovery-plan.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/resume-preflight.json"
+      "artifacts/agere-semantic-fixes-2026-10-27/resume-preflight.json",
+      "artifacts/agere-schema-repair-2026-10-27/verification.json"
     ],
     "remaining_gap": "Original typed study completed: first round126/208 acceptable but36wrong; sparse corrective round88/208 and48 regressed comparison cases; both unselected. Shared guards prevent16 first-round wrong query results without losing correct results, with20 wrong proposals still present. SQL recovery and combined typed/SQL studies on the amended full-fit-rehearsal protocol remain active/pending; inspect final source/parent comparisons before claiming gains. Automatic full-note/dose/answer/artifact and browser/physician acceptance, clinical/model qualification, total cost and all ten product areas remain open.",
-    "next_action": "Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json, recovery-outcomes.md and recovered-sql/combined-typed/combined-sql-result.json plus corresponding -review.json as the already-running PID12107/session58695 finishes the finite offline chain. Source is frozen at the final verified fingerprint; do not silently mutate its training contract. Full rehearsal retains all fit examples; comparison questions never enter fitting. The chain stops on failures, preserves completed evidence and never calls providers or activates defaults. Fix any actual infrastructure/audit failure offline with explicit preserved recovery. After subscription availability, manually use this evidence root resume-after-reset.txt for ordinary clinical workflow and browser review, stopping on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, permissions and all negative/failed candidates. No provider polling, retry or heartbeat.",
+    "next_action": "Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json and current SQL log, then artifacts/agere-schema-repair-2026-10-27/revised-status.json and revised-outcomes.md. Existing finite successor session82301 waits for completed SQL result/review, stops only the exact owned old process before queued fitting (or preserves it if fitting already began), then runs repaired-source typed and SQL studies from /private/tmp/agere-learning-schema-repair-20261027. Do not duplicate jobs, mutate either frozen source, use comparison questions for fitting or start providers. Each finished study receives fresh review; no default installation. On completion review real gains/regressions, integrate candidate0ee2d0d into the canonical branch, rerun only checks justified by any changes, refresh offline clinical preflight and update existing private draft PR. No automatic Claude continuation; manually resume subscription workflow only after availability, stopping on any limit. Preserve all negative/failed candidates, original source/config, G3/all ten areas,181/5 ledger and assisted Heartline.",
     "next": "Inspect artifacts/agere-semantic-fixes-2026-10-27/recovery-status.json, recovery-outcomes.md and recovered-sql/combined-typed/combined-sql-result.json plus corresponding -review.json as the already-running PID12107/session58695 finishes the finite offline chain. Source is frozen at the final verified fingerprint; do not silently mutate its training contract. Full rehearsal retains all fit examples; comparison questions never enter fitting. The chain stops on failures, preserves completed evidence and never calls providers or activates defaults. Fix any actual infrastructure/audit failure offline with explicit preserved recovery. After subscription availability, manually use this evidence root resume-after-reset.txt for ordinary clinical workflow and browser review, stopping on any limit. Preserve G3/all ten areas,181/5 ledger, assisted Heartline, permissions and all negative/failed candidates. No provider polling, retry or heartbeat.",
     "latest_review": {
       "at": "2026-10-27T13:43:29.043393+00:00",
@@ -470,10 +471,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-27T13:43:29.043393+00:00",
+      "at": "2026-10-27T14:17:54.175306+00:00",
       "gate": "G3",
-      "outcome": "Sixteen wrong proposals prevented without correct-answer loss; recursive regression exposed and SQL pre-fit failure repaired; new model studies pending",
-      "evidence": "artifacts/agere-semantic-fixes-2026-10-27/verification.json"
+      "outcome": "349 missing fitting schemas repaired without target leakage; final model study gains pending",
+      "evidence": "artifacts/agere-schema-repair-2026-10-27/verification.json"
     }
   },
   "decisions": [
@@ -1461,6 +1462,12 @@
       "at": "2026-10-27T13:43:29.043393+00:00",
       "decision": "Measured sparse corrective learning regressed and the SQL learner failed before fitting. Preserve both outcomes; fix shared date/scope checks and actual received-schema portability, then amend queued correction to full approved-fit rehearsal with one epoch. No inference from fitting loss to clinical accuracy, no fitting on comparison questions and no default model promotion. Temporary code checkout fast-forwarded into the canonical candidate and removed after original processes exited.",
       "scope_impact": "Retains architecture, G3 and all ten acceptance areas; no runtime layer or disease-specific handler."
+    },
+    {
+      "at": "2026-10-27T14:17:54.175306+00:00",
+      "decision": "Do not train queued typed jobs on known incomplete serving schemas. Preserve active frozen SQL study to its reviewed completion; use a finite exact-process boundary handoff for the repaired-source successor. New schema hints never establish joins and no model/runtime defaults change.",
+      "basis": "Mike explicitly requested completing revised offline learning and fixing regressions. All-question audit found349 omitted fitting schemas; repair restores6071/6071 full-bank schema coverage onthree fixtures, with554pass/four skips and zero providers/protected reads.",
+      "scope_impact": "Shared planner/training consistency only. Architecture and all ten acceptance areas retained; no model accuracy or clinical qualification claim."
     }
   ]
 }
