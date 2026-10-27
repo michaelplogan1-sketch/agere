@@ -191,7 +191,8 @@ def _load(db, p, as_of_day, keep):
         if c in aggregate.BURDEN_CONCEPTS: chronic[pid] += 1
     for pid in people: people[pid]['chronic_conditions'] = chronic[pid]
     ed, adm = Outcome('ed_visits', as_of_day), Outcome('admissions', as_of_day)
-    for pid, d in db.execute("SELECT DISTINCT patient_id, substr(event_date,1,10) FROM encounter WHERE type_concept='emergency_visit' AND event_date IS NOT NULL"):
+    from .ed_definition import metric_visits_sql
+    for pid, d in db.execute(metric_visits_sql(db)):
         if pid in people: ed.days[pid].append(_day(d))
     for pid, d in db.execute('SELECT patient_id, admit_date FROM stay WHERE admit_date IS NOT NULL'):
         if pid in people: adm.days[pid].append(_day(d))
@@ -201,8 +202,9 @@ def _load(db, p, as_of_day, keep):
     else:
         outcome = Outcome(p['outcome'], as_of_day)
         if p['outcome'] == 'lab':
+            from .safety_data import usable_measurement_sql
             for pid, d, v in db.execute('SELECT patient_id, event_date, value_canonical FROM measurement WHERE concept = ? AND '
-                                        'value_canonical IS NOT NULL AND event_date IS NOT NULL', (p['lab'],)):
+                                        'value_canonical IS NOT NULL AND event_date IS NOT NULL'+usable_measurement_sql(db), (p['lab'],)):
                 if pid in people: outcome.values[pid].append((_day(d), float(v)))
         else:
             from . import vbc

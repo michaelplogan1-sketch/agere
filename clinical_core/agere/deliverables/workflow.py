@@ -279,6 +279,7 @@ def refresh(stack, request):
             raise ValueError('Monitor scope policy changed. Re-run this question to create a monitor with explicit scope.')
         source = A.source_identity(stack.path)
         previous = step['observations'][-1]
+        usage={'new_paid_api_calls':0,'known_api_estimate_usd':0,'api_cost_known':True}
         if previous['source'] == source:
             step.update(last_checked=A.now(), reason='Same warehouse snapshot. No new observation or outcome change.')
         else:
@@ -308,6 +309,12 @@ def refresh(stack, request):
                                    population=population, economics=S.economics)
             else:
                 result = S.execute_contract(stack, c['question'], S.graph_for(contract), receipt, population=population)
+            econ=result.get('planning_economics') or {}
+            calls=result.get('new_paid_api_calls',0)
+            known=econ.get('known_api_estimate_usd',econ.get('new_api_estimate_usd'))
+            total=econ.get('new_api_estimate_usd',known)
+            usage={'new_paid_api_calls':calls,'known_api_estimate_usd':known or 0,
+                   'api_cost_known':econ.get('api_cost_known',True) and (total is not None or not calls)}
             answer = result['answer']
             if answer.get('status') != 'answered' or answer.get('missing'):
                 raise ValueError('New snapshot could not produce a complete comparable answer')
@@ -320,5 +327,4 @@ def refresh(stack, request):
                                          'planning_economics': result.get('planning_economics')})
             step.update(last_checked=A.now(), reason='Observed answer changed; investigate the difference.' if changed else 'New snapshot, same computed answer.')
         _save(stack.path, key, record)
-        return {**record, 'new_paid_api_calls': 0, 'known_api_estimate_usd': 0,
-                'api_cost_known': True}
+        return {**record, **usage}

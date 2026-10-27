@@ -217,8 +217,9 @@ def _rows(ctx, c):
             elif not c.get('concept'):
                 missing.append(f"{c['label']}: LOINC-coded results (not in this release)")
         if terms:
+            from .safety_data import usable_measurement_sql
             for pid, d, v, raw in db.execute(f"SELECT patient_id, event_date, value_canonical, value FROM measurement WHERE ({' OR '.join(terms)}) "
-                                             "AND (value_canonical IS NOT NULL OR value IS NOT NULL)", args):
+                                             "AND (value_canonical IS NOT NULL OR value IS NOT NULL)"+usable_measurement_sql(db), args):
                 out[pid].append((d[:10] if d else None, v if v is not None else raw, None))
         if c.get('claim_codes') and not c.get('value'):
             # The test performed, from claim lines (claims-only members have no results feed): HEDIS administrative

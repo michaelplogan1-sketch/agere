@@ -93,17 +93,27 @@ def answer(report, plan, question):
                 'missing': report.get('missing_inputs') or [], 'patient_ids': [], 'limitations': [used]}
     o = report['overall']
     gaps = sorted({g['patient_id'] for g in report.get('care_gaps') or []})
+    output=report['parameters']['output']
+    table=(report.get('patient_rows') or []) if output=='patients' else report['rows']
+    ids=sorted({r['patient_id'] for r in table if r.get('patient_id')}) if output=='patients' else gaps
     partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
-    out = {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': report['rows'],
+    missing=[]
+    if output=='patients' and 'patient_rows' not in report:
+        table=report['rows']
+        partial=True
+        missing=['Complete patient-status rows were not computed for this measure output; aggregate observations are retained.']
+    out = {'status': 'partial' if partial else 'answered', 'answer_type': 'table', 'table': table,
            'value': report['reading'], 'headline': report['reading'], 'method': report.get('method'),
+           'missing':missing,
            'definitions': [{'term': report['measure_name'], 'basis': report.get('method'), 'citations': cite}],
-           'limitations': [used, *(report.get('warnings') or [])][:12], 'patient_ids': gaps, 'membership_role': 'gap',
+           'limitations': [used, *(report.get('warnings') or [])][:12], 'patient_ids': ids,
+           'membership_role': 'evaluated' if output=='patients' else 'gap',
            'denominator': f"{o.get('denominator')} eligible index events/patients" if 'denominator' in o else None,
            'measure': {'id': report['measure_id'], 'numerator': o.get('numerator'), 'denominator': o.get('denominator'),
                        'rate': o.get('rate'), 'excluded': o.get('excluded'), 'follow_up_days': report['parameters']['follow_up_days']}}
     if report['parameters']['output'] == 'rate' and o.get('rate') is not None and report['parameters']['group_by'] == 'none':
         out['value'] = round(o['rate'] * 100, 1); out['unit'] = 'percent'
-    if report['parameters']['output'] != 'rate': out['count'] = len(gaps)
+    if output != 'rate': out['count'] = None if missing else len(ids)
     return out
 
 

@@ -42,8 +42,9 @@ class OffPolicyTest(unittest.TestCase):
         self.assertAlmostEqual(by['uniform']['dr'], uni, delta=0.03)
         # the reward-model greedy policy (phone for high, text for low) truly yields ~0.425 and beats the logged policy
         self.assertGreater(by['model_greedy']['dr'], r['logged_value'] + 0.03)
-        self.assertEqual(r['recommendation']['policy'], 'model_greedy')
-        self.assertGreater(r['recommendation']['gain_ci95'][0], 0)
+        self.assertIsNone(r['recommendation'])  # adaptive target policy still needs independent validation
+        self.assertEqual(r['candidate_for_independent_validation']['policy'], 'model_greedy')
+        self.assertGreater(r['candidate_for_independent_validation']['gain_ci95'][0], 0)
         for x in r['policies']:
             self.assertLessEqual(x['dr_ci95'][0], x['dr']); self.assertGreaterEqual(x['dr_ci95'][1], x['dr'])
             self.assertIn('dr_os', x)
@@ -54,7 +55,7 @@ class OffPolicyTest(unittest.TestCase):
         for x in rows: x['responded'] = bool(rng.random() < 0.3)  # no channel effect at all
         r = O.evaluate(rows, O.validate({'bootstrap': 100, 'policies': ['uniform', 'best_arm']}))
         self.assertIsNone(r['recommendation'])
-        self.assertIn('none is recommended', O.headline({**r, 'patients': 400, 'period': {'start': 'a', 'end': 'b'}}))
+        self.assertIn('independent target-policy validation is required', O.headline({**r, 'patients': 400, 'period': {'start': 'a', 'end': 'b'}}))
 
     def test_insufficient_log_is_stated(self):
         r = O.evaluate(world(10), O.validate({}))

@@ -72,7 +72,9 @@ class PriceBenchmark(unittest.TestCase):
         r = P.execute(self.tmp.name, None, {'codes': ['99213'], 'mrf_path': str(f)}, AS_OF)
         beta = next(m for m in r['mrf'] if m['rate'] == 126.0)
         self.assertEqual((beta['matched_organizations'], beta['observed_allowed_median']), (['ORG-B'], 120.0))
-        self.assertAlmostEqual(beta['published_vs_observed'], 0.05)
+        self.assertAlmostEqual(beta['published_vs_pooled_market'], 0.05)
+        self.assertIsNone(beta['published_vs_observed'])
+        self.assertEqual(beta['comparison_basis'], 'pooled_market_provider_payer_cell_medians')
 
     def test_validate(self):
         for bad in ({'codes': ['9921']}, {'focus': 'x'}, {'min_lines': 0}, {'mrf_path': 'a.csv'}, {'bogus': 1}):

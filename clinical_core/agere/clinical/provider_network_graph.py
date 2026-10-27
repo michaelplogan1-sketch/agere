@@ -98,12 +98,15 @@ def load(db, keep, start, end):
         if keep is not None and pid not in keep: continue
         claims[pid].append((d[:10], by_npi.get(str(rnpi)) if rnpi else None, str(bnpi) if bnpi else None, net, (paid or 0) / 100, rid))
     explicit = defaultdict(dict)
-    for pid, payload, ed in db.execute("SELECT patient_id, payload, event_date FROM record WHERE stream = 'referrals'"):
+    for record_id, pid, payload, ed in db.execute("SELECT record_id, patient_id, payload, event_date FROM record WHERE stream = 'referrals'"):
         if keep is not None and pid not in keep: continue
         r = rc.payload(payload)
         a, b = r.get('requesting_clinician_id') or r.get('ordering_clinician_id'), r.get('receiving_clinician_id')
-        if a in clin and b in clin and a != b and (ed or '')[:10] <= end:
-            explicit[pid][b] = (a, r.get('record_id'))
+        day = (ed or '')[:10]
+        try: date.fromisoformat(day)
+        except ValueError: continue  # an undated relationship cannot establish a preceding referral
+        if a in clin and b in clin and a != b and day <= end:
+            explicit[pid].setdefault(b, []).append((day, a, record_id))
     return clin, by_npi, org_npi, org_name, pcp, claims, explicit
 
 
@@ -118,8 +121,11 @@ def referral_edges(clin, pcp, claims, explicit, p, start):
             cid, spec = c['id'], c['specialty'].lower()
             if cid not in seen and spec not in FACILITY_BASED and d >= start:
                 src = frm = None
-                if cid in explicit.get(pid, {}):
-                    frm, src = explicit[pid][cid][0], 'referral_record'
+                eligible = [r for r in explicit.get(pid, {}).get(cid, []) if 0 <= _gap(r[0], d) <= p['referral_days']]
+                if eligible:
+                    # Latest preceding referral; record id then referrer make ties independent of SQLite row order.
+                    chosen = max(eligible, key=lambda r: (r[0], str(r[2] or ''), r[1]))
+                    frm, src = chosen[1], 'referral_record'
                 elif mypcp and mypcp != cid and any(x == mypcp and 0 <= _gap(t, d) <= p['referral_days'] for t, x in last):
                     frm, src = mypcp, 'pcp_sequence'
                 else:
@@ -130,7 +136,7 @@ def referral_edges(clin, pcp, claims, explicit, p, start):
                     edges.append((pid, frm, cid, d, src, net, paid, rid))
             seen.add(cid)
             last.append((d, cid))
-            if len(last) > 30: last = last[-30:]
+            last = [(t, x) for t, x in last if 0 <= _gap(t, d) <= p['referral_days']]
     return edges
 
 

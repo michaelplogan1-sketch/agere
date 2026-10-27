@@ -111,25 +111,34 @@ def default_year(as_of):
     return int(str(as_of)[:4]) - 1
 
 
-def cells(db, start, end, keep=None, completion=True, as_of=None):
+def cells(db, start, end, keep=None, completion=True, as_of=None, products=None):
     """{(product, year): {'member_months', 'paid', 'paid_completed', 'members'}} (dollars)."""
     from . import vbc
     mm = defaultdict(set)
     for pid, month, product in db.execute('SELECT patient_id, month, product FROM member_month WHERE month BETWEEN ? AND ?', (start[:7], end[:7])):
         if keep is not None and pid not in keep: continue
+        if products and product not in products: continue
         mm[pid].add((month, product or 'unknown'))
     by_month = {pid: dict(v) for pid, v in mm.items()}
     out = defaultdict(lambda: {'member_months': 0, 'paid': 0.0, 'paid_completed': 0.0, 'members': set()})
     for pid, v in by_month.items():
         for month, product in v.items():
             c = out[(product, month[:4])]; c['member_months'] += 1; c['members'].add(pid)
-    claims = vbc._claims(db, start, end)
-    factors, _ = vbc._completion(claims, as_of or end) if completion else ({}, {})  # runout observed through the as-of date
+    cutoff = str(as_of or end)[:10]
+    claims = [r for r in vbc._claims(db, start, end)
+              if r[1] in by_month.get(r[0], {}) and (not r[5] or str(r[5])[:10] <= cutoff)]
+    # The estimand is plan-paid incurred claims. Fit only eligible claims from the same product,
+    # including pharmacy deltas whose allowed component is zero; preserve allowed completion for its other callers.
+    factors = {}
+    if completion:
+        for product in {v for months in by_month.values() for v in months.values()}:
+            selected = [r for r in claims if by_month[r[0]][r[1]] == product]
+            factors[product], _ = vbc._completion(selected, cutoff, basis='paid')
     for pid, month, _allowed, paid, _kind, _arr in claims:
         product = by_month.get(pid, {}).get(month)
         if product is None: continue  # claim outside an enrolled member month: not this plan's incurred claim
         c = out[(product, month[:4])]
-        c['paid'] += paid / 100; c['paid_completed'] += paid / 100 * factors.get(month, 1.0)
+        c['paid'] += paid / 100; c['paid_completed'] += paid / 100 * factors.get(product, {}).get(month, 1.0)
     return {k: {**v, 'members': len(v['members'])} for k, v in out.items()}
 
 
@@ -178,10 +187,12 @@ def run(db, patient_ids, p, as_of):
     year = p['year'] or default_year(as_of)
     start, end = f'{year - p["years"] + 1}-01-01', min(f'{year}-12-31', str(as_of)[:10])
     keep = set(patient_ids) if patient_ids is not None else None
-    rows = compute(cells(db, start, end, keep, p['completion'], str(as_of)[:10]), p, year)
+    rows = compute(cells(db, start, end, keep, p['completion'], str(as_of)[:10], p['products']), p, year)
     assumptions = ['Synthetic warehouse; incurred claims = plan-paid claims (member cost sharing excluded) for enrolled member-months.',
                    f"Quality-improvement expense {p['qi_expense_pmpm']:g} PMPM and taxes/fees {p['taxes_fees_pct']:.0%} of premium (supplied or default 0).",
-                   'IBNR completion: vbc chain-ladder factors on claim arrival lag.' if p['completion'] else 'Claims as paid (no IBNR completion).',
+                   'IBNR completion: arrival-lag factors weighted by plan-paid amounts within each selected product and enrolled population; '
+                   'known arrivals after the snapshot excluded. Missing arrival dates use zero lag. This empirical estimate is not an independently validated actuarial reserve.'
+                   if p['completion'] else 'Claims as paid (no IBNR completion).',
                    'Credibility adjustment (45 CFR 158.232) applied to commercial/marketplace only; deductible factor not applied; '
                    'MA (422.2440) and Medicaid (438.8(h)) credibility not applied.',
                    f"Commercial treated as {p['commercial_market'].replace('_', ' ')}."]

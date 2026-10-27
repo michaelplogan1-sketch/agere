@@ -387,11 +387,14 @@ def _payer_claims(db, start, end):
     return covered, rows
 
 
-def _completion(claims, end):
-    """Chain-ladder completion factors from arrival lag (months), estimated on months with full runout."""
+def _completion(claims, end, basis='allowed'):
+    """Arrival-lag factors on the named monetary basis, estimated on months with six months' runout."""
+    if basis not in ('allowed', 'paid'): raise ValueError('completion basis: allowed|paid')
     lag = lambda svc, arr: (int(arr[:4]) - int(svc[:4])) * 12 + int(arr[5:7]) - int(svc[5:7]) if arr else 0
     by_month = defaultdict(lambda: defaultdict(float))
-    for _, svc, allowed, _, _, arr in claims: by_month[svc][max(lag(svc, arr or svc), 0)] += allowed
+    for row in claims:
+        svc, arr = row[1], row[5]
+        by_month[svc][max(lag(svc, arr or svc), 0)] += row[2 if basis == 'allowed' else 3]
     end_m = end[:7]
     mature = [m for m in by_month if lag(m, end_m) >= 6]
     factors = {}

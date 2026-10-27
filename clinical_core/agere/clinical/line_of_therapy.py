@@ -121,7 +121,7 @@ def reversed_ids(db):
         return set()
 
 
-def fill_rows(db, keep=None):
+def fill_rows(db, keep=None, as_of=None):
     """Every received fill: [(patient_id, ordinal day, days supply or None, drug name, drug_class)]; reversals excluded."""
     cols = _cols(db, 'medication')
     rev = reversed_ids(db)
@@ -130,8 +130,14 @@ def fill_rows(db, keep=None):
            f"json_extract(r.payload, '$.days_supply') FROM medication m LEFT JOIN record r ON r.record_id = m.record_id "
            f"WHERE m.evidence IN ({ev}) AND (m.status IN ({st}) OR (m.status IS NULL AND m.evidence <> 'dispensed')) AND m.event_date IS NOT NULL"
            + (' AND coalesce(m.fill_reversed, 0) = 0' if 'fill_reversed' in cols else ''))
+    args = [*FILL_EVIDENCE, *FILL_STATUSES]
+    if as_of:
+        sql += ' AND substr(m.event_date,1,10) <= ?'; args.append(str(as_of)[:10])
+        if 'available_date' in _cols(db, 'record'):
+            sql += ' AND (r.available_date IS NULL OR substr(r.available_date,1,10) <= ?)'
+            args.append(str(as_of)[:10])
     out, seen = [], set()
-    for rid, pid, d, name, cls, ds1, ds2 in db.execute(sql, [*FILL_EVIDENCE, *FILL_STATUSES]):
+    for rid, pid, d, name, cls, ds1, ds2 in db.execute(sql, args):
         if rid in rev or (keep is not None and pid not in keep): continue
         key = (rid, cls)
         if key in seen: continue
@@ -266,7 +272,7 @@ def execute(path, patient_ids, params, as_of=None):
         db.close()
 
 
-def condition_patients(db, concepts_, icd10):
+def condition_patients(db, concepts_, icd10, as_of=None):
     """{patient_id: first documented date} for a condition by library concept or ICD-10 prefix."""
     first = {}
     terms, args = [], []
@@ -275,8 +281,15 @@ def condition_patients(db, concepts_, icd10):
     if icd10 and 'icd10' in _cols(db, 'condition'):
         terms += ['icd10 LIKE ?'] * len(icd10); args += [f'{x}%' for x in icd10]
     if not terms: return first
-    for pid, d in db.execute('SELECT patient_id, min(coalesce(substr(event_date,1,10), substr(recorded_date,1,10))) FROM condition WHERE '
-                             + ' OR '.join(terms) + ' GROUP BY patient_id', args):
+    cutoff = ''
+    if as_of:
+        cutoff = ' AND coalesce(substr(event_date,1,10), substr(recorded_date,1,10)) <= ?'
+        args.append(str(as_of)[:10])
+        if 'available_date' in _cols(db, 'condition'):
+            cutoff += ' AND (available_date IS NULL OR substr(available_date,1,10) <= ?)'
+            args.append(str(as_of)[:10])
+    for pid, d in db.execute('SELECT patient_id, min(coalesce(substr(event_date,1,10), substr(recorded_date,1,10))) FROM condition WHERE ('
+                             + ' OR '.join(terms) + ')' + cutoff + ' GROUP BY patient_id', args):
         first[pid] = d
     return first
 
@@ -286,10 +299,10 @@ def run(db, patient_ids, params, as_of):
     as_of_day = _day(as_of)
     keep = set(patient_ids) if patient_ids is not None else None
     area = AREAS.get(p['area']) or {}
-    rows, n_reversed = fill_rows(db, keep)
+    rows, n_reversed = fill_rows(db, keep, as_of)
     feed = min((r[1] for r in rows), default=None)
     by_patient = component_fills(rows, p['components'])
-    cond = condition_patients(db, area.get('concepts'), area.get('icd10')) if p['area'] else {}
+    cond = condition_patients(db, area.get('concepts'), area.get('icd10'), as_of) if p['area'] else {}
     counts = Counter()
     counts['patients_with_any_component_fill'] = len(by_patient)
     if p['area']: counts['patients_with_condition'] = len(cond if keep is None else {k: v for k, v in cond.items() if k in keep})
@@ -369,6 +382,8 @@ def run(db, patient_ids, params, as_of):
                              'pdc_ge_80_share': round(sum(x >= 0.8 for x in pdcs[c]) / len(pdcs[c]), 3) if pdcs[c] else None,
                              'small_group': s['units'] < SMALL, 'curve': s.get('curve', [])})
     warnings = ['Synthetic data: treatment patterns describe a generated warehouse, not real prescribing.']
+    warnings.append('Clinical dates and known receipt dates must be on or before the snapshot. Missing receipt dates remain unknown; '
+                    'current received reversal flags are used, so historical reversal-state reconstruction is not established.')
     if feed is None: warnings.append('No received fills (dispenses, pharmacy claims or payer pharmacy claims): no line of therapy can be derived.')
     if n and n < 30: warnings.append(f'Only {n} new users with fills of these components: line shares and medians are unstable.')
     if p['area'] and counts['patients_with_condition'] and n == 0 and feed is not None:
