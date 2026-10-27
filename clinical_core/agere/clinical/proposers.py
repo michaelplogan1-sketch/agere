@@ -320,7 +320,14 @@ OFF_DEFAULT = ('metric_router', 'operator_router', 'local_free_sql', 'hosted_ver
 def enabled(name, stack):
     skip = {s.strip() for s in os.environ.get('AGERE_PROPOSER_SKIP', '').split(',') if s.strip()}
     if name in skip or os.environ.get('AGERE_PROPOSERS', 'on') == 'off': return False
-    if name in OFF_DEFAULT and name not in {s.strip() for s in os.environ.get('AGERE_PROPOSER_ON', '').split(',')}: return False
+    if name in OFF_DEFAULT and name not in {s.strip() for s in os.environ.get('AGERE_PROPOSER_ON', '').split(',')}:
+        # An explicitly installed, qualified replacement may use the existing
+        # rung. Old unqualified adapters remain off; skip flags take precedence.
+        qualified=False
+        if name=='bottled_sql' and os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+            from . import adapter_learning,bottled
+            qualified=bottled.enabled() and adapter_learning.runtime_adapter('bottled',bottled.base_dir()) is not None
+        if not qualified:return False
     if name in PAID and not getattr(stack, 'allow_live', False): return False
     return True
 

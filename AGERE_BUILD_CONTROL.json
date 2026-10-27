@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-26T21:19:04.514954+00:00",
+  "updated_at": "2026-10-27T00:19:59.452604+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_components_verified_live_pending",
+    "kind": "offline_slm_verified_live_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Shared investigator executes existing typed mathematical engines with exact population/snapshot and complete SQL/final-table binding. Opt-in automatic component learning consumes only new explicit supervision and connects comparison, candidate/release, runtime, correction, revision and rollback.",
-    "measured_failure_reduction": "451 checks pass, four optional/data-dependent skips, zero provider calls/blocked attempts. Actual received scope4115: trajectory output50->144 without a default top cap; queueing168 rows. Real MiniLM/UltraBERT/classical comparison and six pinned-encoder runtime decisions; automatic feedback-to-revision lifecycle verified. Stale-index guard and nested result-preview duplication repaired.",
+    "user_behavior_delta": "Direct context-bound correct/correction reviews can supervise the existing opt-in SLM loop: explicit manifests, family-separated training, native acceptability comparison, immutable candidate/release, four runtime adapter pointers, quarantine/revision/rollback. Heavy jobs queue without blocking answers; all seven plan jobs remain candidates.",
+    "measured_failure_reduction": "488 primary checks passed, four optional/data skips; 15 isolated routing/Metal checks and one import-only check passed (four grammar checks overlap the primary suite). Zero provider sends/blocked attempts and zero protected-corpus attempts in final tests. Real typed LoRA verification 0/6->3/6, three declined, zero accepted wrong on two frozen sources; only two verification families, all gains in one. Real adapter loaded through the typed worker in an isolated retired test release. 1307 native targets verified; not model accuracy.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -371,19 +371,22 @@
       "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json",
       "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json",
       "artifacts/agere-components-learning-2026-10-26/verification.json",
-      "artifacts/agere-components-learning-2026-10-26/received-verification.json"
+      "artifacts/agere-components-learning-2026-10-26/received-verification.json",
+      "artifacts/agere-slm-learning-2026-10-26/verification.json",
+      "artifacts/agere-slm-learning-2026-10-26/resume-preflight.json"
     ],
-    "remaining_gap": "Received-source automatic clinical answer/dose/deliverable and browser/physician acceptance remain pending subscription availability. Total-cost RSI qualification and broader model/clinical qualification remain open; automatic SLM adapter training needs reviewed task targets and replacement of legacy exact-key evaluation.",
-    "next_action": "After Claude subscription availability, execute the frozen ordinary request using artifacts/agere-components-learning-2026-10-26/resume-after-reset.txt, retained attempt1 ledger, new attempt2 output, RSI and candidate-only component learning. Complete full note review, dose/answer/artifact, inspect saved browser workflow and obtain physician acceptability. Then measure total-cost baseline/reuse with failed/validation/training/review costs. Stop on any subscription limit; no fallback/retry. Preserve full ten-area scope and local SLM qualification gap.",
-    "next": "After Claude subscription availability, execute the frozen ordinary request using artifacts/agere-components-learning-2026-10-26/resume-after-reset.txt, retained attempt1 ledger, new attempt2 output, RSI and candidate-only component learning. Complete full note review, dose/answer/artifact, inspect saved browser workflow and obtain physician acceptability. Then measure total-cost baseline/reuse with failed/validation/training/review costs. Stop on any subscription limit; no fallback/retry. Preserve full ten-area scope and local SLM qualification gap.",
+    "remaining_gap": "The ordinary received-source complete-note/dose/final-answer/deliverable workflow and browser/physician acceptance remain pending Claude subscription availability. Broader clinical/model qualification, independently reviewed data and measured training for other SLM roles, and total-cost RSI comparison remain open. No default runtime or model promotion.",
+    "next_action": "After Claude subscription availability (observed Oct28 06:00 America/Chicago), use artifacts/agere-slm-learning-2026-10-26/resume-after-reset.txt to execute the frozen-source original ordinary request with its retained attempt1 ledger. Complete note review, dose assessment, final answer and artifact; inspect saved browser/exports and obtain physician acceptability. Then compare guarded RSI reuse with all training, failed/rejected candidates, validation and review costs. Candidate SLM weights remain uninstalled; qualify appropriate reviewed tasks before any proposed clinical/default release. Stop on a subscription limit; no API fallback, wakeup or retry. Preserve G3/full ten-area charter.",
+    "next": "After Claude subscription availability (observed Oct28 06:00 America/Chicago), use artifacts/agere-slm-learning-2026-10-26/resume-after-reset.txt to execute the frozen-source original ordinary request with its retained attempt1 ledger. Complete note review, dose assessment, final answer and artifact; inspect saved browser/exports and obtain physician acceptability. Then compare guarded RSI reuse with all training, failed/rejected candidates, validation and review costs. Candidate SLM weights remain uninstalled; qualify appropriate reviewed tasks before any proposed clinical/default release. Stop on a subscription limit; no API fallback, wakeup or retry. Preserve G3/full ten-area charter.",
     "latest_review": {
-      "at": "2026-10-26T22:25:35.703297+00:00",
-      "kind": "Frozen source offline engineering verification; no clinical/default activation",
+      "at": "2026-10-27T00:19:59.452604+00:00",
+      "kind": "Offline SLM training and runtime engineering verification; live clinical acceptance pending",
       "evidence": [
-        "artifacts/agere-components-learning-2026-10-26/verification.json",
-        "artifacts/agere-components-learning-2026-10-26/tests.json",
-        "artifacts/agere-components-learning-2026-10-26/received-verification.json",
-        "artifacts/agere-components-learning-2026-10-26/resume-preflight.json"
+        "artifacts/agere-slm-learning-2026-10-26/verification.json",
+        "artifacts/agere-slm-learning-2026-10-26/tests.json",
+        "artifacts/agere-slm-learning-2026-10-26/scaled-gpu-verification.json",
+        "artifacts/agere-slm-learning-2026-10-26/runtime-compatibility.json",
+        "artifacts/agere-slm-learning-2026-10-26/resume-preflight.json"
       ]
     },
     "coordination": {
@@ -453,9 +456,9 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-26T22:25:35.703297+00:00",
-      "kind": "Existing engine tools and automatic opt-in component learning verified offline",
-      "receipt": "artifacts/agere-components-learning-2026-10-26/verification.json",
+      "at": "2026-10-27T00:19:59.452604+00:00",
+      "kind": "Existing SLM learning/review/runtime loop implemented and exercised offline",
+      "receipt": "artifacts/agere-slm-learning-2026-10-26/verification.json",
       "clinical_qualification": false
     }
   },
@@ -1395,6 +1398,19 @@
       "basis": "Mike explicitly authorized all offline coding/testing without Claude. 451 passing checks and four optional/data skips; real local encoder and all-received mathematical execution with zero provider calls. Default trajectory output cap and stale-index/preview regressions removed.",
       "scope_impact": "Full ten-area charter, assisted acceptance and interrupted live ledger preserved. No default release, provider call, protected evaluation, clinical or cost-superiority claim. Local SLM training/evaluation gap remains explicit.",
       "evidence": "artifacts/agere-components-learning-2026-10-26/verification.json"
+    },
+    {
+      "at": "2026-10-26T23:03:16.907015+00:00",
+      "decision": "Complete existing SLM adapter learning integration offline and prepare broader question-driven improvement.",
+      "basis": "Mike authorized remaining SLM adapter coding/testing without Claude, a larger question-learning curriculum and appropriate open healthcare sources; user is stepping away and requested completion. Local Metal training works with isolated GPU access.",
+      "scope_impact": "No providers, legacy/protected answer keys, default runtime promotion, competing-service scraping or new services. G3 and all ten product areas remain open."
+    },
+    {
+      "at": "2026-10-27T00:19:59.452604+00:00",
+      "decision": "Freeze the connected local SLM adapter learning candidate after actual local training and final guarded tests; keep all weights uninstalled and G3 active.",
+      "basis": "Mike authorized finishing all offline work while stepping away. Real typed adapter improves three of six verification cases from two engineering families with no accepted wrong result; 488 primary checks plus isolated checks pass. Public NLM terminology used with provenance. Legacy file-reading unit fixtures were excluded from final verification; final corpus guard recorded zero reads.",
+      "scope_impact": "All ten areas and accepted assisted Heartline remain preserved. No provider inference, default runtime/model promotion, clinical/general-intelligence or cost-superiority claim. Live clinical workflow and reviewed multi-family model qualification remain open.",
+      "evidence": "artifacts/agere-slm-learning-2026-10-26/verification.json"
     }
   ]
 }

@@ -23,7 +23,7 @@ import time
 from pathlib import Path
 import sys
 
-VERSION = 'local-typed-worker/2'
+VERSION = 'local-typed-worker/3'
 ROOT = Path(__file__).resolve().parents[3]
 
 
@@ -34,6 +34,9 @@ def _base():
 
 def typed_adapter():
     """The promoted typed adapter directory (held-out win in train_all), or None."""
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+        from .adapter_learning import runtime_adapter
+        return runtime_adapter('typed',_base())
     if os.environ.get('AGERE_TYPED_ADAPTER'):
         p = Path(os.environ['AGERE_TYPED_ADAPTER'])
         return p if (p / 'adapters.safetensors').exists() else None
@@ -60,7 +63,13 @@ def short_messages(catalog, question):
 
 
 def decode(text):
-    value = json.loads(re.sub(r'^```(?:json)?\s*|\s*```$', '', re.sub(r'<think>.*?</think>', '', text, flags=re.S).strip()))
+    raw=re.sub(r'^```(?:json)?\s*|\s*```$', '', re.sub(r'<think>.*?</think>', '', text, flags=re.S).strip())
+    start=raw.find('{')
+    if start<0:raise ValueError('Typed output contains no JSON object')
+    # Ignore a formatting preamble only. Never skip a malformed outer object to
+    # select a nested plan, or silently discard a second plan/trailing content.
+    value,end=json.JSONDecoder().raw_decode(raw[start:])
+    if raw[start+end:].strip():raise ValueError('Typed output has trailing content or multiple plans')
     if not isinstance(value, dict): raise ValueError('typed output must be an object')
     return value
 
@@ -90,7 +99,8 @@ def interpret_short(catalog, question, population, generate, adapter=None):
     prompt_chars = sum(len(m['content']) for m in messages)
     return contract, {'interpreter': 'qwen_typed_adapter', 'review': 'typed_adapter_compile_literal_check', 'semantic_review': review,
                       'attempts': [{'model': f'qwen3-4b+{Path(adapter).name if adapter else "adapter"}', 'seconds': seconds, 'api_tokens': 0,
-                                    'prompt': 'datasets.typed_messages', 'prompt_chars': prompt_chars, 'tables': tables}],
+                                    'prompt': 'datasets.typed_messages', 'prompt_chars': prompt_chars, 'tables': tables,
+                                    'formatting_preamble_removed':not text.lstrip().startswith(('{','```','<think>'))}],
                       'execution_accepted': False, 'worker': VERSION}
 
 

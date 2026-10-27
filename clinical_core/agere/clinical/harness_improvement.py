@@ -85,6 +85,14 @@ def record_feedback(path,candidate_id,*,accepted,reason):
     finally:db.close()
 
 
+def record_question_correction(path,question,reason):
+    """Retire old reuse even when an older saved answer lacks candidate lineage."""
+    db=database(path)
+    try:
+        with db:event(db,None,'physician_feedback',{'accepted':False,'question_digest':digest(question),'reason':reason})
+    finally:db.close()
+
+
 def attempt_replay(tools,*args,**kwargs):
     report={}
     try:return replay(tools,*args,**kwargs,_report=report)

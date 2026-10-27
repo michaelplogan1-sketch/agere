@@ -22,7 +22,14 @@ def promoted_adapter():
     return None
 
 
-ADAPTER = Path(os.environ.get('AGERE_NORMALIZER_ADAPTER') or promoted_adapter() or ROOT / 'artifacts' / 'agere-local-planner-v1' / 'adapter')
+ADAPTER = ROOT / 'artifacts' / 'agere-local-planner-v1' / 'adapter'
+
+
+def adapter_dir():
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT'):
+        from .adapter_learning import runtime_adapter
+        return runtime_adapter('normalizer',BASE_MODEL)
+    return Path(os.environ.get('AGERE_NORMALIZER_ADAPTER') or promoted_adapter() or ADAPTER)
 VERSION = 'local-normalizer/1'
 UNSUPPORTED = 'UNSUPPORTED'
 SYSTEM = ('Rewrite the analytics question into the precise wording the Agere parser reads. Keep every number, year, '
@@ -106,15 +113,20 @@ _LOCK = threading.Lock()
 
 
 def available():
-    return ADAPTER.joinpath('adapters.safetensors').exists() and BASE_MODEL.exists()
+    adapter=adapter_dir()
+    return adapter is not None and adapter.joinpath('adapters.safetensors').exists() and BASE_MODEL.exists()
 
 
 def _load():
     with _LOCK:
+        adapter=adapter_dir();key=str(adapter) if adapter else None
+        if _MODEL.get('key')!=key:
+            _MODEL.update(loaded=None,failed=None,key=key)
+        if adapter is None:return None
         if _MODEL['loaded'] is None and _MODEL['failed'] is None:
             try:
                 from mlx_lm import load
-                _MODEL['loaded'] = load(str(BASE_MODEL), adapter_path=str(ADAPTER))
+                _MODEL['loaded'] = load(str(BASE_MODEL), adapter_path=str(adapter))
             except Exception as exc:  # noqa: BLE001 - a missing local model means the normalizer declines
                 _MODEL['failed'] = repr(exc)
         return _MODEL['loaded']

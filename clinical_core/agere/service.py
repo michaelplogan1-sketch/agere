@@ -43,6 +43,17 @@ def _failure_receipts(exc):
     if getattr(exc,'evaluation',None):out['evaluation']=exc.evaluation
     return out
 
+def answer_feedback(stack,body):
+    from os import environ
+    if environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
+        from .clinical.component_learning import handle_feedback
+        return handle_feedback(stack,body)
+    from .clinical import learning
+    if set(body)-{'question','note','expected','rule'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
+        raise ValueError('Correction needs question and note (optional expected)')
+    return learning.record_correction(stack.path,body['question'],body['note'],body.get('expected'),body.get('rule'))
+
+
 def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_stack=False,recovery=None):
     if recovery and allow_live_stack:raise ValueError('Restored installations have hosted inference disabled')
     from .local_release import READ_POSTS,recovery_routes,check_local_request
@@ -314,10 +325,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     from .clinical import conversation
                     result=conversation.handle_compose(connected_stack,body)
                 elif path=='/api/stack/correct':
-                    from .clinical import learning
-                    if set(body)-{'question','note','expected','rule'} or not isinstance(body.get('question'),str) or not isinstance(body.get('note'),str):
-                        raise ValueError('Correction needs question and note (optional expected)')
-                    result=learning.record_correction(connected_stack.path,body['question'],body['note'],body.get('expected'),body.get('rule'))
+                    result=answer_feedback(connected_stack,body)
                 elif path=='/api/stack/briefing-feedback':  # implicit feedback for the briefing ranker (briefing_rank)
                     from .clinical import briefing_rank
                     result=briefing_rank.handle_feedback(connected_stack.path,body)

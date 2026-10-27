@@ -3,20 +3,99 @@
   "jobs": [
     {
       "role": "router",
-      "partition": {"salt": "agere-new-routing-families-v1", "fit": 0.6, "calibration": 0.2, "verification": 0.2},
+      "partition": {
+        "salt": "agere-new-routing-families-v1",
+        "fit": 0.6,
+        "calibration": 0.2,
+        "verification": 0.2
+      },
       "include_machine": false,
       "install": false
     },
     {
       "role": "tier_router",
-      "partition": {"salt": "agere-new-tier-families-v1", "fit": 0.6, "calibration": 0.2, "verification": 0.2},
+      "partition": {
+        "salt": "agere-new-tier-families-v1",
+        "fit": 0.6,
+        "calibration": 0.2,
+        "verification": 0.2
+      },
       "include_machine": true,
       "install": false
     },
     {
       "role": "shape",
-      "partition": {"salt": "agere-new-shape-families-v1", "fit": 0.6, "calibration": 0.2, "verification": 0.2},
+      "partition": {
+        "salt": "agere-new-shape-families-v1",
+        "fit": 0.6,
+        "calibration": 0.2,
+        "verification": 0.2
+      },
       "include_machine": false,
+      "install": false
+    },
+    {
+      "learner": "typed",
+      "base": "../../../models/qwen3-4b",
+      "partition": {
+        "salt": "agere-reviewed-typed-families-v1",
+        "fit": 0.6,
+        "calibration": 0.2,
+        "verification": 0.2
+      },
+      "training": {
+        "iterations": 200,
+        "num_layers": -1,
+        "rank": 16
+      },
+      "install": false
+    },
+    {
+      "learner": "normalizer",
+      "base": "../../../models/qwen3-4b",
+      "partition": {
+        "salt": "agere-reviewed-normalizer-families-v1",
+        "fit": 0.6,
+        "calibration": 0.2,
+        "verification": 0.2
+      },
+      "training": {
+        "iterations": 200,
+        "num_layers": -1,
+        "rank": 16
+      },
+      "install": false
+    },
+    {
+      "learner": "bottled",
+      "base": "../../../models/qwen3-4b",
+      "partition": {
+        "salt": "agere-reviewed-bottled-families-v1",
+        "fit": 0.6,
+        "calibration": 0.2,
+        "verification": 0.2
+      },
+      "training": {
+        "iterations": 200,
+        "num_layers": -1,
+        "rank": 16
+      },
+      "install": false
+    },
+    {
+      "learner": "narrow",
+      "base": "../../../models/qwen3-4b",
+      "partition": {
+        "salt": "agere-reviewed-narrow-families-v1",
+        "fit": 0.6,
+        "calibration": 0.2,
+        "verification": 0.2
+      },
+      "training": {
+        "iterations": 200,
+        "num_layers": -1,
+        "rank": 16
+      },
       "install": false
     }
   ]

@@ -27,6 +27,11 @@ def run(*,root=None,stack=None,manifest=None,encoder=None,review_splits=None,rol
     if manifest is None:
         return {'version':VERSION,'status':'requires_approved_manifest','provider_calls':0,
                 'reason':'Supply an approved manifest or explicit newly reviewed observations and family splits. Legacy store and benchmark discovery is disabled.'}
+    if json.loads(C.checked_path(manifest).read_text()).get('schema')=='approved-adapter-data/1':
+        from tools.training.adapters import run as adapter_run
+        if stack is None or not options.get('base'):raise ValueError('Adapter learning requires explicit source stack and pinned base')
+        return adapter_run(manifest,root or C.root_for(stack),stack=stack,base=options['base'],train=bool(options.get('train_adapters',False)),
+            install=bool(options.get('install',False)),backend=options.get('backend'),candidate_adapter=options.get('candidate_adapter'))
     from tools.training.approved import run as approved_run
     return approved_run(manifest,root or (C.root_for(stack) if stack is not None else training_root()/'component-learning'),stack=stack,encoder=encoder,
                         install=bool(options.get('install',False)))
@@ -38,11 +43,22 @@ def main(argv=None):
     ap.add_argument('--review-splits',help='Explicit JSON mapping of newly reviewed source families to fit/calibration/verification')
     ap.add_argument('--role',choices=('router','tier_router','shape'));ap.add_argument('--install',action='store_true')
     ap.add_argument('--include-machine-supervision',action='store_true')
+    ap.add_argument('--base');ap.add_argument('--train-adapters',action='store_true');ap.add_argument('--learning-plan')
     args=ap.parse_args(argv)
     from clinical_core.agere.clinical.component_learning import checked_path
+    if args.learning_plan:
+        if not args.stack:raise ValueError('Learning plan requires an explicit stack')
+        from clinical_core.agere.clinical.component_learning import run_plan
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        env={'AGERE_COMPONENT_LEARNING_PLAN':str(checked_path(args.learning_plan)),
+             'AGERE_COMPONENT_RELEASE_ROOT':str(checked_path(args.root or Path(args.stack)/'component-learning'))}
+        with patch.dict(os.environ,env):
+            print(json.dumps(run_plan(SimpleNamespace(path=Path(args.stack),retriever=None),train_adapters=args.train_adapters),indent=2))
+        return
     splits=json.loads(checked_path(args.review_splits).read_text()) if args.review_splits else None
     print(json.dumps(run(root=args.root,stack=args.stack,manifest=args.manifest,review_splits=splits,
-                         role=args.role,include_machine=args.include_machine_supervision,install=args.install),indent=2))
+                         role=args.role,include_machine=args.include_machine_supervision,install=args.install,base=args.base,train_adapters=args.train_adapters),indent=2))
 
 
 if __name__=='__main__':main()

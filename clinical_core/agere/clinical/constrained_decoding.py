@@ -54,7 +54,9 @@ class JsonGrammar:
         return mode == 'done' or (mode == 'number' and not stack and bool(_NUM_FULL.match(buf)))
 
     def must_stop(self, s):
-        return False
+        # A complete JSON object has no remaining content to generate. Whitespace
+        # after its closing delimiter must not keep a local model decoding.
+        return s[0]=='done'
 
     def advance(self, s, text):
         for ch in text:

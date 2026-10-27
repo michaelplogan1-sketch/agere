@@ -90,23 +90,30 @@ class Answer(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); fixture(root)
             model = FakeModel([GOOD]); model.question = self.Q
-            c = bottled.candidate(root, self.Q, '2029-08-15', PROFILE, model=model)
+            with patch.object(bottled, 'benchmark_match', return_value=None):
+                c = bottled.candidate(root, self.Q, '2029-08-15', PROFILE, model=model)
             self.assertEqual((c['label'], c['returns'], c['model']), ('local_model', 'count', 'fake-bottled'))
             model = FakeModel([LINT_BAD]); model.question = self.Q
-            self.assertIsNone(bottled.candidate(root, self.Q, '2029-08-15', PROFILE, model=model))
+            with patch.object(bottled, 'benchmark_match', return_value=None):
+                self.assertIsNone(bottled.candidate(root, self.Q, '2029-08-15', PROFILE, model=model))
 
     def test_never_answers_a_benchmark_question(self):
-        root = Path(bottled.__file__).resolve().parents[3]
-        bench = json.loads(next((root / 'bench' / 'questions').glob('*.json')).read_text())[0]
-        self.assertEqual(bottled.benchmark_match(bench['question']), bench['id'])
-        self.assertTrue(bottled.benchmark_match('  ' + bench['question'].upper() + '  '))  # normalised text
-        model = Mock(side_effect=AssertionError('benchmark questions never reach the model'))
         with tempfile.TemporaryDirectory() as tmp:
-            root_ = Path(tmp); fixture(root_)
-            with self.assertRaises(ValueError) as ctx:
-                bottled.answer(root_, bench['question'], '2029-08-15', PROFILE, model=model, k=3, agree=3)
-        self.assertIn('benchmark', str(ctx.exception)); model.assert_not_called()
-        self.assertIsNone(bottled.benchmark_match(self.Q + ' zebra quokka axolotl narwhal'))
+            root = Path(tmp); fixture(root)
+            # Exercise the guard using an authored throwaway fixture, never the
+            # repository's protected question corpus or answer keys.
+            folder = root / 'bench' / 'questions'; folder.mkdir(parents=True)
+            bench = {'id': 'authored-guard', 'question': 'How many imaginary lunar clinics have a blue roof?'}
+            (folder / 'authored.json').write_text(json.dumps([bench]))
+            match = bottled.benchmark_match
+            self.assertEqual(match(bench['question'], root=root), bench['id'])
+            self.assertTrue(match('  ' + bench['question'].upper() + '  ', root=root))
+            model = Mock(side_effect=AssertionError('guarded questions never reach the model'))
+            with patch.object(bottled, 'benchmark_match', side_effect=lambda q: match(q, root=root)):
+                with self.assertRaises(ValueError) as ctx:
+                    bottled.answer(root, bench['question'], '2029-08-15', PROFILE, model=model, k=3, agree=3)
+            self.assertIn('benchmark', str(ctx.exception)); model.assert_not_called()
+            self.assertIsNone(match(self.Q + ' zebra quokka axolotl narwhal', root=root))
 
 
 class Planner(unittest.TestCase):
@@ -122,9 +129,17 @@ class Planner(unittest.TestCase):
                                retriever=SimpleNamespace(meta={'source_digest': 's', 'snapshot': {'as_of': '2029-08-15'}}))
 
     def common(self):
+        def reviewed_fixture(*args, **kwargs):
+            # The SQL/fixture checks remain real; the external clinical-review
+            # boundary is scripted, as in the other offline proposer tests.
+            args[9]['system_one_cross_check']={'verdict':'confirmed','calls':0,'cost_usd':0,'fixture':True}
         return [patch('clinical_core.agere.clinical.source_profile.load', return_value=PROFILE),
+                patch('clinical_core.agere.clinical.answer_checks._cross_check',side_effect=reviewed_fixture),
                 patch('clinical_core.agere.clinical.local_compiler.compile', return_value=(None, {'route': 'fallback', 'reason': 'test'})),
-                patch.dict(os.environ, {'AGERE_LOCAL_MODEL': 'off', 'AGERE_LOCAL_SQL': 'off', 'AGERE_BOTTLED': 'on'}),
+                patch.dict(os.environ, {'AGERE_LOCAL_MODEL': 'off', 'AGERE_LOCAL_SQL': 'off',
+                                       'AGERE_LOCAL_TYPED': 'off', 'AGERE_LOCAL_QWEN': 'off',
+                                       'AGERE_LOCAL_NORMALIZER': 'off',
+                                       'AGERE_BOTTLED': 'on','AGERE_PROPOSER_ON':'bottled_sql'}),
                 patch.object(bottled.BottledModel, 'available', return_value=True),
                 patch.object(bottled, 'benchmark_match', return_value=None)]
 
@@ -152,7 +167,11 @@ class Planner(unittest.TestCase):
                       'nodes': [{'id': 'n1', 'operation': 'sql', 'inputs': [], 'purpose': 'routed',
                                  'parameters': {'query': GOOD.split('\n', 2)[2].rsplit('\n', 1)[0], 'returns': 'count'}}]}
             from clinical_core.agere.clinical import operator_router
+            from clinical_core.agere.clinical.proposers import Cascade
             ctx = self.common() + [patch.object(bottled.BottledModel, 'get', return_value=model),
+                                   # Test decline/fallback, independent of the production
+                                   # stage order (which may put the router first).
+                                   patch.object(Cascade, 'order', return_value=('bottled_sql', 'operator_router')),
                                    patch.object(operator_router, 'route', return_value=(routed, {'decision': 'x', 'calls': []})),
                                    patch.object(operator_router, 'cost', return_value=0.0),
                                    patch.dict(os.environ, {'AGERE_PROPOSER_ON': 'operator_router,bottled_sql'})]  # an off-default tier, switched on

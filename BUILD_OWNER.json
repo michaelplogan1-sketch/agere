@@ -5,7 +5,7 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Frozen offline engine/component-learning source candidate; next complete automatic clinical/deliverable workflow after subscription availability, no automatic retry.",
+  "active_work": "Offline SLM adapter integration frozen; next is the prepared subscription-only ordinary workflow after reset, then browser/physician acceptance and total-cost RSI comparison.",
   "latest_delivery": "docs/agere/HF_SERVICE_DELIVERY_2026-10-26.md",
   "latest_receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
   "owned_server_pid": 87713,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-26T22:25:35.703297+00:00",
+  "latest_checkpoint": "2026-10-27T00:19:59.452604+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -31,11 +31,11 @@
   "server_status": "Isolated candidate on8888 restarted on b944abd, PID87713/session12081; saved assisted-review workspace reopens; ordinary query stall remains unresolved.",
   "unsealed_work": {
     "status": "offline_verified_live_pending",
-    "path": "artifacts/agere-components-learning-2026-10-26",
-    "source_base_commit": "fd9bfeb",
+    "path": "artifacts/agere-slm-learning-2026-10-26",
+    "source_base_commit": "a764dfdd39644fc92eed9b0a85945596cdfcc9d3",
     "source": "Frozen source candidate on approved private branch/draft PR2; no default runtime/model promotion",
-    "latest_review": "artifacts/agere-components-learning-2026-10-26/verification.json",
-    "remaining_gap": "Received-source automatic clinical answer/dose/deliverable and browser/physician acceptance remain pending subscription availability. Total-cost RSI qualification and broader model/clinical qualification remain open; automatic SLM adapter training needs reviewed task targets and replacement of legacy exact-key evaluation."
+    "latest_review": "artifacts/agere-slm-learning-2026-10-26/verification.json",
+    "remaining_gap": "The ordinary received-source complete-note/dose/final-answer/deliverable workflow and browser/physician acceptance remain pending Claude subscription availability. Broader clinical/model qualification, independently reviewed data and measured training for other SLM roles, and total-cost RSI comparison remain open. No default runtime or model promotion."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-build-continuity-v1/",

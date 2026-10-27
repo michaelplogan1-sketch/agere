@@ -73,7 +73,8 @@ calls does not mean zero operating cost.
 
 `config/agere/learning/offline-candidates.json` is the executable candidate plan.
 Router and shape supervision require direct review. Complete native executions may
-supply explicitly labeled tier-routing supervision. All three jobs have
+supply explicitly labeled tier-routing supervision. At this checkpoint all three jobs had
+`install: false`. The later SLM extension adds four adapter jobs; all seven remain
 `install: false`. Set `AGERE_COMPONENT_LEARNING_PLAN` to an explicit plan only in
 the intended isolated runtime; the default runtime is unchanged. With no plan,
 the hook records observations only. The CLI `tools/training/self_improve.py` also
@@ -109,14 +110,13 @@ Local receipts are in `artifacts/agere-components-learning-2026-10-26/`:
   and the retained-ledger resume command remain local, outside GitHub source export.
 
 The existing rerankers, clinical encoders, Jev/Perplexity reviewers, local SLMs and
-frontier generator keep their existing roles. This increment executed MiniLM,
-UltraBERT, classical heads and native mathematics locally. It did not exercise
-live Jev/Perplexity/Claude, retrain reranker or clinical assertion weights, or train
-Qwen LoRA adapters. The new automatic trainer currently supports router, tier-router
-and shape heads. Existing SLM training code remains; connecting its training/release
-cycle still requires suitable reviewed task targets and an acceptability evaluator
-that replaces the legacy exact-answer-key evaluation. Do not describe that work
-or all research components as completed.
+frontier generator keep their existing roles. This historical increment executed
+MiniLM, UltraBERT, classical heads and native mathematics locally. The subsequent
+[SLM adapter extension](SLM_ADAPTER_LEARNING_2026-10-26.md) connects explicit reviewed
+training, native acceptability evaluation, four runtime roles, feedback retirement
+and rollback, and records actual typed-role GPU training. It does not qualify all
+research components or broadly establish clinical interpretation. Use that report
+and its refreshed resume command for the latest offline state.
 
 No reliable cost per clinically correct answer is available for this increment.
 Provider cost was zero because providers were blocked. The prior assisted workflow's
@@ -135,6 +135,6 @@ still limited; no external Anthropic API fallback is authorized.
 Finish the full received-source automatic note review, dose assessment, final answer
 and deliverable; inspect the saved workflow in the browser; obtain physician
 acceptability. Then compare baseline/reuse with validation, failed candidates,
-training and review costs included. Broader clinical/model qualification, SLM skill
-learning and the full ten-area charter remain open. The observed subscription reset
+training and review costs included. Broader clinical/model qualification, reviewed clinical SLM training
+and the full ten-area charter remain open. The observed subscription reset
 is October 28 at 06:00 America/Chicago. No automatic wakeup or retry was created.

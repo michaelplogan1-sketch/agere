@@ -88,6 +88,22 @@ def _fmt(v):
 # the plan must carry (its digits made every plan fail the number check).
 AS_OF_CLAUSE = re.compile(r'\b(?:use|using)\s+(?:the\s+)?(?:data|records?)\s+(?:received|available|delivered)\s+as\s+of\s+\d{4}-\d{2}-\d{2}\b\.?', re.I)  # a bare 'as of DATE' stays a requirement
 
+# Instructions about epistemic caution/presentation are not patient exclusion
+# predicates. Ignore them only for this coarse negation check; all other literal
+# checks still see the original question, and clinical exclusions remain intact.
+REPORTING_CAUTION = re.compile(r"(?:^|[.!?;])\s*(?:please\s+)?(?:(?:do not|don't|never)\s+"
+    r"(?:infer|invent|guess|assume|impute|fabricate|extrapolate)\b[^.!?;]*|"
+    r"(?:keep|report|show|display|label|make|preserve)\s+(?:the\s+)?(?:missing|unknown|null|unavailable)\s+"
+    r"(?:values|data|information)\b[^.!?;]*\b(?:explicit|separate(?:ly)?|distinct|visible|unknown|unavailable)\b[^.!?;]*)",re.I)
+
+
+def predicate_negation_question(question):
+    def keep_patient_clause(match):
+        text=match.group(0)
+        tail=re.search(r'\b(?:and|but|then|also)\s+(?:exclude|include|count|list|find|filter|remove|omit|show)\b',text,re.I)
+        return ' '+text[tail.start():] if tail else ' '
+    return REPORTING_CAUTION.sub(keep_patient_clause,question)
+
 
 def missing(question, evidence):
     """Literal elements of the question absent from the executable evidence text (a list of readable reasons)."""
@@ -99,7 +115,7 @@ def missing(question, evidence):
     for name, number in MONTHS.items():
         if re.search(rf'\b{name}\b', q, re.I) and not re.search(rf'-{number:02d}-|\b{name}\b|"month"\s*:\s*{number}\b', text):
             gaps.append(f'month {name} is not in the plan')
-    if N.NEGATION.search(q) and not NEGATED.search(text):
+    if N.NEGATION.search(predicate_negation_question(q)) and not NEGATED.search(text):
         gaps.append('the question negates or excludes something; the plan has no negation or exclusion')
     for table in (N.QUALIFIERS, N.CONCEPTS):
         for key, rx in table.items():
