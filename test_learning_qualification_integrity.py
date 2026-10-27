@@ -100,6 +100,19 @@ class QualificationIntegrity(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'independent source group'):
             K.independent_rows([{**self.route('source-a', 'a'), 'group': ''}])
 
+    def test_missing_score_stays_an_abstention_before_representative_selection(self):
+        group = self.groups('cal', 1)[0]
+        rows = [self.route(group, f'wording-{i}') for i in range(45)]
+        selected = K.independent_rows(rows)[0]['item']
+        rows = [{**r, 'score': None if r['item'] == selected else 1.0} for r in rows]
+        rec = self.fit(rows)
+        self.assertEqual(rec['n_calibration'], 1)
+        self.assertEqual(rec['eligible'], 0)
+
+    def test_unresolved_outcome_cannot_enter_correctness_calibration(self):
+        with self.assertRaisesRegex(ValueError, 'unresolved outcome'):
+            self.fit([{**self.route(self.groups('cal', 1)[0], 'a'), 'error': None}])
+
     def test_unknown_reference_is_not_negative_supervision(self):
         path = self.labels([self.case('unresolved', 'unknown', 'no_barrier'),
                             self.case('explicit-negative', 'no_barrier', 'no_barrier'),

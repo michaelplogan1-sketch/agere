@@ -46,19 +46,36 @@ def validate(p):
     return out
 
 
+def _transition(days, floor, drift_per_year=None):
+    """The same latent-state transition and process covariance for filtering and future projection."""
+    import numpy as np
+    if not math.isfinite(days) or days < 0:
+        raise ValueError('A forward time interval must be finite and nonnegative')
+    q_level = (floor * 0.5) ** 2 / 365.0
+    q_slope = (drift_per_year or floor) ** 2 / 365.0 ** 3
+    F = np.array([[1.0, days], [0.0, 1.0]])
+    Q = np.array([[q_level * days + q_slope * days ** 3 / 3, q_slope * days ** 2 / 2],
+                  [q_slope * days ** 2 / 2, q_slope * days]])
+    return F, Q
+
+
+def _project(x, P, floor, days):
+    """Latent-state predictive uncertainty; observation noise is a separate endpoint."""
+    import numpy as np
+    F, Q = _transition(float(days), floor)
+    return float((F @ x)[0]), float(np.sqrt(max((F @ P @ F.T + Q)[0, 0], 1e-12)))
+
+
 def kalman(points, rel, floor, drift_per_year=None):
     """Local linear trend Kalman filter (level + slope per day) with per-value measurement error
     max(rel x value, floor). Returns final state mean [level, slope/day] and covariance."""
     import numpy as np
     t0, v0 = points[0]
-    q_level = (floor * 0.5) ** 2 / 365.0          # true level wanders slowly (per day)
-    q_slope = (drift_per_year or floor) ** 2 / 365.0 ** 3
     x = np.array([v0, 0.0]); P = np.diag([max(rel * abs(v0), floor) ** 2, (floor / 365.0) ** 2 * 4])
     last = t0
     for t, v in points:
         dt = max(t - last, 0); last = t
-        F = np.array([[1.0, dt], [0.0, 1.0]])
-        Q = np.array([[q_level * dt + q_slope * dt ** 3 / 3, q_slope * dt ** 2 / 2], [q_slope * dt ** 2 / 2, q_slope * dt]])
+        F, Q = _transition(dt, floor, drift_per_year)
         x = F @ x; P = F @ P @ F.T + Q
         R = max(rel * abs(v), floor) ** 2
         S = P[0, 0] + R; K = P[:, 0] / S
@@ -70,20 +87,20 @@ def forecast(points, rel, floor, horizon_days, threshold, below=True):
     """Predicted value at the horizon (mean, sd) and the probability it is past the threshold."""
     import numpy as np
     x, P, last = kalman(points, rel, floor)
-    F = np.array([1.0, float(horizon_days)])
-    mean = float(F @ x); sd = float(np.sqrt(max(F @ P @ F, 1e-12)))
+    mean, sd = _project(x, P, floor, horizon_days)
     z = (threshold - mean) / sd
     p_below = 0.5 * (1 + math.erf(z / math.sqrt(2)))
     return {'level_now': round(float(x[0]), 2), 'slope_per_year': round(float(x[1]) * 365.25, 2),
-            'forecast': round(mean, 2), 'forecast_sd': round(sd, 2), 'p_cross': round(p_below if below else 1 - p_below, 3)}
+            'forecast': round(mean, 2), 'forecast_sd': round(sd, 2),
+            'p_cross': round(p_below if below else 1 - p_below, 3),
+            '_p_cross': p_below if below else 1 - p_below}
 
 
 def _predict(points, rel, floor, horizon_days):
     """Unrounded Kalman forecast mean and sd at horizon_days after the last point."""
     import numpy as np
     x, P, _ = kalman(points, rel, floor)
-    F = np.array([1.0, float(horizon_days)])
-    return float(F @ x), float(np.sqrt(max(F @ P @ F, 1e-12)))
+    return _project(x, P, floor, horizon_days)
 
 
 def _p_past(mean, sd, threshold, below):
@@ -194,11 +211,12 @@ def apply_calibration(row, cal):
     """Add conformal fields to one forecast row in place; existing fields are untouched."""
     import numpy as np
     mean, sd = row.pop('_mean', None), row.pop('_sd', None)
+    raw_probability = row.pop('_p_cross', row.get('p_cross'))
     if not cal.get('available') or mean is None: return row
     if math.isfinite(cal['_q']):
         row['conformal_low'], row['conformal_high'] = round(mean - cal['_q'] * sd, 2), round(mean + cal['_q'] * sd, 2)
     if '_venn_abers' in cal:
-        p0, p1, merged = conformal.venn_abers(*cal['_venn_abers'], np.array([row['p_cross']]))
+        p0, p1, merged = conformal.venn_abers(*cal['_venn_abers'], np.array([raw_probability]))
         row['p_cross_calibrated'] = round(float(merged[0]), 3)
         row['p_cross_calibrated_range'] = [round(float(p0[0]), 3), round(float(p1[0]), 3)]
     return row
@@ -270,11 +288,11 @@ def execute(path, patient_ids, params):
             gap = max(0, snapshot - pts[-1][0])  # the horizon runs from the snapshot, not the last result
             f = forecast(pts, rel, floor, p['horizon_days'] + gap, p['threshold'], below)
             f['days_since_last_result'] = gap
-            if f['p_cross'] >= 0.5:
+            if f['_p_cross'] >= 0.5:
                 f['_mean'], f['_sd'] = _predict(pts, rel, floor, p['horizon_days'] + gap)
                 at_risk.append({'patient_id': pid, 'last_value': round(pts[-1][1], 2), 'last_date': date.fromordinal(pts[-1][0]).isoformat(),
                                 'points': len(pts), **f})
-        at_risk.sort(key=lambda r: -r['p_cross'])
+        at_risk.sort(key=lambda r: -r['_p_cross'])
         unit = concepts.MEASUREMENTS[c]['unit']
         cal = calibrate(series, c, snapshot, p['horizon_days'], p['threshold'], below, p['min_points'], keep=keep)
         for r in at_risk:

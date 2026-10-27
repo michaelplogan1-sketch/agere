@@ -49,6 +49,33 @@ def _timesfm():
 LEVELS = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
 
 
+def quantile_samples(q, levels, n, rng):
+    """Preserve the supplied probability axis; use explicit linear tail assumptions outside its support.
+
+    Missing tails are not identified by central quantiles. Linear extrapolation is a model assumption, not a
+    coverage guarantee; callers retain it in their forecast receipt and evaluate interval coverage separately.
+    """
+    q, levels = np.asarray(q, float), np.asarray(levels, float)
+    if (q.ndim != 2 or levels.ndim != 1 or len(levels) < 2 or q.shape[1] != len(levels)
+            or not np.all(np.isfinite(q)) or not np.all(np.isfinite(levels))
+            or np.any(np.diff(levels) <= 0) or levels[0] < 0 or levels[-1] > 1):
+        raise ValueError('Finite increasing probability levels and aligned forecast quantiles required')
+    q = np.maximum.accumulate(q, axis=1)
+    h = q.shape[0]
+    u = rng.uniform(0.0, 1.0, (n, h))
+    draws = np.empty((n, h))
+    for k in range(h):
+        draws[:, k] = np.interp(u[:, k], levels, q[k])
+        lower, upper = u[:, k] < levels[0], u[:, k] > levels[-1]
+        draws[lower, k] = q[k, 0] + (u[lower, k] - levels[0]) * (q[k, 1] - q[k, 0]) / (levels[1] - levels[0])
+        draws[upper, k] = q[k, -1] + (u[upper, k] - levels[-1]) * (q[k, -1] - q[k, -2]) / (levels[-1] - levels[-2])
+    assumptions = {'provided_probability_range': [float(levels[0]), float(levels[-1])],
+                   'tails': 'linear_extrapolation' if levels[0] > 0 or levels[-1] < 1 else 'supplied_full_range',
+                   'tail_coverage_qualified': False, 'independent_horizon_draws': True,
+                   'meaning': 'Central quantiles keep their original probabilities. Unprovided tails use a linear assumption; model intervals require empirical qualification.'}
+    return draws, assumptions
+
+
 def quantiles(name, y, h):
     """-> (h, 9) forecast quantiles at LEVELS."""
     y = np.asarray(y, float)[-512:]
@@ -79,6 +106,5 @@ class Challenger:
     def point(self, h): return self._quantiles(h)[:, 4]
 
     def simulate(self, h, n, rng):
-        q = np.maximum.accumulate(self._quantiles(h), axis=1)
-        u = rng.uniform(LEVELS[0], LEVELS[-1], (n, h))
-        return np.stack([np.interp(u[:, k], LEVELS, q[k]) for k in range(h)], axis=1)
+        draws, self.simulation_assumptions = quantile_samples(self._quantiles(h), LEVELS, n, rng)
+        return draws

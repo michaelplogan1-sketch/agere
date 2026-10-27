@@ -369,10 +369,11 @@ def candidates(db, as_of, keep=None, discount=0.5, measure_gaps=None):
             if gap > A['rising_max_days_since_result']: continue
             rel, floor = trajectory.NOISE[concept]
             f = trajectory.forecast(pts, rel, floor, 365 + gap, threshold, below)
-            if f['p_cross'] >= A['rising_min_probability']:
-                add(code, REASONS[code][2] * f['p_cross'], f"{concept} {last:.1f} -> forecast {f['forecast']} (sd {f['forecast_sd']}) in 1 year; "
+            probability = f['_p_cross']
+            if probability >= A['rising_min_probability']:
+                add(code, REASONS[code][2] * probability, f"{concept} {last:.1f} -> forecast {f['forecast']} (sd {f['forecast_sd']}) in 1 year; "
                                                            f"slope {f['slope_per_year']}/yr; P(cross {threshold:g}) {f['p_cross']:.2f}")
-                reasons[-1].update(p_cross=f['p_cross'], _concept=concept)
+                reasons[-1].update(p_cross=f['p_cross'], _p_cross=probability, _concept=concept)
                 reasons[-1]['_mean'], reasons[-1]['_sd'] = trajectory._predict(pts, rel, floor, 365 + gap)
         for need, code in (('food', 'SDOH_FOOD'), ('transport', 'SDOH_TRANSPORT'), ('cost_of_care', 'SDOH_COST')):
             got = needs.get((pid, need))
@@ -629,7 +630,8 @@ def _apply_rising(rows, rising):
     for r in rows:
         for c in r['reasons']:
             if '_concept' not in c: continue
-            tmp = trajectory.apply_calibration({'_mean': c.pop('_mean'), '_sd': c.pop('_sd'), 'p_cross': c['p_cross']}, rising[c.pop('_concept')])
+            tmp = trajectory.apply_calibration({'_mean': c.pop('_mean'), '_sd': c.pop('_sd'), 'p_cross': c['p_cross'],
+                                               '_p_cross': c.pop('_p_cross', c['p_cross'])}, rising[c.pop('_concept')])
             if 'conformal_low' in tmp: c['forecast_interval_90'] = [tmp['conformal_low'], tmp['conformal_high']]
             for k in ('p_cross_calibrated', 'p_cross_calibrated_range'):
                 if k in tmp: c[k] = tmp[k]

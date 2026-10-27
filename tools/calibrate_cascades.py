@@ -437,8 +437,13 @@ def fit_all(alpha=C.DEFAULT_ALPHA, delta=C.DEFAULT_DELTA, write=False, out=None)
     blind_groups = {r['group'] for r in rows if r.get('blind')}
     by_tier = defaultdict(list)
     for r in rows:
-        if r.get('score') is None: continue
-        by_tier[r['tier']].append({**r, 'blind': bool(r.get('blind') or r['group'] in blind_groups)})
+        if type(r.get('error')) is not bool:
+            raise ValueError('An unresolved outcome cannot enter correctness calibration')
+        # Missing scores remain abstentions before representative selection; dropping them would make selection
+        # depend on score availability. Their identity participates just like every other settled-reference case.
+        by_tier[r['tier']].append({**r, 'score': -1.0 if r.get('score') is None else r['score'],
+                                  'unscored': r.get('score') is None,
+                                  'blind': bool(r.get('blind') or r['group'] in blind_groups)})
     records = []
     for tier in C.ROUTE_TIERS + C.THERAPY_TIERS:
         raw = by_tier.get(tier, [])
@@ -452,6 +457,7 @@ def fit_all(alpha=C.DEFAULT_ALPHA, delta=C.DEFAULT_DELTA, write=False, out=None)
                 'sources': dict(Counter(r['source'] for r in rs)), 'errors_all': sum(r['error'] for r in rs),
                 'sampling': 'one label/score-independent hash-selected representative per independent source group',
                 'raw_rows': len(raw), 'raw_errors': sum(r['error'] for r in raw),
+                'unscored_rows': sum(r.get('unscored', False) for r in raw),
                 'reference_exclusions': reference_audit}
         rec = C.fit(tier, scores, [r['error'] for r in cal], alpha=alpha, delta=delta, grid=grid, data=data,
                     score_definition=SCORE_DEFS.get(tier, 'route-level (1.0 for every claim); qualification applies to the declared representative population'))

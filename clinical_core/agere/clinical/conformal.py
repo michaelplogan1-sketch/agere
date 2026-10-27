@@ -180,14 +180,21 @@ def venn_abers(cal_p, cal_y, test_p):
     calibrated in the Venn sense under exchangeability."""
     cal_p, cal_y = np.asarray(cal_p, dtype=float), np.asarray(cal_y, dtype=float)
     test_p = np.asarray(test_p, dtype=float)
+    if cal_p.ndim != 1 or cal_y.shape != cal_p.shape or test_p.ndim != 1:
+        raise ValueError('Aligned one-dimensional calibration scores/labels and test scores required')
+    if not np.all(np.isfinite(cal_p)) or not np.all(np.isfinite(test_p)) or not np.all(np.isin(cal_y, [0, 1])):
+        raise ValueError('Finite scores and settled binary calibration labels required')
+    unique = np.unique(cal_p)
     cache, p0, p1 = {}, np.empty(len(test_p)), np.empty(len(test_p))
     for j, t in enumerate(test_p):
-        key = round(float(t), 4)
+        # Isotonic fitting depends on order and ties, not distance. Keep the exact insertion/tie class;
+        # decimal rounding changes that class and can reverse a calibrated probability.
+        key = (int(np.searchsorted(unique, t, side='left')), int(np.searchsorted(unique, t, side='right')))
         if key not in cache:
             vals = []
             for label in (0.0, 1.0):
-                ux, f = _pav(np.append(cal_p, key), np.append(cal_y, label))
-                vals.append(float(f[np.searchsorted(ux, key)]))
+                ux, f = _pav(np.append(cal_p, t), np.append(cal_y, label))
+                vals.append(float(f[np.searchsorted(ux, t)]))
             cache[key] = vals
         p0[j], p1[j] = cache[key]
     merged = p1 / np.maximum(1 - p0 + p1, 1e-12)

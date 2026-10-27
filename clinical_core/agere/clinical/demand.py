@@ -439,8 +439,9 @@ class Timestral(Model):
     def point(self, h): return self._quantiles(h)[:, list(self._levels).index(0.5)]
 
     def simulate(self, h, n, rng):
-        q = self._quantiles(h); u = rng.uniform(self._levels[0], self._levels[-1], (n, h))
-        return np.stack([np.interp(u[:, k], self._levels, q[k]) for k in range(h)], axis=1)
+        from .foundation_forecasters import quantile_samples
+        draws, self.simulation_assumptions = quantile_samples(self._quantiles(h), self._levels, n, rng)
+        return draws
 
 
 def timestral_sizes():
@@ -626,6 +627,11 @@ def forecast_series(periods, y, freq, horizon, partial=None, booked=None, seed=0
                          'selected_mase': round(mase[best], 3), 'baseline_mase': round(mase[baseline], 3),
                          'skill_vs_baseline': round(1 - mase[best] / mase[baseline], 3) if mase[baseline] > 0 else None,
                          'coverage': coverage})
+    if getattr(model, 'simulation_assumptions', None):
+        out['simulation_assumptions'] = model.simulation_assumptions
+        if model.simulation_assumptions['tails'] == 'linear_extrapolation':
+            out['data_issues'].append({'kind': 'unqualified_forecast_tails',
+                                      'detail': 'Source quantiles do not identify the full tails. Simulation uses explicit linear extrapolation; nominal model intervals are estimates under that assumption, not established coverage.'})
     out.update(_sims=sims, _pt=pt, _sd=sd, _recs=recs, _offset=sc['start'], _yr=yr, _lag=SEASON[freq] if seasonal else 1, _floor=floor)
     return out
 
