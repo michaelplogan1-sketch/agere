@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-27T17:40:46.048326+00:00",
+  "latest_checkpoint": "2026-10-27T22:09:12.834542+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -58,10 +58,21 @@
       },
       "integration": "Integrated by merge before format repair; no classifier candidate activated",
       "no_default_activation": true
+    },
+    "workflow_followup": {
+      "workspace": "/private/tmp/agere-workflow-integrity-20261027",
+      "branch": "codex/workflow-integrity-20261027",
+      "commit": "58b1a53",
+      "status": "staged_offline_verified_not_integrated",
+      "receipt": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/58b1a53/workflow-receipt-v7.json",
+      "source_fingerprint": "594434a23d217796ab7de831a862bb2fca4fef561ec3eedbc177672ae1abe42c",
+      "scope": "General workflow/evidence/analytics/economics, medication arithmetic, unknown supply and shared cohort semantics.",
+      "evidence": "563checks:561pass/2live skips, zero provider/protected reads. Identical16 authored medication/scope/survival checks: old22assertions/two exceptions, new16pass. All earlier evidence preserved.",
+      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open."
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-10-27T17:40:46.048326+00:00",
+  "latest_continuity_checkpoint": "2026-10-27T22:09:12.834542+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
