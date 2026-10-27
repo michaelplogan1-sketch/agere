@@ -144,7 +144,8 @@ def statement_evidence(payload, stream):
     text = '; '.join(texts)
     # Do not turn a conditional, variable or conflicting regimen into a point dose.
     if re.search(r'\b(?:prn|as needed|up to|alternat\w*|every other|except|taper\w*|then|weekly|or|ml)\b|'
-                 r'\d\s*(?:[-–]|to)\s*\d|(?<!\w)-\s*\.?\d|\d,\d', text.lower()):
+                 r'\d\s*(?:[-–]|to)\s*\d|(?<!\w)-\s*\.?\d|\d,\d|'
+                 r'\b(?:\d+|one|two|three)\s+and\s+(?:\d|one|two|half)|\b\d+\s+\d+\s*/\s*\d', text.lower()):
         evidence['basis'] = 'variable_or_ambiguous_instruction'
         return json.dumps(evidence)
     count_rx = r'(?<![\w./])((?:\d+(?:\.\d+)?|\.\d+)(?:\s*/\s*\d+(?:\.\d+)?)?|one|two|three|half)\s+(tablets?|capsules?)\b'

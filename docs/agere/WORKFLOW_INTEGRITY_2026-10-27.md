@@ -24,6 +24,21 @@ keep their child contexts. Two matching empty selections retain an explicit
 empty follow-up; an unrelated aggregate selects no additional cohort. Composite
 answers continue to carry no authority to create patient work.
 
+The survival reader now preserves bounded threshold meaning as well. A strict
+reported bound can establish a crossing when every permitted value satisfies
+the criterion. An unresolved baseline or an earlier ambiguous result cannot
+become an exact first-event date or a negative/censored observation. Such units
+retain their source evidence separately; the report and answer are partial and
+the curves explicitly describe only the resolvable subset. Exact measurements,
+definite negative bounds and ambiguity after an established event retain their
+valid behavior. This does not validate population inference or censoring assumptions.
+
+Latest frozen engineering verification: 563 checks, 561 passed and two optional
+live skips; no providers or protected-corpus reads. Identical 16 medication/scope
+and survival tests pass after the repairs; the baseline's assertions and native
+exceptions remain in the paired receipts. These known-defect cases and controls
+are separate from model-comparison or physician-adjudicated accuracy.
+
 Investigator SQL now scopes patient-linked inputs before aggregation and expands
 trusted views so a hidden aggregate cannot widen the population. Explicit empty
 membership stays empty, reference dimensions remain available, and qualified

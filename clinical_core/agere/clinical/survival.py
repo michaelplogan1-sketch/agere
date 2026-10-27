@@ -36,7 +36,7 @@ from scipy.stats import chi2, norm
 
 from . import aggregate, concepts, semantic_layer
 
-VERSION = 'survival/1'
+VERSION = 'survival/2'
 INDEX_TYPES = ('discharge', 'condition_first_record', 'date')
 EVENT_TYPES = ('readmission', 'followup', 'encounter', 'measurement')
 GROUP_BY = ('none', 'coverage_type', 'practice', 'pcp', 'sex', 'age_band', 'condition')
@@ -328,7 +328,7 @@ def describe_event(p):
     return what, zero
 
 
-def units(db, patient_ids, p, as_of):
+def units(db, patient_ids, p, as_of, *, uncertainties=None):
     """One row per analysed unit: (patient_id, index_date, time_days, event 0/1, censor_reason); plus exclusion counts."""
     ix, ev, horizon = p['index'], p['event'], p['horizon_days']
     members = set(patient_ids) if patient_ids is not None else {r[0] for r in db.execute('SELECT patient_id FROM patient')}
@@ -358,6 +358,7 @@ def units(db, patient_ids, p, as_of):
         starts = [(pid, ix['date']) for pid in members]
     # event sources
     dated = defaultdict(list)
+    threshold_evidence = defaultdict(list)
     if ev['type'] in ('encounter', 'followup'):
         types = FOLLOWUP_CONCEPTS if ev['type'] == 'followup' else (ev['concept'],)
         query = ('SELECT DISTINCT patient_id, substr(event_date, 1, 10) FROM encounter WHERE type_concept IN (%s) AND event_date IS NOT NULL'
@@ -369,10 +370,23 @@ def units(db, patient_ids, p, as_of):
             if pid in members: dated[pid].append((d, None))
     elif ev['type'] == 'measurement':
         from .safety_data import usable_measurement_sql
-        for pid, d, v in db.execute('SELECT patient_id, substr(event_date, 1, 10), value_canonical FROM measurement WHERE concept = ? '
+        from .cohorts import _compare_measurement, CENSOR_OPS
+        columns = {r[1] for r in db.execute('PRAGMA table_info(measurement)')}
+        censor = 'value_censor' if 'value_censor' in columns else 'NULL'
+        rid = 'record_id' if 'record_id' in columns else 'NULL'
+        raw = 'value' if 'value' in columns else 'NULL'
+        for pid, d, v, comparator, record_id, received in db.execute(
+                                    f'SELECT patient_id, substr(event_date, 1, 10), value_canonical,{censor},{rid},{raw} FROM measurement WHERE concept = ? '
                                     'AND value_canonical IS NOT NULL AND event_date IS NOT NULL'+usable_measurement_sql(db), (ev['concept'],)):
-            if pid in members: dated[pid].append((d, v))
-    for v in dated.values(): v.sort()
+            if pid not in members: continue
+            value = {'op': CENSOR_OPS[comparator], 'bound': v} if comparator in CENSOR_OPS else v
+            finite = type(v) in (int,float) and math.isfinite(v)
+            truth = (None if not finite or
+                     (comparator and comparator not in CENSOR_OPS) else _compare_measurement(value, ev['op'], ev['value']))
+            dated[pid].append((d, truth))
+            threshold_evidence[pid,d].append({'record_id': record_id, 'date': d, 'value_canonical': v if finite else None,
+                                             'comparator': comparator, 'received_value': str(received), 'threshold_result': truth})
+    for v in dated.values(): v.sort(key=lambda item:item[0])
     out = []
     for pid, zero in starts:
         if zero > as_of: excluded['time_zero_after_snapshot'] += 1; continue
@@ -397,9 +411,25 @@ def units(db, patient_ids, p, as_of):
             series = dated.get(pid, [])
             before = [(d, v) for d, v in series if d <= zero]
             after = [(d, v) for d, v in series if d > zero and _days(zero, d) <= limit]
-            if before and OPS[ev['op']](before[-1][1], ev['value']): excluded['already_past_threshold_at_time_zero'] += 1; continue
+            def uncertain(reason, day):
+                excluded[reason] += 1
+                if uncertainties is not None:
+                    uncertainties.append({'patient_id':pid,'index_date':zero,'reason':reason,
+                                          'measurement_evidence':threshold_evidence[pid,day]})
+            if before:
+                latest = {v for d, v in before if d == before[-1][0]}
+                if None in latest or len(latest) > 1:
+                    uncertain('unresolved_threshold_at_time_zero',before[-1][0]); continue
+                if latest == {True}: excluded['already_past_threshold_at_time_zero'] += 1; continue
             if not after: excluded['no_result_after_time_zero'] += 1; continue
-            hit = next((d for d, v in after if OPS[ev['op']](v, ev['value'])), None)
+            hit, unresolved = None, None
+            daily = defaultdict(set)
+            for day, truth in after: daily[day].add(truth)
+            for day, values in sorted(daily.items()):
+                if True in values: hit = day; break  # An observed positive result establishes an event that day.
+                if None in values: unresolved = day; break
+            if unresolved:
+                uncertain('unresolved_threshold_after_time_zero',unresolved); continue
             if hit: out.append((pid, zero, _days(zero, hit), 1, None))
             else: out.append((pid, zero, _days(zero, after[-1][0]), 0, 'last_result'))
             if not before: excluded['included_without_baseline_result'] += 1
@@ -457,7 +487,8 @@ def execute(path, patient_ids, params):
     as_of = json.loads((path / 'run.json').read_text())['snapshot']['as_of']
     db = sqlite3.connect(f'file:{semantic_layer.ensure(path)}?mode=ro', uri=True)
     try:
-        rows, excluded = units(db, patient_ids, p, as_of)
+        uncertainties = []
+        rows, excluded = units(db, patient_ids, p, as_of, uncertainties=uncertainties)
         attrs = attributes(db, {r[0] for r in rows}, p)
     finally:
         db.close()
@@ -531,8 +562,14 @@ def execute(path, patient_ids, params):
     if model: method += ('Cox proportional hazards (Efron ties, Newton-Raphson; reference = most common level; levels with under 5 units or '
                          'no events are not estimated); hazard ratios are associations, not causal effects, and proportional hazards is not tested. ')
     method += f'Groups under {SMALL_GROUP} units are flagged.'
+    if uncertainties:
+        method += (' Thresholds use the full interval allowed by a reported comparator. Units whose baseline eligibility or '
+                   'first observed event cannot be resolved are excluded with source evidence; curves describe the resolvable '
+                   'subset only. Selection and censoring assumptions for general-population inference remain unvalidated.')
     if bounds and bounds.get('status') == 'ok': method += ' ' + bounds['method']
     return {'schema': VERSION, 'parameters': p, 'event_label': what, 'time_zero': zero, 'as_of': as_of,
+            'status': 'partial' if uncertainties else 'complete', 'unresolved_units': uncertainties,
+            'missing': ['Resolve bounded/ambiguous measurement evidence before estimating this outcome for the full requested population.'] if uncertainties else [],
             'units': len(rows), 'patients': len({r[0] for r in rows}), 'events': sum(r[3] for r in rows),
             'excluded': {k: v for k, v in excluded.items() if k != 'included_without_baseline_result'},
             'included_without_baseline_result': excluded.get('included_without_baseline_result', 0), 'groups': summaries, 'groups_total': len(summaries), 'table': table, 'curves': curves,
@@ -551,7 +588,7 @@ def summary(report):
         parts.append(f"{row['group']} {row['cumulative_incidence']:.1%} (95% CI {row['ci95_low']:.1%}-{row['ci95_high']:.1%}; "
                      f"{g['units']} {unit}, {g['events']} events{med})")
     if not parts: return f"No analysable {unit}: " + ', '.join(f'{k} {v}' for k, v in report['excluded'].items()) + '.'
-    text = f"Kaplan-Meier cumulative incidence of {report['event_label']} by day {key} after {report['time_zero']}: " + '; '.join(parts)
+    text = ('Resolvable subset only. ' if report.get('unresolved_units') else '') + f"Kaplan-Meier cumulative incidence of {report['event_label']} by day {key} after {report['time_zero']}: " + '; '.join(parts)
     if report['groups_total'] > 6: text += f" (+{report['groups_total'] - 6} more groups)"
     text += '.'
     if report['logrank']:

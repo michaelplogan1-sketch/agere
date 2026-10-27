@@ -45,6 +45,7 @@ class DoseArithmetic(unittest.TestCase):
     def test_product_strength_without_count_and_ambiguous_instructions_stay_unknown(self):
         for instruction in ('5 mg/tablet twice daily','5 mg tablet twice daily',
                             'take 1 or 2 tablets twice daily','take -0.5 tablet twice daily',
+                            'take 1 and 1/2 tablets twice daily','take one and half tablet twice daily',
                             'take 0 tablets twice daily','5 mg/tablet; take 2 tablets as needed',
                             'take 1 tablet in the morning and 2 tablets at night'):
             with self.subTest(instruction=instruction):
