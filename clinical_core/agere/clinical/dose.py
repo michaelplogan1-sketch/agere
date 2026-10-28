@@ -126,9 +126,9 @@ def statement_evidence(payload, stream):
     p = json.loads(payload)
     fields = {k: p[k] for k in ('dose', 'dose_unit', 'strength', 'strength_unit', 'name',
               'medication_name', 'product_description', 'medication_display', 'directions_text',
-              'frequency', 'times_per_day') if k in p}
+              'frequency', 'times_per_day', 'sig', 'status', 'order_status', 'list_status') if k in p}
     evidence = {'received': fields, 'per_admin_mg': None, 'basis': 'interpretation_required'}
-    if stream == 'medication_orders':
+    if stream == 'medication_orders' and p.get('dose') is not None and p.get('dose_unit') is not None:
         unit = str(p.get('dose_unit') or '').strip().lower().rstrip('s')
         amount = _positive(p.get('dose'))
         if unit == 'mg':
@@ -140,7 +140,7 @@ def statement_evidence(payload, stream):
             evidence.update(per_admin_mg=_positive(amount * strength), basis='strength_times_unit_count',
                             strength_mg_per_unit=strength, unit_count=amount, unit=unit)
         return json.dumps(evidence)
-    texts = [p.get(k) for k in ('dose', 'directions_text') if isinstance(p.get(k), str) and p[k].strip()]
+    texts = [p.get(k) for k in ('dose', 'directions_text', 'sig') if isinstance(p.get(k), str) and p[k].strip()]
     text = '; '.join(texts)
     # Do not turn a conditional, variable or conflicting regimen into a point dose.
     if re.search(r'\b(?:prn|as needed|up to|alternat\w*|every other|except|taper\w*|then|weekly|or|ml)\b|'
@@ -172,7 +172,7 @@ def statement_evidence(payload, stream):
         elif re.search(r'\bmg\b', text.lower()):
             strengths = set()
         else:
-            names = [p.get(k) for k in ('name', 'product_description', 'medication_display') if p.get(k)]
+            names = [p.get(k) for k in ('name', 'medication_name', 'product_description', 'medication_display') if p.get(k)]
             strengths = {dose_mg(name) for name in names if len(re.findall(r'\bmg\b',name.lower())) == 1}
         strengths.discard(None)
         if len(strengths) == 1:
@@ -197,7 +197,7 @@ def statement_mg(payload, stream):
 
 def statement_per_day(payload, stream):
     p = json.loads(payload)
-    texts = [p.get(k) for k in ('frequency', 'directions_text', 'dose') if isinstance(p.get(k), str)]
+    texts = [p.get(k) for k in ('frequency', 'directions_text', 'dose', 'sig') if isinstance(p.get(k), str)]
     if any(re.search(r'\b(?:prn|as needed|every other|except|alternat\w*|weekly|hold|if|unless|taper\w*|then)\b|\d\s*[-–]\s*\d', t.lower()) for t in texts):
         return None
     frequencies = {_positive(p.get('times_per_day'))} if p.get('times_per_day') is not None else set()
@@ -208,10 +208,22 @@ def statement_per_day(payload, stream):
 
 def statement_status(status):
     status = str(status or '').strip().lower().replace('-', '_').replace(' ', '_')
-    if status in ('active', 'taking'): return 'active_documentation'
-    if status in ('stopped', 'discontinued', 'held', 'on_hold', 'inactive', 'not_taking', 'cancelled', 'canceled'):
+    if status in ('active', 'taking', 'active_documentation'): return 'active_documentation'
+    if status=='conflicting': return 'conflicting'
+    if status in ('not_active', 'stopped', 'discontinued', 'held', 'on_hold', 'inactive', 'not_taking', 'cancelled', 'canceled'):
         return 'not_active'
     return 'unknown_status'
+
+
+def statement_payload_status(payload, stream):
+    """Received aliases are evidence; conflicting statuses never pick a winner."""
+    p=json.loads(payload)
+    if stream=='medication_label_evidence':return 'label'
+    keys=('status','order_status') if stream=='medication_orders' else ('list_status','status')
+    values=[p[k] for k in keys if p.get(k) is not None]
+    states={statement_status(v) for v in values}
+    if len(states)>1:return 'conflicting'
+    return next(iter(states)) if states else 'unknown_status'
 
 
 def statement_day(value):
@@ -230,6 +242,7 @@ def register(db):
     db.create_function('statement_evidence', 2, statement_evidence, deterministic=True)
     db.create_function('statement_per_day', 2, statement_per_day, deterministic=True)
     db.create_function('statement_status', 1, statement_status, deterministic=True)
+    db.create_function('statement_payload_status', 2, statement_payload_status, deterministic=True)
     db.create_function('statement_day', 1, statement_day, deterministic=True)
     return db
 
@@ -246,8 +259,7 @@ MEDICATION_DOSE_SQL = """(SELECT patient_id, source_stream, record_id, event_dat
    lower(CASE stream WHEN 'medication_orders' THEN json_extract(payload,'$.medication_name')
      WHEN 'medication_lists' THEN json_extract(payload,'$.name')
      ELSE COALESCE(json_extract(payload,'$.product_description'),json_extract(payload,'$.medication_display')) END) AS drug_text,
-   CASE stream WHEN 'medication_orders' THEN json_extract(payload,'$.status')
-     WHEN 'medication_lists' THEN json_extract(payload,'$.list_status') ELSE 'label' END AS status,
+   statement_payload_status(payload, stream) AS status,
    statement_mg(payload, stream) AS per_admin_mg, statement_per_day(payload, stream) AS times_per_day,
    statement_evidence(payload, stream) AS dose_evidence
  FROM record WHERE stream IN ('medication_orders','medication_lists','medication_label_evidence'))

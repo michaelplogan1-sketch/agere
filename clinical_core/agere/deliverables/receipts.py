@@ -142,8 +142,8 @@ class Bundle:
         walk(self.meta, 'meta')
         return idx
 
-    def digest_for_model(self, max_list=6, max_str=300, max_chars=60000):
-        return digest(self, max_list=max_list, max_str=max_str, max_chars=max_chars)
+    def digest_for_model(self, max_list=6, max_str=300, max_chars=60000, *, shared=False):
+        return digest(self, max_list=max_list, max_str=max_str, max_chars=max_chars, shared=shared)
 
 
 def trim(v, max_list=6, max_str=300):
@@ -161,7 +161,7 @@ def trim(v, max_list=6, max_str=300):
     return v
 
 
-def digest(bundle, max_list=6, max_str=300, max_chars=60000):
+def digest(bundle, max_list=6, max_str=300, max_chars=60000, *, shared=False):
     """A compact view of the bundle for a model prompt: every receipt with its tool, args, definition and the data with
     long lists truncated (the item count kept). The artifact embeds the full data; this only teaches the shape."""
     out = []
@@ -171,7 +171,58 @@ def digest(bundle, max_list=6, max_str=300, max_chars=60000):
                     'data': trim(bundle.results[rid], max_list, max_str)})
     text = json.dumps(out, default=str, separators=(',', ':'))
     if max_chars is None:
+        if shared and max_list is None and max_str is None:
+            encoded=json.dumps(share_json(out),default=str,separators=(',',':'))
+            return encoded if len(encoded)<len(text) else text
         return text
     if len(text) > max_chars and max_list > 2:
         return digest(bundle, max_list=max(2, max_list // 2), max_str=max_str // 2, max_chars=max_chars)
     return text[:max_chars * 2]
+
+
+def share_json(value, min_chars=256):
+    """Lossless JSON sharing for model context; native bundle and binding paths are unchanged.
+
+    Only complete identical subtrees/strings are interned. No sampling,
+    clipping, paraphrase, field dropping or semantic deduplication occurs.
+    """
+    seen={};references=[]
+    def walk(v,path):
+        if isinstance(v,(dict,list,str)):
+            key=json.dumps(v,sort_keys=True,default=str,separators=(',',':'))
+            if len(key)>=min_chars:
+                if key in seen:
+                    target=list(seen[key]);references.append({'at':list(path),'from':target})
+                    return {'$agere_shared':target}
+                seen[key]=path
+        if isinstance(v,dict):return {k:walk(x,path+(k,)) for k,x in v.items()}
+        if isinstance(v,list):return [walk(x,path+(i,)) for i,x in enumerate(v)]
+        return v
+    data=walk(value,())
+    return {'encoding':'agere-lossless-shared-json/1',
+            'instructions':'Every original JSON value is present. At each listed references.at path, substitute the complete value from references.from in data. Only listed paths are references; identical-looking source data elsewhere is literal. This encoding is only the model view. AGERE.get/data-bind use the original receipt:path, without encoding/data prefixes. Do not display reference markers.',
+            'data':data,'references':references,'original_fingerprint':fingerprint(value)}
+
+
+def unshare_json(encoded):
+    """Round-trip verification of the model-only representation."""
+    if encoded.get('encoding')!='agere-lossless-shared-json/1':raise ValueError('Unknown shared JSON encoding')
+    refs={tuple(r['at']):tuple(r['from']) for r in encoded['references']}
+    if len(refs)!=len(encoded['references']):raise ValueError('Duplicate reference path')
+    root=encoded['data']
+    def at(path):
+        v=root
+        for key in path:v=v[key]
+        return v
+    def walk(v,path,active):
+        if path in refs:
+            if path in active:raise ValueError('Cyclic shared JSON reference')
+            target=refs[path]
+            if v!={'$agere_shared':list(target)}:raise ValueError('Shared JSON marker differs')
+            return walk(at(target),target,active|{path})
+        if isinstance(v,dict):return {k:walk(x,path+(k,),active) for k,x in v.items()}
+        if isinstance(v,list):return [walk(x,path+(i,),active) for i,x in enumerate(v)]
+        return v
+    value=walk(root,(),set())
+    if fingerprint(value)!=encoded.get('original_fingerprint'):raise ValueError('Shared JSON fingerprint differs')
+    return value
