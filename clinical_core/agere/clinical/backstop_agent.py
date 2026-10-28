@@ -147,6 +147,17 @@ has already declined this question, so it is yours to answer completely and corr
 - For a table, compute the COMPLETE requested table, including changes and comparisons, in query_sql. Earlier tabular tool results are
   available as their result_view names on the same connection. Set table_from_tool to the final result_view and omit table: code copies
   the executed rows into the answer. Never transcribe or calculate a numeric table in your final text.
+- For a table answer, numeric claims in headline and facts must also be copied by code, not transcribed into prose.
+  Use a template object instead of a numeric string, for example:
+  {{"template":"{{stays}} hospital stays among {{people}} patients",
+    "bindings":{{"stays":{{"result_view":"agere_result_9","row":0,"column":"hospital_stays"}},
+                "people":{{"result_view":"agere_result_9","row":0,"column":"distinct_patients"}}}}}}
+  First query SQL for the named scalars, percentages or amounts, with meaningful aliases and the correct grain/window.
+  Bindings use zero-based rows from complete executed results. Code inserts the exact scalar; no formatting expressions.
+  Use SQL ROUND for display precision. Put a percent sign or dollar sign in the template when those are the source units.
+  Fixed numeric definitions used in a quantitative sentence can be returned as explicitly named SQL columns too.
+  Keep dates and patient/record identifiers literal. A bound text column may supply an exact source observation.
+  Non-numeric prose remains a string. Clinical meaning still requires review; bindings do not establish appropriateness.
 Return ONLY one JSON object, no markdown:
 {{"status":"answered|partial|unsupported","answer_type":"count|patient_set|value|table|note|unsupported",
 "headline":"one or two sentences that state the complete answer with every requested fact and number",
@@ -655,6 +666,69 @@ def table_value_counts(rows):
     return {'rows':len(rows),'columns':out,'meaning':'Exact row counts by original column/value and arithmetic over numeric, non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums, not inferred distinct patients, events, current use, clinical appropriateness or outcomes; interpret using the source column grain and units.'}
 
 
+def bind_computed_prose(answer,calls):
+    """Compile quantitative table prose from actual native scalar cells.
+
+    Templates and addresses are untrusted model output. Only executed cells
+    establish values; saved metadata is recompiled, never accepted as proof.
+    Semantic meaning remains the independent answer review's responsibility.
+    """
+    import string
+    import math
+    formatter=string.Formatter();proofs=[]
+    old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
+    def numeric(text):
+        # Dates/identifiers are addresses or temporal anchors, not row counts.
+        text=re.sub(r'\b\d{4}-\d{2}-\d{2}\b','',text)
+        text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+\b','',text)
+        return bool(re.search(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I))
+    def compile_value(field,value):
+        if isinstance(value,str) and field in old:
+            prior=old[field]
+            # A mutated field must supply a new explicit template, not silently
+            # inherit old bindings attached to a different sentence.
+            if value==prior.get('rendered'):value={k:prior[k] for k in ('template','bindings')}
+        if not isinstance(value,dict) or 'template' not in value:
+            if answer.get('table_binding') and ((isinstance(value,str) and numeric(value)) or type(value) in (int,float)):
+                raise ValueError('Quantitative '+field+' needs a template with bindings to actual executed scalar cells; do not transcribe quantities. Compute the named quantities in SQL with explicit aliases, then bind result_view, row and column.')
+            return value
+        if set(value)!={'template','bindings'} or not isinstance(value['template'],str) or not isinstance(value['bindings'],dict):
+            raise ValueError('Invalid computed prose template at '+field)
+        template=value['template'];bindings=value['bindings'];names=[]
+        for literal,name,spec,conversion in formatter.parse(template):
+            if name is not None:
+                if not re.fullmatch(r'[A-Za-z_]\w*',name) or spec or conversion:raise ValueError('Use plain named scalar placeholders at '+field)
+                names.append(name)
+            if numeric(literal):raise ValueError('Numeric prose must use scalar placeholders at '+field)
+        if not names or set(names)!=set(bindings):raise ValueError('Computed prose bindings must exactly match placeholders at '+field)
+        resolved={};sources={}
+        for name,binding in bindings.items():
+            if not isinstance(binding,dict) or set(binding)!={'result_view','row','column'} or type(binding['row']) is not int or binding['row']<0:
+                raise ValueError('Invalid computed scalar address at '+field+'.'+name)
+            call=next((c for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')==binding['result_view']),None)
+            if call is None:raise ValueError('Computed scalar must name an executed result_view at '+field+'.'+name)
+            result=call['result'];columns,rows=output_table(result)
+            if result.get('truncated') or type(result.get('table_rows')) is int and result['table_rows']!=len(rows):
+                raise ValueError('Computed scalar result is incomplete at '+field+'.'+name)
+            if binding['column'] not in columns or binding['row']>=len(rows):raise ValueError('Computed scalar cell is unavailable at '+field+'.'+name)
+            cell=rows[binding['row']][columns.index(binding['column'])]
+            if cell is not None and type(cell) not in (str,int,float,bool):raise ValueError('Computed prose requires scalar cells at '+field+'.'+name)
+            if isinstance(cell,float) and not math.isfinite(cell):raise ValueError('Computed scalar must be finite at '+field+'.'+name)
+            resolved[name]='unknown' if cell is None else str(cell)
+            sources[name]={'binding':binding,'value':cell,'source_row':dict(zip(columns,rows[binding['row']])),
+                           'input':call.get('input'),'tool':call.get('name')}
+        rendered=template.format_map(resolved)
+        proofs.append({'field':field,'template':template,'bindings':bindings,'rendered':rendered,'sources':sources})
+        return rendered
+    updates={}
+    if 'headline' in answer:updates['headline']=compile_value('headline',answer['headline'])
+    if isinstance(answer.get('facts'),dict):
+        updates['facts']={key:compile_value('facts.'+key,value) for key,value in answer['facts'].items()}
+    answer.update(updates);answer.pop('computed_prose',None)
+    if proofs:answer['computed_prose']=proofs
+    return proofs
+
+
 def numeric_role_review(question,answer,calls,*,decider,as_of,ledger):
     """Bind each written quantity to a source role; code compares its value.
 
@@ -763,6 +837,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         return {**assessment, 'status': 'repair', 'feedback': str(exc)}
     if (answer.get('answer_type') == 'table' or answer.get('table')) and not answer.get('table_binding'):
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
+    try:
+        bind_computed_prose(answer,calls)
+    except (ValueError,KeyError,IndexError,TypeError) as exc:
+        return {**assessment,'status':'repair','feedback':str(exc)}
     from .drug_classes import group_query_issues
     scope_issues=group_query_issues(question,calls,answer.get('table_from_tool'))
     if scope_issues:return {**assessment,'status':'repair','feedback':' '.join(scope_issues)}

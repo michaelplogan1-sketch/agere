@@ -60,6 +60,9 @@ class Meaning(unittest.TestCase):
 
  def test_unqualified_numeric_prototype_is_off_by_default(self):
   rows,call,a=self.data()
+  # This test isolates selection of the old prototype. Quantitative prose has
+  # its own earlier compiler checks and is exercised in computed-answer tests.
+  a['headline']='Cohort details';a['facts']={}
   decider=SimpleNamespace(decide=lambda *a,**kw:{'label':'supported','decided_by':'fixture','steps':[]})
   with patch.dict(os.environ,{}),patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=decider),patch.object(G,'check',return_value={'label':'answers_fully','calls':0,'cost_usd':0}),patch.object(B,'numeric_role_review',side_effect=AssertionError('Unselected prototype')):
    os.environ.pop('AGERE_QUANTITATIVE_ROLE_CHECK',None)
@@ -113,12 +116,17 @@ class Meaning(unittest.TestCase):
 
  def test_contradicted_numeric_role_repairs_before_global_check_and_keeps_computed_table(self):
   rows,call,a=self.data()
+  scalar={'name':'query_sql','input':{'sql':'SELECT count(*) AS patients FROM agere_result_1'},
+          'result':{'result_view':'agere_result_2','columns':['patients'],'rows':[[2]],'table_rows':1}}
+  a['headline']='Cohort details'
+  a['facts']={'People':{'template':'{n} narrative-only',
+                      'bindings':{'n':{'result_view':'agere_result_2','row':0,'column':'patients'}}}}
   class Decider:
    def judge_fields(self,*args,**kw):raise AssertionError('Mapping tested separately')
    def decide(self,*a,**kw):raise AssertionError('No global pass can override a known role contradiction')
   numeric={'claims':{'claim_1':{'field':'People','text':'2 narrative-only'}},'judgments':{'claim_1':{'label':'contradicted','decided_by':'code_after_typed_role_binding'}},'steps':[{'provider':'jev','cost_usd':.001}]}
   with patch.dict(os.environ,{'AGERE_QUANTITATIVE_ROLE_CHECK':'on'}),patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=Decider()),patch.object(B,'numeric_role_review',return_value=numeric):
-   review=B.review_final(SimpleNamespace(),'Count the cohort',a,[call],SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+   review=B.review_final(SimpleNamespace(),'Count the cohort',a,[call,scalar],SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
   self.assertEqual(review['status'],'repair');self.assertIn('Quantitative meaning',review['feedback'])
   self.assertEqual(a['table'],rows);self.assertEqual(review['calls'],1);self.assertEqual(review['cost_usd'],.001)
 
