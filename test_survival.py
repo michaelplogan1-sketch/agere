@@ -160,8 +160,9 @@ class Fixture(unittest.TestCase):
         answer = analysis_graph.build_answer(plan, [{'node': plan['nodes'][0], 'result': {}}, {'node': plan['nodes'][1], 'result': report}], {}, 'q')
         self.assertEqual((answer['status'], answer['answer_type']), ('answered', 'table'))
         self.assertEqual(set(answer['table'][0]), {'group', 'day', 'at_risk', 'events_by_day', 'survival', 'cumulative_incidence',
-                                                   'ci95_low', 'ci95_high', 'small_group'})
+                                                                 'ci95_low', 'ci95_high', 'small_group', 'support'})
         self.assertIn('Greenwood', answer['method']); self.assertIn('Censoring', answer['method'])
+        self.assertTrue(answer['table'][0]['support']['supported'])
         text = analysis_graph.headline(answer)
         self.assertTrue(text.startswith('Kaplan-Meier cumulative incidence of readmission by day 30 after discharge'))
         self.assertIn('Log-rank', text)

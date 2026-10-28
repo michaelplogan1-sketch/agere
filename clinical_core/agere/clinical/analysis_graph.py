@@ -449,6 +449,7 @@ def build_answer_core(plan, results, memberships, question):
                                                       'included_without_baseline_result', 'groups', 'logrank', 'cox', 'curves')})
         answer['missing'].extend(report.get('missing') or [])
         answer['overall']['unresolved_units'] = report.get('unresolved_units', [])
+        answer['overall']['unsupported_horizons'] = report.get('unsupported_horizons', [])
         if not report['units']:
             answer['missing'].append(summary(report))
         return answer
@@ -616,15 +617,16 @@ def build_answer_core(plan, results, memberships, question):
     if last['operation'] == 'line_of_therapy':
         from .line_of_therapy import summarize as lot_summary
         report = results[-1]['result']
-        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
+        partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements') or report.get('status') == 'partial'
         value, table = lot_summary(report)
-        ok = report.get('status') == 'answered'
+        ok = report.get('status') in ('answered', 'partial')
         answer.update(status=('partial' if partial else 'answered') if ok else 'unsupported', answer_type='table' if ok else 'unsupported',
                       value=value, table=table, method=report['method'], warnings=report['warnings'], count=report['counts'].get('analysed_new_users'),
                       overall={'line_of_therapy': {k: report.get(k) for k in ('parameters', 'area', 'area_label', 'fill_feed_start', 'counts', 'rules',
                                                                              'lines', 'regimens', 'transitions', 'switch_matrix', 'sequences',
                                                                              'sankey', 'persistence', 'examples')}})
         if not ok: answer['missing'].append(value)
+        elif report.get('status') == 'partial': answer['missing'].append('Long-term persistence or next-treatment risk lacks observed follow-up support; descriptive treatment lines remain available.')
         return answer
     if last['operation'] == 'trial_feasibility':
         from .trial_feasibility import summarize as tf_summary

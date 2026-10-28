@@ -3,7 +3,7 @@
 Partially linear model Y = theta(X) T + g(X) + e, T = e(X) + v (Robinson 1988; Chernozhukov et al. 2018 double/debiased ML).
   nuisances   out-of-fold m(X) = E[Y|X] and e(X) = P(T=1|X) by gradient boosting (K folds; a member's nuisances come from
               models that never saw it). Residuals ry = Y - m(X), rt = T - e(X).
-  dml_ate     theta = sum(rt ry) / sum(rt^2) (Neyman-orthogonal score), sandwich SE from psi = (ry - theta rt) rt / mean(rt^2).
+  plr_projection     theta = sum(rt ry) / sum(rt^2) (Neyman-orthogonal score), sandwich SE from psi = (ry - theta rt) rt / mean(rt^2).
   r_learner   CATE tau(x) = argmin sum rt^2 (ry / rt - tau(x))^2 (Nie & Wager 2021): a weighted regressor on the pseudo-outcome
               ry / rt with weights rt^2, cross-fitted.
   causal forest  GRF-style honest forest (Athey, Tibshirani & Wager 2019): each tree takes a subsample, grows its structure on
@@ -17,7 +17,7 @@ import math
 
 import numpy as np
 
-VERSION = 'causal-hte/1'
+VERSION = 'causal-hte/2'
 LEARNERS = ('dml', 'causal_forest')
 
 
@@ -41,15 +41,18 @@ def nuisances(X, t, y, fold, train_mask=None, seed=7, clip=0.02):
     return m, np.clip(e, clip, 1 - clip)
 
 
-def dml_ate(y, t, m, e):
-    """Partially linear DML effect of T on Y with sandwich SE."""
+def plr_projection(y, t, m, e):
+    """Partially linear residual projection with sandwich SE; not generally the population ATE under heterogeneity."""
     ry, rt = np.asarray(y, float) - m, np.asarray(t, float) - e
     den = float(np.mean(rt * rt))
     theta = float(np.sum(rt * ry) / np.sum(rt * rt))
     psi = (ry - theta * rt) * rt / den
     se = float(np.std(psi, ddof=1) / math.sqrt(len(psi)))
     return {'estimate': theta, 'se': se, 'ci95': [theta - 1.96 * se, theta + 1.96 * se], 'n': int(len(psi)),
-            'method': 'Cross-fitted partially linear double ML (Neyman-orthogonal residual-on-residual score)'}
+            'estimand': 'conditional_treatment_variance_weighted_projection',
+            'population': 'declared analysis sample with residual treatment variation',
+            'population_ate': False,
+            'method': 'Cross-fitted partially linear double ML projection (Neyman-orthogonal residual-on-residual score)'}
 
 
 def r_learner(X, ry, rt, fold, train_mask=None, seed=7, min_weight=1e-3):
@@ -142,12 +145,12 @@ def causal_forest_cate(X, ry, rt, fold, train_mask=None, seed=7, n_trees=200, mi
 
 
 def fit(X, t, y, fold, train_mask=None, learners=LEARNERS, seed=7, n_trees=200, min_leaf=10):
-    """Both learners on arrays with shared cross-fitted nuisances -> {'tau': {learner: array}, 'dml_ate', 'importance', 'nuisance'}."""
+    """Both learners on arrays with shared cross-fitted nuisances -> {'tau': {learner: array}, 'plr_projection', 'importance', 'nuisance'}."""
     t, y = np.asarray(t, int), np.asarray(y, float)
     keep = np.ones(len(y), bool) if train_mask is None else np.asarray(train_mask, bool)
     m, e = nuisances(X, t, y, fold, keep, seed)
     ry, rt = y - m, t - e
-    out = {'tau': {}, 'dml_ate': dml_ate(y[keep], t[keep], m[keep], e[keep]), 'importance': None,
+    out = {'tau': {}, 'plr_projection': plr_projection(y[keep], t[keep], m[keep], e[keep]), 'importance': None,
            'nuisance': {'m': m, 'e': e, 'residual_outcome': ry, 'residual_treatment': rt}}
     if 'dml' in learners: out['tau']['dml'] = r_learner(X, ry, rt, fold, keep, seed)
     if 'causal_forest' in learners:

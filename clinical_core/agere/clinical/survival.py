@@ -36,7 +36,7 @@ from scipy.stats import chi2, norm
 
 from . import aggregate, concepts, semantic_layer
 
-VERSION = 'survival/2'
+VERSION = 'survival/3'
 INDEX_TYPES = ('discharge', 'condition_first_record', 'date')
 EVENT_TYPES = ('readmission', 'followup', 'encounter', 'measurement')
 GROUP_BY = ('none', 'coverage_type', 'practice', 'pcp', 'sex', 'age_band', 'condition')
@@ -73,6 +73,33 @@ def _loglog_ci(s, g):
     return s ** math.exp(Z * se), s ** math.exp(-Z * se)
 
 
+def endpoint_support(horizon, last_followup, at_risk, *, all_events_observed=False):
+    """Observation support for a requested endpoint; a flat censored tail is not observed survival."""
+    supported = last_followup is not None and (last_followup >= horizon or all_events_observed)
+    return {'requested_horizon_days': float(horizon), 'last_followup_days': last_followup,
+            'at_risk': int(at_risk), 'all_events_observed': bool(all_events_observed), 'supported': bool(supported),
+            'reason': None if supported else 'Requested horizon extends beyond observed follow-up; the surviving tail is unknown.'}
+
+
+def horizon_support(times, events, horizon, weights=None):
+    times, events = np.asarray(times, float), np.asarray(events, int)
+    weights = np.ones(len(times)) if weights is None else np.asarray(weights, float)
+    positive = np.isfinite(times) & np.isfinite(weights) & (weights > 0)
+    times, events, weights = times[positive], events[positive], weights[positive]
+    at_risk = times >= horizon
+    result = endpoint_support(horizon, float(times.max()) if len(times) else None, at_risk.sum(),
+                              all_events_observed=bool(len(times) and np.all((events == 1) & (times <= horizon))))
+    result['positive_weight_units'] = len(times)
+    result['weight_at_risk'] = float(weights[at_risk].sum())
+    return result
+
+
+def km_support(rows, t):
+    at_risk = next((r['at_risk'] for r in rows if r['time'] >= t), 0)
+    absorbed = bool(rows and all(not r['censored'] for r in rows) and rows[-1]['survival'] == 0 and rows[-1]['time'] <= t)
+    return endpoint_support(t, rows[-1]['time'] if rows else None, at_risk, all_events_observed=absorbed)
+
+
 def km_at(rows, t):
     """Step-function value of a KM curve at time t (with its interval and number still at risk)."""
     s, lo, hi = 1.0, 1.0, 1.0
@@ -80,7 +107,7 @@ def km_at(rows, t):
         if r['time'] > t: break
         if r['events']: s, lo, hi = r['survival'], r['ci_low'], r['ci_high']
     at_risk = next((r['at_risk'] for r in rows if r['time'] >= t), 0)  # still under observation at t
-    return s, lo, hi, at_risk
+    return (s, lo, hi, at_risk) if km_support(rows, t)['supported'] else (None, None, None, at_risk)
 
 
 def median_time(rows):
@@ -502,7 +529,7 @@ def execute(path, patient_ids, params):
                                             lambda r: min(p['horizon_days'], _days(r[1], as_of)), p.get('alpha', 0.1))
         except (ValueError, ZeroDivisionError) as exc:  # a bound that cannot be computed never takes the curve down
             bounds = {'status': 'error', 'reason': f'{type(exc).__name__}: {exc}'[:200]}
-    summaries, table = [], []
+    summaries, table, unsupported_horizons = [], [], []
     for g, rs in groups.items():
         km = kaplan_meier([r[2] for r in rs], [r[3] for r in rs])
         s = {'group': g, 'units': len(rs), 'patients': len({r[0] for r in rs}), 'events': sum(r[3] for r in rs),
@@ -515,10 +542,16 @@ def execute(path, patient_ids, params):
     for s in shown:
         for t in p['time_points']:
             surv, lo, hi, at_risk = km_at(s['_km'], t)
+            support = km_support(s['_km'], t)
+            if not support['supported']:
+                unsupported_horizons.append({'group': s['group'], 'day': t, **support})
             table.append({'group': s['group'], 'day': t, 'at_risk': at_risk,
                           'events_by_day': sum(r['events'] for r in s['_km'] if r['time'] <= t),
-                          'survival': round(surv, 4), 'cumulative_incidence': round(1 - surv, 4),
-                          'ci95_low': round(1 - hi, 4), 'ci95_high': round(1 - lo, 4), 'small_group': s['small_group']})
+                          'survival': round(surv, 4) if surv is not None else None,
+                          'cumulative_incidence': round(1 - surv, 4) if surv is not None else None,
+                          'ci95_low': round(1 - hi, 4) if hi is not None else None,
+                          'ci95_high': round(1 - lo, 4) if lo is not None else None,
+                          'support': support, 'small_group': s['small_group']})
     curves = {str(s['group']): [{'day': int(r['time']), 'at_risk': r['at_risk'], 'events': r['events'], 'censored': r['censored'],
                                  'survival': round(r['survival'], 4)} for r in s['_km']][:400] for s in shown}
     for s in summaries:
@@ -562,14 +595,18 @@ def execute(path, patient_ids, params):
     if model: method += ('Cox proportional hazards (Efron ties, Newton-Raphson; reference = most common level; levels with under 5 units or '
                          'no events are not estimated); hazard ratios are associations, not causal effects, and proportional hazards is not tested. ')
     method += f'Groups under {SMALL_GROUP} units are flagged.'
+    if unsupported_horizons:
+        method += ' Requested endpoint risks beyond observed follow-up remain unknown; observed earlier curves are retained without shortening the requested horizon.'
     if uncertainties:
         method += (' Thresholds use the full interval allowed by a reported comparator. Units whose baseline eligibility or '
                    'first observed event cannot be resolved are excluded with source evidence; curves describe the resolvable '
                    'subset only. Selection and censoring assumptions for general-population inference remain unvalidated.')
     if bounds and bounds.get('status') == 'ok': method += ' ' + bounds['method']
     return {'schema': VERSION, 'parameters': p, 'event_label': what, 'time_zero': zero, 'as_of': as_of,
-            'status': 'partial' if uncertainties else 'complete', 'unresolved_units': uncertainties,
-            'missing': ['Resolve bounded/ambiguous measurement evidence before estimating this outcome for the full requested population.'] if uncertainties else [],
+            'status': 'partial' if uncertainties or unsupported_horizons else 'complete', 'unresolved_units': uncertainties,
+            'unsupported_horizons': unsupported_horizons,
+            'missing': (['Resolve bounded/ambiguous measurement evidence before estimating this outcome for the full requested population.'] if uncertainties else [])
+                       + (['Requested horizon risk is unknown for groups with no remaining follow-up support.'] if unsupported_horizons else []),
             'units': len(rows), 'patients': len({r[0] for r in rows}), 'events': sum(r[3] for r in rows),
             'excluded': {k: v for k, v in excluded.items() if k != 'included_without_baseline_result'},
             'included_without_baseline_result': excluded.get('included_without_baseline_result', 0), 'groups': summaries, 'groups_total': len(summaries), 'table': table, 'curves': curves,
@@ -584,6 +621,10 @@ def summary(report):
     parts = []
     for row in [r for r in report['table'] if r['day'] == key][:6]:
         g = next(s for s in report['groups'] if s['group'] == row['group'])
+        if row['cumulative_incidence'] is None:
+            support = row.get('support') or {}
+            parts.append(f"{row['group']} risk unknown (last follow-up {support.get('last_followup_days')} days; {row['at_risk']} at risk at day {key})")
+            continue
         med = f", median {g['median_days']:g} days" if g['median_days'] is not None else ''
         parts.append(f"{row['group']} {row['cumulative_incidence']:.1%} (95% CI {row['ci95_low']:.1%}-{row['ci95_high']:.1%}; "
                      f"{g['units']} {unit}, {g['events']} events{med})")

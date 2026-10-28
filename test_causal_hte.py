@@ -1,4 +1,5 @@
-"""causal_hte: cross-fitted double ML recovers a known ATE; R-learner and honest causal forest rank the benefiting subgroup first;
+"""causal_hte: residual projection agrees with ATE in this independent effect-modifier fixture only;
+R-learner and honest causal forest rank the benefiting subgroup first;
 uplift.analyze evaluates both through its RATE / Qini machinery."""
 import unittest
 
@@ -26,8 +27,8 @@ class DoubleML(unittest.TestCase):
         cls.fold = np.arange(len(cls.y)) % 5
         cls.res = C.fit(cls.X, cls.t, cls.y, cls.fold, n_trees=80)
 
-    def test_ate_within_ci(self):
-        a = self.res['dml_ate']
+    def test_projection_agrees_with_ate_when_effect_modifier_is_independent_of_propensity(self):
+        a = self.res['plr_projection']
         self.assertLess(a['ci95'][0], 1.0); self.assertGreater(a['ci95'][1], 1.0)
         self.assertLess(a['se'], 0.1)
 
@@ -59,8 +60,8 @@ class UpliftIntegration(unittest.TestCase):
         order = ok[np.argsort(-m['benefit'][ok])]
         self.assertGreater(self.sub[np.array_split(order, 10)[0]].mean(), 0.8)
 
-    def test_dml_ate_benefit_sign_and_importance(self):
-        self.assertGreater(self.res['dml_ate_benefit']['estimate'], 0)  # treatment reduces events: positive benefit
+    def test_plr_projection_benefit_sign_and_importance(self):
+        self.assertGreater(self.res['plr_projection_benefit']['estimate'], 0)  # treatment reduces events: positive benefit
         imp = self.res['causal_forest_importance']
         self.assertAlmostEqual(sum(imp.values()), 1.0, places=6)
         self.assertTrue({'chronic_conditions', 'baseline_risk'} & set(sorted(imp, key=imp.get)[-2:]))  # baseline_risk is a chronic-count proxy

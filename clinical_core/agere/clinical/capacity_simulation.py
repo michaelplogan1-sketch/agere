@@ -2,7 +2,8 @@
 
 Twin = empirical admission arrivals by day of week (Poisson), empirical length-of-stay draws, a fixed bed count, FIFO bed assignment.
 An admitted patient who finds no free bed waits (boards in the ED when ED-origin) until the first discharge. Scenarios change beds,
-LOS and admissions with common random numbers (same seed) so differences are the scenario, not noise.
+LOS and admissions using the same replication seeds. Changing arrival counts can desynchronise later random draws;
+paired differences still contain Monte Carlo noise and are not a deterministic scenario effect.
 
 Inputs not received are modelled from what exists and stated in every answer: staffed bed counts (beds = stated or the 95th-percentile
 daily census observed in the window), bed-assignment clocks (boarding is simulated, never read), ED arrival curve (admission origin
@@ -21,7 +22,7 @@ import numpy as np
 from . import hospital_ops as H
 
 OP = 'capacity_simulation'
-VERSION = 'capacity-simulation/1'
+VERSION = 'capacity-simulation/2'
 DEFAULTS = {'facility': None, 'months': 12, 'start': None, 'end': None, 'beds': None, 'add_beds': 0, 'los_change_pct': 0.0,
             'admission_change_pct': 0.0, 'horizon_days': 365, 'replications': 30, 'sensitivity': True}
 SPEC = {'facility': ('str',), 'months': ('int', 1, 120), 'start': ('date',), 'end': ('date',), 'beds': ('int', 1, 5000),
@@ -43,10 +44,11 @@ def validate(p): return H.spec_validate(OP, DEFAULTS, SPEC, p)
 
 
 # ---- twin ---------------------------------------------------------------------------------------------------------------------
-def fit(rows, start, end):
+def fit(rows, start, end, occupancy_rows=None):
     """Admission rates by weekday, LOS hours, ED-origin share, observed census and bed estimate from governed visits."""
     adm = [r for r in rows if r['has_inpatient'] or r['has_observation']]
     s, e = H.d(start or min((r['start_date'] for r in adm), default=end)), H.d(end)
+    adm = [r for r in adm if s <= H.d(r['start_date']) <= e]
     days = max((e - s).days + 1, 1)
     dow_days = Counter((s + timedelta(n)).weekday() for n in range(days))
     cnt = Counter(H.d(r['start_date']).weekday() for r in adm)
@@ -57,7 +59,7 @@ def fit(rows, start, end):
         h = r['los_hours'] if r['los_hours'] is not None else (None if r['los_days'] is None else r['los_days'] * 24 + 12)
         if h is not None and h > 0: los.append(float(h))
     delta = defaultdict(int)
-    allv = [r for r in rows if r['has_inpatient'] or r['has_observation']]
+    allv = [r for r in (rows if occupancy_rows is None else occupancy_rows) if r['has_inpatient'] or r['has_observation']]
     for r in allv:  # every visit overlapping the window counts, including ones that started before it
         a = H.d(r['start_date']); b = H.d(r['end_date']) if r['end_date'] and r['discharge_known'] else e
         if a is None or b is None or b < s or a > e: continue
@@ -118,9 +120,10 @@ def execute(path, patient_ids, params, as_of):
     try:
         as_of = str(as_of or snap)[:10]
         rows, basis, (start, end), fac, notes = H.visits_in(db, as_of, p, patient_ids)
+        occupants, _, _, _, _ = H.visits_in(db, as_of, p, patient_ids, overlap=True)
     finally:
         db.close()
-    twin = fit(rows, start, end)
+    twin = fit(rows, start, end, occupancy_rows=occupants)
     base = {'status': 'insufficient', 'reason': 'No inpatient or observation admissions with a known length of stay in the window.'}
     if not twin['los_hours'] or not sum(twin['rates']):
         return {'schema': VERSION, 'status': 'unknown', 'as_of': as_of, 'parameters': p, 'window': [start, end], 'facility': fac, 'basis': basis,
@@ -150,6 +153,8 @@ def execute(path, patient_ids, params, as_of):
                'mean_los_days': None if twin['mean_los_days'] is None else round(twin['mean_los_days'], 2), 'ed_origin_share': round(twin['ed_share'], 3),
                'admissions_per_day': round(sum(twin['rates']) / 7, 3), 'beds_baseline': beds0, 'beds_scenario': beds1, 'replications': reps,
                'horizon_days': days, 'scenario_changed': changed}
+    receipt['occupancy_basis'] = {'selection': 'inpatient and observation visits overlapping the question window under the same population, facility and cutoff',
+                                  'mean_observed_census': float(np.mean(twin['census'])), 'p95_observed_census': float(np.quantile(twin['census'], .95))}
     return {'schema': VERSION, 'status': 'computed', 'as_of': as_of, 'parameters': p, 'window': [start, end], 'facility': fac, 'basis': basis,
             'table': table, 'scenarios': {'bed_sensitivity': sens} if sens else None, 'receipt': receipt, 'notes': notes, 'patient_ids': [],
             'method': ('Discrete-event simulation: Poisson admissions by weekday from the window, empirical LOS draws, FIFO beds, ED-origin patients '
@@ -157,6 +162,7 @@ def execute(path, patient_ids, params, as_of):
             'assumptions': ['Admissions are inpatient and observation visits of the visit_group table; ED-origin = ED-to-inpatient / ED-to-observation.',
                             'Date-only stays use LOS = days x 24h + 12h; clocked stays use the received hours.',
                             'Arrival hour within a day is uniform (no hourly arrival clock is received for inpatient admissions).',
+                            'Equal seeds do not guarantee variance reduction when changed arrival counts consume different random draws; paired differences retain Monte Carlo noise.',
                             'Bed assignment clocks are not received, so boarding is a simulated outcome of bed supply, not a measurement.']}
 
 

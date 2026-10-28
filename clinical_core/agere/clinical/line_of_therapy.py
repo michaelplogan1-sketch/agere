@@ -28,9 +28,9 @@ import json, math, re, sqlite3
 
 from . import semantic_layer
 from .drug_classes import CLASSES
-from .survival import kaplan_meier, km_at, median_time
+from .survival import kaplan_meier, km_at, km_support, median_time
 
-VERSION = 'line-of-therapy/1'
+VERSION = 'line-of-therapy/2'
 FILL_EVIDENCE = ('dispensed', 'claim', 'payer_claim')
 FILL_STATUSES = ('dispensed', 'completed', 'paid')
 DEFAULT_DAYS_SUPPLY = 30
@@ -258,7 +258,9 @@ def _km_summary(times, events, points=(90, 180, 365)):
     out = {'units': len(times), 'events': int(sum(events)), 'median_days': median_time(km)}
     for t in points:
         s, lo, hi, n = km_at(km, t)
-        out[f'still_on_day_{t}'] = round(s, 4); out[f'ci95_day_{t}'] = [round(lo, 4), round(hi, 4)]
+        out[f'still_on_day_{t}'] = round(s, 4) if s is not None else None
+        out[f'ci95_day_{t}'] = [round(v, 4) if v is not None else None for v in (lo, hi)]
+        out.setdefault('horizon_support', {})[t] = km_support(km, t)
     out['curve'] = [{'day': int(r['time']), 'at_risk': r['at_risk'], 'survival': round(r['survival'], 4)} for r in km][:300]
     return out
 
@@ -347,7 +349,8 @@ def run(db, patient_ids, params, as_of):
                           'via_switch': via.get('switch', 0), 'via_add_on': via.get('add_on', 0),
                           'median_time_on_treatment_days': km_tot.get('median_days'), 'on_treatment_day_365': km_tot.get('still_on_day_365'),
                           'median_time_to_next_treatment_days': km_ttnt.get('median_days'),
-                          'next_line_by_day_365': round(1 - km_ttnt['still_on_day_365'], 4) if km_ttnt.get('units') else None,
+                          'next_line_by_day_365': round(1 - km_ttnt['still_on_day_365'], 4) if km_ttnt.get('still_on_day_365') is not None else None,
+                          'time_on_treatment_support': km_tot.get('horizon_support'), 'next_line_support': km_ttnt.get('horizon_support'),
                           'discontinued_without_next_line': sum(1 for _, ln in lns if ln['discontinued']),
                           'top_regimen': regs.most_common(1)[0][0], 'small_group': len(lns) < SMALL})
         for reg, c in regs.most_common(p['top']):
@@ -379,6 +382,7 @@ def run(db, patient_ids, params, as_of):
         persist_rows.append({'component': c, 'first_line_starters': s['units'], 'discontinued': s.get('events'), 'median_persistence_days': s.get('median_days'),
                              'persistent_day_180': s.get('still_on_day_180'), 'persistent_day_365': s.get('still_on_day_365'),
                              'ci95_day_365': s.get('ci95_day_365'), 'median_pdc_first_year': round(float(sorted(pdcs[c])[len(pdcs[c]) // 2]), 3) if pdcs[c] else None,
+                             'horizon_support': s.get('horizon_support'),
                              'pdc_ge_80_share': round(sum(x >= 0.8 for x in pdcs[c]) / len(pdcs[c]), 3) if pdcs[c] else None,
                              'small_group': s['units'] < SMALL, 'curve': s.get('curve', [])})
     warnings = ['Synthetic data: treatment patterns describe a generated warehouse, not real prescribing.']
@@ -400,6 +404,11 @@ def run(db, patient_ids, params, as_of):
                     'switches may look like discontinuation.')
     if n_reversed: warnings.append(f'{n_reversed} reversed / returned-to-stock fills excluded (counts_as_fill).')
     status = 'answered' if n else 'no_data'
+    unsupported = any(not support['supported'] for r in line_rows for key in ('time_on_treatment_support', 'next_line_support')
+                      for support in (r.get(key) or {}).values()) or any(not support['supported'] for r in persist_rows for support in (r.get('horizon_support') or {}).values())
+    if unsupported:
+        status = 'partial'
+        warnings.append('Requested persistence or next-treatment endpoints beyond observed follow-up remain unknown; supported earlier curves and descriptive treatment lines are retained.')
     reading = summarize_text(p, area, n, line_rows, persist_rows, transitions, sequences)
     rules = {'gap_days': p['gap_days'], 'regimen_window_days': p['regimen_window_days'], 'switch_window_days': p['switch_window_days'],
              'washout_days': p['washout_days'], 'add_on_new_line': p['add_on_new_line'], 'require_new_user': p['require_new_user'],

@@ -38,7 +38,7 @@ from . import aggregate, concepts, semantic_layer
 from .drug_classes import CLASSES
 from .line_of_therapy import episodes, fill_rows
 
-VERSION = 'target-trial/1'
+VERSION = 'target-trial/2'
 OUTCOME_TYPES = ('lab_change', 'lab_threshold', 'lab_decline_pct', 'admission', 'ed_visit', 'condition', 'encounter')
 ADJUSTMENTS = ('overlap', 'iptw', 'matching')
 OPS = {'lt': lambda v, t: v < t, 'le': lambda v, t: v <= t, 'gt': lambda v, t: v > t, 'ge': lambda v, t: v >= t}
@@ -307,7 +307,8 @@ def weighted_km(t, e, w, horizon):
         n = w[t >= u].sum(); d = w[(t == u) & (e == 1)].sum()
         if n > 0: s *= 1 - d / n
         curve.append((int(u), round(s, 5)))
-    return 1 - s, curve
+    from .survival import horizon_support
+    return (1 - s if horizon_support(t, e, horizon, w)['supported'] else None), curve
 
 
 def weighted_cox(t, e, x, w, iters=50):
@@ -611,14 +612,29 @@ def estimate(cohort, X, a, outcomes, o, p, rng):
             return {'difference': m1 - m0, 'mean_treated': m1, 'mean_comparator': m0, 'sd': float(y.std(ddof=1)) if len(y) > 1 else 0.0}
         tt = np.array([v[1] for v in ys], float); ee = np.array([v[2] for v in ys], int)
         tt = np.maximum(tt, 0.5)
-        r1, _ = weighted_km(tt[aa == 1], ee[aa == 1], wa[aa == 1], horizon)
-        r0, _ = weighted_km(tt[aa == 0], ee[aa == 0], wa[aa == 0], horizon)
-        b = weighted_cox(tt, ee, aa, wa)
-        return {'risk_treated': r1, 'risk_comparator': r0, 'risk_difference': r1 - r0, 'risk_ratio': r1 / r0 if r0 > 0 else None,
-                'hazard_ratio': math.exp(b) if b is not None else None}
+        r1, c1 = weighted_km(tt[aa == 1], ee[aa == 1], wa[aa == 1], horizon)
+        r0, c0 = weighted_km(tt[aa == 0], ee[aa == 0], wa[aa == 0], horizon)
+        from .survival import horizon_support
+        support = {name: horizon_support(tt[aa == arm], ee[aa == arm], horizon, wa[aa == arm])
+                   for name, arm in [('treated', 1), ('comparator', 0)]}
+        supported = r1 is not None and r0 is not None
+        b = weighted_cox(tt, ee, aa, wa) if supported else None
+        curves = {'treated': c1[:300], 'comparator': c0[:300]}
+        return {'risk_treated': r1, 'risk_comparator': r0, 'risk_difference': r1 - r0 if supported else None,
+                'risk_ratio': r1 / r0 if supported and r0 > 0 else None,
+                'hazard_ratio': math.exp(b) if b is not None else None,
+                'horizon_support': support, 'curves': curves}
     ys = [outcomes[i] for i in idx]
     base = point(idx, X, a, obs, ys, p['seed'])
     if base is None: return {'status': 'not_estimable', 'reason': 'weights collapse in one arm', 'outcome': label_, 'analysed': len(idx)}
+    if kind != 'value' and not all(s['supported'] for s in base['horizon_support'].values()):
+        return {'status': 'partial', 'outcome': label_, 'analysed': len(idx), 'analysed_by_arm': [n1, n0],
+                'scale': 'hazard_ratio', 'estimate': None, 'ci95': [None, None],
+                'risk_treated': _r(base['risk_treated']), 'risk_comparator': _r(base['risk_comparator']),
+                'risk_difference': None, 'risk_difference_ci95': [None, None],
+                'risk_ratio': None, 'risk_ratio_ci95': [None, None], 'bootstrap_draws': 0,
+                'horizon_support': base['horizon_support'], 'curves': base['curves'],
+                'reason': f'Requested {horizon}-day risk lacks observed follow-up support in at least one arm; earlier observed curves are retained. Resampling cannot identify the missing tail.'}
     n = len(cohort); draws = []
     arm1 = np.flatnonzero(a == 1); arm0 = np.flatnonzero(a == 0)
     for b in range(p['bootstrap']):
@@ -628,8 +644,12 @@ def estimate(cohort, X, a, outcomes, o, p, rng):
         r = point(pick, X[pick], a[pick], ob, [outcomes[i] for i in pick if outcomes[i] is not None], p['seed'] + b + 1)
         if r: draws.append(r)
     out = {'status': 'estimated', 'outcome': label_, 'analysed': len(idx), 'analysed_by_arm': [n1, n0], 'bootstrap_draws': len(draws)}
-    q = lambda key: [float(x) for x in np.quantile([d[key] for d in draws if d.get(key) is not None], [0.025, 0.975])] \
-        if sum(d.get(key) is not None for d in draws) >= 20 else [None, None]
+    def q(key):
+        values = [d[key] for d in draws if d.get(key) is not None]
+        # A subset of supported resamples is a conditional distribution, not the requested bootstrap interval.
+        if len(values) != p['bootstrap'] or len(values) < 20:
+            return [None, None]
+        return [float(x) for x in np.quantile(values, [0.025, 0.975])]
     if kind == 'value':
         y = np.array([v[1] for v in ys])
         out.update(scale='mean_difference', estimate=_r(base['difference']), ci95=[_r(x) for x in q('difference')],
@@ -652,11 +672,10 @@ def estimate(cohort, X, a, outcomes, o, p, rng):
                risk_ratio=_r(base['risk_ratio']), risk_ratio_ci95=[_r(x) for x in rr_ci],
                e_value=_r(e_value(base['risk_ratio'])), e_value_ci=_r(e_value_ci(*rr_ci)) if rr_ci[0] is not None else None,
                e_value_note='E-value on the risk ratio at the horizon (VanderWeele & Ding 2017).')
+    out['horizon_support'] = base['horizon_support']
+    out['bootstrap_unsupported_horizon_draws'] = sum(not all(s['supported'] for s in d['horizon_support'].values()) for d in draws)
     if out['estimate'] is None: out['ci95'] = [None, None]
-    tt = np.maximum(np.array([v[1] for v in ys], float), 0.5); ee = np.array([v[2] for v in ys], int); aa = np.array([a[i] for i in idx])
-    ps = logistic(X, a); w = ps_weights(ps, a, p['adjustment'], p['caliper'], np.random.default_rng(p['seed']))[idx]
-    out['curves'] = {'treated': weighted_km(tt[aa == 1], ee[aa == 1], w[aa == 1], horizon)[1][:300],
-                     'comparator': weighted_km(tt[aa == 0], ee[aa == 0], w[aa == 0], horizon)[1][:300]}
+    out['curves'] = base['curves']
     return out
 
 
@@ -708,6 +727,7 @@ def result_rows(r):
                      'ci95': x.get('ci95'), 'analysed': x.get('analysed'), 'events': x.get('events'),
                      'risk_treated': x.get('risk_treated'), 'risk_comparator': x.get('risk_comparator'),
                      'risk_difference': x.get('risk_difference'), 'e_value': x.get('e_value'), 'status': x.get('status'),
+                     'horizon_support': x.get('horizon_support'),
                      **({'reason': x['reason']} if x.get('reason') else {})})
     return rows
 
@@ -717,6 +737,10 @@ def reading(r):
     itt = r['analyses'].get('intention_to_treat') or {}
     n = r['sample']
     head = f"Target trial emulation, initiating {a} vs {b} ({n[r['arms'][0]]} vs {n[r['arms'][1]]} eligible new users) on {r['outcome_label']}: "
+    if itt.get('status') == 'partial' and itt.get('horizon_support'):
+        support = '; '.join(f"{name}: last follow-up {s['last_followup_days']}d, {s['at_risk']} at risk at day {s['requested_horizon_days']:g}"
+                            for name, s in itt['horizon_support'].items())
+        return head + 'requested horizon risk unknown (' + support + '). Earlier observed curves retained; synthetic data, no causal claim.'
     if r['inference'] == 'not_supported' or itt.get('status') != 'estimated':
         return head + 'the received data cannot support an estimate: ' + (r['blocking_warnings'][0] if r['blocking_warnings'] else itt.get('reason', 'no analysable outcome')) + \
             ' Synthetic data; no causal claim.'
