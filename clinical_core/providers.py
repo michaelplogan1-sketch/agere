@@ -21,6 +21,7 @@ class EvidenceTask:
     evidence: list
     select_source: bool = True
     long_context: bool = False
+    questions: dict | None = None
 
     def state(self):
         if not self.options or "unknown" not in self.options:
@@ -132,6 +133,11 @@ class JevProvider:
 
     def request(self, task):
         state = task.state()
+        if task.questions is not None:
+            if not task.questions or any(not isinstance(k,str) or not isinstance(q,dict) or q.get('type')!='choice'
+                                        or not isinstance(q.get('criteria'),dict) or 'unknown' not in q['criteria'] for k,q in task.questions.items()):
+                raise ValueError('Named choices require explicit criteria including unknown')
+            return {'model':self.model,'state':state,'questions':task.questions}
         questions={"reason": {"type": "choice", "instructions": instruction_for(task), "criteria": task.options}}
         if task.select_source:
             questions['support']={"type": "choice", "instructions": "Select the source passage most directly supporting the documented state of `subject`. Select unknown if none supports it.",
@@ -141,6 +147,15 @@ class JevProvider:
     def classify(self, task):
         response = self.gateway.send(self.name, self.request(task))
         answers = response["answers"]
+        if task.questions is not None:
+            if set(answers)!=set(task.questions):raise ValueError('Named choice response omitted or invented a question')
+            for key,q in task.questions.items():
+                a=answers[key];probs=a.get('probabilities') or {};choices=q['criteria']
+                if a.get('type')!='choice' or a.get('choice') not in choices or set(probs)!=set(choices) or any(
+                        type(p) not in (int,float) or not math.isfinite(p) or not 0<=p<=1 for p in probs.values()) or abs(sum(probs.values())-1)>.001:
+                    raise ValueError('Invalid named choice: '+key)
+            return {'judgments':{k:{'label':v['choice'],'probabilities':v['probabilities']} for k,v in answers.items()},
+                    'provider':self.name,'model':response.get('model'),'acceptance':'unvalidated_proposal'}
         reason = answers["reason"]
         required=[('reason',reason,task.options)]
         if task.select_source:

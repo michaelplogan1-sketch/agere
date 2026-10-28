@@ -171,6 +171,42 @@ def _total(steps):
     return sum(s.get('cost_usd') or 0.0 for s in steps)
 
 
+def judge_fields(subject,questions,evidence,*,as_of,ledger=None,allow_live=True,threshold=.8,order=None,long_context=False):
+    """Independent named Choices share one state; only unresolved fields fall back.
+
+    This does not fit calibration, create physician labels, or certify a complete
+    clinical answer. Each accepted field retains its actual provider/threshold.
+    """
+    if not questions:return {'judgments':{},'steps':[],'cost_usd':0.0}
+    pending=dict(questions);accepted={};steps=[];observed={}
+    for provider in (PROVIDERS if order is None else order):
+        task=EvidenceTask(str(subject),str(as_of)[:10],{'unknown':UNKNOWN},_evidence(evidence,as_of),
+                          select_source=False,long_context=long_context,questions=pending)
+        handle,owned=_open_ledger(ledger)
+        try:
+            raw=_gateway(handle,allow_live).classify(provider,task)
+            if raw.get('status')=='prepared':
+                steps.append({'provider':provider,'status':'prepared','cost_usd':0.0,'request_hash':raw.get('request_hash')});continue
+            usd=0.0 if raw.get('cache_hit') else (raw.get('cost_estimate') or {}).get('estimated_usd')
+            steps.append({'provider':provider,'status':'answered','cost_usd':usd,'cache_hit':bool(raw.get('cache_hit')),
+                          'request_hash':raw.get('request_hash'),'fields':list(pending)})
+            for key,result in raw['judgments'].items():
+                p=result['probabilities'].get(result['label'],0)
+                row={**result,'probability':p,'provider':provider,'model':raw.get('model'),'decided_by':None,'threshold':threshold}
+                observed[key]=row
+                if result['label']!='unknown' and p>=threshold:
+                    accepted[key]={**row,'decided_by':provider}
+            pending={k:v for k,v in pending.items() if k not in accepted}
+            if not pending:break
+        except Exception as exc:
+            steps.append({'provider':provider,'status':'error','error':f'{type(exc).__name__}: {str(exc)[:200]}',
+                          **getattr(exc,'provider_receipt',{})})
+        finally:
+            if owned:handle.close()
+    return {'judgments':{k:accepted.get(k) or observed.get(k) or {'label':'unknown','decided_by':None} for k in questions},
+            'steps':steps,'cost_usd':_total(steps),'scope':'Per-field model judgments, not independent clinical acceptance'}
+
+
 def typed_question(question, options, *, as_of, order=None, threshold=0.8, task_key=None, ledger=None, allow_live=True):
     """Question-only typed judgment (no evidence), e.g. 'is this question about a medication?' for checkers/routers."""
     return decide(question, options, [], as_of=as_of, order=order, threshold=threshold, task_key=task_key, ledger=ledger,
