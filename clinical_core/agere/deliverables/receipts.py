@@ -172,8 +172,12 @@ def digest(bundle, max_list=6, max_str=300, max_chars=60000, *, shared=False):
     text = json.dumps(out, default=str, separators=(',', ':'))
     if max_chars is None:
         if shared and max_list is None and max_str is None:
-            encoded=json.dumps(share_json(out),default=str,separators=(',',':'))
-            return encoded if len(encoded)<len(text) else text
+            encoded=compact_json(out)
+            if uncompact_json(encoded)!=out:raise ValueError('Frozen artifact evidence did not round-trip')
+            encoded['receipt_index']=[{'receipt':r['receipt'],'tool':r['tool']} for r in out]
+            candidates=[text,json.dumps(share_json(out),default=str,separators=(',',':')),
+                        json.dumps(encoded,default=str,separators=(',',':'))]
+            return min(candidates,key=len)
         return text
     if len(text) > max_chars and max_list > 2:
         return digest(bundle, max_list=max(2, max_list // 2), max_str=max_str // 2, max_chars=max_chars)
@@ -206,6 +210,7 @@ def share_json(value, min_chars=256):
 
 def unshare_json(encoded):
     """Round-trip verification of the model-only representation."""
+    if encoded.get('encoding')=='agere-lossless-compact-json/1':return uncompact_json(encoded)
     if encoded.get('encoding')!='agere-lossless-shared-json/1':raise ValueError('Unknown shared JSON encoding')
     refs={tuple(r['at']):tuple(r['from']) for r in encoded['references']}
     if len(refs)!=len(encoded['references']):raise ValueError('Duplicate reference path')

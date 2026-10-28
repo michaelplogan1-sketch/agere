@@ -1,5 +1,5 @@
 """Independent quantitative claim checks with shared state, no provider calls."""
-import copy,json,tempfile,unittest
+import copy,json,tempfile,unittest,os
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -58,24 +58,66 @@ class Meaning(unittest.TestCase):
           'facts':{'People':'2 patients, 2 narrative-only'},'table_from_tool':'agere_result_1','sources':[],'workflow':[]}
   return rows,call,answer
 
- def test_per_claim_questions_get_code_counts_and_no_source_is_silently_relabelled(self):
+ def test_unqualified_numeric_prototype_is_off_by_default(self):
+  rows,call,a=self.data()
+  decider=SimpleNamespace(decide=lambda *a,**kw:{'label':'supported','decided_by':'fixture','steps':[]})
+  with patch.dict(os.environ,{}),patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=decider),patch.object(G,'check',return_value={'label':'answers_fully','calls':0,'cost_usd':0}),patch.object(B,'numeric_role_review',side_effect=AssertionError('Unselected prototype')):
+   os.environ.pop('AGERE_QUANTITATIVE_ROLE_CHECK',None)
+   out=B.review_final(SimpleNamespace(),'Count the cohort',a,[call],SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+  self.assertEqual(out['numeric_roles']['status'],'unselected_after_native_regressions')
+  self.assertEqual(a['table'],rows)
+
+ def test_selected_category_is_compared_in_code_without_showing_counts_to_chooser(self):
   rows,call,a=self.data();B.materialize_table(a,[call]);seen=[]
   class Decider:
    def judge_fields(self,subject,questions,evidence,**kw):
     seen.append((questions,json.loads(evidence[0]['text'])))
-    return {'judgments':{k:{'label':'contradicted','decided_by':'fixture'} for k in questions},'steps':[]}
+    stage=len(seen)
+    return {'judgments':{k:{'label':'column_1' if stage==1 else 'value_1','decided_by':'fixture'} for k in questions},'steps':[]}
   result=B.numeric_role_review('Count the cohort',a,[call],decider=Decider(),as_of='2030-05-27',ledger=None)
-  questions,state=seen[0]
-  self.assertEqual(state['exact_final_table_row_counts']['columns']['basis']['values'],[{'value':'both','rows':1},{'value':'narrative_only','rows':1}])
-  self.assertEqual(state['claims']['claim_1']['text'],'2 patients, 2 narrative-only')
-  self.assertEqual(len(questions),1);self.assertIn('claim_1',questions);self.assertEqual(len(result['judgments']),1)
+  self.assertEqual(result['judgments']['claim_1']['label'],'contradicted')
+  self.assertTrue(all(v['computed_value']==1 for v in result['bindings'].values()))
+  self.assertNotIn('exact_final_table_row_counts',seen[0][1])
+  self.assertEqual(seen[0][1]['claims']['claim_1']['text'],'2 patients, 2 narrative-only')
+  self.assertIn('basis',json.dumps(seen[0][0]));self.assertIn('narrative_only',json.dumps(seen[1][0]))
+
+ def test_uncertain_role_stays_unknown_and_dates_ids_are_not_count_mentions(self):
+  rows,call,a=self.data();B.materialize_table(a,[call]);a['facts']={'Date':'2030-05-27 patient P-1234, 2 patients'}
+  seen=[]
+  class Decider:
+   def judge_fields(self,subject,questions,evidence,**kw):
+    seen.append(questions)
+    return {'judgments':{k:{'label':'unknown','decided_by':None} for k in questions},'steps':[]}
+  out=B.numeric_role_review('Count',a,[call],decider=Decider(),as_of='2030-05-27',ledger=None)
+  self.assertEqual(len(out['bindings']),1);self.assertEqual(out['judgments']['claim_1']['label'],'unknown')
+  self.assertEqual(len(seen),1)
+
+ def test_hierarchy_retains_all_categories_beyond_provider_option_limit(self):
+  a={'table_binding':{'result_view':'final'},'table':[{'category':str(i)} for i in range(600)],'facts':{'Count':'7 in category 599'}}
+  seen=[]
+  class Decider:
+   def judge_fields(self,subject,questions,evidence,**kw):
+    seen.append(questions)
+    out={}
+    for k,q in questions.items():
+     options=q['criteria'];self_outer.assertLessEqual(len(options),255)
+     if 'column_0' in options:label='column_0'
+     elif 'branch_2' in options:label='branch_2'
+     else:label='value_599'
+     out[k]={'label':label,'decided_by':'fixture'}
+    return {'judgments':out,'steps':[]}
+  self_outer=self
+  out=B.numeric_role_review('Count',a,[],decider=Decider(),as_of='2030-05-27',ledger=None)
+  self.assertTrue(any('branch_2' in json.dumps(x) for x in seen))
+  self.assertEqual(out['judgments']['claim_1']['label'],'contradicted')
 
  def test_contradicted_numeric_role_repairs_before_global_check_and_keeps_computed_table(self):
   rows,call,a=self.data()
   class Decider:
-   def judge_fields(self,*args,**kw):return {'claims':{},'judgments':{'claim_1':{'label':'contradicted','decided_by':'fixture'}},'steps':[{'provider':'jev','cost_usd':.001}]}
+   def judge_fields(self,*args,**kw):raise AssertionError('Mapping tested separately')
    def decide(self,*a,**kw):raise AssertionError('No global pass can override a known role contradiction')
-  with patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=Decider()):
+  numeric={'claims':{'claim_1':{'field':'People','text':'2 narrative-only'}},'judgments':{'claim_1':{'label':'contradicted','decided_by':'code_after_typed_role_binding'}},'steps':[{'provider':'jev','cost_usd':.001}]}
+  with patch.dict(os.environ,{'AGERE_QUANTITATIVE_ROLE_CHECK':'on'}),patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=Decider()),patch.object(B,'numeric_role_review',return_value=numeric):
    review=B.review_final(SimpleNamespace(),'Count the cohort',a,[call],SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
   self.assertEqual(review['status'],'repair');self.assertIn('Quantitative meaning',review['feedback'])
   self.assertEqual(a['table'],rows);self.assertEqual(review['calls'],1);self.assertEqual(review['cost_usd'],.001)

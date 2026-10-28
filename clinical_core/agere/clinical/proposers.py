@@ -1428,3 +1428,45 @@ def execute(stack, question, graph, receipt, *, started,population=None,parent=N
             old={r['patient_id']:r for r in parent.get('patient_rows',[])}
             out['cohort_patient_rows']=[old.get(pid,{'patient_id':pid}) for pid in answer['patient_ids']]
     return out
+
+
+def continue_from_artifact(stack, context_id, feedback):
+    """Continue one server-owned investigation, not the full planning cascade.
+
+    Re-execute literal read-only tools and review current evidence. Neither the
+    prior answer nor machine artifact criticism becomes a trusted clinical label.
+    """
+    from ..deliverables import answer_context as A
+    from . import harness_improvement as H, decision_context as D
+    context=A.load(stack.path,context_id,current=True)
+    question=context['question'];population=context['input_patient_ids']
+    actions=[]
+    for call in (context.get('investigation') or {}).get('tool_calls') or []:
+        if call.get('name') not in H.READ_ONLY or not isinstance(call.get('input'),dict):
+            raise ValueError('Artifact continuation requires registered read-only native actions')
+        actions.append({'name':call['name'],'input':call['input']})
+    parent_key=(context.get('cohort_transform') or {}).get('parent_context_id')
+    parent=A.load(stack.path,parent_key,current=True) if parent_key else None
+    c=Cascade(stack,request_plan.Catalog.load(stack.path),question,population=population)
+    before={row[0] for row in c.ledger.db.execute('SELECT id FROM calls')}
+    try:
+        with H.owned_recovery(actions,question,feedback), D.scope(question,context['source']['as_of']):
+            found=c.attempt('backstop_agent',backstop_limit())
+            if found is None:
+                raise c.provider_error or QuestionNotUnderstood('Artifact feedback investigation did not produce a checked answer')
+            contract,interpretation=c.accept(['backstop_agent'],'backstop_agent',found)
+            receipt={**c.usage(),'route':'backstop_agent','interpretation':interpretation,
+                     'request_contract':contract,'proposers':c.log,'artifact_feedback_context':context_id}
+            out=execute(stack,question,contract['graph'],receipt,started=c.started,population=population,parent=parent)
+            out=D.finalize(stack.path,out,D.current())
+        if A.source_identity(stack.path)!=context['source']:
+            raise ValueError('Source changed during artifact-feedback investigation; prior evidence retained')
+        out['execution_snapshot']=context['source']
+        return out
+    except Exception as exc:
+        usage=c.usage();added=[row for row in c.ledger.db.execute('SELECT id,status FROM calls') if row[0] not in before]
+        usage['new_paid_api_calls']=max(usage['new_paid_api_calls'],len(added))
+        if any(row[1]!='validated' for row in added):usage['api_cost_known']=False
+        exc.planner_receipt={**getattr(exc,'planner_receipt',{}),**usage,'artifact_feedback_context':context_id,'proposers':c.log}
+        raise
+    finally:c.close()

@@ -42,6 +42,126 @@ def _save(path, key, record):
     temporary.replace(target)
 
 
+def review_feedback(path,key):
+    """Read criticism only from this source-bound workflow's saved artifacts."""
+    import re
+    context=A.load(path,key,current=True);saved=read(path,key);reports=[]
+    for step in saved.get('steps') or []:
+        ident=step.get('deliverable_id')
+        if step.get('kind')!='deliverable' or step.get('status')!='blocked' or not isinstance(ident,str) or not re.fullmatch(r'DLV-[A-F0-9]{12}',ident):continue
+        file=A.root(path)/key/'deliverables'/ident/'spec.json'
+        if not file.is_file():continue
+        spec=json.loads(file.read_text());review=(spec.get('verification') or {}).get('semantic_review')
+        if spec.get('status')=='rejected' and isinstance(review,dict) and review.get('issues'):
+            reports.append({'artifact':ident,'context_id':key,'source':context['source'],
+                            'authority':'machine error reports to investigate, not clinician truth','review':review})
+    return reports
+
+
+def _progress(context):
+    """Native evidence or a newly confirmed interpretation permits continuation.
+
+    Rewording a headline, duplicating calls or changing cost/timing does not.
+    """
+    from ..clinical.harness_improvement import semantic_result
+    def stable(value):
+        if isinstance(value,dict):return {k:stable(v) for k,v in value.items() if k not in ('result_view','owned_run_recovery','request_hash','attempt_id')}
+        if isinstance(value,list):return [stable(v) for v in value]
+        return value
+    evidence=A.investigation_evidence(context.get('investigation'))
+    calls={fingerprint(stable(semantic_result(c))) for c in evidence['tool_calls']}
+    reviews={fingerprint(stable(semantic_result(r))) for r in evidence['document_reviews']}
+    return fingerprint({'source':context['source'],'input_patient_ids':context['input_patient_ids'],
+                        'calls':sorted(calls),'reviews':sorted(reviews),'results':stable(semantic_result(context.get('results'))),
+                        'confirmed':(context['answer'].get('investigation_review') or {}).get('status')=='confirmed',
+                        'workflow':[{k:s.get(k) for k in ('kind','purpose','unresolved')} for s in context.get('workflow') or []]})
+
+
+def fulfill(stack,question,result,*,original_question=None):
+    """Capture and finish the existing request, including upstream artifact repair.
+
+    Costs and every immutable context are retained. Progress, not an iteration
+    quota, controls repetition. Compound internal work is preserved for explicit
+    reconciliation instead of being duplicated on a changed analytical context.
+    """
+    from ..clinical import evaluation
+    original_question=original_question or question
+    seen=set();attempts=[];initial=None;stop=None;total_calls=0;known=0.;complete=True
+    while True:
+        key=A.capture(stack.path,question,result,original_question=original_question)
+        if not key:
+            if attempts:
+                attempts.append({'context_id':None,'phase':'analysis_without_context','new_paid_api_calls':result.get('new_paid_api_calls',0),
+                                 'planning_economics':result.get('planning_economics') or {}})
+                stop='no_capturable_answer'
+            break
+        reference=key;key=key['id'];initial=initial or key;result={**result,'action_context':reference}
+        context=A.load(stack.path,key,current=True)
+        progress=_progress(context)
+        if attempts and progress in seen:
+            stop='no_new_native_evidence_or_confirmed_interpretation'
+            # Do not purchase another rendering of the same failed evidence.
+            result['workflow']=[{**s,'status':'blocked','reason':'Prior artifact review remains unresolved; retained attempts are linked below.'} for s in context.get('workflow') or []]
+            attempts.append({'context_id':key,'phase':'analysis','new_paid_api_calls':result.get('new_paid_api_calls',0),
+                             'planning_economics':result.get('planning_economics') or {},'rendered':False})
+            break
+        seen.add(progress)
+        econ=dict(result.get('planning_economics') or {})
+        analysis_calls=result.get('new_paid_api_calls') or 0
+        analysis_known=econ.get('known_api_estimate_usd') or 0
+        analysis_complete=(econ.get('new_api_estimate_usd') is not None or analysis_calls==0 and analysis_known==0) and econ.get('api_cost_known') is not False
+        if evaluation.active():break
+        if result.get('workflow') and result.get('program_results'):
+            save_program_workflow(stack.path,key,result['workflow']);break
+        delivered=materialize(stack.path,key,generation='frontier',allow_live=bool(getattr(stack,'allow_live',False))) if result.get('workflow') else {
+            'steps':[],'new_paid_api_calls':0,'known_api_estimate_usd':0,'api_cost_known':True}
+        result['workflow']=delivered['steps']
+        stage={'context_id':key,'phase':'analysis_and_delivery','new_paid_api_calls':analysis_calls+delivered['new_paid_api_calls'],
+               'planning_economics':{'known_api_estimate_usd':analysis_known+delivered['known_api_estimate_usd'],
+                                     'api_cost_known':analysis_complete and delivered['api_cost_known']},
+               'workflow':copy.deepcopy(delivered['steps']),'rendered':bool(result.get('workflow'))}
+        attempts.append(stage)
+        if any((s.get('provider_failure') or {}).get('kind')=='rate_limit' and (s.get('provider_failure') or {}).get('transport')=='subscription' for s in delivered['steps']):
+            stop='subscription_limit';break
+        try:feedback=review_feedback(stack.path,key)
+        except (ValueError,OSError,sqlite3.Error) as exc:
+            result['action_context_error']=str(exc);stop='source_or_review_unavailable';break
+        if not feedback or not getattr(stack,'allow_live',False):break
+        if any(s.get('kind')!='deliverable' for s in context.get('workflow') or []):
+            stop='existing_internal_work_requires_reconciliation';break
+        from ..clinical import proposers
+        try:
+            repaired=proposers.continue_from_artifact(stack,key,feedback)
+        except Exception as exc:
+            from ..clinical.system_one_gate import outage
+            usage=getattr(exc,'planner_receipt',{})
+            attempts.append({'context_id':key,'phase':'analysis_failure','new_paid_api_calls':usage.get('new_paid_api_calls',0),
+                             'planning_economics':{'known_api_estimate_usd':usage.get('known_api_estimate_usd',0),
+                                                   'api_cost_known':usage.get('api_cost_known',False)},
+                             'error':type(exc).__name__,'provider_failure':outage(exc)})
+            stop='subscription_limit' if outage(exc)=='rate_limit' and __import__('os').environ.get('AGERE_CLAUDE_TRANSPORT')=='subscription' else 'investigation_unavailable'
+            break
+        # The original requested artifact remains owed even when the analyst
+        # repairs data without repeating its workflow declaration.
+        if not repaired.get('workflow'):repaired['workflow']=copy.deepcopy(context.get('workflow') or [])
+        result=repaired
+    if attempts:
+        total_calls=sum(a['new_paid_api_calls'] for a in attempts)
+        known=sum((a['planning_economics'].get('known_api_estimate_usd') or 0) for a in attempts)
+        complete=all(a['planning_economics'].get('api_cost_known',a['planning_economics'].get('new_api_estimate_usd') is not None) for a in attempts)
+        econ={**(result.get('planning_economics') or {}),'known_api_estimate_usd':known,
+              'new_api_estimate_usd':known if complete else None,'api_cost_known':complete,
+              'scope':'All analysis and artifact attempts for this original request; subscription API-equivalent usage, local compute and review unpriced.'}
+        result.update(new_paid_api_calls=total_calls,planning_economics=econ)
+    if len(attempts)>1 or stop:
+        record={'status':stop or 'returned','original_context_id':initial,'latest_context_id':(result.get('action_context') or {}).get('id'),
+                'attempts':attempts,'clinical_acceptance':False,'external_dispatch_performed':False}
+        result['workflow_continuation']=record
+        target=A.root(stack.path)/initial/'continuation.json';temp=target.with_suffix('.tmp')
+        temp.write_text(json.dumps(record,default=str));temp.replace(target)
+    return result
+
+
 def measurement(answer):
     """Retain actual computed outputs, not an invented intervention outcome."""
     return {k: answer[k] for k in ('status', 'headline', 'count', 'value', 'table', 'sections', 'patient_ids', 'missing') if k in answer}
@@ -116,13 +236,16 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
             # again to a conversation that merely reuses this saved workflow.
             return {**saved, 'new_paid_api_calls': 0, 'known_api_estimate_usd': 0,
                     'api_cost_known': True}
-        steps = []
+        steps = [];subscription_stopped=False
         # Prepare explicitly requested tasks before freezing deliverable views,
         # while preserving the user's step order in the returned workflow.
         ordered = sorted(enumerate(c.get('workflow', [])), key=lambda x: (x[1]['kind'] != 'simulation', x[0]))
         for index, step in ordered:
             s = copy.deepcopy(step)
             s['index'] = index
+            if subscription_stopped:
+                s.update(status='blocked',reason='Claude subscription limit stopped this workflow; no later provider call was attempted.')
+                steps.append(s);continue
             try:
                 if s.get('origin'):
                     from ..clinical.workflow_contract import validate_selection
@@ -152,6 +275,9 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                         d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title']})
                         reason = ('Partial evidence view saved with unresolved requirements; patient work remains blocked.'
                                   if incomplete else 'Local template saved from this exact answer; no frontier generation.')
+                    if d.get('provider_failure'):
+                        s['provider_failure']=d['provider_failure']
+                        subscription_stopped=d['provider_failure'].get('kind')=='rate_limit' and d['provider_failure'].get('transport')=='subscription'
                     s.update(status='ready' if d['status'] == 'delivered' else 'blocked', deliverable_id=d['id'],
                              reason=reason, costs=d['costs'], new_paid_api_calls=d.get('new_paid_api_calls', 0))
                 elif s['kind'] == 'simulation':

@@ -273,6 +273,34 @@ def successful_sql_calls(calls):
     return [c for c in calls if c.get('sql') and not (isinstance(c.get('result'), dict) and c['result'].get('error'))]
 
 
+def row_count_profile(columns,rows):
+    """Exact compact aggregates for a model preview; full rows remain queryable.
+
+    Repeated categories keep their values. Singleton category values are not
+    copied into this summary; their exact count and native view remain explicit.
+    This is row metadata, not inferred clinical status or patient grain.
+    """
+    import math
+    out={}
+    for i,column in enumerate(columns):
+        values={};missing=0;positive=0;numeric=0
+        for row in rows:
+            if isinstance(row,dict):
+                if column not in row:missing+=1;continue
+                value=row[column]
+            else:value=row[i]
+            key=json.dumps(value,sort_keys=True,default=str)
+            if key not in values:values[key]={'value':value,'rows':0}
+            values[key]['rows']+=1
+            if isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value):
+                numeric+=1;positive+=value>0
+        out[column]={'missing_rows':missing,'null_rows':sum(v['rows'] for v in values.values() if v['value'] is None),
+                     'repeated_values':[v for v in values.values() if v['rows']>1],
+                     'singleton_value_rows':sum(v['rows']==1 for v in values.values()),
+                     'finite_numeric_rows':numeric,'positive_numeric_rows':positive}
+    return {'rows':len(rows),'columns':out,'meaning':'Code-computed row counts, with repeated category values and the total number of singleton categories. Singleton values and all original rows remain in the native result_view; query it for exact details. Counts do not establish patient grain, current therapy or clinical appropriateness.'}
+
+
 def actor_result(value):
     """A model preview, while native receipts and SQL result views retain ALL rows."""
     if not isinstance(value,dict):return value
@@ -286,6 +314,7 @@ def actor_result(value):
         for row in rows[:3]:
             if len(json.dumps(preview+[row],default=str))>10000:break
             preview.append(row)
+        if isinstance(shown.get('columns'),list):shown['computed_row_count_profile']=row_count_profile(shown['columns'],rows)
         shown.update(rows=preview,rows_computed=len(rows),preview_only=True,
                      complete_result_available_in=shown.get('result_view'),
                      instruction='The native receipt and result_view retain every row. Query the view for details/aggregates; use table_from_tool to copy a complete final result.')

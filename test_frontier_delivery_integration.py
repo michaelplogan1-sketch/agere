@@ -118,6 +118,20 @@ class FrontierDelivery(unittest.TestCase):
         self.assertEqual(result['known_api_estimate_usd'], 0.2)
         self.assertFalse(list(A.root(self.path).glob('*/deliverables/DLV-*/artifact.html')))
 
+    def test_subscription_limit_preserves_failed_artifact_and_stops_later_deliverables(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        c=A.load(self.path,self.key)
+        result={'answer':c['answer'],'workflow':c['workflow']+[dict(c['workflow'][0],title='Second view')]}
+        key=A.capture(self.path,self.question,result)['id']
+        sender=Mock(side_effect=ProviderUnavailable('Subscription weekly limit',kind='rate_limit'))
+        with patch.dict(__import__('os').environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
+            out=W.materialize(self.path,key,allow_live=True,generation='frontier',send=sender)
+        sender.assert_called_once()
+        self.assertEqual(out['steps'][0]['provider_failure']['kind'],'rate_limit')
+        self.assertEqual(out['steps'][1]['status'],'blocked')
+        self.assertNotIn('deliverable_id',out['steps'][1]);self.assertFalse(out['api_cost_known'])
+        self.assertEqual(out['new_paid_api_calls'],1)
+
     def test_frozen_revision_cannot_fetch_new_population(self):
         out = A.compose_frontier(self.path, {'context_id': self.key, 'request': 'Create an evidence lens'},
                                  allow_live=True, send=self.sender)

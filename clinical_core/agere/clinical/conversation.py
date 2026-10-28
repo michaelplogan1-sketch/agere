@@ -1097,30 +1097,8 @@ def handle_compose(stack, body, hosted_factory=None):
         if result.get('program_results') and not _evaluating():
             from . import request_program
             request_program.materialize(stack, result)
-        # evaluation mode saves the cohort in the evaluation scratch directory (answer_context.root), so a follow-up can use it
-        action_context = answer_context.capture(
-            stack.path, resolution['standalone'] if resolution else question, result, original_question=question)
-        if action_context:
-            result = {**result, 'action_context': action_context}
-        if action_context and not _evaluating():  # evaluation mode: no workflow / program materialization into the stack
-            if result.get('workflow') and result.get('program_results'):
-                from ..deliverables.workflow import save_program_workflow
-                save_program_workflow(stack.path, action_context['id'], result['workflow'])
-            elif result.get('workflow'):
-                from ..deliverables.workflow import materialize
-                delivered = materialize(stack.path, action_context['id'],
-                                        generation='frontier', allow_live=bool(getattr(stack, 'allow_live', False)))
-                result['workflow'] = delivered['steps']
-                result['new_paid_api_calls'] = (result.get('new_paid_api_calls') or 0) + delivered['new_paid_api_calls']
-                econ = dict(result.get('planning_economics') or {})
-                prior_new = econ.get('new_api_estimate_usd')
-                cost_known = prior_new is not None and econ.get('api_cost_known') is not False and delivered['api_cost_known']
-                econ['workflow_api_estimate_usd'] = delivered['known_api_estimate_usd'] if delivered['api_cost_known'] else None
-                econ['workflow_known_api_estimate_usd'] = delivered['known_api_estimate_usd']
-                econ['known_api_estimate_usd'] = (econ.get('known_api_estimate_usd') or 0) + delivered['known_api_estimate_usd']
-                econ['new_api_estimate_usd'] = prior_new + delivered['known_api_estimate_usd'] if cost_known else None
-                econ['api_cost_known'] = cost_known
-                result['planning_economics'] = econ
+        from ..deliverables.workflow import fulfill
+        result=fulfill(stack,resolution['standalone'] if resolution else question,result,original_question=question)
     except (OSError, ValueError, sqlite3.Error) as exc:
         result = {**result, 'action_context_error': str(exc)}
     if conv is not False:

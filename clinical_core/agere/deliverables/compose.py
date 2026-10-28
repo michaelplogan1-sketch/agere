@@ -178,14 +178,15 @@ def _user_prompt(request, audience, bundle, extra=''):
                     'Use words or automatic list numbering for structure. Do not type factual numbers in JS strings; '
                     'render from AGERE.get with AGERE.fmt. Preserve access to complete dated per-patient findings and their limitations, not just a first example. Do not use eval, Function, dynamic global properties or resource URL setters.\n'
                     if bundle.meta.get('frozen_evidence') else '')
-    return (f'REQUEST: {request}\nAUDIENCE: {audience or "infer from the request"}\nWORKSPACE: {bundle.meta.get("workspace")} '
-            f'(as of {bundle.meta.get("as_of")}; synthetic data)\n{extra}\n'
-            f'EVIDENCE SCOPE: {bundle.meta.get("scope") or "Use the executed tools."}\n'
-            + frozen_rules +
-            ('DATA BUNDLE (complete frozen results, including exceptions and unresolved evidence):\n' +
-             bundle.digest_for_model(max_list=None, max_str=None, max_chars=None, shared=True)
-             if bundle.meta.get('frozen_evidence') else
-             'DATA BUNDLE (compact preview; use tools for further evidence):\n' + bundle.digest_for_model(max_chars=40000)))
+    evidence=('DATA BUNDLE (complete frozen results, including exceptions and unresolved evidence):\n' +
+              bundle.digest_for_model(max_list=None,max_str=None,max_chars=None,shared=True)
+              if bundle.meta.get('frozen_evidence') else
+              'DATA BUNDLE (compact preview; use tools for further evidence):\n' + bundle.digest_for_model(max_chars=40000))
+    # Keep complete frozen evidence before changing revision text, so a repair
+    # can reuse the same provider prompt prefix. Native binding paths are intact.
+    return (evidence+'\n'+f'EVIDENCE SCOPE: {bundle.meta.get("scope") or "Use the executed tools."}\n'+frozen_rules+
+            f'REQUEST: {request}\nAUDIENCE: {audience or "infer from the request"}\nWORKSPACE: {bundle.meta.get("workspace")} '
+            f'(as of {bundle.meta.get("as_of")}; synthetic data)\n{extra}\n')
 
 
 def _extract(text):
@@ -438,6 +439,9 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
 
 def _failed(ws, spec, bundle, ledger, ctx, t0, save, exc, revision=None):
     spec['failure'] = f'Frontier generation could not finish ({type(exc).__name__}). No artifact was delivered. Inspect provider receipts before retrying; API cost may be incomplete.'
+    from ..clinical.system_one_gate import outage
+    kind=outage(exc)
+    if kind:spec['provider_failure']={'kind':kind,'transport':'subscription' if os.environ.get('AGERE_CLAUDE_TRANSPORT')=='subscription' else 'configured'}
     report = {'passed': False, 'violations': [{'kind': 'generation_failed', 'detail': spec['failure']}]}
     return _finish(ws, spec, bundle, None, None, report, ledger, ctx, t0, save,
                    repaired=any(c['purpose'] == 'repair' for c in ledger.calls), revision=revision)
