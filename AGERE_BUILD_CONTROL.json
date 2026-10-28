@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T13:22:24.448571+00:00",
+  "updated_at": "2026-10-28T13:57:11.229028+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "live_source_repairs_verified_automatic_continuation",
+    "kind": "live_workflow_partial_reassessment",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "General runtime fixes remove protected example dependencies, recover structured materialization atomically under explicit optional NER policy, and execute literal subscription tool batches through existing guards. Earlier received shared workflow repairs are integrated after finite-study exit. Main/default checkout remains unchanged.",
-    "measured_failure_reduction": "Final source266guarded checks pass. Actual source dose-field recovery0to11known daily doses among12unchanged records,7active documented. Full57rows retained through repair; registered phenotype false-premise removed. Lossless renderer data2424172to952094characters with exact value equality. NativeHF-specific beta blocker count14 vsincorrect broad22; new automatic output must confirm correction. No clinical accuracy score inferred.",
+    "measured_failure_reduction": "271 guarded offline checks; attempt7 live table retains57rows and fixes broad22 toHF-specific14. Prescription aliases recover11/12 documentary doses,7active. Cohort label error and rejected deliverable remain; no clinical acceptance.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -405,10 +405,13 @@
       "artifacts/agere-live-integration-2026-10-28/verification-clinical-input.json",
       "artifacts/agere-live-integration-2026-10-28/verification-lossless.json",
       "artifacts/agere-live-integration-2026-10-28/lossless-pair.json",
-      "artifacts/agere-live-integration-2026-10-28/dose-alias-pair.json"
+      "artifacts/agere-live-integration-2026-10-28/dose-alias-pair.json",
+      "artifacts/agere-live-integration-2026-10-28/verification-review-loop.json",
+      "artifacts/agere-live-integration-2026-10-28/latest-workflow-checkpoint.json",
+      "docs/agere/MVP_STATUS_2026-10-28.md"
     ],
-    "remaining_gap": "Full automatic clinical/browser/physician and ten-area acceptance, final-source candidate qualification and total-cost/company comparison remain open.",
-    "next_action": "Inspect /private/tmp/agere-live-resume-20261028/attempt6 progress and final receipts. Finish source-bound patient findings/doses/care-team and proposed deliverable using Claude subscription only, Jev and Perplexity under Mike's direct synthetic payload approval. Stop on subscription usage limit; prompt-size failures are distinct. Reuse exact cached document reads through native recovery; no additional fitting, experimental model activation, source/answer-key reads or new layers. Audit GDMT-specific classes, restored sig/order_status dose values, every source limitation and artifact scope. Browser-check and preserve the result, publish source/docs only to already-approved private draftPR2. Retain all negative/failing attempts, queued finding66 and all ten product areas; do not claim MVP or clinical readiness from engineering checks.",
+    "remaining_gap": "Attempt7 completed in380.1s:57rows retained and exact HF-specific beta-blocker count14 now appears in final output. Answer partial; artifactDLV-E3F54A2752AD rejected. Headline mislabels13overlap asnote-only (table17note-only). Global support unknown/provider failures; oversized all-evidence judging and manual downstream-feedback continuation remain. Current therapy/max tolerance, clean reasons, clinical/browser/ten-area qualification and denial finding66 remain open. No training jobs or selected adapters.",
+    "next_action": "Repair evidence-size handling at the existing closed-judgment boundary and connect downstream review to the same source-bound analyst continuation. Verify with failed native receipts and generic offline cases before another end-to-end run. Preserve original question, scope, all patient rows and error/cost receipts; no model/catalog expansion or new training. Claude subscription only; stop on subscription usage limit. Mike-approved synthetic warehouse and three destinations remain authorized. No protected evaluations, new fitting, new layers or default activation. Update approved private draftPR2 with source/docs only; preserve all local runtime/cost/error evidence.",
     "next": "Inspect /private/tmp/agere-live-resume-20261028/attempt6 progress and final receipts. Finish source-bound patient findings/doses/care-team and proposed deliverable using Claude subscription only, Jev and Perplexity under Mike's direct synthetic payload approval. Stop on subscription usage limit; prompt-size failures are distinct. Reuse exact cached document reads through native recovery; no additional fitting, experimental model activation, source/answer-key reads or new layers. Audit GDMT-specific classes, restored sig/order_status dose values, every source limitation and artifact scope. Browser-check and preserve the result, publish source/docs only to already-approved private draftPR2. Retain all negative/failing attempts, queued finding66 and all ten product areas; do not claim MVP or clinical readiness from engineering checks.",
     "latest_review": {
       "at": "2026-10-27T17:40:46.048326+00:00",
@@ -1590,15 +1593,23 @@
       "basis": "Explicit human resume and payload/destination approval, recorded synthetic provenance, actual unexecuted tool-envelope failure and165guarded checks.",
       "scope_impact": "No new architecture, disease handler, adapter/default activation, protected evaluation or narrowed ten-area charter. Source/docs remain authorized for private draftPR; runtime/data stay local.",
       "evidence": "artifacts/agere-live-integration-2026-10-28/verification-protocol.json"
+    },
+    {
+      "at": "2026-10-28T13:57:11.229028+00:00",
+      "gate": "G3",
+      "decision": "Reassess after repeated incomplete live workflows: fix verification granularity and automatic error feedback before another full rerun.",
+      "basis": "Attempt7 retains corrected class count and57rows but ends partial/rejected; final evidence packet fails support providers and presentation errors persist. More training will not close these observed integration failures.",
+      "scope_impact": "Existing architecture and full ten-area scope retained; no new providers/models/layers/default activation or clinical claims.",
+      "evidence": "artifacts/agere-live-integration-2026-10-28/latest-workflow-checkpoint.json"
     }
   ],
   "unsealed_work": {
-    "status": "live_source_repairs_verified_automatic_continuation",
+    "status": "live_workflow_partial_reassessment",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
     "source": "Verified workflow source integrated only after frozen studies completed",
     "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "Attempt6 running. Whole57-patient/4610-document pass is preserved;40 model-supported,14 support-limited,3no-docs. Earlier final class count was wrong (broad22 vsHF-specific14); require new live count verification. Source daily doses0to11/12 records after aliases. Last artifact failed semantic rendering checks; proposed-design purpose fix and complete finding access are now staged. Final large support packets still expose provider context/failed-key errors. Full MVP/physician/browser/cost acceptance and denial-feature finding66 remain open.",
+    "remaining_gap": "Attempt7 completed in380.1s:57rows retained and exact HF-specific beta-blocker count14 now appears in final output. Answer partial; artifactDLV-E3F54A2752AD rejected. Headline mislabels13overlap asnote-only (table17note-only). Global support unknown/provider failures; oversized all-evidence judging and manual downstream-feedback continuation remain. Current therapy/max tolerance, clean reasons, clinical/browser/ten-area qualification and denial finding66 remain open. No training jobs or selected adapters.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
@@ -1646,11 +1657,12 @@
       "automatic_retry": false
     },
     "live_resume": {
-      "workspace": "/private/tmp/agere-live-fixes-20261028",
-      "source_fingerprint": "aa82f33d972b1a6f8ccadbce587404eba051ff6aa33756479056776442b95f59",
-      "attempt": "/private/tmp/agere-live-resume-20261028/attempt6",
-      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-clinical-input.json",
-      "explicit_payload_approval": true
+      "workspace": "/private/tmp/agere-codex-integration-20261026",
+      "source_fingerprint": "8fc1cdd01010356b8d80ced8ba34d55676aaf582a56e040ff8e14ceeb4364241",
+      "attempt": "/private/tmp/agere-live-resume-20261028/attempt7",
+      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-review-loop.json",
+      "explicit_payload_approval": true,
+      "status": "completed_partial_artifact_rejected"
     }
   }
 }
