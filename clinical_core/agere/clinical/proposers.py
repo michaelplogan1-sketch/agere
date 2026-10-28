@@ -1443,7 +1443,9 @@ def continue_from_artifact(stack, context_id, feedback):
     actions=[]
     for call in (context.get('investigation') or {}).get('tool_calls') or []:
         if call.get('name') not in H.READ_ONLY or not isinstance(call.get('input'),dict):
-            raise ValueError('Artifact continuation requires registered read-only native actions')
+            exc=ValueError('Artifact continuation requires registered read-only native actions: '+str(call.get('name')))
+            exc.planner_receipt={'new_paid_api_calls':0,'known_api_estimate_usd':0.,'api_cost_known':True}
+            raise exc
         actions.append({'name':call['name'],'input':call['input']})
     parent_key=(context.get('cohort_transform') or {}).get('parent_context_id')
     parent=A.load(stack.path,parent_key,current=True) if parent_key else None

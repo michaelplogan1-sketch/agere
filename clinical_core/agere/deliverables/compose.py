@@ -31,7 +31,7 @@ import time
 import uuid
 
 from . import examples, intent as intentmod, runtime, tools as toolsmod, verify as verifymod
-from .receipts import Bundle, fingerprint, trim as rtrim
+from .receipts import Bundle, fingerprint, trim as rtrim, render_for_model
 
 FRONTIER_MODEL = os.environ.get('AGERE_DELIVERABLE_MODEL') or 'claude-opus-5-5'
 SMALL_MODEL = os.environ.get('AGERE_DELIVERABLE_SMALL_MODEL') or 'claude-haiku-5-5'
@@ -178,13 +178,15 @@ def _user_prompt(request, audience, bundle, extra=''):
                     'Use words or automatic list numbering for structure. Do not type factual numbers in JS strings; '
                     'render from AGERE.get with AGERE.fmt. Preserve access to complete dated per-patient findings and their limitations, not just a first example. Do not use eval, Function, dynamic global properties or resource URL setters.\n'
                     if bundle.meta.get('frozen_evidence') else '')
-    evidence=('DATA BUNDLE (complete frozen results, including exceptions and unresolved evidence):\n' +
-              bundle.digest_for_model(max_list=None,max_str=None,max_chars=None,shared=True)
+    proposed_design=('PROPOSED DESIGN CONTRACT: The requested new service/process is a design brief. You may design proposed functional roles, operating steps, daily/support cadence, intake, consent, verification, fulfillment, handoffs and escalation where the request calls for them. Label these as proposed design, not observed staffing, available capacity, verified eligibility, enrollment, orders, shipments or clinical approval. For each requested capability, explain the trigger, proposed action, responsible function, unresolved prerequisite and confirmation of completion. Missing operational data must remain explicitly unknown, while the proposed process can still be designed. Do not invent patient facts, clinical thresholds or numeric capacity/cost assumptions.\n'
+                     if bundle.meta.get('deliverable_purpose')=='proposal' else '')
+    evidence=('DATA BUNDLE (complete clinical values; native SQL provenance referenced explicitly):\n' +
+              render_for_model(bundle)
               if bundle.meta.get('frozen_evidence') else
               'DATA BUNDLE (compact preview; use tools for further evidence):\n' + bundle.digest_for_model(max_chars=40000))
     # Keep complete frozen evidence before changing revision text, so a repair
     # can reuse the same provider prompt prefix. Native binding paths are intact.
-    return (evidence+'\n'+f'EVIDENCE SCOPE: {bundle.meta.get("scope") or "Use the executed tools."}\n'+frozen_rules+
+    return (evidence+'\n'+f'EVIDENCE SCOPE: {bundle.meta.get("scope") or "Use the executed tools."}\n'+frozen_rules+proposed_design+
             f'REQUEST: {request}\nAUDIENCE: {audience or "infer from the request"}\nWORKSPACE: {bundle.meta.get("workspace")} '
             f'(as of {bundle.meta.get("as_of")}; synthetic data)\n{extra}\n')
 
@@ -477,7 +479,7 @@ def _review_artifact(body, bundle, request, audience, send, ledger, report, vali
               '"support":"supported|contradicted|not_established|unknown","issues":[{"requirement":"...","reason":"..."}]}. '
               'Use unknown if you cannot inspect the evidence or code sufficiently; never infer approval.\n'
               'REQUEST: ' + request + '\nAUDIENCE: ' + str(audience) + '\nARTIFACT BODY:\n' + body +
-              '\nCOMPLETE EVIDENCE:\n' + bundle.digest_for_model(max_list=None, max_str=None, max_chars=None, shared=True))
+              '\nCOMPLETE EVIDENCE:\n' + render_for_model(bundle))
     raw = _model_call(send, ledger, 'small', 'semantic_review',
                       {'model':SMALL_MODEL, 'max_tokens':SMALL_MAX_TOKENS,
                        'system':purpose_rules+'You review presentation fidelity to a saved source answer and the requested artifact clause. The source answer may remain partial or unverified. Rendering approval does not approve its clinical conclusions or execute care. Fail false claims and omitted available exceptions; follow the declared final/proposal/inspection purpose. Return the requested JSON judgment.',

@@ -146,6 +146,77 @@ class Bundle:
         return digest(self, max_list=max_list, max_str=max_str, max_chars=max_chars, shared=shared)
 
 
+def render_projection(bundle):
+    """All saved clinical values; executable SQL travels as native provenance refs.
+
+    This is an explicit artifact-role projection, not clinical evidence filtering.
+    Raw SQL remains in the immutable/embedded bundle, available by original path.
+    Only listed server-owned executable fields can become references. Source rows,
+    quotes, findings, questions, review outcomes and uncertainty are untouched.
+    """
+    import copy
+    data=[];refs=[];current=[]
+    def sql(parent,key,path):
+        value=parent.get(key)
+        if not isinstance(value,str) or not re.match(r'^\s*(?:WITH|SELECT)\b',value,re.I):return
+        ref={'native_path':path,'sha256':hashlib.sha256(value.encode()).hexdigest(),'characters':len(value),'kind':'executed_SQL_provenance'}
+        refs.append(ref);parent[key]={'$agere_native_provenance':ref}
+    def plans(value,path):
+        # This visitor is confined to compiler/planner metadata, never source rows.
+        if isinstance(value,list):
+            for i,v in enumerate(value):plans(v,path+'.'+str(i))
+        elif isinstance(value,dict):
+            for k in list(value):
+                if k in ('query','sql','executed_query'):sql(value,k,path+'.'+k)
+                elif k not in ('answer','rows','table','findings','review_json'):plans(value[k],path+'.'+k)
+    for rid,receipt in bundle.receipts.items():
+        native=bundle.results[rid];value=copy.deepcopy(native)
+        if receipt['tool']=='saved_answer' and isinstance(value,dict):
+            a=value.get('answer') or {}
+            current.append({'receipt':rid,'context_id':value.get('id'),'original_question':value.get('original_question') or value.get('question'),
+                            'source':value.get('source'),'answer_status':a.get('status'),'verification':a.get('verification'),
+                            'investigation_review':a.get('investigation_review')})
+            for key in ('graph','planner_receipt'):plans(value.get(key),rid+':'+key)
+            binding=(value.get('answer') or {}).get('table_binding')
+            if isinstance(binding,dict):sql(binding,'query',rid+':answer.table_binding.query')
+            for i,call in enumerate((value.get('investigation') or {}).get('tool_calls') or []):
+                base=rid+':investigation.tool_calls.'+str(i)
+                if call.get('name')=='query_sql' and isinstance(call.get('input'),dict):sql(call['input'],'sql',base+'.input.sql')
+                sql(call,'sql',base+'.sql')
+                if isinstance(call.get('result'),dict):sql(call['result'],'executed_query',base+'.result.executed_query')
+        data.append({'receipt':rid,'tool':receipt['tool'],'args':receipt['args'],'definition':receipt.get('definition') or '', 'data':value})
+    packet={'projection':'agere-artifact-render-view/1','instructions':
+            'All native clinical rows, full findings, source quotes, review outcomes and uncertainty are supplied unchanged. '
+            'Only executable SQL provenance strings at the listed native paths are represented by hash references; '
+            'the full original SQL remains in the immutable embedded bundle. Native AGERE.get/data-bind paths are unchanged; '
+            'do not use projection/data prefixes in bindings. Do not turn a hash or past machine report into a clinical fact. '
+            'current_saved_status names the CURRENT answer and machine review; older critiques and prior checks in the history '
+            'are observations to investigate, not the current support label or physician truth. Preserve partial/unverified status.',
+            'current_saved_status':current,'data':data,'sql_provenance':refs,'native_results_fingerprint':fingerprint(bundle.results)}
+    # Reconstruct against the independently retained native bundle. This ensures
+    # that projection changes ONLY the declared executable fields.
+    for entry in data:
+        rid=entry['receipt'];restored=copy.deepcopy(entry['data'])
+        for ref in refs:
+            prefix=rid+':'
+            if not ref['native_path'].startswith(prefix):continue
+            parts=ref['native_path'][len(prefix):].split('.');parent=restored
+            for key in parts[:-1]:parent=parent[int(key)] if isinstance(parent,list) else parent[key]
+            original=bundle.get(ref['native_path'])
+            if hashlib.sha256(original.encode()).hexdigest()!=ref['sha256']:raise ValueError('Native SQL provenance changed')
+            parent[parts[-1]]=original
+        if restored!=bundle.results[rid]:raise ValueError('Artifact projection changed a native clinical/source value')
+    return packet
+
+
+def render_for_model(bundle):
+    """Compact artifact-role packet; the source-bound native bundle is untouched."""
+    packet=render_projection(bundle);encoded=compact_json(packet)
+    if uncompact_json(encoded)!=packet:raise ValueError('Artifact-role packet did not round-trip')
+    encoded['receipt_index']=[{'receipt':rid,'tool':r['tool']} for rid,r in bundle.receipts.items()]
+    return json.dumps(encoded,default=str,separators=(',',':'))
+
+
 def trim(v, max_list=6, max_str=300):
     """Long lists cut to max_list items (count kept), long strings cut; dicts capped at 60 keys."""
     if isinstance(v, dict):

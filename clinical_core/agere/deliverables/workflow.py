@@ -138,7 +138,7 @@ def fulfill(stack,question,result,*,original_question=None):
             attempts.append({'context_id':key,'phase':'analysis_failure','new_paid_api_calls':usage.get('new_paid_api_calls',0),
                              'planning_economics':{'known_api_estimate_usd':usage.get('known_api_estimate_usd',0),
                                                    'api_cost_known':usage.get('api_cost_known',False)},
-                             'error':type(exc).__name__,'provider_failure':outage(exc)})
+                             'error':type(exc).__name__,'error_detail':str(exc) if isinstance(exc,ValueError) else None,'provider_failure':outage(exc)})
             stop='subscription_limit' if outage(exc)=='rate_limit' and __import__('os').environ.get('AGERE_CLAUDE_TRANSPORT')=='subscription' else 'investigation_unavailable'
             break
         # The original requested artifact remains owed even when the analyst
