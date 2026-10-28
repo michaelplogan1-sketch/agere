@@ -38,7 +38,7 @@ import numpy as np
 
 from . import programs, vbc
 
-VERSION = 'contract-strategy/1'
+VERSION = 'contract-strategy/2'
 FOCUS = ('compare', 'value', 'negotiate', 'capacity')
 TARGETS = ('nash', 'break_even')
 TYPICAL = 'commercial_shared_savings_typical'
@@ -227,10 +227,29 @@ def _resolve_msr(t, members):
 
 
 def risk_measures(net, confidence):
-    """VaR and CVaR of the loss (positive = dollars at risk) at the given confidence."""
+    """Nonnegative reported VaR/CVaR loss for equally weighted net scenarios.
+
+    VaR retains the existing linearly interpolated quantile convention. CVaR
+    integrates exactly the worst ``1-confidence`` empirical probability mass,
+    splitting a boundary scenario when necessary. Including every value tied at
+    the quantile would dilute the tail at settlement thresholds and payout caps.
+    Both public loss measures retain their existing zero floor for all-profit
+    scenarios; this is not a claim about the underlying cost distribution.
+    """
+    net = np.asarray(net, dtype=float)
+    if net.ndim != 1 or not net.size or not np.isfinite(net).all():
+        raise ValueError('Finite nonempty one-dimensional net scenarios required')
+    if not _num(confidence) or not 0 < confidence < 1:
+        raise ValueError('Confidence must be strictly between zero and one')
     q = float(np.quantile(net, 1 - confidence))
-    tail = net[net <= q]
-    return max(0.0, -q), max(0.0, -float(tail.mean())) if tail.size else 0.0
+    ordered = np.sort(net)
+    mass = (1 - confidence) * net.size
+    whole = int(math.floor(mass))
+    partial = mass - whole
+    total = math.fsum(float(x) for x in ordered[:whole])
+    if partial:
+        total += partial * float(ordered[whole])
+    return max(0.0, -q), max(0.0, -total / mass)
 
 
 def value(cost, bench, mm, terms, spend_total=0.0, confidence=0.95, risk_aversion=0.5):
