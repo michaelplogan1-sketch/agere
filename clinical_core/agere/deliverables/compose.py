@@ -473,6 +473,8 @@ def _retry_candidate(ws, bundle, request):
             if not isinstance(violations, list) or not violations:
                 continue
             return {'artifact':spec['id'],'body':body,'violations':violations,
+                    'title':spec.get('title'),
+                    'static_failure_only':all(v.get('kind') not in ('semantic_review','dependency_failure','generation_failed','no_output') for v in violations),
                     'body_fingerprint':fingerprint(body),'evidence_fingerprint':fingerprint(prior.results)}
         except (ValueError, TypeError, KeyError, OSError):
             continue
@@ -547,6 +549,14 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
         prior = _retry_candidate(ws, bundle, request)
         if prior:
             spec['draft_reuse'] = {k:prior[k] for k in ('artifact','body_fingerprint','evidence_fingerprint')}
+            if prior['static_failure_only'] and verifymod.verify(runtime.wrap(prior['body'],bundle,prior['title'] or 'Agere deliverable'),bundle)['passed']:
+                # A deterministic repair can make the retained candidate valid.
+                # Recheck fidelity once under the current source before paying
+                # for another rewrite. Never reroll a failed semantic judgment
+                # on an unchanged draft merely to obtain approval.
+                spec['technical_revalidation']={'previous_static_violations':prior['violations'],
+                                                'current_static_passed':True,'writer_call_avoided':True}
+                return _deliver(ws,spec,bundle,prior['title'],prior['body'],ledger,ctx,send,request,audience or it['audience'],t0,save)
             title, body = _compose_frontier(ctx, bundle, request, audience or it['audience'], send, ledger,
                 current_body=prior['body'], violations=prior['violations'],
                 instruction='Repair this retained draft against the CURRENT complete evidence and request. Prior machine criticism is a hypothesis to investigate, not clinical truth. Preserve available evidence and uncertainty, and return exact find/replace edits or complete corrected HTML. Do not restart data acquisition or defer page generation; the runtime and validation are supplied by the application.')
@@ -658,7 +668,7 @@ def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience
     current = writers[-1] if writers else models[0]
     # Each stronger writer sees the failed candidate and the same complete
     # evidence. Infrastructure failures propagate; they never purchase an upgrade.
-    repairs = models[models.index(current)+1:] if current in models else models
+    repairs = models[models.index(current)+1:] if writers and current in models else models
     if len(models) == 1:
         repairs = models  # preserve the explicit model's existing repair behavior
     repaired = False

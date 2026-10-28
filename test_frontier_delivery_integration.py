@@ -165,6 +165,30 @@ class FrontierDelivery(unittest.TestCase):
         self.assertEqual(bundle.meta['user_answer_review'],review)
         self.assertFalse(out['external_dispatch_performed'])
 
+    def test_resolved_static_failure_rechecks_retained_page_without_another_writer(self):
+        def writer(body):
+            raw,receipt=self.sender(body)
+            if 'Assess the COMPLETE artifact' not in body['messages'][0]['content']:
+                raw['content'][0]['text']=raw['content'][0]['text'].replace('<h1>Evidence lens</h1>',
+                    '<h1>Evidence lens</h1><p>Units mL/min/1.73m²</p>')
+            return raw,receipt
+        # Reproduce the old parser's actual numeric-unit rejection.
+        with patch.object(verify,'INDEXED_RATE_UNIT_RE',re.compile(r'(?!)')):
+            first=W.materialize(self.path,self.key,allow_live=True,send=writer)
+        self.assertEqual(first['steps'][0]['status'],'blocked')
+        old=first['steps'][0]['deliverable_id'];self.calls.clear()
+        def technical_check_only(body):
+            self.assertIn('Assess the COMPLETE artifact',body['messages'][0]['content'])
+            return self.sender(body)
+        out=W.retry_deliverable(self.path,{'context_id':self.key,'index':0,'attempt':2},
+                                allow_live=True,send=technical_check_only)
+        self.assertEqual(out['steps'][0]['status'],'ready')
+        self.assertEqual(len(self.calls),1);self.assertEqual(out['new_paid_api_calls'],1)
+        ws=A.workspace(self.path,A.load(self.path,self.key));spec,_,_,_=C.load(ws,out['steps'][0]['deliverable_id'])
+        self.assertEqual(spec['draft_reuse']['artifact'],old)
+        self.assertTrue(spec['technical_revalidation']['writer_call_avoided'])
+        self.assertEqual(spec['costs']['frontier']['calls'],0)
+
     def test_writer_escalates_only_after_failed_checks_with_same_source(self):
         seen=[]
         def sender(body):

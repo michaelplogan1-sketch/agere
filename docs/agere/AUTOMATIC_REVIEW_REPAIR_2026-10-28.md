@@ -159,3 +159,12 @@ For an exactly accepted analysis, presentation roles receive the complete final 
 Historical compiler/model checks are also referenced as prior provenance, including their mirrored copies inside planner receipts. Previously a renderer could turn a failed old draft check into a false warning on a repaired current answer. Current machine judgments, independent user acceptance, final findings and uncertainty remain explicit. Every projection is reconstructed against the full native bundle before use.
 
 Authored checks cover the real saved-answer/composer boundary, exact review binding, changed premise exclusions, approved versus unreviewed presentation views, complete final data retention, immutable native raw provenance, absence of old warnings, working bindings and the existing technical fidelity checks. No new fitting, model/default activation, clinician reassessment or care dispatch is introduced. Detailed native runtime results and costs remain local ignored artifacts.
+
+
+## Unit syntax and repaired-draft revalidation
+
+The numeric verifier now distinguishes the exact indexed filtration-rate unit syntax from an unbound clinical measurement. The normalization constant inside the complete unit label is dimensional notation; a bare constant, calculation factor, percentage or patient value remains checked. This follows the unit notation in the [NIDDK adult eGFR equations](https://www.niddk.nih.gov/research-funding/research-programs/kidney-clinical-research-epidemiology/laboratory/glomerular-filtration-rate-equations/adults). No clinical values are converted or reinterpreted.
+
+When a retained page failed only static checks and a current deterministic repair resolves those checks, the composer now revalidates the exact page before purchasing another rewrite. A fresh technical fidelity check still runs. This path cannot reroll a failed semantic judgment on unchanged evidence to fish for approval. If a genuine current defect remains, the existing cheap writer and checked escalation remain available. The original page, provenance and prior costs stay unchanged.
+
+Authored tests reproduce the former unit rejection, then verify successful retained-page revalidation with one technical check and zero writer calls. They also require surrounding patient quantities and bare numeric factors to remain grounded. Native diagnostics and runtime costs remain local.
