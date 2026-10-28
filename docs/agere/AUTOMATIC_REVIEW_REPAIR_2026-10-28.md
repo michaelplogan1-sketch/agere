@@ -168,3 +168,12 @@ The numeric verifier now distinguishes the exact indexed filtration-rate unit sy
 When a retained page failed only static checks and a current deterministic repair resolves those checks, the composer now revalidates the exact page before purchasing another rewrite. A fresh technical fidelity check still runs. This path cannot reroll a failed semantic judgment on unchanged evidence to fish for approval. If a genuine current defect remains, the existing cheap writer and checked escalation remain available. The original page, provenance and prior costs stay unchanged.
 
 Authored tests reproduce the former unit rejection, then verify successful retained-page revalidation with one technical check and zero writer calls. They also require surrounding patient quantities and bare numeric factors to remain grounded. Native diagnostics and runtime costs remain local.
+
+
+## Required repairs versus optional presentation suggestions
+
+The versioned technical review now separates actual blocking defects, optional advisory suggestions and positive observations. A page still requires complete coverage and supported assertions. Contradicted, incomplete, unknown, malformed, untyped and explicitly blocking issues fail closed. Typed optional suggestions are retained in the saved report without purchasing another rewrite; passed checks belong in observations. This does not adjudicate the independently accepted clinical analysis or confer care authority.
+
+An exact independently accepted candidate with a prior complete/supported judgment can receive one current technical check when this explicit review contract changes. The version is saved; an unchanged failed contract cannot be repeatedly regraded to fish for approval. Actual blocking defects still go through the existing cheap repair and checked model escalation. Generic fixtures exercise disposition, conservative parsing, version migration and zero-writer revalidation.
+
+Frozen current candidate:550authored offline checks,549passed/one optional live skip, zero providers/protected reads and unchanged source. Native runtime outcomes/costs stay in local ignored artifacts. No new fitting/default promotion or main deployment.

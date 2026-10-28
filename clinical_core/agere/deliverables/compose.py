@@ -42,6 +42,7 @@ MAX_FRONTIER_TOOL_ROUNDS = 3
 MAX_SMALL_TOOL_ROUNDS = 3
 SEND_TIMEOUT_S = 900
 SCHEMA = 'agere-deliverable/1'
+PRESENTATION_REVIEW_VERSION = 'presentation-fidelity/2'
 
 RULES = """You design and build bespoke, interactive deliverables for value-based-care leaders (ACO / health-system CMO, CFO, VP population
 health, quality director, payer medical director, pharmacy leader) from Agere's executed results. The data is synthetic.
@@ -474,6 +475,8 @@ def _retry_candidate(ws, bundle, request):
                 continue
             return {'artifact':spec['id'],'body':body,'violations':violations,
                     'title':spec.get('title'),
+                    'review_version':(spec.get('verification') or {}).get('semantic_review_version'),
+                    'previous_review':(spec.get('verification') or {}).get('semantic_review'),
                     'static_failure_only':all(v.get('kind') not in ('semantic_review','dependency_failure','generation_failed','no_output') for v in violations),
                     'body_fingerprint':fingerprint(body),'evidence_fingerprint':fingerprint(prior.results)}
         except (ValueError, TypeError, KeyError, OSError):
@@ -549,13 +552,18 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
         prior = _retry_candidate(ws, bundle, request)
         if prior:
             spec['draft_reuse'] = {k:prior[k] for k in ('artifact','body_fingerprint','evidence_fingerprint')}
-            if prior['static_failure_only'] and verifymod.verify(runtime.wrap(prior['body'],bundle,prior['title'] or 'Agere deliverable'),bundle)['passed']:
+            previous_review=prior.get('previous_review') or {}
+            contract_changed=(bundle.meta.get('user_answer_review') and prior.get('review_version')!=PRESENTATION_REVIEW_VERSION
+                              and previous_review.get('coverage')=='complete' and previous_review.get('support')=='supported')
+            if (prior['static_failure_only'] or contract_changed) and verifymod.verify(runtime.wrap(prior['body'],bundle,prior['title'] or 'Agere deliverable'),bundle)['passed']:
                 # A deterministic repair can make the retained candidate valid.
-                # Recheck fidelity once under the current source before paying
-                # for another rewrite. Never reroll a failed semantic judgment
-                # on an unchanged draft merely to obtain approval.
+                # Recheck fidelity after a deterministic repair, or once after
+                # an explicit presentation-contract change on a supported,
+                # complete candidate. Never reroll an unchanged contract merely
+                # to obtain approval.
                 spec['technical_revalidation']={'previous_static_violations':prior['violations'],
-                                                'current_static_passed':True,'writer_call_avoided':True}
+                                                'current_static_passed':True,'writer_call_avoided':True,
+                                                'review_contract_changed':bool(contract_changed)}
                 return _deliver(ws,spec,bundle,prior['title'],prior['body'],ledger,ctx,send,request,audience or it['audience'],t0,save)
             title, body = _compose_frontier(ctx, bundle, request, audience or it['audience'], send, ledger,
                 current_body=prior['body'], violations=prior['violations'],
@@ -604,8 +612,13 @@ def _review_artifact(body, bundle, request, audience, send, ledger, report, vali
               'Do not accept a correct number under a wrong label, unknown rewritten as no, proposed services '
               'as enrollment, or opportunity as realized savings. Inspect dynamic rendering code against the full data. '
               'A summary may aggregate rows faithfully; it must not suppress material exceptions or requirements. '
+              'Distinguish required repairs from optional suggestions. An issue is blocking only for an actual misleading or unsupported assertion, '
+              'wrong quantity/label/unit/scope, hidden material exception, omitted available requested result, or broken functionality. '
+              'Optional additional summaries, cosmetic preferences and nonmisleading presentation suggestions are advisory. '
+              'Put successful checks, "no issue found", and faithful disclosure of unavailable data in observations, never issues. '
+              'Do not demand additional clinical assessment of independently accepted findings. '
               'Return ONLY JSON: {"coverage":"complete|incomplete|unknown",'
-              '"support":"supported|contradicted|not_established|unknown","issues":[{"requirement":"...","reason":"..."}]}. '
+              '"support":"supported|contradicted|not_established|unknown","issues":[{"severity":"blocking|advisory","requirement":"...","reason":"..."}],"observations":["..."]}. '
               'Use unknown if you cannot inspect the evidence or code sufficiently; never infer approval.\n'
               'REQUEST: ' + request + '\nAUDIENCE: ' + str(audience) + '\nARTIFACT BODY:\n' + body +
               '\nCOMPLETE EVIDENCE:\n' + render_for_model(bundle))
@@ -613,19 +626,26 @@ def _review_artifact(body, bundle, request, audience, send, ledger, report, vali
                       {'model':SMALL_MODEL, 'max_tokens':SMALL_MAX_TOKENS,
                        'system':purpose_rules+clock_rules+'You review presentation fidelity to a saved source answer and the requested artifact clause. The source answer may remain partial or unverified. Rendering approval does not approve its clinical conclusions or execute care. Fail false claims and omitted available exceptions; follow the declared final/proposal/inspection purpose. Return the requested JSON judgment.',
                        'messages':[{'role':'user','content':prompt}], 'tool_choice':{'type':'none'}, 'tools':_cached_tools()})
+    advisories=[]
     try:
         text = _text(raw).strip()
         if text.startswith('```'):
             text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text)
         review = json.loads(text)
+        issues=review.get('issues') if isinstance(review,dict) else None
+        advisories=([i for i in issues if isinstance(i,dict) and i.get('severity')=='advisory'
+                    and all(isinstance(i.get(k),str) and i[k].strip() for k in ('requirement','reason'))]
+                    if isinstance(issues,list) else [])
         valid = (isinstance(review,dict) and review.get('coverage')=='complete' and
-                 review.get('support')=='supported' and review.get('issues')==[])
+                 review.get('support')=='supported' and isinstance(issues,list) and len(advisories)==len(issues))
     except (ValueError, TypeError):
         review, valid = {'coverage':'unknown', 'support':'unknown','issues':['Malformed reviewer output']}, False
     violations = list(report.get('violations') or [])
     if not valid:
         violations.append({'kind':'semantic_review','detail':review})
     return {**report, 'passed':bool(valid), 'semantic_review':review,
+            'semantic_review_version':PRESENTATION_REVIEW_VERSION,
+            'advisories':advisories,
             'violations':violations, 'violation_count':len(violations)}
 
 

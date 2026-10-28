@@ -189,6 +189,33 @@ class FrontierDelivery(unittest.TestCase):
         self.assertTrue(spec['technical_revalidation']['writer_call_avoided'])
         self.assertEqual(spec['costs']['frontier']['calls'],0)
 
+    def test_review_contract_migration_reclassifies_optional_notes_once_without_rewriting(self):
+        def old_review(body):
+            if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
+                return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported',
+                    'issues':[{'requirement':'Optional summary','reason':'A non-blocking suggestion'}]})}]},{'cache_hit':True}
+            return self.sender(body)
+        first=W.materialize(self.path,self.key,allow_live=True,send=old_review)
+        old=first['steps'][0]['deliverable_id'];c=A.load(self.path,self.key);ws=A.workspace(self.path,c)
+        file=Path(ws.dir)/'deliverables'/old/'spec.json';s=json.loads(file.read_text())
+        s['verification'].pop('semantic_review_version');file.write_text(json.dumps(s))
+        review={'schema':'independent-answer-review/1','accepted':True,'reviewer':'Fixture physician',
+                'verbatim':'Independently reviewed and accepted','recorded_at':'2030-05-28','context_id':self.key,
+                'answer_fingerprint':fingerprint(c['answer']),'source_fingerprint':fingerprint(c['source']),
+                'policy_identity':c['context_policy_identity']}
+        (Path(ws.dir)/'answer-review.json').write_text(json.dumps(review));self.calls.clear()
+        def new_check(body):
+            self.assertIn('Assess the COMPLETE artifact',body['messages'][0]['content']);self.calls.append(body)
+            return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported',
+                'issues':[{'severity':'advisory','requirement':'Optional summary','reason':'Complete data remains available'}]})}]},{'cost_estimate':{'estimated_usd':.01}}
+        out=W.retry_deliverable(self.path,{'context_id':self.key,'index':0,'attempt':2},allow_live=True,send=new_check)
+        self.assertEqual(out['steps'][0]['status'],'ready');self.assertEqual(len(self.calls),1)
+        spec,_,_,_=C.load(ws,out['steps'][0]['deliverable_id'])
+        self.assertTrue(spec['technical_revalidation']['review_contract_changed'])
+        self.assertEqual(spec['verification']['semantic_review_version'],C.PRESENTATION_REVIEW_VERSION)
+        self.assertEqual(len(spec['verification']['advisories']),1)
+        self.assertEqual(spec['costs']['frontier']['calls'],0)
+
     def test_writer_escalates_only_after_failed_checks_with_same_source(self):
         seen=[]
         def sender(body):

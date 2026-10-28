@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T19:51:27.254827+00:00",
+  "updated_at": "2026-10-28T20:03:16.095914+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "unit_and_static_revalidation_verified",
+    "kind": "presentation_disposition_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "A matching rejected presentation is edited with actual retained criticism and fresh checks, rather than independently rewritten. Writer instructions preserve source scope, causal uncertainty and dated qualifiers.",
-    "measured_failure_reduction": "544 authored offline checks543pass/one optional live skip; zero provider/protected reads/source change. Native unit-only rejection resolves with unchanged body and source values; connected retry fixture purchases one fresh technical check and zero writers. Detailed measurements local.",
+    "measured_failure_reduction": "550authored offline checks549pass/one optional live skip; zero provider/protected reads and source change. Exact native complete/supported candidate is bound to independent acceptance; version migration invokes technical disposition before any rewrite. Blocking, unsupported, incomplete, malformed and untyped judgments stay closed.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -439,7 +439,7 @@
       "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json"
     ],
     "remaining_gap": "Technical presentation completion/UI/export and actual cost measurement remain. Independent user review is complete for the reviewed results and must not be demanded again. Broad production/cold-workflow economics remain distinct.",
-    "next_action": "Run prepared saved retry17 on frozen source: exact previously static-rejected page now passes corrected dimensional-unit parser, so retain body and purchase no rewrite unless the current technical fidelity check finds a genuine defect. Carry independently accepted analysis forward; no further clinical assessment. Inspect UI/export, audit actual components/cost locally, preserve deliverable/recovery. Stop new providers on subscription limit. No protected keys/caps/fitting/model/default/main activation/agents.",
+    "next_action": "Run prepared saved retry18 under explicit presentation-fidelity/2 on the same independently accepted analysis and retained complete/supported page. One current technical disposition, no writer unless an actual blocking defect remains; optional suggestions do not trigger rewrites. Inspect actual UI/export, record costs/components locally and preserve delivery/recovery. No clinical reassessment or additional clinician review. Stop new providers on subscription limit. No protected keys/caps/new fitting/model/default/main activation/agents.",
     "next": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
@@ -535,9 +535,9 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-28T19:51:27.254827+00:00",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-unit-revalidation.json",
-      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-unit-revalidation-audit.json",
+      "at": "2026-10-28T20:03:16.095914+00:00",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-presentation-disposition.json",
+      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-presentation-disposition-audit.json",
       "independent_review": "artifacts/agere-live-integration-2026-10-28/independent-answer-review.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
@@ -1728,6 +1728,11 @@
       "at": "2026-10-28T19:51:27.254827+00:00",
       "reason": "A numeral embedded in a standard complete unit label was misclassified as a patient quantity. Distinguish exact dimensional syntax from measurements, preserving numeric grounding. Recheck a deterministically repaired static-only draft before buying another rewrite; do not reroll failed semantic judgments on unchanged data.",
       "scope_impact": "No clinical result, threshold, accepted finding or execution authority changes. User acceptance remains exact-source bound; all ten product areas remain. Native outcomes and costs stay local."
+    },
+    {
+      "at": "2026-10-28T20:03:16.095914+00:00",
+      "reason": "Technical review had conflated successful checks and explicitly non-blocking suggestions with actual defects, causing paid rewrites after complete/supported judgments. Version the contract, require explicit severity, preserve observations/advisories, and retain strict blocking/unknown/contradicted behavior.",
+      "scope_impact": "No clinical result or threshold changes; no further clinical review of independently accepted findings. Exact complete accepted response and attached raw evidence retained. All ten product areas remain; native data/accounting stay local."
     }
   ],
   "unsealed_work": {
