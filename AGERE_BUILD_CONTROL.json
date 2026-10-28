@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T12:04:13.118907+00:00",
+  "updated_at": "2026-10-28T12:17:05.595618+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_studies_and_received_repairs_complete_clinical_pending",
+    "kind": "offline_studies_complete_live_automatic_workflow_in_progress",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Staged shared investigation/evidence/scope/retrieval/economics repairs now retain medication quantities, unknown supply and empty cohorts; existing survival reader retains measurement intervals and exposes unresolved units. Canonical training source remains frozen.",
-    "measured_failure_reduction": "757 checks:755pass/two live skips. General scope/evidence/arithmetic and calibration/uncertainty repairs verified; actual study gains/losses are in the final paired report. No new trained-model gains inferred from engineering tests.",
+    "user_behavior_delta": "General runtime fixes remove protected example dependencies, recover structured materialization atomically under explicit optional NER policy, and execute literal subscription tool batches through existing guards. Earlier received shared workflow repairs are integrated after finite-study exit. Main/default checkout remains unchanged.",
+    "measured_failure_reduction": "992 unique offline checks:990pass/two live skips through received finding65; new isolated live protocol/startup/routing verification165pass, not an additive clinical accuracy score. Both actual saved padded tool batches change0to3 recognized literal actions with unchanged arguments/usage. SQL55to173correct/304 with62wrong/69declines remains unselected; typed corrective round gains11loses11 and wrong33to42. Full ordinary clinical completion remains pending.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -399,11 +399,13 @@
       "artifacts/agere-schema-repair-2026-10-27/workflow-followup/31bde42/workflow-receipt-v6.json",
       "artifacts/agere-schema-repair-2026-10-27/workflow-followup/58b1a53/workflow-receipt-v7.json",
       "artifacts/agere-schema-repair-2026-10-27/format-typed-first-round-review.json",
-      "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json"
+      "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
+      "artifacts/agere-live-integration-2026-10-28/verification-protocol.json",
+      "artifacts/agere-live-integration-2026-10-28/protocol-pair.json"
     ],
     "remaining_gap": "Full automatic clinical/browser/physician and ten-area acceptance, final-source candidate qualification and total-cost/company comparison remain open.",
-    "next_action": "Inspect /private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md and completion-receipt.json. Frozen studies and received engineering repairs are complete; do not start more fitting by default. All models remain off and old-contract candidates require explicit final-source qualification. When Mike resumes the ordinary clinical run and the subscription is available, use the prepared manual subscription-only command and stop on any limit. No automatic provider call, poll, retry or heartbeat. Complete browser/physician and full-path-cost acceptance; inspect the retained negative fresh detector check and do not reuse its evaluation series for fitting or promote a detector without new evidence; retain G3/all ten areas.",
-    "next": "Inspect /private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md and completion-receipt.json. Frozen studies and received engineering repairs are complete; do not start more fitting by default. All models remain off and old-contract candidates require explicit final-source qualification. When Mike resumes the ordinary clinical run and the subscription is available, use the prepared manual subscription-only command and stop on any limit. No automatic provider call, poll, retry or heartbeat. Complete browser/physician and full-path-cost acceptance; inspect the retained negative fresh detector check and do not reuse its evaluation series for fitting or promote a detector without new evidence; retain G3/all ten areas.",
+    "next_action": "Mike has explicitly resumed the full automatic HFrEF workflow and approved its synthetic warehouse payload to Claude subscription, Jev/TypeSafe and Perplexity. Continue owned /private/tmp/agere-live-resume-20261028/run.py attempt4 on sealed live source716fd030, retaining all provider receipts and exact cache matches; no Anthropic API key, stop on subscription limit. Finish full scoped note review, current therapy/dose/tolerance, prior-year HF admissions, care-team activity and source-bound deliverable; inspect actual tool completion rather than accepting action envelopes as answers. Complete browser review and report actual components/costs, with clinical acceptance left to Mike. Both finite local studies/native reviews are completed and no candidate was selected; no more fitting or model/default promotion. Preserve all ten areas, queued denial-feature-state finding66 and negative qualification results.",
+    "next": "Mike has explicitly resumed the full automatic HFrEF workflow and approved its synthetic warehouse payload to Claude subscription, Jev/TypeSafe and Perplexity. Continue owned /private/tmp/agere-live-resume-20261028/run.py attempt4 on sealed live source716fd030, retaining all provider receipts and exact cache matches; no Anthropic API key, stop on subscription limit. Finish full scoped note review, current therapy/dose/tolerance, prior-year HF admissions, care-team activity and source-bound deliverable; inspect actual tool completion rather than accepting action envelopes as answers. Complete browser review and report actual components/costs, with clinical acceptance left to Mike. Both finite local studies/native reviews are completed and no candidate was selected; no more fitting or model/default promotion. Preserve all ten areas, queued denial-feature-state finding66 and negative qualification results.",
     "latest_review": {
       "at": "2026-10-27T17:40:46.048326+00:00",
       "kind": "Actual format-failure diagnosis, whole-bank tokenizer audit and offline regression verification",
@@ -1577,6 +1579,13 @@
       "at": "2026-10-27T22:17:33.214995+00:00",
       "decision": "Finish source coding/verification and arm one finite post-study completion process so long local training can finish without another manual handoff. It cannot invoke Claude, retry a failed study, overwrite concurrent changes or promote weights.",
       "evidence": "artifacts/agere-offline-finish-2026-10-27/test_finish.py"
+    },
+    {
+      "at": "2026-10-28T12:17:05.595618+00:00",
+      "decision": "Integrate verified live runtime fixes after both finite studies and their completion worker exit; continue Mike-authorized subscription-only workflow.",
+      "basis": "Explicit human resume and payload/destination approval, recorded synthetic provenance, actual unexecuted tool-envelope failure and165guarded checks.",
+      "scope_impact": "No new architecture, disease handler, adapter/default activation, protected evaluation or narrowed ten-area charter. Source/docs remain authorized for private draftPR; runtime/data stay local.",
+      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-protocol.json"
     }
   ]
 }
