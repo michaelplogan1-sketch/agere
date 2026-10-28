@@ -43,6 +43,30 @@ class Investigator(unittest.TestCase):
         self.assertEqual(r['answer']['count'],7);self.assertEqual(len(self.executed),1)
         self.assertFalse(r.get('model_escalations'));self.assertEqual(r['new_paid_api_calls'],2)
 
+    def test_deterministic_compiler_repair_keeps_haiku_and_existing_evidence(self):
+        def check(a,c):
+            return {'status':'confirmed'} if a.get('bound') else {'status':'repair','repair_kind':'deterministic_compiler',
+                                                               'feedback':'Bind the visits placeholder to the executed scalar column.'}
+        r=self.run_loop([TOOL_REPLY,reply({'status':'answered'}),reply({'status':'answered','bound':True})],check)
+        self.assertEqual([b['model'] for b in self.sent],[M.HAIKU]*3)
+        self.assertEqual(len(self.executed),1);self.assertFalse(r.get('model_escalations'))
+        self.assertTrue(r['answer']['bound'])
+
+    def test_repeated_compiler_failure_still_escalates_and_never_bypasses_review(self):
+        bad=reply({'status':'answered','headline':'An unbound quantity'})
+        r=self.run_loop([bad,bad,bad],lambda a,c:{'status':'repair','repair_kind':'deterministic_compiler','feedback':'Same unbound scalar cell.'})
+        self.assertEqual([b['model'] for b in self.sent],[M.HAIKU,M.HAIKU,M.SONNET])
+        self.assertEqual(r['review_stopped'],'no_progress');self.assertEqual(r['answer']['status'],'partial')
+
+    def test_changed_compiler_failures_can_be_repaired_without_a_fixed_retry_quota(self):
+        stages=iter(['Bind visits','Bind dollars','Bind percentage',None])
+        def review(a,c):
+            issue=next(stages)
+            return {'status':'confirmed'} if issue is None else {'status':'repair','repair_kind':'deterministic_compiler','feedback':issue}
+        r=self.run_loop([reply({'status':'answered'})]*4,review)
+        self.assertEqual([b['model'] for b in self.sent],[M.HAIKU]*4);self.assertFalse(r.get('model_escalations'))
+        self.assertFalse(r.get('review_stopped'))
+
     def test_failed_meaning_check_escalates_same_conversation_without_reexecuting_tools(self):
         def check(a,c):
             self.assertEqual(len(c),1)

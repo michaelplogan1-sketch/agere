@@ -501,8 +501,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             if not escalate('Answer review repeated with unchanged evidence'):
                                 result['review_stopped'] = 'no_progress'
                                 return result
-                        elif assessment.get('status') == 'repair':
+                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')!='deterministic_compiler':
                             escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
+                        # Exact compiler feedback can be repaired on the cheap
+                        # rung. A repeated failure/evidence state still takes
+                        # the existing checked escalation above; no new quota.
                         reviewed.add(key)
                         repairs += 1
                         force_text = False  # the repair may need more evidence, even after a JSON-format repair

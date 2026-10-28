@@ -157,6 +157,8 @@ has already declined this question, so it is yours to answer completely and corr
   Use SQL ROUND for display precision. Put a percent sign or dollar sign in the template when those are the source units.
   Fixed numeric definitions used in a quantitative sentence can be returned as explicitly named SQL columns too.
   Keep dates and patient/record identifiers literal. A bound text column may supply an exact source observation.
+  An exact attributed quotation with its record ID in the prose and a matching sources entry may keep its observed
+  measurements verbatim: code checks that passage in its own record. Do not turn that quote into a population total.
   Non-numeric prose remains a string. Clinical meaning still requires review; bindings do not establish appropriateness.
 Return ONLY one JSON object, no markdown:
 {{"status":"answered|partial|unsupported","answer_type":"count|patient_set|value|table|note|unsupported",
@@ -621,6 +623,13 @@ def shaped(a):
     """The agent's JSON in the product's answer shape: a {columns, rows} table becomes row dicts; empty value / count / table / patient_ids are
     left out (a null value reads downstream as "the value is absent" and would replace a headline that states the numbers); an answer whose
     type promises a field it does not carry is a composite (headline + facts)."""
+    if isinstance(a.get('headline'),dict) and 'template' in a['headline']:
+        # A rejected/uncompiled draft is retained in its provider receipt, not
+        # rendered as [object Object] or presented as verified clinical prose.
+        from ..deliverables.receipts import fingerprint
+        a['uncompiled_prose_fingerprint']=fingerprint({'headline':a['headline'],'facts':a.get('facts')})
+        a['headline']='The computed table is retained; its quantitative summary needs repair.'
+        a['facts']={}
     t = a.get('table')
     if isinstance(t, dict) and isinstance(t.get('rows'), list):
         cols = t.get('columns') or []
@@ -666,7 +675,7 @@ def table_value_counts(rows):
     return {'rows':len(rows),'columns':out,'meaning':'Exact row counts by original column/value and arithmetic over numeric, non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums, not inferred distinct patients, events, current use, clinical appropriateness or outcomes; interpret using the source column grain and units.'}
 
 
-def bind_computed_prose(answer,calls):
+def bind_computed_prose(answer,calls,*,verified_quotes=()):
     """Compile quantitative table prose from actual native scalar cells.
 
     Templates and addresses are untrusted model output. Only executed cells
@@ -679,9 +688,17 @@ def bind_computed_prose(answer,calls):
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     def numeric(text):
         # Dates/identifiers are addresses or temporal anchors, not row counts.
+        # Only independently provenance-checked, explicitly attributed QUOTES
+        # are observations rather than newly computed quantitative claims.
+        for source in verified_quotes:
+            quote=source.get('quote') or ''
+            if isinstance(source.get('record_id'),str) and source['record_id'] in text and len(re.findall(r'\w+',quote))>=3:
+                for left,right in (("'","'"),('"','"'),('“','”')):
+                    text=text.replace(left+quote+right,'')
         text=re.sub(r'\b\d{4}-\d{2}-\d{2}\b','',text)
-        text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)+\b','',text)
-        return bool(re.search(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I))
+        text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',
+                    lambda m:'' if any(c.isdigit() for c in m.group()) else m.group(),text)
+        return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
     def compile_value(field,value):
         if isinstance(value,str) and field in old:
             prior=old[field]
@@ -690,16 +707,17 @@ def bind_computed_prose(answer,calls):
             if value==prior.get('rendered'):value={k:prior[k] for k in ('template','bindings')}
         if not isinstance(value,dict) or 'template' not in value:
             if answer.get('table_binding') and ((isinstance(value,str) and numeric(value)) or type(value) in (int,float)):
-                raise ValueError('Quantitative '+field+' needs a template with bindings to actual executed scalar cells; do not transcribe quantities. Compute the named quantities in SQL with explicit aliases, then bind result_view, row and column.')
+                raise ValueError('Quantitative '+field+' needs a template with bindings to actual executed scalar cells; unbound literals: '+json.dumps(numeric(value) if isinstance(value,str) else [value]))
             return value
         if set(value)!={'template','bindings'} or not isinstance(value['template'],str) or not isinstance(value['bindings'],dict):
             raise ValueError('Invalid computed prose template at '+field)
-        template=value['template'];bindings=value['bindings'];names=[]
+        template=value['template'];bindings=value['bindings'];names=[];literals=[]
         for literal,name,spec,conversion in formatter.parse(template):
             if name is not None:
                 if not re.fullmatch(r'[A-Za-z_]\w*',name) or spec or conversion:raise ValueError('Use plain named scalar placeholders at '+field)
                 names.append(name)
-            if numeric(literal):raise ValueError('Numeric prose must use scalar placeholders at '+field)
+            literals.extend(numeric(literal))
+        if literals:raise ValueError('Numeric prose must use scalar placeholders at '+field+'; unbound literals: '+json.dumps(list(dict.fromkeys(literals))))
         if not names or set(names)!=set(bindings):raise ValueError('Computed prose bindings must exactly match placeholders at '+field)
         resolved={};sources={}
         for name,binding in bindings.items():
@@ -720,10 +738,15 @@ def bind_computed_prose(answer,calls):
         rendered=template.format_map(resolved)
         proofs.append({'field':field,'template':template,'bindings':bindings,'rendered':rendered,'sources':sources})
         return rendered
-    updates={}
-    if 'headline' in answer:updates['headline']=compile_value('headline',answer['headline'])
+    updates={};errors=[]
+    def checked(field,value):
+        try:return compile_value(field,value)
+        except (ValueError,KeyError,IndexError,TypeError) as exc:
+            errors.append(str(exc));return value
+    if 'headline' in answer:updates['headline']=checked('headline',answer['headline'])
     if isinstance(answer.get('facts'),dict):
-        updates['facts']={key:compile_value('facts.'+key,value) for key,value in answer['facts'].items()}
+        updates['facts']={key:checked('facts.'+key,value) for key,value in answer['facts'].items()}
+    if errors:raise ValueError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal. An attributed exact passage in verified sources may remain quoted. Do not guess a value or reword a failed quantity to avoid its binding.')
     answer.update(updates);answer.pop('computed_prose',None)
     if proofs:answer['computed_prose']=proofs
     return proofs
@@ -837,13 +860,16 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         return {**assessment, 'status': 'repair', 'feedback': str(exc)}
     if (answer.get('answer_type') == 'table' or answer.get('table')) and not answer.get('table_binding'):
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
+    kept, dropped = verified_sources(answer, tools)
+    answer['sources'] = kept
+    static_feedback=[]
     try:
-        bind_computed_prose(answer,calls)
+        bind_computed_prose(answer,calls,verified_quotes=kept)
     except (ValueError,KeyError,IndexError,TypeError) as exc:
-        return {**assessment,'status':'repair','feedback':str(exc)}
+        static_feedback.append(str(exc))
     from .drug_classes import group_query_issues
     scope_issues=group_query_issues(question,calls,answer.get('table_from_tool'))
-    if scope_issues:return {**assessment,'status':'repair','feedback':' '.join(scope_issues)}
+    static_feedback.extend(scope_issues)
     workflow=answer.get('workflow') or []
     try:
         from .workflow_contract import validate
@@ -854,14 +880,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         if any(s.get('quote') not in question for s in workflow if isinstance(s.get('quote'),str)):
             raise ValueError('Workflow quotes must be literal clauses of the original question')
     except ValueError as exc:
-        return {**assessment,'status':'repair','feedback':'Repair the downstream workflow definition: '+str(exc)+'. The computed table has been retained. For an evidence-only inspection or proposed design, use purpose=inspection or purpose=proposal and unresolved=[] when the design itself is defined. Keep unavailable patient facts in answer.missing/limitations; do not claim eligibility, completed work or clinical certainty.'}
-    shaped(answer)
-    kept, dropped = verified_sources(answer, tools)
-    answer['sources'] = kept
+        static_feedback.append('Repair the downstream workflow definition: '+str(exc)+'. The computed table has been retained. For an evidence-only inspection or proposed design, use purpose=inspection or purpose=proposal and unresolved=[] when the design itself is defined. Keep unavailable patient facts in answer.missing/limitations; do not claim eligibility, completed work or clinical certainty.')
     feedback = []
     if dropped: feedback.append(f'{dropped} citations were not present in their own records. Read those records and correct the claims and citations.')
     if answer.get('answer_type') in ('note', 'note_answer', 'yes_no') and not kept:
         feedback.append('Cite the exact supporting passage, record ID and date for the document answer.')
+    if static_feedback:return {**assessment,'status':'repair','repair_kind':'deterministic_compiler',
+                               'feedback':' '.join(static_feedback+feedback)}
+    shaped(answer)
     if not gate.ready(stack, 'AGERE_S1_CHECK'):
         return {**assessment, 'reason': 'System One answer review unavailable', 'feedback': ' '.join(feedback) or None}
     try:
