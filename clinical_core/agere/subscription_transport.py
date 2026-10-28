@@ -163,25 +163,50 @@ def run_cli(model, system, user, timeout=None):
 
 
 def _tool_calls(text, tools):
-    """Native tool blocks for one literal action or an entirely valid action batch."""
-    single = _tool_call(text, tools)
+    """Recognize literal protocol actions; empty unknown XML padding carries no action.
+
+    Never discard a nonempty unknown invocation, accept an unknown batch member,
+    or mix a native invocation with a second JSON action envelope.
+    """
+    if not tools: return []
+    names = {t.get('name') for t in tools}
+    raw = (text or '').strip()
+    while True:
+        padding = INVOKE.match(raw)
+        if not padding or padding.group(1) in names or padding.group(2).strip(): break
+        raw = raw[padding.end():].lstrip()
+    leading = INVOKE.match(raw)
+    if leading and leading.group(1) in names:
+        rest = raw[leading.end():].strip()
+        try: extra = json.loads(rest)
+        except ValueError: extra = None
+        if isinstance(extra, dict) and any(k in extra for k in ('tool_use', 'tool_uses')): return []
+    single = _tool_call(raw, tools)
     if single:
+        try: json.dumps(single, allow_nan=False)
+        except (TypeError, ValueError): return []
         return [single]
-    if not tools:
-        return []
-    raw=(text or '').strip()
     if raw.startswith('```'):
-        raw=re.sub(r'^```(?:json)?\s*|\s*```$','',raw)
-    try:
-        obj=json.loads(raw)
-    except ValueError:
-        return []
-    calls=obj.get('tool_uses') if isinstance(obj,dict) else None
-    names={t.get('name') for t in tools}
-    if not isinstance(calls,list) or not calls or any(not isinstance(c,dict) or set(c)!={'name','input'}
-            or c['name'] not in names or not isinstance(c['input'],dict) for c in calls):
+        raw = re.sub(r'^```(?:json)?\s*|\s*```$', '', raw)
+    def nonfinite(value): raise ValueError('Nonfinite tool argument')
+    try: obj = json.loads(raw, parse_constant=nonfinite)
+    except ValueError: return []
+    calls = obj.get('tool_uses') if isinstance(obj, dict) and set(obj) == {'tool_uses'} else None
+    if not isinstance(calls, list) or not calls or any(not isinstance(c, dict) or set(c) != {'name', 'input'}
+            or c['name'] not in names or not isinstance(c['input'], dict) for c in calls):
         return []
     return calls
+
+
+def normalize_tool_response(response, tools):
+    """Free literal normalization also applies to cached or non-CLI text responses."""
+    blocks = response.get('content') or []
+    if not tools or response.get('stop_reason') == 'max_tokens' or any(b.get('type') == 'tool_use' for b in blocks): return response
+    calls = _tool_calls('\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text'), tools)
+    if not calls: return response
+    return {**response, 'stop_reason': 'tool_use',
+            'content': [{'type': 'tool_use', 'id': 'toolu_normalized_' + uuid.uuid4().hex[:20],
+                         'name': c['name'], 'input': c['input']} for c in calls]}
 
 
 def respond(body, *, timeout=None):

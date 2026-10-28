@@ -635,6 +635,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     assessment = {'status': 'unavailable', 'calls': 0, 'cost_usd': 0.0, 'feedback': None}
     if not isinstance(answer, dict):
         return {**assessment, 'status': 'repair', 'feedback': 'Return the required JSON answer object.'}
+    if any(k in answer for k in ('tool_use', 'tool_uses')):
+        return {**assessment, 'status': 'repair', 'feedback': 'Unexecuted tool requests are not a final answer. Execute the registered tools and finish the requested work.'}
     workflow=answer.get('workflow') or []
     try:
         from .workflow_contract import validate
