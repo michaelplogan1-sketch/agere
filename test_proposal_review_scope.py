@@ -4,6 +4,19 @@ from types import SimpleNamespace
 from clinical_core.agere.deliverables.receipts import Bundle
 C=importlib.import_module('clinical_core.agere.deliverables.compose')
 class Scope(unittest.TestCase):
+ def test_writer_and_reviewer_share_snapshot_clock_without_inventing_current_care(self):
+  b=Bundle({'as_of':'2032-07-01','deliverable_purpose':'proposal'});seen=[]
+  def send(body):seen.append(body);return {'content':[{'type':'text','text':'{"coverage":"complete","support":"supported","issues":[]}'}]},{'cache_hit':True}
+  C._review_artifact('<p>Synthetic snapshot</p>',b,'Review',None,send,C.Ledger(),{'passed':True})
+  writer='\n'.join(x['text'] for x in C._system_blocks(b));reviewer=seen[0]['system']
+  for text in (writer,reviewer):
+   self.assertIn('as_of="2032-07-01"',text)
+   self.assertIn('not the page generation date',text)
+   self.assertIn('do not prove a source contradiction',text)
+   self.assertIn('Do not silently change the cutoff',text)
+   self.assertIn('or infer current tolerance from historical findings',text)
+  self.assertEqual(C._clock_rules(Bundle()),'')
+
  def test_writer_system_explicitly_allows_proposed_process_and_current_status(self):
   b=Bundle({'deliverable_purpose':'proposal','frozen_evidence':True});seen=[]
   def send(body):seen.append(body);return {'content':[{'type':'text','text':'TITLE: Plan\n```html\n<p>Proposed intake process</p>\n```'}]},{'cost_estimate':{'estimated_usd':.01}}
