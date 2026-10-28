@@ -6,6 +6,20 @@ from clinical_core.agere.clinical import harness_improvement as H
 C=importlib.import_module('clinical_core.agere.deliverables.compose')
 
 class RoleContext(unittest.TestCase):
+ def test_historical_artifact_criticism_cannot_masquerade_as_current_page_content(self):
+  b,rid=self.bundle();old='An earlier page falsely said no affordability barriers were documented.'
+  b.results[rid]['investigation']['recursive_improvement']={'replay':{'downstream_review_feedback':[{'review':{'issues':[{'reason':old}]}}]}}
+  b.results[rid]['answer']['facts']={'access':'A documented affordability barrier is present.'}
+  before=copy.deepcopy(b.to_json());p=render_projection(b);encoded=render_for_model(b)
+  self.assertNotIn(old,encoded)
+  self.assertIn('A documented affordability barrier is present.',encoded)
+  self.assertEqual(b.to_json(),before)
+  ref=p['historical_machine_report_refs'][0]
+  self.assertEqual(b.get(ref['native_path'])[0]['review']['issues'][0]['reason'],old)
+  self.assertEqual(ref['sha256'],fingerprint(b.get(ref['native_path'])))
+  self.assertEqual(p['data'][0]['data']['investigation']['document_reviews'],b.results[rid]['investigation']['document_reviews'])
+  self.assertEqual(p['current_saved_status'][0]['answer_status'],'partial')
+
  def bundle(self):
   sql='WITH raw AS (SELECT '+"'received literal'"+' AS observed) SELECT * FROM raw '+('/* proof */ '*1000)
   quote='SELECT and graph/sql are literal clinical source text, not executable fields.'

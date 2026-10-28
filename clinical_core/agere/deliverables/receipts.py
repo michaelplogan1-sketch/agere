@@ -155,7 +155,7 @@ def render_projection(bundle):
     quotes, findings, questions, review outcomes and uncertainty are untouched.
     """
     import copy
-    data=[];refs=[];current=[]
+    data=[];refs=[];current=[];history=[]
     def sql(parent,key,path):
         value=parent.get(key)
         if not isinstance(value,str) or not re.match(r'^\s*(?:WITH|SELECT)\b',value,re.I):return
@@ -184,26 +184,39 @@ def render_projection(bundle):
                 if call.get('name')=='query_sql' and isinstance(call.get('input'),dict):sql(call['input'],'sql',base+'.input.sql')
                 sql(call,'sql',base+'.sql')
                 if isinstance(call.get('result'),dict):sql(call['result'],'executed_query',base+'.result.executed_query')
+            # Prior artifact criticism is machine history, not current clinical
+            # evidence. Repeating its text made a reviewer assert that an old
+            # error was still printed after the bound source answer changed.
+            replay=(((value.get('investigation') or {}).get('recursive_improvement') or {}).get('replay') or {})
+            prior=replay.get('downstream_review_feedback')
+            if isinstance(prior,list) and prior:
+                ref={'native_path':rid+':investigation.recursive_improvement.replay.downstream_review_feedback',
+                     'sha256':fingerprint(prior),'kind':'historical_machine_artifact_criticism','reports':len(prior)}
+                history.append(ref);replay['downstream_review_feedback']={'$agere_native_provenance':ref}
         data.append({'receipt':rid,'tool':receipt['tool'],'args':receipt['args'],'definition':receipt.get('definition') or '', 'data':value})
     packet={'projection':'agere-artifact-render-view/1','instructions':
-            'All native clinical rows, full findings, source quotes, review outcomes and uncertainty are supplied unchanged. '
+            'All native clinical rows, full findings, source quotes, current review outcomes and uncertainty are supplied unchanged. '
             'Only executable SQL provenance strings at the listed native paths are represented by hash references; '
             'the full original SQL remains in the immutable embedded bundle. Native AGERE.get/data-bind paths are unchanged; '
             'do not use projection/data prefixes in bindings. Do not turn a hash or past machine report into a clinical fact. '
             'current_saved_status names the CURRENT answer and machine review; older critiques and prior checks in the history '
-            'are observations to investigate, not the current support label or physician truth. Preserve partial/unverified status.',
-            'current_saved_status':current,'data':data,'sql_provenance':refs,'native_results_fingerprint':fingerprint(bundle.results)}
+            'are observations to investigate, not the current support label or physician truth. '
+            'Historical artifact criticism is referenced as native machine provenance; it is not evidence of what the current page prints. '
+            'Inspect the current artifact and its actual bindings before alleging a defect. Preserve partial/unverified status.',
+            'current_saved_status':current,'data':data,'sql_provenance':refs,'historical_machine_report_refs':history,
+            'native_results_fingerprint':fingerprint(bundle.results)}
     # Reconstruct against the independently retained native bundle. This ensures
     # that projection changes ONLY the declared executable fields.
     for entry in data:
         rid=entry['receipt'];restored=copy.deepcopy(entry['data'])
-        for ref in refs:
+        for ref in refs+history:
             prefix=rid+':'
             if not ref['native_path'].startswith(prefix):continue
             parts=ref['native_path'][len(prefix):].split('.');parent=restored
             for key in parts[:-1]:parent=parent[int(key)] if isinstance(parent,list) else parent[key]
             original=bundle.get(ref['native_path'])
-            if hashlib.sha256(original.encode()).hexdigest()!=ref['sha256']:raise ValueError('Native SQL provenance changed')
+            digest=(hashlib.sha256(original.encode()).hexdigest() if ref['kind']=='executed_SQL_provenance' else fingerprint(original))
+            if digest!=ref['sha256']:raise ValueError('Native provenance changed')
             parent[parts[-1]]=original
         if restored!=bundle.results[rid]:raise ValueError('Artifact projection changed a native clinical/source value')
     return packet
