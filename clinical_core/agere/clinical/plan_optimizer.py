@@ -17,7 +17,7 @@ import json
 import os
 import re
 
-VERSION = 'plan-optimizer/2'
+VERSION = 'plan-optimizer/3'
 MIN_FUSE_CHARS = 40  # a repeated one-token sub-select is not worth a CTE
 
 
@@ -30,25 +30,58 @@ def _key(node, rewrite):
     return json.dumps([node['operation'], node.get('parameters'), inputs], sort_keys=True, default=str)
 
 
-def optimize_plan(plan):
+def _identity_sensitive(nodes):
+    """Preserve opaque parameter references and their full input lineage rather than guessing how to rewrite them.
+
+    A parameter key/value exactly matching a graph ID may be a typed reference or ordinary data. Conservatively
+    retaining that branch is safe in either case. No SQL, patient identifier, question or arbitrary string is edited.
+    """
+    by = {n['id']: n for n in nodes}
+    def matches(value):
+        if isinstance(value, str): return {value} if value in by else set()
+        if isinstance(value, dict):
+            return set().union(*(matches(k) | matches(v) for k,v in value.items())) if value else set()
+        if isinstance(value, (list, tuple)):
+            return set().union(*(matches(v) for v in value)) if value else set()
+        return set()
+    preserve = set()
+    for node in nodes:
+        refs = matches(node.get('parameters'))
+        if refs: preserve.update(refs | {node['id']} | set(node.get('inputs') or []))
+    pending = list(preserve)
+    while pending:
+        ident = pending.pop()
+        for parent in by[ident].get('inputs') or []:
+            if parent not in preserve: preserve.add(parent); pending.append(parent)
+    return preserve
+
+
+def optimize_plan(plan, *, validator=None):
     """-> (plan, receipt). The plan is returned unchanged (same object) when nothing fuses."""
     nodes = (plan or {}).get('nodes') or []
     if not enabled() or len(nodes) < 2: return plan, {'version': VERSION, 'fused': []}
     terminal = nodes[-1]['id']
+    preserve = _identity_sensitive(nodes)
     seen, rewrite, drop = {}, {}, []
     for n in nodes:
         k = _key(n, rewrite)
-        if k in seen and n['id'] != terminal:
+        if k in seen and n['id'] != terminal and n['id'] not in preserve:
             canon = seen[k]
             consumers = [m for m in nodes if n['id'] in (m.get('inputs') or [])]
             if all(canon not in [rewrite.get(x, x) for x in m['inputs'] if x != n['id']] for m in consumers):
                 rewrite[n['id']] = canon; drop.append(n['id']); continue
         seen.setdefault(k, n['id'])
-    if not drop: return plan, {'version': VERSION, 'fused': []}
+    if not drop: return plan, {'version': VERSION, 'fused': [], 'identity_preserved': sorted(preserve)}
     out = copy.deepcopy(plan)
     out['nodes'] = [dict(n, inputs=[rewrite.get(x, x) for x in n.get('inputs') or []]) for n in out['nodes'] if n['id'] not in drop]
-    return out, {'version': VERSION, 'fused': [{'node': d, 'reads': rewrite[d]} for d in drop],
-                 'nodes_before': len(nodes), 'nodes_after': len(out['nodes'])}
+    receipt = {'version': VERSION, 'fused': [{'node': d, 'reads': rewrite[d]} for d in drop],
+               'nodes_before': len(nodes), 'nodes_after': len(out['nodes']), 'identity_preserved': sorted(preserve)}
+    if validator is not None:
+        try: out = validator(out)
+        except (ValueError, KeyError, TypeError) as exc:
+            return plan, {'version': VERSION, 'fused': [], 'rejected_fusion': receipt,
+                          'fallback_reason': f'Optimized graph failed complete validation: {type(exc).__name__}: {exc}'}
+    return out, receipt
 
 
 # ---- SQL level ------------------------------------------------------------------------------------------------------------

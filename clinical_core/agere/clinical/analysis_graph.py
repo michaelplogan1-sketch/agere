@@ -1456,7 +1456,7 @@ def execute(stack, plan, *, question=None):
     from . import decision_context  # lab thresholds in cohort atoms follow the question's lab mode before the plan is keyed and cached
     plan, _ = decision_context.enforce_plan(plan, question)
     from .plan_optimizer import optimize_plan  # identical nodes run once (compiler common-subexpression elimination)
-    plan, fusion = optimize_plan(plan)
+    plan, fusion = optimize_plan(plan, validator=lambda candidate: validate(candidate, meta['snapshot']['as_of']))
     if question is not None:
         from .question_input import validate_question
         validate_question(question)

@@ -87,7 +87,9 @@ class ReferenceScope(unittest.TestCase):
    with self.subTest(delta=delta),self.assertRaises(ValueError):S.selection(raw({**good,**delta}),good['text'],['reference_review','cohort'],[],['a'*64])
  def test_provider_and_planning_bound_agree(self):
   from clinical_core.agere.clinical import planner_scope as S
-  self.assertEqual(S.PLAN_MAX_BYTES,128000)
-  self.assertFalse(S.bounded({"text":"x"*128000},S.PLAN_MAX_BYTES))
+  from clinical_core.agere.clinical import context_student as P
+  self.assertIsNone(S.PLAN_MAX_BYTES);self.assertIsNone(P.REQUEST_MAX_BYTES)  # Mike's standing no-local-cap rule
+  self.assertTrue(S.bounded({"text":"x"*128000},S.PLAN_MAX_BYTES))
+  self.assertFalse(S.bounded({"text":"x"*128000},128000))  # an explicit narrow request remains distinct
 
 if __name__=='__main__':unittest.main()
