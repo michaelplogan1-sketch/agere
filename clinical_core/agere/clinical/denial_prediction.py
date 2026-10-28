@@ -1,31 +1,17 @@
-"""Claim-level first-pass denial prediction with reason attribution ('denial_prediction' operation).
+"""First-pass denial review with explicit supervision and feature-availability clocks.
 
-Population: every payer-feed claim submission (payer_claim, voided versions excluded) received on or before the as-of date.
-Label: the FIRST adjudication denied (payer_claim.first_status denied / denied_upheld) - first-pass denial, whatever happened
-on appeal or resubmission. Reason: the CARC on the first adjudication (payer_adjudication.is_first).
+A received claim is not a received target. Only a unique first adjudication with
+matching claim/patient identity, a supported final status and both event/receipt
+clocks at or before the relevant origin supplies a label or CARC. Later labels
+may evaluate earlier submissions, but may not train a model claimed at that origin.
 
-Features known before submission (header fields of the 837 the provider sends):
-  payer, product (line of business), claim type, place of service, network status, billing NPI, principal diagnosis
-  (3-character category), payer x claim type x POS cell, coverage on file for that payer in the service month (member_month),
-  rendering NPI missing, duplicate submission, frequency code (replacement), filing lag (service date -> received date).
-Service codes (CPT/HCPCS) are NOT used: the payer feed returns service lines only on adjudicated-paid claims, so their
-presence would leak the label; this is stated in every answer.
-
-Method:
-  1. Empirical-Bayes target encoding of each categorical feature: shrunk log-odds of denial of the level vs the base rate,
-     (d + m p0) / (n + m), prior strength m (default 50); training rows are encoded out-of-fold (5 folds) so a claim never
-     sees its own label.
-  2. L2-penalised logistic regression (Newton-Raphson) on the encodings plus numeric flags (filing lag in 30-day units,
-     capped at 12; lag > 90 days; rendering NPI missing; duplicate; replacement).
-  3. Time split: train on claims received before the cutoff (as-of minus validation_months, default 6), validate on claims
-     received after it: AUROC, Brier score, calibration by risk decile, payer-only baseline AUROC.
-  4. The final model is refit on all claims and scores the most recent `score_days` (default 30) of submissions.
-  Attribution per scored claim: the top log-odds contributions (beta_j x x_j) and the most likely denial reason (CARC)
-  for the claim's strongest feature level, the level's CARC mix shrunk toward the payer's overall CARC mix.
-Scores are review prompts for a billing team (scrub before submission), never a payer decision.
+Current payer headers, coverage and duplicate flags are not an archived 837 feature
+snapshot. The existing empirical-Bayes/logistic model therefore provides descriptive
+associations; even a supported retrospective time split is not qualification for
+pre-submission prediction. No prospective performance is inferred from refit scores.
 """
 from collections import Counter, defaultdict
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import math
 import re
 
@@ -33,7 +19,7 @@ import numpy as np
 
 from . import revenue_common as rc
 
-VERSION = 'denial-prediction/1'
+VERSION = 'denial-prediction/2'
 OP = 'denial_prediction'
 CATEGORICAL = ('payer', 'product', 'claim_type', 'pos', 'network', 'billing_npi', 'dx3', 'cell', 'covered')
 NUMERIC = ('lag30', 'late90', 'npi_missing', 'duplicate', 'replacement')
@@ -55,14 +41,14 @@ FIX = {'CO-16': 'complete required fields (rendering NPI, member ID, dx pointers
 
 PRODUCT = {'population': 'optional', 'view': 'table',
            'use': 'DENIAL PREDICTION: which claims are likely to be denied on first pass and why - claim-level denial risk from header '
-                  'fields (payer, product, POS, provider, diagnosis, coverage, filing lag), time-split validated (AUROC, calibration), '
+                  'fields (payer, product, POS, provider, diagnosis, coverage, filing lag), availability-audited retrospective comparison where supported, '
                   'with per-claim reason attribution (likely CARC and the fix).'}
 CONTRACT = {'inputs': ['optional earlier_set'],
             'parameters': {'validation_months': 6, 'score_days': 30, 'prior_strength': 50, 'l2': 1.0, 'top': 25, 'payer': '', 'product': '',
                            'min_level_claims': 1},
             'meaning': 'First-pass denial risk per payer claim: empirical-Bayes target-encoded header features + L2 logistic regression, '
-                       'trained on claims received before as-of minus validation_months and validated after (AUROC, Brier, decile '
-                       'calibration, payer-only baseline); refit on all claims to score the last score_days of submissions with top '
+                       'trained only on labels and current header versions available at the fit origin, compared after (AUROC, Brier, decile '
+                       'calibration, payer-only baseline); retrospective refit associations, not qualified pre-submission predictions, with top '
                        'log-odds contributions and the most likely CARC per claim. Service codes excluded (payer feed returns lines only on '
                        'paid claims).'}
 NATIVE = ('value', 'count')
@@ -100,31 +86,79 @@ def _days(a, b):
         return 0
 
 
+def _clock(value):
+    """Validate source dates without treating a missing/invalid clock as timely."""
+    if not isinstance(value, str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}(?:[T ].*)?', value): return None
+    try:
+        if len(value) > 10: datetime.fromisoformat(value.replace('Z', '+00:00'))
+        return date.fromisoformat(value[:10]).isoformat()
+    except ValueError: return None
+
+
+def _target(witnesses, pid, received, header_status, origin):
+    if len(witnesses) != 1: return None, None, 'missing_first_adjudication' if not witnesses else 'ambiguous_first_adjudication'
+    w = witnesses[0]
+    if not w['record_id'] or w['patient_id'] != pid: return None, None, 'first_adjudication_identity_mismatch'
+    event, arrival = _clock(w['adjudication_date']), _clock(w['available_date'])
+    if not event or not arrival: return None, None, 'missing_or_invalid_label_clock'
+    if event < received or arrival < event: return None, None, 'inconsistent_label_clock'
+    if event > origin or arrival > origin: return None, None, 'label_not_available_at_origin'
+    status = w['claim_status']
+    if status not in ('paid', 'denied', 'denied_upheld'): return None, None, 'unresolved_first_status'
+    if header_status and header_status != status: return None, None, 'first_status_conflict'
+    return int(status in ('denied', 'denied_upheld')), w['carc'], 'known'
+
+
 def load(db, patient_ids, p, as_of):
+    if _clock(as_of) != as_of: raise ValueError('denial review requires an ISO as-of date')
     keep = set(patient_ids) if patient_ids is not None else None
-    covered = set()
-    for pid, month, payer in db.execute('SELECT DISTINCT patient_id, month, payer_id FROM member_month'):
-        covered.add((pid, month, payer))
-    first_carc = dict(db.execute('SELECT payer_claim_id, carc FROM payer_adjudication WHERE is_first=1'))
-    rows = []
+    covered = set(db.execute('SELECT DISTINCT patient_id, month, payer_id FROM member_month'))
+    first = defaultdict(list)
+    for row in db.execute('SELECT payer_claim_id, record_id, patient_id, claim_status, carc, adjudication_date, available_date '
+                          'FROM payer_adjudication WHERE is_first=1'):
+        first[row[0]].append(dict(zip(('record_id', 'patient_id', 'claim_status', 'carc', 'adjudication_date', 'available_date'), row[1:])))
+    cols = rc.columns(db, 'payer_claim')
+    clocks = ', '.join(c if c in cols else 'NULL' for c in ('last_available_date', 'record_id'))
     sql = ('SELECT payer_claim_id, patient_id, payer_id, product, claim_type, place_of_service, network_status, billing_npi, principal_diagnosis, '
-           'service_from, claim_received_date, first_status, rendering_npi_missing, duplicate_submission, claim_frequency_code, charge_cents '
-           "FROM payer_claim WHERE COALESCE(version_status,'') <> 'voided' AND claim_received_date IS NOT NULL AND claim_received_date <= ?")
-    for (cid, pid, payer, product, ctype, pos, net, npi, dx, svc, recv, first, npi_missing, dup, freq, charge) in db.execute(sql, (as_of,)):
+           'service_from, claim_received_date, first_status, rendering_npi_missing, duplicate_submission, claim_frequency_code, charge_cents, ' + clocks +
+           " FROM payer_claim WHERE COALESCE(version_status,'') <> 'voided' AND claim_received_date IS NOT NULL")
+    rows = []
+    for (cid, pid, payer, product, ctype, pos, net, npi, dx, svc, recv, header_status, npi_missing, dup, freq, charge, header_arrival, header_record) in db.execute(sql):
         if keep is not None and pid not in keep: continue
         if p['payer'] and payer != p['payer']: continue
         if p['product'] and product != p['product']: continue
-        if not first or first in ('voided',): continue
-        lag = max(_days(svc or recv, recv), 0)
-        rows.append({'claim_id': cid, 'patient_id': pid, 'received': recv[:10], 'service_from': (svc or '')[:10],
-                     'denied': int(str(first).startswith('denied')), 'carc': first_carc.get(cid),
+        received = _clock(recv)
+        if not received or received > as_of: continue
+        denied, carc, target_status = _target(first[cid], pid, received, header_status, as_of)
+        lag = max(_days(svc or received, received), 0)
+        rows.append({'claim_id': cid, 'patient_id': pid, 'received': received, 'received_source': recv,
+                     'service_from': (svc or '')[:10], 'denied': denied, 'carc': carc, 'label_status': target_status,
+                     'label_origin': as_of, 'label_witnesses': first[cid], 'header_first_status': header_status,
+                     'header_available_source': header_arrival, 'header_available': _clock(header_arrival), 'header_record_id': header_record,
                      'payer': payer or 'unknown', 'product': product or 'unknown', 'claim_type': ctype or 'unknown', 'pos': pos or 'none',
                      'network': net or 'unknown', 'billing_npi': npi or 'none', 'dx3': (dx or 'none').replace('.', '')[:3],
                      'cell': f'{payer}|{ctype}|{pos or "-"}', 'covered': 'yes' if (pid, (svc or '')[:7], payer) in covered else 'no',
                      'lag30': min(lag / 30, 12.0), 'late90': float(lag > 90), 'npi_missing': float(bool(npi_missing)),
                      'duplicate': float(bool(dup)), 'replacement': float(str(freq or '1') in ('7', '8')), 'lag_days': lag,
                      'charge': (charge or 0) / 100})
-    return rows
+    return sorted(rows, key=lambda r: (r['received'], str(r['claim_id'])))
+
+
+def split_at_origin(rows, cutoff, as_of):
+    """Keep target observation time distinct from the earlier model-fitting origin."""
+    train, test = [], []
+    excluded = Counter()
+    candidates = sum(r['received'] < cutoff for r in rows)
+    for r in rows:
+        origin = cutoff if r['received'] < cutoff else as_of
+        target, carc, reason = _target(r['label_witnesses'], r['patient_id'], r['received'], r['header_first_status'], origin)
+        prefix = 'train' if r['received'] < cutoff else 'validation'
+        if reason != 'known': excluded[prefix + ':' + reason] += 1; continue
+        if not r['header_available'] or r['header_available'] > origin or r['header_available'] < r['received']:
+            excluded[prefix + ':current_header_unavailable_at_origin'] += 1; continue
+        (train if prefix == 'train' else test).append({**r, 'denied': target, 'carc': carc, 'label_origin': origin})
+    return train, test, {'fit_origin': cutoff, 'evaluation_as_of': as_of, 'train_candidates': candidates,
+                         'validation_candidates': len(rows) - candidates, 'exclusions': dict(sorted(excluded.items()))}
 
 
 class Encoder:
@@ -219,29 +253,42 @@ def run(db, patient_ids, p, as_of):
     rows = load(db, patient_ids, p, as_of)
     names = list(CATEGORICAL) + list(NUMERIC)
     cutoff = (date.fromisoformat(as_of) - timedelta(days=round(p['validation_months'] * 30.4375))).isoformat()
-    train = [r for r in rows if r['received'] < cutoff]; test = [r for r in rows if r['received'] >= cutoff]
-    validation = {'cutoff': cutoff, 'train_claims': len(train), 'validation_claims': len(test), 'status': 'insufficient'}
+    train, test, support = split_at_origin(rows, cutoff, as_of)
+    validation = {'cutoff': cutoff, 'train_claims': len(train), 'validation_claims': len(test), 'status': 'insufficient',
+                  'availability': support, 'prospective_status': 'unqualified',
+                  'feature_timing': 'Current payer headers, coverage and outcome-derived duplicate flags lack archived pre-submission provenance.'}
     if len(train) >= 50 and len(test) >= 20 and 0 < sum(r['denied'] for r in train) < len(train):
         beta, enc = fit(train, p)
         Xt = design(test, enc); st = rc.sigmoid(Xt @ beta); yt = np.array([r['denied'] for r in test])
         # payer-only baseline: shrunk payer rate from the training window
         base = np.array([rc.sigmoid(rc.logit(enc.p0) + enc.value('payer', r['payer'])) for r in test])
-        validation.update(status='validated', auroc=rc.auroc(yt, st), auroc_payer_only=rc.auroc(yt, base),
+        validation.update(status='retrospective_only', auroc=rc.auroc(yt, st), auroc_payer_only=rc.auroc(yt, base),
                           brier=round(float(np.mean((st - yt) ** 2)), 5), observed_rate=round(float(yt.mean()), 4) if len(yt) else None,
                           mean_predicted=round(float(st.mean()), 4) if len(st) else None, calibration=deciles(yt, st))
         if validation['auroc'] is not None: validation['auroc'] = round(validation['auroc'], 4)
         if validation['auroc_payer_only'] is not None: validation['auroc_payer_only'] = round(validation['auroc_payer_only'], 4)
-    report = {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'claims': len(rows), 'denied_first_pass': sum(r['denied'] for r in rows),
+    labelled = [r for r in rows if r['label_status'] == 'known']
+    fit_rows = [r for r in labelled if r['header_available'] and r['received'] <= r['header_available'] <= as_of]
+    limitations = ['Current payer headers, member-month coverage and duplicate flags are not archived pre-submission features. Prospective denial prediction remains unqualified.',
+                   'Later first-adjudication labels may evaluate earlier claims but cannot train a model at an earlier fit origin.',
+                   'Refit scores are descriptive associations, not out-of-sample prediction performance.']
+    report = {'schema': VERSION, 'as_of': as_of, 'parameters': p, 'claims': len(rows),
+              'labelled_claims': len(labelled), 'unknown_first_pass': len(rows) - len(labelled),
+              'label_exclusions': dict(Counter(r['label_status'] for r in rows if r['label_status'] != 'known')),
+              'denied_first_pass': sum(r['denied'] for r in labelled), 'refit_claims': len(fit_rows),
               'validation': validation, 'rows': [], 'coefficients': [], 'drivers': []}
-    if len(rows) < 20 or not 0 < report['denied_first_pass'] < len(rows):
-        report.update(status='partial', assumptions=['Too few claims (or no denials) in scope to fit a denial model; observed rates only.'],
+    if len(fit_rows) < 20 or not 0 < sum(r['denied'] for r in fit_rows) < len(fit_rows):
+        report.update(status='partial', assumptions=limitations + ['Too few known, available labels/header versions (or no class variation); observed rates only.'],
                       method=VERSION)
         return report
-    beta, enc = fit(rows, p)
+    beta, enc = fit(fit_rows, p)
     report['coefficients'] = [{'feature': LABEL[n], 'coefficient': round(float(b), 4)} for n, b in zip(names, beta[1:])]
-    cm = carc_model(rows)
+    cm = carc_model(fit_rows)
     start = (date.fromisoformat(as_of) - timedelta(days=p['score_days'])).isoformat()
-    recent = [r for r in rows if r['received'] >= start] or rows[-min(len(rows), 200):]
+    available = [r for r in rows if r['header_available'] and r['received'] <= r['header_available'] <= as_of]
+    recent = [r for r in available if r['received'] >= start]
+    report['score_population'] = {'window_start': start, 'available_claims': len(available),
+                                  'unavailable_header_claims': len(rows) - len(available)}
     X = design(recent, enc); s = rc.sigmoid(X @ beta)
     scored = []
     for r, x, prob in zip(recent, X, s):
@@ -254,13 +301,16 @@ def run(db, patient_ids, p, as_of):
                        'drivers': [f"{LABEL[n]}={r[n] if n in CATEGORICAL else round(r[n], 2)} (+{c:.2f} log-odds)" for c, n in top],
                        'likely_reason': carc, 'reason_text': CARC_TEXT.get(carc, ''), 'reason_probability': carc_p,
                        'suggested_fix': FIX.get(carc, 'review before release'),
-                       'actual_first_pass': 'denied' if r['denied'] else 'paid', 'actual_carc': r['carc'], 'charge': r['charge']})
+                       'actual_first_pass': 'unknown' if r['denied'] is None else ('denied' if r['denied'] else 'paid'),
+                       'actual_carc': r['carc'], 'label_status': r['label_status'], 'charge': r['charge'],
+                       'score_use': 'retrospective_association_only'})
     scored.sort(key=lambda x: -x['denial_probability'])
     exp = sum(x['denial_probability'] for x in scored)
     report['rows'] = scored[:p['top']]
     report['scored'] = {'window_start': start, 'claims': len(scored), 'expected_denials': round(exp, 1),
                         'expected_denied_charges': round(sum(x['denial_probability'] * x['charge'] for x in scored), 2),
-                        'observed_denials': sum(1 for x in scored if x['actual_first_pass'] == 'denied')}
+                        'observed_denials': sum(1 for x in scored if x['actual_first_pass'] == 'denied'),
+                        'unknown_outcomes': sum(x['actual_first_pass'] == 'unknown' for x in scored)}
     # population drivers: levels with the highest shrunk log-odds (>= 30 claims)
     drv = []
     for f in ('payer', 'product', 'pos', 'billing_npi', 'dx3', 'cell'):
@@ -268,16 +318,16 @@ def run(db, patient_ids, p, as_of):
             if n >= 30: drv.append({'feature': LABEL[f], 'level': level, 'claims': n, 'denial_rate': round(d / n, 4),
                                     'shrunk_log_odds_vs_base': round(enc.value(f, level), 3)})
     report['drivers'] = sorted(drv, key=lambda x: -x['shrunk_log_odds_vs_base'])[:15]
-    report['status'] = 'answered'
-    report['assumptions'] = [
-        'Synthetic payer feed; label = first adjudication denied (first-pass), regardless of later appeal or resubmission.',
+    report['status'] = 'partial'
+    report['assumptions'] = limitations + [
+        'Received payer feed; label = first adjudication denied (first-pass), regardless of later appeal or resubmission.',
         'Service codes (CPT/HCPCS) excluded: the payer feed returns service lines only on paid claims, so they would leak the label; '
         'add the provider-side 837 lines to use them.',
-        f"Time split at {cutoff}: trained on claims received before it, validated on claims received after (to {as_of}).",
+        f"Retrospective split at {cutoff}: fit labels and current header versions must be available by that origin; later evaluation labels may arrive through {as_of}.",
         f"Empirical-Bayes prior strength {p['prior_strength']:g} claims, out-of-fold (5-fold) encoding, L2 {p['l2']:g}.",
         'Coverage feature = a member_month row for that payer in the service month (eligibility responses themselves not used).',
         'Reason = most likely first-pass CARC for the claim\'s strongest feature level, shrunk toward the payer\'s CARC mix; a prompt for review, not a payer decision.']
-    report['method'] = (f'{VERSION}: empirical-Bayes target-encoded header features + L2 logistic regression; time-split validation '
+    report['method'] = (f'{VERSION}: empirical-Bayes target-encoded header features + L2 logistic regression; availability-audited retrospective comparison '
                         '(AUROC, Brier, decile calibration, payer-only baseline); per-claim log-odds attribution and CARC reason.')
     return report
 
@@ -290,15 +340,16 @@ def execute(path, patient_ids, params, as_of):
 
 def headline(r):
     v = r['validation']; s = r.get('scored') or {}
-    parts = [f"{r['denied_first_pass']:,} of {r['claims']:,} claims denied on first pass ({r['denied_first_pass'] / max(r['claims'], 1):.1%})"]
-    if v.get('status') == 'validated':
-        parts.append(f"hold-out AUROC {v['auroc']} vs payer-only {v['auroc_payer_only']} (cutoff {v['cutoff']}, {v['validation_claims']:,} claims)")
+    known = r['labelled_claims']
+    rate = f"{r['denied_first_pass'] / known:.1%}" if known else 'rate unknown'
+    parts = [f"{r['denied_first_pass']:,} of {known:,} known first outcomes denied ({rate}); {r['unknown_first_pass']:,} outcomes unknown"]
+    if v.get('status') == 'retrospective_only':
+        parts.append(f"retrospective AUROC {v['auroc']} vs payer-only {v['auroc_payer_only']} (fit origin {v['cutoff']}, {v['validation_claims']:,} claims)")
+    elif v.get('status') == 'insufficient':
+        parts.append(f"insufficient time-split support: {v['train_claims']} training / {v['validation_claims']} evaluation claims")
     if s:
-        parts.append(f"last {r['parameters']['score_days']} days: {s['claims']:,} claims scored, {s['expected_denials']:.0f} denials expected "
-                     f"(${s['expected_denied_charges']:,.0f} charges at risk)")
-    if r['rows']:
-        t = r['rows'][0]
-        parts.append(f"highest risk {t['claim_id']} {t['denial_probability']:.0%} (likely {t['likely_reason']}: {t['reason_text']})")
+        parts.append(f"last {r['parameters']['score_days']} days: {s['claims']:,} claims with descriptive refit scores")
+    parts.append('pre-submission prediction remains unqualified')
     return 'Denial prediction: ' + '; '.join(parts)
 
 
@@ -307,7 +358,7 @@ def answer(report, plan, question):
     return rc.answer(report, plan, value=headline(report) + '.', table=table,
                      definitions=[{'term': 'first-pass denial', 'basis': 'first adjudication of the claim denied (835 claim status 4 / CARC on first remit)'},
                                   {'term': 'CARC', 'basis': 'X12 Claim Adjustment Reason Code (group code CO/PR + reason)'}],
-                     number=(report.get('scored') or {}).get('expected_denials'), overall_key='denial_prediction',
+                     number=None, overall_key='denial_prediction',
                      patient_ids=sorted({x['patient_id'] for x in report['rows']}), membership_role='evaluated')
 
 
@@ -336,7 +387,7 @@ def route(question, profile, as_of):
     if m: params['payer'] = m.group(1).upper()
     m = re.search(r'\btop (\d{1,3})\b', q)
     if m: params['top'] = max(1, min(500, int(m.group(1))))
-    return plan(OP, params, 'First-pass denial risk per claim with reason attribution (time-split validated)', question)
+    return plan(OP, params, 'First-pass denial review with availability-audited retrospective comparison', question)
 
 
 TEMPLATES = ['Which claims are likely to be denied?', 'Predict which of our recent claims will get denied and why',
