@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "accepted_analysis_delivery_and_workspace_complete",
+    "kind": "ordinary_app_integration_and_full_cost_measurement",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "An independently accepted saved analysis now reaches its proposed service deliverable with complete worklist/evidence and preserved acceptance across artifact and workspace. Technical suggestions do not trigger repeated rewrites; current-source workspace no longer asks for the completed interpretation review.",
-    "measured_failure_reduction": "551authored offline checks550pass/one optional live skip. Native accepted-analysis deliverable delivered with complete/supported technical disposition; final page reused rather than rewritten. Browser population/filter/dated-source expansion and full export checks pass; actual usage/limits retained locally.",
+    "user_behavior_delta": "Normal launcher now binds the selected provider ledger and subscription transport without changing pending-request ownership; read-only configuration checking does not mutate ledgers.",
+    "measured_failure_reduction": "24 focused authored startup/subscription/runner/cost checks passed; zero provider or child-process attempts. Existing accepted saved-analysis delivery preserved.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -436,11 +436,13 @@
       "artifacts/agere-live-integration-2026-10-28/attempt12-native-audit.json",
       "artifacts/agere-live-integration-2026-10-28/verification-computed-feedback-routing.json",
       "artifacts/agere-live-integration-2026-10-28/native-compiler-feedback-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json"
+      "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json",
+      "docs/agere/APP_INTEGRATION_2026-10-28.md",
+      "artifacts/agere-app-integration-2026-10-28/startup-verification.json"
     ],
-    "remaining_gap": "This received-source recovery and deliverable are complete. G3/full charter and fresh ordinary-workflow economics remain open. No additional clinician review of these accepted results is required. Direct file URL and visual screenshot tests unavailable under browser constraints; existing app preview and byte-equivalent export verified.",
-    "next_action": "Use the completed received-source delivery and preserved current candidate as the recovery point. Next integrate/qualify the ordinary app release and measure fresh full-workflow cost, without rerunning clinician review of the accepted results or claiming the final completion-call cost is full-question pricing. Keep all ten product areas, source/cost transparency, subscription-only Claude and stop-on-limit. No protected keys/new caps/automatic fitting/model/default/main promotion/agents.",
-    "next": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
+    "remaining_gap": "Fresh ordinary app compose and full analysis-to-deliverable economics being measured; retained-investigation delivery is not a full cold question price. G3 and broad commercial release remain open.",
+    "next_action": "Start the frozen verified ordinary app on the existing primary local port with isolated received-source installation, fresh question state and fresh provider ledger; submit original warehouse question through compose and account for every provider attempt, failed request and delivery stage. Preserve accepted prior results, subscription-only transport and stop-on-limit. Fix shared measured failures. No protected corpora, fitting/model activation, default/main merge, agents, care execution or publication.",
+    "next": "Start the frozen verified ordinary app on the existing primary local port with isolated received-source installation, fresh question state and fresh provider ledger; submit original warehouse question through compose and account for every provider attempt, failed request and delivery stage. Preserve accepted prior results, subscription-only transport and stop-on-limit. Fix shared measured failures. No protected corpora, fitting/model activation, default/main merge, agents, care execution or publication.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
       "kind": "MVP reassessment, controlled stop and native review-history repair",
