@@ -155,8 +155,8 @@ def run_cli(model, system, user, timeout=None):
     out = json.loads(lines[-1])
     if out.get('is_error') or out.get('terminal_reason') == 'api_error':
         message = str(out.get('result') or '')
-        if any(cue in message.lower() for cue in ("you've hit your limit", 'weekly limit', 'usage limit', 'rate limit', 'rate_limit')):
-            from .gateway import ProviderUnavailable
+        from .gateway import ProviderUnavailable, subscription_limit
+        if subscription_limit(message):
             raise ProviderUnavailable('Claude subscription limit reached: ' + message[:300], kind='rate_limit')
         raise RuntimeError('claude CLI error: ' + str(out.get('result'))[:300])
     return out

@@ -81,7 +81,7 @@ class AutomaticWorkflow(unittest.TestCase):
         return {'content':[out],'usage':{'input_tokens':10,'output_tokens':10}},.001,False
 
     def artifact(self,body):
-        if body['model']==composer.SMALL_MODEL:
+        if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
             return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.001}}
         self.assertEqual(body['tool_choice'],{'type':'none'})
         rid=re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"',body['messages'][0]['content']).group(1)

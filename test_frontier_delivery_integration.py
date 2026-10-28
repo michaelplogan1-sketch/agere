@@ -43,7 +43,7 @@ class FrontierDelivery(unittest.TestCase):
         text = body['messages'][0]['content']
         self.assertIn(self.question, text)
         self.assertNotIn('OUTSIDE', text)
-        if body['model']==C.SMALL_MODEL:
+        if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
             return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.01}}
         rid = re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"', text).group(1)
         return {'content': [{'type': 'text', 'text': (
@@ -76,6 +76,32 @@ class FrontierDelivery(unittest.TestCase):
         self.assertEqual(saved['patient_ids'], ['A', 'B'])
         self.assertIn('Show evidence', doc)
         self.assertEqual(C.listing(ws)[0]['generation'], 'frontier')
+        self.assertEqual([c['model'] for c in self.calls], [C.RENDER_MODELS[0], C.SMALL_MODEL])
+
+    def test_writer_escalates_only_after_failed_checks_with_same_source(self):
+        seen=[]
+        def sender(body):
+            seen.append(body)
+            if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
+                writers=[b for b in seen if 'Assess the COMPLETE artifact' not in b['messages'][0]['content']]
+                if len(writers)<3:
+                    return {'content':[{'type':'text','text':json.dumps({'coverage':'incomplete','support':'not_established','issues':[{'requirement':'Evidence detail','reason':'Omitted available exception'}]})}]},{'cost_estimate':{'estimated_usd':.01}}
+            return self.sender(body)
+        r=W.materialize(self.path,self.key,allow_live=True,send=sender)
+        self.assertEqual(r['steps'][0]['status'],'ready')
+        writers=[b for b in seen if 'Assess the COMPLETE artifact' not in b['messages'][0]['content']]
+        self.assertEqual([b['model'] for b in writers],list(C.RENDER_MODELS))
+        self.assertTrue(all(b['tool_choice']=={'type':'none'} for b in writers))
+        self.assertTrue(all('Omitted available exception' in b['messages'][0]['content'] for b in writers[1:]))
+        ws=A.workspace(self.path,A.load(self.path,self.key));spec,bundle,_,_=C.load(ws,r['steps'][0]['deliverable_id'])
+        self.assertEqual([a['passed'] for a in spec['render_attempts']],[False,False,True])
+        self.assertEqual(spec['costs']['known_api_estimate_usd'],.78)
+
+    def test_explicit_writer_override_is_honored(self):
+        with patch.dict(__import__('os').environ,{'AGERE_DELIVERABLE_MODEL':'claude-sonnet-5-5'}):
+            r=W.materialize(self.path,self.key,allow_live=True,send=self.sender)
+        self.assertEqual(r['steps'][0]['status'],'ready')
+        self.assertEqual(self.calls[0]['model'],'claude-sonnet-5-5')
 
     def test_disabled_explicit_frontier_never_falls_back_to_template(self):
         sender = Mock(side_effect=AssertionError('No authority'))
@@ -114,8 +140,8 @@ class FrontierDelivery(unittest.TestCase):
         sender = Mock(return_value=(bad, {'cost_estimate': {'estimated_usd': 0.1}}))
         result = W.materialize(self.path, self.key, allow_live=True, send=sender)
         self.assertEqual(result['steps'][0]['status'], 'blocked')
-        self.assertEqual(result['new_paid_api_calls'], 2)
-        self.assertEqual(result['known_api_estimate_usd'], 0.2)
+        self.assertEqual(result['new_paid_api_calls'], 3)
+        self.assertAlmostEqual(result['known_api_estimate_usd'], 0.3)
         self.assertFalse(list(A.root(self.path).glob('*/deliverables/DLV-*/artifact.html')))
 
     def test_subscription_limit_preserves_failed_artifact_and_stops_later_deliverables(self):
@@ -144,7 +170,7 @@ class FrontierDelivery(unittest.TestCase):
         bundle_file.write_text(json.dumps(legacy))
         def revise(body):
             self.assertEqual(body['tool_choice'], {'type': 'none'})
-            if body['model']==C.SMALL_MODEL:
+            if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
                 return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cache_hit':True}
             return {'content': [{'type': 'text', 'text': '```json\n[{"find":"Evidence lens</h1>","replace":"Saved evidence</h1>"}]\n```'}]}, {'cache_hit': True}
         with patch.object(C.toolsmod.ToolContext, 'call', side_effect=AssertionError('No new evidence')):
@@ -180,7 +206,7 @@ class FrontierDelivery(unittest.TestCase):
         self.assertIsNone(C.load(ws, out['id'])[3])
         self.assertFalse(Path(out['path']).exists())
         self.assertTrue((Path(out['path']).parent / 'revisions/r1.html').exists())
-        self.assertEqual(rev['costs']['total_usd'], 0.2)
+        self.assertAlmostEqual(rev['costs']['total_usd'], 0.3)
 
     def test_frozen_verifier_rejects_unbound_values_and_representative_network_cases(self):
         b = Bundle({'frozen_evidence': True})

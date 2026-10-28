@@ -10,6 +10,21 @@ from clinical_core.agere import subscription_transport as T
 
 
 class Translation(unittest.TestCase):
+    def test_session_limit_is_typed_and_never_retried_by_transport(self):
+        from clinical_core.agere.gateway import ProviderUnavailable, classify_provider_error
+        message = "You've hit your session limit \u00b7 resets 11:50am (America/Chicago)"
+        done = subprocess.CompletedProcess([], 1, json.dumps({'is_error': True, 'result': message}), '')
+        with patch.object(T, 'cli_path', return_value='scripted-cli'), patch.object(T, 'cli_env', return_value={}), \
+             patch.object(T.subprocess, 'run', return_value=done) as call:
+            with self.assertRaises(ProviderUnavailable) as raised:
+                T.run_cli('claude-haiku-5-5', 'rules', 'question')
+        self.assertEqual(raised.exception.kind, 'rate_limit')
+        self.assertEqual(call.call_count, 1)
+        self.assertEqual(classify_provider_error(RuntimeError('claude CLI error: '+message)), 'rate_limit')
+        self.assertEqual(classify_provider_error(RuntimeError(message.replace("'", '\u2019'))), 'rate_limit')
+        for request_error in ('context window limit reached', 'max output tokens limit exceeded'):
+            self.assertIsNone(classify_provider_error(RuntimeError(request_error)))
+
     def test_literal_action_batch_preserves_arguments_and_has_distinct_native_ids(self):
         calls=[{'name':'sql','input':{'query':'SELECT 1'}},{'name':'sql','input':{'query':'SELECT 2'}}]
         with patch.object(T,'run_cli',return_value={'result':json.dumps({'tool_uses':calls}),'usage':{}}):

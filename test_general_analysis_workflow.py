@@ -420,7 +420,7 @@ class GeneralAnalysisWorkflow(unittest.TestCase):
         self.stack.allow_live = True; self.stack.receipts = self.path
         def sender(body):
             prompt = body['messages'][0]['content']
-            if body['model']==composer.SMALL_MODEL:
+            if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
                 return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.01}}
             rid = re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"', prompt).group(1)
             return {'content': [{'type': 'text', 'text': 'TITLE: Utilization brief\n```html\n<h1>Utilization brief</h1>'

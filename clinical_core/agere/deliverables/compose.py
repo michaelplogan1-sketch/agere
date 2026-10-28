@@ -8,12 +8,12 @@ Division of labour (token economics):
   * Cheap layers do everything factual or computed: deterministic intent rules pick tool calls (intent.py); the tools run
     the stack (tools.py) and return data with receipts; results are cached per workspace and reused across revisions.
   * A small model (Haiku) chooses tools only when the rules find nothing to fetch.
-  * The frontier model (claude-opus-5-5) designs and writes the artifact: structure, interaction, narrative, HTML/JS. It may
+  * A checked writer ladder (Haiku, Sonnet, then Opus after failed checks) designs and writes the artifact: structure, interaction, narrative, HTML/JS. It may
     call tools for more data; it never writes SQL and never types a number: static numbers are data-bind spans, computed
     numbers come from JS over the embedded bundle (runtime.py). The system prompt (rules, runtime, tool catalog, few-shot
     examples) is prompt-cached.
-  * The verifier (verify.py) checks static bindings, numeric literals and representative code patterns; on failure one
-    repair attempt, then fail closed. These checks do not validate metric labels, clinical claims or arbitrary JavaScript.
+  * Static and semantic verification run on every candidate. Failed checks go to the next writer model, then fail closed.
+    Static checks alone do not validate metric labels, clinical claims or arbitrary JavaScript.
 Every model call goes through the product's budget ledger (context_student.send) and is reported, split frontier / small
 model / tools ($0 unless a tool itself used a model).
 
@@ -35,6 +35,7 @@ from .receipts import Bundle, fingerprint, trim as rtrim, render_for_model
 
 FRONTIER_MODEL = os.environ.get('AGERE_DELIVERABLE_MODEL') or 'claude-opus-5-5'
 SMALL_MODEL = os.environ.get('AGERE_DELIVERABLE_SMALL_MODEL') or 'claude-haiku-5-5'
+RENDER_MODELS = ('claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5')
 FRONTIER_MAX_TOKENS = 28000
 SMALL_MAX_TOKENS = 1200
 MAX_FRONTIER_TOOL_ROUNDS = 3
@@ -152,7 +153,18 @@ def _tool_uses(raw):
 
 
 # ------------------------------------------------------------------------------------------------------------ prompts
-def _system_blocks():
+PROPOSED_DESIGN = ('PROPOSED DESIGN CONTRACT: The requested new service/process is a design brief. You may design proposed functional roles, operating steps, daily/support cadence, intake, consent, verification, fulfillment, handoffs and escalation where the request calls for them. Label these as proposed design, not observed staffing, available capacity, verified eligibility, enrollment, orders, shipments or clinical approval. For each requested capability, explain the trigger, proposed action, responsible function, unresolved prerequisite and confirmation of completion. Missing operational data must remain explicitly unknown, while the proposed process can still be designed. Do not invent patient facts, clinical thresholds or numeric capacity/cost assumptions. '
+                   'The evidence-only rule governs factual claims and actual execution; it permits this requested proposed operating design. Complete the proposed process rather than deferring the entire design because operational records are missing.')
+CURRENT_STATUS = ('CURRENT REVIEW STATUS: current_saved_status in the evidence packet describes the current saved machine review. Historical criticisms and earlier draft status text are history, not its current status. Report current results and disagreements faithfully. A machine review is not physician approval, and partial/unverified clinical conclusions remain partial/unverified.')
+
+
+def render_models():
+    """An explicit writer override retains its existing single-model repair policy."""
+    chosen = os.environ.get('AGERE_DELIVERABLE_MODEL')
+    return (chosen,) if chosen else RENDER_MODELS
+
+
+def _system_blocks(bundle=None):
     """Static, cacheable system prompt: rules + runtime + finance library + few-shot examples."""
     shots = '\n\n'.join(f'### Reference example `{n}` ({examples.EXAMPLES[n]["description"]})\n```python\n{examples.few_shot(n, 7000)}\n```'
                         for n in ('pharmacist_cards', 'war_room'))
@@ -161,7 +173,8 @@ def _system_blocks():
            'evaluate/nash take AGERE.get(<what_if receipt>) and sliders {scale, benchmark_factor, attainment, cost_multiplier, trend, '
            'aco_is_access_participant, risk_aversion, confidence} (start from data.defaults) and return the same fields as data.initial / '
            'data.initial_nash (nash also returns grid rows {sharing_rate, msr, aco_value, payer_value, nash_product}).')
-    return [{'type': 'text', 'text': RULES + '\n\n' + runtime.runtime_doc() + '\n\n' + lib},
+    purpose_rules = ('\n\n' + PROPOSED_DESIGN if bundle and bundle.meta.get('deliverable_purpose') == 'proposal' else '')
+    return [{'type': 'text', 'text': RULES + purpose_rules + '\n\n' + CURRENT_STATUS + '\n\n' + runtime.runtime_doc() + '\n\n' + lib},
             {'type': 'text', 'text': 'REFERENCE EXAMPLES (deterministic pages built on the same runtime; follow their binding, JS-over-data and '
                                      'write-back patterns, not their exact layout):\n\n' + shots, 'cache_control': {'type': 'ephemeral'}}]
 
@@ -178,7 +191,7 @@ def _user_prompt(request, audience, bundle, extra=''):
                     'Use words or automatic list numbering for structure. Do not type factual numbers in JS strings; '
                     'render from AGERE.get with AGERE.fmt. Preserve access to complete dated per-patient findings and their limitations, not just a first example. Do not use eval, Function, dynamic global properties or resource URL setters.\n'
                     if bundle.meta.get('frozen_evidence') else '')
-    proposed_design=('PROPOSED DESIGN CONTRACT: The requested new service/process is a design brief. You may design proposed functional roles, operating steps, daily/support cadence, intake, consent, verification, fulfillment, handoffs and escalation where the request calls for them. Label these as proposed design, not observed staffing, available capacity, verified eligibility, enrollment, orders, shipments or clinical approval. For each requested capability, explain the trigger, proposed action, responsible function, unresolved prerequisite and confirmation of completion. Missing operational data must remain explicitly unknown, while the proposed process can still be designed. Do not invent patient facts, clinical thresholds or numeric capacity/cost assumptions.\n'
+    proposed_design=(PROPOSED_DESIGN+'\n'
                      if bundle.meta.get('deliverable_purpose')=='proposal' else '')
     evidence=('DATA BUNDLE (complete clinical values; native SQL provenance referenced explicitly):\n' +
               render_for_model(bundle)
@@ -337,7 +350,7 @@ def _edits(text):
         return None
 
 
-def _compose_frontier(ctx, bundle, request, audience, send, ledger, *, current_body=None, instruction=None, violations=None):
+def _compose_frontier(ctx, bundle, request, audience, send, ledger, *, current_body=None, instruction=None, violations=None, model=None):
     """One frontier-model turn (with up to MAX_FRONTIER_TOOL_ROUNDS tool rounds). Revisions and repairs ask for find/replace
     edits against the current body (a few hundred output tokens instead of a full rewrite); a full body is accepted too.
     The tools and system blocks are identical on every call so the prompt cache prefix holds (tool_choice none disables them)."""
@@ -353,7 +366,7 @@ def _compose_frontier(ctx, bundle, request, audience, send, ledger, *, current_b
     purpose = 'repair' if violations else 'revise' if current_body is not None else 'compose'
     for rnd in range(MAX_FRONTIER_TOOL_ROUNDS + 1):
         allow = rnd < MAX_FRONTIER_TOOL_ROUNDS and not violations and not getattr(ctx, 'frozen_evidence', False)
-        body = {'model': FRONTIER_MODEL, 'max_tokens': FRONTIER_MAX_TOKENS, 'system': _system_blocks(), 'tools': _cached_tools(),
+        body = {'model': model or render_models()[0], 'max_tokens': FRONTIER_MAX_TOKENS, 'system': _system_blocks(bundle), 'tools': _cached_tools(),
                 'messages': msgs}
         if not allow:
             body['tool_choice'] = {'type': 'none'}
@@ -407,7 +420,7 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
     ledger = Ledger()
     spec = {'schema': SCHEMA, 'id': dlv_id, 'workspace': ws.slug, 'request': request, 'audience': audience or it['audience'],
             'template': template, 'params': params, 'intent': it, 'created_at': _now(), 'revision': 1, 'synthetic': True,
-            'models': {'frontier': FRONTIER_MODEL, 'small': SMALL_MODEL}}
+            'models': {'frontier': FRONTIER_MODEL, 'small': SMALL_MODEL, 'writer_ladder': list(render_models())}}
     if template is not None:
         params.setdefault('program_kind', it['program_kind'] or 'pharmacy_gdmt')
         rids = [ctx.call(bundle, name, args) for name, args in examples.needs(template, params)]
@@ -501,23 +514,46 @@ def _review_artifact(body, bundle, request, audience, send, ledger, report, vali
 
 
 def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience, t0, save, instruction=None, revision=None):
-    if not body:
-        report = {'passed': False, 'violations': [{'kind': 'no_output', 'detail': 'the model returned no HTML body'}]}
-        return _finish(ws, spec, bundle, None, None, report, ledger, ctx, t0, save, repaired=False, revision=revision)
     title = title or spec.get('title') or 'Agere deliverable'
-    doc = runtime.wrap(body, bundle, title, subtitle=f"{ws.slug} | synthetic data")
-    report = _review_artifact(body, bundle, request, audience, send, ledger, verifymod.verify(doc, bundle),getattr(ctx,'validate_dependencies',None))
+    def check(fragment, heading):
+        if not fragment:
+            return None, {'passed': False, 'violation_count': 1,
+                          'violations': [{'kind': 'no_output', 'detail': 'the model returned no HTML body'}]}
+        document = runtime.wrap(fragment, bundle, heading, subtitle=f"{ws.slug} | synthetic data")
+        return document, _review_artifact(fragment, bundle, request, audience, send, ledger,
+                                         verifymod.verify(document, bundle), getattr(ctx, 'validate_dependencies', None))
+    doc, report = check(body, title)
+    models = render_models()
+    writers = [c['model'] for c in ledger.calls if c['role'] == 'frontier']
+    current = writers[-1] if writers else models[0]
+    # Each stronger writer sees the failed candidate and the same complete
+    # evidence. Infrastructure failures propagate; they never purchase an upgrade.
+    repairs = models[models.index(current)+1:] if current in models else models
+    if len(models) == 1:
+        repairs = models  # preserve the explicit model's existing repair behavior
     repaired = False
-    if not report['passed'] and not report.get('dependency_failure'):
+    attempts = []
+    for model in repairs:
+        if report['passed'] or report.get('dependency_failure'):
+            break
         first = report
+        attempts.append({'model': current, 'passed': False, 'violations': first['violations']})
         t2, b2 = _compose_frontier(ctx, bundle, request, audience, send, ledger, current_body=body, instruction=instruction,
-                                   violations=report['violations'][:60])
+                                   violations=report['violations'], model=model)
         repaired = True
+        current = model
         if b2:
             title, body = t2 or title, b2
-            doc = runtime.wrap(body, bundle, title, subtitle=f"{ws.slug} | synthetic data")
-            report = _review_artifact(body, bundle, request, audience, send, ledger, verifymod.verify(doc, bundle),getattr(ctx,'validate_dependencies',None))
-        report['first_attempt'] = {'violation_count': first['violation_count'], 'violations': first['violations'][:20]}
+            doc, report = check(body, title)
+        else:
+            # Keep the preceding candidate for diagnosis, but an empty repair
+            # cannot inherit its approval or silently count as a successful edit.
+            report = {'passed': False, 'violation_count': 1,
+                      'violations': [{'kind': 'no_output', 'detail': 'the repair returned no HTML body'}]}
+    attempts.append({'model': current, 'passed': report['passed'], 'violations': report.get('violations', [])})
+    spec['render_attempts'] = attempts
+    if len(attempts) > 1:
+        report['first_attempt'] = {'violation_count': len(attempts[0]['violations']), 'violations': attempts[0]['violations']}
     spec['title'] = title
     return _finish(ws, spec, bundle, body, doc, report, ledger, ctx, t0, save, repaired=repaired, revision=revision)
 

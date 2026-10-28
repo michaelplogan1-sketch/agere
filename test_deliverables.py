@@ -246,7 +246,7 @@ class Composer(unittest.TestCase):
         self.assertEqual([c['purpose'] for c in out['model_calls']], ['compose', 'repair','semantic_review'])
         self.assertEqual(out['costs']['frontier']['calls'], 2)
         self.assertAlmostEqual(out['costs']['total_usd'], 0.0256)
-        self.assertEqual([c['model'] for c in calls],[composemod.FRONTIER_MODEL,composemod.FRONTIER_MODEL,composemod.SMALL_MODEL])
+        self.assertEqual([c['model'] for c in calls],[composemod.RENDER_MODELS[0],composemod.RENDER_MODELS[1],composemod.SMALL_MODEL])
         self.assertIn('cache_control', json.dumps(calls[0]['system']))
         self.assertEqual(calls[0]['tools'][-1].get('cache_control'), {'type': 'ephemeral'})
         tools_used = {c['tool'] for c in out['tool_calls']}
@@ -263,7 +263,7 @@ class Composer(unittest.TestCase):
 
     def test_fails_closed_when_repair_does_not_fix(self):
         bad = 'TITLE: X\n```html\n<p>Net savings of $555,555 next year.</p>\n```'
-        send, _ = _fake([bad, bad])
+        send, _ = _fake([bad, bad, bad])
         out = composemod.compose(self.ws, 'a story of our heart failure program', send=send)
         self.assertEqual(out['status'], 'rejected')
         self.assertIsNone(out['html'])

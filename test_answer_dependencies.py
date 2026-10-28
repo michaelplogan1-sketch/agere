@@ -65,7 +65,7 @@ class AnswerDependencies(unittest.TestCase):
 
     def deliver(self, mutation=None):
         def sender(body):
-            if body['model']==importlib.import_module('clinical_core.agere.deliverables.compose').SMALL_MODEL:
+            if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
                 return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.01}}
             if mutation:
                 mutation()

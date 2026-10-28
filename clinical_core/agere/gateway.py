@@ -289,6 +289,16 @@ _PROVIDER_PATTERNS=(('billing',('credit balance','billing','insufficient credit'
                     ('timeout',('timed out','timeout','connection reset','connection refused','remote end closed','urlerror')))
 
 
+def subscription_limit(message):
+    """Recognize subscription quotas, including the CLI's session-reset wording.
+
+    Context-window and output-token bounds are request failures, not a plan reset.
+    """
+    text = str(message).lower().replace('\u2019', "'")
+    return any(cue in text for cue in ("you've hit your limit", 'session limit',
+               'weekly limit', 'usage limit', 'subscription limit', 'rate limit', 'rate_limit'))
+
+
 def classify_provider_error(exc):
     """'billing' | 'rate_limit' | 'overloaded' | 'server' | 'timeout' when the provider (not the request) failed, else None.
     Request errors (400 schema, parse failures, size bounds) return None and are never retried on another model."""
@@ -301,6 +311,7 @@ def classify_provider_error(exc):
         if code>=500:return 'server'
     elif isinstance(exc,(TimeoutError,ConnectionError,urllib.error.URLError)):return 'timeout'
     text=(type(exc).__name__+': '+str(exc)).lower()
+    if subscription_limit(text):return 'rate_limit'
     for kind,needles in _PROVIDER_PATTERNS:
         if any(n in text for n in needles):return kind
     return None
