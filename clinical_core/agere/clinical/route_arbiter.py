@@ -3,8 +3,8 @@
 The engine suite used to answer first-match (engine_suite.ROUTE_ORDER), so an engine added later could silently take an older
 engine's or a native route's question. Candidates here are every engine route that returns a plan plus the native route chain's own plan
 (local_compiler._compile(engines=False)). Score of a candidate operation for a question:
-  similarity   best IDF-weighted token cosine to the operation's own example questions (engine TEMPLATES, bench/acceptance rows whose
-               expect_operation is the operation, tools/learned_routing templates)
+  similarity   best IDF-weighted token cosine to native engine TEMPLATES and declared operation descriptions.
+               Evaluation examples and legacy learned-template files are never runtime routing inputs.
   cue          small bonus for what the plan recognised, a penalty for what it left unexplained
   learned      the learned router's probability for the operation, only when a local encoder is bound (else lexical only)
 The previous order's winner (first engine claim, else the native plan) keeps the question unless another candidate beats it by SWITCH_MARGIN.
@@ -19,7 +19,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-VERSION = 'route-arbiter/1'
+VERSION = 'route-arbiter/2'
 SWITCH_MARGIN = 0.1  # a later candidate must beat the previous order's winner by this much to take the question
 IDF_OP = 0.5          # weight of operation-level IDF (vs example-level) in the token weights
 CENTROID = 0.5        # weight of the operation-centroid cosine (vs the best single example)
@@ -63,36 +63,17 @@ _EXAMPLES = {}
 
 
 def _acceptance():
-    out = []
-    for f in sorted((ROOT / 'bench' / 'acceptance').glob('*.json')):
-        try:
-            rows = json.loads(f.read_text())
-        except (OSError, ValueError):
-            continue
-        out += [(r['expect_operation'], r['question']) for r in rows if isinstance(r, dict) and r.get('expect_operation') and r.get('question')]
-    return out
+    """Retired corpus hook; preserve call compatibility without reading evaluation files."""
+    return []
 
 
 def _learned_templates():
-    path = ROOT / 'tools' / 'learned_routing' / 'templates.py'
-    if not path.exists(): return []
-    import importlib.util
-    spec = importlib.util.spec_from_file_location('agere_learned_templates', path)
-    mod = importlib.util.module_from_spec(spec)
-    try:
-        spec.loader.exec_module(mod)
-    except Exception:  # noqa: BLE001 - training material is optional
-        return []
-    out = []
-    for label, lines in mod.T.items():
-        for line in lines:
-            for k in range(2):  # two fills of every slot: variety without the full grid
-                out.append((label, re.sub(r'\{(\w+)\}', lambda m: str(mod.FILL.get(m.group(1), [m.group(1)])[k % len(mod.FILL.get(m.group(1), [0]))]), line)))
-    return out
+    """Retired legacy-template hook; versioned native capabilities supply runtime examples."""
+    return []
 
 
 def examples():
-    """op -> [(example question, source)] from engine TEMPLATES, acceptance rows and the learned router's templates."""
+    """op -> [(example question, source)] from the native capability registry only."""
     if _EXAMPLES: return _EXAMPLES
     from . import engine_suite
     got = {}
@@ -101,8 +82,6 @@ def examples():
     for op, m in engine_suite.available().items():
         for text in (m.PRODUCT.get('use'), m.CONTRACT.get('meaning')):
             if text: got.setdefault(op, []).append((text, 'description'))
-    for op, q in _acceptance(): got.setdefault(op, []).append((q, 'acceptance'))
-    for op, q in _learned_templates(): got.setdefault(op, []).append((q, 'learned'))
     _EXAMPLES.update(got)
     return _EXAMPLES
 
