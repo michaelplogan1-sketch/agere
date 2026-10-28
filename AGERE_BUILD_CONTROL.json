@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T15:56:20.694111+00:00",
+  "updated_at": "2026-10-28T16:22:47.026224+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "automatic_review_continuation_offline_verified",
+    "kind": "artifact_role_context_offline_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Failed saved artifact reviews return to the same original source-bound Haiku-first investigation, retaining native tool replay, exact input population, failed artifacts and all known/unknown costs. Progress prevents wording-only paid render loops; mixed internal work is retained for reconciliation. Large table previews now carry exact code-computed category counts; stable complete artifact evidence precedes repair instructions.",
-    "measured_failure_reduction": "438 authored offline checks:437pass/one optional live skip, source588596c6 unchanged, zero providers/protected reads. Complete artifact prompt1,188,110to1,057,526bytes with exact restoration and stable1,058,338-character prefix. Nine native typed diagnostics cost$0.016910674 but numeric-role checks missed known error/introduced false alarms, therefore prototype remains off; no measured clinical gain or production cache saving.",
+    "user_behavior_delta": "Artifact continuation now accepts scoped native document search. The render role keeps every clinical row/finding/quote/uncertainty and current machine status, replacing only executable SQL provenance with checked native hash/path references. Proposal mode can design proposed operations without claiming actual care.",
+    "measured_failure_reduction": "Native attempt8 corrects13note-only to17, retains57rows and4387unique/4610received whole documents; note verifier provider errors48to0, model reviewed40to42 (not clinical quality). It remains partial/rejected; actual new$1.563173analysis+$5.593759presentation,584.07seconds. Follow-up source4c99792b passes443offline checks:442pass/one live skip, no providers/protected reads; native render packet1,072,765to594,163bytes with checked restoration of91SQLrefs. Cache/clinical savings not yet established.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -416,18 +416,20 @@
       "docs/agere/COST_ROUTING_REPAIR_2026-10-28.md",
       "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md",
       "artifacts/agere-live-integration-2026-10-28/verification-automatic-continuation.json",
-      "artifacts/agere-live-integration-2026-10-28/artifact-prompt-audit.json"
+      "artifacts/agere-live-integration-2026-10-28/artifact-prompt-audit.json",
+      "artifacts/agere-live-integration-2026-10-28/verification-render-context.json",
+      "artifacts/agere-live-integration-2026-10-28/artifact-role-context-audit.json"
     ],
-    "remaining_gap": "Latest complete native workflow remains attempt7 partial/rejected; known13note-only vs17table, non-reason candidates, medication/dose uncertainty, source allergy conflict and missing service evidence remain. New automatic continuation and economical routing require native execution/browser/physician and total-cost review. Compound-work reconciliation, denial finding66, unselected adapters and full ten-area qualification remain open.",
-    "next_action": "Execute the verified source588596c6 original-question continuation from owned attempt7, on the same approved synthetic warehouse and retained provider ledger. Use existing Haiku-first investigator and closed Jev/Perplexity judgments; experimental numeric-role checker remains off after native failure. Inspect final facts, full note/dose/care-team evidence, artifact review and actual analysis/deliverable costs; do not promote partial output or claim clinical acceptance. Stop all provider work on a Claude subscription limit. No external Anthropic key, protected evaluations, new fitting, experimental model activation, main deployment or unilateral caps. Preserve results/source locally and update already-approved private draftPR2 with source/docs only.",
-    "next": "Execute the verified source588596c6 original-question continuation from owned attempt7, on the same approved synthetic warehouse and retained provider ledger. Use existing Haiku-first investigator and closed Jev/Perplexity judgments; experimental numeric-role checker remains off after native failure. Inspect final facts, full note/dose/care-team evidence, artifact review and actual analysis/deliverable costs; do not promote partial output or claim clinical acceptance. Stop all provider work on a Claude subscription limit. No external Anthropic key, protected evaluations, new fitting, experimental model activation, main deployment or unilateral caps. Preserve results/source locally and update already-approved private draftPR2 with source/docs only.",
+    "remaining_gap": "Native attempt8 partial/rejected. Stale provider-status claim, unresolved narrative reasons, current use/reference versus individual maximum-dose meaning and service prerequisites remain. Search replay omission and overloaded presentation provenance are repaired offline; actual next run, browser/physician and accepted-answer economics pending. Mixed internal-work reconciliation, denial finding66 and full ten-area qualification remain.",
+    "next_action": "Execute source4c99792b original-question continuation from owned attempt8 and its actual saved artifact criticism on the same approved synthetic warehouse/retained ledger. Use Haiku-first checked escalation and Jev/Perplexity; numeric-role prototype stays off. Audit current verification labels, clinical dose/medication meaning, all patient rows, proposed operating design, automatic continuation and actual analysis/presentation costs. Stop on subscription limit; no external Anthropic key, protected keys, new fitting/model activation, main deployment or quotas. Preserve local evidence and update the existing authorized private draft PR with source/docs only.",
+    "next": "Execute source4c99792b original-question continuation from owned attempt8 and its actual saved artifact criticism on the same approved synthetic warehouse/retained ledger. Use Haiku-first checked escalation and Jev/Perplexity; numeric-role prototype stays off. Audit current verification labels, clinical dose/medication meaning, all patient rows, proposed operating design, automatic continuation and actual analysis/presentation costs. Stop on subscription limit; no external Anthropic key, protected keys, new fitting/model activation, main deployment or quotas. Preserve local evidence and update the existing authorized private draft PR with source/docs only.",
     "latest_review": {
-      "at": "2026-10-28T15:56:20.694111+00:00",
-      "kind": "Source-bound offline continuation, lossless artifact and negative native typed-verification review",
+      "at": "2026-10-28T16:22:47.026224+00:00",
+      "kind": "Actual attempt8 failure/cost audit and source-bound artifact-role repair",
       "evidence": [
         "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md",
-        "artifacts/agere-live-integration-2026-10-28/verification-automatic-continuation.json",
-        "artifacts/agere-live-integration-2026-10-28/artifact-prompt-audit.json"
+        "artifacts/agere-live-integration-2026-10-28/verification-render-context.json",
+        "artifacts/agere-live-integration-2026-10-28/artifact-role-context-audit.json"
       ]
     },
     "coordination": {
@@ -1625,15 +1627,23 @@
       "basis": "Complete-context transport works cheaply but support false-passed; role binding also confused any-event with exactly-one. Nine diagnostic calls$0.016910674; no clinical gain. Offline end-to-end continuation and lossless stable-prefix evidence pass437checks/one live skip.",
       "scope_impact": "No new architecture, patient quota, lowered threshold, training or clinical truth labels. Same authorized original request, source and provider destinations; all ten areas retained. Mixed internal work is not duplicated.",
       "evidence": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md"
+    },
+    {
+      "at": "2026-10-28T16:22:47.026224+00:00",
+      "gate": "G3",
+      "decision": "Repair observed search replay omission and distinguish artifact clinical data from executable SQL provenance before native continuation. Keep all clinical evidence and full native programs; allow proposed operational design without inventing execution.",
+      "basis": "Attempt8 stillpartial/rejected at$7.156932APIequivalent. Stable prefix did not cause large subscription-cache reuse; nativeSQL/derivation history overloaded render context. Follow-up443offlinechecks442pass/one skip;594163byte role context replaces1072765bytes; no clinical savings claimed.",
+      "scope_impact": "Existing architecture, original question/source, provider approval and ten-area charter retained. No quotas, trained/default model changes or new layers.",
+      "evidence": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md"
     }
   ],
   "unsealed_work": {
-    "status": "automatic_review_continuation_offline_verified",
+    "status": "artifact_role_context_offline_verified",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
     "source": "Verified workflow source integrated only after frozen studies completed",
     "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "Latest complete native workflow remains attempt7 partial/rejected; known13note-only vs17table, non-reason candidates, medication/dose uncertainty, source allergy conflict and missing service evidence remain. New automatic continuation and economical routing require native execution/browser/physician and total-cost review. Compound-work reconciliation, denial finding66, unselected adapters and full ten-area qualification remain open.",
+    "remaining_gap": "Native attempt8 partial/rejected. Stale provider-status claim, unresolved narrative reasons, current use/reference versus individual maximum-dose meaning and service prerequisites remain. Search replay omission and overloaded presentation provenance are repaired offline; actual next run, browser/physician and accepted-answer economics pending. Mixed internal-work reconciliation, denial finding66 and full ten-area qualification remain.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
@@ -1682,11 +1692,11 @@
     },
     "live_resume": {
       "workspace": "/private/tmp/agere-codex-integration-20261026",
-      "source_fingerprint": "8fc1cdd01010356b8d80ced8ba34d55676aaf582a56e040ff8e14ceeb4364241",
-      "attempt": "/private/tmp/agere-live-resume-20261028/attempt7",
+      "source_fingerprint": "588596c6cdad55ffc954bbae5b74b0aac0a1b249989ee5a789a1cd2a6aabdfa1",
+      "attempt": "/private/tmp/agere-live-resume-20261028/attempt8",
       "evidence": "artifacts/agere-live-integration-2026-10-28/verification-review-loop.json",
       "explicit_payload_approval": true,
-      "status": "completed_partial_artifact_rejected"
+      "status": "completed_partial_rejected_continuation_registry_failure"
     },
     "cost_routing_candidate": {
       "workspace": "/private/tmp/agere-codex-integration-20261026",
@@ -1704,6 +1714,13 @@
       "runtime_promoted": false,
       "clinical_gain_measured": false,
       "numeric_role_check": "off after native regressions"
+    },
+    "artifact_role_candidate": {
+      "commit": "905f80a",
+      "source_fingerprint": "4c99792bbbd708292dec97d6b10c93fb1fb9ef55c571bddf070af756e09c5ad6",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-context.json",
+      "runtime_promoted": false,
+      "clinical_gain_measured": false
     }
   }
 }
