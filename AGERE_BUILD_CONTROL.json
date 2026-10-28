@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T12:17:05.595618+00:00",
+  "updated_at": "2026-10-28T13:22:24.448571+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_studies_complete_live_automatic_workflow_in_progress",
+    "kind": "live_source_repairs_verified_automatic_continuation",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "General runtime fixes remove protected example dependencies, recover structured materialization atomically under explicit optional NER policy, and execute literal subscription tool batches through existing guards. Earlier received shared workflow repairs are integrated after finite-study exit. Main/default checkout remains unchanged.",
-    "measured_failure_reduction": "992 unique offline checks:990pass/two live skips through received finding65; new isolated live protocol/startup/routing verification165pass, not an additive clinical accuracy score. Both actual saved padded tool batches change0to3 recognized literal actions with unchanged arguments/usage. SQL55to173correct/304 with62wrong/69declines remains unselected; typed corrective round gains11loses11 and wrong33to42. Full ordinary clinical completion remains pending.",
+    "measured_failure_reduction": "Final source266guarded checks pass. Actual source dose-field recovery0to11known daily doses among12unchanged records,7active documented. Full57rows retained through repair; registered phenotype false-premise removed. Lossless renderer data2424172to952094characters with exact value equality. NativeHF-specific beta blocker count14 vsincorrect broad22; new automatic output must confirm correction. No clinical accuracy score inferred.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -401,11 +401,15 @@
       "artifacts/agere-schema-repair-2026-10-27/format-typed-first-round-review.json",
       "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
       "artifacts/agere-live-integration-2026-10-28/verification-protocol.json",
-      "artifacts/agere-live-integration-2026-10-28/protocol-pair.json"
+      "artifacts/agere-live-integration-2026-10-28/protocol-pair.json",
+      "artifacts/agere-live-integration-2026-10-28/verification-clinical-input.json",
+      "artifacts/agere-live-integration-2026-10-28/verification-lossless.json",
+      "artifacts/agere-live-integration-2026-10-28/lossless-pair.json",
+      "artifacts/agere-live-integration-2026-10-28/dose-alias-pair.json"
     ],
     "remaining_gap": "Full automatic clinical/browser/physician and ten-area acceptance, final-source candidate qualification and total-cost/company comparison remain open.",
-    "next_action": "Mike has explicitly resumed the full automatic HFrEF workflow and approved its synthetic warehouse payload to Claude subscription, Jev/TypeSafe and Perplexity. Continue owned /private/tmp/agere-live-resume-20261028/run.py attempt4 on sealed live source716fd030, retaining all provider receipts and exact cache matches; no Anthropic API key, stop on subscription limit. Finish full scoped note review, current therapy/dose/tolerance, prior-year HF admissions, care-team activity and source-bound deliverable; inspect actual tool completion rather than accepting action envelopes as answers. Complete browser review and report actual components/costs, with clinical acceptance left to Mike. Both finite local studies/native reviews are completed and no candidate was selected; no more fitting or model/default promotion. Preserve all ten areas, queued denial-feature-state finding66 and negative qualification results.",
-    "next": "Mike has explicitly resumed the full automatic HFrEF workflow and approved its synthetic warehouse payload to Claude subscription, Jev/TypeSafe and Perplexity. Continue owned /private/tmp/agere-live-resume-20261028/run.py attempt4 on sealed live source716fd030, retaining all provider receipts and exact cache matches; no Anthropic API key, stop on subscription limit. Finish full scoped note review, current therapy/dose/tolerance, prior-year HF admissions, care-team activity and source-bound deliverable; inspect actual tool completion rather than accepting action envelopes as answers. Complete browser review and report actual components/costs, with clinical acceptance left to Mike. Both finite local studies/native reviews are completed and no candidate was selected; no more fitting or model/default promotion. Preserve all ten areas, queued denial-feature-state finding66 and negative qualification results.",
+    "next_action": "Inspect /private/tmp/agere-live-resume-20261028/attempt6 progress and final receipts. Finish source-bound patient findings/doses/care-team and proposed deliverable using Claude subscription only, Jev and Perplexity under Mike's direct synthetic payload approval. Stop on subscription usage limit; prompt-size failures are distinct. Reuse exact cached document reads through native recovery; no additional fitting, experimental model activation, source/answer-key reads or new layers. Audit GDMT-specific classes, restored sig/order_status dose values, every source limitation and artifact scope. Browser-check and preserve the result, publish source/docs only to already-approved private draftPR2. Retain all negative/failing attempts, queued finding66 and all ten product areas; do not claim MVP or clinical readiness from engineering checks.",
+    "next": "Inspect /private/tmp/agere-live-resume-20261028/attempt6 progress and final receipts. Finish source-bound patient findings/doses/care-team and proposed deliverable using Claude subscription only, Jev and Perplexity under Mike's direct synthetic payload approval. Stop on subscription usage limit; prompt-size failures are distinct. Reuse exact cached document reads through native recovery; no additional fitting, experimental model activation, source/answer-key reads or new layers. Audit GDMT-specific classes, restored sig/order_status dose values, every source limitation and artifact scope. Browser-check and preserve the result, publish source/docs only to already-approved private draftPR2. Retain all negative/failing attempts, queued finding66 and all ten product areas; do not claim MVP or clinical readiness from engineering checks.",
     "latest_review": {
       "at": "2026-10-27T17:40:46.048326+00:00",
       "kind": "Actual format-failure diagnosis, whole-bank tokenizer audit and offline regression verification",
@@ -1587,5 +1591,66 @@
       "scope_impact": "No new architecture, disease handler, adapter/default activation, protected evaluation or narrowed ten-area charter. Source/docs remain authorized for private draftPR; runtime/data stay local.",
       "evidence": "artifacts/agere-live-integration-2026-10-28/verification-protocol.json"
     }
-  ]
+  ],
+  "unsealed_work": {
+    "status": "live_source_repairs_verified_automatic_continuation",
+    "path": "artifacts/agere-schema-repair-2026-10-27",
+    "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
+    "source": "Verified workflow source integrated only after frozen studies completed",
+    "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
+    "remaining_gap": "Attempt6 running. Whole57-patient/4610-document pass is preserved;40 model-supported,14 support-limited,3no-docs. Earlier final class count was wrong (broad22 vsHF-specific14); require new live count verification. Source daily doses0to11/12 records after aliases. Last artifact failed semantic rendering checks; proposed-design purpose fix and complete finding access are now staged. Final large support packets still expose provider context/failed-key errors. Full MVP/physician/browser/cost acceptance and denial-feature finding66 remain open.",
+    "training_root": "artifacts/agere-schema-repair-2026-10-27",
+    "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
+    "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
+    "candidate_workspace": "/private/tmp/agere-codex-integration-20261026",
+    "candidate_commit": "c6da2892bb8c3559940f7020e11d9bf8df232def",
+    "active_original_training": "artifacts/agere-semantic-fixes-2026-10-27/recovered-sql-format-stop.json",
+    "results_report": "artifacts/agere-schema-repair-2026-10-27/before-after.md",
+    "results_collector_session": 83290,
+    "qualification_followup": {
+      "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
+      "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
+      "workspace": "/private/tmp/agere-native-shape-qualification-20261027",
+      "source_fingerprint": "8c78097e89133ecd83dbe1a5ed3c988d872a220fc577d57031840111af43d9d1",
+      "kind": "classifier-native-baseline-qualification",
+      "adapter_serving_contracts_unchanged": true,
+      "tests": {
+        "run": 560,
+        "passed": 556,
+        "skipped": 4
+      },
+      "integration": "Integrated by merge before format repair; no classifier candidate activated",
+      "no_default_activation": true
+    },
+    "workflow_followup": {
+      "workspace": "/private/tmp/agere-denial-timing-followup-20261028",
+      "branch": "codex/workflow-integrity-20261027",
+      "commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8",
+      "status": "integrated_offline_verified",
+      "receipt": "/private/tmp/agere-denial-timing-followup-20261028/artifacts/agere-interpretation-followup-2026-10-27/release-receipt.json",
+      "source_fingerprint": "fa1cd528164afea8cec1447e2b3340d526ab77c2369a2f6edbe3baa06b531595",
+      "scope": "General workflow/evidence/analytics/economics, medication arithmetic, unknown supply and shared cohort semantics.",
+      "evidence": "992 unique offline checks:990pass/two live skips through received finding65; new isolated live protocol/startup/routing verification165pass, not an additive clinical accuracy score. Both actual saved padded tool batches change0to3 recognized literal actions with unchanged arguments/usage. SQL55to173correct/304 with62wrong/69declines remains unselected; typed corrective round gains11loses11 and wrong33to42. Full ordinary clinical completion remains pending.",
+      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open.",
+      "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
+    },
+    "finite_completion": {
+      "kind": "finite_local_poststudy_completion",
+      "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
+      "status_file": "artifacts/agere-offline-finish-2026-10-27/finalization-status.json",
+      "expected_study_pid": 29583,
+      "source_rule": "Wait for both final native reviews and exact study-process exit; verify frozen and staged source, clean pinned checkouts and preserved final study bytes before fast-forward. No duplicate training, default/model activation or live clinical run.",
+      "scope": "Integrate already-tested general repairs; write paired/domain gains, losses and cost limitation; refresh offline preflight; preserve final source/report; update already-approved private draft PR branch.",
+      "tests": "Five completion safety/hash checks pass; seven actual-results reporting checks pass.",
+      "automatic_provider_calls": false,
+      "automatic_retry": false
+    },
+    "live_resume": {
+      "workspace": "/private/tmp/agere-live-fixes-20261028",
+      "source_fingerprint": "aa82f33d972b1a6f8ccadbce587404eba051ff6aa33756479056776442b95f59",
+      "attempt": "/private/tmp/agere-live-resume-20261028/attempt6",
+      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-clinical-input.json",
+      "explicit_payload_approval": true
+    }
+  }
 }
