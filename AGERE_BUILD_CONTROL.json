@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T18:34:29.002931+00:00",
+  "updated_at": "2026-10-28T19:05:10.621965+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "specific_compiler_feedback_and_economical_repair_verified",
+    "kind": "proposal_handoff_verified_saved_workflow_retry_ready",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "All static literal/field/workflow errors return together; verified attributed clinical quotations remain literal, failed drafts have readable partial fallback. Exact compiler repairs stay on Haiku while evidence/failure state progresses; repeat failures still escalate.",
-    "measured_failure_reduction": "Run12 returned198.19sec partial/needs_definition,5validatedsubscriptioncalls0.763962580API-equivalent, no artifact. Sonnet0.6609915(86.5%) followed generic static feedback. Current517checks516pass/one skip, zero provider/protected reads; exact native negative reports all relevant errors together without reextracting verified quotations or losing57rows.",
+    "user_behavior_delta": "Saved proposed-design stage now reaches actual writer/reviewer, and exact compressed-column bindings heal before paid escalation. Native first Haiku candidate18to0staticerrors with unchanged values.",
+    "measured_failure_reduction": "524offlinechecks523pass/one optional live skip; exact native proposal metadata missing before/correct after;18actual native static errors repaired at0modelcalls. No clinical meaning approval or price claim from fixtures.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -438,8 +438,8 @@
       "artifacts/agere-live-integration-2026-10-28/native-compiler-feedback-audit.json",
       "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json"
     ],
-    "remaining_gap": "No accepted automatic clinical deliverable. Retry10 cost3.511326385API-equivalent, still rejected. Continuation11 corrected the broad dose-reason denial but accumulated support packets exceeded typed context limits; stopped at completed-call boundary with no pending requests.51newrows41validated/10failed,known6.713725570plus10unpriced. Historical machine criticism contaminated current QA;33b99a6 fixes its render-role provenance offline,46checks pass. Analytical evidence sizing, current-artifact criticism fidelity, clinical/normal-UI/exports/unit-cost acceptance and all ten areas remain; no active training/default promotion.",
-    "next_action": "Run the prepared source-bound39-action continuation13 on frozen current source, original question/warehouse scope and retained ledger. Reexecute native actions, never reuse historical answer/policy. Existing Haiku investigator repairs specific compiler/proposal feedback, computes scalar bindings and continues through existing semantic review and automatic artifact workflow. Stop new provider calls on actual subscription limit. Inspect actual clinical output/deliverable/UI/export, components and total/warm accounting before sales-readiness claims; all ten areas remain. No protected keys, caps, fitting/model/default/main activation or agents.",
+    "remaining_gap": "Retry failed saved presentation with current source then inspect UI/export, actual components and costs. Automatic clinical/cold-price/general-product qualification remains open; Mike accepts results he reviewed, without invented exact-context labels.",
+    "next_action": "Run prepared retry14.py attempt14 against unchanged analytical context ANS-c857e36a7b7750e0885a10a8 through existing saved-workflow retry, source3b6b75d6, original scope and retained ledger. No cohort/note reextraction solely for presentation. Inspect actual result/UI/export/component costs and preserve checkpoint. Stop new providers on subscription limit. No protected keys/caps/fitting/model/default/main activation/agents.",
     "next": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
@@ -534,7 +534,13 @@
         "completion": "Independent appropriate qualification remains separate from deterministic engineering acceptance; do not use protected evaluations or credits as a prerequisite for local build work."
       }
     ],
-    "latest_progress": "Both finite revised studies and native reviews completed; verified workflow source integrated. No model/default/live clinical promotion.",
+    "latest_progress": {
+      "at": "2026-10-28T19:05:10.621965+00:00",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-proposal-handoff.json",
+      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-proposal-handoff-audit.json",
+      "native13": "artifacts/agere-live-integration-2026-10-28/attempt13-native-audit.json",
+      "clinician_review": "artifacts/agere-live-integration-2026-10-28/clinician-review-20261028.json"
+    },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -1703,6 +1709,11 @@
       "basis": "Run12 static repair recurs with generic first-error text and hides proposal feedback. Sonnet consumes0.6609915of0.76396258. Current native audit reports all static repairs together;517checks516pass/one skip.",
       "scope_impact": "Existing compiler/investigator workflow only, no domain handler, new provider/model/layer, quota, training, clinical-threshold reduction or narrowed charter.",
       "evidence": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md"
+    },
+    {
+      "at": "2026-10-28T19:03:21.605666+00:00",
+      "reason": "Native13 ended partial after1194sec/33newcalls with5.655548415known API-equivalent and one unpriced Perplexity timeout. Concrete cause: Bundle.merge dropped proposal purpose, causing writer/critic to treat design as executed care. Actual first Haiku artifact has18compact-column binding errors that current deterministic canonicalization resolves to0without changing native values. Correct the stage boundary and literal encoding before buying another cohort investigation.",
+      "scope_impact": "G3 and all ten areas retained. Mike accepts results he reviewed; exact statement retained without assigning unbound acceptance to future contexts or executing care."
     }
   ],
   "unsealed_work": {

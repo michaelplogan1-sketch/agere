@@ -230,6 +230,50 @@ def render_for_model(bundle):
     return json.dumps(encoded,default=str,separators=(',',':'))
 
 
+def native_binding_path(bundle, path):
+    """Resolve a compact record-column address to its exact native field path.
+
+    A valid native path always wins. Only homogeneous record lists that the
+    compact encoder actually represents by columns permit an index alias. No
+    values, names, source roots or missing fields are guessed.
+    """
+    try:
+        bundle.get(path)
+        return path
+    except (KeyError, IndexError, TypeError, ValueError):
+        pass
+    match = PATH_RE.match(str(path).strip())
+    if not match or match.group(1) not in bundle.results:
+        raise KeyError(path)
+    cur = bundle.results[match.group(1)]
+    parts = [p for p in (match.group(2) or '').split('.') if p != '']
+    native, columns = [], None
+    for part in parts:
+        if isinstance(cur, list):
+            if not re.fullmatch(r'\d+', part) or int(part) >= len(cur):
+                raise KeyError(path)
+            columns = (list(cur[0]) if len(cur) > 1 and isinstance(cur[0], dict)
+                       and all(isinstance(r, dict) and list(r) == list(cur[0]) for r in cur) else None)
+            cur = cur[int(part)]
+        elif isinstance(cur, dict):
+            if part not in cur:
+                if columns is None or not re.fullmatch(r'\d+', part) or int(part) >= len(columns):
+                    raise KeyError(path)
+                part = columns[int(part)]
+                # Dot-path syntax cannot represent literal dots in field names.
+                if not part or '.' in part:
+                    raise KeyError(path)
+            cur = cur[part]
+            columns = None
+        else:
+            raise KeyError(path)
+        native.append(part)
+    resolved = match.group(1) + ':' + '.'.join(native)
+    if bundle.get(resolved) != cur:
+        raise KeyError(path)
+    return resolved
+
+
 def trim(v, max_list=6, max_str=300):
     """Long lists cut to max_list items (count kept), long strings cut; dicts capped at 60 keys."""
     if isinstance(v, dict):

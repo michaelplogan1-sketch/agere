@@ -428,6 +428,15 @@ def compose(ws, request=None, audience=None, *, template=None, params=None, live
     if evidence_bundle is not None:
         bundle.merge(evidence_bundle)
         bundle.meta['scope'] = evidence_bundle.meta.get('scope')
+        # Bundle.merge copies receipts, not metadata. The source-bound stage
+        # must survive this boundary or a proposed design is judged as care
+        # already executed. Do not let incoming metadata replace workspace,
+        # snapshot, synthetic or deliverable identities.
+        purpose = evidence_bundle.meta.get('deliverable_purpose')
+        if purpose is not None:
+            if purpose not in ('final', 'proposal', 'inspection'):
+                raise ValueError('Unknown saved deliverable purpose')
+            bundle.meta['deliverable_purpose'] = purpose
         bundle.meta['frozen_evidence'] = True
     ledger = Ledger()
     spec = {'schema': SCHEMA, 'id': dlv_id, 'workspace': ws.slug, 'request': request, 'audience': audience or it['audience'],
@@ -526,16 +535,40 @@ def _review_artifact(body, bundle, request, audience, send, ledger, report, vali
             'violations':violations, 'violation_count':len(violations)}
 
 
+def _native_bindings(fragment, bundle):
+    """Heal literal compact-column addresses before unchanged artifact checks."""
+    from .receipts import native_binding_path
+    repairs = []
+    if not bundle.meta.get('frozen_evidence'):
+        return fragment, repairs
+    pattern = re.compile(r'''(?:\bdata-bind\s*=\s*|\bAGERE\.get\(\s*)(["'])(R-[a-f0-9]+:[^"']*)\1''')
+    def replace(match):
+        old = match.group(2)
+        try:
+            native = native_binding_path(bundle, old)
+        except (KeyError, IndexError, TypeError, ValueError):
+            return match.group(0)
+        if native == old:
+            return match.group(0)
+        repairs.append({'from': old, 'to': native, 'kind': 'exact_compact_column_address'})
+        start, end = match.span(2)
+        return match.group(0)[:start-match.start()] + native + match.group(0)[end-match.start():]
+    return pattern.sub(replace, fragment), repairs
+
+
 def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience, t0, save, instruction=None, revision=None):
     title = title or spec.get('title') or 'Agere deliverable'
     def check(fragment, heading):
         if not fragment:
-            return None, {'passed': False, 'violation_count': 1,
+            return fragment, None, {'passed': False, 'violation_count': 1,
                           'violations': [{'kind': 'no_output', 'detail': 'the model returned no HTML body'}]}
+        fragment, repairs = _native_bindings(fragment, bundle)
+        if repairs:
+            spec.setdefault('binding_repairs', []).extend(repairs)
         document = runtime.wrap(fragment, bundle, heading, subtitle=f"{ws.slug} | synthetic data")
-        return document, _review_artifact(fragment, bundle, request, audience, send, ledger,
+        return fragment, document, _review_artifact(fragment, bundle, request, audience, send, ledger,
                                          verifymod.verify(document, bundle), getattr(ctx, 'validate_dependencies', None))
-    doc, report = check(body, title)
+    body, doc, report = check(body, title)
     models = render_models()
     writers = [c['model'] for c in ledger.calls if c['role'] == 'frontier']
     current = writers[-1] if writers else models[0]
@@ -557,7 +590,7 @@ def _deliver(ws, spec, bundle, title, body, ledger, ctx, send, request, audience
         current = model
         if b2:
             title, body = t2 or title, b2
-            doc, report = check(body, title)
+            body, doc, report = check(body, title)
         else:
             # Keep the preceding candidate for diagnosis, but an empty repair
             # cannot inherit its approval or silently count as a successful edit.

@@ -78,6 +78,55 @@ class FrontierDelivery(unittest.TestCase):
         self.assertEqual(C.listing(ws)[0]['generation'], 'frontier')
         self.assertEqual([c['model'] for c in self.calls], [C.RENDER_MODELS[0], C.SMALL_MODEL])
 
+    def test_proposal_stage_survives_real_saved_answer_to_composer_boundary(self):
+        c = A.load(self.path, self.key)
+        result = {'answer': {**c['answer'], 'status': 'partial',
+                             'missing': ['Patient eligibility is unavailable']},
+                  'workflow': [{**c['workflow'][0], 'purpose': 'proposal'}]}
+        key = A.capture(self.path, self.question, result)['id']
+        out = W.materialize(self.path, key, allow_live=True, send=self.sender)
+        self.assertEqual(out['steps'][0]['status'], 'ready')
+        writer, reviewer = self.calls
+        self.assertIn('PROPOSED DESIGN CONTRACT', '\n'.join(b['text'] for b in writer['system']))
+        self.assertIn('Do not demand actual enrollment', reviewer['system'])
+        ws = A.workspace(self.path, A.load(self.path, key))
+        _, bundle, _, _ = C.load(ws, out['steps'][0]['deliverable_id'])
+        self.assertEqual(bundle.meta['deliverable_purpose'], 'proposal')
+        saved = next(v for rid, v in bundle.results.items() if bundle.receipts[rid]['tool'] == 'saved_answer')
+        self.assertEqual(saved['answer']['status'], 'partial')
+        self.assertEqual(saved['answer']['missing'], ['Patient eligibility is unavailable'])
+        self.assertFalse(out['external_dispatch_performed'])
+
+    def test_inspection_stage_and_final_stage_remain_distinct(self):
+        c = A.load(self.path, self.key)
+        for purpose in ('inspection', 'final'):
+            with self.subTest(purpose=purpose):
+                key = A.capture(self.path, self.question, {'answer': c['answer'],
+                      'workflow': [{**c['workflow'][0], 'purpose': purpose}]})['id']
+                self.calls.clear()
+                out = W.materialize(self.path, key, allow_live=True, send=self.sender)
+                self.assertEqual(out['steps'][0]['status'], 'ready')
+                self.assertEqual('Do not demand actual enrollment' in self.calls[-1]['system'], purpose == 'inspection')
+                ws = A.workspace(self.path, A.load(self.path, key))
+                self.assertEqual(C.load(ws, out['steps'][0]['deliverable_id'])[1].meta['deliverable_purpose'], purpose)
+
+    def test_compact_address_error_does_not_purchase_a_stronger_writer(self):
+        def sender(body):
+            raw, receipt = self.sender(body)
+            if 'Assess the COMPLETE artifact' not in body['messages'][0]['content']:
+                raw['content'][0]['text'] = raw['content'][0]['text'].replace('answer.table.0.observed_visits', 'answer.table.0.1')
+            return raw, receipt
+        out = W.materialize(self.path, self.key, allow_live=True, send=sender)
+        self.assertEqual(out['steps'][0]['status'], 'ready')
+        self.assertEqual([c['model'] for c in self.calls], [C.RENDER_MODELS[0], C.SMALL_MODEL])
+        ws = A.workspace(self.path, A.load(self.path, self.key))
+        spec, bundle, body, doc = C.load(ws, out['steps'][0]['deliverable_id'])
+        self.assertEqual(len(spec['binding_repairs']), 1)
+        self.assertTrue(spec['binding_repairs'][0]['to'].endswith('answer.table.0.observed_visits'))
+        self.assertTrue(spec['verification']['passed'])
+        self.assertIn('answer.table.0.observed_visits', body)
+        self.assertEqual(len(spec['render_attempts']), 1)
+
     def test_writer_escalates_only_after_failed_checks_with_same_source(self):
         seen=[]
         def sender(body):
