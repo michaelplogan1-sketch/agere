@@ -442,9 +442,9 @@
       "artifacts/agere-app-reports-2026-10-28/repairs-verification.json",
       "artifacts/agere-app-reports-2026-10-28/native-repair-differential.json"
     ],
-    "remaining_gap": "Fresh ordinary-app measurement completed and exposed definition drift and excessive work. Its historical answer is not corrected by a compiler test. Reexecute owned actions under current definitions with exact reader-cache reuse, obtain repaired analysis, render through saved_report and account for all additional usage. Full G3 and the ten-area charter remain open.",
-    "next_action": "Freeze verified source, continue the exact original question from its own read-only actions/cache under current definitions, select reusable report rendering, preserve all prior outcomes and measure incremental/full workflow usage. Finish local academic-style white paper and UI/export checks; preserve backups and engineering-only draft PR. Subscription only; stop on actual subscription limit. No agents, protected corpora, new fitting/default model activation, care execution or publication.",
-    "next": "Start the frozen verified ordinary app on the existing primary local port with isolated received-source installation, fresh question state and fresh provider ledger; submit original warehouse question through compose and account for every provider attempt, failed request and delivery stage. Preserve accepted prior results, subscription-only transport and stop-on-limit. Fix shared measured failures. No protected corpora, fitting/model activation, default/main merge, agents, care execution or publication.",
+    "remaining_gap": "Repair continuation returned a corrected medication subtype result through zero-model HTML rendering; its answer remains partial. The refined full patient-review request is actively running on frozen source 203f988/d087 at :8885. Current reusable renderer has browser printing but no actual PDF file and needs the staged generic dashboard/PDF integration after the run. No matched model-only comparison results exist yet. Paper remains held; original historical cost TTL uncertainty remains an interval.",
+    "next_action": "Finish and preserve the active refined ordinary-app request (started2026-10-28T22:05:19Z; /private/tmp/agere-app-e2e-20261028/refined-request; app PID98273, client session4898). Do not edit product code/config or start competing full provider runs while it is active. After return and zero pending, inspect full patient findings/recommendations and complete reusable dashboard plus real PDF with source binding and UI/export checks. Then freeze equivalent inputs and execute independently metered Haiku-only/Sonnet-only comparisons; distinguish warm engineering run from cold comparisons and grade clinical acceptability/coverage, not model confidence. Comparison harness and staged renderers are outside source under /private/tmp/agere-app-e2e-20261028; eight offline harness checks and mocked real-source setup pass, zero provider calls. Subscription only; stop on actual subscription limit. No agents, protected corpora, fitting/activation, care execution, paper or publication.",
+    "next": "Finish and preserve the active refined ordinary-app request (started2026-10-28T22:05:19Z; /private/tmp/agere-app-e2e-20261028/refined-request; app PID98273, client session4898). Do not edit product code/config or start competing full provider runs while it is active. After return and zero pending, inspect full patient findings/recommendations and complete reusable dashboard plus real PDF with source binding and UI/export checks. Then freeze equivalent inputs and execute independently metered Haiku-only/Sonnet-only comparisons; distinguish warm engineering run from cold comparisons and grade clinical acceptability/coverage, not model confidence. Comparison harness and staged renderers are outside source under /private/tmp/agere-app-e2e-20261028; eight offline harness checks and mocked real-source setup pass, zero provider calls. Subscription only; stop on actual subscription limit. No agents, protected corpora, fitting/activation, care execution, paper or publication.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
       "kind": "MVP reassessment, controlled stop and native review-history repair",
@@ -582,6 +582,12 @@
       "tests": "Five completion safety/hash checks pass; seven actual-results reporting checks pass.",
       "automatic_provider_calls": false,
       "automatic_retry": false
+    },
+    "latest_human_steering": {
+      "at": "2026-10-28T22:31:45.882287+00:00",
+      "request": "Compare entire requested workflow against cheap/expensive LLM-only agents with actual cost and accuracy",
+      "comparison_protocol": "/private/tmp/agere-app-e2e-20261028/comparison/protocol.json",
+      "status": "prepared_not_executed"
     }
   },
   "decisions": [

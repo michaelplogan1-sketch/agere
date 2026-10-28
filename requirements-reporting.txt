@@ -1,0 +1,3 @@
+# Deterministic HTML/PDF report companion; no paid model dependency.
+reportlab==4.4.9
+pypdf>=6,<7

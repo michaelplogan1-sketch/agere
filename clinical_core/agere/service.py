@@ -297,10 +297,13 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/ask':
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
-                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-deliverable', '/api/stack/action-mockup', '/api/stack/action-simulate'):
+                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-deliverable', '/api/stack/action-report', '/api/stack/action-mockup', '/api/stack/action-simulate'):
                     from .deliverables import answer_context
                     if path.endswith('/action-mockup'):
                         from .deliverables.mock_views import create
+                        result=create(connected_stack.path,body)
+                    elif path.endswith('/action-report'):
+                        from .deliverables.saved_report import create
                         result=create(connected_stack.path,body)
                     elif path.endswith('/action-simulate'):
                         from .deliverables.synthetic_actions import advance
@@ -893,6 +896,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         if parsed.path.endswith('/action-deliverables'):
                             result={'deliverables':listing(ws)}
                         else:
+                            if params.get('format'):
+                                from .deliverables.saved_report import read_format
+                                raw,mime,filename=read_format(connected_stack.path,key,params.get('id',[''])[0],params['format'][0])
+                                self.send_response(200);self.send_header('Content-Type',mime)
+                                self.send_header('Content-Length',str(len(raw)))
+                                disposition='attachment' if params['format'][0]=='pdf' else 'inline'
+                                self.send_header('Content-Disposition',disposition+'; filename="'+filename+'"')
+                                self.end_headers();self.wfile.write(raw);return
                             spec,_,_,doc=load(ws,params.get('id',[''])[0])
                             result={**spec,'html':doc if spec.get('status')=='delivered' else None}
                     raw=json.dumps(result,default=str).encode();mime='application/json'

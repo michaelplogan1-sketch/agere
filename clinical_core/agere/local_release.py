@@ -120,7 +120,7 @@ def code_identity():
     # not optional documentation. Omitting them produces a runnable interpreter
     # whose saved decisions and workbench fail on first use.
     files = [p for p in (ROOT / 'clinical_core').rglob('*')
-             if p.is_file() and p.suffix in ('.py', '.js', '.json', '.css') and '__pycache__' not in p.parts]
+             if p.is_file() and p.suffix in ('.py', '.js', '.json', '.css', '.html') and '__pycache__' not in p.parts]
     files += list((ROOT / 'config/agere').glob('*.json'))
     files += list((ROOT / 'config').glob('*.json'))
     # The active build pointer is installation configuration, not release code.
