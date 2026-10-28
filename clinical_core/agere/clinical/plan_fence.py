@@ -62,12 +62,27 @@ def premises(graph):
 def _schema(path):
     target = Path(path) / 'semantic.sqlite3'
     if not target.exists(): return None
-    db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
+    db = sqlite3.connect(target.resolve().as_uri()+'?mode=ro', uri=True)
     try:
         names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")]
-        return {n.lower(): [r[1].lower() for r in db.execute(f'PRAGMA table_info("{n}")')] for n in names}
+        schema = {n.lower(): [r[1].lower() for r in db.execute('PRAGMA table_info("'+n.replace('"','""')+'")')] for n in names}
+        if 'meta' not in schema: return schema
+        day = db.execute("SELECT value FROM meta WHERE key='as_of'").fetchone()
     finally:
         db.close()
+    if day:
+        # Recreate exactly the registered owner views, not arbitrary missing
+        # aliases. Their base relations/columns still have to compile.
+        from .semantic_analyst import SemanticWarehouse
+        wh = SemanticWarehouse(target)
+        try:
+            for name in wh.define(day[0]):
+                try: cursor = wh.db.execute('SELECT * FROM "'+name.replace('"','""')+'" LIMIT 0')
+                except sqlite3.Error: continue
+                schema[name.lower()] = [c[0].lower() for c in cursor.description]
+        finally:
+            wh.close()
+    return schema
 
 
 def _saved_row(path, graph):

@@ -130,7 +130,7 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                 incomplete = c['answer'].get('status') != 'answered' or c['answer'].get('missing')
                 # A local inspection view can show partial evidence and its gaps.
                 # Work and monitoring still require an accepted complete answer.
-                inspection_view = s['kind'] == 'deliverable' and generation == 'local_template'
+                inspection_view = s['kind'] == 'deliverable' and (generation == 'local_template' or s.get('purpose') in ('inspection','proposal'))
                 if incomplete and not inspection_view:
                     s.update(status='blocked', reason='Resolve the incomplete analytical answer first.')
                 elif s.get('unresolved'):
@@ -140,6 +140,9 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                     if generation == 'frontier':
                         from ..clinical.request_plan import quote_text
                         brief = quote_text(s['quote']) if s.get('quote') else s['title']
+                        if s.get('purpose') in ('inspection','proposal'):
+                            brief += ('\nThis is an evidence inspection or proposed design. Display the saved answer status, unknowns and open items prominently. '
+                                      'Preserve all source uncertainty. Do not claim eligibility, completed clinical review, enrollment, orders, shipment or new analytical facts.')
                         d = A.compose_frontier(path, {'context_id': key, 'request': brief},
                                                allow_live=allow_live, send=send)
                         reason = ('Frontier-generated view saved from this answer; structural evidence checks passed.' if d['status'] == 'delivered'

@@ -65,6 +65,10 @@ def validate(steps, question, *, outputs=(), output_quotes=(), output_bindings=N
         if not isinstance(step, dict) or step.get('kind') not in FIELDS:
             raise PlanError('Workflow steps are deliverable, simulation or monitor')
         expected = {'kind', 'title', 'quote', 'unresolved'} | FIELDS[step['kind']]
+        if step['kind'] == 'deliverable' and 'purpose' in step:
+            expected.add('purpose')
+            if step['purpose'] not in ('final','inspection','proposal'):
+                raise PlanError('Deliverable purpose must be final, inspection or proposal')
         if step['kind'] == 'simulation' and 'selection' in step:
             expected.add('selection')
         if set(step) != expected:

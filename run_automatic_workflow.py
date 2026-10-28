@@ -37,12 +37,41 @@ def parser():
     p.add_argument('--output',required=True,type=Path,help='New per-attempt receipt directory')
     p.add_argument('--expect-source',help='Required with --execute; fingerprint printed by offline preflight')
     p.add_argument('--execute',action='store_true')
+    p.add_argument('--resume-attempt',type=Path,help='Explicit owned unfinished attempt; re-execute its literal read-only tools on the same question/source, never reuse its final answer')
     p.add_argument('--rsi',action='store_true',help='Opt into candidate RSI qualification; default off')
     p.add_argument('--bulk-note-ner',action='store_true',help='Explicitly enable optional warehouse-wide NER during materialization; full documents remain available either way')
     p.add_argument('--component-learning',action='store_true',help='Collect new isolated learning observations without legacy stores')
     p.add_argument('--component-release-root',type=Path,help='Explicit isolated component release registry; defaults to this runtime/component-learning when enabled')
     p.add_argument('--learning-plan',type=Path,help='Explicit offline component-learning-plan/1; no automatic provider use')
     return p
+
+
+def retained_actions(directory, runtime, request):
+    from clinical_core.agere.deliverables import answer_context as A
+    from clinical_core.agere.clinical.harness_improvement import READ_ONLY
+    result_path=directory/'result.json'
+    result=json.loads(result_path.read_text())
+    preflight=json.loads((directory/'preflight.json').read_text())
+    if Path(preflight['runtime']).resolve()!=runtime.resolve() or result.get('question')!=request['question'] or result.get('synthetic') is not True:
+        raise ValueError('Recovery question/runtime/synthetic binding differs')
+    request_digest=hashlib.sha256(json.dumps(request,sort_keys=True).encode()).hexdigest()
+    if preflight.get('request_digest'):
+        if preflight['request_digest']!=request_digest:raise ValueError('Recovery input scope/context changed')
+    elif set(request)!={'question','scope'} or request.get('scope')!='warehouse':
+        raise ValueError('Legacy recovery requires the explicit original warehouse scope')
+    context=A.load(runtime,(result.get('action_context') or {}).get('id'))
+    if not preflight.get('request_digest') and context.get('input_patient_ids') is not None:
+        raise ValueError('Legacy recovery cannot change the selected population')
+    if context['source']!=A.source_identity(runtime) or context['question']!=request['question']:
+        raise ValueError('Recovery warehouse source/question changed')
+    calls=(result.get('investigation') or {}).get('tool_calls') or []
+    actions=[]
+    for c in calls:
+        if c.get('name') not in READ_ONLY or not isinstance(c.get('input'),dict):raise ValueError('Recovery contains an unsupported tool')
+        actions.append({'name':c['name'],'input':c['input']})
+    if not actions:raise ValueError('Recovery has no retained native actions')
+    return actions,{'attempt':str(directory.resolve()),'result_sha256':hashlib.sha256(result_path.read_bytes()).hexdigest(),
+                    'read_only_actions':len(actions),'reuse_final_answer':False,'reexecute_native_tools':True}
 
 
 def run(a):
@@ -57,11 +86,14 @@ def run(a):
         if plan.get('schema')!='component-learning-plan/1' or not isinstance(plan.get('jobs'),list):raise ValueError('Explicit component-learning-plan/1 required')
     fingerprint=source_fingerprint()
     if a.expect_source and a.expect_source!=fingerprint:raise ValueError('Source changed after offline verification; freeze and verify again')
+    recovery_actions=None;recovery_receipt=None
+    if getattr(a,'resume_attempt',None) is not None:
+        recovery_actions,recovery_receipt=retained_actions(a.resume_attempt,a.runtime,request)
     before=ledger_status(a.ledger)
     release_root=getattr(a,'component_release_root',None) or (a.runtime/'component-learning' if getattr(a,'component_learning',False) else None)
     preflight={'schema':'automatic-workflow-run/1','status':'offline_preflight','source_fingerprint':fingerprint,
-               'runtime':str(a.runtime.resolve()),'retained_cache_ledger':str(a.ledger.resolve()),'ledger_before':before,
-               'provider_calls':0,'transport':'subscription','bulk_note_ner':bool(getattr(a,'bulk_note_ner',False)),'rsi':'candidate_on' if a.rsi else 'off',
+               'request_digest':hashlib.sha256(json.dumps(request,sort_keys=True).encode()).hexdigest(),'runtime':str(a.runtime.resolve()),'retained_cache_ledger':str(a.ledger.resolve()),'ledger_before':before,
+               'provider_calls':0,'owned_recovery':recovery_receipt,'transport':'subscription','bulk_note_ner':bool(getattr(a,'bulk_note_ner',False)),'rsi':'candidate_on' if a.rsi else 'off',
                'component_learning':bool(getattr(a,'component_learning',False)),
                'component_release_root':str(release_root.resolve()) if release_root is not None else None,
                'learning_plan':str(a.learning_plan.resolve()) if getattr(a,'learning_plan',None) is not None else None,
@@ -96,7 +128,8 @@ def run(a):
         from clinical_core.agere.clinical.conversation import handle_compose
         from clinical_core.agere.request_lineage import Execution
         stack=Stack(a.runtime,allow_live=True);stack.ledger_path=a.ledger.resolve()
-        with Execution(stack.path,'/api/stack/compose',request) as execution:
+        from clinical_core.agere.clinical.harness_improvement import owned_recovery
+        with owned_recovery(recovery_actions,request['question']), Execution(stack.path,'/api/stack/compose',request) as execution:
             result=handle_compose(stack,request);execution.finish(result)
         (a.output/'result.json').write_text(json.dumps(result,indent=2,default=str)+'\n')
         summary={**preflight,'status':'returned','seconds':time.monotonic()-started,
