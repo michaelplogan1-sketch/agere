@@ -64,6 +64,11 @@ class Translation(unittest.TestCase):
             r = T.respond({'model': 'claude-haiku-5-5', 'tools': tools, 'messages': [{'role': 'user', 'content': 'q'}]})
         self.assertEqual(r['stop_reason'], 'tool_use'); self.assertEqual(r['content'][0]['input'], {'query': 'SELECT 2'})
         self.assertEqual(r['usage']['input_tokens'], 10)
+        cached={'input_tokens':10,'output_tokens':5,'cache_creation_input_tokens':100,
+                'cache_creation':{'ephemeral_5m_input_tokens':20,'ephemeral_1h_input_tokens':80}}
+        with patch.object(T,'run_cli',return_value={'result':'{}','usage':cached}):
+            priced=T.respond({'model':'claude-haiku-5-5','messages':[{'role':'user','content':'q'}]})
+        self.assertEqual(priced['usage']['cache_creation'],cached['cache_creation'])
         with patch.object(T, 'run_cli', return_value={'result': '{"answer": 3}', 'usage': {}}):
             r = T.respond({'model': 'claude-haiku-5-5', 'messages': [{'role': 'user', 'content': 'q'}]})
         self.assertEqual(r['stop_reason'], 'end_turn'); self.assertEqual(r['content'][0]['text'], '{"answer": 3}')

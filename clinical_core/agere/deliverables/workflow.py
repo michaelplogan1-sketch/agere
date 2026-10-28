@@ -77,7 +77,7 @@ def _progress(context):
                         'workflow':[{k:s.get(k) for k in ('kind','purpose','unresolved')} for s in context.get('workflow') or []]})
 
 
-def fulfill(stack,question,result,*,original_question=None):
+def fulfill(stack,question,result,*,original_question=None,generation=None):
     """Capture and finish the existing request, including upstream artifact repair.
 
     Costs and every immutable context are retained. Progress, not an iteration
@@ -85,9 +85,14 @@ def fulfill(stack,question,result,*,original_question=None):
     reconciliation instead of being duplicated on a changed analytical context.
     """
     from ..clinical import evaluation
+    if generation not in (None,'saved_report','frontier'):
+        raise ValueError('Choose saved_report or frontier delivery')
     original_question=original_question or question
     seen=set();attempts=[];initial=None;stop=None;total_calls=0;known=0.;complete=True
     while True:
+        if generation is not None:
+            result={**result,'workflow':[{**s,**({'generation':generation} if s.get('kind')=='deliverable' else {})}
+                                        for s in result.get('workflow') or []]}
         key=A.capture(stack.path,question,result,original_question=original_question)
         if not key:
             if attempts:
@@ -113,7 +118,7 @@ def fulfill(stack,question,result,*,original_question=None):
         if evaluation.active():break
         if result.get('workflow') and result.get('program_results'):
             save_program_workflow(stack.path,key,result['workflow']);break
-        delivered=materialize(stack.path,key,generation='frontier',allow_live=bool(getattr(stack,'allow_live',False))) if result.get('workflow') else {
+        delivered=materialize(stack.path,key,generation=generation or 'frontier',allow_live=bool(getattr(stack,'allow_live',False))) if result.get('workflow') else {
             'steps':[],'new_paid_api_calls':0,'known_api_estimate_usd':0,'api_cost_known':True}
         result['workflow']=delivered['steps']
         stage={'context_id':key,'phase':'analysis_and_delivery','new_paid_api_calls':analysis_calls+delivered['new_paid_api_calls'],
@@ -215,8 +220,8 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
     An explicit frontier request never falls back to a local template.
     """
     generation = generation or ('frontier' if allow_live else 'local_template')
-    if generation not in ('frontier', 'local_template'):
-        raise ValueError('Choose frontier or local_template generation')
+    if generation not in ('frontier', 'local_template', 'saved_report'):
+        raise ValueError('Choose frontier, saved_report or local_template generation')
     with _lock:
         try:
             c = A.load(path, key, current=True)
@@ -253,7 +258,7 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                 incomplete = c['answer'].get('status') != 'answered' or c['answer'].get('missing')
                 # A local inspection view can show partial evidence and its gaps.
                 # Work and monitoring still require an accepted complete answer.
-                inspection_view = s['kind'] == 'deliverable' and (generation == 'local_template' or s.get('purpose') in ('inspection','proposal'))
+                inspection_view = s['kind'] == 'deliverable' and (generation in ('local_template','saved_report') or s.get('purpose') in ('inspection','proposal'))
                 if incomplete and not inspection_view:
                     s.update(status='blocked', reason='Resolve the incomplete analytical answer first.')
                 elif s.get('unresolved'):
@@ -270,6 +275,10 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None):
                                                allow_live=allow_live, send=send)
                         reason = ('Frontier-generated view saved from this answer; structural evidence checks passed.' if d['status'] == 'delivered'
                                   else d.get('failure') or 'Generated view failed evidence/number checks. Open the studio to review the failure and costs.')
+                    elif generation == 'saved_report':
+                        from .saved_report import create
+                        d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title']})
+                        reason = 'Reusable report saved from the exact answer, including analytical status and uncertainty; no model call for rendering.'
                     else:
                         from .mock_views import create
                         d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title']})

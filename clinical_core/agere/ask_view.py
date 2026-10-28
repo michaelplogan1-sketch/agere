@@ -869,15 +869,17 @@ function details(a){let h='';
  if(a.query)h+='<details><summary>Query</summary><pre>'+esc(a.query)+'</pre></details>';
  return h}
 function executionInfo(d){d=d||{};const pr=d.planner_receipt||{},econ=d.planning_economics||{},tg=d.together||{},analyst=tg.analyst||{},hybrid=tg.hybrid||{};
- const calls=isNum(d.new_paid_api_calls)?d.new_paid_api_calls:isNum(pr.new_paid_api_calls)?pr.new_paid_api_calls:null;
- const total=econ.failed_or_unpriced_api_cost?null:isNum(econ.new_api_estimate_usd)?econ.new_api_estimate_usd:null;
- const known=isNum(econ.known_api_estimate_usd)?econ.known_api_estimate_usd:null;
+ const cr=d.cost_receipt,authoritative=!!(cr&&cr.version==='cost-receipt/1');
+ const calls=authoritative?(isNum(cr.paid_calls)?cr.paid_calls:null):isNum(d.new_paid_api_calls)?d.new_paid_api_calls:isNum(pr.new_paid_api_calls)?pr.new_paid_api_calls:null;
+ const total=authoritative?(cr.ledger_consistent===true&&cr.accounting_complete!==false&&cr.usd_known===true&&isNum(cr.usd)?cr.usd:null):econ.failed_or_unpriced_api_cost?null:isNum(econ.new_api_estimate_usd)?econ.new_api_estimate_usd:null;
+ const known=authoritative?(isNum((d.cost_telemetry||{}).api_usd)?d.cost_telemetry.api_usd:null):isNum(econ.known_api_estimate_usd)?econ.known_api_estimate_usd:null;
  const cost=total!=null?'$'+total.toFixed(4):'Unknown'+(known>0?' (known portion $'+known.toFixed(4)+')':'');
  const models=new Set();function model(v){if(typeof v==='string'&&v)models.add(v)}
  function walk(r){if(!r||typeof r!=='object')return;model(r.model);(r.stages||[]).forEach(walk);if(r.receipt)walk(r.receipt)}
  (pr.steps||[]).forEach(walk);if(pr.model)model(pr.model);
  if(analyst.state&&!String(analyst.state).startsWith('skipped')){model(analyst.model);Object.values(hybrid.models||{}).forEach(model)}
  if(tg.reconcile)model(tg.reconcile.model);
+ if(authoritative)Object.entries(cr.calls_by_model||{}).filter(([_,n])=>isNum(n)&&n>0).forEach(([name])=>model(name));
  const raw=pr.route||d.route||'',route=tg.winner==='analyst'?'Executed analyst SQL':ROUTES[raw]||raw||'Not recorded';
  const graph=d.graph||{},nodes=Array.isArray(graph.nodes)?graph.nodes:[],operations=[...new Set(nodes.map(n=>n.operation).filter(Boolean))];
  return {route,calls,total,known,cost,models:[...models],operations,reason:tg.reason||pr.escalation_reason||'',
@@ -937,7 +939,7 @@ async function ask(question,opt){opt=opt||{};question=String(question||'').trim(
  state.busy=true;$('#askb').disabled=true;$('#newconv').disabled=true;$('#q').readOnly=true;activeTab='overview';
  if(!state.cid){state.cid=newId();store.set('agere-conversation',state.cid)}
  const t={question,pending:true,focus:opt.focus,scopeBefore:parent?{context:parent,value:selectedScope}:null};state.turns.push(t);renderTurn(state.turns.length-1);const t0=performance.now();
- try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,conversation_id:state.cid,...(parent?{answer_context_id:parent.id,...(selectedScope==='input'?{answer_scope:'input'}:{})}:{}),...(!parent?{scope:'warehouse'}:{})})});
+ try{const r=await fetch('/api/stack/compose',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({question,delivery_generation:$('#delivery-generation').value,conversation_id:state.cid,...(parent?{answer_context_id:parent.id,...(selectedScope==='input'?{answer_scope:'input'}:{})}:{}),...(!parent?{scope:'warehouse'}:{})})});
   let d;try{d=await r.json()}catch(_){d={error:'HTTP '+r.status}}t.seconds=(performance.now()-t0)/1000;t.pending=false;
   if(d.error||!r.ok){t.error=d.error||('HTTP '+r.status)}else{t.data=d;t.resolved=(d.conversation||{}).resolved_question}}
  catch(err){t.pending=false;t.error=String(err)}finally{state.busy=false;$('#askb').disabled=false;$('#newconv').disabled=false;$('#q').readOnly=false}
@@ -949,7 +951,7 @@ function newConversation(){if(state.busy)return;conversationEpoch++;state.cid=nu
 function loadEcon(){fetch('/api/stack/economics').then(r=>r.ok?r.json():null).then(e=>{if(!e)return;
  $('#econ').innerHTML='<span class="pill" title="Questions answered by this installation"><b>'+fmt(e.questions||0)+'</b> questions</span>'+
   '<span class="pill" title="Answered without any paid model call"><b>'+(e.share_without_api_calls!=null?Math.round(100*e.share_without_api_calls)+'%':'—')+'</b> without paid calls</span>'+
-  '<span class="pill" title="Known hosted model spend"><b>$'+(e.api_usd||0).toFixed(2)+'</b> spend</span><span id="loop"></span>';loadLoop()}).catch(()=>{})}
+  '<span class="pill" title="Known API-equivalent usage estimates; subscription allocation and local compute are excluded"><b>$'+(e.api_usd||0).toFixed(2)+'</b> known usage estimate</span>'+(e.unknown_usage_questions?'<span class="pill">'+fmt(e.unknown_usage_questions)+' unpriced question(s)</span>':'')+'<span id="loop"></span>';loadLoop()}).catch(()=>{})}
 function loadLoop(){Promise.all(['/api/stack/learning','/api/stack/learning-loop'].map(url=>fetch(url).then(r=>r.ok?r.json():null))).then(([learning,loop])=>{
  if(!$('#loop'))return;const shapes=learning?.reusable_structures||{},stored=Object.values(shapes).reduce((n,s)=>n+(s.active||0),0),revoked=Object.values(shapes).reduce((n,s)=>n+(s.revoked||0),0);
  let html=learning?'<span class="pill" title="'+esc(learning.learning_mode||'Checked structures remain source- and policy-bound; counts are not a quality score.')+'"><b>'+fmt(stored)+'</b> saved plan structures · <b>'+fmt(learning.corrections||0)+'</b> corrections · <b>'+fmt(revoked)+'</b> suspended</span>':'';

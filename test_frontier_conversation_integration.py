@@ -1,5 +1,6 @@
 """Owner integration checks across execution, artifacts and request accounting."""
 import copy
+import json
 import importlib
 import re
 import sqlite3
@@ -37,6 +38,8 @@ class FrontierConversationIntegration(unittest.TestCase):
     def sender(self, body):
         self.assertEqual(body['tool_choice'], {'type': 'none'})
         prompt = body['messages'][0]['content']
+        if 'Assess the COMPLETE artifact' in prompt:
+            return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]},{'cost_estimate':{'estimated_usd':.01}}
         rid = re.search(r'"receipt":"(R-[0-9a-f]{10})","tool":"saved_answer"', prompt).group(1)
         return {'content': [{'type': 'text', 'text': (
             'TITLE: Executive review\n```html\n<h1>Executive review</h1>'
@@ -62,10 +65,10 @@ class FrontierConversationIntegration(unittest.TestCase):
         self.assertEqual(result['answer']['patient_ids'], ['A', 'C'])
         step = result['workflow'][0]
         self.assertEqual((step['status'], step['generation']), ('ready', 'frontier'))
-        self.assertEqual(result['new_paid_api_calls'], 2)
-        self.assertEqual(result['planning_economics']['new_api_estimate_usd'], 0.375)
+        self.assertEqual(result['new_paid_api_calls'], 3)
+        self.assertEqual(result['planning_economics']['new_api_estimate_usd'], 0.385)
         self.assertFalse(result['planning_economics']['total_cost_known'])
-        self.assertEqual(self.usage(), ((2, 0.375), (2, 0.375)))
+        self.assertEqual(self.usage(), ((3, 0.385), (3, 0.385)))
         context = answer_context.load(self.path, result['action_context']['id'])
         _, bundle, _, _ = composer.load(
             answer_context.workspace(self.path, context), step['deliverable_id'])
@@ -77,9 +80,9 @@ class FrontierConversationIntegration(unittest.TestCase):
         result = self.ask()
         economics = result['planning_economics']
         self.assertIsNone(economics['new_api_estimate_usd'])
-        self.assertEqual(economics['known_api_estimate_usd'], 0.375)
+        self.assertEqual(economics['known_api_estimate_usd'], 0.385)
         self.assertFalse(economics['api_cost_known'])
-        self.assertEqual(self.usage(), ((2, None), (2, None)))
+        self.assertEqual(self.usage(), ((3, None), (3, None)))
 
     def test_unknown_artifact_cost_keeps_known_planner_subtotal(self):
         self.prepare()
@@ -103,7 +106,7 @@ class FrontierConversationIntegration(unittest.TestCase):
         self.assertEqual(first['workflow'][0]['deliverable_id'], repeated['workflow'][0]['deliverable_id'])
         self.assertEqual(repeated['new_paid_api_calls'], 0)
         self.assertEqual(repeated['planning_economics']['new_api_estimate_usd'], 0)
-        self.assertEqual(repeated['workflow'][0]['costs']['total_usd'], 0.25)
+        self.assertEqual(repeated['workflow'][0]['costs']['total_usd'], 0.26)
         self.assertEqual(self.usage(), ((0, 0), (0, 0)))
         sender.assert_not_called()
 

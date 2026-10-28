@@ -221,8 +221,12 @@ def respond(body, *, timeout=None):
         timeout = float(configured)
     out = run_cli(model, system, user, timeout=timeout)
     text = out.get('result') or ''
-    usage = out.get('usage') or {}
-    usage = {k: usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
+    reported_usage = out.get('usage') or {}
+    usage = {k: reported_usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
+    if 'cache_creation' in reported_usage:
+        # Preserve reported cache TTLs for pricing. Never turn a one-hour write
+        # into a cheaper five-minute write by dropping the provider breakdown.
+        usage['cache_creation'] = reported_usage['cache_creation']
     calls = _tool_calls(text, body.get('tools'))
     if calls:
         content, stop = [{'type': 'tool_use', 'id': 'toolu_' + uuid.uuid4().hex[:20], 'name': call['name'], 'input': call['input']} for call in calls], 'tool_use'

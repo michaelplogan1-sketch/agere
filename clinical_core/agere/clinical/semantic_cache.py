@@ -224,6 +224,8 @@ def effective_gate(info, global_gate, encoder_identity=None):
 def lookup(path, question, encoder, *, threshold=None):
     """-> (hit | None, receipt). hit = {plan_kind, plan, agreement, matched_question}."""
     from . import learning
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT') or os.environ.get('AGERE_COMPONENT_LEARNING')=='on':
+        return None, {'cache': VERSION, 'reason': 'Legacy verified-question store excluded from isolated component runtime'}
     pinned = threshold is not None
     gate = similarity_gate(encoder) if threshold is None else {'threshold': threshold, 'calibrated': False}
     threshold = gate['threshold']

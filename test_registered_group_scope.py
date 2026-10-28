@@ -22,6 +22,17 @@ class Scope(unittest.TestCase):
  def test_repair_can_keep_original_evidence_and_use_correct_group(self):
   c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')"),call('agere_result_2',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b')"),call('agere_result_3','SELECT a.patient_id,b.therapy FROM agere_result_1 a JOIN agere_result_2 b USING(patient_id)')]
   self.assertEqual(D.group_query_issues('Assess prevention medications',c,'agere_result_3'),[])
+ def test_partial_case_filter_cannot_widen_one_registered_subtype(self):
+  with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
+   c=[call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class IN ('narrow_a','broad') THEN 1 ELSE 0 END) AS therapy FROM fill GROUP BY patient_id"),call('agere_result_2','SELECT * FROM agere_result_1')]
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_2'))
+   c[0]=call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class='narrow_a' OR drug_class='broad' THEN 1 ELSE 0 END) AS therapy FROM fill GROUP BY patient_id")
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_2'))
+   c[0]=call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class IN ('narrow_a') THEN 1 ELSE 0 END) AS therapy FROM fill GROUP BY patient_id")
+   self.assertEqual(D.group_query_issues('Assess prevention medications',c,'agere_result_2'),[])
+ def test_subtype_rule_does_not_redefine_a_group_that_explicitly_includes_parent(self):
+  with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}),patch.object(D,'GROUPS',{'maintenance':['narrow_a','broad']}):
+   self.assertEqual(D.group_query_issues('Assess maintenance medications',[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','broad')")],'agere_result_1'),[])
  def test_blocked_group_review_preserves_computed_rows(self):
   c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")];a={'table_from_tool':'agere_result_1'}
   r=B.review_final(None,'Assess prevention medications',a,c,None,ledger=None,as_of='2030-05-27');self.assertEqual(r['status'],'repair');self.assertEqual(len(a['table']),1)

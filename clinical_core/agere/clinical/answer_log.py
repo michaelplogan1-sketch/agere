@@ -44,19 +44,29 @@ def summary(path):
     if not target.exists(): return {'questions': 0}
     db = sqlite3.connect(f'file:{target}?mode=ro', uri=True)
     try:
-        total, calls, usd = db.execute('SELECT count(*), coalesce(sum(api_calls),0), coalesce(sum(api_usd),0) FROM answers').fetchone()
-        unknown = db.execute('SELECT count(*) FROM answers WHERE api_usd IS NULL OR api_calls IS NULL').fetchone()[0]
+        # The request-wide ledger telemetry includes readers, artifacts and
+        # worker threads that the planner-only historical columns omit.
+        tables={r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        columns={r[1] for r in db.execute('PRAGMA table_info(answers)')}
+        if 'answer_costs' in tables and 'question_id' in columns:
+            rows=db.execute("SELECT a.route,a.status,CASE WHEN c.question_id IS NOT NULL THEN c.api_calls ELSE a.api_calls END, "
+                "CASE WHEN c.question_id IS NOT NULL THEN CASE WHEN c.usd_known=1 THEN c.api_usd ELSE NULL END ELSE a.api_usd END,a.seconds "
+                "FROM answers a LEFT JOIN answer_costs c ON c.question_id=a.question_id").fetchall()
+        else:rows=db.execute('SELECT route,status,api_calls,api_usd,seconds FROM answers').fetchall()
+        total=len(rows);calls=sum(r[2] or 0 for r in rows);usd=sum(r[3] or 0 for r in rows)
+        unknown=sum(r[2] is None or r[3] is None for r in rows)
         import statistics
         by = {}
-        for route, calls_, usd_, secs in db.execute('SELECT coalesce(route, "unknown"), api_calls, api_usd, seconds FROM answers'):
+        for route, status, calls_, usd_, secs in rows:
+            route=route or 'unknown'
             r = by.setdefault(route, {'route': route, 'questions': 0, 'api_calls': 0, 'api_usd': 0.0, 'seconds': []})
             r['questions'] += 1; r['api_calls'] += calls_ or 0; r['api_usd'] += usd_ or 0.0; r['seconds'].append(secs or 0.0)
         routes = sorted(({**{k: v for k, v in r.items() if k != 'seconds'}, 'api_usd': round(r['api_usd'], 4),
                           'median_seconds': round(statistics.median(r['seconds']), 2)} for r in by.values()), key=lambda r: -r['questions'])
-        zero = db.execute("SELECT count(*) FROM answers WHERE api_calls = 0 AND status = 'answered'").fetchone()[0]
+        zero = sum(calls_ == 0 and status == 'answered' for _,status,calls_,_,_ in rows)
     finally:
         db.close()
     return {'questions': total, 'answered_without_api_calls': zero, 'share_without_api_calls': round(zero / total, 4) if total else None,
             'api_calls': calls, 'api_usd': round(usd, 4), 'unknown_usage_questions': unknown,
-            'cost_scope': 'Recorded known API estimates; historical undercount and local costs remain unresolved.',
+            'cost_scope': 'Request-wide telemetry where available, otherwise historical planner estimates. Prices are those recorded at execution; subscription allocation and local costs are excluded.',
             'usd_per_question': round(usd / total, 6) if total and not unknown else None, 'routes': routes}

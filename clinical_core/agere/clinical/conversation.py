@@ -614,6 +614,10 @@ def compose_shape(body):
     keys = set(body)
     if not isinstance(body.get('question'), str): raise ValueError('Explicit composition question and supported optional candidate policy required')
     conv = False
+    if 'delivery_generation' in keys:
+        if body['delivery_generation'] not in ('saved_report','frontier'):
+            raise ValueError('Choose saved_report or frontier delivery')
+        keys -= {'delivery_generation'}
     if 'conversation_id' in keys:
         conv = check_id(body['conversation_id']); keys = keys - {'conversation_id'}
     if 'scope' in keys:
@@ -1098,7 +1102,8 @@ def handle_compose(stack, body, hosted_factory=None):
             from . import request_program
             request_program.materialize(stack, result)
         from ..deliverables.workflow import fulfill
-        result=fulfill(stack,resolution['standalone'] if resolution else question,result,original_question=question)
+        result=fulfill(stack,resolution['standalone'] if resolution else question,result,original_question=question,
+                       generation=body.get('delivery_generation'))
     except (OSError, ValueError, sqlite3.Error) as exc:
         result = {**result, 'action_context_error': str(exc)}
     if conv is not False:

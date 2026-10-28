@@ -208,6 +208,8 @@ _VALSARTAN = re.compile(r'\bvalsartan\b', re.I)
 _OTHER_ARB = _COMPILED['arb']
 
 
+SUBCLASS_PARENTS = {'hf_evidence_based_beta_blocker': 'beta_blocker'}
+
 def group_query_issues(question, calls, final_view=None):
     """Audit named group coverage against literal class filters and native result lineage.
 
@@ -234,6 +236,18 @@ def group_query_issues(question, calls, final_view=None):
         for node in tree.find_all(exp.In):
             if isinstance(node.this,exp.Column) and node.this.name.lower()=='drug_class' and node.expressions and all(isinstance(v,exp.Literal) and v.is_string for v in node.expressions):
                 values.append({v.this for v in node.expressions})
+        for node in tree.find_all(exp.Or):
+            terms=[]
+            def alternatives(n):
+                if isinstance(n,exp.Paren):return alternatives(n.this)
+                if isinstance(n,exp.Or):return alternatives(n.this) and alternatives(n.expression)
+                if isinstance(n,exp.EQ):
+                    col,lit=n.this,n.expression
+                    if isinstance(lit,exp.Column):col,lit=lit,col
+                    if isinstance(col,exp.Column) and col.name.lower()=='drug_class' and isinstance(lit,exp.Literal) and lit.is_string:
+                        terms.append(lit.this);return True
+                return False
+            if alternatives(node):values.append(set(terms))
         filters[view]=values
     reached=set()
     def visit(view):
@@ -244,7 +258,16 @@ def group_query_issues(question, calls, final_view=None):
     else:reached.update(parents)
     issues=[]
     for group,members in named.items():
-        bad=[(positions[v],v,s-members) for v,sets in filters.items() for s in sets if v in reached and s>members]
+        bad=[]
+        for view,sets in filters.items():
+            if view not in reached:continue
+            for selected in sets:
+                # A CASE expression can widen one pillar without containing
+                # the entire registered group in any single IN filter.
+                widened={parent for child,parent in SUBCLASS_PARENTS.items()
+                         if child in members and child in selected and parent in selected and parent not in members}
+                extra=(selected-members) if selected>members else widened
+                if extra:bad.append((positions[view],view,extra))
         exact=[positions[v] for v,sets in filters.items() if v in reached and members in sets]
         for position,view,extra in bad:
             if any(i>position for i in exact):continue

@@ -163,6 +163,8 @@ def lookup(path, question, encoder, *, model=None, entails=None):
     """-> (hit | None, receipt). hit = {plan_kind, plan, agreement, matched_question, template}."""
     from . import learning, semantic_cache
     receipt = {'template_decoding': VERSION}
+    if os.environ.get('AGERE_COMPONENT_RELEASE_ROOT') or os.environ.get('AGERE_COMPONENT_LEARNING')=='on':
+        return None, {**receipt, 'reason': 'Legacy verified-question store excluded from isolated component runtime'}
     if not enabled(): return None, {**receipt, 'reason': 'disabled'}
     if not (os.path.exists(os.path.join(str(path), 'learning.sqlite3'))): return None, {**receipt, 'reason': 'no verified store'}
     if semantic_cache.is_benchmark(question): return None, {**receipt, 'reason': 'benchmark question: never served from templates'}
