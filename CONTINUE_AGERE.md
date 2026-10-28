@@ -1,5 +1,8 @@
 # Continue Agere
 
+CURRENT COST ROUTING CHECKPOINT 2026-10-28T14:46:24.457787+00:00:953648b/sourcef61b308f verified359checks (358pass/one opt-in live skip). Same-tool-loop Haiku-first/checked Sonnet escalation; no re-extraction on verifier outage; aggregate checks retain all evidence without choosing one source; no reword-only repair loop. Read docs/agere/COST_ROUTING_REPAIR_2026-10-28.md and sole control next_action. No new Agere provider run or training, main/default unchanged. Last live output remains attempt7 partial/rejected with recorded errors. Production economics and clinical acceptance unmeasured.
+
+
 CURRENT LIVE CHECKPOINT 2026-10-28T13:57:11.229028+00:00: Attempt7 is COMPLETE after380.1s, not still running.57rows retained; exactHF beta-blocker count14 fixed. Answer partial and artifact rejected. Computed basis13both/17note-only/27coded-only contradicts native headline13note-only; preserve the error. Both finite studies complete/unselected. Next: existing verification boundary evidence sizing and automatic source-bound analyst/reviewer continuation, with generic tests before another complete run. No new training/layers/defaults. Read docs/agere/MVP_STATUS_2026-10-28.md and sole control next_action.
 
 

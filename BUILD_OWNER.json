@@ -5,7 +5,7 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Finite studies complete/unselected; latest live run completed partial/rejected. Repair scalable verification and same-request analyst/reviewer feedback before the next end-to-end run.",
+  "active_work": "Economical role-routing correction953648b passes358offline checks/one live skip. Repair existing System One verification granularity and same-request review continuation before another full metered workflow; no active training/default promotion.",
   "latest_delivery": "docs/agere/HF_SERVICE_DELIVERY_2026-10-26.md",
   "latest_receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
   "owned_server_pid": 87713,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-28T13:57:11.229028+00:00",
+  "latest_checkpoint": "2026-10-28T14:46:24.457787+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -30,12 +30,12 @@
   "last_observed_server_session": 2376,
   "server_status": "Isolated candidate on8888 restarted on b944abd, PID87713/session12081; saved assisted-review workspace reopens; ordinary query stall remains unresolved.",
   "unsealed_work": {
-    "status": "live_workflow_partial_reassessment",
+    "status": "economical_routing_offline_verified",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
     "source": "Verified workflow source integrated only after frozen studies completed",
     "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "Attempt7 completed in380.1s:57rows retained and exact HF-specific beta-blocker count14 now appears in final output. Answer partial; artifactDLV-E3F54A2752AD rejected. Headline mislabels13overlap asnote-only (table17note-only). Global support unknown/provider failures; oversized all-evidence judging and manual downstream-feedback continuation remain. Current therapy/max tolerance, clean reasons, clinical/browser/ten-area qualification and denial finding66 remain open. No training jobs or selected adapters.",
+    "remaining_gap": "Cost-routing candidate953648b verified offline only. Latest live attempt remains7/8fc1cdd0:57rows, partial answer, rejected artifact and wrong13note-only label (table17). Large all-evidence support and automatic artifact-to-analyst continuation remain. No measured fresh accepted-answer price, clinical acceptance, deployed SLM gains or complete MVP. Denial finding66 and full ten-area qualification remain open.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
@@ -89,10 +89,18 @@
       "evidence": "artifacts/agere-live-integration-2026-10-28/verification-review-loop.json",
       "explicit_payload_approval": true,
       "status": "completed_partial_artifact_rejected"
+    },
+    "cost_routing_candidate": {
+      "workspace": "/private/tmp/agere-codex-integration-20261026",
+      "commit": "953648bf51efefb6193c7ae297347b4ae7ec24d7",
+      "source_fingerprint": "f61b308fdd47302c4892bb68de31f4b3f7010fc25ae86168241098286930228a",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-economical-routing.json",
+      "runtime_promoted": false,
+      "live_cost_saving_measured": false
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-10-28T13:57:11.229028+00:00",
+  "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {

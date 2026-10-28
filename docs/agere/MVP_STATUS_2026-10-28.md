@@ -1,5 +1,7 @@
 # Agere MVP status — October 28, 2026
 
+Later checkpoint: generic [cost-routing corrections](COST_ROUTING_REPAIR_2026-10-28.md) pass358offline checks/one optional live skip, with no new Agere provider call. The live results and costs below remain unchanged; no production saving or accepted workflow is claimed.
+
 The latest complete run took **380.1 seconds (6 minutes 20 seconds)** and ended with a **partial answer and rejected deliverable**. This is not an accepted automatic workflow or a ready MVP. There is no defensible remaining completion estimate yet; the earlier 20–35 minute estimate was too optimistic.
 
 ## What actually improved
