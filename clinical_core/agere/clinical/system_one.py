@@ -122,7 +122,7 @@ def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, tas
     steps, results = [], []
     student = None
     try:
-        student = system_one_student.predict(task_key, question, _options(options), evidence) if task_key else None
+        student = system_one_student.predict(task_key, question, _options(options), evidence,as_of=as_of) if task_key else None
     except Exception as exc:  # noqa: BLE001 - the student is an optimization; providers still answer
         steps.append({'provider': 'local_student', 'status': 'error', 'error': f'{type(exc).__name__}: {str(exc)[:200]}'})
     if student and student.get('label'):
@@ -149,7 +149,8 @@ def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, tas
             continue
         results.append(r)
         if r['label'] != 'unknown' and p is not None and p >= threshold:
-            if task_key: system_one_student.record(task_key, question, options, evidence, r['label'], p, provider)
+            if task_key: system_one_student.record(task_key,question,_options(options),evidence,r['label'],p,provider,
+                                                  as_of=as_of,model=r.get('model'),request_hash=r.get('request_hash'))
             return {**r, 'decided_by': provider, 'steps': steps, 'cost_usd': _total(steps)}
     answered = [r for r in results if r.get('status') != 'prepared']
     if answered:
