@@ -100,7 +100,7 @@ def cost(out):
     """(new paid calls, usd) of one choice/decide result: decide's steps when present, else the result itself; cache hits are free."""
     steps = (out or {}).get('steps') or [out or {}]
     paid=[s for s in steps if isinstance(s,dict) and s.get('provider') and s.get('provider')!='local_student' and not s.get('cache_hit')
-          and (not s.get('error') or s.get('cost_usd') is not None) and s.get('status')!='prepared']
+          and (not s.get('error') or s.get('cost_usd') is not None or s.get('attempted')) and s.get('status')!='prepared']
     # Equal input hashes can represent separate charged retries. Deduplicate only
     # an actual provider attempt/receipt identity, never the prompt alone.
     calls=len({s.get('attempt_id') or s.get('receipt_id') or ('unidentified',i) for i,s in enumerate(paid)})
@@ -232,11 +232,17 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     -> {'addresses_question': P(fully)+P(partially), 'label', 'p': P(label), 'probabilities', 'reasons', 'reject': bool,
         'cost_usd', 'calls', 'provider', 'cache_hit', 'version'}"""
     mod = s1()
-    summary = render(question, graph, result, limit=None)
+    from ..deliverables.receipts import compact_json,uncompact_json
+    original={'question':question,'executed_plan':graph,'result':result}
+    encoded=compact_json(original)
+    if uncompact_json(encoded)!=original:raise ValueError('Coverage evidence did not round-trip')
+    summary=json.dumps(encoded,default=str,separators=(',',':'))
     when = as_of_date or as_of(stack)
-    out = mod.decide(f'Question as asked: {question}\nDoes the computed result below answer this question as asked?',
+    out = mod.decide(f'Question as asked: {question}\nDoes the computed result below answer this question as asked? '
+                     'Resolve all lossless table layouts and shared references before judging. Every original plan/result value is present.',
                      CHECK_OPTIONS, [{'id': 'computed', 'text': summary, 'date': when, 'note_id': 'executed_plan'}],
-                     as_of=when, task_key='s1_answer_check', ledger=ledger, allow_live=True)
+                     as_of=when, task_key='s1_answer_check', ledger=ledger, allow_live=True,select_source=False,
+                     long_context=len(summary.encode('utf-8'))>32768)
     probs = _probs(out)
     label = out.get('label') or 'unknown'
     p = float(probs.get(label, 0.0))

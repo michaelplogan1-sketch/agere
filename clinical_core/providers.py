@@ -20,6 +20,7 @@ class EvidenceTask:
     options: dict
     evidence: list
     select_source: bool = True
+    long_context: bool = False
 
     def state(self):
         if not self.options or "unknown" not in self.options:

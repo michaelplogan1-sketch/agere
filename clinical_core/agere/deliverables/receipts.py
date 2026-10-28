@@ -226,3 +226,46 @@ def unshare_json(encoded):
     value=walk(root,(),set())
     if fingerprint(value)!=encoded.get('original_fingerprint'):raise ValueError('Shared JSON fingerprint differs')
     return value
+
+
+def compact_json(value):
+    """Lossless model view: share record layouts and repeated complete values.
+
+    Table layouts apply only at listed paths, so source arrays and marker-like
+    objects remain literal. Native receipts/bindings keep their original shape.
+    """
+    tables=[]
+    def walk(v,path):
+        if isinstance(v,list):
+            if len(v)>1 and isinstance(v[0],dict) and all(isinstance(r,dict) and list(r)==list(v[0]) for r in v):
+                keys=list(v[0]);tables.append({'at':list(path),'columns':keys})
+                return [[walk(row[k],path+(i,j)) for j,k in enumerate(keys)] for i,row in enumerate(v)]
+            return [walk(row,path+(i,)) for i,row in enumerate(v)]
+        if isinstance(v,dict):return {k:walk(x,path+(k,)) for k,x in v.items()}
+        return v
+    packed=walk(value,())
+    return {'encoding':'agere-lossless-compact-json/1',
+            'instructions':'This is the complete evidence, with no omitted rows or text. First resolve the shared JSON references. In the resulting payload, each tables.at path is a list of records stored as arrays: pair every row value with tables.columns in order. Other arrays and objects are literal. Native sources and bindings are unchanged. Judge values and their column meaning, never reference markers.',
+            'shared':share_json({'payload':packed,'tables':tables}),
+            'original_fingerprint':fingerprint(value)}
+
+
+def uncompact_json(encoded):
+    """Verify exact restoration of the complete model view before use."""
+    if encoded.get('encoding')!='agere-lossless-compact-json/1':raise ValueError('Unknown compact JSON encoding')
+    body=unshare_json(encoded['shared']);tables={tuple(t['at']):t['columns'] for t in body['tables']}
+    if len(tables)!=len(body['tables']):raise ValueError('Duplicate table layout')
+    used=set()
+    def walk(v,path):
+        if path in tables:
+            keys=tables[path];used.add(path)
+            if not isinstance(v,list) or len(keys)!=len(set(keys)) or any(not isinstance(k,str) for k in keys):
+                raise ValueError('Invalid table layout')
+            if any(not isinstance(row,list) or len(row)!=len(keys) for row in v):raise ValueError('Invalid compact row')
+            return [{k:walk(row[j],path+(i,j)) for j,k in enumerate(keys)} for i,row in enumerate(v)]
+        if isinstance(v,list):return [walk(x,path+(i,)) for i,x in enumerate(v)]
+        if isinstance(v,dict):return {k:walk(x,path+(k,)) for k,x in v.items()}
+        return v
+    value=walk(body['payload'],())
+    if used!=set(tables) or fingerprint(value)!=encoded.get('original_fingerprint'):raise ValueError('Compact JSON fingerprint/layout differs')
+    return value

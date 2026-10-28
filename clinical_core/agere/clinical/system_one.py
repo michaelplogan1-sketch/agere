@@ -87,7 +87,8 @@ def _result(raw, provider, task_key):
             'request_hash': raw.get('request_hash'), 'task_key': task_key}
 
 
-def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, allow_live=True, task_key=None, select_source=True):
+def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, allow_live=True, task_key=None, select_source=True,
+           long_context=False):
     """One typed Choice. Returns {'label','probabilities','calibrated_probabilities','evidence_ids','provider','model',
     'cost_usd','cache_hit','request_hash'}; with allow_live=False and no cached answer, status='prepared' and label None.
     Provider/request errors raise (decide() turns them into steps)."""
@@ -95,7 +96,7 @@ def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, a
         raise ValueError(f'System One provider must be one of {PROVIDERS}')
     as_of = str(as_of)[:10]
     date.fromisoformat(as_of)
-    task = EvidenceTask(str(question), as_of, _options(options), _evidence(evidence, as_of),select_source=select_source)
+    task = EvidenceTask(str(question), as_of, _options(options), _evidence(evidence, as_of),select_source=select_source,long_context=long_context)
     handle, owned = _open_ledger(ledger)
     try:
         raw = _gateway(handle, allow_live).classify(provider, task)
@@ -110,7 +111,7 @@ def choice(question, options, evidence, *, as_of, provider='jev', ledger=None, a
 
 
 def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, task_key=None, ledger=None, allow_live=True,
-           select_source=True):
+           select_source=True,long_context=False):
     """Cheapest typed provider first; the next one only when the previous is below threshold (calibrated), says 'unknown',
     or fails. Returns the accepted (else best) choice plus 'decided_by' (None when nobody cleared the bar), 'steps' and
     total 'cost_usd'. Never raises for a provider failure: when every provider fails the label is 'unknown'.
@@ -138,9 +139,10 @@ def decide(question, options, evidence, *, as_of, order=None, threshold=0.8, tas
     for provider in order:
         try:
             r = choice(question, options, evidence, as_of=as_of, provider=provider, ledger=ledger, allow_live=allow_live,
-                       task_key=task_key,select_source=select_source)
+                       task_key=task_key,select_source=select_source,long_context=long_context)
         except Exception as exc:  # one provider failing never walls the caller out
-            steps.append({'provider': provider, 'status': 'error', 'error': f'{type(exc).__name__}: {str(exc)[:200]}'})
+            steps.append({'provider': provider, 'status': 'error', 'error': f'{type(exc).__name__}: {str(exc)[:200]}',
+                          **getattr(exc,'provider_receipt',{})})
             continue
         p = r['calibrated_probabilities'].get(r['label']) if r['label'] else None
         steps.append({'provider': provider, 'status': r.get('status', 'answered'), 'label': r['label'], 'probability': p,

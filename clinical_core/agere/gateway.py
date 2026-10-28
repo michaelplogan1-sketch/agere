@@ -78,9 +78,10 @@ class BudgetLedger:
             n=self.db.execute("UPDATE calls SET status='abandoned',error='process ended before response' WHERE status='pending'").rowcount
         return n
     def finish(self,key,response=None,error=None,seconds=0):
+        status='validated' if response is not None and error is None else 'failed'
         with self.db:self.db.execute('UPDATE calls SET status=?,response=?,error=?,seconds=? WHERE id=?',
-            ('validated' if response is not None else 'failed',json.dumps(response) if response is not None else None,error,seconds,key))
-        ledger_event(self,'request_finished',key,status='validated' if response is not None else 'failed')
+            (status,json.dumps(response) if response is not None else None,error,seconds,key))
+        ledger_event(self,'request_finished',key,status=status)
     def extend_authorization(self,new_cap,authorization):
         """Record an explicit user authorization; never invoked by ordinary inference."""
         if self.cap is None or type(new_cap) not in (int,float) or not math.isfinite(new_cap) or new_cap<=self.cap:
@@ -159,15 +160,19 @@ class PersistentGateway:
         # Future source dates cannot enter any provider request.
         date.fromisoformat(task.as_of)
         for evidence in task.evidence:
-            date.fromisoformat(evidence['date'])
-            if evidence['date']>task.as_of:raise ValueError('Evidence beyond cutoff')
+            if evidence['date']!='unknown':
+                date.fromisoformat(evidence['date'])
+                if evidence['date']>task.as_of:raise ValueError('Evidence beyond cutoff')
         parser=ClaudeProvider(None) if provider=='claude' else JevProvider(None,model=self.MODELS[provider])
         if provider=='claude':
             from .model_policy import claude_model
             parser.model=claude_model(parser.model,track=True)  # Opus only for deliverables (model_policy)
         body=parser.request(task)
         parser.name=provider  # Perplexity Decisions and Jev share this typed Choice contract.
-        key=digest({'provider':provider,'body':body,'contract':2})
+        identity={'provider':provider,'body':body,'contract':2}
+        long_context=provider=='jev' and getattr(task,'long_context',False)
+        if long_context:identity['transport']={'TypeSafe-Danger-Zone-Long-Context':'true'}
+        key=digest(identity)
         old=self.ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
         if old and old[0]=='validated':
             raw=json.loads(old[1]);return {**self._parse(parser,task,raw),'cache_hit':True,'new_paid_api_usd':0}
@@ -183,9 +188,11 @@ class PersistentGateway:
         cached=self.ledger.reserve(key,provider,body['model'])
         if cached is not None:return self._parse(parser,task,cached)
         headers={'Content-Type':'application/json'}
+        if long_context:headers['TypeSafe-Danger-Zone-Long-Context']='true'
         if provider=='claude':headers.update({'x-api-key':secret,'anthropic-version':'2023-06-01'})
         else:headers['Authorization']='Bearer '+secret
         start=time.perf_counter()
+        raw=None
         try:
             with self.transport(urllib.request.Request(endpoint,data=encoded,headers=headers),timeout=45) as response:raw=json.loads(response.read())
             if raw.get('model')!=body['model']:raise ValueError('Unexpected actual model revision')
@@ -194,8 +201,17 @@ class PersistentGateway:
             from .economics import usage_cost
             return {**parsed,'request_hash':key,'usage':raw.get('usage'),'cost_estimate':usage_cost(body['model'],raw.get('usage'))}
         except Exception as e:
-            error='HTTP '+str(e.code) if isinstance(e,urllib.error.HTTPError) else type(e).__name__
-            self.ledger.finish(key,error=error,seconds=time.perf_counter()-start)
+            error=type(e).__name__+': '+str(e)
+            if isinstance(e,urllib.error.HTTPError):
+                try:detail=e.read().decode('utf-8',errors='replace')
+                except Exception:detail='Error body unavailable'
+                raw={'provider_error':{'http_status':e.code,'body':detail}}
+                error='HTTP '+str(e.code)+': '+detail
+            self.ledger.finish(key,response=raw,error=error,seconds=time.perf_counter()-start)
+            from .economics import usage_cost
+            price=usage_cost(body['model'],raw.get('usage')) if isinstance(raw,dict) and raw.get('model')==body['model'] else None
+            e.provider_receipt={'attempt_id':key,'request_hash':key,'attempted':True,'model':body['model'],
+                                'cost_usd':(price or {}).get('estimated_usd'),'usage':raw.get('usage') if isinstance(raw,dict) else None}
             raise
     def cascade(self,task,*,primary='jev',acceptance_threshold=None):
         first=self.classify(primary,task)

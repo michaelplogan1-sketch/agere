@@ -136,7 +136,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                                 '\nFindings: '+json.dumps(found),{'supported':'Every finding is supported and no relevant documented finding was omitted',
                                 'unsupported':'A finding misreads the source or relevant documented evidence is missing','unknown':'Cannot establish completeness and support'},evidence,
                                 as_of=tools.as_of,ledger=ledger,allow_live=bool(tools.stack.allow_live),task_key='whole_document_review_support',
-                                select_source=False)
+                                select_source=False,long_context=len(json.dumps(evidence).encode('utf-8'))>32768)
                             checks.append(check)
                             if check.get('label')!='supported' or not check.get('decided_by'):
                                 provider_errors=[s for s in check.get('steps') or [] if s.get('error') or s.get('status')=='error']
