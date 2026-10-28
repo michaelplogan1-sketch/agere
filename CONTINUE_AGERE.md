@@ -1,5 +1,8 @@
 # Continue Agere
 
+CURRENT AUTOMATIC REVIEW CHECKPOINT 2026-10-28T15:56:20.694111+00:00: Source8e53fb0/core588596c6 passes438checks (437pass/one optional live skip), no providers/protected reads. Existing artifact QA now continues the original source-bound analyst with exact scope, native re-execution, costs, progress checks and subscription-limit stop; mixed internal work needs reconciliation. Native table previews expose code-computed counts. Complete artifact prompt1,188,110to1,057,526bytes, unchanged native data; actual cache saving unmeasured. Nine typed native diagnostics cost$0.016910674 but numeric-role checks failed qualification and remain OFF; do not report clinical improvement. Read docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md and sole control next_action. Next execute original owned attempt7 continuation on this source/approved destinations, audit facts/doses/reasons/artifact/cost. Last full native result remains attempt7 partial/rejected. No fitting, new models, protected keys, main deployment or quotas. Both training studies complete/unselected.
+
+
 CURRENT COST ROUTING CHECKPOINT 2026-10-28T14:46:24.457787+00:00:953648b/sourcef61b308f verified359checks (358pass/one opt-in live skip). Same-tool-loop Haiku-first/checked Sonnet escalation; no re-extraction on verifier outage; aggregate checks retain all evidence without choosing one source; no reword-only repair loop. Read docs/agere/COST_ROUTING_REPAIR_2026-10-28.md and sole control next_action. No new Agere provider run or training, main/default unchanged. Last live output remains attempt7 partial/rejected with recorded errors. Production economics and clinical acceptance unmeasured.
 
 
