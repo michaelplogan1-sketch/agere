@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-27T22:17:33.214995+00:00",
+  "updated_at": "2026-10-28T12:04:13.118907+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "offline_serving_serialization_repaired_revised_studies_running",
+    "kind": "offline_studies_and_received_repairs_complete_clinical_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Staged shared investigation/evidence/scope/retrieval/economics repairs now retain medication quantities, unknown supply and empty cohorts; existing survival reader retains measurement intervals and exposes unresolved units. Canonical training source remains frozen.",
-    "measured_failure_reduction": "563offlinechecks561pass/2live skips; identical16 new medication/scope/survival fixtures old22assertions/two exceptions ->16pass. Separate frozen-source first repaired typed round:185correct/33wrong/86declines of304 vs304untrained declines; freshly reproduced, unselected, final corrective/SQL pending. Earlier negative candidates retained.",
+    "measured_failure_reduction": "757 checks:755pass/two live skips. General scope/evidence/arithmetic and calibration/uncertainty repairs verified; actual study gains/losses are in the final paired report. No new trained-model gains inferred from engineering tests.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -398,11 +398,12 @@
       "artifacts/agere-schema-repair-2026-10-27/workflow-followup/c44418e/workflow-receipt-v2.json",
       "artifacts/agere-schema-repair-2026-10-27/workflow-followup/31bde42/workflow-receipt-v6.json",
       "artifacts/agere-schema-repair-2026-10-27/workflow-followup/58b1a53/workflow-receipt-v7.json",
-      "artifacts/agere-schema-repair-2026-10-27/format-typed-first-round-review.json"
+      "artifacts/agere-schema-repair-2026-10-27/format-typed-first-round-review.json",
+      "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json"
     ],
-    "remaining_gap": "Frozen SQL attempt failed its decoding-format contract and was explicitly stopped, weights andpartial comparisons preserved. Revised typed/SQL studies now run on repaired contract; no final comparison or model promotion. Full automatic clinical note/dose/answer/artifact, browser/physician acceptance, total cost and all ten acceptance areas remain open.",
-    "next_action": "The sole finite model chain PID29583/session7315 continues on frozen495525e3, typed then SQL. A source-pinned local finisher at artifacts/agere-offline-finish-2026-10-27/finish.py waits for both completed/native-reviewed studies and process exit; it then verifies preservation and exact clean source, integrates the already563-check-verified workflow source594434a2, writes actual paired/domain/regression results, refreshes only offline preflight, preserves final artifacts and updates the authorized private draft PR. Inspect artifacts/agere-offline-finish-2026-10-27/finalization-status.json and revised-status.json; do not duplicate jobs or modify pinned checkouts while it is armed. On failure it stops with no automatic retry, source overwrite or provider use. All received review findings1\u201344 and interval-aware survival have staged verified general repairs; no more fitting by default. First repaired typed round185correct/33wrong/86declines of304, unselected; full corrective/SQL results remain pending. No automatic Claude continuation, model/default promotion or clinical completion claim. Preserve G3/all ten areas,181/5 ledger and all negative candidates.",
-    "next": "The sole finite model chain PID29583/session7315 continues on frozen495525e3, typed then SQL. A source-pinned local finisher at artifacts/agere-offline-finish-2026-10-27/finish.py waits for both completed/native-reviewed studies and process exit; it then verifies preservation and exact clean source, integrates the already563-check-verified workflow source594434a2, writes actual paired/domain/regression results, refreshes only offline preflight, preserves final artifacts and updates the authorized private draft PR. Inspect artifacts/agere-offline-finish-2026-10-27/finalization-status.json and revised-status.json; do not duplicate jobs or modify pinned checkouts while it is armed. On failure it stops with no automatic retry, source overwrite or provider use. All received review findings1\u201344 and interval-aware survival have staged verified general repairs; no more fitting by default. First repaired typed round185correct/33wrong/86declines of304, unselected; full corrective/SQL results remain pending. No automatic Claude continuation, model/default promotion or clinical completion claim. Preserve G3/all ten areas,181/5 ledger and all negative candidates.",
+    "remaining_gap": "Full automatic clinical/browser/physician and ten-area acceptance, final-source candidate qualification and total-cost/company comparison remain open.",
+    "next_action": "Inspect /private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md and completion-receipt.json. Frozen studies and received engineering repairs are complete; do not start more fitting by default. All models remain off and old-contract candidates require explicit final-source qualification. When Mike resumes the ordinary clinical run and the subscription is available, use the prepared manual subscription-only command and stop on any limit. No automatic provider call, poll, retry or heartbeat. Complete browser/physician and full-path-cost acceptance; inspect the retained negative fresh detector check and do not reuse its evaluation series for fitting or promote a detector without new evidence; retain G3/all ten areas.",
+    "next": "Inspect /private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md and completion-receipt.json. Frozen studies and received engineering repairs are complete; do not start more fitting by default. All models remain off and old-contract candidates require explicit final-source qualification. When Mike resumes the ordinary clinical run and the subscription is available, use the prepared manual subscription-only command and stop on any limit. No automatic provider call, poll, retry or heartbeat. Complete browser/physician and full-path-cost acceptance; inspect the retained negative fresh detector check and do not reuse its evaluation series for fitting or promote a detector without new evidence; retain G3/all ten areas.",
     "latest_review": {
       "at": "2026-10-27T17:40:46.048326+00:00",
       "kind": "Actual format-failure diagnosis, whole-bank tokenizer audit and offline regression verification",
@@ -494,8 +495,8 @@
         "completion": "Independent appropriate qualification remains separate from deterministic engineering acceptance; do not use protected evaluations or credits as a prerequisite for local build work."
       }
     ],
-    "latest_progress": "Staged shared investigation/evidence/scope/retrieval/economics repairs now retain medication quantities, unknown supply and empty cohorts; existing survival reader retains measurement intervals and exposes unresolved units. Canonical training source remains frozen.",
-    "results_report": "artifacts/agere-schema-repair-2026-10-27/before-after.md",
+    "latest_progress": "Both finite revised studies and native reviews completed; verified workflow source integrated. No model/default/live clinical promotion.",
+    "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -512,15 +513,16 @@
       "no_default_activation": true
     },
     "workflow_followup": {
-      "workspace": "/private/tmp/agere-workflow-integrity-20261027",
+      "workspace": "/private/tmp/agere-denial-timing-followup-20261028",
       "branch": "codex/workflow-integrity-20261027",
-      "commit": "58b1a53",
-      "status": "staged_offline_verified_not_integrated",
-      "receipt": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/58b1a53/workflow-receipt-v7.json",
-      "source_fingerprint": "594434a23d217796ab7de831a862bb2fca4fef561ec3eedbc177672ae1abe42c",
+      "commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8",
+      "status": "integrated_offline_verified",
+      "receipt": "/private/tmp/agere-denial-timing-followup-20261028/artifacts/agere-interpretation-followup-2026-10-27/release-receipt.json",
+      "source_fingerprint": "fa1cd528164afea8cec1447e2b3340d526ab77c2369a2f6edbe3baa06b531595",
       "scope": "General workflow/evidence/analytics/economics, medication arithmetic, unknown supply and shared cohort semantics.",
-      "evidence": "563checks:561pass/2live skips, zero provider/protected reads. Identical16 authored medication/scope/survival checks: old22assertions/two exceptions, new16pass. All earlier evidence preserved.",
-      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open."
+      "evidence": "757 checks:755 pass/two live skips, zero provider/protected reads. Received findings1-58 repaired; final-source saved typed outputs have zero new gains/losses. Forecast tail assumptions and clinical limitations retained.",
+      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open.",
+      "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
       "kind": "finite_local_poststudy_completion",

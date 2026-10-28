@@ -5,7 +5,7 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Finish format-repaired typed/SQL studies locally; source495525e3 frozen. Shared schema/native qualification integrated; no Claude or default activation.",
+  "active_work": "Offline revised studies and received general repairs completed; models remain off; manual clinical workflow pending.",
   "latest_delivery": "docs/agere/HF_SERVICE_DELIVERY_2026-10-26.md",
   "latest_receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
   "owned_server_pid": 87713,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-27T22:17:33.214995+00:00",
+  "latest_checkpoint": "2026-10-28T12:04:13.118907+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -30,12 +30,12 @@
   "last_observed_server_session": 2376,
   "server_status": "Isolated candidate on8888 restarted on b944abd, PID87713/session12081; saved assisted-review workspace reopens; ordinary query stall remains unresolved.",
   "unsealed_work": {
-    "status": "offline_serving_format_repaired_revised_learning_running",
+    "status": "offline_studies_and_received_repairs_complete_clinical_pending",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
-    "source": "Shared schema, native-classifier qualification and exact serving-format supervision; source frozen for finite revised studies",
-    "latest_review": "artifacts/agere-schema-repair-2026-10-27/verification.json",
-    "remaining_gap": "Original SQL full candidate comparison stopped after14 punctuation-only outputs; preserved, not scored. Revised two-adapter studies now run on corrected exact serving-prefix and fenced-target contract. Final actual model gains/regressions remain unmeasured. G3/all ten product areas and full automatic clinical/browser/physician qualification remain open.",
+    "source": "Verified workflow source integrated only after frozen studies completed",
+    "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
+    "remaining_gap": "Automatic clinical/browser/physician, all ten acceptance areas and total cost remain unqualified.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
@@ -60,15 +60,16 @@
       "no_default_activation": true
     },
     "workflow_followup": {
-      "workspace": "/private/tmp/agere-workflow-integrity-20261027",
+      "workspace": "/private/tmp/agere-denial-timing-followup-20261028",
       "branch": "codex/workflow-integrity-20261027",
-      "commit": "58b1a53",
-      "status": "staged_offline_verified_not_integrated",
-      "receipt": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/58b1a53/workflow-receipt-v7.json",
-      "source_fingerprint": "594434a23d217796ab7de831a862bb2fca4fef561ec3eedbc177672ae1abe42c",
+      "commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8",
+      "status": "integrated_offline_verified",
+      "receipt": "/private/tmp/agere-denial-timing-followup-20261028/artifacts/agere-interpretation-followup-2026-10-27/release-receipt.json",
+      "source_fingerprint": "fa1cd528164afea8cec1447e2b3340d526ab77c2369a2f6edbe3baa06b531595",
       "scope": "General workflow/evidence/analytics/economics, medication arithmetic, unknown supply and shared cohort semantics.",
-      "evidence": "563checks:561pass/2live skips, zero provider/protected reads. Identical16 authored medication/scope/survival checks: old22assertions/two exceptions, new16pass. All earlier evidence preserved.",
-      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open."
+      "evidence": "757 checks:755 pass/two live skips, zero provider/protected reads. Received findings1-58 repaired; final-source saved typed outputs have zero new gains/losses. Forecast tail assumptions and clinical limitations retained.",
+      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open.",
+      "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
       "kind": "finite_local_poststudy_completion",
@@ -83,7 +84,7 @@
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-10-27T22:17:33.214995+00:00",
+  "latest_continuity_checkpoint": "2026-10-28T12:04:13.118907+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
