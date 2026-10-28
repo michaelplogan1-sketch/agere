@@ -281,9 +281,10 @@ def row_count_profile(columns,rows):
     This is row metadata, not inferred clinical status or patient grain.
     """
     import math
+    from decimal import Decimal
     out={}
     for i,column in enumerate(columns):
-        values={};missing=0;positive=0;numeric=0
+        values={};missing=0;positive=0;numeric=0;numbers=[];nonnull=0
         for row in rows:
             if isinstance(row,dict):
                 if column not in row:missing+=1;continue
@@ -292,13 +293,18 @@ def row_count_profile(columns,rows):
             key=json.dumps(value,sort_keys=True,default=str)
             if key not in values:values[key]={'value':value,'rows':0}
             values[key]['rows']+=1
+            nonnull+=value is not None
             if isinstance(value,(int,float)) and not isinstance(value,bool) and math.isfinite(value):
                 numeric+=1;positive+=value>0
+                numbers.append(Decimal(str(value)))
         out[column]={'missing_rows':missing,'null_rows':sum(v['rows'] for v in values.values() if v['value'] is None),
                      'repeated_values':[v for v in values.values() if v['rows']>1],
                      'singleton_value_rows':sum(v['rows']==1 for v in values.values()),
                      'finite_numeric_rows':numeric,'positive_numeric_rows':positive}
-    return {'rows':len(rows),'columns':out,'meaning':'Code-computed row counts, with repeated category values and the total number of singleton categories. Singleton values and all original rows remain in the native result_view; query it for exact details. Counts do not establish patient grain, current therapy or clinical appropriateness.'}
+        if numbers and numeric==nonnull:
+            out[column]['numeric_rows']={'non_null_rows':numeric,'sum_decimal':str(sum(numbers,Decimal(0))),
+                                        'min_decimal':str(min(numbers)),'max_decimal':str(max(numbers))}
+    return {'rows':len(rows),'columns':out,'meaning':'Code-computed row counts, repeated categories, singleton counts and arithmetic over numeric non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums; counts and sums do not establish distinct patient/event grain, current therapy or clinical appropriateness. Singleton values and all original rows remain in the native result_view; query it for exact details.'}
 
 
 def actor_result(value):

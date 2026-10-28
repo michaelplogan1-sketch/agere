@@ -634,6 +634,7 @@ SUPPORT_OPTIONS = {
 
 def table_value_counts(rows):
     """Exact row frequencies, never model arithmetic or inferred clinical meaning."""
+    from decimal import Decimal
     if not isinstance(rows,list) or not all(isinstance(r,dict) for r in rows):return None
     columns=list(dict.fromkeys(k for row in rows for k in row))
     out={}
@@ -645,7 +646,13 @@ def table_value_counts(rows):
             if key not in values:values[key]={'value':value,'rows':0}
             values[key]['rows']+=1
         out[column]={'missing_rows':missing,'values':list(values.values())}
-    return {'rows':len(rows),'columns':out,'meaning':'Exact row counts by original column/value; row counts are not independently inferred patient counts, current use, clinical appropriateness or outcomes.'}
+        nonnull=[r[column] for r in rows if column in r and r[column] is not None]
+        if nonnull and all(type(v) in (int,float) for v in nonnull):
+            numbers=[Decimal(str(v)) for v in nonnull]
+            out[column]['numeric_rows']={'non_null_rows':len(numbers),
+                'sum_decimal':str(sum(numbers,Decimal(0))),
+                'min_decimal':str(min(numbers)),'max_decimal':str(max(numbers))}
+    return {'rows':len(rows),'columns':out,'meaning':'Exact row counts by original column/value and arithmetic over numeric, non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums, not inferred distinct patients, events, current use, clinical appropriateness or outcomes; interpret using the source column grain and units.'}
 
 
 def numeric_role_review(question,answer,calls,*,decider,as_of,ledger):

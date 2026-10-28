@@ -295,6 +295,7 @@ def share_json(value, min_chars=256):
 def unshare_json(encoded):
     """Round-trip verification of the model-only representation."""
     if encoded.get('encoding')=='agere-lossless-compact-json/1':return uncompact_json(encoded)
+    if encoded.get('encoding')=='agere-lossless-value-dictionary/1':return undictionary_json(encoded)
     if encoded.get('encoding')!='agere-lossless-shared-json/1':raise ValueError('Unknown shared JSON encoding')
     refs={tuple(r['at']):tuple(r['from']) for r in encoded['references']}
     if len(refs)!=len(encoded['references']):raise ValueError('Duplicate reference path')
@@ -317,6 +318,67 @@ def unshare_json(encoded):
     return value
 
 
+def dictionary_json(value):
+    """Intern identical complete values once, using short, model-visible addresses.
+
+    Source objects that resemble a marker are escaped. Key order is part of
+    dictionary identity; differing record layouts must never be conflated.
+    Unlike path sharing, references do not repeat long source paths twice.
+    """
+    from collections import Counter
+    def key(v):return json.dumps(v,ensure_ascii=False,separators=(',',':'),allow_nan=False,default=str)
+    counts=Counter()
+    def count(v):
+        if isinstance(v,(dict,list,str)):counts[key(v)]+=1
+        for child in v.values() if isinstance(v,dict) else v if isinstance(v,list) else ():
+            count(child)
+    count(value)
+    selected={k for k,n in counts.items() if n>1 and len(k)>=12 and (n-1)*len(k)>n*9+12}
+    pool=[];ids={}
+    def walk(v,definition=False):
+        k=key(v) if isinstance(v,(dict,list,str)) else None
+        if k in selected and not definition:
+            if k not in ids:
+                ids[k]=len(pool);pool.append(None);pool[ids[k]]=walk(v,True)
+            return {'$':ids[k]}
+        if isinstance(v,dict):
+            if set(v) in ({'$'},{'$literal'}):return {'$literal':[[k,walk(x)] for k,x in v.items()]}
+            return {k:walk(x) for k,x in v.items()}
+        if isinstance(v,list):return [walk(x) for x in v]
+        return v
+    data=walk(value)
+    return {'encoding':'agere-lossless-value-dictionary/1',
+            'instructions':'Every value is retained. Replace an object with only $ by the complete value at that zero-based index in dictionary. References may nest. An object with only $literal encodes literal object entries as [key,value] pairs. Other objects, arrays and scalars are literal. Reference numbers are addresses, never clinical measurements. Restore references before interpreting table columns. Native source and binding paths are unchanged.',
+            'dictionary':pool,'data':data,'original_fingerprint':fingerprint(value)}
+
+
+def undictionary_json(encoded):
+    """Fail closed on malformed, cyclic or modified dictionary representations."""
+    if encoded.get('encoding')!='agere-lossless-value-dictionary/1':raise ValueError('Unknown dictionary encoding')
+    pool=encoded['dictionary'];active=set();cache={}
+    if not isinstance(pool,list):raise ValueError('Invalid dictionary')
+    def walk(v):
+        if isinstance(v,dict):
+            if set(v)=={'$'}:
+                i=v['$']
+                if type(i) is not int or not 0<=i<len(pool) or i in active:raise ValueError('Invalid/cyclic dictionary reference')
+                if i not in cache:
+                    active.add(i);cache[i]=walk(pool[i]);active.remove(i)
+                return cache[i]
+            if set(v)=={'$literal'}:
+                pairs=v['$literal']
+                if not isinstance(pairs,list) or any(not isinstance(p,list) or len(p)!=2 or not isinstance(p[0],str) for p in pairs):
+                    raise ValueError('Invalid literal object')
+                if len({p[0] for p in pairs})!=len(pairs):raise ValueError('Duplicate literal object key')
+                return {k:walk(x) for k,x in pairs}
+            return {k:walk(x) for k,x in v.items()}
+        if isinstance(v,list):return [walk(x) for x in v]
+        return v
+    restored=walk(encoded['data'])
+    if fingerprint(restored)!=encoded.get('original_fingerprint'):raise ValueError('Dictionary fingerprint differs')
+    return restored
+
+
 def compact_json(value):
     """Lossless model view: share record layouts and repeated complete values.
 
@@ -333,9 +395,15 @@ def compact_json(value):
         if isinstance(v,dict):return {k:walk(x,path+(k,)) for k,x in v.items()}
         return v
     packed=walk(value,())
+    body={'payload':packed,'tables':tables}
+    shared=share_json(body);dictionary=dictionary_json(body)
+    # Small packets keep their simpler representation. This changes only the
+    # reversible wire view, never evidence selection or the native receipts.
+    if dictionary['dictionary'] and len(json.dumps(dictionary,ensure_ascii=False))<len(json.dumps(shared,ensure_ascii=False)):
+        shared=dictionary
     return {'encoding':'agere-lossless-compact-json/1',
             'instructions':'This is the complete evidence, with no omitted rows or text. First resolve the shared JSON references. In the resulting payload, each tables.at path is a list of records stored as arrays: pair every row value with tables.columns in order. Other arrays and objects are literal. Native sources and bindings are unchanged. Judge values and their column meaning, never reference markers.',
-            'shared':share_json({'payload':packed,'tables':tables}),
+            'shared':shared,
             'original_fingerprint':fingerprint(value)}
 
 

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T17:35:55.163291+00:00",
+  "updated_at": "2026-10-28T17:57:58.533646+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "review_history_offline_verified_mvp_reassessment",
+    "kind": "complete_evidence_dictionary_offline_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current render-role evidence references historical machine artifact criticism by native hash/path, preserving complete clinical rows, current review uncertainty and full audit history. Old machine complaints cannot masquerade as current source text.",
-    "measured_failure_reduction": "Native continuation withdraws incorrect blanket denial of reasons but remains unverified; support packets280189then310235tokens exceed262144window. Controlled stop preserves all completed responses with0pending. Current source6ea4430b:46focusedofflinechecks pass,0provider/protected reads. Actual57-row bundle unchanged; obsolete critic retained natively and absent from current render view. No accepted-answer gain or scalable-price claim.",
+    "user_behavior_delta": "Shared analytical/artifact model views retain complete evidence with short dictionary references; actor and verifier receive code-computed exact decimal numeric row totals.",
+    "measured_failure_reduction": "503 offline checks:502pass/one optional live skip, zero provider/protected reads. Native57row/39tool packet792794to540624bytes, exact round trip; local surrogate295366to227766tokens. Native admission column17vswritten13 defect exposed, not yet corrected or accepted.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -427,10 +427,12 @@
       "artifacts/agere-live-integration-2026-10-28/verification-render-history.json",
       "artifacts/agere-live-integration-2026-10-28/native-review-history-audit.json",
       "artifacts/agere-live-integration-2026-10-28/attempt11-native-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt11-controlled-stop.json"
+      "artifacts/agere-live-integration-2026-10-28/attempt11-controlled-stop.json",
+      "artifacts/agere-live-integration-2026-10-28/verification-evidence-dictionary.json",
+      "artifacts/agere-live-integration-2026-10-28/native-support-dictionary-audit.json"
     ],
     "remaining_gap": "No accepted automatic clinical deliverable. Retry10 cost3.511326385API-equivalent, still rejected. Continuation11 corrected the broad dose-reason denial but accumulated support packets exceeded typed context limits; stopped at completed-call boundary with no pending requests.51newrows41validated/10failed,known6.713725570plus10unpriced. Historical machine criticism contaminated current QA;33b99a6 fixes its render-role provenance offline,46checks pass. Analytical evidence sizing, current-artifact criticism fidelity, clinical/normal-UI/exports/unit-cost acceptance and all ten areas remain; no active training/default promotion.",
-    "next_action": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
+    "next_action": "Run one exact saved native negative support diagnostic on frozen dictionary source; require context acceptance and no approval of the known13versus17stay error. Then re-execute the retained source-bound native actions under current policy, use the existing investigator and automatic artifact repair with subscription-only Claude and the original validated-response ledger. Preserve all uncertainty and all ten areas; qualify clinician acceptability, ordinary UI/exports and actual cost. No keys, caps, fitting, new models/default/main activation or agents.",
     "next": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
@@ -1670,15 +1672,23 @@
       "basis": "Repeated provider hard context failures and proven reviewer copying of historical complaint despite corrected bound current facts. Controlled stop0pending;51newrequests6.713726knownAPI-equivalentplus10unpriced; history repair46offlinechecks pass.",
       "scope_impact": "No budget/patient/call quota, lost response, ledger reset, training stop, reduced clinical threshold, new architecture, main/default activation or narrowed ten-area charter.",
       "evidence": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md"
+    },
+    {
+      "at": "2026-10-28T17:57:58.533646+00:00",
+      "gate": "G3",
+      "decision": "Replace verbose complete-value path sharing with a reversible short dictionary when smaller; expose exact numeric row totals before another native continuation.",
+      "basis": "Saved support310235tokens exceeds262144window; exact native packet shrinks32%bytes with no evidence loss;503offlinechecks502pass/one skip. Saved admission summary13contradicts native total17.",
+      "scope_impact": "Same architecture, evidence, provider models, threshold, population and ten-area scope; no quotas, training or deployment.",
+      "evidence": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md"
     }
   ],
   "unsealed_work": {
-    "status": "review_history_offline_verified_mvp_reassessment",
+    "status": "complete_evidence_dictionary_offline_verified",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
     "source": "Verified workflow source integrated only after frozen studies completed",
     "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "No accepted automatic clinical deliverable. Retry10 cost3.511326385API-equivalent, still rejected. Continuation11 corrected the broad dose-reason denial but accumulated support packets exceeded typed context limits; stopped at completed-call boundary with no pending requests.51newrows41validated/10failed,known6.713725570plus10unpriced. Historical machine criticism contaminated current QA;33b99a6 fixes its render-role provenance offline,46checks pass. Analytical evidence sizing, current-artifact criticism fidelity, clinical/normal-UI/exports/unit-cost acceptance and all ten areas remain; no active training/default promotion.",
+    "remaining_gap": "Full native negative support diagnostic/context acceptance, corrected interpretation and automatic deliverable remain pending. No accepted-answer gain or scalable unit-cost claim; clinical/ordinary UI/export/product qualification remains open.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",

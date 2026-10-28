@@ -9,13 +9,59 @@ import urllib.error
 from pathlib import Path
 from unittest.mock import patch
 
-from clinical_core.agere.deliverables.receipts import compact_json,uncompact_json,fingerprint
+from clinical_core.agere.deliverables.receipts import compact_json,uncompact_json,fingerprint,dictionary_json,undictionary_json
 from clinical_core.providers import EvidenceTask
 from clinical_core.agere.gateway import BudgetLedger,PersistentGateway
 from clinical_core.agere.clinical import system_one as S,system_one_gate as G,cost_telemetry as C
 
 
 class Encoding(unittest.TestCase):
+    def test_numeric_totals_have_explicit_row_grain_and_decimal_precision(self):
+        from clinical_core.agere.clinical.backstop_agent import table_value_counts
+        rows=[{'paid_dollars':.1,'visits':1,'flag':True},
+              {'paid_dollars':.2,'visits':4,'flag':False},
+              {'paid_dollars':None,'visits':1},{'visits':0}]
+        p=table_value_counts(rows)
+        self.assertEqual(p['columns']['paid_dollars']['numeric_rows'],{
+            'non_null_rows':2,'sum_decimal':'0.3','min_decimal':'0.1','max_decimal':'0.2'})
+        self.assertEqual(p['columns']['paid_dollars']['missing_rows'],1)
+        self.assertEqual(p['columns']['visits']['numeric_rows']['sum_decimal'],'6')
+        self.assertNotIn('numeric_rows',p['columns']['flag'])
+        self.assertIn('not inferred distinct patients',p['meaning'])
+        from clinical_core.agere.clinical.semantic_analyst import row_count_profile
+        preview=row_count_profile(['paid_dollars','visits','flag'],rows)
+        self.assertEqual(preview['columns']['paid_dollars']['numeric_rows'],p['columns']['paid_dollars']['numeric_rows'])
+        self.assertEqual(preview['columns']['visits']['numeric_rows'],p['columns']['visits']['numeric_rows'])
+        self.assertNotIn('numeric_rows',preview['columns']['flag'])
+
+    def test_dictionary_preserves_ordered_objects_and_literal_marker_collisions(self):
+        a={'alpha':'a lengthy exact source value','beta':None}
+        b={'beta':None,'alpha':'a lengthy exact source value'}
+        v={'rows':[a,b,a,b], 'literal':[{'$':0},{'$literal':[['$','source']]}, {'$':True}]}
+        actual=undictionary_json(dictionary_json(v))
+        self.assertEqual(actual,v)
+        self.assertEqual([list(r) for r in actual['rows']],[list(r) for r in v['rows']])
+
+    def test_dictionary_fails_closed_on_cycle_bad_address_and_tampering(self):
+        for marker in [0,-1,True,'0']:
+            p={'encoding':'agere-lossless-value-dictionary/1','dictionary':[{'$':0}],
+               'data':{'$':marker},'original_fingerprint':fingerprint(None)}
+            with self.subTest(marker=marker),self.assertRaises(ValueError):undictionary_json(p)
+        p=dictionary_json(['an exact clinical source sentence']*100)
+        p['dictionary'][0]='a changed sentence'
+        with self.assertRaisesRegex(ValueError,'fingerprint'):undictionary_json(p)
+
+    def test_large_cross_tool_evidence_uses_dictionary_without_dropping_uncommon_counterevidence(self):
+        phrase='An academic clinic note: asthma treatment held; reason is historical and current use uncertain.'
+        rows=[{'patient_id':'SYNTHETIC-'+str(i),'quote':phrase,'status':'unresolved'} for i in range(80)]
+        value={'first':rows,'last':rows+[{'patient_id':'last','quote':'Later restarted; no current hold.','status':'conflict'}],
+               'counts':[{'value':phrase,'rows':80}]}
+        packed=compact_json(value)
+        self.assertEqual(packed['shared']['encoding'],'agere-lossless-value-dictionary/1')
+        self.assertEqual(uncompact_json(packed),value)
+        self.assertIn('Later restarted; no current hold.',json.dumps(packed))
+        self.assertLess(len(json.dumps(packed)),len(json.dumps(value)))
+
     def test_table_frequencies_keep_overlap_roles_and_missing_distinct_from_null(self):
         from clinical_core.agere.clinical.backstop_agent import table_value_counts
         rows=[{'basis':'both','value':None}]*13+[{'basis':'narrative_only','value':'null'}]*17+[{'basis':'coded_only'}]*27
