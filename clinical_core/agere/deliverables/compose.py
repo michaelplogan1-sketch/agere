@@ -183,7 +183,7 @@ def _user_prompt(request, audience, bundle, extra=''):
             f'EVIDENCE SCOPE: {bundle.meta.get("scope") or "Use the executed tools."}\n'
             + frozen_rules +
             ('DATA BUNDLE (complete frozen results, including exceptions and unresolved evidence):\n' +
-             bundle.digest_for_model(max_list=None, max_str=None, max_chars=None)
+             bundle.digest_for_model(max_list=None, max_str=None, max_chars=None, shared=True)
              if bundle.meta.get('frozen_evidence') else
              'DATA BUNDLE (compact preview; use tools for further evidence):\n' + bundle.digest_for_model(max_chars=40000)))
 
@@ -468,7 +468,7 @@ def _review_artifact(body, bundle, request, audience, send, ledger, report, vali
               '"support":"supported|contradicted|not_established|unknown","issues":[{"requirement":"...","reason":"..."}]}. '
               'Use unknown if you cannot inspect the evidence or code sufficiently; never infer approval.\n'
               'REQUEST: ' + request + '\nAUDIENCE: ' + str(audience) + '\nARTIFACT BODY:\n' + body +
-              '\nCOMPLETE EVIDENCE:\n' + bundle.digest_for_model(max_list=None, max_str=None, max_chars=None))
+              '\nCOMPLETE EVIDENCE:\n' + bundle.digest_for_model(max_list=None, max_str=None, max_chars=None, shared=True))
     raw = _model_call(send, ledger, 'small', 'semantic_review',
                       {'model':SMALL_MODEL, 'max_tokens':SMALL_MAX_TOKENS,
                        'system':'You review evidence support and requirement coverage. Return the requested JSON judgment.',
