@@ -804,7 +804,8 @@ RA_UNITS = ('hospital', 'practice', 'pcp', 'none')
 RA_ADJUST = ('age_sex_conditions', 'age_sex', 'none')
 RA_FIELDS = {'chart', 'outcome', 'unit', 'or_shift', 'or_improve', 'arl0', 'window_days', 'adjust', 'min_cases', 'include_observation'}
 RA_P_FLOOR, RA_P_CEIL = 1e-4, 1 - 1e-4
-VLAD_Z = (1.96, 3.09)       # 95% and 99.8% two-sided funnel limits
+VLAD_Z = (1.96, 3.09)       # legacy Gaussian diagnostic comparison only
+VLAD_LEVELS = (0.95, 0.998)
 RA_PATH_POINTS = 120
 RA_ASSUMPTIONS = [
     'Expected risk per case comes from one patient-level logistic model fitted on all cases in the window (risk_outcomes.fit_glm '
@@ -815,10 +816,10 @@ RA_ASSUMPTIONS = [
     'CUSUM weights follow Steiner, Cook, Farewell & Treasure (2000) for a step change of the odds ratio to or_shift (and to '
     'or_improve for the improvement chart); each chart restarts at zero after a signal.',
     'The control limit h is one value for all units, found by simulation of in-control outcomes (Bernoulli at the expected risk, '
-    'case mix resampled from the pooled cases of the charted units) so the average run length to a false signal is arl0 cases. '
-    'Units with unusual case mix have a slightly different true ARL0; expected risks are treated as known (model error ignored).',
-    'VLAD is the running sum of expected minus observed events; limits are +-z sqrt(sum p(1-p)) (95% and 99.8%), exact for known '
-    'risks at a fixed look but not corrected for looking at every case, so crossings are prompts to review, not proof of worse care.',
+    'case mix resampled from the pooled cases of the charted units), targeting arl0 cases per false signal. The actual rounded '
+    'threshold is independently simulated; finite estimates, uncertainty and censoring are reported, not an exact achievement '
+    'or established calibration. Unit case mix and fitted-risk error can change alarm spacing.',
+    'VLAD is cumulative expected minus observed events. Central 95%/99.8% bands use finite independent-Bernoulli count recursion, evaluated numerically, conditional on known risks at one prespecified look. Fitted-risk error, case dependence, repeated looks and multiple-unit calibration are unqualified. Standardized residual z is descriptive, not a Gaussian tail. Crossings prompt review, not proof of worse care.',
     'Outcomes are what the warehouse records; follow-up must be complete before the snapshot. No planned-readmission flag exists.',
 ]
 
@@ -935,13 +936,49 @@ def simulate_control_limit(probs, R, arl0, seed=7, n_chains=None, length=None, s
 
 
 def vlad(p, y):
-    """Variable life-adjusted display for cases in order: cumulative expected minus observed events, with 95% / 99.8% funnel limits
-    +-z sqrt(sum p(1-p)) around zero. Below the lower limit = more events than expected."""
-    p = np.asarray(p, float); y = np.asarray(y, float)
-    cum = np.cumsum(p - y)
+    """VLAD with central finite-count bands, conditional on known independent risks.
+
+    Prefix Poisson-binomial sum-product recursion is O(n^2) time/O(n) working
+    memory. No cases are dropped or truncated. Gaussian limits remain only as a
+    labelled compatibility diagnostic; signals use integer count intervals.
+    Floating-point evaluation is not a formal roundoff proof or a repeated-look,
+    fitted-risk or clinical calibration guarantee.
+    """
+    p, y = np.asarray(p, float), np.asarray(y, float)
+    if p.ndim != 1 or y.shape != p.shape or not np.all(np.isfinite(p)) or not np.all((p >= 0) & (p <= 1)):
+        raise ValueError('VLAD needs one finite probability in [0,1] per case')
+    if not np.all(np.isfinite(y)) or not np.all((y == 0) | (y == 1)):
+        raise ValueError('VLAD needs binary observed events')
+    expected, observed = np.cumsum(p), np.cumsum(y).astype(int)
+    cum = expected - observed
     sd_ = np.sqrt(np.maximum(np.cumsum(p * (1 - p)), 1e-12))
     z = cum / sd_
-    return {'cum': cum, 'sd': sd_, 'z': z, 'limits': {str(k): (k * sd_) for k in VLAD_Z}}
+    n = len(p)
+    intervals = {str(level): np.empty((n, 2), dtype=int) for level in VLAD_LEVELS}
+    tails, residual = np.empty(n), 0.0
+    pmf = np.array([1.])
+    for i, risk in enumerate(p):
+        pmf = np.convolve(pmf, [1 - risk, risk])
+        cdf = np.cumsum(pmf)
+        residual = max(residual, abs(float(cdf[-1]) - 1))
+        count = observed[i]
+        # Direct tail sums avoid subtracting two nearly equal probabilities.
+        tails[i] = min(1., 2 * min(float(pmf[:count + 1].sum()), float(pmf[count:].sum())))
+        for level in VLAD_LEVELS:
+            alpha = (1 - level) / 2
+            lo = min(int(np.searchsorted(cdf, alpha, side='right')), i + 1)
+            hi = min(int(np.searchsorted(cdf, 1 - alpha, side='left')), i + 1)
+            intervals[str(level)][i] = [lo, hi]
+    bands = {level: np.column_stack((expected - bounds[:, 1], expected - bounds[:, 0])) for level, bounds in intervals.items()}
+    outside = {level: (observed < bounds[:, 0]) | (observed > bounds[:, 1]) for level, bounds in intervals.items()}
+    return {'cum': cum, 'sd': sd_, 'z': z, 'z_kind': 'standardized residual; not a Gaussian tail',
+            'limits': {str(k): k * sd_ for k in VLAD_Z}, 'limits_kind': 'legacy normal-approximation diagnostic only',
+            'bands': bands, 'count_intervals': intervals, 'observed_counts': observed,
+            'outside': outside, 'fixed_look_tail_p': tails, 'final_count_pmf': pmf,
+            'mass_residual_max': residual, 'method': 'finite Poisson-binomial count recursion; central fixed-look intervals',
+            'qualification': {'known_independent_risks_fixed_look': True, 'floating_point_roundoff_certified': False,
+                              'fitted_risk': False, 'dependence': False, 'repeated_looks': False,
+                              'multiple_units': False, 'clinical': False}}
 
 
 def _episodes(mask):
@@ -1026,18 +1063,26 @@ def ra_chart(unit, cases, p, y, params, limits):
                                  'signals': len(dn['signals']), 'path': [[i + 1, dates[i], round(dn['path'][i], 3)] for i in keep]}
     else:
         v = vlad(p, y)
-        lo, hi = VLAD_Z[-1], VLAD_Z[0]
-        below, above = v['z'] < -lo, v['z'] > lo
+        bounds = v['count_intervals']['0.998']
+        below, above = v['observed_counts'] > bounds[:, 1], v['observed_counts'] < bounds[:, 0]
         for mask, direction in ((below, 'deterioration'), (above, 'improvement')):
             for s, e in _episodes(mask):
                 signals.append({'unit': unit, 'direction': direction, 'case_number': s + 1, 'date': dates[s], 'last_case_number': e + 1,
-                                'last_date': dates[e], 'vlad': round(float(v['cum'][s]), 3), 'z': round(float(v['z'][s]), 3)})
+                                'last_date': dates[e], 'vlad': round(float(v['cum'][s]), 3), 'z': round(float(v['z'][s]), 3),
+                                'z_kind': v['z_kind'], 'fixed_look_tail_p': float(v['fixed_look_tail_p'][s]),
+                                'tail_scope': 'known independent risks; repeated looks and fitted risks unqualified'})
         keep = _thin(v['cum'])
         out['vlad'] = {'final': round(float(v['cum'][-1]), 3), 'final_z': round(float(v['z'][-1]), 3), 'min': round(float(v['cum'].min()), 3),
                        'max': round(float(v['cum'].max()), 3), 'excess_events': round(-float(v['cum'][-1]), 3),
-                       'outside_95': int((np.abs(v['z']) > VLAD_Z[0]).sum()),
-                       'path': [[i + 1, dates[i], round(float(v['cum'][i]), 3), round(float(v['limits'][str(VLAD_Z[0])][i]), 3),
-                                 round(float(v['limits'][str(VLAD_Z[1])][i]), 3)] for i in keep]}
+                       'outside_95': int(v['outside']['0.95'].sum()),
+                       'method': v['method'], 'z_kind': v['z_kind'], 'qualification': v['qualification'],
+                       'mass_residual_max': v['mass_residual_max'],
+                       'path_rounding': 'display only; classifications use integer observed counts and count bounds',
+                       'final_fixed_look_tail_p': float(v['fixed_look_tail_p'][-1]),
+                       'final_count_intervals': {k: bounds[-1].tolist() for k, bounds in v['count_intervals'].items()},
+                       'path_columns': ['case_number','date','expected_minus_observed','lower_95','upper_95','lower_998','upper_998'],
+                       'path': [[i + 1, dates[i], round(float(v['cum'][i]), 3),
+                                 *[round(float(x), 6) for level in ('0.95','0.998') for x in v['bands'][level][i]]] for i in keep]}
     out['signals'] = signals
     return out
 
@@ -1110,19 +1155,22 @@ def execute_ra(path, patient_ids, p, as_of=None):
                 head = (f"{c['unit']}: risk-adjusted CUSUM signals {direction} (odds ratio {p['or_shift'] if direction == 'deterioration' else p['or_improve']}) "
                         f"at case {first['case_number']} ({first['date']}); {len(sig)} signal(s) over {c['cases']} cases, O/E {c['o_e']}")
             else:
-                z = abs(first['z'])
-                bits_ = z_bits(z)
-                head = (f"{c['unit']}: VLAD outside the 99.8% limits ({direction}) from case {first['case_number']} ({first['date']}); "
+                tail = first['fixed_look_tail_p']
+                bits_ = -math.log2(tail) if tail > 0 else None
+                head = (f"{c['unit']}: VLAD outside the conditional finite-count 99.8% band ({direction}) from case {first['case_number']} ({first['date']}); "
                         f"final expected minus observed {c['vlad']['final']:+.1f} events over {c['cases']} cases")
             f = {'kind': 'risk_adjusted_signal', 'category': f'{chart}_{direction}', 'series': p['outcome'], 'group_by': p['unit'], 'group': c['unit'],
                  'months': sorted({s['date'][:7] for s in sig})[:12], 'rules': [chart], 'headline': head, 'surprise_bits': bits_,
                  'patients': c['cases'], 'dollars': None, 'first_signal_date': first['date'], 'signals': len(sig),
-                 'look_elsewhere_bits': look, 'excess_bits': round(bits_ - look, 2)}
-            f['salient'] = f['excess_bits'] >= 0
-            f['score'] = score(f['excess_bits'], c['cases'])
+                 'look_elsewhere_bits': look, 'excess_bits': round(bits_ - look, 2) if bits_ is not None else None}
+            f['salient'] = f['excess_bits'] is not None and f['excess_bits'] >= 0
+            f['score'] = score(f['excess_bits'], c['cases']) if f['excess_bits'] is not None else 0.
+            if chart == 'vlad':
+                f['tail_scope'] = 'fixed look, known independent risks; no repeated-look or fitted-risk qualification'
+                f['calibration_qualified'] = False
             f['follow_up'] = f"Is risk-adjusted {p['outcome'].replace('_', ' ')} at {c['unit']} getting worse?"
             flagged.append(f)
-    flagged.sort(key=lambda f: (-f['score'], -f['surprise_bits']))
+    flagged.sort(key=lambda f: (-f['score'], -(f['surprise_bits'] or 0)))
     status_rows = [{'series': p['outcome'], 'group_by': p['unit'], 'group': c['unit'], 'status': 'rate_signal' if c['signals'] else 'in_control',
                     'cases': c['cases'], 'signals': len(c['signals']), 'surprise_bits': 0.0} for c in units]
     summary = {'outcome': p['outcome'], 'unit': p['unit'], 'cases': int(sum(c['cases'] for c in units)), 'units_charted': len(units),
@@ -1134,15 +1182,17 @@ def execute_ra(path, patient_ids, p, as_of=None):
                   summary=summary, tests_examined=len(units), look_elsewhere_bits=look,
                   control_limits={'arl0': p['arl0'], 'upper': sims.get('up'), 'lower': sims.get('down'), 'h': limits['up'], 'h_improvement': limits['down']}
                   if chart == 'ra_cusum' else None,
-                  vlad_limits={'z': list(VLAD_Z), 'levels': ['95%', '99.8%']} if chart == 'vlad' else None)
+                  vlad_limits={'method': 'central finite independent-Bernoulli count bands, evaluated numerically',
+                               'levels': list(VLAD_LEVELS), 'symmetric': False, 'fixed_look_only': True,
+                               'fitted_risk_qualified': False, 'repeated_looks_qualified': False} if chart == 'vlad' else None)
     return report
 
 
 RA_METHOD = ('Risk-adjusted monitoring over index cases in date order, using risk_outcomes\' case definitions (readmission, post-discharge ED, ED '
              'revisit, mortality) and expected risks from one logistic model without unit terms. ra_cusum: Steiner et al. (2000) CUSUM, '
              'weight log(R^y / (1 - p + R p)) for odds ratio R (or_shift for deterioration, or_improve for improvement), restart at zero after a '
-             'signal, control limit h by simulation for an in-control average run length of arl0 cases over the data\'s case-mix. vlad: '
-             'cumulative expected minus observed events with funnel limits +-z sqrt(sum p(1 - p)) at 95% and 99.8%.')
+             'signal, control limit h by simulation targeting arl0 cases per false signal over the data\'s case-mix, with independent finite validation and uncertainty. vlad: '
+             'cumulative expected minus observed events with central finite independent-Bernoulli count bands at 95% and 99.8%, conditional on known risks at one fixed look; repeated looks and fitted-risk error remain unqualified.')
 
 
 def _plan(p):
