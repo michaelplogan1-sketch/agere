@@ -5,7 +5,7 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Artifact-role context/search replay905f80a passes442offlinechecks/one live skip. Continue original owned attempt8, audit clinical/source/operating-design meaning and actual costs; no active training or experimental model/default promotion.",
+  "active_work": "Verified d5241ee/sourcea68e3818 saved-deliverable retry10 running after explicit reset authorization. Patient analysis/notes reused; no new fitting or model activation.",
   "latest_delivery": "docs/agere/HF_SERVICE_DELIVERY_2026-10-26.md",
   "latest_receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
   "owned_server_pid": 87713,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-28T16:22:47.026224+00:00",
+  "latest_checkpoint": "2026-10-28T16:55:45.650341+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -30,12 +30,12 @@
   "last_observed_server_session": 2376,
   "server_status": "Isolated candidate on8888 restarted on b944abd, PID87713/session12081; saved assisted-review workspace reopens; ordinary query stall remains unresolved.",
   "unsealed_work": {
-    "status": "artifact_role_context_offline_verified",
+    "status": "render_ladder_offline_verified_native_retry_running",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
     "source": "Verified workflow source integrated only after frozen studies completed",
     "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "Native attempt8 partial/rejected. Stale provider-status claim, unresolved narrative reasons, current use/reference versus individual maximum-dose meaning and service prerequisites remain. Search replay omission and overloaded presentation provenance are repaired offline; actual next run, browser/physician and accepted-answer economics pending. Mixed internal-work reconciliation, denial finding66 and full ten-area qualification remain.",
+    "remaining_gap": "Saved clinical analysis remains partial/unverified. Attempt9 artifacts rejected and final review hit a session limit; Mike authorized resume after11:50America/Chicago. General writer ladder/limit/design fixes pass496checks/one skip. Saved deliverable retry10 running; actual output, clinical meaning, browser acceptance and accepted-answer economics pending. Mixed internal-work reconciliation, denial finding66 and all ten acceptance areas remain.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
@@ -84,11 +84,11 @@
     },
     "live_resume": {
       "workspace": "/private/tmp/agere-codex-integration-20261026",
-      "source_fingerprint": "588596c6cdad55ffc954bbae5b74b0aac0a1b249989ee5a789a1cd2a6aabdfa1",
-      "attempt": "/private/tmp/agere-live-resume-20261028/attempt8",
-      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-review-loop.json",
+      "source_fingerprint": "a68e3818e97cfdf3a33858fe1e0fd848ced2a6c31c22415873a7d5a44d23fa55",
+      "attempt": "/private/tmp/agere-live-resume-20261028/attempt10",
+      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-render-ladder.json",
       "explicit_payload_approval": true,
-      "status": "completed_partial_rejected_continuation_registry_failure"
+      "status": "running_saved_deliverable_retry_after_human_authorized_reset"
     },
     "cost_routing_candidate": {
       "workspace": "/private/tmp/agere-codex-integration-20261026",
@@ -113,6 +113,14 @@
       "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-context.json",
       "runtime_promoted": false,
       "clinical_gain_measured": false
+    },
+    "render_ladder_candidate": {
+      "commit": "d5241ee",
+      "source_fingerprint": "a68e3818e97cfdf3a33858fe1e0fd848ced2a6c31c22415873a7d5a44d23fa55",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-ladder.json",
+      "runtime_promoted": false,
+      "clinical_gain_measured": false,
+      "native_retry": "/private/tmp/agere-live-resume-20261028/attempt10"
     }
   },
   "build_control": "AGERE_BUILD_CONTROL.json",

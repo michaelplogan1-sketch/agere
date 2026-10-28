@@ -1,5 +1,8 @@
 # Continue Agere
 
+CURRENT SAVED-DELIVERABLE RETRY 2026-10-28T16:55:45.650341+00:00: source d5241ee/corea68e3818 passes497checks496pass/one optional live skip,zero providers/protected reads. Session-limit classification and cheap checked writer ladder fixed. Attempt9partial/rejected after1117.41s,known$1.428295analysis+$6.053378presentation plusoneunknown;79note responses reused. Mike explicitly authorized reset resume. Retry10 runs against current savedcontext ANS-a4b5218adce5a053dead7ee7 without fresh investigation/notes. Inspect /private/tmp/agere-live-resume-20261028/attempt10 and sole control next_action; do not duplicate active work. No provider work after a fresh subscription limit, no APIkey, fitting, quotas, agents or default promotion. All ten areas remain.
+
+
 CURRENT ARTIFACT ROLE CHECKPOINT 2026-10-28T16:22:47.026224+00:00: Candidate905f80a/core4c99792b verified443checks (442pass/one live skip), zero providers/protected reads. Attempt8 completed584.07s, partial/rejected,171newvalidatedrequests, known$1.563173analysis+$5.593759presentation, no new provider failures/limit. Cohort note-only label17fixed; machine note statuses42reviewed/12needs/3no-docs,4387unique/4610received. Search replay registry omission fixed; artifact role now retains all clinical values while referencing only nativeSQLprovenance; packet1072765to594163bytes, restoration checked. Actual savings unmeasured. Read docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md and sole control next_action. Continue original source-bound owned attempt8 on approved destinations; numeric prototype OFF, no training/default deployment.
 
 
