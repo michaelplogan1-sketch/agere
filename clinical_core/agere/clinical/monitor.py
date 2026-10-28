@@ -842,26 +842,50 @@ def ra_cusum(p, y, R, h):
     return {'path': path, 'signals': signals, 'max': max(path) if path else 0.0, 'final': s}
 
 
+def _restart_arl(probs, R, h, n_chains, length, seed):
+    """Finite restart exposure per signal at the actual threshold; independent-chain uncertainty is approximate.
+
+    This estimates long-run ARL under the declared iid case-mix simulation, not a finite-window any-alarm probability.
+    Terminal unfinished runs remain exposure; first-passage censoring is reported separately.
+    """
+    P = np.asarray(probs, float); D = np.log1p(P * (R - 1.0)); lr = math.log(R)
+    rng = np.random.default_rng(seed)
+    s = np.zeros(n_chains); counts = np.zeros(n_chains, int); first = np.full(n_chains, length + 1, int)
+    for t in range(length):
+        idx = rng.integers(0, len(P), n_chains)
+        w = (rng.random(n_chains) < P[idx]) * lr - D[idx]
+        s = np.maximum(0.0, s + w); hit = s >= h
+        first[(first > length) & hit] = t + 1
+        counts += hit; s[hit] = 0.0
+    signals = int(counts.sum()); exposure = int(n_chains * length)
+    rate = signals / exposure; estimate = exposure / signals if signals else None
+    se_rate = float(counts.std(ddof=1) / math.sqrt(n_chains) / length) if n_chains > 1 else None
+    if signals and se_rate is not None and se_rate > 0:
+        lo, hi = max(0., rate - 1.96 * se_rate), rate + 1.96 * se_rate
+        interval = [1 / hi, 1 / lo if lo else None]
+    else:
+        interval = [None, None]  # zero empirical variance is not proof of certainty
+    return {'estimate': estimate, 'ci95_approx': interval, 'signals': signals, 'exposure_cases': exposure,
+            'first_passages_observed': int((first <= length).sum()), 'first_window_any_alarm_rate': float((first <= length).mean()),
+            'first_window_probability_contract': 'Any alarm within chain_length cases; distinct from average cases per signal', 'first_passages_censored': int((first > length).sum()),
+            'restricted_first_passage_mean': float(np.minimum(first, length).mean()),
+            'uncertainty_method': 'Independent-chain normal approximation for signal rate, inverted to ARL; finite-run boundary bias and model assumptions are not eliminated.',
+            'metric': 'restart_exposure_cases_per_signal', 'seed': seed}
+
+
 def simulate_arl(probs, R, h, n_chains=300, length=4000, seed=11):
     """Average run length (cases) to a signal for an in-control process: chains of cases drawn from the case-mix `probs`, outcomes
     Bernoulli at the expected risk, CUSUM restarted after each signal. ARL = cases observed / signals."""
-    P = np.asarray(probs, float); D = np.log1p(P * (R - 1.0)); lr = math.log(R)
-    rng = np.random.default_rng(seed)
-    s = np.zeros(n_chains); signals = 0
-    for _ in range(length):
-        idx = rng.integers(0, len(P), n_chains)
-        w = (rng.random(n_chains) < P[idx]) * lr - D[idx]
-        s = np.maximum(0.0, s + w)
-        hit = s >= h
-        signals += int(hit.sum()); s[hit] = 0.0
-    return n_chains * length / signals if signals else math.inf
+    result = _restart_arl(probs, R, h, n_chains, length, seed)
+    return result['estimate'] if result['estimate'] is not None else math.inf
 
 
 def simulate_control_limit(probs, R, arl0, seed=7, n_chains=None, length=None, step=0.05, h_max=20.0):
     """Control limit h giving in-control ARL ~ arl0 cases, by simulation over the case-mix distribution `probs`.
     One simulation of reflected CUSUMs (never reset) gives the first-passage time to every h on a grid at once: the run
-    length to a signal is the first time the reflected path reaches h. ARL(h) is the total cases observed over signals
-    seen (the censored-exponential estimate, exact for a constant signal rate), then h is interpolated on log ARL."""
+    length to a signal is the first time the reflected path reaches h. The total cases observed over first hits is a censored-hazard grid selection proxy, not an achieved ARL.
+    An actual grid boundary is selected and the returned rounded threshold is independently evaluated with restart simulation.
+    Discrete score lattices may not attain the target."""
     P = np.clip(np.asarray(probs, float), RA_P_FLOOR, RA_P_CEIL)
     if len(P) == 0 or not (arl0 >= 2): raise ValueError('need case risks and arl0 >= 2')
     length = int(length or min(max(4 * arl0, 2000), 400000))
@@ -892,16 +916,22 @@ def simulate_control_limit(probs, R, arl0, seed=7, n_chains=None, length=None, s
         arl = np.where(hits > 0, cases / np.maximum(hits, 1), np.inf)
     arl = np.maximum.accumulate(np.where(np.isfinite(arl), arl, 1e18))
     k = int(np.searchsorted(arl, arl0, side='left'))
-    if k >= len(grid):
-        h, est = float(grid[-1]), float(arl[-1])
-    elif k == 0:
-        h, est = float(grid[0]), float(arl[0])
-    else:
-        a0, a1 = math.log(arl[k - 1]), math.log(min(arl[k], 1e17))
-        frac = (math.log(arl0) - a0) / (a1 - a0) if a1 > a0 else 1.0
-        h, est = float(grid[k - 1] + frac * step), float(arl0)
-    return {'h': round(h, 3), 'arl0_target': arl0, 'arl0_simulated': round(est, 1), 'chains': n_chains, 'chain_length': length,
-            'signals_at_h': int(hits[min(k, len(grid) - 1)]), 'odds_ratio': R}
+    k = min(k, len(grid) - 1)
+    h = math.ceil(float(grid[k]) * 1000) / 1000  # never lower the selected boundary when serializing
+    validation = _restart_arl(P, R, h, n_chains, length, seed + 1)
+    low, high = validation['ci95_approx']
+    assessment = ('estimated_at_least_target' if low is not None and low >= arl0 else
+                  'estimated_below_target' if high is not None and high < arl0 else 'not_established')
+    return {'h': h, 'arl0_target': arl0, 'arl0_simulated': round(validation['estimate'], 1) if validation['estimate'] is not None else None,
+            'arl0_ci95_approx': [round(x, 1) if x is not None else None for x in validation['ci95_approx']],
+            'target_assessment': assessment, 'grid_selection_proxy': float(cases[k] / hits[k]) if hits[k] else None,
+            'grid_first_hits': int(hits[k]), 'grid_threshold': float(grid[k]),
+            'chains': n_chains, 'chain_length': length, 'signals_at_h': validation['signals'], 'odds_ratio': R,
+            'grid_case_draws': n_chains * length, 'validation_case_draws': n_chains * length,
+            'risk_assumption': {'law': 'iid resampling of the supplied case mix and Bernoulli expected outcomes', 'probability_floor': RA_P_FLOOR, 'probability_ceiling': RA_P_CEIL},
+            'validation': validation, 'calibration_qualified': False,
+            'method': 'Choose a grid threshold without interpolating unattainable ARLs; independently restart-simulate the actual rounded threshold. Monte Carlo intervals and finite-run bias do not establish clinical calibration.'}
+
 
 
 def vlad(p, y):
@@ -1563,7 +1593,8 @@ def _summarize_ra(report, limit):
     name = 'Risk-adjusted CUSUM' if report['check'] == 'ra_cusum' else 'VLAD'
     text = (f"{name} for {p['outcome'].replace('_', ' ')} across {s['units_charted']} {p['unit']} unit(s), {s['cases']} cases "
             f"(network rate {s['network_rate']:.1%}; expected risks from {s['expected_risk_source']})"
-            + (f", OR {p['or_shift']} detection, h {lim['h']}, ARL0 {p['arl0']} cases" if lim else '')
+            + (f", OR {p['or_shift']} detection, h {lim['h']}, target ARL0 {p['arl0']} cases; independently simulated "
+               f"{str((lim.get('upper') or {}).get('arl0_simulated')) + ' cases per signal' if (lim.get('upper') or {}).get('arl0_simulated') is not None else 'alarm spacing unresolved'} (finite-simulation estimate, not established calibration)" if lim else '')
             + f": {s['units_with_signals']} unit(s) signal"
             + (': ' + '; '.join(f['headline'] for f in rows[:limit]) if rows else '') + '.')
     return text + ' Signals are prompts to review case mix and data, not evidence of worse care.', table

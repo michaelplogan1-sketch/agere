@@ -17,8 +17,9 @@ Detectors (one statistic per monitoring week, threshold calibrated on the null s
   ewma              EWMA of the standardized series (lambda 0.2), the monitor engine's rate rule
 Each runs naive and gap_aware: gap_aware drops weeks the feed-gap rule marks (counts implausibly low under the baseline Poisson,
 the same signature monitor.zero_runs / feed_gaps.py use) and completes the latest weeks for runout with chain-ladder factors.
-Keep rule (report line 92): a method qualifies over CUSUM/Page-Hinkley only if its median delay is >= 20% shorter at the fixed
-false-alert budget AND its gap false-alarm rate is no worse than the budget. The verdict is written by
+Current qualification uses simultaneous bounds for clean-null, gap, missing-batch, runout and early alarms; comparable
+paired sensitivity and at least 20% lower miss-adjusted delay loss with simultaneous uncertainty. Conditional median delay
+is descriptive. Older metric-only verdicts are unqualified under this version. The verdict is written by
 tools/changepoint_qualification.py to config/agere/changepoint_qualification.json and read back by the trajectory and monitor
 engines (verdict(), note()). Synthetic simulation only; this is bounded engineering evidence, not clinical validation.
 """
@@ -29,7 +30,7 @@ import random
 import statistics
 from pathlib import Path
 
-VERSION = 'changepoint-qualification/1'
+VERSION = 'changepoint-qualification/2'
 ROOT = Path(__file__).resolve().parents[3]
 RESULT_FILE = ROOT / 'config' / 'agere' / 'changepoint_qualification.json'
 METHODS = ('bayesian_blocks', 'cusum', 'page_hinkley', 'ewma')
@@ -199,19 +200,28 @@ def calibrate(null_paths, budget):
 def score(method, variant, sets, budget):
     P = {key: [paths(s, method, variant) for s in group] for key, group in sets.items()}
     h = calibrate(P['null_cal'], budget)
-    rate = lambda key: round(sum(first_alarm(p, h) is not None for p in P[key]) / len(P[key]), 4)
-    delays, detected, early = [], 0, 0
-    for s, p in zip(sets['shift'], P['shift']):
-        t = first_alarm(p, h)
-        if t is None: continue
-        if t < s['change']: early += 1; continue
-        detected += 1; delays.append(t - s['change'])
-    return {'method': method, 'variant': variant, 'threshold': round(h, 4), 'false_alarm_rate': rate('null_test'),
-            'gap_false_alarm_rate': round((rate('gap') * len(sets['gap']) + rate('batch') * len(sets['batch'])) / (len(sets['gap']) + len(sets['batch'])), 4),
-            'zero_gap_false_alarm_rate': rate('gap'), 'missing_batch_false_alarm_rate': rate('batch'),
-            'lag_false_alarm_rate': rate('lag'), 'detection_rate': round(detected / len(sets['shift']), 4),
-            'alarm_before_change_rate': round(early / len(sets['shift']), 4),
-            'median_delay_weeks': statistics.median(delays) if delays else None}
+    alarms = {key: sum(first_alarm(path, h) is not None for path in group) for key,group in P.items() if key != 'shift'}
+    rate = lambda key: alarms[key] / len(P[key])
+    delays, detected, early, losses, detections = [], 0, 0, [], []
+    for item, path in zip(sets['shift'], P['shift']):
+        t = first_alarm(path, h); duration = len(item['counts']) - item['change']
+        found = t is not None and t >= item['change']
+        detections.append(int(found)); losses.append((t-item['change']) / duration if found else 1.)
+        if t is not None and t < item['change']: early += 1
+        if found: detected += 1; delays.append(t-item['change'])
+    n = len(sets['shift']); gap_n = len(sets['gap']) + len(sets['batch'])
+    counts = {field: {'events':alarms[key], 'n':len(P[key])} for field,key in [
+        ('false_alarm_rate','null_test'), ('zero_gap_false_alarm_rate','gap'),
+        ('missing_batch_false_alarm_rate','batch'), ('lag_false_alarm_rate','lag')]}
+    counts.update(alarm_before_change_rate={'events':early,'n':n}, detection_rate={'events':detected,'n':n},
+                  gap_false_alarm_rate={'events':alarms['gap']+alarms['batch'],'n':gap_n})
+    import hashlib
+    identity = hashlib.sha256(json.dumps(sets,sort_keys=True).encode()).hexdigest()
+    return {'method':method, 'variant':variant, 'threshold':float(h),
+            **{field: round(v['events']/v['n'],4) for field,v in counts.items()}, 'scenario_counts':counts,
+            'median_delay_weeks':statistics.median(delays) if delays else None,
+            'miss_adjusted_delay_loss':statistics.mean(losses), 'shift_loss_samples':losses,
+            'shift_detection_samples':detections, 'evaluation_identity':identity}
 
 
 def qualify(seed=20261018, n=150, budget=0.1):
@@ -227,36 +237,100 @@ def qualify(seed=20261018, n=150, budget=0.1):
                        'x1.25-1.30; zero-filled feed outages of 1-4 weeks; missing batches removing 40-70% of 1-3 weeks; claim '
                        f'runout leaving {", ".join(f"{f:.0%}" for f in LAG_FACTORS)} of the latest three weeks received. Thresholds '
                        f'calibrated so at most {budget:.0%} of clean null series alarm in {WEEKS - WARMUP} monitoring weeks.'),
-            'keep_rule': ('A method qualifies over CUSUM/Page-Hinkley only if its median detection delay is >= 20% shorter at the '
-                          'same false-alert budget and its gap false-alarm rate does not exceed the budget.'),
+            'keep_rule': ('Joint simultaneous clean-null, gap, missing-batch, runout and early-alarm bounds; comparable sensitivity on paired trials and >=20% lower miss-adjusted loss with simultaneous uncertainty. No implicit qualified fallback.'),
             'scope': 'Synthetic simulation; bounded engineering evidence about detector behaviour, not clinical validation.'}
 
 
-def decide(results, budget):
-    by = {(r['method'], r['variant']): r for r in results}
-    def ok(r): return r['median_delay_weeks'] is not None and r['gap_false_alarm_rate'] <= budget + 1e-9
-    base = [by[(m, v)] for m in BASELINES for v in VARIANTS if ok(by[(m, v)])]
-    if not base:
-        base = [by[(m, v)] for m in BASELINES for v in VARIANTS if by[(m, v)]['median_delay_weeks'] is not None]
-    ref = min(base, key=lambda r: (r['median_delay_weeks'], r['gap_false_alarm_rate'])) if base else None
-    rows = []
-    for r in results:
-        if r['method'] in BASELINES or ref is None: continue
-        improves = ok(r) and r['median_delay_weeks'] <= 0.8 * ref['median_delay_weeks']
-        rows.append({'method': r['method'], 'variant': r['variant'], 'qualifies': bool(improves),
-                     'delay_vs_reference': (round(1 - r['median_delay_weeks'] / ref['median_delay_weeks'], 3)
-                                            if r['median_delay_weeks'] is not None and ref['median_delay_weeks'] else None)})
-    qualified = [x for x in rows if x['qualifies']]
-    if qualified:
-        best = min(qualified, key=lambda x: by[(x['method'], x['variant'])]['median_delay_weeks'])
-        winner = by[(best['method'], best['variant'])]
-    else:
-        winner = ref
-    return {'reference': {k: ref[k] for k in ('method', 'variant', 'median_delay_weeks', 'gap_false_alarm_rate')} if ref else None,
-            'challengers': rows, 'qualified_method': winner['method'] if winner else None,
-            'qualified_variant': winner['variant'] if winner else None,
-            'qualified': {k: winner[k] for k in ('method', 'variant', 'threshold', 'false_alarm_rate', 'gap_false_alarm_rate',
-                                                 'lag_false_alarm_rate', 'detection_rate', 'median_delay_weeks')} if winner else None}
+FALSE_ALERT_FIELDS = ('false_alarm_rate','zero_gap_false_alarm_rate','missing_batch_false_alarm_rate',
+                      'lag_false_alarm_rate','alarm_before_change_rate')
+
+
+def decide(results, budget, alpha=0.05):
+    """Joint scenario bounds and paired, miss-adjusted loss; no implicit qualified fallback.
+
+    Bonferroni allocates half alpha to all scenario bounds and half to all possible challenger/reference loss
+    comparisons, so selecting a comparator does not avoid multiplicity. Assumes independent synthetic series
+    and exact paired evaluation identity. Conditional median delay is descriptive, not a miss-adjusted objective.
+    """
+    from .cascade import upper_bound
+    if not 0 < budget < 1 or not 0 < alpha < 1: raise ValueError('budget and alpha must lie in (0,1)')
+    rows = list(results); bases = [r for r in rows if r.get('method') in BASELINES]
+    challengers = [r for r in rows if r.get('method') not in BASELINES]
+    delta = alpha / (2 * max(len(rows),1) * len(FALSE_ALERT_FIELDS))
+    loss_delta = alpha / (2 * max(len(bases)*len(challengers),1))
+    def evidence(r):
+        reasons=[]; bounds={}; counts=r.get('scenario_counts') or {}
+        if r.get('method') not in METHODS or r.get('variant') not in VARIANTS:
+            reasons.append('unsupported detector method or variant')
+        if not isinstance(r.get('threshold'),(int,float)) or not math.isfinite(r['threshold']) or r['threshold']<0:
+            reasons.append('missing finite nonnegative detector threshold')
+        for field in [*FALSE_ALERT_FIELDS,'gap_false_alarm_rate','detection_rate']:
+            c=counts.get(field) or {}; k,n=c.get('events'),c.get('n')
+            if type(k) is not int or type(n) is not int or not 0<=k<=n or n<=0:
+                reasons.append(field+': missing settled scenario counts');continue
+            value=r.get(field)
+            if not isinstance(value,(int,float)) or not math.isfinite(value) or abs(value-k/n)>5.01e-5:
+                reasons.append(field+': reported metric disagrees with counts');continue
+            if field in FALSE_ALERT_FIELDS:
+                bounds[field]=upper_bound(k,n,delta)
+                if bounds[field]>budget:reasons.append(field+': upper bound exceeds declared budget')
+        loss=r.get('shift_loss_samples') or []; detections=r.get('shift_detection_samples') or []
+        n=(counts.get('detection_rate') or {}).get('n',0)
+        n=n if type(n) is int and n>0 else 0
+        valid_loss=isinstance(loss,(list,tuple)) and bool(loss) and len(loss)==n and all(isinstance(x,(int,float)) and math.isfinite(x) and 0<=x<=1 for x in loss)
+        valid_detections=isinstance(detections,(list,tuple)) and len(detections)==n and all(type(x) in (int,bool) and x in (0,1) for x in detections) and sum(detections)==(counts.get('detection_rate') or {}).get('events')
+        if not isinstance(r.get('evaluation_identity'),str) or not r['evaluation_identity']:
+            reasons.append('missing paired evaluation identity')
+        if not valid_loss:
+            reasons.append('missing bounded miss-adjusted delay samples')
+        if not valid_detections:
+            reasons.append('detection samples do not reconcile')
+        parts=[counts.get(k) or {} for k in ('zero_gap_false_alarm_rate','missing_batch_false_alarm_rate','gap_false_alarm_rate')]
+        if all(type(c.get('n')) is int and type(c.get('events')) is int for c in parts):
+            if parts[2]['n']!=parts[0]['n']+parts[1]['n'] or parts[2]['events']!=parts[0]['events']+parts[1]['events']:
+                reasons.append('aggregate gap counts do not reconcile with the two gap scenarios')
+        if valid_loss and (not isinstance(r.get('miss_adjusted_delay_loss'),(int,float)) or not math.isfinite(r['miss_adjusted_delay_loss']) or abs(r['miss_adjusted_delay_loss']-statistics.mean(loss))>1e-8):
+            reasons.append('reported miss-adjusted loss disagrees with samples')
+        if valid_loss and valid_detections and any((not flag and loss!=1) or (flag and loss>=1) for loss,flag in zip(loss,detections)):
+            reasons.append('miss/detection outcomes disagree with delay loss')
+        if not reasons and not any(detections):reasons.append('no genuine shift detected')
+        return {'eligible':not reasons,'reasons':reasons,'false_alert_upper_bounds':bounds,
+                'mean_miss_adjusted_delay_loss':statistics.mean(loss) if valid_loss else None,
+                'detection_interval':([1-upper_bound(n-sum(detections),n,alpha/2),upper_bound(sum(detections),n,alpha/2)] if n and valid_detections else [None,None])}
+    assessments=[evidence(r) for r in rows]; lookup={id(r):a for r,a in zip(rows,assessments)}
+    eligible=[r for r in bases if lookup[id(r)]['eligible']]
+    ref=min(eligible,key=lambda r:lookup[id(r)]['mean_miss_adjusted_delay_loss']) if eligible else None
+    diagnostic=ref or next((r for r in bases if r.get('median_delay_weeks') is not None),None)
+    compact=lambda r: ({k:r.get(k) for k in ('method','variant','threshold','false_alarm_rate','gap_false_alarm_rate',
+                      'zero_gap_false_alarm_rate','missing_batch_false_alarm_rate','lag_false_alarm_rate',
+                      'detection_rate','median_delay_weeks','miss_adjusted_delay_loss')} if r else None)
+    outcomes=[]
+    for r in challengers:
+        a=lookup[id(r)]; reasons=list(a['reasons']); upper=None
+        if ref is None:reasons.append('no reference passes the joint evidence constraints')
+        elif a['eligible']:
+            if r['evaluation_identity']!=ref['evaluation_identity'] or len(r['shift_loss_samples'])!=len(ref['shift_loss_samples']):
+                reasons.append('incomparable paired shift populations')
+            elif sum(r['shift_detection_samples'])<sum(ref['shift_detection_samples']):
+                reasons.append('sensitivity fell below reference on the same shift trials')
+            else:
+                differences=[x-.8*y for x,y in zip(r['shift_loss_samples'],ref['shift_loss_samples'])]
+                upper=statistics.mean(differences)+1.8*math.sqrt(math.log(1/loss_delta)/(2*len(differences)))
+                if upper>0:reasons.append('20% miss-adjusted loss improvement not established by simultaneous Hoeffding bound')
+        outcomes.append({'method':r.get('method'),'variant':r.get('variant'),'qualifies':not reasons,'reasons':reasons,
+                         'loss_difference_upper_bound':upper,'evidence':a,
+                         'sensitivity_comparison': {'observed_rate':r.get('detection_rate'),
+                            'reference_rate':ref.get('detection_rate') if ref else None,
+                            'marginal_interval':a['detection_interval'], 'formal_noninferiority_certified':False,
+                            'meaning':'Observed detection cannot fall below the paired reference; the simultaneous certificate concerns joint false-alert risk and miss-adjusted loss, not a separate sensitivity noninferiority guarantee.'}})
+    winners=[r for r,o in zip(challengers,outcomes) if o['qualifies']]
+    winner=min(winners,key=lambda r:lookup[id(r)]['mean_miss_adjusted_delay_loss']) if winners else None
+    return {'reference':compact(ref),'diagnostic_reference':{**compact(diagnostic),'qualified':False} if diagnostic else None,
+            'challengers':outcomes,'qualified_method':winner['method'] if winner else None,
+            'qualified_variant':winner['variant'] if winner else None,'qualified':compact(winner),
+            'assessments':[{'method':r.get('method'),'variant':r.get('variant'),**a} for r,a in zip(rows,assessments)],
+            'joint_alpha':alpha,'false_alert_fields':list(FALSE_ALERT_FIELDS),'qualification_version':VERSION,
+            'assumptions':'Independent synthetic series; same paired evaluation population; binomial one-sided bounds and bounded paired-loss Hoeffding bounds. No clinical qualification.'}
 
 
 # ---- consumption by the engines ---------------------------------------------------------------------------------------
@@ -271,35 +345,35 @@ def verdict(path=None):
 
 def summary(doc=None):
     doc = doc if doc is not None else verdict()
-    if not doc or not doc.get('qualified'): return None
-    by = {(r['method'], r['variant']): r for r in doc['results']}
-    bb = by.get(('bayesian_blocks', 'gap_aware')) or {}
-    return {'version': doc['version'], 'qualified_method': doc['qualified_method'], 'qualified_variant': doc['qualified_variant'],
-            'qualified': doc['qualified'], 'reference': doc.get('reference'), 'false_alert_budget': doc['false_alert_budget'],
-            'bayesian_blocks_gap_aware': {k: bb.get(k) for k in ('median_delay_weeks', 'gap_false_alarm_rate', 'false_alarm_rate')},
-            'bayesian_blocks_qualifies': any(c['qualifies'] for c in doc.get('challengers') or [] if c['method'] == 'bayesian_blocks'),
-            'source': 'config/agere/changepoint_qualification.json'}
+    if not doc: return None
+    if doc.get('version')!=VERSION or doc.get('qualification_version')!=VERSION:
+        return {'version':VERSION,'qualified_method':None,'qualified_variant':None,'qualified':None,'reference':None,
+                'diagnostic_reference':None,'reason':'Saved qualification lacks current joint-scenario/count/paired-loss evidence; requalification is required.',
+                'false_alert_budget':doc.get('false_alert_budget'),'clinical_qualification':False}
+    try: current=decide(doc.get('results') or [],doc['false_alert_budget'],doc.get('joint_alpha',.05))
+    except (ValueError,TypeError,KeyError,OverflowError):
+        return {'version':VERSION,'qualified_method':None,'qualified':None,'reason':'Qualification evidence is malformed; no method selected.'}
+    return {'version':VERSION,'false_alert_budget':doc['false_alert_budget'],
+            **{k:current.get(k) for k in ('qualified_method','qualified_variant','qualified','reference','diagnostic_reference',
+                                        'joint_alpha','false_alert_fields','assumptions')}}
+
 
 
 def note(doc=None):
-    """One plain sentence for an engine's method / limitations. None when no qualification has been run."""
-    s = summary(doc)
-    if not s: return None
-    q, bb = s['qualified'], s['bayesian_blocks_gap_aware']
-    role = 'reference detector (no challenger met the keep rule)' if q['method'] in BASELINES else 'qualified over CUSUM/Page-Hinkley'
-    return (f"Change-point qualification (synthetic, {s['false_alert_budget']:.0%} false-alert budget): {q['method'].replace('_', ' ')} "
-            f"({q['variant'].replace('_', '-')}) is the {role}, median delay {q['median_delay_weeks']} weeks, gap false alarms "
-            f"{q['gap_false_alarm_rate']:.0%}, detection {q['detection_rate']:.0%}; Bayesian Blocks (gap-aware) delay "
-            f"{bb['median_delay_weeks']} weeks, gap false alarms {bb['gap_false_alarm_rate']:.0%}"
-            + (' (qualifies over CUSUM/Page-Hinkley).' if s['bayesian_blocks_qualifies'] else
-               ' (did not meet the 20% faster-than-CUSUM/Page-Hinkley keep rule).'))
+    s=summary(doc)
+    if not s:return None
+    q=s.get('qualified')
+    if not q:return 'Change-point qualification: no method currently qualifies under the joint evidence rule; any reference is diagnostic only. '+s.get('reason','Synthetic engineering evidence, not clinical validation.')
+    return (f"Change-point qualification (synthetic, {s['false_alert_budget']:.0%} joint scenario false-alert budget): "
+            f"{q['method']} ({q['variant']}) passed joint scenario bounds and paired miss-adjusted delay loss against its reference. "
+            'Not clinical validation; conditional median delay alone is not the qualification target.')
 
 
 def chart_signals(points, excluded=(), doc=None):
     """The qualified detector run on one monitor chart's standardized points ([{'month', 'z'}]), gap months excluded.
     -> {'method', 'variant', 'threshold', 'signal_months'} or None."""
     s = summary(doc)
-    if not s: return None
+    if not s or not s.get('qualified'): return None
     q = s['qualified']
     pts = [p for p in points if p.get('z') is not None and (q['variant'] != 'gap_aware' or p.get('month') not in set(excluded))]
     z = [float(p['z']) for p in pts]
@@ -308,4 +382,5 @@ def chart_signals(points, excluded=(), doc=None):
     else:
         stat = {'cusum': cusum_stat, 'page_hinkley': page_hinkley_stat, 'ewma': ewma_stat}[q['method']](z)
     return {'method': q['method'], 'variant': q['variant'], 'threshold': q['threshold'],
+            'qualification_scope': 'synthetic weekly scenarios', 'live_chart_transfer_qualified': False,
             'signal_months': [p['month'] for p, v in zip(pts, stat) if v > q['threshold']][:12]}
