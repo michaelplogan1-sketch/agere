@@ -75,7 +75,7 @@ TIERS = {
     'operator_router': ('Haiku', 'FAILED calibration: held-out 19/19 wrong; proposes only', 'graph'),
     'local_free_sql': ('free (Qwen3-4B)', 'FAILED calibration: precision too low; proposes only', 'graph'),
     'legacy_cost_ladder': ('free locally; its paid rungs only when live', 'pre-2026-10-19 ladder + together semantics, last resort; uncalibrated', 'graph'),
-    'backstop_agent': ('Sonnet (the escalation rung), one tool loop of up to 20 calls', 'final backstop analyst with SQL + document tools + the '
+    'backstop_agent': ('Haiku tool loop, escalating to Sonnet on failed checks while retaining evidence', 'final backstop analyst with SQL + document tools + the '
                        'conversation; quotes verified verbatim; accepted with checks as annotations (Mike 2026-10-25); uncalibrated', 'answer'),
 }
 # The cascade runs in six stages (CTO, 2026-10-23; Mike, 2026-10-23: the spec path is the main path); a tier never runs before an earlier
@@ -820,7 +820,7 @@ class Cascade:
         return self.accept(order, name, found) if found is not None else None
 
     def tier_backstop_agent(self):
-        """The final backstop analyst (backstop_agent.py) on the escalation rung (Sonnet): every Haiku tier before it declined. Its answer is
+        """The final backstop analyst (backstop_agent.py) starts on Haiku and owns its checked escalation. Its answer is
         accepted with the checks as annotations (heal, don't block): it is the last layer, and its document quotes are verified verbatim."""
         if os.environ.get('AGERE_BACKSTOP', 'on') == 'off' or not getattr(self.stack, 'allow_live', False) or not claude_available(): return None
         from . import backstop_agent
@@ -845,7 +845,7 @@ class Cascade:
                 return None
             reasons = next((e['detail'] for e in reversed(self.log) if e['proposer'] == 'backstop_agent' and e['outcome'] == 'rejected'), 'final answer checks did not pass')
             return 'Final answer checks: ' + str(reasons) + '. Repair this in the current investigation using the existing tool results.'
-        with model_policy.escalation():
+        with model_policy.question_path(), model_policy.first_rung():
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
                                         hint=getattr(self, 'second_look_hint', None), validate_final=validate_final)
         self.spend(run.get('new_paid_api_calls', 0), run.get('known_cost_usd') or run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
@@ -878,6 +878,7 @@ class Cascade:
                   'investigation': {'model': run.get('model'), 'tool_calls': run.get('tool_calls') or [],
                                     'answer_reviews': run.get('answer_reviews') or [],
                                     'document_reviews':run.get('document_reviews') or [],
+                                    'model_escalations':run.get('model_escalations') or [],
                                     'guarded_continuations':run.get('guarded_continuations') or [],
                                     'recursive_improvement':run.get('recursive_improvement')}}
         review = answer.get('investigation_review') or {}

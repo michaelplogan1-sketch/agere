@@ -304,7 +304,8 @@ def actor_result(value):
 
 
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
-              format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None):
+              format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None,
+              escalation_model=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -315,8 +316,19 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     the JSON object embedded in the text (free), then ask once more for only the JSON object (build log step 12).
     review(answer, tool_calls) optionally returns an assessment with repair feedback. Repair continues in THIS conversation,
     retaining every tool result. None for max_tools means no call quota. Repeated rejected answers with unchanged evidence
-    stop as explicitly partial; a provider or deadline failure retains the last rejected answer as unverified."""
+    stop as explicitly partial; a provider or deadline failure retains the last rejected answer as unverified.
+    An optional stronger model continues this SAME conversation after a failed answer/format/progress check;
+    it never restarts tools, bypasses validation, or retries a failed provider request."""
     result = new_result(model)
+    def escalate(reason):
+        nonlocal model
+        if not escalation_model or model == escalation_model:
+            return False
+        result.setdefault('model_escalations', []).append({'from':model,'to':escalation_model,'reason':reason,
+                                                          'retained_tool_calls':len(result['tool_calls'])})
+        model = escalation_model
+        result['model'] = model
+        return True
     messages = [{'role': 'user', 'content': user}]
     if initial_calls:
         # Certified literal replay enters through the same native tool protocol.
@@ -410,8 +422,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         candidate = None
                     if candidate is None:
                         if retries_left <= 0:
-                            raise
-                        retries_left -= 1
+                            if not escalate('Answer JSON remained invalid after format feedback'):
+                                raise
+                        else:
+                            retries_left -= 1
                         result['format_repair'] = 'asked_again'
                         force_text = True
                         messages.append({'role': 'assistant', 'content': blocks})
@@ -421,7 +435,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 if isinstance(candidate, dict) and any(k in candidate for k in ('tool_use', 'tool_uses')):
                     signature = json.dumps([candidate, result['tool_calls']], sort_keys=True, default=str)
                     if signature in rejected_protocol:
-                        raise ValueError('Investigation made no progress: repeated unexecuted tool request, not a final answer')
+                        if not escalate('Repeated unexecuted tool envelope'):
+                            raise ValueError('Investigation made no progress: repeated unexecuted tool request, not a final answer')
                     rejected_protocol.add(signature)
                     repairs += 1
                     result.setdefault('protocol_repairs', []).append({'reason': 'Unexecuted tool request is not a final answer',
@@ -440,12 +455,19 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     if feedback:
                         # Counts do not establish progress: querying the same rows again must not reset this protection.
                         evidence = sorted({json.dumps(c, sort_keys=True, default=str) for c in result['tool_calls']})
-                        key = json.dumps([candidate, evidence], sort_keys=True, default=str)
+                        # Rephrasing alone does not repair the same failed check.
+                        # The reviewer runs first, so a genuinely corrected answer
+                        # can pass using existing evidence. Otherwise, only a new
+                        # failure/evidence state justifies further investigation.
+                        key = json.dumps([assessment.get('status'), feedback, evidence], sort_keys=True, default=str)
                         result['answer'] = {**candidate, 'status': 'partial', 'verification': 'unverified',
                                             'limitations': [*(candidate.get('limitations') or []), str(feedback)]} if isinstance(candidate, dict) else None
                         if key in reviewed:
-                            result['review_stopped'] = 'no_progress'
-                            return result
+                            if not escalate('Answer review repeated with unchanged evidence'):
+                                result['review_stopped'] = 'no_progress'
+                                return result
+                        elif assessment.get('status') == 'repair':
+                            escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
                         reviewed.add(key)
                         repairs += 1
                         force_text = False  # the repair may need more evidence, even after a JSON-format repair
@@ -501,7 +523,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             state = json.dumps([[u.get('name'), u.get('input')] for u in uses] +
                                [[a['content'], a['is_error']] for a in answers], sort_keys=True, default=str)
             if max_tools is None and state == last_tools:
-                raise ValueError('Investigation made no progress: the same tools returned the same evidence again.')
+                if not escalate('Repeated tools returned unchanged evidence'):
+                    raise ValueError('Investigation made no progress: the same tools returned the same evidence again.')
             last_tools = state
         raise ValueError('No final answer within the bounded tool loop')
     except Exception as exc:

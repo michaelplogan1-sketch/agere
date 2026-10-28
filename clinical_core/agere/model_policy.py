@@ -12,7 +12,8 @@ on it. There is now ONE question-path ladder, [Haiku, Sonnet], for every questio
   * The cascade (clinical/proposers.py) runs every Claude tier on the Haiku rung first; only when each of them failed does it
     run the failed tiers again on the Sonnet rung (`with escalation():`), so a Sonnet call never precedes another tier's
     Haiku attempt for the same question. A tier that escalates inside itself (a failed review, a tie-break) does so under
-    the same primitive.
+    the same primitive. The final investigator owns its own Haiku-first tool loop; an earlier role declining does not
+    establish that this investigator failed. Nested roles use first_rung() before their own escalation.
   * Opus stays deliverable-only (`deliverable()`), or `AGERE_QUESTION_OPUS=on`.
 
 Every question-path Claude request passes claude_model(): inside a question (question_path(), opened by the cascade and the
@@ -82,6 +83,16 @@ def ladder(role='planner'):
 
 def escalation_enabled():
     return os.environ.get('AGERE_ESCALATION', 'on') != 'off'
+
+
+@contextlib.contextmanager
+def first_rung():
+    """A distinct role starts cheaply even when called by an escalated role."""
+    token = _RUNG.set(0)
+    try:
+        yield
+    finally:
+        _RUNG.reset(token)
 
 
 @contextlib.contextmanager

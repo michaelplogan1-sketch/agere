@@ -19,6 +19,7 @@ class EvidenceTask:
     as_of: str
     options: dict
     evidence: list
+    select_source: bool = True
 
     def state(self):
         if not self.options or "unknown" not in self.options:
@@ -130,27 +131,32 @@ class JevProvider:
 
     def request(self, task):
         state = task.state()
-        return {"model": self.model, "state": state, "questions": {
-            "reason": {"type": "choice", "instructions": instruction_for(task), "criteria": task.options},
-            "support": {"type": "choice", "instructions": "Select the source passage most directly supporting the documented state of `subject`. Select unknown if none supports it.",
-                        "criteria": {"unknown": "No supporting passage", **{e["id"]: f'Source {e["id"]}, note {e["note_id"]}, dated {e["date"]} (text in state.evidence)' for e in task.evidence}}}}}
+        questions={"reason": {"type": "choice", "instructions": instruction_for(task), "criteria": task.options}}
+        if task.select_source:
+            questions['support']={"type": "choice", "instructions": "Select the source passage most directly supporting the documented state of `subject`. Select unknown if none supports it.",
+                                  "criteria": {"unknown": "No supporting passage", **{e["id"]: f'Source {e["id"]}, note {e["note_id"]}, dated {e["date"]} (text in state.evidence)' for e in task.evidence}}}
+        return {"model":self.model,"state":state,"questions":questions}
 
     def classify(self, task):
         response = self.gateway.send(self.name, self.request(task))
         answers = response["answers"]
-        reason, support = answers["reason"], answers["support"]
-        for key, answer, choices in (("reason", reason, task.options), ("support", support, {"unknown": None, **{e["id"]: None for e in task.evidence}})):
+        reason = answers["reason"]
+        required=[('reason',reason,task.options)]
+        if task.select_source:
+            required.append(('support',answers['support'],{"unknown": None, **{e["id"]: None for e in task.evidence}}))
+        for key, answer, choices in required:
             if answer.get("type") != "choice" or answer.get("choice") not in choices:
                 raise ValueError(f"Invalid {key} choice")
             probabilities = answer.get("probabilities", {})
             if set(probabilities) != set(choices) or any(type(p) not in (int, float) or not math.isfinite(p) or not 0 <= p <= 1 for p in probabilities.values()) or abs(sum(probabilities.values())-1) > 0.001:
-                raise ValueError("Invalid probability distribution")
+                raise ValueError(f"Invalid {key} probability distribution")
         label = reason["choice"]
-        source = support["choice"]
-        return {"label": label, "evidence_ids": [] if source == "unknown" else [source],
+        source = answers['support']['choice'] if task.select_source else None
+        return {"label": label, "evidence_ids": [] if source in (None,"unknown") else [source],
                 "uncertain": label == "unknown" or source == "unknown", "probabilities": reason["probabilities"],
                 "provider": self.name, "model": response.get("model"), "acceptance": "unvalidated_proposal",
-                "support_check": "Source selection is not an independent entailment check"}
+                "support_check": "Source selection is not an independent entailment check" if task.select_source else
+                                 "Closed judgment only; all received evidence retained, no citation selected"}
 
 
 class ClaudeProvider:

@@ -169,6 +169,7 @@ class Deciders(Temp):
 
 
 class Student(Temp):
+    @mock.patch.dict(os.environ, {'AGERE_SYSTEM_ONE_STUDENT': 'on'})
     def test_fit_predict_and_decide_uses_student_first(self):
         o = {'yes': 'documented', 'no': 'denied', 'unknown': 'not addressed'}
         things = ['cough', 'fever', 'rash', 'nausea', 'dizziness', 'fatigue', 'headache', 'edema', 'wheezing', 'palpitations']
