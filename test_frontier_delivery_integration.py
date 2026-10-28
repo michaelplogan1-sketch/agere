@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from clinical_core.agere.deliverables import answer_context as A, workflow as W, runtime, verify
-from clinical_core.agere.deliverables.receipts import Bundle
+from clinical_core.agere.deliverables.receipts import Bundle, fingerprint
 
 C = importlib.import_module('clinical_core.agere.deliverables.compose')
 
@@ -126,6 +126,28 @@ class FrontierDelivery(unittest.TestCase):
         self.assertTrue(spec['verification']['passed'])
         self.assertIn('answer.table.0.observed_visits', body)
         self.assertEqual(len(spec['render_attempts']), 1)
+
+    def test_retry_edits_retained_draft_and_rechecks_meaning_instead_of_restarting(self):
+        def reject(body):
+            if 'Assess the COMPLETE artifact' in body['messages'][0]['content']:
+                return {'content':[{'type':'text','text':json.dumps({'coverage':'incomplete','support':'supported',
+                    'issues':[{'requirement':'Historical evidence','reason':'Preserve observation dates'}]})}]},{'cache_hit':True}
+            return self.sender(body)
+        first=W.materialize(self.path,self.key,allow_live=True,send=reject)
+        old=first['steps'][0]['deliverable_id'];ws=A.workspace(self.path,A.load(self.path,self.key))
+        old_files={p.name:p.read_bytes() for p in (Path(ws.dir)/'deliverables'/old).iterdir() if p.is_file()}
+        self.calls.clear()
+        out=W.retry_deliverable(self.path,{'context_id':self.key,'index':0,'attempt':2},allow_live=True,send=self.sender)
+        self.assertEqual(out['steps'][0]['status'],'ready')
+        self.assertEqual(len(self.calls),2)
+        self.assertIn('CURRENT BODY FRAGMENT',self.calls[0]['messages'][0]['content'])
+        self.assertIn('Preserve observation dates',self.calls[0]['messages'][0]['content'])
+        self.assertIn('hypothesis to investigate, not clinical truth',self.calls[0]['messages'][0]['content'])
+        self.assertIn('Assess the COMPLETE artifact',self.calls[1]['messages'][0]['content'])
+        spec,bundle,_,_=C.load(ws,out['steps'][0]['deliverable_id'])
+        self.assertEqual(spec['draft_reuse']['artifact'],old)
+        self.assertEqual(spec['draft_reuse']['evidence_fingerprint'],fingerprint(bundle.results))
+        self.assertEqual(old_files,{p.name:p.read_bytes() for p in (Path(ws.dir)/'deliverables'/old).iterdir() if p.is_file()})
 
     def test_writer_escalates_only_after_failed_checks_with_same_source(self):
         seen=[]

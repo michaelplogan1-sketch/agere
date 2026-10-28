@@ -139,3 +139,12 @@ Mike's exact new review, “ive reaview them they are all correct”, is retaine
 Next use the existing revision-checked saved-workflow retry to finish presentation, rather than repeating cohort/note extraction solely because of a rendering boundary defect. Inspect actual UI/export and new usage separately from development totals. Independent production qualification and the full ten-area charter remain open.
 
 Frozen presentation-boundary candidate source `3b6b75d6` passes **524 offline checks:523 passed/one optional live skip**, zero provider/protected reads and source unchanged. The current analytical policy identity remains unchanged, and the failed artifact context passes its actual dependency checks. The prepared retry therefore uses the existing failed-deliverable endpoint without recapturing or current-stamping an old answer.
+
+
+## Evidence-bound rejected-draft repair
+
+A retry can now edit an existing rejected draft instead of generating an independent page. The candidate must belong to the same saved workspace and exactly match the current complete native results, meaningful receipt provenance, population scope, snapshot, deliverable purpose and brief. Changed facts, source provenance, stage, date or request prevent reuse. Only the draft and its actual failed machine review are supplied as repair input; no prior judgment becomes clinical truth or cached approval. Current source/dependency, structural and semantic checks still run, and old artifacts and costs remain intact.
+
+Writer instructions now distinguish absent structured assignments from available note evidence, candidate observations from causal treatment decisions, and dated or carried-forward history from current state. The conflicting permission to type ordinal heading numbers in a frozen page is removed; use automatic list numbering or unnumbered headings.
+
+The current candidate passes530authored offline checks:529passed/one optional live skip, zero provider or protected-corpus reads and unchanged source. Connected generic fixtures exercise a cheap edit with real retained criticism and fresh semantic review, mismatch exclusions, and immutable prior artifacts. Detailed native results and accounting remain in local ignored artifacts, not PR metadata. This is engineering qualification, not a clinical accuracy or production-price claim.

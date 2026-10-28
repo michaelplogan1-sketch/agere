@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T19:05:10.621965+00:00",
+  "updated_at": "2026-10-28T19:17:21.805901+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "proposal_handoff_verified_saved_workflow_retry_ready",
+    "kind": "retained_presentation_repair_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Saved proposed-design stage now reaches actual writer/reviewer, and exact compressed-column bindings heal before paid escalation. Native first Haiku candidate18to0staticerrors with unchanged values.",
-    "measured_failure_reduction": "524offlinechecks523pass/one optional live skip; exact native proposal metadata missing before/correct after;18actual native static errors repaired at0modelcalls. No clinical meaning approval or price claim from fixtures.",
+    "user_behavior_delta": "A matching rejected presentation is edited with actual retained criticism and fresh checks, rather than independently rewritten. Writer instructions preserve source scope, causal uncertainty and dated qualifiers.",
+    "measured_failure_reduction": "530authored offline checks529pass/one optional live skip. Connected actual retry path supplies prior draft/feedback, invokes new writer+semantic review and leaves old artifacts unchanged; source/scope/stage/date/brief mismatches prevent reuse. Native diagnostics retained locally.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -438,8 +438,8 @@
       "artifacts/agere-live-integration-2026-10-28/native-compiler-feedback-audit.json",
       "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json"
     ],
-    "remaining_gap": "Retry failed saved presentation with current source then inspect UI/export, actual components and costs. Automatic clinical/cold-price/general-product qualification remains open; Mike accepts results he reviewed, without invented exact-context labels.",
-    "next_action": "Run prepared retry14.py attempt14 against unchanged analytical context ANS-c857e36a7b7750e0885a10a8 through existing saved-workflow retry, source3b6b75d6, original scope and retained ledger. No cohort/note reextraction solely for presentation. Inspect actual result/UI/export/component costs and preserve checkpoint. Stop new providers on subscription limit. No protected keys/caps/fitting/model/default/main activation/agents.",
+    "remaining_gap": "Native saved-deliverable completion/UI/export and full workflow economics remain pending. No clinical approval or production claim inferred from engineering checks; existing physician review remains scoped to the results he reviewed.",
+    "next_action": "Run prepared retry15 through existing saved-workflow endpoint with frozen current source, exact matched draft/evidence/stage/brief and actual criticism. No repeat patient investigation or note extraction for a presentation repair. Inspect actual UI/export/components/costs and preserve locally; stop new providers on subscription limit. No protected keys/caps/fitting/default/model/main promotion/agents.",
     "next": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
@@ -535,10 +535,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-28T19:05:10.621965+00:00",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-proposal-handoff.json",
-      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-proposal-handoff-audit.json",
-      "native13": "artifacts/agere-live-integration-2026-10-28/attempt13-native-audit.json",
+      "at": "2026-10-28T19:17:21.805901+00:00",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-rejected-draft.json",
+      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-rejected-draft-audit.json",
+      "native14": "artifacts/agere-live-integration-2026-10-28/attempt14-native-audit.json",
       "clinician_review": "artifacts/agere-live-integration-2026-10-28/clinician-review-20261028.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
@@ -1714,6 +1714,11 @@
       "at": "2026-10-28T19:03:21.605666+00:00",
       "reason": "Native13 ended partial after1194sec/33newcalls with5.655548415known API-equivalent and one unpriced Perplexity timeout. Concrete cause: Bundle.merge dropped proposal purpose, causing writer/critic to treat design as executed care. Actual first Haiku artifact has18compact-column binding errors that current deterministic canonicalization resolves to0without changing native values. Correct the stage boundary and literal encoding before buying another cohort investigation.",
       "scope_impact": "G3 and all ten areas retained. Mike accepts results he reviewed; exact statement retained without assigning unbound acceptance to future contexts or executing care."
+    },
+    {
+      "at": "2026-10-28T19:14:42.974197+00:00",
+      "reason": "The saved retry discarded an existing failed candidate and its review, and the frozen writer rules conflicted about literal section numbering. Preserve exact native-bound rejected work for a cheap edit with its actual criticism, remove the instruction conflict, and rerun current checks. Detailed native evidence and costs remain local.",
+      "scope_impact": "No clinical threshold/conclusion or execution authority changes; no prior approval reuse, new fitting/default promotion or main deployment. All ten areas retained."
     }
   ],
   "unsealed_work": {
