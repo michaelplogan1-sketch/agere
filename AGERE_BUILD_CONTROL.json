@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T16:55:45.650341+00:00",
+  "updated_at": "2026-10-28T17:13:12.083453+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "render_ladder_offline_verified_native_retry_running",
+    "kind": "saved_source_reconciliation_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Deliverable writing starts on Haiku, escalating to Sonnet then Opus only after failed unchanged checks. Session-limit wording stops the workflow. System-level proposal permission supports a complete proposed process without inventing actual clinical facts or actions.",
-    "measured_failure_reduction": "Attempt9 automatic analyst continuation executes but remains partial/rejected;1117.41s,27validated/twofailed new requests,known$1.428295analysis+$6.053378presentation plusoneunknown. All79note responses reused. New sourcea68e3818 passes497authoredchecks:496pass/one live skip,zero provider/protected reads. No live saving or clinical gain claimed before retry10 returns.",
+    "user_behavior_delta": "General writer/reviewer use the declared snapshot clock and distinguish simulation from present-day care. Resume the exact saved workflow, carrying its latest actual machine criticism through the existing analyst and progress guard.",
+    "measured_failure_reduction": "Retry10:526.53s,5validated,$3.511326385API-equivalent,zero new investigation/note extraction; proposed service/device coverage incomplete to complete, support still contradicted, no accepted deliverable. Shared clock source97a0678f passes498offlinechecks497pass/one skip,zero providers/protected reads. Recapture reproduces exact current context and latest saved critic. No clinical improvement or like-for-like cost-per-right-answer claim.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -420,18 +420,22 @@
       "artifacts/agere-live-integration-2026-10-28/verification-render-context.json",
       "artifacts/agere-live-integration-2026-10-28/artifact-role-context-audit.json",
       "artifacts/agere-live-integration-2026-10-28/verification-render-ladder.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt9-native-audit.json"
+      "artifacts/agere-live-integration-2026-10-28/attempt9-native-audit.json",
+      "artifacts/agere-live-integration-2026-10-28/verification-render-clock.json",
+      "artifacts/agere-live-integration-2026-10-28/attempt10-native-audit.json",
+      "artifacts/agere-live-integration-2026-10-28/attempt10-first-writer-static-audit.json"
     ],
-    "remaining_gap": "Saved clinical analysis remains partial/unverified. Attempt9 artifacts rejected and final review hit a session limit; Mike authorized resume after11:50America/Chicago. General writer ladder/limit/design fixes pass496checks/one skip. Saved deliverable retry10 running; actual output, clinical meaning, browser acceptance and accepted-answer economics pending. Mixed internal-work reconciliation, denial finding66 and all ten acceptance areas remain.",
-    "next_action": "Finish and inspect the running saved-deliverable retry10 against current context ANS-a4b5218adce5a053dead7ee7. Do not rerun its current patient investigation/notes. Audit complete patient evidence, dose meaning, current review labels, proposed operating design and actual model usage; inspect rendered output if delivered. Stop all provider work on subscription limit. Preserve failures/costs and local evidence, update source/docs only on the approved private draft PR. No external Anthropic key, protected evaluations, new fitting/model activation, main deployment, quotas or new agents.",
-    "next": "Finish and inspect the running saved-deliverable retry10 against current context ANS-a4b5218adce5a053dead7ee7. Do not rerun its current patient investigation/notes. Audit complete patient evidence, dose meaning, current review labels, proposed operating design and actual model usage; inspect rendered output if delivered. Stop all provider work on subscription limit. Preserve failures/costs and local evidence, update source/docs only on the approved private draft PR. No external Anthropic key, protected evaluations, new fitting/model activation, main deployment, quotas or new agents.",
+    "remaining_gap": "Retry10 completed526.53s:5validated subscription calls,$3.511326385API-equivalent,no new analysis/notes. Coverage now complete, support contradicted; no delivered artifact. Confirmed upstream broad negative about dose reasons conflicts with dated source excerpts; historical/current meaning and allergy/fill conflict remain. Clock false alarm addressed offline. Saved source reconciliation11 running through existing fulfillment, not a cold planner. Full clinical/browser/accepted-answer economics, mixed internal-work reconciliation, denial finding66 and all ten areas remain open.",
+    "next_action": "Finish running saved-workflow continuation11 on source97a0678f from exact current context ANS-a4b5218adce5a053dead7ee7 and actual retry10 critic. Existing fulfillment reuses failed view at zero new rendering cost, re-executes native tools and permits fresh rendering only under progress/source checks. Inspect whether summary-row contradictions resolve with dates and current/historical meaning; audit all rows, proposed workflow, browser if delivered, actual provider/component/cost receipts. Stop all provider work on subscription limit. No API key, quotas, protected evaluations, new fitting/model activation, agents or main deployment; preserve local evidence and update approved private source/docs PR.",
+    "next": "Finish running saved-workflow continuation11 on source97a0678f from exact current context ANS-a4b5218adce5a053dead7ee7 and actual retry10 critic. Existing fulfillment reuses failed view at zero new rendering cost, re-executes native tools and permits fresh rendering only under progress/source checks. Inspect whether summary-row contradictions resolve with dates and current/historical meaning; audit all rows, proposed workflow, browser if delivered, actual provider/component/cost receipts. Stop all provider work on subscription limit. No API key, quotas, protected evaluations, new fitting/model activation, agents or main deployment; preserve local evidence and update approved private source/docs PR.",
     "latest_review": {
-      "at": "2026-10-28T16:55:45.650341+00:00",
-      "kind": "Native attempt9 audit and checked cheap writer/session-limit/design repair",
+      "at": "2026-10-28T17:13:12.083453+00:00",
+      "kind": "Retry10 source contradiction audit and declared clock repair",
       "evidence": [
         "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md",
-        "artifacts/agere-live-integration-2026-10-28/verification-render-ladder.json",
-        "artifacts/agere-live-integration-2026-10-28/attempt9-native-audit.json"
+        "artifacts/agere-live-integration-2026-10-28/verification-render-clock.json",
+        "artifacts/agere-live-integration-2026-10-28/attempt10-native-audit.json",
+        "artifacts/agere-live-integration-2026-10-28/attempt10-first-writer-static-audit.json"
       ]
     },
     "coordination": {
@@ -1645,15 +1649,23 @@
       "basis": "Attempt9 costs7.481673API-equivalent plusunknown and no artifact. Saved analysis dependency validation remains current;497offlinechecks496pass/one skip.",
       "scope_impact": "Existing writer and retry workflow; no new architecture, cohorts, training, caps or default deployment. All ten areas retained.",
       "evidence": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md"
+    },
+    {
+      "at": "2026-10-28T17:13:12.083453+00:00",
+      "gate": "G3",
+      "decision": "After repeated rejected presentations, return actual retry10 criticism to the existing source-bound analyst before another independent rendering.",
+      "basis": "Proposed process coverage now complete but saved summary contradicts source excerpts. Exact recapture/current dependencies permit native saved-workflow reuse with zero initial generation and existing no-progress protection. Date contract fixes a separate synthetic-clock false alarm;498checks497pass/one skip.",
+      "scope_impact": "No new handler/layer/model, rewritten architecture, quotas or reduced clinical checks; original source/question/input retained and all ten areas open.",
+      "evidence": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md"
     }
   ],
   "unsealed_work": {
-    "status": "render_ladder_offline_verified_native_retry_running",
+    "status": "saved_source_reconciliation_running",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
     "source": "Verified workflow source integrated only after frozen studies completed",
     "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "Saved clinical analysis remains partial/unverified. Attempt9 artifacts rejected and final review hit a session limit; Mike authorized resume after11:50America/Chicago. General writer ladder/limit/design fixes pass496checks/one skip. Saved deliverable retry10 running; actual output, clinical meaning, browser acceptance and accepted-answer economics pending. Mixed internal-work reconciliation, denial finding66 and all ten acceptance areas remain.",
+    "remaining_gap": "Retry10 completed526.53s:5validated subscription calls,$3.511326385API-equivalent,no new analysis/notes. Coverage now complete, support contradicted; no delivered artifact. Confirmed upstream broad negative about dose reasons conflicts with dated source excerpts; historical/current meaning and allergy/fill conflict remain. Clock false alarm addressed offline. Saved source reconciliation11 running through existing fulfillment, not a cold planner. Full clinical/browser/accepted-answer economics, mixed internal-work reconciliation, denial finding66 and all ten areas remain open.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
@@ -1702,11 +1714,11 @@
     },
     "live_resume": {
       "workspace": "/private/tmp/agere-codex-integration-20261026",
-      "source_fingerprint": "a68e3818e97cfdf3a33858fe1e0fd848ced2a6c31c22415873a7d5a44d23fa55",
-      "attempt": "/private/tmp/agere-live-resume-20261028/attempt10",
-      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-render-ladder.json",
+      "source_fingerprint": "97a0678f44aa381c7919d0be14bafd14cac47b82e3bebbe10553e8de82533366",
+      "attempt": "/private/tmp/agere-live-resume-20261028/attempt11",
+      "evidence": "artifacts/agere-live-integration-2026-10-28/verification-render-clock.json",
       "explicit_payload_approval": true,
-      "status": "running_saved_deliverable_retry_after_human_authorized_reset"
+      "status": "running_existing_saved_workflow_source_reconciliation"
     },
     "cost_routing_candidate": {
       "workspace": "/private/tmp/agere-codex-integration-20261026",
@@ -1739,6 +1751,14 @@
       "runtime_promoted": false,
       "clinical_gain_measured": false,
       "native_retry": "/private/tmp/agere-live-resume-20261028/attempt10"
+    },
+    "render_clock_candidate": {
+      "commit": "2609e36",
+      "source_fingerprint": "97a0678f44aa381c7919d0be14bafd14cac47b82e3bebbe10553e8de82533366",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-clock.json",
+      "runtime_promoted": false,
+      "clinical_gain_measured": false,
+      "native_continuation": "/private/tmp/agere-live-resume-20261028/attempt11"
     }
   }
 }

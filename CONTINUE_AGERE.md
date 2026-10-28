@@ -1,5 +1,8 @@
 # Continue Agere
 
+CURRENT SAVED SOURCE RECONCILIATION 2026-10-28T17:13:12.083453+00:00:2609e36/core97a0678f passes498checks497pass/one live skip,zero providers/protected reads. Retry10 completed526.53s,5validated,$3.511326385API-equivalent,zero new patient investigation/notes; coveragecomplete/supportcontradicted, rejected. Source confirms broad summary negative conflicts with historical BP/renal excerpts. Declared snapshot-clock fix verified. Exact saved-workflow continuation11 is RUNNING from context ANS-a4b5218adce5a053dead7ee7 and actual retry10 critic; existing failed view reused, analyst native actions re-executed, no independent rendering until progress permits. Inspect /private/tmp/agere-live-resume-20261028/attempt11 and sole control next_action. Do not duplicate provider work or mutate pinned core; stop on any new subscription limit. No APIkey, fitting, quotas, agents or main promotion; all ten areas retained.
+
+
 CURRENT SAVED-DELIVERABLE RETRY 2026-10-28T16:55:45.650341+00:00: source d5241ee/corea68e3818 passes497checks496pass/one optional live skip,zero providers/protected reads. Session-limit classification and cheap checked writer ladder fixed. Attempt9partial/rejected after1117.41s,known$1.428295analysis+$6.053378presentation plusoneunknown;79note responses reused. Mike explicitly authorized reset resume. Retry10 runs against current savedcontext ANS-a4b5218adce5a053dead7ee7 without fresh investigation/notes. Inspect /private/tmp/agere-live-resume-20261028/attempt10 and sole control next_action; do not duplicate active work. No provider work after a fresh subscription limit, no APIkey, fitting, quotas, agents or default promotion. All ten areas remain.
 
 
