@@ -177,3 +177,10 @@ The versioned technical review now separates actual blocking defects, optional a
 An exact independently accepted candidate with a prior complete/supported judgment can receive one current technical check when this explicit review contract changes. The version is saved; an unchanged failed contract cannot be repeatedly regraded to fish for approval. Actual blocking defects still go through the existing cheap repair and checked model escalation. Generic fixtures exercise disposition, conservative parsing, version migration and zero-writer revalidation.
 
 Frozen current candidate:550authored offline checks,549passed/one optional live skip, zero providers/protected reads and unchanged source. Native runtime outcomes/costs stay in local ignored artifacts. No new fitting/default promotion or main deployment.
+
+
+## Workspace acceptance display and finite delivery
+
+The read-only workspace API now returns the exact matching independent review, excluding stale, invalidated or changed contexts. The workspace and studio display acceptance separately from the prior machine assessment, preserving old notes as labelled history rather than asking for another completed interpretation review. This does not change work/clinical-action authority or unavailable data. Current source passes551authored checks:550passed/one optional live skip, no providers/protected reads/source change.
+
+The received-source recovery has a delivered proposed service artifact and local delivery/UI/export receipts. This finite output is complete; it is distinct from a fresh ordinary-workflow execution, full-question production pricing and the remaining full product charter. No additional clinician review of independently accepted findings is required. Native data, costs, review receipts and delivery files remain local ignored artifacts. Direct file-URL and screenshot capture limitations are recorded honestly; the existing app preview, interactive population/filter/source expansion and byte-equivalent export were checked. No default runtime, model fitting or main merge was performed.

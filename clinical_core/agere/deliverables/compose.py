@@ -199,6 +199,16 @@ def _bound_user_review(ws, bundle):
         return None
 
 
+def context_review(path, context):
+    """Read-only display of exact independent acceptance; no work authority."""
+    if context.get('stale') or context.get('invalidated') or not re.fullmatch(r'ANS-[a-f0-9]{24}',str(context.get('id') or '')):
+        return None
+    from . import answer_context
+    bundle=Bundle()
+    bundle.add('saved_answer',{'context_id':context['id']},context)
+    return _bound_user_review(answer_context.workspace(path,context),bundle)
+
+
 def render_models():
     """An explicit writer override retains its existing single-model repair policy."""
     chosen = os.environ.get('AGERE_DELIVERABLE_MODEL')

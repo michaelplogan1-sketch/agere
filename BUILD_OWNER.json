@@ -5,9 +5,9 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Versioned technical disposition passes550checks549pass/one skip; actual defects block, optional suggestions/positive checks no longer trigger paid rewrites. Prepared saved retry18 on independently accepted same analysis; no additional clinician review.",
-  "latest_delivery": "docs/agere/HF_SERVICE_DELIVERY_2026-10-26.md",
-  "latest_receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
+  "active_work": "Accepted-analysis delivery and read-only workspace acceptance display complete. Current551checks550pass/one skip; native technical deliverable and browser/filter/export checks retained locally. No further clinician review of accepted findings; next ordinary-app integration/fresh economics.",
+  "latest_delivery": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md",
+  "latest_receipt": "artifacts/agere-live-integration-2026-10-28/delivery-receipt.json",
   "owned_server_pid": 87713,
   "owned_server_session": 12081,
   "full_queue_acceptance": false,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-28T20:03:16.095914+00:00",
+  "latest_checkpoint": "2026-10-28T20:21:25.166801+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -30,12 +30,12 @@
   "last_observed_server_session": 2376,
   "server_status": "Isolated candidate on8888 restarted on b944abd, PID87713/session12081; saved assisted-review workspace reopens; ordinary query stall remains unresolved.",
   "unsealed_work": {
-    "status": "presentation_disposition_verified",
+    "status": "accepted_analysis_delivery_complete_full_gate_open",
     "path": "artifacts/agere-schema-repair-2026-10-27",
     "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
     "source": "Verified workflow source integrated only after frozen studies completed",
     "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "Technical saved-deliverable completion/UI/export and measured economics pending. No additional clinician review required for independently accepted findings. Full fresh-workflow/production economics remain distinct.",
+    "remaining_gap": "This received-source recovery and deliverable are complete. G3/full charter and fresh ordinary-workflow economics remain open. No additional clinician review of these accepted results is required. Direct file URL and visual screenshot tests unavailable under browser constraints; existing app preview and byte-equivalent export verified.",
     "training_root": "artifacts/agere-schema-repair-2026-10-27",
     "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
     "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
@@ -136,7 +136,8 @@
       "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-history.json",
       "runtime_promoted": false,
       "clinical_gain_measured": false
-    }
+    },
+    "accepted_delivery": "artifacts/agere-live-integration-2026-10-28/delivery-receipt.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
@@ -355,5 +356,11 @@
     "latest_review": "AGERE_SCOPE_REASSESSMENT_2026-10-12.md"
   },
   "candidate_pull_request": "https://github.com/michaelplogan1-sketch/agere/pull/2",
-  "current_request_receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json"
+  "current_request_receipt": "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
+  "inspection_preview": {
+    "url": "http://127.0.0.1:8889/ask",
+    "allow_live": false,
+    "source_fingerprint": "6432e94052c5b405c0a9aa50c17bcf9e5feff216cdf0d65afe3c01a58a78c314",
+    "session": 30529
+  }
 }

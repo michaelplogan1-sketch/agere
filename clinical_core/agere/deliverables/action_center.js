@@ -214,8 +214,13 @@ function render() {
   if (c.answer.status !== 'answered') warnings.push('This answer is '+pretty(c.answer.status)+'. Complete the analysis before creating review work.');
   if (c.answer.missing?.length) warnings.push('Not covered: '+c.answer.missing.join('; '));
   if (c.supports_patient_work === false) warnings.push('This is an analytical summary. Build a view or monitor it; ask for a specific patient cohort before preparing follow-up work.');
-  $('scope-warning').textContent = warnings.join(' ');
-  $('scope-warning').hidden = !warnings.length;
+  const accepted = data.independent_review?.accepted === true;
+  if (accepted) {
+    $('scope-warning').innerHTML = '<strong>Independent review accepted by '+esc(data.independent_review.reviewer)+'.</strong> No additional clinician review of these accepted findings is requested.'+
+      (warnings.length?'<details><summary>Saved machine assessment, recorded before independent review</summary><p>'+esc(warnings.join(' '))+'</p></details>':'');
+  } else $('scope-warning').textContent = warnings.join(' ');
+  $('scope-warning').hidden = !accepted && !warnings.length;
+  $('studio-review-note').textContent = accepted ? 'Independent review of this saved analysis is recorded. Source gaps and action prerequisites remain explicit.' : 'Both remain synthetic and require interpretation review.';
   $('cohort-description').textContent = num(c.patient_rows.length)+' patients from the saved answer. Select who to work with, then choose their next step.';
   if (!$('program').options.length) {
     const options = Object.entries(data.programs).map(([id,p])=>'<option value="'+esc(id)+'">'+esc(p.label)+'</option>').join('');
@@ -309,7 +314,7 @@ function preview(d) {
   $('preview').innerHTML = '<div class="preview-heading"><h2>'+esc(d.title||'Your custom view')+'</h2><button class="text-button" id="close-preview">Close preview ×</button></div>';
   $('preview').append(frame);
   $('close-preview').onclick = () => $('preview').replaceChildren();
-  $('cost').textContent += d.mockup ? ' Fixed synthetic layout.' : ' Binding and number checks passed; interpretation still needs review.';
+  $('cost').textContent += d.mockup ? ' Fixed synthetic layout.' : data.independent_review?.accepted ? ' Binding and technical presentation checks passed. Independent review of this saved analysis is recorded.' : ' Binding and number checks passed; interpretation still needs review.';
   if (data.context.stale || data.context.invalidated) $('cost').textContent += ' Historical artifact: the source answer is stale or invalidated. Re-run the analysis before creating new work.';
   $('preview').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
 }

@@ -164,6 +164,19 @@ class FrontierDelivery(unittest.TestCase):
         _,bundle,_,_=C.load(ws,out['steps'][0]['deliverable_id'])
         self.assertEqual(bundle.meta['user_answer_review'],review)
         self.assertFalse(out['external_dispatch_performed'])
+        self.assertEqual(C.context_review(self.path,c),review)
+
+    def test_workspace_acceptance_display_preserves_status_and_rejects_changed_premises(self):
+        c=A.load(self.path,self.key);ws=A.workspace(self.path,c)
+        review={'schema':'independent-answer-review/1','accepted':True,'reviewer':'Fixture physician',
+                'verbatim':'Accepted independently','recorded_at':'2030-05-28','context_id':self.key,
+                'answer_fingerprint':fingerprint(c['answer']),'source_fingerprint':fingerprint(c['source']),
+                'policy_identity':c['context_policy_identity']}
+        (Path(ws.dir)/'answer-review.json').write_text(json.dumps(review));before=fingerprint(c)
+        self.assertTrue(C.context_review(self.path,c)['accepted']);self.assertEqual(fingerprint(c),before)
+        for changed in (dict(c,stale=True),dict(c,invalidated=True),dict(c,id='../other'),
+                        dict(c,answer={**c['answer'],'headline':'Changed findings'})):
+            self.assertIsNone(C.context_review(self.path,changed))
 
     def test_resolved_static_failure_rechecks_retained_page_without_another_writer(self):
         def writer(body):

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T20:03:16.095914+00:00",
+  "updated_at": "2026-10-28T20:21:25.166801+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "presentation_disposition_verified",
+    "kind": "accepted_analysis_delivery_and_workspace_complete",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "A matching rejected presentation is edited with actual retained criticism and fresh checks, rather than independently rewritten. Writer instructions preserve source scope, causal uncertainty and dated qualifiers.",
-    "measured_failure_reduction": "550authored offline checks549pass/one optional live skip; zero provider/protected reads and source change. Exact native complete/supported candidate is bound to independent acceptance; version migration invokes technical disposition before any rewrite. Blocking, unsupported, incomplete, malformed and untyped judgments stay closed.",
+    "user_behavior_delta": "An independently accepted saved analysis now reaches its proposed service deliverable with complete worklist/evidence and preserved acceptance across artifact and workspace. Technical suggestions do not trigger repeated rewrites; current-source workspace no longer asks for the completed interpretation review.",
+    "measured_failure_reduction": "551authored offline checks550pass/one optional live skip. Native accepted-analysis deliverable delivered with complete/supported technical disposition; final page reused rather than rewritten. Browser population/filter/dated-source expansion and full export checks pass; actual usage/limits retained locally.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -438,8 +438,8 @@
       "artifacts/agere-live-integration-2026-10-28/native-compiler-feedback-audit.json",
       "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json"
     ],
-    "remaining_gap": "Technical presentation completion/UI/export and actual cost measurement remain. Independent user review is complete for the reviewed results and must not be demanded again. Broad production/cold-workflow economics remain distinct.",
-    "next_action": "Run prepared saved retry18 under explicit presentation-fidelity/2 on the same independently accepted analysis and retained complete/supported page. One current technical disposition, no writer unless an actual blocking defect remains; optional suggestions do not trigger rewrites. Inspect actual UI/export, record costs/components locally and preserve delivery/recovery. No clinical reassessment or additional clinician review. Stop new providers on subscription limit. No protected keys/caps/new fitting/model/default/main activation/agents.",
+    "remaining_gap": "This received-source recovery and deliverable are complete. G3/full charter and fresh ordinary-workflow economics remain open. No additional clinician review of these accepted results is required. Direct file URL and visual screenshot tests unavailable under browser constraints; existing app preview and byte-equivalent export verified.",
+    "next_action": "Use the completed received-source delivery and preserved current candidate as the recovery point. Next integrate/qualify the ordinary app release and measure fresh full-workflow cost, without rerunning clinician review of the accepted results or claiming the final completion-call cost is full-question pricing. Keep all ten product areas, source/cost transparency, subscription-only Claude and stop-on-limit. No protected keys/new caps/automatic fitting/model/default/main promotion/agents.",
     "next": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
@@ -535,10 +535,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-28T20:03:16.095914+00:00",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-presentation-disposition.json",
-      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-presentation-disposition-audit.json",
-      "independent_review": "artifacts/agere-live-integration-2026-10-28/independent-answer-review.json"
+      "at": "2026-10-28T20:21:25.166801+00:00",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-workspace-acceptance.json",
+      "delivery_receipt": "artifacts/agere-live-integration-2026-10-28/delivery-receipt.json",
+      "ui_export_receipt": "artifacts/agere-live-integration-2026-10-28/ui-export-qa.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {

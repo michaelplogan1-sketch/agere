@@ -884,6 +884,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result={'contexts':answer_context.listing(connected_stack.path)}
                     elif parsed.path.endswith('/action-context'):
                         result={**answer_context.inspect(connected_stack.path,key),'allow_frontier':bool(connected_stack.allow_live and not recovery)}
+                        from .deliverables.compose import context_review
+                        result['independent_review']=context_review(connected_stack.path,result['context'])
                     else:
                         from .deliverables.compose import load,listing
                         context=answer_context.load(connected_stack.path,key)
