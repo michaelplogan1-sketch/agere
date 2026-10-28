@@ -38,6 +38,7 @@ def parser():
     p.add_argument('--expect-source',help='Required with --execute; fingerprint printed by offline preflight')
     p.add_argument('--execute',action='store_true')
     p.add_argument('--rsi',action='store_true',help='Opt into candidate RSI qualification; default off')
+    p.add_argument('--bulk-note-ner',action='store_true',help='Explicitly enable optional warehouse-wide NER during materialization; full documents remain available either way')
     p.add_argument('--component-learning',action='store_true',help='Collect new isolated learning observations without legacy stores')
     p.add_argument('--component-release-root',type=Path,help='Explicit isolated component release registry; defaults to this runtime/component-learning when enabled')
     p.add_argument('--learning-plan',type=Path,help='Explicit offline component-learning-plan/1; no automatic provider use')
@@ -60,7 +61,7 @@ def run(a):
     release_root=getattr(a,'component_release_root',None) or (a.runtime/'component-learning' if getattr(a,'component_learning',False) else None)
     preflight={'schema':'automatic-workflow-run/1','status':'offline_preflight','source_fingerprint':fingerprint,
                'runtime':str(a.runtime.resolve()),'retained_cache_ledger':str(a.ledger.resolve()),'ledger_before':before,
-               'provider_calls':0,'transport':'subscription','rsi':'candidate_on' if a.rsi else 'off',
+               'provider_calls':0,'transport':'subscription','bulk_note_ner':bool(getattr(a,'bulk_note_ner',False)),'rsi':'candidate_on' if a.rsi else 'off',
                'component_learning':bool(getattr(a,'component_learning',False)),
                'component_release_root':str(release_root.resolve()) if release_root is not None else None,
                'learning_plan':str(a.learning_plan.resolve()) if getattr(a,'learning_plan',None) is not None else None,
@@ -75,7 +76,8 @@ def run(a):
     # API fallback, scheduler, retry loop or automatic limit reset is installed.
     for k,v in {'AGERE_CLAUDE':'on','AGERE_CLAUDE_TRANSPORT':'subscription','AGERE_EVALUATION':'0','AGERE_LEARNED':'off',
                 'AGERE_LOCAL_TYPED':'off','AGERE_LOCAL_NORMALIZER':'off','AGERE_LOCAL_QWEN':'off','AGERE_LOCAL_MODEL':'off',
-                'AGERE_LOCAL_SQL':'off','AGERE_BOTTLED':'off','AGERE_RECURSIVE_IMPROVEMENT':'on' if a.rsi else 'off',
+                'AGERE_LOCAL_SQL':'off','AGERE_BOTTLED':'off',
+                'AGERE_NOTE_NER':'on' if getattr(a,'bulk_note_ner',False) else 'off','AGERE_RECURSIVE_IMPROVEMENT':'on' if a.rsi else 'off',
                 'AGERE_COMPONENT_LEARNING':'on' if getattr(a,'component_learning',False) else 'off',
                 'AGERE_LEDGER_PATH':str(a.ledger.resolve()),'AGERE_EXECUTION_TRACE':str(a.output.resolve()/'components.jsonl'),
                 'AGERE_EXECUTION_SQL_TRACE':'on','AGERE_TRAINING_DIR':str(a.output.resolve()/'own-traffic')}.items():os.environ[k]=v

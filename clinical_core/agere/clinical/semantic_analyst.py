@@ -333,6 +333,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     retries_left = format_retries
     force_text = False
     turns, repairs, reviewed = 0, 0, set()
+    rejected_protocol = set()
     last_tools = None
     if initial_answer is not None and review is not None:
         import copy
@@ -377,6 +378,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     result[field] = result[field] + value if result[field] is not None and type(value) is int else None
                 result['estimated_cost_usd'] = (result['estimated_cost_usd'] + cost
                                                  if result['estimated_cost_usd'] is not None and cost is not None else None)
+            from ..subscription_transport import normalize_tool_response
+            if response.get('stop_reason') == 'max_tokens':
+                raise ValueError('Provider response was truncated; no tool actions executed')
+            response = normalize_tool_response(response, tools)
             blocks = response.get('content', [])
             uses = [b for b in blocks if b.get('type') == 'tool_use']
             if not uses:
@@ -413,6 +418,21 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         messages.append({'role': 'user', 'content': 'Your reply was not a valid JSON answer object. Reply with '
                                          'ONLY the JSON answer object in the required contract, no other text.'})
                         continue
+                if isinstance(candidate, dict) and any(k in candidate for k in ('tool_use', 'tool_uses')):
+                    signature = json.dumps([candidate, result['tool_calls']], sort_keys=True, default=str)
+                    if signature in rejected_protocol:
+                        raise ValueError('Investigation made no progress: repeated unexecuted tool request, not a final answer')
+                    rejected_protocol.add(signature)
+                    repairs += 1
+                    result.setdefault('protocol_repairs', []).append({'reason': 'Unexecuted tool request is not a final answer',
+                                                                    'candidate_digest': digest(candidate)})
+                    force_text = False
+                    messages.append({'role': 'assistant', 'content': blocks})
+                    messages.append({'role': 'user', 'content': 'Your reply requests tools but is not a valid executable tool envelope. '
+                                     'Use only the registered tool names and exact literal arguments in the provided protocol. '
+                                     'Do not wrap tool requests in an answer object or mix them with other actions. '
+                                     'Execute the missing work before returning the final answer.'})
+                    continue
                 if review is not None:
                     assessment = review(candidate, result['tool_calls'])
                     result.setdefault('answer_reviews', []).append(assessment)

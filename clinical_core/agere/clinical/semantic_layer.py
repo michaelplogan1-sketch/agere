@@ -9,7 +9,7 @@ value/unit and the canonical unit conversion.
 """
 from collections import defaultdict
 from pathlib import Path
-import json, os, re, sqlite3, time
+import hashlib, json, os, re, sqlite3, time
 
 from . import aggregate, client_data, concepts, population_events, population_feeds, source_profile, therapy_barriers
 
@@ -1148,7 +1148,7 @@ def build(path):
     stay_type = re.compile(aggregate.STAY_TYPES, re.I)
     target = path / 'semantic.sqlite3'
     tmp = path / 'semantic.sqlite3.tmp'
-    tmp.unlink(missing_ok=True)
+    if tmp.exists(): raise ValueError('Retained semantic build exists; inspect/recover it before starting another')
     out = sqlite3.connect(tmp)
     out.executescript(DDL)
     src = sqlite3.connect(f'file:{path / "stack.sqlite3"}?mode=ro', uri=True)
@@ -1317,6 +1317,47 @@ def build(path):
         out.commit()
     finally:
         src.close(); out.close()
+    return finish_materialization(path, tmp, started=started)
+
+
+def postprocessing_policy():
+    """Bind materialized enrichments to their code, admission and explicit model policy."""
+    from . import clinical_ner, note_facts
+    files = [Path(note_facts.__file__), Path(clinical_ner.__file__), Path(therapy_barriers.__file__),
+             clinical_ner.ADMISSION, Path(note_facts.__file__).with_name('note_facts_admission.json')]
+    model_manifests = [p / 'agere-model.json' for p in clinical_ner.MODELS.values()] if clinical_ner.enabled() else []
+    return {'schema': 'semantic-postprocessing-policy/1', 'note_ner': clinical_ner.enabled(),
+            'therapy_barriers': therapy_barriers.enabled(), 'therapy_barriers_llm': therapy_barriers.llm_enabled(),
+            'code_and_admission': {p.name: hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None for p in files},
+            'ner_model_manifests': {p.parent.name: hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else None for p in model_manifests}}
+
+
+def policy_identity(policy=None):
+    return hashlib.sha256(json.dumps(postprocessing_policy() if policy is None else policy, sort_keys=True).encode()).hexdigest()
+
+
+def finish_materialization(path, temporary=None, *, started=None, verify_integrity=False):
+    """Finish a received-source core atomically, including an explicitly retained interrupted build.
+
+    No incomplete target is exposed. The core must match this source, schema and
+    cutoff; recovery may additionally check SQLite integrity before enrichment.
+    """
+    path = Path(path); tmp = Path(temporary) if temporary is not None else path / 'semantic.sqlite3.tmp'
+    if tmp.resolve() == (path / 'semantic.sqlite3').resolve(): raise ValueError('A separate temporary materialization is required')
+    if tmp.parent.resolve() != path.resolve(): raise ValueError('Temporary materialization must belong to this workspace')
+    started = time.perf_counter() if started is None else started
+    target = path / 'semantic.sqlite3'
+    meta = json.loads((path / 'run.json').read_text())
+    with sqlite3.connect(tmp.resolve().as_uri() + '?mode=ro', uri=True) as check:
+        core = dict(check.execute('SELECT key,value FROM meta'))
+        if (core.get('version') != VERSION or core.get('source_digest') != meta['source_digest'] or
+                core.get('as_of') != meta['snapshot']['as_of']):
+            raise ValueError('Retained semantic core source/schema/cutoff mismatch')
+        if meta.get('patients') is not None and check.execute('SELECT COUNT(*) FROM patient').fetchone()[0] != meta['patients']:
+            raise ValueError('Retained semantic core roster mismatch')
+        if verify_integrity and check.execute('PRAGMA quick_check').fetchone() != ('ok',):
+            raise ValueError('Retained semantic core failed integrity check')
+    policy = postprocessing_policy()
     from . import note_facts
     note_facts.build(tmp)  # facts found only in free text, read from and written into the new build
     if therapy_barriers.enabled():  # AGERE_THERAPY_BARRIERS (default on); the typed tier only with AGERE_THERAPY_BARRIERS_LLM=on
@@ -1332,6 +1373,10 @@ def build(path):
                     err.execute('INSERT INTO meta VALUES (?,?)', ('therapy_barrier_error', f'{type(e).__name__}: {str(e)[:500]}'))
             finally:
                 err.close()
+    with sqlite3.connect(tmp) as completed:
+        completed.executemany('INSERT OR REPLACE INTO meta VALUES (?,?)', [
+            ('postprocessing_policy', json.dumps(policy, sort_keys=True)),
+            ('postprocessing_identity', policy_identity(policy))])
     tmp.replace(target)
     from . import record_store; record_store.build(path)  # stream-clustered record copy for population scans (record_store.py)
     duck = None
@@ -1351,6 +1396,14 @@ def ensure(path):
         finally:
             db.close()
         if row.get('version') == VERSION and row.get('source_digest') == meta['source_digest']:
+            if row.get('postprocessing_identity') == policy_identity(): return target
+            # A model/admission choice changed, not the received structured source.
+            # Reuse its complete core and refresh enrichments in a separate atomic file.
+            tmp = path / 'semantic.sqlite3.tmp'
+            if tmp.exists(): raise ValueError('Retained semantic build exists; inspect/recover it before starting another')
+            with sqlite3.connect(target.resolve().as_uri() + '?mode=ro', uri=True) as source, sqlite3.connect(tmp) as copy:
+                source.backup(copy)
+            finish_materialization(path, tmp)
             return target
     build(path)
     return target
