@@ -206,3 +206,50 @@ def generic_name(name):
 
 _VALSARTAN = re.compile(r'\bvalsartan\b', re.I)
 _OTHER_ARB = _COMPILED['arb']
+
+
+def group_query_issues(question, calls, final_view=None):
+    """Audit named group coverage against literal class filters and native result lineage.
+
+    Read-only broader analyses remain available. A requested registered group
+    cannot be satisfied by a strict superset without an exact-membership repair
+    contributing to the final result. This is a contract check, not medical judgment.
+    """
+    import sqlglot
+    from sqlglot import exp
+    named={k:set(v) for k,v in GROUPS.items() if re.search(r'(?<!\w)'+re.escape(k).replace('_',r'[ _]+')+r's?(?!\w)',str(question),re.I)}
+    if not named:return []
+    filters={};parents={};positions={}
+    for index,call in enumerate(calls):
+        result=call.get('result') or {}
+        if not isinstance(result,dict) or result.get('error'):continue
+        view=result.get('result_view')
+        if not view:continue
+        sql=(call.get('input') or {}).get('sql')
+        if not isinstance(sql,str):continue
+        parents[view]=set(re.findall(r'\bagere_result_\d+\b',sql));positions[view]=index
+        try:tree=sqlglot.parse_one(sql,read='sqlite')
+        except sqlglot.errors.ParseError:continue
+        values=[]
+        for node in tree.find_all(exp.In):
+            if isinstance(node.this,exp.Column) and node.this.name.lower()=='drug_class' and node.expressions and all(isinstance(v,exp.Literal) and v.is_string for v in node.expressions):
+                values.append({v.this for v in node.expressions})
+        filters[view]=values
+    reached=set()
+    def visit(view):
+        if view in reached:return
+        reached.add(view)
+        for parent in parents.get(view,()):visit(parent)
+    if final_view:visit(final_view)
+    else:reached.update(parents)
+    issues=[]
+    for group,members in named.items():
+        bad=[(positions[v],v,s-members) for v,sets in filters.items() for s in sets if v in reached and s>members]
+        exact=[positions[v] for v,sets in filters.items() if v in reached and members in sets]
+        for position,view,extra in bad:
+            if any(i>position for i in exact):continue
+            issues.append('Registered medication group '+group+' has exact members '+', '.join(sorted(members))+
+                '; contributing query '+view+' widened that set with '+', '.join(sorted(extra))+
+                '. Recompute the requested group using its exact members and bind the final table to that repaired result. '
+                'Broader therapies may be shown separately; do not count them as satisfying the registered group.')
+    return list(dict.fromkeys(issues))

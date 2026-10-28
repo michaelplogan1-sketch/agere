@@ -476,7 +476,7 @@ def _review_artifact(body, bundle, request, audience, send, ledger, report, vali
               '\nCOMPLETE EVIDENCE:\n' + bundle.digest_for_model(max_list=None, max_str=None, max_chars=None, shared=True))
     raw = _model_call(send, ledger, 'small', 'semantic_review',
                       {'model':SMALL_MODEL, 'max_tokens':SMALL_MAX_TOKENS,
-                       'system':'You review evidence support and requirement coverage. Return the requested JSON judgment.',
+                       'system':purpose_rules+'You review presentation fidelity to a saved source answer and the requested artifact clause. The source answer may remain partial or unverified. Rendering approval does not approve its clinical conclusions or execute care. Fail false claims and omitted available exceptions; follow the declared final/proposal/inspection purpose. Return the requested JSON judgment.',
                        'messages':[{'role':'user','content':prompt}], 'tool_choice':{'type':'none'}, 'tools':_cached_tools()})
     try:
         text = _text(raw).strip()

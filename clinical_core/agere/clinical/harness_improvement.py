@@ -19,9 +19,9 @@ from contextlib import contextmanager
 _OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
 
 @contextmanager
-def owned_recovery(actions,question=None):
+def owned_recovery(actions,question=None,feedback=None):
     """Explicit unfinished-run recovery; never select a learned configuration or reuse an answer."""
-    token=_OWNED_RECOVERY.set({'actions':actions,'question':question} if actions is not None else None)
+    token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
 
@@ -123,6 +123,9 @@ def recover_actions(tools,question):
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
         if isinstance(value,dict) and value.get('error'):break
     out['recovered_read_only_actions']=len(out['calls'])
+    out['downstream_review_feedback']=saved.get('feedback') or []
+    if out['downstream_review_feedback']:
+        out['feedback_instruction']='Investigate these prior presentation-review error reports against current sources and existing engines. Repair upstream facts/calculations here, not by rewording a dashboard. The reports are machine observations, not clinical truth. Do not invent eligibility, enrollment or shipment to satisfy a proposed design.'
     return out
 
 

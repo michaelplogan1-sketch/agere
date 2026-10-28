@@ -649,6 +649,9 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         return {**assessment, 'status': 'repair', 'feedback': str(exc)}
     if (answer.get('answer_type') == 'table' or answer.get('table')) and not answer.get('table_binding'):
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
+    from .drug_classes import group_query_issues
+    scope_issues=group_query_issues(question,calls,answer.get('table_from_tool'))
+    if scope_issues:return {**assessment,'status':'repair','feedback':' '.join(scope_issues)}
     workflow=answer.get('workflow') or []
     try:
         from .workflow_contract import validate

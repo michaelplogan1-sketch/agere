@@ -13,8 +13,10 @@ class Tools:
 class Recovery(unittest.TestCase):
  def test_literal_native_execution_and_no_final_answer_or_selection(self):
   t=Tools();actions=[{'name':'query_sql','input':{'sql':'SELECT 1'}},{'name':'review_documents','input':{'patient_ids':['A'],'questions':{'x':'authored'}}}]
-  with H.owned_recovery(actions,'q'):
+  feedback=[{'authority':'machine report','issue':'Investigate source meaning'}]
+  with H.owned_recovery(actions,'q',feedback):
    r=H.recover_actions(t,'q');self.assertIsNone(H.recover_actions(t,'different question'))
+  self.assertEqual(r['downstream_review_feedback'],feedback)
   self.assertEqual(t.calls,actions);self.assertIsNone(r['final_answer']);self.assertIsNone(r['used']);self.assertIsNone(H.recover_actions(t,'q'))
  def test_failed_tool_stops_the_old_prefix(self):
   t=Tools();t.fail=True
@@ -33,9 +35,12 @@ class Recovery(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d);runtime=p/'runtime';runtime.mkdir();request={'question':'authored question','scope':'warehouse'}
    x={'question':request['question'],'synthetic':True,'action_context':{'id':'ANS-owned'},'investigation':{'tool_calls':[{'name':'query_sql','input':{'sql':'SELECT 1'},'result':{'untrusted':'ignored'}}]},'answer':{'untrusted':'ignored'}}
+   x['workflow']=[{'deliverable_id':'DLV-123456ABCDEF'}]
+   folder=runtime/'answer-workspaces'/'ANS-owned'/'deliverables'/'DLV-123456ABCDEF';folder.mkdir(parents=True)
+   (folder/'spec.json').write_text(json.dumps({'verification':{'semantic_review':{'issues':[{'requirement':'authored requirement','reason':'Candidate error to investigate'}]}}}))
    (p/'result.json').write_text(json.dumps(x));(p/'preflight.json').write_text(json.dumps({'runtime':str(runtime)}))
    with patch('clinical_core.agere.deliverables.answer_context.load',return_value={'source':{'id':'same'},'question':request['question']}),patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'id':'same'}):
-    actions,proof=W.retained_actions(p,runtime,request);self.assertEqual(actions,[{'name':'query_sql','input':{'sql':'SELECT 1'}}]);self.assertFalse(proof['reuse_final_answer'])
+    actions,proof=W.retained_actions(p,runtime,request);self.assertEqual(actions,[{'name':'query_sql','input':{'sql':'SELECT 1'}}]);self.assertFalse(proof['reuse_final_answer']);self.assertEqual(len(proof['downstream_review_feedback']),1);self.assertIn('not clinician truth',proof['downstream_review_feedback'][0]['authority'])
     with self.assertRaises(ValueError):W.retained_actions(p,runtime,{'question':'changed','scope':'warehouse'})
     with self.assertRaises(ValueError):W.retained_actions(p,runtime,{**request,'scope':'selected'})
    with patch('clinical_core.agere.deliverables.answer_context.load',return_value={'source':{'id':'old'},'question':request['question']}),patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'id':'new'}):

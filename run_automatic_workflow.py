@@ -70,8 +70,17 @@ def retained_actions(directory, runtime, request):
         if c.get('name') not in READ_ONLY or not isinstance(c.get('input'),dict):raise ValueError('Recovery contains an unsupported tool')
         actions.append({'name':c['name'],'input':c['input']})
     if not actions:raise ValueError('Recovery has no retained native actions')
+    feedback=[]
+    for step in result.get('workflow') or []:
+        ident=step.get('deliverable_id')
+        if not isinstance(ident,str) or not __import__('re').fullmatch(r'DLV-[A-F0-9]{12}',ident):continue
+        file=A.root(runtime)/(result.get('action_context') or {})['id']/'deliverables'/ident/'spec.json'
+        if file.is_file():
+            review=(json.loads(file.read_text()).get('verification') or {}).get('semantic_review')
+            if isinstance(review,dict) and review.get('issues'):
+                feedback.append({'artifact':ident,'authority':'machine error reports to investigate, not clinician truth','review':review})
     return actions,{'attempt':str(directory.resolve()),'result_sha256':hashlib.sha256(result_path.read_bytes()).hexdigest(),
-                    'read_only_actions':len(actions),'reuse_final_answer':False,'reexecute_native_tools':True}
+                    'read_only_actions':len(actions),'downstream_review_feedback':feedback,'reuse_final_answer':False,'reexecute_native_tools':True}
 
 
 def run(a):
@@ -129,7 +138,7 @@ def run(a):
         from clinical_core.agere.request_lineage import Execution
         stack=Stack(a.runtime,allow_live=True);stack.ledger_path=a.ledger.resolve()
         from clinical_core.agere.clinical.harness_improvement import owned_recovery
-        with owned_recovery(recovery_actions,request['question']), Execution(stack.path,'/api/stack/compose',request) as execution:
+        with owned_recovery(recovery_actions,request['question'],(recovery_receipt or {}).get('downstream_review_feedback')), Execution(stack.path,'/api/stack/compose',request) as execution:
             result=handle_compose(stack,request);execution.finish(result)
         (a.output/'result.json').write_text(json.dumps(result,indent=2,default=str)+'\n')
         summary={**preflight,'status':'returned','seconds':time.monotonic()-started,
