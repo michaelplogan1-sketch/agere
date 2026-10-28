@@ -28,8 +28,9 @@ CONTRACTS = {
                        'group_by': 'list of registered population dimensions'},
         'meaning': 'A named, versioned governed business or quality measure over the compiled population. '
                    'Use the registered definition digest; no model-written numerator, denominator or SQL.'},
-    'trajectory': {'inputs':['earlier_set'],'parameters':{'concept':'measurement concept','direction':'worse|better|up|down|any','min_points':3},
-        'meaning':'Per-patient lab/vital trajectories: uncertainty-weighted change points + Theil-Sen slope; flags material, statistically separable changes (e.g. declining eGFR).'},
+    'trajectory': {'inputs':['earlier_set'],'parameters':{'concept':'measurement concept','direction':'worse|better|up|down|any','min_points':3,
+        'threshold':'optional forecast threshold','horizon_days':'forecast days from snapshot','target_event':'endpoint_exceedance|any_observed_crossing|first_passage|sustained_crossing'},
+        'meaning':'Per-patient lab/vital trajectories: change points + Theil-Sen slope; optional endpoint value forecasts. Path-event requests preserve their event and return an explicit unknown until a corresponding model/capture definition is supported.'},
     'discover': {'inputs':['earlier_set'],'parameters':{'outcome':'cohort specification of the outcome','segments':['practice','pcp','coverage_type','age_band','sex','food_difficulty','transport_difficulty','financial_hardship'],'pairs':True,'direction':'high|low|both'},
         'meaning':'Finds where an outcome is unusually concentrated across segments and segment pairs (two-proportion tests, BH-controlled), labelling documentation-limited cells. Use for where/which-groups/hotspot/pattern questions nobody specified.'},
     'program_effect': {'inputs':['optional earlier_set'],'parameters':{'program':'care_management|transitions_of_care|community_services|care_coordination|medication_start',

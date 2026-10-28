@@ -1,6 +1,6 @@
 """`calibration` operation: how well calibrated are Agere's forecasts and risk scores?
 
-One row per prediction Agere makes (Kalman lab/vital forecasts and their threshold-crossing probabilities,
+One row per prediction Agere makes (Kalman lab/vital forecasts and last-observed-window exceedance probabilities,
 per-member next-year cost from the internal risk score, outreach avoidable-utilization value), each with
 its time-split conformal backtest: nominal level, empirical coverage of held-out values, the model's own
 interval coverage where it has one, Brier score and expected calibration error (raw vs recalibrated) for
@@ -13,7 +13,7 @@ import math, sqlite3
 
 from . import conformal, semantic_layer, trajectory
 
-VERSION = 'calibration/1'
+VERSION = 'calibration/2'
 TARGETS = ('all', 'forecasts', 'risk_scores', 'outreach_utilization')
 # default forecast checks: the outreach rising-risk definitions
 FORECASTS = (('egfr', 30.0, 'below'), ('hba1c', 9.0, 'above'), ('systolic_bp', 160.0, 'above'))
@@ -61,11 +61,7 @@ def execute(path, patient_ids, params, as_of=None):
         snapshot = date.fromisoformat(as_of[:10]).toordinal()
         if p['target'] in ('all', 'forecasts'):
             checks = [(p['concept'], p['threshold'], p['direction'])] if p.get('concept') else list(FORECASTS)
-            series = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-            marks = ','.join('?' * len(checks))
-            for pid, c, d, v in db.execute(f'SELECT patient_id, concept, event_date, value_canonical FROM measurement WHERE concept IN ({marks}) '
-                                           'AND value_canonical IS NOT NULL AND event_date IS NOT NULL', [c for c, _, _ in checks]):
-                series[c][pid][d[:10]].append(v)
+            series = trajectory.load_series(db, [c for c, _, _ in checks], as_of, keep)
             for c, t, direction in checks:
                 row, receipt, rel = _forecast_row(series[c], c, t, direction, snapshot, p['horizon_days'], alpha, keep)
                 rows.append(row); receipts[row['prediction']] = receipt

@@ -360,17 +360,27 @@ def build_answer_core(plan, results, memberships, question):
         return answer
     if last['operation'] == 'trajectory':
         report = results[-1]['result']
+        from . import trajectory
+        requested = trajectory.requested_event(question)
+        if report.get('status') == 'unknown' or (report.get('mode') == 'forecast' and requested != 'endpoint_exceedance'):
+            reason = 'The requested path-event probability is unknown: the current engine estimates an endpoint value and cannot substitute it for a crossing within the window.'
+            answer.update(status='partial', answer_type='table', table=[], patient_ids=[], count=None, value=reason, method=report['method'],
+                          overall={'requested_event': report.get('target_event', requested), 'path_event_probability_available': False})
+            answer['missing'] += report.get('missing') or [reason]
+            return answer
         partial = plan.get('coverage') != 'supported_observation' or plan.get('unmet_requirements')
         answer.update(status='partial' if partial else 'answered', answer_type='table', table=report['patients'], method=report['method'],
                       count=report['flagged'], patient_ids=[x['patient_id'] for x in report['patients']],
                       value=(f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series are projected "
-                             f"to go {report['direction']} {_fmt(report['threshold'])} {report['unit']} within {report['horizon_days']} days "
+                             f"to be {report['direction']} {_fmt(report['threshold'])} {report['unit']} at the endpoint {report['horizon_days']} days from the snapshot "
                              f"(probability >= 50%)." if report.get('mode') == 'forecast' else
                              f"{report['flagged']} of {report['patients_with_series']} patients with a {report['concept']} series show a material, "
                              f"statistically separable change ({report['direction']})."))
         if report.get('conformal'):  # forecast mode: distribution-free intervals and their backtested coverage
             answer['value'] += ' Conformal calibration: ' + report['conformal']['statement']
             answer['overall'] = {**(answer.get('overall') or {}), 'calibration': report['conformal']}
+        if report.get('probability_target'):
+            answer['overall'] = {**(answer.get('overall') or {}), 'probability_target': report['probability_target']}
         return answer
     if last['operation'] == 'calibration':
         report = results[-1]['result']
@@ -1673,6 +1683,8 @@ def execute(stack, plan, *, question=None):
             elif op == 'trajectory':
                 from . import trajectory
                 chosen = memberships[node['inputs'][0]]
+                event = trajectory.requested_event(question)
+                if 'threshold' in params and event != 'endpoint_exceedance': params = {**params, 'target_event': event}
                 detail = trajectory.execute(path, sorted(chosen.yes), params)
                 detail['input_membership'] = membership_receipt(chosen)
             elif op == 'survival':

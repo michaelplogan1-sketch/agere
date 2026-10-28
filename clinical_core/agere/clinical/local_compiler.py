@@ -1294,6 +1294,7 @@ def _population_question(q, r, profile, as_of, info):
                     break
             if forecast_target: break
     horizon = None
+    if projected: r.take(r'\bat (?:the )?endpoint\b', 'endpoint target')
     for m in r.take(r'\b(?:in|within|over|during) (?:the )?(?:next |coming )?(\d+|a|one|two|three|six|twelve|eighteen) ?(days?|weeks?|months?|years?|yr)\b'
                     r'|\b(?:in|within|over|during) the (?:next|coming) (year|quarter|month|six months)\b|\bnext (year|quarter)\b', 'horizon'):
         words = {'a': 1, 'one': 1, 'two': 2, 'three': 3, 'six': 6, 'twelve': 12, 'eighteen': 18}
@@ -1624,8 +1625,9 @@ def _population_question(q, r, profile, as_of, info):
             {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': {'all': base[:20], 'any': anyp[:20], 'exclude': excl[:20]}},
              'purpose': 'Population named in the question'},
             {'id': 'forecast', 'operation': 'trajectory', 'inputs': ['population'],
-             'parameters': {'concept': c, 'direction': 'down' if op in ('lt', 'le') else 'up', 'threshold': value, 'horizon_days': horizon or 365},
-             'purpose': f'Patients projected to cross {c} {value}'}]}, info
+             'parameters': {'concept': c, 'direction': 'down' if op in ('lt', 'le') else 'up', 'threshold': value, 'horizon_days': horizon or 365,
+                            'target_event': __import__('clinical_core.agere.clinical.trajectory', fromlist=['requested_event']).requested_event(q)},
+             'purpose': f'Preserve the requested trajectory event for {c} {value}'}]}, info
     if trend:
         target = next((c for c, cmp, _ in measured), None)
         if target is None:

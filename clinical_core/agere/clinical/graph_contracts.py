@@ -149,6 +149,8 @@ def parameter_schema(op, catalog):
     if op == 'trajectory':
         from . import trajectory
         return obj({'concept': string(trajectory.NOISE), 'direction': string(['worse', 'better', 'up', 'down', 'any']),
+                    'threshold': {'type': ['number','null']}, 'horizon_days': {'type': ['integer','null'], 'minimum': 7, 'maximum': 1095},
+                    'target_event': {'anyOf': [string(trajectory.EVENTS, 'Endpoint exceedance is supported; path events retain an explicit unknown until qualified.'), {'type':'null'}]},
                     'min_points': {'type': 'integer', 'minimum': 3, 'maximum': 50}, 'top': {'type': ['integer','null'], 'minimum': 1,'description':'Explicit presentation limit; null returns all flagged patients'}})
     if op == 'survival':
         from . import survival, concepts as library

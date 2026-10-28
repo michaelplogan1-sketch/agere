@@ -10,7 +10,7 @@ components (reason codes), each with its evidence:
     heart-failure GDMT pillars (evidence-based beta blocker, ACEi/ARB/ARNI, MRA,
     SGLT2 inhibitor) from medication classes;
   - rising risk: local-linear-trend Kalman forecast (trajectory.forecast) of eGFR,
-    A1c and systolic BP crossing a threshold within a year;
+    A1c and systolic BP past a threshold at the one-year endpoint;
   - social needs: positive latest screen for food, transport or cost of care.
 Components for one patient overlap (one contact cannot deliver every intervention
 in full), so they are combined with a geometric overlap discount. Expected value =
@@ -39,7 +39,7 @@ import numpy as np
 
 from . import aggregate, conformal, semantic_layer, trajectory, vbc
 
-VERSION = 'outreach/1'
+VERSION = 'outreach/2'
 CATEGORIES = ('utilization', 'care_gap', 'rising_risk', 'social_need')
 GROUP_BY = ('none', 'practice', 'pcp')
 METHODS = ('auto', 'exact', 'greedy')
@@ -57,9 +57,9 @@ REASONS = {
     'GAP_GDMT_RAAS': ('care_gap', 'HF: no ACEi/ARB/ARNI observed', 600, 'GDMT review (nurse/pharmacist with cardiology/PCP)', 25),
     'GAP_GDMT_MRA': ('care_gap', 'HF: no MRA observed', 600, 'GDMT review (nurse/pharmacist with cardiology/PCP)', 25),
     'GAP_GDMT_SGLT2': ('care_gap', 'HF: no SGLT2 inhibitor observed', 600, 'GDMT review (nurse/pharmacist with cardiology/PCP)', 25),
-    'RISING_EGFR': ('rising_risk', 'eGFR forecast to fall below 30 within a year', 800, 'Early renal labs recheck; PCP/nephrology review', 15),
-    'RISING_A1C': ('rising_risk', 'A1c forecast to exceed 9% within a year', 300, 'Early A1c recheck; diabetes education', 15),
-    'RISING_SBP': ('rising_risk', 'Systolic BP forecast to exceed 160 within a year', 250, 'BP recheck; medication review', 15),
+    'RISING_EGFR': ('rising_risk', 'eGFR forecast below 30 at the one-year endpoint', 800, 'Early renal labs recheck; PCP/nephrology review', 15),
+    'RISING_A1C': ('rising_risk', 'A1c forecast above 9% at the one-year endpoint', 300, 'Early A1c recheck; diabetes education', 15),
+    'RISING_SBP': ('rising_risk', 'Systolic BP forecast above 160 at the one-year endpoint', 250, 'BP recheck; medication review', 15),
     'SDOH_FOOD': ('social_need', 'Positive food-insecurity screen', 150, 'Community resource referral (food)', 20),
     'SDOH_TRANSPORT': ('social_need', 'Positive transport screen', 150, 'Arrange transport benefit / ride', 20),
     'SDOH_COST': ('social_need', 'Positive cost-of-care screen', 150, 'Financial counseling / assistance referral', 20),
@@ -315,9 +315,8 @@ def candidates(db, as_of, keep=None, discount=0.5, measure_gaps=None):
     pop_attend = (a0 + sum(k for k, _ in appts.values())) / (a0 + b0 + sum(k + n for k, n in appts.values()))
     # measurement series for rising-risk forecasts
     series = defaultdict(lambda: defaultdict(list))
-    for pid, c, d, v in db.execute("SELECT patient_id, concept, event_date, value_canonical FROM measurement WHERE concept IN ('egfr','hba1c','systolic_bp') "
-                                   "AND value_canonical IS NOT NULL AND event_date IS NOT NULL"):
-        if keep is None or pid in keep: series[(pid, c)][d[:10]].append(v)
+    for c, people_series in trajectory.load_series(db, list(RISING), as_of, keep).items():
+        for pid, days in people_series.items(): series[(pid, c)] = days
     snapshot = date.fromisoformat(as_of).toordinal()
 
     rows = []
@@ -372,8 +371,12 @@ def candidates(db, as_of, keep=None, discount=0.5, measure_gaps=None):
             probability = f['_p_cross']
             if probability >= A['rising_min_probability']:
                 add(code, REASONS[code][2] * probability, f"{concept} {last:.1f} -> forecast {f['forecast']} (sd {f['forecast_sd']}) in 1 year; "
-                                                           f"slope {f['slope_per_year']}/yr; P(cross {threshold:g}) {f['p_cross']:.2f}")
+                                                           f"slope {f['slope_per_year']}/yr; P(endpoint {'below' if below else 'above'} {threshold:g}) {f['p_cross']:.2f}")
                 reasons[-1].update(p_cross=f['p_cross'], _p_cross=probability, _concept=concept)
+                reasons[-1]['probability_target'] = {**f['probability_target'], 'request_origin_day': snapshot, 'requested_horizon_days': 365}
+                reasons[-1]['value_basis'] = {'assumed_event_value_usd': REASONS[code][2], 'event': 'endpoint_exceedance',
+                    'interpretation': 'Assumed service value weighted by endpoint probability; no first-passage prevention benefit is identified.',
+                    'clinical_value_qualified': False}
                 reasons[-1]['_mean'], reasons[-1]['_sd'] = trajectory._predict(pts, rel, floor, 365 + gap)
         for need, code in (('food', 'SDOH_FOOD'), ('transport', 'SDOH_TRANSPORT'), ('cost_of_care', 'SDOH_COST')):
             got = needs.get((pid, need))
@@ -617,23 +620,20 @@ def _conformal_fields(r, cal, discount):
 
 def calibrate_rising(db, as_of):
     """Time-split conformal calibration of each rising-risk forecast (trajectory.calibrate on the whole roster's series)."""
-    series = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
-    for pid, c, d, v in db.execute("SELECT patient_id, concept, event_date, value_canonical FROM measurement WHERE concept IN ('egfr','hba1c','systolic_bp') "
-                                   "AND value_canonical IS NOT NULL AND event_date IS NOT NULL"):
-        series[c][pid][d[:10]].append(v)
+    series = trajectory.load_series(db, list(RISING), as_of)
     snapshot = date.fromisoformat(as_of).toordinal()
     return {c: trajectory.calibrate(series[c], c, snapshot, 365, threshold, below) for c, (_, threshold, below) in RISING.items()}
 
 
 def _apply_rising(rows, rising):
-    """Rising-risk reasons gain a conformal forecast interval and a Venn-Abers calibrated crossing probability."""
+    """Retain endpoint and last-observed-window calibration targets separately."""
     for r in rows:
         for c in r['reasons']:
             if '_concept' not in c: continue
             tmp = trajectory.apply_calibration({'_mean': c.pop('_mean'), '_sd': c.pop('_sd'), 'p_cross': c['p_cross'],
                                                '_p_cross': c.pop('_p_cross', c['p_cross'])}, rising[c.pop('_concept')])
             if 'conformal_low' in tmp: c['forecast_interval_90'] = [tmp['conformal_low'], tmp['conformal_high']]
-            for k in ('p_cross_calibrated', 'p_cross_calibrated_range'):
+            for k in ('p_cross_calibrated', 'p_cross_calibrated_range', 'p_last_observed_exceedance_calibrated', 'calibration_target'):
                 if k in tmp: c[k] = tmp[k]
         r.pop('_util', None); r.pop('_age', None)
 
@@ -712,7 +712,7 @@ def execute(path, patient_ids, params, as_of=None):
     method = ('Candidate value = engagement probability x value if engaged; value if engaged combines reason components largest-first '
               f'with overlap discount {p["overlap_discount"]}. Components: avoidable utilization (12-month admissions/ED days shrunk toward '
               'the internal Poisson-GLM risk-score expectation, x assumed reduction x unit cost), internal care-gap definitions (A1c, BP, statin, '
-              'kidney health evaluation, HF GDMT pillars from medication classes), Kalman-forecast rising risk (eGFR<30, A1c>9, SBP>160 within a year, '
+              'kidney health evaluation, HF GDMT pillars from medication classes), Kalman-forecast endpoint risk (eGFR<30, A1c>9, SBP>160 at one year, '
               'value x probability), positive social-needs screens. Engagement = base reach x the patient\'s Beta-shrunk appointment attendance '
               f'relative to the population. Optimiser: {receipt.get("method")} ({receipt.get("guarantee", "")}); certified ratio '
               f'{receipt.get("certified_ratio", 1.0)} of a computed upper bound. Dollar values are planning assumptions, not measured effects. '

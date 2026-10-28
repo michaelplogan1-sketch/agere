@@ -15,7 +15,7 @@ PRODUCT = {
     'discover': {'population': 'required', 'view': 'table',
                  'use': 'WHERE / which groups: unexpected concentrations of an outcome across practices, PCPs, payers, age, sex, social needs (hotspots nobody specified).'},
     'trajectory': {'population': 'required', 'view': 'table',
-                   'use': 'Per-patient lab or vital trends: WHICH PATIENTS are declining or will cross a threshold (Kalman forecast), change points. '
+                   'use': 'Per-patient lab or vital trends: WHICH PATIENTS are declining or past a threshold at an endpoint (Kalman forecast), change points. Path-event crossing requests retain an explicit unknown. '
                           'Population-level "what fraction reach X within T" is survival.'},
     'survival': {'population': 'required', 'view': 'curve',
                  'use': 'Time-to-event: HOW QUICKLY / HOW LONG UNTIL / median days until / what fraction reach an event within a time: readmission or follow-up '
