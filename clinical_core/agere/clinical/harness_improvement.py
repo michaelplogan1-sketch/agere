@@ -13,6 +13,19 @@ from pathlib import Path
 from ...contracts import digest
 from ..request_lineage import execution_observation
 
+from contextvars import ContextVar
+from contextlib import contextmanager
+
+_OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
+
+@contextmanager
+def owned_recovery(actions,question=None):
+    """Explicit unfinished-run recovery; never select a learned configuration or reuse an answer."""
+    token=_OWNED_RECOVERY.set({'actions':actions,'question':question} if actions is not None else None)
+    try: yield
+    finally: _OWNED_RECOVERY.reset(token)
+
+
 VERSION='recursive-harness/1'
 READ_ONLY={'query_sql','list_documents','read_document','review_documents','execute_metric','list_metrics',
            'list_analyses','describe_analysis','execute_analysis'}
@@ -93,7 +106,29 @@ def record_question_correction(path,question,reason):
     finally:db.close()
 
 
+def recover_actions(tools,question):
+    saved=_OWNED_RECOVERY.get()
+    if saved is None or saved['question']!=question:return None
+    actions=saved['actions']
+    guard=digest(tools.continuation_identity())
+    out={'used':None,'calls':[],'certificates':[],'final_answer':None,'reason':'Explicit owned-run recovery: every literal tool is re-executed; only exact provider requests may hit cache.'}
+    for action in actions:
+        if action.get('name') not in READ_ONLY or set(action)!={'name','input'}:
+            raise ValueError('Owned recovery accepts registered read-only actions only')
+        if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
+        try: value=tools(action)
+        except (ValueError,sqlite3.Error) as exc:value={'error':str(exc)}
+        out['calls'].append({'name':action['name'],'input':action['input'],'result':value,
+                             'sql':value.get('executed_query') if isinstance(value,dict) else None,'owned_run_recovery':True})
+        if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
+        if isinstance(value,dict) and value.get('error'):break
+    out['recovered_read_only_actions']=len(out['calls'])
+    return out
+
+
 def attempt_replay(tools,*args,**kwargs):
+    recovery=recover_actions(tools,args[0] if args else kwargs.get('question'))
+    if recovery is not None:return recovery
     report={}
     try:return replay(tools,*args,**kwargs,_report=report)
     except (sqlite3.Error,OSError) as exc:
