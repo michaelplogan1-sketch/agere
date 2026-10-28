@@ -519,6 +519,10 @@ def compose_frontier(path, request, *, allow_live=False, send=None):
         raise ValueError('Frontier composition is disabled on this server; the local command center remains available')
     from .compose import compose
     c, b = evidence_bundle(path, request['context_id'])
+    from ..clinical.request_plan import quote_text
+    purposes=[s.get('purpose','final') for s in c.get('workflow',[]) if s.get('kind')=='deliverable'
+              and s.get('quote') and quote_text(s['quote']) in request['request']]
+    if purposes and len(set(purposes))==1:b.meta['deliverable_purpose']=purposes[0]
     # The original question, source, returned evidence and revisioned review
     # work are already in this bundle. A design prompt cannot fetch new facts.
     validate_dependencies = bundle_validator(path, b)

@@ -673,7 +673,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                        for i, c in enumerate(successful_sql_calls(calls))]}
     from .decision_context import prompt_block
     from .clinical_definitions import describe
-    request = question + '\nGoverned definitions:\n' + prompt_block() + '\nClinical owner definitions:\n' + json.dumps(describe())
+    from .drug_classes import GROUPS
+    request = question + '\nRegistered medication group members (do not widen a member subtype to its parent):\n'+json.dumps(GROUPS)+'\nGoverned definitions:\n' + prompt_block() + '\nClinical owner definitions:\n' + json.dumps(describe())
     if workflow:
         request += ('\nExecution stage: review analytical findings and the explicit downstream workflow contract. '
                     'The existing artifact builder executes these source-bound steps AFTER analytical acceptance; '
@@ -744,6 +745,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     from .clinical_definitions import describe
     # Shared, versioned relation contracts; do not teach a second dose/phenotype rule.
     macro_docs = ANALYSIS_SYSTEM[ANALYSIS_SYSTEM.index('Authoritative definitions:'):ANALYSIS_SYSTEM.index('Temporal state:')]
+    from .drug_classes import GROUPS
+    docs += '\nREGISTERED MEDICATION GROUP CONTRACTS (exact class members):\n'+json.dumps(GROUPS)
     docs += '\nGOVERNED SQL MACROS (also accepted by query_sql):\n' + macro_docs + '\nCLINICAL OWNER DEFINITIONS:\n' + json.dumps(describe())
     quota = f'The caller configured a quota of {MAX_TOOLS} tool calls.' if MAX_TOOLS is not None else 'There is no fixed tool-call quota.'
     rules = RULES.format(tool_quota=quota) + '\n' + decision_context.prompt_block()
