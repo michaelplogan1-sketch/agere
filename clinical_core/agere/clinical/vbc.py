@@ -520,18 +520,21 @@ def _risk_pairs(db, origin, group_by):
     return pairs, scores, pmpy
 
 
-def risk_calibration(db, end, group_by, alpha=0.1, min_group=30):
+def risk_calibration(db, end, group_by, alpha=0.1, min_group=30, *, patient_ids=None):
     """Mondrian split conformal for per-member next-year cost implied by the internal risk score.
     Score = |observed - predicted| / predicted. Live intervals are calibrated on predictions issued a year before `end`
     and scored on the following year; the backtest calibrates two years back and evaluates one year back."""
+    from . import conformal
     level = 1 - alpha
     t1, t2 = _shift(end, -365), _shift(end, -730)
     by = group_by if group_by != 'none' else 'age_band'
     out = {'method': (f'Mondrian ({by}) split conformal on per-member next-year allowed cost predicted as risk score x population '
                       f'cost per member-year; score |observed - predicted| / predicted; members with >= 6 enrolled months in the outcome year. '
                       f'Live intervals calibrated on predictions issued {t1}; backtest calibrated on predictions issued {t2}, evaluated on {t1}.'),
-           'level': level, 'target': 'allowed cost per member-year, next 12 months (USD)', 'available': False}
+           'level': level, 'target': 'allowed cost per member-year, next 12 months (USD)', 'available': False,
+           'calibration_origin': t1, 'backtest_origin': t2, 'model_fit_population': 'global', 'reference_calibration_population': 'global'}
     live, _, _ = _risk_pairs(db, t1, group_by)
+    out['evaluation'] = conformal.scoped_interval_coverage(live, patient_ids=patient_ids)
     if len(live) < 20:
         out['reason'] = f'only {len(live)} members with a prediction issued {t1} and >= 6 enrolled months after it (need 20)'
         out['statement'] = 'Conformal calibration unavailable: ' + out['reason'] + '.'
@@ -549,12 +552,14 @@ def risk_calibration(db, end, group_by, alpha=0.1, min_group=30):
         pred, y = arr(live, 'pred'), arr(live, 'y')
         qs = np.array([conformal.mondrian_q(bt, q['group']) for q in live])
         lo, hi = conformal.interval(pred, qs, np.maximum(pred, 1.0), lower=0.0)
-        hit = (y >= lo) & (y <= hi)
-        groups = np.array([q['group'] for q in live], dtype=object)
-        out.update(backtest_coverage=round(float(hit.mean()), 4), backtest_evaluation_pairs=len(live), backtest_calibration_pairs=len(earlier),
-                   backtest_by_group={str(g): {'cases': int((groups == g).sum()), 'coverage': round(float(hit[groups == g].mean()), 4)}
-                                      for g in sorted(set(groups.tolist()), key=str)})
-        out['statement'] = conformal.describe_coverage(level, out['backtest_coverage'], len(live)) + ' in the time-split backtest'
+        evaluation = conformal.scoped_interval_coverage(live, lo, hi, patient_ids)
+        out.update(evaluation=evaluation, backtest_coverage=evaluation['coverage'],
+                   backtest_evaluation_pairs=evaluation['evaluable_pairs'], backtest_calibration_pairs=len(earlier),
+                   backtest_by_group=evaluation['by_group'])
+        if evaluation['coverage'] is not None:
+            out['statement'] = conformal.describe_coverage(level, evaluation['coverage'], evaluation['evaluable_pairs']) + ' in the requested-population time-split backtest'
+        else:
+            out['statement'] = 'No evaluable finite-interval cases in the requested population; coverage is unknown'
     else:
         out['statement'] = f'Conformal {level:.0%} intervals calibrated on {len(live)} members; too little earlier history to backtest their coverage'
     out['statement'] += f' (per-member next-year cost from the risk score; Mondrian by {by}).'

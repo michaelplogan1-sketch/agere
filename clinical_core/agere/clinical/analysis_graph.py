@@ -389,7 +389,9 @@ def build_answer_core(plan, results, memberships, question):
         answer.update(status='partial' if partial or not tested else 'answered', answer_type='table',
                       table=[{k: v for k, v in r.items() if k != 'statement'} for r in report['rows']], value=report['reading'],
                       method=report['method'], limitations=report['limitations'],
-                      overall={'calibration': {'statement': report['reading'], 'receipts': report['receipts']}, 'reliability': report['reliability']})
+                      overall={'calibration': {'statement': report['reading'], 'receipts': report['receipts'],
+                                               **{k: report.get(k) for k in ('evaluation_population','as_of','parameters','source_binding')}},
+                               'reliability': report['reliability']})
         return answer
     if last['operation'] == 'scheduling':
         from .scheduling import summary

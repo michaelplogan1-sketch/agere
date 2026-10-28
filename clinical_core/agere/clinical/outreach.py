@@ -222,7 +222,7 @@ def _calibration_origins(db, as_of, max_years=4, max_empty_run=2):
     return t1, t2, skipped
 
 
-def calibrate_utilization(db, as_of, alpha=0.1, min_group=30):
+def calibrate_utilization(db, as_of, alpha=0.1, min_group=30, *, patient_ids=None):
     """Mondrian (age band) split conformal on the avoidable-utilization value, time-split by year.
     Score = |observed - predicted| / (predicted + s0), s0 = median prediction. Live: calibrated on predictions issued
     one year before `as_of` scored on the following year. Backtest: calibrated two years back, evaluated one year back."""
@@ -235,8 +235,10 @@ def calibrate_utilization(db, as_of, alpha=0.1, min_group=30):
                       f'and evaluates those issued {t1}. Other value components are stated assumptions and are held fixed.'
                       + (f' Windows skipped because they contain a run of months with no admission or ED visit recorded anywhere (feed gap): {"; ".join(skipped[:3])}.' if skipped else '')),
            'level': level, 'target': 'avoidable-utilization value next 12 months (USD)', 'available': False,
-           'calibration_origin': t1, 'backtest_origin': t2, 'skipped_windows': skipped[:6]}
+           'calibration_origin': t1, 'backtest_origin': t2, 'skipped_windows': skipped[:6],
+           'model_fit_population': 'global', 'reference_calibration_population': 'global'}
     live = _utilization_pairs(db, t1) if t1 else []
+    out['evaluation'] = conformal.scoped_interval_coverage(live, patient_ids=patient_ids)
     if len(live) < 20:
         out['reason'] = (f'only {len(live)} enrolled members at the calibration origin {t1} (need 20)' if t1 else
                          'no origin with 24 continuously recorded months of admissions/ED visits around it and >= 20 enrolled members')
@@ -257,14 +259,14 @@ def calibrate_utilization(db, as_of, alpha=0.1, min_group=30):
         pred, y = arr(live, 'pred'), arr(live, 'y')
         qs = np.array([conformal.mondrian_q(bt, q['group']) for q in live])
         lo, hi = conformal.interval(pred, qs, pred + s0b, lower=0.0)
-        hit = (y >= lo) & (y <= hi)
-        out['backtest_coverage'] = round(float(hit.mean()), 4)
-        out['backtest_evaluation_pairs'] = len(live)
-        out['backtest_calibration_pairs'] = len(earlier)
-        groups = np.array([q['group'] for q in live], dtype=object)
-        out['backtest_by_group'] = {str(g): {'cases': int((groups == g).sum()), 'coverage': round(float(hit[groups == g].mean()), 4)}
-                                    for g in sorted(set(groups.tolist()), key=str)}
-        out['statement'] = conformal.describe_coverage(level, out['backtest_coverage'], len(live)) + ' in the time-split backtest'
+        evaluation = conformal.scoped_interval_coverage(live, lo, hi, patient_ids)
+        out.update(evaluation=evaluation, backtest_coverage=evaluation['coverage'],
+                   backtest_evaluation_pairs=evaluation['evaluable_pairs'], backtest_calibration_pairs=len(earlier),
+                   backtest_by_group=evaluation['by_group'])
+        if evaluation['coverage'] is not None:
+            out['statement'] = conformal.describe_coverage(level, evaluation['coverage'], evaluation['evaluable_pairs']) + ' in the requested-population time-split backtest'
+        else:
+            out['statement'] = 'No evaluable finite-interval cases in the requested population; coverage is unknown'
     else:
         out['statement'] = f'Conformal {level:.0%} intervals calibrated on {len(live)} members; too little earlier history to backtest their coverage'
     out['statement'] += ' (avoidable-utilization component; Mondrian by age band).'
