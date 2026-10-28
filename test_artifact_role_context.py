@@ -36,7 +36,10 @@ class RoleContext(unittest.TestCase):
   self.assertEqual(data['answer']['table'],b.results[rid]['answer']['table'])
   self.assertEqual(data['investigation']['document_reviews'],b.results[rid]['investigation']['document_reviews'])
   self.assertEqual(data['investigation']['tool_calls'][0]['result']['rows'],b.results[rid]['answer']['table'])
-  self.assertEqual(data['investigation']['answer_reviews'],b.results[rid]['investigation']['answer_reviews'])
+  historical=data['investigation']['answer_reviews']['$agere_native_provenance']
+  self.assertEqual(historical['kind'],'historical_machine_answer_checks')
+  self.assertEqual(b.get(historical['native_path']),b.results[rid]['investigation']['answer_reviews'])
+  self.assertEqual(historical['sha256'],fingerprint(b.get(historical['native_path'])))
   self.assertEqual(len(p['sql_provenance']),6)
   for ref in p['sql_provenance']:
    self.assertEqual(len(b.get(ref['native_path'])),ref['characters']);self.assertIn('$agere_native_provenance',json.dumps(data))
@@ -46,6 +49,27 @@ class RoleContext(unittest.TestCase):
   b,rid=self.bundle();encoded=render_for_model(b);p=uncompact_json(json.loads(encoded))
   self.assertEqual(p,render_projection(b));self.assertEqual(b.get(rid+':answer.table.0.patient_id'),'A')
   self.assertIn('Native AGERE.get/data-bind paths are unchanged',p['instructions'])
+
+ def test_old_compiler_failures_are_not_current_warnings_or_missing_clinical_evidence(self):
+  b,rid=self.bundle();old='The previous draft failed numeric binding for its old headline.'
+  b.results[rid]['investigation']['answer_reviews']=[{'feedback':old}]
+  before=copy.deepcopy(b.to_json());p=render_projection(b);encoded=render_for_model(b)
+  self.assertNotIn(old,encoded)
+  self.assertEqual(b.to_json(),before)
+  for field in ('status','table','investigation_review'):
+   self.assertEqual(p['data'][0]['data']['answer'][field],before['results'][rid]['answer'][field])
+  self.assertEqual(p['current_saved_status'][0]['investigation_review'],before['results'][rid]['answer']['investigation_review'])
+  ref=next(r for r in p['historical_machine_report_refs']if r['kind']=='historical_machine_answer_checks')
+  self.assertEqual(b.get(ref['native_path']),[{'feedback':old}])
+
+ def test_mirrored_planner_check_history_cannot_reappear_as_current_compiler_failure(self):
+  b,rid=self.bundle();old='Numeric prose must use scalar placeholders in the PREVIOUS draft.'
+  b.results[rid]['planner_receipt']['request_contract']={'legacy_receipt':{'backstop':{'answer_reviews':[{'feedback':old}]}}}
+  before=copy.deepcopy(b.to_json());packet=render_projection(b)
+  self.assertNotIn(old,render_for_model(b));self.assertEqual(b.to_json(),before)
+  ref=next(r for r in packet['historical_machine_report_refs']if 'legacy_receipt.backstop.answer_reviews' in r['native_path'])
+  self.assertEqual(b.get(ref['native_path']),[{'feedback':old}])
+  self.assertEqual(ref['sha256'],fingerprint(b.get(ref['native_path'])))
  def test_frozen_compose_and_semantic_review_use_same_role_projection(self):
   b,rid=self.bundle();prompt=C._user_prompt('proposal','physician',b,'repair')
   self.assertIn('agere-artifact-render-view/1',prompt);self.assertIn('current_saved_status',prompt)

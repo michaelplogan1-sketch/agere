@@ -147,20 +147,30 @@ class Bundle:
 
 
 def render_projection(bundle):
-    """All saved clinical values; executable SQL travels as native provenance refs.
+    """Presentation view with exact native provenance and bound user acceptance.
 
     This is an explicit artifact-role projection, not clinical evidence filtering.
     Raw SQL remains in the immutable/embedded bundle, available by original path.
-    Only listed server-owned executable fields can become references. Source rows,
-    quotes, findings, questions, review outcomes and uncertainty are untouched.
+    Without independent acceptance every clinical value is supplied. An exact
+    user-accepted answer supplies its complete final findings/table/scope and
+    attaches raw analytical derivation by hash, rather than reassessing it.
+    Listed server-owned executable fields and historical machine checks can
+    become references. Source rows, quotes, findings, current judgments and
+    uncertainty are untouched.
     """
     import copy
-    data=[];refs=[];current=[];history=[]
+    data=[];refs=[];current=[];history=[];accepted_provenance=[]
     def sql(parent,key,path):
         value=parent.get(key)
         if not isinstance(value,str) or not re.match(r'^\s*(?:WITH|SELECT)\b',value,re.I):return
         ref={'native_path':path,'sha256':hashlib.sha256(value.encode()).hexdigest(),'characters':len(value),'kind':'executed_SQL_provenance'}
         refs.append(ref);parent[key]={'$agere_native_provenance':ref}
+    def previous_checks(parent,key,path):
+        previous=parent.get(key)
+        if isinstance(previous,list) and previous:
+            ref={'native_path':path,'sha256':fingerprint(previous),
+                 'kind':'historical_machine_answer_checks','reports':len(previous)}
+            history.append(ref);parent[key]={'$agere_native_provenance':ref}
     def plans(value,path):
         # This visitor is confined to compiler/planner metadata, never source rows.
         if isinstance(value,list):
@@ -168,14 +178,34 @@ def render_projection(bundle):
         elif isinstance(value,dict):
             for k in list(value):
                 if k in ('query','sql','executed_query'):sql(value,k,path+'.'+k)
+                elif k=='answer_reviews':previous_checks(value,k,path+'.'+k)
                 elif k not in ('answer','rows','table','findings','review_json'):plans(value[k],path+'.'+k)
     for rid,receipt in bundle.receipts.items():
         native=bundle.results[rid];value=copy.deepcopy(native)
         if receipt['tool']=='saved_answer' and isinstance(value,dict):
             a=value.get('answer') or {}
+            review=bundle.meta.get('user_answer_review') or {}
+            accepted=(review.get('accepted') is True and bool(review.get('context_id')) and bool(review.get('policy_identity'))
+                      and review.get('context_id')==value.get('id')
+                      and review.get('answer_fingerprint')==fingerprint(a)
+                      and review.get('source_fingerprint')==fingerprint(value.get('source'))
+                      and review.get('policy_identity')==value.get('context_policy_identity'))
+            if accepted:
+                # The physician already accepted this exact analytical result.
+                # A page editor receives the complete final answer, table,
+                # findings, source quotes and declared scope, not a new clinical
+                # investigation. Raw derivation remains attached in the native
+                # bundle and accessible at the same original inspection paths.
+                for key in ('investigation','planner_receipt','graph'):
+                    if key in value:
+                        original=value[key]
+                        ref={'native_path':rid+':'+key,'sha256':fingerprint(original),
+                             'kind':'accepted_analysis_source_provenance'}
+                        accepted_provenance.append(ref);value[key]={'$agere_native_provenance':ref}
             current.append({'receipt':rid,'context_id':value.get('id'),'original_question':value.get('original_question') or value.get('question'),
                             'source':value.get('source'),'answer_status':a.get('status'),'verification':a.get('verification'),
-                            'investigation_review':a.get('investigation_review')})
+                            'investigation_review':a.get('investigation_review'),
+                            'independent_user_review':review if accepted else None})
             for key in ('graph','planner_receipt'):plans(value.get(key),rid+':'+key)
             binding=(value.get('answer') or {}).get('table_binding')
             if isinstance(binding,dict):sql(binding,'query',rid+':answer.table_binding.query')
@@ -193,23 +223,35 @@ def render_projection(bundle):
                 ref={'native_path':rid+':investigation.recursive_improvement.replay.downstream_review_feedback',
                      'sha256':fingerprint(prior),'kind':'historical_machine_artifact_criticism','reports':len(prior)}
                 history.append(ref);replay['downstream_review_feedback']={'$agere_native_provenance':ref}
+            # Failed compiler/model checks on previous analytical drafts are
+            # history too. Exposing them as current made a renderer invent
+            # binding-failure warnings after those fields had been repaired.
+            investigation=value.get('investigation') or {}
+            previous_checks(investigation,'answer_reviews',rid+':investigation.answer_reviews')
         data.append({'receipt':rid,'tool':receipt['tool'],'args':receipt['args'],'definition':receipt.get('definition') or '', 'data':value})
     packet={'projection':'agere-artifact-render-view/1','instructions':
-            'All native clinical rows, full findings, source quotes, current review outcomes and uncertainty are supplied unchanged. '
-            'Only executable SQL provenance strings at the listed native paths are represented by hash references; '
+            ('The complete independently accepted final answer, patient table, findings, source quotes, declared scope and uncertainty are supplied unchanged. '
+             if accepted_provenance else
+             'All native clinical rows, full findings, source quotes, current review outcomes and uncertainty are supplied unchanged. ')+
+            'The declared executable SQL, historical machine checks and any accepted-analysis derivation at the listed native paths use hash references; '
             'the full original SQL remains in the immutable embedded bundle. Native AGERE.get/data-bind paths are unchanged; '
             'do not use projection/data prefixes in bindings. Do not turn a hash or past machine report into a clinical fact. '
             'current_saved_status names the CURRENT answer and machine review; older critiques and prior checks in the history '
             'are observations to investigate, not the current support label or physician truth. '
             'Historical artifact criticism is referenced as native machine provenance; it is not evidence of what the current page prints. '
+            'Historical analytical-draft checks are also provenance, not the current binding or review status. '
+            'When an independent user review is bound to this exact answer/source/policy, the complete accepted final answer, patient table, '
+            'findings, quotes and scope are supplied for presentation. Its full underlying investigation, planner receipt and graph are '
+            'native hash-referenced provenance attached to the artifact for inspection; do not reopen that accepted clinical assessment. '
             'Inspect the current artifact and its actual bindings before alleging a defect. Preserve partial/unverified status.',
             'current_saved_status':current,'data':data,'sql_provenance':refs,'historical_machine_report_refs':history,
+            'accepted_analysis_provenance':accepted_provenance,
             'native_results_fingerprint':fingerprint(bundle.results)}
     # Reconstruct against the independently retained native bundle. This ensures
     # that projection changes ONLY the declared executable fields.
     for entry in data:
         rid=entry['receipt'];restored=copy.deepcopy(entry['data'])
-        for ref in refs+history:
+        for ref in refs+history+accepted_provenance:
             prefix=rid+':'
             if not ref['native_path'].startswith(prefix):continue
             parts=ref['native_path'][len(prefix):].split('.');parent=restored

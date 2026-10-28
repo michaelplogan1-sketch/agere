@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-28T19:17:21.805901+00:00",
+  "updated_at": "2026-10-28T19:40:53.116081+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "retained_presentation_repair_verified",
+    "kind": "independent_acceptance_delivery_handoff_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "A matching rejected presentation is edited with actual retained criticism and fresh checks, rather than independently rewritten. Writer instructions preserve source scope, causal uncertainty and dated qualifiers.",
-    "measured_failure_reduction": "530authored offline checks529pass/one optional live skip. Connected actual retry path supplies prior draft/feedback, invokes new writer+semantic review and leaves old artifacts unchanged; source/scope/stage/date/brief mismatches prevent reuse. Native diagnostics retained locally.",
+    "measured_failure_reduction": "539 authored offline checks:538pass/one optional live skip, zero provider/protected reads and source unchanged. Exact acceptance reaches actual writer and technical checker; accepted final data remains complete with full raw derivation attached, mirrored old compiler checks cannot become current warnings. Native packet proof retained locally.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -438,8 +438,8 @@
       "artifacts/agere-live-integration-2026-10-28/native-compiler-feedback-audit.json",
       "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json"
     ],
-    "remaining_gap": "Native saved-deliverable completion/UI/export and full workflow economics remain pending. No clinical approval or production claim inferred from engineering checks; existing physician review remains scoped to the results he reviewed.",
-    "next_action": "Run prepared retry15 through existing saved-workflow endpoint with frozen current source, exact matched draft/evidence/stage/brief and actual criticism. No repeat patient investigation or note extraction for a presentation repair. Inspect actual UI/export/components/costs and preserve locally; stop new providers on subscription limit. No protected keys/caps/fitting/default/model/main promotion/agents.",
+    "remaining_gap": "Technical presentation completion/UI/export and actual cost measurement remain. Independent user review is complete for the reviewed results and must not be demanded again. Broad production/cold-workflow economics remain distinct.",
+    "next_action": "Finish frozen-source technical verification, then run prepared saved-presentation retry16. Carry exact independent user acceptance forward; no additional clinician review or clinical reassessment of accepted results. Complete accepted answer/table/scope goes to page roles with raw derivation still attached by native provenance. Reuse matching draft, check bindings/UI/export, record actual costs locally and preserve recovery state. No protected keys/caps/fitting/model/default/main activation/agents.",
     "next": "Continue G3 offline on analytical evidence sizing and current-artifact verification, using the saved native context-limit and history-contamination receipts. Preserve complete native clinical evidence and uncertainty; tie claims/review failures to current source/actual artifact. Demonstrate the repair on authored non-HF engineering fixtures and exact saved negative cases before another provider run. Reuse retained native work and validated responses; do not launch independent full reruns against an unqualifiable packet. No monetary/call/patient caps, lowered clinical checks, protected evaluations, new fitting/model activation, agents or main deployment. Then qualify the ordinary multi-domain workflow, clinician acceptability, UI/exports and measured cost/latency; preserve full ten-area scope and update approved private source/docs PR.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
@@ -535,11 +535,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-28T19:17:21.805901+00:00",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-rejected-draft.json",
-      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-rejected-draft-audit.json",
-      "native14": "artifacts/agere-live-integration-2026-10-28/attempt14-native-audit.json",
-      "clinician_review": "artifacts/agere-live-integration-2026-10-28/clinician-review-20261028.json"
+      "at": "2026-10-28T19:40:53.116081+00:00",
+      "verification": "artifacts/agere-live-integration-2026-10-28/verification-independent-review.json",
+      "native_audit": "artifacts/agere-live-integration-2026-10-28/native-independent-review-audit.json",
+      "independent_review": "artifacts/agere-live-integration-2026-10-28/independent-answer-review.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -1719,6 +1718,11 @@
       "at": "2026-10-28T19:14:42.974197+00:00",
       "reason": "The saved retry discarded an existing failed candidate and its review, and the frozen writer rules conflicted about literal section numbering. Preserve exact native-bound rejected work for a cheap edit with its actual criticism, remove the instruction conflict, and rerun current checks. Detailed native evidence and costs remain local.",
       "scope_impact": "No clinical threshold/conclusion or execution authority changes; no prior approval reuse, new fitting/default promotion or main deployment. All ten areas retained."
+    },
+    {
+      "at": "2026-10-28T19:36:16.166111+00:00",
+      "reason": "The user explicitly reaffirmed independent acceptance and requires no additional clinician reviews of the same findings. Bind acceptance to exact saved answer/source/policy; use the complete accepted final analysis for delivery rather than reopening raw clinical assessment on each page edit. Keep full raw derivation attached by native provenance. Reference mirrored prior compiler checks as history rather than false current failures.",
+      "scope_impact": "Acceptance cannot transfer to changed facts/source/policy. No additional clinical review of this accepted result, no new fitting or actual care authority. Technical binding, source-dependency and presentation-fidelity checks remain; full product charter retained."
     }
   ],
   "unsealed_work": {

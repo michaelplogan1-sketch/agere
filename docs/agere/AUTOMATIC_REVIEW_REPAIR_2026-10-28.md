@@ -148,3 +148,14 @@ A retry can now edit an existing rejected draft instead of generating an indepen
 Writer instructions now distinguish absent structured assignments from available note evidence, candidate observations from causal treatment decisions, and dated or carried-forward history from current state. The conflicting permission to type ordinal heading numbers in a frozen page is removed; use automatic list numbering or unnumbered headings.
 
 The current candidate passes530authored offline checks:529passed/one optional live skip, zero provider or protected-corpus reads and unchanged source. Connected generic fixtures exercise a cheap edit with real retained criticism and fresh semantic review, mismatch exclusions, and immutable prior artifacts. Detailed native results and accounting remain in local ignored artifacts, not PR metadata. This is engineering qualification, not a clinical accuracy or production-price claim.
+
+
+## Preserve independently accepted analyses through delivery
+
+The user has independently reviewed and accepted the analytical findings and explicitly requires no further clinician reviews of those results. The presentation path now honors an explicit review receipt only when its saved context, complete answer, source snapshot and analytical policy match exactly. The receipt is separate from the saved machine status and genuine missing source facts; it neither transfers to changed findings nor establishes eligibility or executes care. Writer and technical-checker instructions preserve that acceptance rather than requesting another clinical assessment.
+
+For an exactly accepted analysis, presentation roles receive the complete final answer, patient table, findings, quotes and declared scope. Full underlying investigation, planner receipt and graph remain attached in the immutable native bundle and referenced by exact path and hash for inspection. The editor does not repeat the accepted clinical analysis. Without a matching independent review, the complete raw clinical evidence remains in the model packet.
+
+Historical compiler/model checks are also referenced as prior provenance, including their mirrored copies inside planner receipts. Previously a renderer could turn a failed old draft check into a false warning on a repaired current answer. Current machine judgments, independent user acceptance, final findings and uncertainty remain explicit. Every projection is reconstructed against the full native bundle before use.
+
+Authored checks cover the real saved-answer/composer boundary, exact review binding, changed premise exclusions, approved versus unreviewed presentation views, complete final data retention, immutable native raw provenance, absence of old warnings, working bindings and the existing technical fidelity checks. No new fitting, model/default activation, clinician reassessment or care dispatch is introduced. Detailed native runtime results and costs remain local ignored artifacts.

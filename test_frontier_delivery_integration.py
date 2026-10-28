@@ -149,6 +149,22 @@ class FrontierDelivery(unittest.TestCase):
         self.assertEqual(spec['draft_reuse']['evidence_fingerprint'],fingerprint(bundle.results))
         self.assertEqual(old_files,{p.name:p.read_bytes() for p in (Path(ws.dir)/'deliverables'/old).iterdir() if p.is_file()})
 
+    def test_saved_independent_user_acceptance_reaches_writer_and_technical_checker(self):
+        c=A.load(self.path,self.key);ws=A.workspace(self.path,c)
+        review={'schema':'independent-answer-review/1','accepted':True,'reviewer':'Fixture physician',
+                'verbatim':'I independently reviewed the results; no further clinician review is needed.',
+                'recorded_at':'2030-05-28','context_id':self.key,
+                'answer_fingerprint':fingerprint(c['answer']),'source_fingerprint':fingerprint(c['source']),
+                'policy_identity':c['context_policy_identity']}
+        (Path(ws.dir)/'answer-review.json').write_text(json.dumps(review))
+        out=W.materialize(self.path,self.key,allow_live=True,send=self.sender)
+        self.assertEqual(out['steps'][0]['status'],'ready')
+        self.assertIn('do not run a new clinical assessment','\n'.join(b['text']for b in self.calls[0]['system']))
+        self.assertIn('do not run a new clinical assessment',self.calls[1]['system'])
+        _,bundle,_,_=C.load(ws,out['steps'][0]['deliverable_id'])
+        self.assertEqual(bundle.meta['user_answer_review'],review)
+        self.assertFalse(out['external_dispatch_performed'])
+
     def test_writer_escalates_only_after_failed_checks_with_same_source(self):
         seen=[]
         def sender(body):
