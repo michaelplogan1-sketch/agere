@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 
-VERSION = 'semantic-cache/1'
+VERSION = 'semantic-cache/2'
 SIMILARITY = 0.85  # hand-set fallback (semantic_cache_eval.py: 0 false reuses); a certified LTT value replaces it
 ROOT = Path(__file__).resolve().parents[3]
 
@@ -189,13 +189,46 @@ def similarity_gate(encoder=None):
     return get('semantic_cache.similarity', SIMILARITY, bind=getattr(encoder, 'identity', None))
 
 
+def effective_gate(info, global_gate, encoder_identity=None):
+    """Qualification of the rule actually used; never borrow another rule's flag.
+
+    A global certificate only transfers when candidate selection and cutoff are
+    unchanged. Adaptive headroom selection needs its own post-selection evidence.
+    Ordinary older global receipts remain supported; legacy adaptive ones do not.
+    """
+    from . import vcache
+    rule = (info or {}).get('effective_rule')
+    if rule is None and not (info or {}).get('vcache'):
+        return None
+    cut = (info or {}).get('threshold')
+    out = {'threshold': cut, 'calibrated': False,
+           'reason': 'effective cache admission policy is not qualified'}
+    if not isinstance(rule, dict) or rule.get('source') != 'global' or not rule.get('qualified'):
+        return out
+    if rule.get('adaptive_enabled') != vcache.enabled():
+        return {**out, 'reason': 'cache admission policy changed'}
+    try:
+        binding = rule.get('policy')
+        if binding is not None and binding != vcache.policy(encoder_identity):
+            return {**out, 'reason': 'cache error policy or scorer changed'}
+        target = (binding or {}).get('error_target')
+        same = (rule.get('version') == VERSION and rule.get('scorer') == encoder_identity
+                and cut == global_gate.get('threshold') and rule.get('cutoff') == cut
+                and global_gate.get('calibrated')
+                and (target is None or float(global_gate.get('alpha', 1)) <= target))
+    except (TypeError, ValueError):
+        same = False
+    return {**global_gate, 'threshold': cut} if same else out
+
+
 def lookup(path, question, encoder, *, threshold=None):
     """-> (hit | None, receipt). hit = {plan_kind, plan, agreement, matched_question}."""
     from . import learning
     pinned = threshold is not None
     gate = similarity_gate(encoder) if threshold is None else {'threshold': threshold, 'calibrated': False}
     threshold = gate['threshold']
-    receipt = {'cache': VERSION, 'threshold': threshold, 'threshold_calibrated': gate['calibrated']}
+    receipt = {'cache': VERSION, 'threshold': threshold, 'threshold_calibrated': gate['calibrated'],
+               'global_gate': dict(gate)}
     if os.environ.get('AGERE_SEMANTIC_CACHE', 'on') == 'off': return None, {**receipt, 'reason': 'disabled'}
     if encoder is None: return None, {**receipt, 'reason': 'no local encoder'}
     if not (Path(path) / 'learning.sqlite3').exists(): return None, {**receipt, 'reason': 'no verified store'}
@@ -216,17 +249,38 @@ def lookup(path, question, encoder, *, threshold=None):
     best = int(np.argmax(sims))
     entry_cuts = None
     from . import vcache
+    ident = getattr(encoder, 'identity', None)
+    binding = None
+    policy_valid = True
+    adaptive_selection = False
     if not pinned and vcache.enabled():
-        ident = getattr(encoder, 'identity', None)
+        try:
+            binding = vcache.policy(ident)
+        except (ValueError, TypeError):
+            policy_valid = False
         entry_cuts = [vcache.entry_threshold(path, c['question'], threshold, ident) for c in candidates]
+        adaptive_selection = any(r.get('effective') != 'global' for _, r in entry_cuts)
+        available = [i for i, (cut, _) in enumerate(entry_cuts) if cut is not None]
+        if not available:
+            return None, {**receipt, 'threshold': None, 'threshold_calibrated': False,
+                          'vcache': [r for _, r in entry_cuts],
+                          'reason': 'no available entry cutoff; use the ordinary planner'}
         # the candidate with the most headroom over ITS OWN cut wins (a looser entry may beat a closer, stricter one)
-        best = int(np.argmax([float(sims[i]) - entry_cuts[i][0] for i in range(len(candidates))]))
+        best = max(available, key=lambda i: float(sims[i]) - entry_cuts[i][0])
     cut, vreceipt = entry_cuts[best] if entry_cuts else (threshold, None)
     receipt.update(candidates=len(candidates), matched_question=candidates[best]['question'], similarity=round(float(sims[best]), 4),
                    slots=slots(question))
     if vreceipt: receipt.update(threshold=cut, global_threshold=threshold, vcache=vreceipt)
+    qualified = bool(not pinned and not adaptive_selection and policy_valid and gate.get('calibrated')
+                     and (binding is None or float(gate.get('alpha', 1)) <= binding['error_target']))
+    receipt.update(threshold_calibrated=qualified, effective_rule={
+        'version': VERSION, 'source': 'explicit' if pinned else 'adaptive' if adaptive_selection else 'global',
+        'cutoff': cut, 'scorer': ident, 'policy': binding, 'qualified': qualified,
+        'adaptive_enabled': not pinned and vcache.enabled(),
+        'qualification': 'global certificate, unchanged selection' if qualified else 'unqualified; ordinary answer review required',
+        'guarantee': gate.get('guarantee') if qualified else None})
     if sims[best] < cut: return None, {**receipt, 'reason': 'identical slots but similarity below threshold'}
     hit = candidates[best]
-    if vreceipt: vcache.log_reuse(path, question, hit['question'], float(sims[best]), hit['plan'])
+    if vreceipt: vcache.log_reuse(path, question, hit['question'], float(sims[best]), hit['plan'], binding=binding)
     return {'plan_kind': hit['plan_kind'], 'plan': hit['plan'], 'agreement': hit['agreement'], 'matched_question': hit['question']}, \
            {**receipt, 'reason': 'reused'}

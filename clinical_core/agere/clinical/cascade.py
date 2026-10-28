@@ -50,7 +50,7 @@ TIER_CODE = {
     'operator_router': ('operator_router.py', 'learned_router.py'),
     'compact_retrieval_typed_router': ('economical_planner.py',),
     'learned_verified_sql': ('learning.py', 'verify.py'),
-    'semantic_cache': ('semantic_cache.py',),
+    'semantic_cache': ('semantic_cache.py', 'vcache.py', 'gate_policy.py'),
     'tier1_rules': ('therapy_barriers.py',),
     'tier2_classifier': ('therapy_barriers.py',),
     'tier3_jev': ('therapy_barriers.py',),
@@ -250,7 +250,15 @@ def route_score(route, receipt):
         from .family_common import score
         return score(receipt.get(route))
     if route == 'semantic_cache':
-        sim = (receipt.get('semantic_cache') or {}).get('similarity')
+        info = receipt.get('semantic_cache') or {}
+        if 'effective_rule' in info or info.get('vcache'):
+            from .semantic_cache import effective_gate
+            gate = info.get('global_gate') or {}
+            rule = info.get('effective_rule') or {}
+            effective = effective_gate(info, gate, rule.get('scorer'))
+            if not effective or not effective.get('calibrated'):
+                return None
+        sim = info.get('similarity')
         return None if sim is None else float(sim)
     if route == 'compact_retrieval_typed_router':
         step = next((s for s in receipt.get('steps') or [] if s.get('stage') == 'typed_decision_router'), None)
@@ -287,4 +295,11 @@ def certify_route(receipt, path=None):
     scored = receipt
     if (receipt or {}).get('route') == 'exact_question_cache' and isinstance(receipt.get('prior_planning_receipt'), dict):
         scored = receipt['prior_planning_receipt']
-    return certify(tier, route_score(tier, scored), path)
+    result = certify(tier, route_score(tier, scored), path)
+    if tier == 'semantic_cache' and result.get('certified'):
+        rule = ((scored or {}).get('semantic_cache') or {}).get('effective_rule') or {}
+        target = (rule.get('policy') or {}).get('error_target')
+        if target is not None and result.get('alpha', 1) > target:
+            result.update(certified=False, status='uncalibrated', reason='cascade error target does not cover effective cache policy')
+            result['statement'] = statement(result)
+    return result
