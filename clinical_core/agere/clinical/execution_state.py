@@ -77,7 +77,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None):
             if coverage:
                 state['current_review_feedback']['coverage']={k:coverage[k]for k in ('label','reasons','reject')if k in coverage}
             support=feedback.get('support')or{}
-            pending=[{k:r[k]for k in ('id','label','reason')if k in r}for r in support.get('packets',[])if r.get('label')!='supported']
+            pending=[{k:r[k]for k in ('id','label','reason','claim_feedback')if k in r}for r in support.get('packets',[])if r.get('label')!='supported']
             if pending:state['current_review_feedback']['unresolved_dependencies']=pending
             if support.get('failed_packet_ids'):
                 state['current_review_feedback']['failed_dependency_ids']=support['failed_packet_ids']

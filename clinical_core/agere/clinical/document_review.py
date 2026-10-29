@@ -254,6 +254,9 @@ def with_correspondence(rows,packages,questions=None,as_of=None):
     for row in rows:
         pid=row['patient_id'];docs=[d for batch in packages[pid] for d in batch]
         result={**row,'source_clinicians_json':json.dumps(correspondence_roles(docs))}
+        findings=json.loads(row['review_json'])
+        result['source_findings_json']=json.dumps([{'field':field,**value}
+            for field,values in findings.items() for value in values])
         if questions and any(isinstance(q,dict) for q in questions.values()):
             from .assertion_reconciliation import reconcile
             found=json.loads(row['review_json']);assertions=[]

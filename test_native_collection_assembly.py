@@ -44,5 +44,16 @@ class Collections(unittest.TestCase):
         results['source']['rows'][0]['collection_json']=json.dumps([clause]);join['as']='contract_terms'
         out=A.compose(results,base='base',keys=['patient_id'],joins=[join]);self.assertEqual(out['rows'][0]['contract_terms'],[clause])
 
+    def test_explicit_final_retention_detects_dropped_roles_or_changed_dates(self):
+        _,results,join=self.fixture();join['retain_in_final']=True
+        out=A.compose(results,base='base',keys=['patient_id'],joins=[join]);results['composed']=out
+        self.assertEqual(A.collection_retention_issues(results,out['rows'],{'composed'}),[])
+        for mutation in ('drop','change','omit'):
+            final=copy.deepcopy(out['rows'])
+            if mutation=='drop':final[0]['dated_roles'].pop()
+            elif mutation=='change':final[0]['dated_roles'][0]['date']='2030-05-27'
+            else:final[0].pop('dated_roles')
+            with self.subTest(mutation=mutation):self.assertTrue(A.collection_retention_issues(results,final,{'composed'}))
+
 
 if __name__=='__main__':unittest.main()

@@ -9,6 +9,13 @@ def finding(record,quote):
 
 
 class Projection(unittest.TestCase):
+    def test_readable_native_json_keeps_field_names_and_checks_integrity(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        native={'patient_id':'A','reason':[finding('r','MRA held.')]};encoded=readable_json(native)
+        self.assertEqual(uncompact_json(encoded),native);self.assertIn('reason',encoded['payload'])
+        changed=copy.deepcopy(encoded);changed['payload']['patient_id']='B'
+        with self.assertRaises(ValueError):uncompact_json(changed)
+
     def test_exact_string_cells_and_episode_grain_restore_without_mutation(self):
         table=[{'patient_id':'A','episode':'e1','findings':json.dumps([finding('r1','Could not afford it.')],indent=2),'cost':42},
                {'patient_id':'A','episode':'e2','findings':[finding('r2','Later paid fill.')],'cost':0},
@@ -45,7 +52,7 @@ class Projection(unittest.TestCase):
         self.assertEqual(view['table_binding']['result_view'],'v');self.assertIn('native_executable_provenance',view['table_binding'])
         self.assertEqual(view['coverage_contract']['dependency_edges'][0]['packet'],'patient_A');self.assertEqual(answer,old)
 
-    def test_every_patient_dependency_keeps_full_findings_and_global_claim_context(self):
+    def test_every_patient_dependency_keeps_full_findings_and_global_claims_are_separate(self):
         table=[{'patient_id':f'P{i}','findings':[finding(f'r{i}','A long dated source statement. '*200)]}for i in range(64)]
         answer={'table':table,'facts':{'scope':'Current responsibility is unknown.'}}
         packets=B.support_packets('Care gaps and access',answer,[],[],'2030-01-02')
@@ -55,7 +62,16 @@ class Projection(unittest.TestCase):
         summary=native['summary'];self.assertEqual(E.restore_table(summary['all_final_rows'],summary['required_clinical_dependencies'],leaves),table)
         for i,row in enumerate(table):
             self.assertEqual(native[f'patient_P{i}']['answer_rows'],[row])
-            self.assertEqual(native[f'patient_P{i}']['global_claims_context']['facts'],answer['facts'])
+            self.assertNotIn('global_claims_context',native[f'patient_P{i}'])
+        self.assertEqual(native['summary']['answer']['facts'],answer['facts'])
+
+    def test_native_text_dependencies_restore_legacy_flattened_cells_exactly(self):
+        table=[{'patient_id':'A','reason':'A long literal source account. '*1000,
+            'clinician':'Historical author; current responsibility unknown.','literal':'[not JSON]','amount':42}]
+        view,edges=E.table_view(table,defer_native_cells=True)
+        self.assertEqual(len(edges),3);self.assertLess(len(json.dumps(view)),2000)
+        self.assertEqual(E.restore_table(view,edges,{'patient_A':table}),table)
+        self.assertEqual(view[0]['amount'],42)
 
     def test_supported_summary_cannot_override_one_contradicted_clinical_dependency(self):
         packets=B.support_packets('Care gaps',{'table':[{'patient_id':'A','finding':[finding('r','Therapy was stopped.')]}]},[],[],'2030-01-02')

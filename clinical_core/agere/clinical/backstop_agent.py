@@ -63,7 +63,7 @@ TOOLS = [
                       'required': ['metric_id', 'period_start', 'period_end'], 'additionalProperties': False}},
     {'name':'compose_table','description':'Combine already executed result views in code. Base defines exact output membership and must be unique on keys. Joins use one for unique relationships or collect to preserve every intact matching source row. In collect mode, items_from may name a native JSON-array column to carry every intact collection object into the final field (for example dated correspondence roles or contract clauses); omit columns for this mode. No clinical inference or source-row sampling. Use the returned result_view as table_from_tool. Missing joins are null, never inferred negatives.',
      'input_schema':{'type':'object','properties':{'base':{'type':'string'},'keys':{'type':'array','items':{'type':'string'}},'base_columns':{'type':'array','items':{'type':'string'}},
-        'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
+        'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'retain_in_final':{'type':'boolean'},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
      "earlier results and compute comparisons/deltas without repeating source scans. Results are paged (2000 rows / 60K characters); aggregate in SQL.",
@@ -128,8 +128,12 @@ has already declined this question, so it is yours to answer completely and corr
   do not claim that a preview's missing value means no source evidence exists. Use separate source questions for different roles.
   Prefer compose_table for joins of already executed result views. It preserves full rows and base membership without another SQL rewrite.
   For requested clinician evidence, carry source_clinicians_json into a dated_correspondence_roles field using a collect join
-  with items_from=source_clinicians_json. Keep these literal dated objects alongside structured care-team relationships;
+  with items_from=source_clinicians_json and retain_in_final=true. Code then rejects dropped or changed objects in a final
+  descendant patient table. For any explicitly requested native collection, use this retention contract. Keep dated objects alongside structured care-team relationships;
   authors/addressees are not current assignments. The same collection join retains native contract clauses or episode evidence.
+  source_findings_json is a flat collection of every review finding with its requested field, record, date and quote intact.
+  Use a retained collect join into documentary_findings; keep the main patient assessment concise and point to this source evidence.
+  Do not rebuild evidence fields as concatenated quote strings; intact objects keep entity, record and date relationships inspectable.
   Preserve intact finding JSON objects with value/quote/date/record_id together. Never use independent MIN/MAX on those properties.
   Preserve every patient's recommendation in an explicit final table column when recommendations were requested; counts of plans
   or quotes alone do not supply recommendations. Use separate columns for historical documented plans and proposed next actions.
@@ -928,6 +932,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     static_feedback=[]
     from .document_review import relation_composition_issues
     static_feedback.extend(relation_composition_issues(answer,getattr(tools,'document_reviews',[])))
+    from .result_assembly import collection_retention_issues
+    native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    static_feedback.extend(collection_retention_issues(native,answer.get('table')or[],
+        native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view')])))
     try:
         bind_computed_prose(answer,calls,verified_quotes=kept)
     except (ValueError,KeyError,IndexError,TypeError) as exc:
@@ -1012,14 +1020,16 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
             operational_receipts='Retained by native digest; excluded from clinical model context')
-        support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger)
+        support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,field_decider=getattr(gate.s1(),'judge_fields',None))
         n, usd = gate.cost(support)
-        assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids')},
+        assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
         if coverage['label'] in ('answers_partially', 'answers_a_different_question'):
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
         if support.get('label') in ('contradicted', 'not_established'):
             feedback.append('Evidence check: ' + support['label'].replace('_', ' ') + ' in '+str(support.get('failed_packet_ids',[]))+'. Recheck each claim against its own computed rows or document context; correct unsupported claims and compute numbers in tools.')
+            if support.get('claim_feedback'):
+                feedback.append('Targeted claim/source repairs: '+json.dumps(support['claim_feedback'])+'. Repair only the named field/source dependencies; retain unaffected native work and supported unknowns.')
         numeric_unknown=any(not r.get('decided_by') for r in numeric.get('judgments',{}).values())
         if numeric_unknown:assessment['reason']='One or more quantitative field-meaning checks remain uncertain or unavailable'
         confirmed = coverage['label'] == 'answers_fully' and support.get('label') == 'supported' and bool(support.get('decided_by')) and not feedback and not numeric_unknown
@@ -1032,17 +1042,36 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
 
 
 
+def native_result_dependencies(calls,roots):
+    """Conservative closure over executed native result references.
+
+    Unknown roots retain the legacy full dependency set. Input references can
+    overselect; they never hide a known referenced result.
+    """
+    by_view={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    if not roots or any(v not in by_view for v in roots):return None
+    selected=set(roots);pending=list(roots)
+    while pending:
+        view=pending.pop();text=json.dumps(by_view[view].get('input')or{},default=str)
+        for other in by_view:
+            if other not in selected and re.search(r'(?<![A-Za-z0-9_])'+re.escape(other)+r'(?![A-Za-z0-9_])',text):
+                selected.add(other);pending.append(other)
+    return selected
+
+
 def support_packets(question,answer,calls,document_reviews,as_of):
     """All clinical rows, deduplicated and grouped by patient dependency.
 
     Operational probabilities/timing are retained in the native receipt, bound
     by digest here. They are not clinical evidence. No patient/finding is sampled.
-    Global claims see all final rows and all shared scalars; patient claims see
-    every observed row for that patient plus shared results and request scope.
+    Global claims see all final rows and shared scalars. Patient claims see every
+    observed row for that patient and shared results in the final view's native
+    dependency closure; unknown lineage retains all shared results.
     """
     from ...contracts import digest
-    from ..deliverables.receipts import compact_json
-    by={};shared={};native=[]
+    from ..deliverables.receipts import compact_json,readable_json
+    by={};shared={};shared_views={};native=[]
+    local_dependencies=native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')])
     def decode(value):
         if isinstance(value,str)and value[:1]in ('{','['):
             try:return decode(json.loads(value))
@@ -1050,42 +1079,54 @@ def support_packets(question,answer,calls,document_reviews,as_of):
         if isinstance(value,dict):return {k:decode(v)for k,v in value.items()}
         if isinstance(value,list):return [decode(v)for v in value]
         return value
-    def add(row):
+    def add(row,view=None):
         row=decode(row)
         if not isinstance(row,dict):
-            shared[digest(row)]=row;return
+            ident=digest(row);shared[ident]=row;shared_views.setdefault(ident,set()).add(view);return
         pid=row.get('patient_id')
-        (by.setdefault(pid,{})if pid else shared)[digest(row)]=row
+        ident=digest(row);(by.setdefault(pid,{})if pid else shared)[ident]=row
+        if not pid:shared_views.setdefault(ident,set()).add(view)
     for i,c in enumerate(calls):
         observed=c.get('result')or{}
         native.append({'tool_index':i,'tool':c.get('name'),'input_digest':digest(c.get('input')),'result_digest':digest(observed)})
         rows=observed.get('rows')if isinstance(observed,dict)else None
         if isinstance(rows,list):
             columns=observed.get('columns')or[]
-            for row in rows:add(dict(zip(columns,row))if isinstance(row,list)else row)
+            for row in rows:add(dict(zip(columns,row))if isinstance(row,list)else row,observed.get('result_view'))
         else:
-            add({'tool':c.get('name'),'result':observed})
+            add({'tool':c.get('name'),'result':observed,
+                 **({'patient_id':observed['patient_id']} if isinstance(observed,dict) and observed.get('patient_id') else {})},
+                observed.get('result_view') if isinstance(observed,dict) else None)
     review_manifests=[]
     for review in document_reviews:
         review_manifests.append({'questions':review['questions'],'manifest':review['manifest'],
-            'native_receipt_digest':digest(review),'operational_receipts_retained_in_native':True})
+            'native_receipt_digest':digest(review),'rows':review['rows'],'operational_receipts_retained_in_native':True})
         for row in review['rows']:add(row)
     table=answer.get('table')or[]
     summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
-    common={'question':question,'as_of':as_of,'shared_evidence':list(shared.values()),'native_bindings':native,
+    final_view=(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')
+    common={'question':question,'as_of':as_of,'final_result_view':final_view,
         'instruction':'Review source interpretations as machine observations, not independent clinical truth. Preserve unknowns, dates and negation. Check only this packet scope. Global coverage is checked separately.'}
     from .evidence_projection import table_view,restore_table
-    summary_rows,dependencies=table_view(table)
+    summary_rows,dependencies=table_view(table,defer_native_cells=True)
     packets=[{'id':'summary','scope':'Global/headline/fact claims and all final rows. Clinical source collections refer to required patient packets; these references alone cannot establish clinical aggregates or causal claims. Return unknown for an aggregate requiring clinical interpretation not present in actual computed scalars.',
-        **common,'answer':summary,'all_final_rows':summary_rows,'required_clinical_dependencies':dependencies}]
+        **common,'shared_evidence':list(shared.values()),'native_bindings':native,
+        'answer':summary,'all_final_rows':summary_rows,'required_clinical_dependencies':dependencies,
+        'computed_claims':[{'field':p['field'],'template':p['template'],'rendered':p['rendered'],
+            'sources':{k:{kk:v[kk] for kk in ('binding','value','measure','source_row') if kk in v} for k,v in p['sources'].items()}}
+            for p in answer.get('computed_prose',[])]}]
+    local_shared=[row for ident,row in shared.items() if local_dependencies is None or
+                  None in shared_views[ident] or bool(shared_views[ident]&local_dependencies)]
     for pid in sorted(set(by)|{r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')}):
         packets.append({'id':'patient_'+pid,'scope':'All final claims for this patient only',**common,
             'patient_id':pid,'answer_rows':[r for r in table if isinstance(r,dict)and r.get('patient_id')==pid],
-            'global_claims_context':summary,
-            'global_claims_scope':'Check any global statement that makes a claim about this patient. Whole-population arithmetic belongs to the global packet; do not infer it from this patient alone.',
+            'shared_evidence':local_shared,
+            'global_claims_scope':'Global/headline/fact claims are checked in the separate summary packet. Check only this patient\'s actual final row fields here. A global edit is not a change to these local claims.',
             'evidence':list(by.get(pid,{}).values()),
             'review_scope':[{'questions':m['questions'],'manifest':[x for x in m['manifest']if x['patient_id']==pid],
-                'native_receipt_digest':m['native_receipt_digest']}for m in review_manifests]})
+                'patient_observation_digest':digest({'questions':m['questions'],
+                    'manifest':[x for x in m['manifest']if x['patient_id']==pid],
+                    'rows':[x for x in m['rows'] if x['patient_id']==pid]})}for m in review_manifests]})
     leaves={p['id']:p['answer_rows']for p in packets if p['id'].startswith('patient_')}
     if restore_table(summary_rows,dependencies,leaves)!=table:
         raise ValueError('Clinical dependency representation did not restore the complete native table')
@@ -1094,12 +1135,27 @@ def support_packets(question,answer,calls,document_reviews,as_of):
     # An oversized dependency cannot be silently sampled or certified.
     result=[]
     for packet in packets:
-        text=json.dumps(compact_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
-        result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':True})
+        claims=[]
+        if packet['id']=='summary':
+            if 'headline' in summary:claims.append({'id':'headline','field':'headline','path':['answer','headline']})
+            for i,key in enumerate((summary.get('facts')or{})):claims.append({'id':'fact_'+str(i),'field':'facts.'+str(key),'path':['answer','facts',key]})
+            for i,row in enumerate(summary_rows):
+                if not isinstance(row,dict) or row.get('patient_id'):continue
+                for key in row:claims.append({'id':'table_'+str(len(claims)),'field':'table.'+str(i)+'.'+str(key),'path':['all_final_rows',i,key]})
+        else:
+            for i,row in enumerate(packet['answer_rows']):
+                for key,value in row.items():
+                    if key=='patient_id':continue
+                    claims.append({'id':'claim_'+str(len(claims)),'field':str(key),'path':['answer_rows',i,key]})
+        packet['claim_manifest']=claims
+        readable=json.dumps(readable_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
+        text=readable if len(readable.encode())<=230000 else json.dumps(compact_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
+        result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':True,'claim_manifest':claims,'result_view':final_view,
+            'representation':'readable_native_json' if text==readable else 'lossless_compact_fallback'})
     return result
 
 
-def check_support_packets(packets,decider,*,as_of,ledger):
+def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
     results=[];steps=[]
     for packet in packets:
         if packet['bytes']>240000:
@@ -1109,13 +1165,96 @@ def check_support_packets(packets,decider,*,as_of,ledger):
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
             task_key='agere_investigation_support_dependency',ledger=ledger,allow_live=True,select_source=False,
             long_context=packet['bytes']>32768)
-        results.append({'id':packet['id'],**{k:result.get(k)for k in ('label','decided_by','probabilities')}})
+        checked={'id':packet['id'],**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
+        if result.get('label')!='supported':checked['reason']='Source support '+str(result.get('label'))+' for this exact dependency; no successful check is inferred.'
+        responded=bool(result.get('decided_by') or result.get('probabilities') or any(s.get('status')in ('answered','partial') for s in result.get('steps',[])))
+        if result.get('label')!='supported' or not result.get('decided_by'):
+            needs_diagnosis=responded and field_decider and packet.get('claim_manifest')
+        else:needs_diagnosis=False
+        if needs_diagnosis:
+            localized=localize_support_failure(packet,field_decider,as_of=as_of,ledger=ledger)
+            checked['claim_feedback']=localized['feedback'];steps.extend(localized['steps'])
+            faults=[f for f in localized['feedback']if f.get('decided_by') and f['label']!='unknown']
+            if faults:
+                checked.update(label='not_established' if all(f['label']=='missing_evidence'for f in faults) else 'contradicted',
+                    decided_by='typed_claim_checks',reason='Specific source/field faults resolved by typed claim checks.')
+            elif not localized['feedback'] and not result.get('decided_by'):
+                checked.update(label='unknown',decided_by=None,reason='Local checks did not identify a fault, but the complete source check remains unresolved; no support is inferred.')
+            elif not localized['feedback']:
+                checked.update(label='unknown',decided_by=None,reason='Packet and claim checks disagree; retain unresolved support and inspect this dependency.')
+        results.append(checked)
         steps.extend(result.get('steps')or[])
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
     return {'label':'supported'if settled else failed[0]['label']if failed else 'unknown',
         'decided_by':'all_dependency_checks'if settled or failed else None,'steps':steps,'packets':results,
-        'complete_dependency_packets':len(packets),'failed_packet_ids':[r['id']for r in failed]}
+        'complete_dependency_packets':len(packets),'failed_packet_ids':[r['id']for r in failed],
+        'claim_feedback':[f for r in results for f in r.get('claim_feedback',[])]}
+
+
+def localize_support_failure(packet,judge,*,as_of,ledger):
+    """Name the failing field and source meaning after a failed packet check."""
+    from ..request_lineage import component
+    from ..deliverables.receipts import uncompact_json
+    state=uncompact_json(json.loads(packet['text']))
+    readable=json.dumps(state,ensure_ascii=False,separators=(',',':'),default=str)
+    source_text=readable if len(readable.encode())<=230000 else packet['text']
+    def source_ids(value):
+        ids=set()
+        if isinstance(value,str) and value[:1] in ('{','['):
+            try:return source_ids(json.loads(value))
+            except ValueError:return ids
+        if isinstance(value,list):
+            for item in value:ids.update(source_ids(item))
+        elif isinstance(value,dict):
+            for key,item in value.items():
+                if key=='record_id' and isinstance(item,str):ids.add(item)
+                elif key=='source_record_ids':
+                    if isinstance(item,str):
+                        try:item=json.loads(item)
+                        except ValueError:item=[item]
+                    if isinstance(item,list):ids.update(x for x in item if isinstance(x,str))
+                ids.update(source_ids(item))
+        return ids
+    options={'supported':'This field is supported, including an honestly stated unknown or source limitation.',
+        'wrong_entity':'The field assigns a quote/reason/fact to a different entity or relation.',
+        'wrong_domain':'The quantity or label uses the wrong domain, population, denominator, grain or unit.',
+        'wrong_subject':'The field attributes another person or non-person entity account to the requested subject.',
+        'wrong_time':'The field changes the stated event/source date, polarity or historical/planned status.',
+        'wrong_role':'The field conflates authorship, addressee, referral, assignment or actual attendance.',
+        'missing_evidence':'The field asserts a fact that is not established by its sources; an explicit supported unknown is not this error.',
+        'unknown':'The source does not settle whether this field is supported.'}
+    feedback=[];steps=[];claims=packet['claim_manifest']
+    for start in range(0,len(claims),64):
+        chunk=claims[start:start+64]
+        named={c['id']:{'type':'choice','instructions':{'claim':c,
+            'task':'Check ONLY this explicit value at the named field/path against its own source context and requested field meaning. Raw documents are source evidence; final/model interpretation rows are proposals, not proof of themselves. Name the concrete fault, not another field\'s error. Quote presence alone does not establish entity/reason binding. Do not turn a supported unknown into missing evidence.'},'criteria':options} for c in chunk}
+        size=len(source_text.encode())+len(json.dumps(named,ensure_ascii=False).encode())+2048
+        for claim in chunk:
+            value=_claim_value(state,claim['path']);extra=len(json.dumps(value,ensure_ascii=False).encode())+32
+            if size+extra<=230000:
+                named[claim['id']]['instructions']['value']=value;size+=extra
+            # Otherwise the complete value is already present at its exact path
+            # in the same source packet. No source bytes or fields are cut.
+        with component('claim_local_source_review',packet_id=packet['id'],fields=len(named)):
+            result=judge('Localize the source-supported failure in each named answer field',named,
+                [{'id':packet['id'],'date':packet['date'],'text':source_text}],as_of=as_of,ledger=ledger,allow_live=True,long_context=len(source_text.encode())>32768)
+        steps.extend(result.get('steps')or[])
+        for claim in chunk:
+            reading=result.get('judgments',{}).get(claim['id'],{})
+            if reading.get('label')=='supported' and reading.get('decided_by'):continue
+            label=reading.get('label') if reading.get('decided_by') else 'unknown'
+            value=_claim_value(state,claim['path'])
+            feedback.append({'packet_id':packet['id'],'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
+                'label':label,'reason':options.get(label,options['unknown']),'decided_by':reading.get('decided_by'),
+                'source_record_ids':sorted(source_ids(value) or source_ids(state.get('evidence',[]))),'result_view':packet.get('result_view')})
+    return {'feedback':feedback,'steps':steps}
+
+
+def _claim_value(state,path):
+    value=state
+    for key in path:value=value[key]
+    return value
 
 
 def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, population=None, hint=None, validate_final=None):

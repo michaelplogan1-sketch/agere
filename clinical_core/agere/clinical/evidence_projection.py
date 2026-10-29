@@ -22,23 +22,25 @@ def finding_collection(value):
     return value
 
 
-def table_view(table):
+def table_view(table,*,defer_native_cells=False):
     """Return the global table view and exact source-cell dependency edges."""
     rows=copy.deepcopy(table);edges=[];indices={}
     for index,row in enumerate(table):
         if not isinstance(row,dict)or not isinstance(row.get('patient_id'),str):continue
         pid=row['patient_id'];local=indices.get(pid,0);indices[pid]=local+1
         for field,value in row.items():
+            if field=='patient_id':continue
             found=finding_collection(value)
-            if found is None:continue
+            native=defer_native_cells and bool(value) and isinstance(value,(str,list,dict))
+            if found is None and not native:continue
             edge={'at':[index,field],'packet':'patient_'+pid,'patient_id':pid,
                   'answer_row':local,'field':field,'source_cell_digest':digest(value)}
             edges.append(edge)
             rows[index][field]={'clinical_evidence_dependency':{
                 'packet':edge['packet'],'field':field,'answer_row':local,
-                'source_cell_digest':edge['source_cell_digest'],'findings':len(found),
-                'record_ids':list(dict.fromkeys(v['record_id']for v in found)),
-                'meaning':'Full unchanged clinical content is in the required patient packet. This reference is not a clinical support judgment.'}}
+                'source_cell_digest':edge['source_cell_digest'],
+                **({'findings':len(found),'record_ids':list(dict.fromkeys(v['record_id']for v in found))} if found is not None else
+                   {'kind':'complete_native_cell'})}}
     return rows,edges
 
 
@@ -64,7 +66,7 @@ def restore_table(rows,edges,patient_rows):
 def coverage_answer(answer):
     """Coverage-only projection; support receives every complete native value."""
     out=copy.deepcopy(answer);rows=answer.get('table')or[]
-    view,edges=table_view(rows);out['table']=view
+    view,edges=table_view(rows,defer_native_cells=True);out['table']=view
     binding=out.get('table_binding')
     if isinstance(binding,dict)and isinstance(binding.get('query'),str):
         query=binding.pop('query')

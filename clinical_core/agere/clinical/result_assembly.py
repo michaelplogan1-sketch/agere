@@ -144,7 +144,7 @@ def compose(results,*,base,keys,joins=None,base_columns=None):
     if joins is None:joins=[]
     if not isinstance(joins,list):raise ValueError('joins must be a list')
     for join in joins:
-        if not isinstance(join,dict)or not {'result','as','on','mode'}<=set(join)or set(join)-{'result','as','on','mode','columns','items_from'}:raise ValueError('Join requires result, as, on and mode, with optional columns or items_from')
+        if not isinstance(join,dict)or not {'result','as','on','mode'}<=set(join)or set(join)-{'result','as','on','mode','columns','items_from','retain_in_final'}:raise ValueError('Join requires result, as, on and mode, with optional columns or items_from')
         view,alias,on,mode=(join[x]for x in ('result','as','on','mode'))
         if view not in results:raise ValueError('Join must name an executed result_view')
         if not isinstance(alias,str)or not alias or alias in columns:raise ValueError('Join alias must be a new nonempty field')
@@ -156,6 +156,8 @@ def compose(results,*,base,keys,joins=None,base_columns=None):
         selected=join.get('columns',right_columns)
         if not isinstance(selected,list)or not selected or not all(isinstance(c,str)for c in selected)or len(selected)!=len(set(selected))or not set(selected)<=set(right_columns):raise ValueError('Join columns must be distinct received names')
         items_from=join.get('items_from');collections={}
+        retain=join.get('retain_in_final',False)
+        if type(retain)is not bool or retain and items_from is None:raise ValueError('Final retention requires an explicit native collection')
         if items_from is not None:
             if mode!='collect' or not isinstance(items_from,str) or items_from not in right_columns or 'columns' in join:
                 raise ValueError('items_from requires collect and a received collection column, without a columns projection')
@@ -186,8 +188,44 @@ def compose(results,*,base,keys,joins=None,base_columns=None):
             'source_rows_with_missing_key':missing,'source_rows_outside_base_keys':sum(len(v)for k,v in grouped.items()if k not in matched_right),
             'source_result_digest':digest(results[view]),
             **({'items_from':items_from,'source_collection_items':sum(map(len,collections.values())),
-                'output_collection_items':sum(len(row[alias] or []) for row in keyed.values())} if items_from is not None else {})})
+                'output_collection_items':sum(len(row[alias] or []) for row in keyed.values()),'retain_in_final':retain} if items_from is not None else {})})
     return {'columns':columns,'rows':list(keyed.values()),'truncated':False,
         'assembly':{'schema':VERSION,'base_result_view':base,'base_result_digest':digest(results[base]),'keys':keys,
             'base_rows':len(rows),'output_rows':len(keyed),'joins':coverage,
             'method':'Exact left membership; scalar joins prove uniqueness; collection joins retain intact rows. Missing joins are null, not a clinical negative.'}}
+
+
+def collection_retention_issues(results,final_rows,dependencies):
+    """Check explicitly promised source collections in descendant final tables."""
+    from collections import Counter
+    issues=[]
+    if dependencies is None:return issues
+    def decoded(value):
+        if isinstance(value,str) and value[:1] in ('{','['):
+            try:return json.loads(value)
+            except ValueError:return value
+        return value
+    def key(row,names):
+        if not isinstance(row,dict) or any(k not in row for k in names):return None
+        return json.dumps([row[k]for k in names],sort_keys=True,allow_nan=False)
+    for view in sorted(dependencies):
+        result=results[view];assembly=result.get('assembly') or {};keys=assembly.get('keys') or []
+        required=[j for j in assembly.get('joins',[]) if j.get('retain_in_final')]
+        if not required:continue
+        _,source=_rows(result);final={key(row,keys):row for row in final_rows if key(row,keys) is not None}
+        for row in source:
+            ident=key(row,keys)
+            if ident not in final:continue
+            target=final[ident]
+            for join in required:
+                alias=join['as'];expected=decoded(row[alias]) or []
+                value=decoded(target.get(alias))
+                if alias not in target or value is not None and not isinstance(value,list):
+                    issues.append('Final field '+alias+' at '+str(ident)+' omits its explicitly retained native collection');continue
+                wanted=Counter(digest(item)for item in expected);observed=Counter(digest(item)for item in value or [])
+                missing=wanted-observed
+                if missing:
+                    records=sorted({item['record_id']for item in expected if isinstance(item,dict) and isinstance(item.get('record_id'),str) and digest(item)in missing})
+                    issues.append('Final field '+alias+' at '+str(ident)+' drops or changes '+str(sum(missing.values()))+
+                        ' retained source objects from '+view+'; record_ids='+json.dumps(records))
+    return list(dict.fromkeys(issues))
