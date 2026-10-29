@@ -28,6 +28,7 @@ import os
 import re
 import time
 from pathlib import Path
+from .document_review import QUESTION_SCHEMA
 
 VERSION = 'backstop-agent/3'  # continuing evidence-bound investigation with System One final-answer review
 MAX_TOOLS = int(os.environ['AGERE_BACKSTOP_TOOLS']) if os.environ.get('AGERE_BACKSTOP_TOOLS') else None
@@ -72,11 +73,13 @@ TOOLS = [
      'Supply the complete received patient IDs and a map of field names to precise questions. No patient or document sampling. '
      'Returns coverage and a SQL result_view containing patient_id, review_status, documents_reviewed and review_json. '
      'Each review_json field is a list of {value,record_id,date,quote}; empty means no documented finding, not absent disease. '
+     'For a relation about a specific entity use {question,entity:{kind,id,aliases},relation,subject} instead of a question string. '
+     'Bound findings also retain entity,relation,subject,polarity,temporality and a source-bound assertion compatible with documentary state. '
      'Query the result_view to compose the final patient table; use json_extract/json_each for findings. All findings retain exact source quotes. source_clinicians_json retains literal signed correspondence roles. Unchanged fields reuse exact-source observations in explicit continuation; ask only missing/changed fields. Use record_ids for a source-specific repair.',
      'input_schema': {'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
           'patient_query_sql':{'type':'string','description':'Preferred for a population: a read-only SELECT returning every patient_id, e.g. SELECT patient_id FROM a governed phenotype or cohort view. Avoid transcribing IDs.'},
           'record_ids':{'type':'array','items':{'type':'string'},'description':'Optional exact received source IDs for targeted repair. Reviews only these records, never a complete-patient absence claim.'},
-          'questions':{'type':'object','additionalProperties':{'type':'string'}},'date_from':{'type':'string'},'date_to':{'type':'string'}},
+          'questions':{'type':'object','additionalProperties':QUESTION_SCHEMA},'date_from':{'type':'string'},'date_to':{'type':'string'}},
           'required':['questions'],'oneOf':[{'required':['patient_ids']},{'required':['patient_query_sql']}],'additionalProperties':False}},
     {'name': 'list_documents', 'description': "One patient's clinical notes, HIE documents and scanned documents, newest first: record_id, "
      "source, document type, date, title, length. Optional inclusive date range (YYYY-MM-DD). Follow next_offset for further pages.",
@@ -108,8 +111,13 @@ has already declined this question, so it is yours to answer completely and corr
   from a governed source first: execute_metric when a governed metric fits (list_metrics shows them), else ask_agere (one simple
   sub-question per call); use query_sql for what neither answers or to break a result down further, following the decision context.
 - For a population note review, call review_documents with ALL selected patient IDs and the specific narrative questions. It reads
-  every whole document and returns source-quoted findings and coverage. Extracted note_fact/therapy_barrier rows are discovery cues,
-  never a substitute for requested whole-note review. Join its result_view to the structured cohort. Keep patients with no documents.
+  every whole document and returns source-quoted findings and coverage.
+  For an entity-specific reason or relationship, bind the question explicitly: {{question,entity:{{kind,id,aliases}},relation,subject}}.
+  Use a distinct binding per medication class, service, access barrier, person or contract. Aliases identify the entity, not proof of
+  the relation. Keep each finding's entity/relation/polarity/temporality/assertion intact in composition; a related entity's reason
+  cannot fill this field. Legacy string questions are suitable for open discovery, without an implied entity assertion.
+  Extracted note_fact/therapy_barrier rows are discovery cues, never a substitute for requested whole-note review.
+  Join its result_view to the structured cohort. Keep patients with no documents.
   Preserve the complete source-quoted findings (including record IDs/dates), not only a first example. If a requested value is missing
   or conflicting in structured data, explicitly ask the narrative reviewer for that value and its dates/status, not merely reasons.
   Prefer patient_query_sql to bind the complete cohort in code. Use complete=true on the final query_sql so table_from_tool copies
@@ -891,6 +899,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     kept, dropped = verified_sources(answer, tools)
     answer['sources'] = kept
     static_feedback=[]
+    from .document_review import relation_composition_issues
+    static_feedback.extend(relation_composition_issues(answer,getattr(tools,'document_reviews',[])))
     try:
         bind_computed_prose(answer,calls,verified_quotes=kept)
     except (ValueError,KeyError,IndexError,TypeError) as exc:

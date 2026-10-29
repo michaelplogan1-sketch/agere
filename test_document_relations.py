@@ -1,0 +1,121 @@
+"""Source/entity integrity regressions, without provider or protected-data reads."""
+import copy,json,os,threading,unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+from clinical_core.agere.clinical import document_review as D,typed_document_review as T,span_repair as S
+from clinical_core.agere.clinical import harness_improvement as H,result_assembly as A
+
+
+def question(entity='mra',subject='patient'):
+    return {'question':'What documented reason concerns this entity?',
+        'entity':{'kind':'therapy_class','id':entity,'aliases':[entity.upper()]},
+        'relation':'withheld_for_reason','subject':subject}
+
+
+class Relations(unittest.TestCase):
+    def setUp(self):
+        self.doc={'record_id':'r','date':'2030-01-01','text':'MRA held for potassium. RASI continued.'}
+        self.tools=SimpleNamespace(as_of='2030-05-27',stack=SimpleNamespace(allow_live=False))
+        self.axes={'polarity':'affirmed','temporality':'historical','subject':'patient'}
+        self.patch=patch.dict(os.environ,{'AGERE_DOCUMENT_LOCAL_READERS':''});self.patch.start();self.addCleanup(self.patch.stop)
+
+    def finding(self,q=None):
+        return D.relation_finding('A','reason',q or question(),self.doc,
+            {'start':0,'end':len(self.doc['text']),'text':self.doc['text']},self.axes,'fixture')
+
+    def test_explicit_binding_is_required_and_legacy_questions_survive(self):
+        self.assertEqual(D.validate_questions({'reason':'What happened?'}),{'reason':'What happened?'})
+        for q in [dict(question(),subject='unsure'),dict(question(),entity={'id':'mra'}),dict(question(),relation='')]:
+            with self.assertRaises(ValueError):D.validate_questions({'reason':q})
+
+    def test_class_swap_changes_only_the_bound_finding_and_keeps_exact_source(self):
+        seen=[]
+        def judge(task,named,evidence,**kw):
+            seen.extend(named.values());judgments={}
+            for key,value in named.items():
+                self.assertIn('unknown',value['criteria'])
+                ins=value['instructions'];axis=ins.get('axis');bound=ins.get('relation_binding')
+                label=self.axes[axis] if axis else 'finding' if bound['entity']['id']=='mra' else 'irrelevant'
+                judgments[key]={'label':label,'decided_by':'fixture','provider':'fixture'}
+            return {'judgments':judgments,'steps':[],'cost_usd':0}
+        out=T.read(self.tools,'A',[self.doc],{'mra_reason':question(),'rasi_reason':question('rasi')},None,judge=judge,ranking=False)
+        self.assertEqual(out['findings']['rasi_reason'],[])
+        value=out['findings']['mra_reason'][0]
+        self.assertEqual(value['quote'],self.doc['text']);self.assertEqual(value['entity']['id'],'mra')
+        self.assertEqual(value['assertion']['clocks']['clinical_date'],None)
+        self.assertEqual(value['assertion']['clocks']['source_date'],self.doc['date'])
+        self.assertTrue(all(v['instructions']['relation_binding'] in [question(),question('rasi')] for v in seen))
+
+    def test_unknown_or_wrong_experiencer_goes_to_targeted_repair(self):
+        for subject in ('other','unknown'):
+            def judge(task,named,evidence,**kw):
+                return {'judgments':{k:{'label':subject if v['instructions'].get('axis')=='subject' else
+                    self.axes[v['instructions']['axis']] if v['instructions'].get('axis') else 'finding',
+                    'decided_by':'fixture','provider':'fixture'} for k,v in named.items()},'steps':[],'cost_usd':0}
+            out=T.read(self.tools,'A',[self.doc],{'reason':question()},None,judge=judge,ranking=False)
+            self.assertEqual(out['findings']['reason'],[]);self.assertEqual(len(out['unresolved']),1)
+            self.assertEqual(out['unresolved'][0]['relation_binding'],question())
+
+    def test_axes_batching_does_not_drop_any_passages(self):
+        docs=[{**self.doc,'text':'\n\n'.join(['MRA held.']*30)}];sizes=[]
+        def judge(task,named,evidence,**kw):
+            sizes.append(len(named))
+            return {'judgments':{k:{'label':self.axes[v['instructions']['axis']] if v['instructions'].get('axis') else 'finding',
+                'decided_by':'fixture','provider':'fixture'}for k,v in named.items()},'steps':[],'cost_usd':0}
+        out=T.read(self.tools,'A',docs,{'reason':question()},None,judge=judge,ranking=False)
+        self.assertEqual(len(out['findings']['reason']),30);self.assertLessEqual(max(sizes),64)
+
+    def test_source_binding_rejects_mutated_entity_date_subject_and_value(self):
+        original=self.finding()
+        D.validate_relation_finding(original,'reason',question(),[self.doc],pid='A')
+        for key,val in [('entity',question('rasi')['entity']),('date','2030-02-01'),('subject','other'),('value','new interpretation')]:
+            changed={**original,key:val}
+            with self.assertRaises(ValueError):D.validate_relation_finding(changed,'reason',question(),[self.doc],pid='A')
+        with self.assertRaises(ValueError):D.validate_relation_finding(original,'reason',question(),[self.doc],pid='B')
+
+    def test_bound_recovery_never_upgrades_an_old_unbound_span(self):
+        value=self.finding();old={k:value[k] for k in ('value','quote','record_id','date')}
+        with self.assertRaises(ValueError):H.validate_saved_source_fields({'reason':[old]},{'reason':question()},[self.doc],patient_id='A')
+        H.validate_saved_source_fields({'reason':[value]},{'reason':question()},[self.doc],patient_id='A')
+
+    def test_frontier_cannot_accept_finding_without_axes_and_keeps_valid_siblings(self):
+        pending=[{'field':k,'record_id':'r','quote':self.doc['text'],'span_start':0,'span_end':len(self.doc['text'])}for k in ('mra','rasi')]
+        seen=[]
+        def send(body):
+            state=json.loads(body['messages'][0]['content']);seen.append(state)
+            answers={key:dict(label='finding',**self.axes) if task['question']['entity']['id']=='mra' else 'finding' for key,task in state['decisions'].items()}
+            return {'content':[{'type':'text','text':json.dumps({'answers':answers})}]},0,False
+        got=S.repair(self.tools,'A',pending,[self.doc],{'mra':question(),'rasi':question('rasi')},send,threading.Event(),[])
+        self.assertEqual(len(got['findings']['mra']),1);self.assertEqual(got['findings']['rasi'],[])
+        self.assertEqual(len(seen[1]['decisions']),1);self.assertEqual(len(got['failures']),1)
+
+    def test_access_and_service_bindings_share_the_same_assertion_and_composition(self):
+        q={'question':'Why was the service not attended?', 'entity':{'kind':'service','id':'transport','aliases':['ride']},
+            'relation':'access_barrier','subject':'patient'}
+        value=self.finding(q)
+        views={'base':{'rows':[{'patient_id':'A'}]},'review':{'rows':[{'patient_id':'A','review_json':json.dumps({'access':[value]})}]}}
+        result=A.compose(views,base='base',keys=['patient_id'],joins=[{'result':'review','as':'evidence','on':{'patient_id':'patient_id'},'mode':'one'}])
+        self.assertEqual(json.loads(result['rows'][0]['evidence']['review_json'])['access'][0],value)
+
+    def test_existing_documentary_reconciler_receives_typed_axes_and_unknown_clocks(self):
+        value=self.finding();row={'patient_id':'A','review_json':json.dumps({'reason':[value]})}
+        out=D.with_correspondence([row],{'A':[[self.doc]]},{'reason':question()},'2030-05-27')
+        state=json.loads(out[0]['documentary_state_json'])
+        self.assertEqual(state['assertions'],[value['assertion']]);self.assertFalse(state['current_clinical_state_established'])
+        self.assertEqual(state['groups'][0]['status'],'unresolved_documentary_accounts')
+
+    def test_analyst_prompt_formats_with_the_new_relation_contract(self):
+        from clinical_core.agere.clinical import backstop_agent as B
+        self.assertIn('entity:{kind,id,aliases}',B.RULES.format(tool_quota='No fixed quota'))
+
+    def test_final_assembly_detects_wrong_field_patient_or_mutated_assertion(self):
+        value=self.finding();reviews=[{'questions':{'mra':question(),'rasi':question('rasi')},
+            'rows':[{'patient_id':'A','review_json':json.dumps({'mra':[value],'rasi':[]})}]}]
+        answer={'table':[{'patient_id':'A','mra':[value]}]}
+        self.assertEqual(D.relation_composition_issues(answer,reviews),[])
+        for row in [{'patient_id':'A','rasi':[value]},{'patient_id':'B','mra':[value]},
+                    {'patient_id':'A','mra':[{**value,'quote':'changed'}]}]:
+            self.assertTrue(D.relation_composition_issues({'table':[row]},reviews))
+
+
+if __name__=='__main__':unittest.main()

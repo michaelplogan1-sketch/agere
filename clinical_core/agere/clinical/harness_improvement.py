@@ -136,7 +136,7 @@ def recovering(question):
 
 
 
-def validate_saved_source_fields(found,questions,documents):
+def validate_saved_source_fields(found,questions,documents,*,patient_id=None):
     """Validate exact saved spans, avoiding first-match normalization of repeats."""
     if not isinstance(found,dict)or set(found)!=set(questions):raise ValueError('Recovered source fields differ')
     for field,values in found.items():
@@ -147,6 +147,8 @@ def validate_saved_source_fields(found,questions,documents):
             if not isinstance(quote,str)or not quote.strip()or not any(
                 d['record_id']==value.get('record_id')and d['date']==value.get('date')and quote in d['text']for d in documents):
                 raise ValueError('Recovered source quote/record/date changed')
+            from .document_review import validate_relation_finding
+            validate_relation_finding(value,field,questions[field],documents,pid=patient_id)
     return found
 
 def recover_document_fields(questions,manifest,packages):
@@ -163,7 +165,7 @@ def recover_document_fields(questions,manifest,packages):
         for row in oldrows:
             pid=row['patient_id'];docs=[d for batch in packages[pid]for d in batch]
             found=json.loads(row['review_json']);selected={k:found[k]for k in subset}
-            validate_saved_source_fields(selected,subset,docs)
+            validate_saved_source_fields(selected,subset,docs,patient_id=pid)
             rows[pid].update(selected)
             limitations[pid].extend(json.loads(row.get('review_limitations')or'[]'))
         matched.update(subset);prior.append(digest(old))
@@ -187,7 +189,7 @@ def recover_document_observations(questions,manifest,packages):
         for row in rows:
             docs=[d for batch in packages[row['patient_id']]for d in batch]
             found=json.loads(row['review_json'])
-            validate_saved_source_fields(found,questions,docs)
+            validate_saved_source_fields(found,questions,docs,patient_id=row['patient_id'])
         return {**old,'observation_reuse':{'kind':'explicit_owned_run_source_observations',
             'source_manifest_digest':digest(manifest),'question_digest':digest(questions),
             'finding_digest':digest(rows),'all_quotes_revalidated':True,

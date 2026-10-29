@@ -24,6 +24,16 @@ Medication non-use due to an access barrier is not itself a stated preference or
 choice. Select for a preference question only when the patient's preference, goal or choice is explicit.
 Other source documents cannot substitute for the named source. Preserve historical, hypothetical,
 retracted or conflicting statements; selecting a passage does not establish current care or treatment.
+For an entity-bound question, finding requires that exact entity, relation and subject. A reason about
+a different medication class, service, person or contract is irrelevant even when the same block
+mentions the requested entity. Resolve references from the complete source; ambiguous attribution is unknown.
+For these bound decisions return an object {"label":"finding|irrelevant|unknown", "polarity":
+"affirmed|negated|uncertain", "temporality":"current|historical|planned|hypothetical|retracted|unspecified",
+"subject":"patient|family_member|other|source_entity"}. Assertion axes are required only for finding. For legacy
+question strings keep the string decision contract. Never infer a clinical date from the document date.
+Classify the ACTUAL subject independently; do not copy the requested subject into an answer. A record's
+patient association is provenance, not proof that organization/contract terms apply to that patient.
+General terms concern source_entity. If the actual subject differs from the requested one, return irrelevant.
 Answer every supplied decision, without quote text, summaries, explanations or new clinical claims.'''
 
 
@@ -48,7 +58,7 @@ def batches(unresolved,documents,questions):
 
 
 def repair(tools,pid,unresolved,documents,questions,send,stop,receipts):
-    from .document_review import parsed
+    from .document_review import parsed,AXES,relation_finding
     found={k:[]for k in questions};failures=[];decisions=[]
     for batch in batches(unresolved,documents,questions):
         indexed={'s'+str(i):(key,doc,item)for i,(key,doc,item)in enumerate(batch)}
@@ -59,7 +69,9 @@ def repair(tools,pid,unresolved,documents,questions,send,stop,receipts):
             contexts={key:doc for key,doc,item in pending.values()}
             state={'patient_id':pid,'as_of':tools.as_of,'whole_source_contexts':contexts,
                 'decisions':{ident:{'source_context':key,'question':questions[item['field']],
-                    'target_block':item['quote'],'source_record_id':item['record_id']}for ident,(key,doc,item)in pending.items()},
+                    'target_block':item['quote'],'source_record_id':item['record_id'],
+                    'answer_contract':{'label':['finding','irrelevant','unknown'],
+                        'required_finding_axes':AXES} if isinstance(questions[item['field']],dict) else 'finding|irrelevant|unknown'}for ident,(key,doc,item)in pending.items()},
                 'repair_feedback':feedback}
             body={'model':model,'max_tokens':8192,'system':SYSTEM,'messages':[{'role':'user','content':json.dumps(state,ensure_ascii=False)}]}
             received=False
@@ -72,18 +84,31 @@ def repair(tools,pid,unresolved,documents,questions,send,stop,receipts):
                     if not isinstance(answers,dict)or set(answers)-set(pending):raise ValueError('Return answers keyed only by the requested decision IDs')
                 remaining={}
                 for ident,(key,doc,item)in pending.items():
-                    label=answers.get(ident)
+                    answer=answers.get(ident);q=questions[item['field']]
+                    label=answer.get('label') if isinstance(answer,dict) else answer
                     if not isinstance(label,str)or label not in ('finding','irrelevant'):
                         remaining[ident]=(key,doc,item);continue
+                    finding=None
+                    if label=='finding' and isinstance(q,dict):
+                        try:
+                            start=item.get('span_start')
+                            if start is None:
+                                if doc['text'].count(item['quote'])!=1:raise ValueError('Ambiguous source offset')
+                                start=doc['text'].index(item['quote'])
+                            finding=relation_finding(pid,item['field'],q,doc,
+                                {'start':start,'end':item.get('span_end',start+len(item['quote'])),'text':item['quote']},
+                                {k:answer[k] for k in AXES},model)
+                        except (ValueError,KeyError,TypeError):
+                            remaining[ident]=(key,doc,item);continue
                     decisions.append({'decision_id':digest([key,item['field'],item['quote'],item.get('span_start')]),
                         'field':item['field'],'record_id':doc['record_id'],'date':doc['date'],
                         'document_text_digest':digest(doc['text']),'source_block_digest':digest(item['quote']),
-                        'label':label,'model':model})
-                    if label=='finding':found[item['field']].append({'value':item['quote'],'quote':item['quote'],
+                        'label':label,'model':model,**({'relation_binding':q,'assertion_id':finding['assertion']['id'] if finding else None} if isinstance(q,dict) else {})})
+                    if label=='finding':found[item['field']].append(finding or {'value':item['quote'],'quote':item['quote'],
                         'record_id':doc['record_id'],'date':doc['date'],
                         **{k:item[k]for k in ('span_start','span_end')if k in item},
                         'interpretation':'source span selected by frontier repair; not independent clinical acceptance','provider':model})
-                pending=remaining;feedback='The remaining decisions were missing, invalid or unknown. Recheck their complete named source; retain unknown if it cannot settle the question.'
+                pending=remaining;feedback='The remaining decisions were missing, invalid, unknown or have incomplete/mismatched entity/relation assertion axes. Recheck their complete named source and exact requested subject; retain unknown if it cannot settle the question.'
             except Exception as exc:
                 if not received:receipts.append({'usage_unknown':True,'error':type(exc).__name__})
                 if getattr(exc,'kind',None)=='rate_limit'or re.search(r'subscription.*limit|weekly.*limit|usage.*limit',str(exc),re.I):stop.set();raise
