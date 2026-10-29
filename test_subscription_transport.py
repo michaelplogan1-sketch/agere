@@ -10,6 +10,64 @@ from clinical_core.agere import subscription_transport as T
 
 
 class Translation(unittest.TestCase):
+    def test_existing_caller_output_contract_reaches_subscription_cli(self):
+        done = subprocess.CompletedProcess([], 0, json.dumps({'result': '{}'}), '')
+        inherited = {'CLAUDE_CODE_MAX_OUTPUT_TOKENS': '128000',
+                     'CLAUDE_CODE_EXTRA_BODY': '{"metadata":{"user_id":"local"}}',
+                     'CLAUDE_CODE_EFFORT_LEVEL': 'max'}
+        with patch.object(T, 'cli_path', return_value='scripted-cli'), \
+             patch.object(T, 'cli_env', return_value=inherited.copy()), \
+             patch.object(T.subprocess, 'run', return_value=done) as call:
+            T.run_cli('claude-haiku-5-5', 'rules', 'question', max_tokens=8192, effort='medium')
+        env = call.call_args.kwargs['env']
+        self.assertEqual(env['CLAUDE_CODE_MAX_OUTPUT_TOKENS'], '8192')
+        self.assertEqual(json.loads(env['CLAUDE_CODE_EXTRA_BODY']),
+                         {'metadata': {'user_id': 'local'}, 'max_tokens': 8192})
+        self.assertEqual(env['CLAUDE_CODE_EFFORT_LEVEL'], 'medium')
+        self.assertEqual(call.call_count, 1)
+
+    def test_no_output_quota_or_effort_is_invented(self):
+        done = subprocess.CompletedProcess([], 0, '{"result":"{}"}', '')
+        with patch.object(T, 'cli_path', return_value='scripted-cli'), patch.object(T, 'cli_env', return_value={}), \
+             patch.object(T.subprocess, 'run', return_value=done) as call:
+            T.run_cli('claude-haiku-5-5', 'rules', 'question')
+        self.assertNotIn('CLAUDE_CODE_MAX_OUTPUT_TOKENS', call.call_args.kwargs['env'])
+        self.assertNotIn('CLAUDE_CODE_EXTRA_BODY', call.call_args.kwargs['env'])
+        self.assertNotIn('CLAUDE_CODE_EFFORT_LEVEL', call.call_args.kwargs['env'])
+
+    def test_invalid_output_contract_never_starts_a_generation(self):
+        with patch.object(T, 'cli_env', return_value={}), patch.object(T.subprocess, 'run') as call:
+            for value in (True, 0, -1, '8192'):
+                with self.assertRaises(ValueError):
+                    T.run_cli('claude-haiku-5-5', 'rules', 'question', max_tokens=value)
+            with self.assertRaises(ValueError):
+                T.run_cli('claude-haiku-5-5', 'rules', 'question', effort='invented')
+        call.assert_not_called()
+
+    def test_internal_cli_work_remains_visible_without_becoming_an_invoice(self):
+        usage = {'input_tokens': 6, 'output_tokens': 128199}
+        raw = {'result': '{}', 'usage': usage, 'num_turns': 3,
+               'duration_ms': 1017869, 'subtype': 'success',
+               'modelUsage': {'claude-haiku-5-5': {'outputTokens': 128199}}}
+        with patch.object(T, 'run_cli', return_value=raw) as call:
+            response = T.respond({'max_tokens': 8192, 'output_config': {'effort': 'high'}})
+        self.assertEqual(call.call_args.kwargs['max_tokens'], 8192)
+        self.assertEqual(call.call_args.kwargs['effort'], 'high')
+        self.assertEqual(response['usage']['output_tokens'], 128199)
+        details = response['transport_details']
+        self.assertEqual(details['cli']['num_turns'], 3)
+        self.assertEqual(details['cli']['modelUsage'], raw['modelUsage'])
+        self.assertNotIn('result', details['cli'])
+        self.assertNotIn('total_cost_usd', details)
+
+    def test_reported_truncated_action_is_not_executable(self):
+        out = {'result': '{"tool_use":{"name":"sql","input":{"query":"SELECT 1"}}}',
+               'stop_reason': 'max_tokens', 'usage': {'output_tokens': 8192}}
+        with patch.object(T, 'run_cli', return_value=out):
+            response = T.respond({'max_tokens': 8192, 'tools': [{'name': 'sql'}]})
+        self.assertEqual(response['stop_reason'], 'max_tokens')
+        self.assertTrue(all(x['type'] == 'text' for x in response['content']))
+
     def test_session_limit_is_typed_and_never_retried_by_transport(self):
         from clinical_core.agere.gateway import ProviderUnavailable, classify_provider_error
         message = "You've hit your session limit \u00b7 resets 11:50am (America/Chicago)"

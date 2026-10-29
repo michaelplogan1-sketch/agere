@@ -1,3 +1,15 @@
+# Current Agere checkpoint — 2026-10-29T10:33:04.549387+00:00
+
+Continuation-v2 session24386 has EXITED normally, partial after1921.509s,281metered attempts,$2.718297068API-equivalent including$0.174670218third-party. Source/code unchanged and zero blocked corpus reads. Context ANS-4dd5bb76817008388b555b37, saved code-built HTML/PDF DLV-D250D6E4744F ready;3compose_table invocations. No provider/training job active. Original cold investigation plus the failed first continuation plus this continuation totals at least$13.041780032API-equivalent with four earlier unpriced context rejections; baselines and component experiments are separate. Do not price this warm continuation as a complete cold answer.
+
+The result still flags unreconciled reason fields, dose/current-use uncertainty and clinical roles. Its prose calls89rows GDMT though the source dose result includes other medications; inspect actual native evidence before any clinical gain claim. The next measured simplification candidate is a lossless native documentation catalog: exact owned system prompt218493to60745resident bytes,105complete sections, exact restoration,0providers; not integrated or live qualified. One subscription call reported128199outputtokens/1017.87s for a short SQL action; transport drops internal CLI turn metadata and does not propagate caller output settings.
+
+Next: Audit the returned continuation-v2 source meanings, dose denominators, reason attribution, clinician evidence and actual prompt/support receipts. Preserve all frozen outputs and cumulative costs. Then repair the measured shared execution/context/transport failure offline before a targeted continuation; no new cold cohort review.
+
+G3/all ten areas remain open. Claude subscription only; stop on actual subscription limit. Existing payload/private-PR authorizations persist. No protected keys/corpora, agents/new chats, main/default promotion, publication/contact/care. At09:00Chicago stop new increments, report honestly and pause the finite heartbeat.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-29T10:01:51.044221+00:00
 
 G3 and all ten acceptance areas remain open. Frozen cold/comparison results: integrated partial, 57 patients / 228 matching source-defined pillar cells, 57.1 minutes, at least $9.8446 plus four unpriced context rejections; Haiku-only partial, same cohort/pillar agreement, 31.5 minutes, $3.8188; Sonnet-only 17.6 minutes / $11.0814 but invalid final contract. Source/meaning correctness beyond finite checks remains unscored; no MVP claim. All frozen arms are preserved.

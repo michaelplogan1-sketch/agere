@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T10:01:51.044221+00:00",
+  "updated_at": "2026-10-29T10:41:20.421416+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "prose_compatible_continuation_v2_running",
+    "kind": "transport_contract_repaired_offline_native_context_next",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
-    "measured_failure_reduction": "Actual failed Sonnet final action recovered57rows offline with exact arguments and22/22native result-view equality checks,0model calls. Actual coverage request1,688,111 to102,865bytes; summary799,628 to82,207bytes; largest complete dependency104,092bytes and0oversized packets. Every native table value restores exactly; patient evidence remains unchanged.378offline checks pass; clinical meaning remains unqualified.",
+    "measured_failure_reduction": "The subscription bridge now propagates an existing caller max_tokens/effort contract and preserves reported CLI internal-turn/model-usage metadata without clipping aggregate usage.157relevant isolated offline checks pass,0providers. No live cost gain claimed. Offline context prototype preserves105whole sections and exact reconstruction,218493to60745resident bytes; not integrated yet.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -384,11 +384,17 @@
       "artifacts/agere-overnight-2026-10-29/dependency-projection-replay.json",
       "artifacts/agere-overnight-2026-10-29/baselines/sonnet-only-run/offline-literal-recovery-receipt.json",
       "artifacts/agere-overnight-2026-10-29/verification-prose-compatible.json",
-      "artifacts/agere-overnight-2026-10-29/prose-tool-regression-replay.json"
+      "artifacts/agere-overnight-2026-10-29/prose-tool-regression-replay.json",
+      "artifacts/agere-overnight-2026-10-29/continuation-v2-run-receipt.json",
+      "artifacts/agere-overnight-2026-10-29/continuation-v2-economics.json",
+      "artifacts/agere-overnight-2026-10-29/system-context-prototype-receipt.json",
+      "artifacts/agere-overnight-2026-10-29/continuation-v2-source-diagnostics.json",
+      "artifacts/agere-overnight-2026-10-29/continuation-v2-source-fact-audit.json",
+      "artifacts/agere-overnight-2026-10-29/transport-verification.json"
     ],
-    "remaining_gap": "All three frozen comparison arms have exited: integrated and Haiku partial; Sonnet invalid final contract. Shared state/dependency/protocol repairs pass381offline checks; source clinical meaning and live cost still require the running owned continuation. Complete medication naming, reference-dose interpretation, causal field alignment and clinician role/attendance must be assessed from its actual output. All ten-area readiness remains open.",
-    "next_action": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly.",
-    "next": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly.",
+    "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
+    "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open.",
+    "next": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -480,11 +486,9 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T10:01:51.044221+00:00",
-      "status": "owned_source_observation_continuation_v2_running",
-      "session": 24386,
-      "active_provider_or_training_job": true,
-      "frozen_source_commit": "4d037b62df93b3086841040abaa80d5c3abdbaec",
+      "at": "2026-10-29T10:33:04.549387+00:00",
+      "status": "returned_partial_audit_pending",
+      "active_provider_or_training_job": false,
       "run_receipt": "/private/tmp/agere-overnight-20261029/composition-repair-v2/run-receipt.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
@@ -547,10 +551,10 @@
     "at": "2026-10-29T09:43:03.236404+00:00",
     "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected.",
     "unsealed_work": {
-      "status": "verified_general_repairs_owned_continuation_v2_running",
+      "status": "source_audited_transport_contract_offline_verified",
       "path": "artifacts/agere-overnight-2026-10-29",
-      "remaining_gap": "All three frozen comparison arms have exited: integrated and Haiku partial; Sonnet invalid final contract. Shared state/dependency/protocol repairs pass381offline checks; source clinical meaning and live cost still require the running owned continuation. Complete medication naming, reference-dose interpretation, causal field alignment and clinician role/attendance must be assessed from its actual output. All ten-area readiness remains open.",
-      "next_action": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly."
+      "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
+      "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open."
     }
   },
   "decisions": [
@@ -1722,13 +1726,20 @@
       "decision": "Mike authorized overnight completion work and stack-order qualification; finite heartbeat restored until09:00Chicago. Existing clinical/source/provider boundaries persist.",
       "evidence": "Human message in current owner chat",
       "scope_impact": "No narrowed charter or readiness claim."
+    },
+    {
+      "at": "2026-10-29T10:41:20.421416+00:00",
+      "gate": "G3",
+      "reason": "Mike explicitly requests a simpler, measured component order and architect-owned MVP execution. Returned source diagnostics identify recurring composition errors and a1017.87s/128199output-token subscription action. Repair native execution/context/transport contracts before another cold run; no new architecture layer, training, population cap or acceptance waiver.",
+      "scope_impact": "All ten areas preserved; no default/main promotion.",
+      "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open."
     }
   ],
   "unsealed_work": {
-    "status": "verified_general_repairs_owned_continuation_v2_running",
+    "status": "source_audited_transport_contract_offline_verified",
     "path": "artifacts/agere-overnight-2026-10-29",
-    "remaining_gap": "All three frozen comparison arms have exited: integrated and Haiku partial; Sonnet invalid final contract. Shared state/dependency/protocol repairs pass381offline checks; source clinical meaning and live cost still require the running owned continuation. Complete medication naming, reference-dose interpretation, causal field alignment and clinician role/attendance must be assessed from its actual output. All ten-area readiness remains open.",
-    "next_action": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly."
+    "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
+    "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

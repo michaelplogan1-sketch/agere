@@ -279,21 +279,7 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [
-    {
-      "kind": "owned_source_composition_continuation_v2",
-      "session": 24386,
-      "source_checkout": "/private/tmp/agere-overnight-repair-v2-frozen-20261029",
-      "source_commit": "4d037b62df93b3086841040abaa80d5c3abdbaec",
-      "output": "/private/tmp/agere-overnight-20261029/composition-repair-v2",
-      "log": "/private/tmp/agere-overnight-20261029/composition-repair-v2.log",
-      "started_at": "2026-10-29T10:01:51.044221+00:00",
-      "transport": "subscription",
-      "cold_benchmark": false,
-      "no_duplicate": true,
-      "frozen_source_do_not_mutate": true
-    }
-  ],
+  "active_jobs": [],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
@@ -362,6 +348,25 @@
       "frozen_source_do_not_mutate": true,
       "status": "failed_protocol_format_regression",
       "exit_code": 1
+    },
+    "composition_repair_v2": {
+      "kind": "owned_source_composition_continuation_v2",
+      "session": 24386,
+      "source_checkout": "/private/tmp/agere-overnight-repair-v2-frozen-20261029",
+      "source_commit": "4d037b62df93b3086841040abaa80d5c3abdbaec",
+      "output": "/private/tmp/agere-overnight-20261029/composition-repair-v2",
+      "log": "/private/tmp/agere-overnight-20261029/composition-repair-v2.log",
+      "started_at": "2026-10-29T10:01:51.044221+00:00",
+      "transport": "subscription",
+      "cold_benchmark": false,
+      "no_duplicate": true,
+      "frozen_source_do_not_mutate": true,
+      "status": "returned",
+      "answer_status": "partial",
+      "seconds": 1921.509,
+      "finished_at": "2026-10-29T10:31:01.741626+00:00",
+      "context_id": "ANS-4dd5bb76817008388b555b37",
+      "known_api_equivalent_usd": 2.7182970680000005
     }
   }
 }

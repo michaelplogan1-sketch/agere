@@ -142,11 +142,28 @@ def _tool_call(text, tools):
     return None
 
 
-def run_cli(model, system, user, timeout=None):
+def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None):
     """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure."""
+    env = cli_env()  # never the API account: the subscription login / token only
+    # Translate the caller's existing request contract; do not introduce a
+    # workflow quota or silently inherit a different per-request output size.
+    # EXTRA_BODY also keeps the limit explicit on the native Messages request.
+    # The CLI may make internal recovery requests; its aggregate usage is NOT
+    # bounded by one request's max_tokens and must remain fully accounted for.
+    if max_tokens is not None:
+        if type(max_tokens) is not int or max_tokens <= 0:
+            raise ValueError('max_tokens must be a positive integer')
+        extra = json.loads(env.get('CLAUDE_CODE_EXTRA_BODY') or '{}')
+        if not isinstance(extra, dict):
+            raise ValueError('CLAUDE_CODE_EXTRA_BODY must be a JSON object')
+        env['CLAUDE_CODE_MAX_OUTPUT_TOKENS'] = str(max_tokens)
+        env['CLAUDE_CODE_EXTRA_BODY'] = json.dumps({**extra, 'max_tokens': max_tokens})
+    if effort is not None:
+        if effort not in ('low', 'medium', 'high', 'xhigh', 'max'):
+            raise ValueError('Unsupported caller effort level')
+        env['CLAUDE_CODE_EFFORT_LEVEL'] = effort
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:
         f.write(system); path = f.name
-    env = cli_env()  # never the API account: the subscription login / token only
     cmd = [cli_path(), '-p', '--model', model, '--system-prompt-file', path, '--output-format', 'json', '--tools', '',
            '--strict-mcp-config', '--no-session-persistence']
     try:
@@ -261,7 +278,11 @@ def respond(body, *, timeout=None):
     configured = os.environ.get('AGERE_SUBSCRIPTION_TIMEOUT')
     if configured:
         timeout = float(configured)
-    out = run_cli(model, system, user, timeout=timeout)
+    output_config = body.get('output_config') or {}
+    if not isinstance(output_config, dict):
+        raise ValueError('output_config must be an object')
+    out = run_cli(model, system, user, timeout=timeout,
+                  max_tokens=body.get('max_tokens'), effort=output_config.get('effort'))
     text = out.get('result') or ''
     reported_usage = out.get('usage') or {}
     usage = {k: reported_usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
@@ -269,13 +290,20 @@ def respond(body, *, timeout=None):
         # Preserve reported cache TTLs for pricing. Never turn a one-hour write
         # into a cheaper five-minute write by dropping the provider breakdown.
         usage['cache_creation'] = reported_usage['cache_creation']
-    calls = _tool_calls(text, body.get('tools'))
+    truncated = out.get('stop_reason') == 'max_tokens'
+    calls = [] if truncated else _tool_calls(text, body.get('tools'))
     if calls:
         content, stop = [{'type': 'tool_use', 'id': 'toolu_' + uuid.uuid4().hex[:20], 'name': call['name'], 'input': call['input']} for call in calls], 'tool_use'
     else:
-        content, stop = [{'type': 'text', 'text': text}], 'end_turn'
+        content, stop = [{'type': 'text', 'text': text}], 'max_tokens' if truncated else 'end_turn'
     return {'id': 'msg_sub_' + uuid.uuid4().hex[:16], 'type': 'message', 'role': 'assistant', 'model': model, 'content': content,
-            'stop_reason': stop, 'stop_sequence': None, 'usage': usage, 'transport': 'claude-code-subscription'}
+            'stop_reason': stop, 'stop_sequence': None, 'usage': usage, 'transport': 'claude-code-subscription',
+            'transport_details': {
+                'schema': 'subscription-cli-receipt/1',
+                'caller_max_tokens': body.get('max_tokens'),
+                'caller_effort': output_config.get('effort'),
+                'cli': {k: out[k] for k in ('num_turns', 'duration_ms', 'duration_api_ms', 'subtype', 'stop_reason', 'modelUsage') if k in out},
+                'usage_scope': 'CLI aggregate, including reported internal recovery requests; internal API attempt count is unknown unless explicitly reported. No subscription allocation or invoice inferred.'}}
 
 
 class _Response(io.BytesIO):
