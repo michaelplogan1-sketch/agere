@@ -54,6 +54,32 @@ class Scope(unittest.TestCase):
  def test_subtype_rule_does_not_redefine_a_group_that_explicitly_includes_parent(self):
   with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}),patch.object(D,'GROUPS',{'maintenance':['narrow_a','broad']}):
    self.assertEqual(D.group_query_issues('Assess maintenance medications',[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','broad')")],'agere_result_1'),[])
+ def json_calls(self,expression,source='agere_result_1 t'):
+  c=[call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class IN ('narrow_a','broad') THEN 1 ELSE 0 END) AS therapy,JSON_GROUP_ARRAY(dose) AS doses FROM fill GROUP BY patient_id")]
+  c[0]['result']['columns']=['patient_id','therapy','doses']
+  c.append(call('agere_result_2',f'SELECT t.patient_id,{expression} AS summary FROM {source}'))
+  c[-1]['result']['columns']=['patient_id','summary']
+  return c
+ def test_correlated_json_summary_consumes_its_argument_only(self):
+  with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
+   for function in ['json_each','json_tree']:
+    c=self.json_calls(f"(SELECT GROUP_CONCAT(d.value,';') FROM {function}(t.doses) d)")
+    self.assertEqual(D.group_query_issues('Assess prevention medications',c,'agere_result_2'),[])
+    c=self.json_calls(f"(SELECT GROUP_CONCAT(d.value,';') FROM {function}(JSON_ARRAY(t.therapy)) d)")
+    self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_2'))
+ def test_json_argument_resolves_cte_projection_and_alias_shadowing(self):
+  with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
+   c=self.json_calls("(SELECT GROUP_CONCAT(d.value,';') FROM json_each(t.payload) d)")
+   c[-1]['input']['sql']="WITH x AS (SELECT patient_id,doses AS payload FROM agere_result_1) SELECT t.patient_id,(SELECT GROUP_CONCAT(d.value,';') FROM json_each(t.payload) d) AS summary FROM x t"
+   self.assertEqual(D.group_query_issues('Assess prevention medications',c,'agere_result_2'),[])
+   c[-1]['input']['sql']=c[-1]['input']['sql'].replace('doses AS payload','JSON_ARRAY(therapy) AS payload')
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_2'))
+   c=self.json_calls("(SELECT GROUP_CONCAT(d.value,';') FROM (SELECT JSON_ARRAY(therapy) AS doses FROM agere_result_1) t,json_each(t.doses) d)")
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_2'))
+ def test_unresolved_json_input_keeps_conservative_scope(self):
+  with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
+   c=self.json_calls("(SELECT GROUP_CONCAT(d.value,';') FROM json_each(missing.payload) d)")
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_2'))
  def test_blocked_group_review_preserves_computed_rows(self):
   c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")];a={'status':'answered','answer_type':'table','table_from_tool':'agere_result_1'}
   r=B.review_final(None,'Assess prevention medications',a,c,None,ledger=None,as_of='2030-05-27');self.assertEqual(r['status'],'repair');self.assertEqual(len(a['table']),1)

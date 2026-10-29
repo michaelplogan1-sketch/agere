@@ -270,6 +270,7 @@ def group_query_issues(question, calls, final_view=None):
         # Trace native output columns, rather than letting an exact filter on
         # an unrelated joined result certify every contributing value.
         from sqlglot.lineage import lineage
+        from sqlglot.optimizer.scope import Scope, traverse_scope
         used={};visited=set()
         def trace(view,column,measured=False):
             key=(view,column,measured)
@@ -308,14 +309,51 @@ def group_query_issues(question, calls, final_view=None):
                         if not conjunctive:continue
                         for table in tables:
                             if table.name in results and (col.table==table.alias_or_name or not col.table and len(tables)==1):barriers.add(table.name)
-                sources=[]
-                for node in root.walk():
-                    if isinstance(node.expression,exp.Table) and node.expression.name in results:
-                        name=sqlglot.parse_one(node.name,into=exp.Column,read='sqlite').name
-                        sources.append((node.expression.name,name))
+                sources=[];resolved_json=False;resolving=set()
+                def collect(native):
+                    nonlocal resolved_json
+                    scopes=list(traverse_scope(native.source))
+                    for node in native.walk():
+                        table=node.expression
+                        if not isinstance(table,exp.Table):continue
+                        if table.name in results:
+                            name=sqlglot.parse_one(node.name,into=exp.Column,read='sqlite').name
+                            sources.append((table.name,name))
+                        elif isinstance(table.this,exp.Anonymous) and table.this.name.lower() in {'json_each','json_tree'}:
+                            # SQLGlot stops at table functions. Follow their
+                            # arguments in the actual lexical scope, including
+                            # correlated outer references and CTE projections.
+                            scope=next((s for s in scopes if any(source is table for _,source in s.selected_sources.values())),None)
+                            if scope is None:raise ValueError('JSON input scope is unavailable')
+                            for argument in table.this.expressions:
+                                for col in argument.find_all(exp.Column):resolve(scope,col)
+                            resolved_json=True
+                def resolve(scope,col):
+                    if scope is None:raise ValueError('JSON input column is unresolved')
+                    active={k.lower():source for k,(_,source) in scope.selected_sources.items()}
+                    if col.table:
+                        source=active.get(col.table.lower())
+                        if source is None:return resolve(scope.parent,col)
+                    else:
+                        candidates=[s for s in active.values() if
+                            isinstance(s,exp.Table) and col.name in schema.get(s.name,{}) or
+                            isinstance(s,Scope) and col.name in s.expression.named_selects]
+                        if len(candidates)!=1:raise ValueError('JSON input column is ambiguous')
+                        source=candidates[0]
+                    key=(id(source),col.name)
+                    if key in resolving:raise ValueError('Recursive JSON input lineage')
+                    if isinstance(source,exp.Table) and source.name in results:
+                        if col.name not in schema[source.name]:raise ValueError('JSON input column is unavailable')
+                        sources.append((source.name,col.name))
+                    elif isinstance(source,Scope):
+                        resolving.add(key)
+                        collect(lineage(col.name,source.expression,schema=schema,scope=source,dialect='sqlite',trim_selects=False,copy=False))
+                        resolving.remove(key)
+                    else:raise ValueError('JSON input has no native value lineage')
+                collect(root)
                 for parent,name in sources:
                     if parent not in barriers:trace(parent,name,aggregate)
-                if not sources:
+                if not sources and not resolved_json:
                     # COUNT(*) and unresolved projections depend on row scope.
                     for parent in parents[view]:trace(parent,'*',True)
             except (sqlglot.errors.SqlglotError,ValueError,RecursionError):

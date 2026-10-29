@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T19:36:20.489197+00:00",
+  "updated_at": "2026-10-29T21:54:29.814966+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "shared_boundary_repairs_verified",
+    "kind": "json_lineage_fixed_dose_scope_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The observed equivalent XML/JSON tool emission executes once under the same permissions; unrelated exact-class queries no longer waive a widened contributing output field, including native composition/aliases and counted IDs. Report UI no longer describes source-number bindings as passed when upstream analysis is partial. General recommendation instructions require each entity\u2019s own native basis; that behavior awaits actual recovery verification.",
-    "measured_failure_reduction": "Offline saved-response dispatch0to1; deterministic final-class issues0to1 on the actual frozen result. No corrected clinical result or readiness claim.",
+    "user_behavior_delta": "Retained-source continuation now computes exact registered-GDMT source cells, keeps broader beta-blocker context separate, compiles numeric prose and proposes conditional per-patient review steps. The remaining blocker is localized to JSON argument dependency resolution.",
+    "measured_failure_reduction": "Registered source-policy disagreements8to0 across228cells; numeric prose repaired after first feedback. Whole source readings reused; no new document-reader provider calls. Final verification remains blocked, not accepted.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -463,11 +463,22 @@
       "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/proof.json",
       "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/verification.json",
       "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/app-source-assertion-audit.json",
-      "artifacts/agere-meaning-integration-2026-10-29/matched-app-inspection-v2/saved-export-audit.json"
+      "artifacts/agere-meaning-integration-2026-10-29/matched-app-inspection-v2/saved-export-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/preparation.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/preflight/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/preflight-v2/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/preflight-v3/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/run-protocol.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/corrected-source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/guard-field-diagnostic.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/accounting.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/json-lineage-proof.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/dose-domain-source-audit.json"
     ],
-    "remaining_gap": "The candidate now parses the exact failed XML/JSON duplicate as one registered action and flags the actual class error through final native field lineage; original eight bad cells are still preserved in the frozen result and need native recomputation. Quantitative prose remains unbound and recommendations generic in that old result. Source assertions126 and all saved/exported data have exact fidelity, but their interpretation and full workflow remain unverified. Baseline original has no final answer/report. Broader transfer and model/clinical qualification remain open.",
-    "next_action": "Prepare one owned recovery on a separate source-only clone of the same received warehouse. Reexecute all31current application native actions and revalidate its complete returned document observations with0new source-reader calls. Continue through the existing backstop/component and saved-report path with the measured feedback: exact registered medication classes, source/domain-scoped doses, native scalar prose bindings, and patient-specific proposed review actions with dated source basis and explicit unknowns. Run normal coverage/source checks without acceptance override. Preserve both original frozen arms; no repeated full warehouse review. Then varied healthcare/financial transfer, parameterized bottling and role-attributed learning against regressions/rollback, retaining all ten areas. No provider/training job or preview is running. Scheduler remains PAUSED after automatic review rejected reactivation; continue this active chat directly.",
-    "next": "Prepare one owned recovery on a separate source-only clone of the same received warehouse. Reexecute all31current application native actions and revalidate its complete returned document observations with0new source-reader calls. Continue through the existing backstop/component and saved-report path with the measured feedback: exact registered medication classes, source/domain-scoped doses, native scalar prose bindings, and patient-specific proposed review actions with dated source basis and explicit unknowns. Run normal coverage/source checks without acceptance override. Preserve both original frozen arms; no repeated full warehouse review. Then varied healthcare/financial transfer, parameterized bottling and role-attributed learning against regressions/rollback, retaining all ten areas. No provider/training job or preview is running. Scheduler remains PAUSED after automatic review rejected reactivation; continue this active chat directly.",
+    "remaining_gap": "Eight registered-policy cell failures are removed and quantitative prose bindings now compile in the returned candidate. Analysis remains partial/unverified because JSON_EACH(current_dose) is not recognized as a value dependency by SQLGlot lineage and the guard falls back to every parent column, flagging an unrelated historical class CASE. Dose-domain completeness, source-supported proposals and normal final source/coverage acceptance still need verification. Broader transfer and model/clinical qualification remain open.",
+    "next_action": "Prepare one targeted native-composition continuation from the returned recovery: replay46 successful actions and reuse exact126 source-bound findings, without repeating document readers. Compute requested-group dose rows from received medication identity/class and the existing vocabulary, separate all-medication and unclassified context, retain dated structured dose and note-change evidence, and make per-patient review proposals depend on these fields. Use normal coverage/source verification and faithful saved reports. Preserve original frozen runs, all attempts and accounting; no clinical acceptance inherited. Then finish varied healthcare/financial transfer and parameterized bottling/role learning with regressions and rollback, retaining all ten areas. Scheduler remains PAUSED; continue directly in this chat.",
+    "next": "The owned recovery PID78956/session42023 has RETURNED; no provider/training/preview job. Audit its retained result, then repair the measured JSON table-function value-lineage gap in the existing medication group checker: dose_summary/proposed_dose_action incorrectly fall back to all parent columns and propagate an unrelated old beta-blocker CASE. Preserve strict actual class/predicate/count scope and use named generic regressions; no threshold waiver. The recovered57patient/228policy cells now exactly match source (8old discrepancies removed), numeric headline/facts have compiled bindings and proposals use per-patient native context, but the class guard still blocks final verification. Preserve all attempts and reuse complete source readings/native calculation state for the next normal verification or continuation; no full warehouse rescan. Then complete varied healthcare/financial transfer, parameterized bottling and role-attributed learning with regressions/rollback and all ten areas. Scheduler remains PAUSED after automatic review rejected reactivation; keep working directly in this active chat.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -508,12 +519,12 @@
       }
     ],
     "latest_progress": {
-      "status": "offline_candidate_verified_recovery_pending",
-      "receipt": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/pair-summary.json",
+      "status": "returned_partial",
+      "receipt": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/run-receipt.json",
       "active_provider_job": false,
       "active_training_job": false,
-      "phase": "prepare_exact_source_recovery",
-      "code_commit": "59cb2d9",
+      "phase": "json_value_lineage_repair",
+      "code_commit": "fee45fd54801b512c2195cc7a2e9d2b5802ad2a3",
       "controller_receipt": "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/owned-run.json",
       "application_context_id": "ANS-41e9ba8445d3da4b371f2c02",
       "readonly_preview": {
@@ -537,7 +548,18 @@
         "provisional_accounting": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/accounting-in-progress.json",
         "qualification": "Source baselines and diagnostic behavior only; no question-path, clinical or superiority acceptance."
       },
-      "verification": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/verification.json"
+      "verification": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/verification.json",
+      "owned_pid": 78956,
+      "owned_process_group": 78956,
+      "owned_session": 42023,
+      "protocol": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/run-protocol.json",
+      "preflight": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/preflight-v3/receipt.json",
+      "answer_status": "partial",
+      "context_id": "ANS-b9f9ea65206a1dd0f54ad62b",
+      "seconds": 360.37131487502484,
+      "known_api_equivalent_usd": 1.59345035,
+      "unpriced_request_rows": 0,
+      "source_audit": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/corrected-source-audit.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -592,13 +614,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T21:21:27.078417+00:00",
-    "workflow_change": "Actual SQLite reads now carry inherited governed-view SQL and source-table meanings into native execution receipts. Coverage and source review both receive the same deduplicated definitions and exact bindings. The canonical fill meaning is documented at its existing schema definition. Actual zero-provider 44-action replay preserves every final row, 57 patients, 228 fill cells, 606 original observations and 436 retained findings; all 58 packets have source context and fit (max229635bytes). Coverage projection roundtrips exactly (219658bytes).",
+    "at": "2026-10-29T21:54:29.814966+00:00",
+    "workflow_change": "JSON table-function summaries now retain actual argument value lineage through correlated scopes and CTEs. Actual old wrong-class result remains rejected and recovered corrected table clears this deterministic guard.157 relevant regressions pass. Offline source dose audit isolates15requested-group rows from89all-medication rows; no providers or source edits.",
     "unsealed_work": {
-      "status": "shared_boundary_repairs_verified_recovery_pending",
+      "status": "json_lineage_fixed_dose_scope_pending",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "The candidate now parses the exact failed XML/JSON duplicate as one registered action and flags the actual class error through final native field lineage; original eight bad cells are still preserved in the frozen result and need native recomputation. Quantitative prose remains unbound and recommendations generic in that old result. Source assertions126 and all saved/exported data have exact fidelity, but their interpretation and full workflow remain unverified. Baseline original has no final answer/report. Broader transfer and model/clinical qualification remain open.",
-      "next_action": "Prepare one owned recovery on a separate source-only clone of the same received warehouse. Reexecute all31current application native actions and revalidate its complete returned document observations with0new source-reader calls. Continue through the existing backstop/component and saved-report path with the measured feedback: exact registered medication classes, source/domain-scoped doses, native scalar prose bindings, and patient-specific proposed review actions with dated source basis and explicit unknowns. Run normal coverage/source checks without acceptance override. Preserve both original frozen arms; no repeated full warehouse review. Then varied healthcare/financial transfer, parameterized bottling and role-attributed learning against regressions/rollback, retaining all ten areas. No provider/training job or preview is running. Scheduler remains PAUSED after automatic review rejected reactivation; continue this active chat directly.",
+      "remaining_gap": "All228 recovered source-policy cells match (8old errors removed), numeric prose compiles and JSON dependency false-positive is fixed while original true error remains blocked. Current dose collection remains all-medication context:89rows,15received-class matched group rows across12patients and9unclassified rows. Group-specific final composition, normal source/coverage acceptance and report checks remain; broader transfer/qualification open.",
+      "next_action": "Prepare one targeted native-composition continuation from the returned recovery: replay46 successful actions and reuse exact126 source-bound findings, without repeating document readers. Compute requested-group dose rows from received medication identity/class and the existing vocabulary, separate all-medication and unclassified context, retain dated structured dose and note-change evidence, and make per-patient review proposals depend on these fields. Use normal coverage/source verification and faithful saved reports. Preserve original frozen runs, all attempts and accounting; no clinical acceptance inherited. Then finish varied healthcare/financial transfer and parameterized bottling/role learning with regressions and rollback, retaining all ten areas. Scheduler remains PAUSED; continue directly in this chat.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -1926,14 +1948,14 @@
     }
   ],
   "unsealed_work": {
-    "status": "rechecked_workflow_partial_browser_pending",
+    "status": "json_lineage_fixed_dose_scope_pending",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "Normal final/source verification v2 and actual browser/report acceptance pending; source reader P-HF01 unresolved. Prior normal v1stopped at deterministic alias retention before anyprovider calls, repaired now. No clinicalaccuracy, recall, current applicability or MVP-ready claim; broaderten-area qualification remains open.",
-    "next_action": "Run prepared verify_rechecked_workflow.py v2 once using the v5zero-call native preflight and explicit native aliases.44nativeactions reuse436exact bound source observations; no actor requests or repeat606source judgments. Normal final/source checks then saved-report delivery. Freeze product source while running. On return audit57patients/228fillcells/606audit observations/436bound findings/106datedroles, exact feedback/costs and report fidelity; inspect actual interactive/PDF outputs. Broader routing, fair baselines, transfer/reuse and alltenareas remain.",
+    "remaining_gap": "All228 recovered source-policy cells match (8old errors removed), numeric prose compiles and JSON dependency false-positive is fixed while original true error remains blocked. Current dose collection remains all-medication context:89rows,15received-class matched group rows across12patients and9unclassified rows. Group-specific final composition, normal source/coverage acceptance and report checks remain; broader transfer/qualification open.",
+    "next_action": "Prepare one targeted native-composition continuation from the returned recovery: replay46 successful actions and reuse exact126 source-bound findings, without repeating document readers. Compute requested-group dose rows from received medication identity/class and the existing vocabulary, separate all-medication and unclassified context, retain dated structured dose and note-change evidence, and make per-patient review proposals depend on these fields. Use normal coverage/source verification and faithful saved reports. Preserve original frozen runs, all attempts and accounting; no clinical acceptance inherited. Then finish varied healthcare/financial transfer and parameterized bottling/role learning with regressions and rollback, retaining all ten areas. Scheduler remains PAUSED; continue directly in this chat.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
-    "source_frozen_for_run": true,
+    "source_frozen_for_run": false,
     "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
   },
   "current_visual_request": {
