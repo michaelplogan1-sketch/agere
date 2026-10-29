@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim.",
+  "active_work": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines.",
   "latest_delivery": "docs/agere/INTEGRATED_STACK_DELIVERY_2026-10-29.md",
   "latest_receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
   "owned_server_pid": 1965,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-29T06:56:19.093644+00:00",
+  "latest_checkpoint": "2026-10-29T06:57:24.010960+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -30,10 +30,10 @@
   "last_observed_server_session": 2376,
   "server_status": "Owned read-only inspection server8894/session34970. Primary8885 unchanged and not freshly checked. No active provider/training job.",
   "unsealed_work": {
-    "status": "remaining_general_product_fix",
-    "path": "artifacts/agere-full-stack-2026-10-29",
-    "remaining_gap": "Analytical output remains partial: two source review flags, three no-document patients, unresolved current clinician responsibility/MTD. Cost and latency remain unacceptable for MVP. Full ten-area scope remains open; no accepted SLM plan, fresh RSI fitting or default promotion.",
-    "next_action": "Compact execution-state catalog and compiled table assembly to replace growing SQL conversation; measure cold workflow quality/cost/latency before any readiness claim."
+    "status": "offline_verified_candidate_live_qualification_pending",
+    "path": "artifacts/agere-overnight-2026-10-29",
+    "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
+    "next_action": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
@@ -279,7 +279,20 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [],
+  "active_jobs": [
+    {
+      "kind": "full_original_cold_candidate",
+      "session": 96258,
+      "source_checkout": "/private/tmp/agere-overnight-frozen-20261029",
+      "source_commit": "d419dee9a14c1beb9bf60345b4d457173d92396f",
+      "output": "/private/tmp/agere-overnight-20261029/full-run",
+      "log": "/private/tmp/agere-overnight-20261029/full-run.log",
+      "started_at": "2026-10-29T06:57:24.010960+00:00",
+      "transport": "subscription",
+      "no_duplicate": true,
+      "frozen_source_do_not_mutate": true
+    }
+  ],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,

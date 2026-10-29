@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T06:56:19.093644+00:00",
+  "updated_at": "2026-10-29T06:57:24.010960+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,7 +359,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "overnight_candidate_offline_verified",
+    "kind": "frozen_cold_candidate_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Generic native execution catalog avoids repeated expanding SQL transcripts; compose_table preserves exact base membership and whole source relationships. Source-partition guard rejects unasked technical filtering. Frontier repair selects exact bound source spans; no generated quotes.",
@@ -379,8 +379,8 @@
       "artifacts/agere-overnight-2026-10-29/slm-scope-regression.json"
     ],
     "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
-    "next_action": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim.",
-    "next": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim.",
+    "next_action": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines.",
+    "next": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -472,10 +472,12 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T06:56:19.093644+00:00",
-      "status": "candidate_offline_verified_cold_workflow_pending",
-      "active_provider_or_training_job": false,
-      "evidence": "artifacts/agere-overnight-2026-10-29/verification.json"
+      "at": "2026-10-29T06:57:24.010960+00:00",
+      "status": "cold_original_workflow_running",
+      "active_provider_or_training_job": true,
+      "session": 96258,
+      "frozen_source_commit": "d419dee9a14c1beb9bf60345b4d457173d92396f",
+      "run_receipt": "/private/tmp/agere-overnight-20261029/full-run/run-receipt.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -535,7 +537,13 @@
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
     "at": "2026-10-29T06:56:19.093644+00:00",
-    "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected."
+    "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected.",
+    "unsealed_work": {
+      "status": "offline_verified_candidate_live_qualification_pending",
+      "path": "artifacts/agere-overnight-2026-10-29",
+      "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
+      "next_action": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines."
+    }
   },
   "decisions": [
     {
@@ -1712,7 +1720,7 @@
     "status": "offline_verified_candidate_live_qualification_pending",
     "path": "artifacts/agere-overnight-2026-10-29",
     "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
-    "next_action": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim."
+    "next_action": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
