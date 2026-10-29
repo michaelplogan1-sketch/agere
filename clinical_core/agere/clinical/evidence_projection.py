@@ -85,3 +85,62 @@ def coverage_answer(answer):
     out['coverage_contract']={'schema':VERSION,'dependency_edges':edges,
         'scope':'Check requested scope, computation, fields and explicit unknowns. Source-finding cells are references to separate required full clinical-support packets. Do not infer clinical truth from a reference or a finding count. Clinical support is confirmed only if every dependency is supported.'}
     return out
+
+
+def partition_support_packet(packet, *, max_bytes=230000):
+    """Partition claimed outputs, retaining every source input in every part.
+
+    This is a transport schedule, not evidence selection. Other output fields
+    remain in the native evidence; each declared claim is checked exactly once.
+    A single claim that still cannot fit remains unresolved at the caller.
+    """
+    from ..deliverables.receipts import compact_json, readable_json, uncompact_json
+    state=uncompact_json(json.loads(packet['text']))
+    claims=state.get('claim_manifest') or []
+    if not claims or claims!=packet.get('claim_manifest'):
+        raise ValueError('Partition requires the exact complete claim manifest')
+    ids=[c['id'] for c in claims];paths=[tuple(c['path']) for c in claims]
+    if len(set(ids))!=len(ids) or len(set(paths))!=len(paths):
+        raise ValueError('Partition claim identities and paths must be unique')
+    allowed={'answer','answer_rows','all_final_rows'}
+    if any(not p or p[0] not in allowed or any(p==q[:len(p)] for q in paths if p!=q) for p in paths):
+        raise ValueError('Partition paths must address distinct answer fields')
+    def at(value,path):
+        for key in path:value=value[key]
+        return value
+    # Access every value before projection, so missing paths cannot disappear.
+    originals={c['id']:at(state,c['path']) for c in claims}
+    protected={k:v for k,v in state.items() if k not in allowed|{'claim_manifest','scope'}}
+    source_digest=digest(protected)
+    def project(selected):
+        part=copy.deepcopy(state);selected_ids={c['id'] for c in selected}
+        for claim in claims:
+            if claim['id'] not in selected_ids:
+                parent=at(part,claim['path'][:-1]);key=claim['path'][-1]
+                if not isinstance(parent,dict):raise ValueError('Claim must name a native answer field')
+                del parent[key]
+        part['claim_manifest']=selected
+        part['scope']='Check ONLY the listed claim_manifest fields in this partition. All original source inputs and native calculations remain complete context, not additional answer claims.'
+        part['claim_partition']={'parent_packet_id':packet['id'],'parent_fingerprint':digest(state),
+            'source_inputs_digest':source_digest,'parent_claim_count':len(claims),
+            'claim_ids':[c['id'] for c in selected],
+            'closure':'All parent claims are scheduled exactly once across the partitions; source inputs are identical in every partition.'}
+        assert {k:v for k,v in part.items() if k in protected}==protected
+        assert all(at(part,c['path'])==originals[c['id']] for c in selected)
+        readable=json.dumps(readable_json(part),ensure_ascii=False,separators=(',',':'))
+        text=readable if len(readable.encode())<=max_bytes else json.dumps(compact_json(part),ensure_ascii=False,separators=(',',':'))
+        if uncompact_json(json.loads(text))!=part:raise ValueError('Claim partition did not round-trip')
+        return {**packet,'text':text,'bytes':len(text.encode()),'claim_manifest':selected,
+            'parent_packet_id':packet['id'],'representation':'complete_source_claim_partition'}
+    groups=[];current=[]
+    for claim in claims:
+        candidate=project(current+[claim])
+        if candidate['bytes']>max_bytes:
+            if current:groups.append(project(current));current=[]
+            candidate=project([claim])
+            if candidate['bytes']>max_bytes:raise ValueError('A complete single-claim dependency still exceeds the provider envelope')
+        current.append(claim)
+    if current:groups.append(project(current))
+    if [c['id'] for part in groups for c in part['claim_manifest']]!=ids:
+        raise ValueError('Claim partition does not close the original manifest')
+    return [{**part,'id':packet['id']+'__claims_'+str(i)} for i,part in enumerate(groups)]

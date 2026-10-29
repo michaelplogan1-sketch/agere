@@ -1293,8 +1293,17 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
 
 
 def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
-    results=[];steps=[]
+    logical_count=len(packets);scheduled=[]
     for packet in packets:
+        if packet['bytes']>240000 and packet.get('source_context_complete') is not False:
+            from .evidence_projection import partition_support_packet
+            try:
+                scheduled.extend(partition_support_packet(packet));continue
+            except (ValueError,KeyError,TypeError,IndexError):
+                pass  # retain the complete unresolved dependency below
+        scheduled.append(packet)
+    results=[];steps=[]
+    for packet in scheduled:
         if packet.get('source_context_complete')is False:
             results.append({'id':packet['id'],'label':'unknown','decided_by':None,
                 'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'})
@@ -1307,6 +1316,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
             task_key='agere_investigation_support_dependency',ledger=ledger,allow_live=True,select_source=False,
             long_context=packet['bytes']>32768)
         checked={'id':packet['id'],**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
+        if packet.get('parent_packet_id'):checked['parent_packet_id']=packet['parent_packet_id']
         if result.get('label')!='supported':checked['reason']='Source support '+str(result.get('label'))+' for this exact dependency; no successful check is inferred.'
         responded=bool(result.get('decided_by') or result.get('probabilities') or any(s.get('status')in ('answered','partial') for s in result.get('steps',[])))
         if result.get('label')!='supported' or not result.get('decided_by'):
@@ -1329,7 +1339,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
     return {'label':'supported'if settled else failed[0]['label']if failed else 'unknown',
         'decided_by':'all_dependency_checks'if settled or failed else None,'steps':steps,'packets':results,
-        'complete_dependency_packets':len(packets),'failed_packet_ids':[r['id']for r in failed],
+        'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),'failed_packet_ids':[r['id']for r in failed],
         'claim_feedback':[f for r in results for f in r.get('claim_feedback',[])]}
 
 
