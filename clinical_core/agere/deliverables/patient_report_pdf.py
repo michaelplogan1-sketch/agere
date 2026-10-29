@@ -1,4 +1,4 @@
-"""Deterministic PDF companion to any saved patient-level analysis; no model calls."""
+"""Deterministic PDF companion to saved patient or grouped analyses; no model calls."""
 from pathlib import Path
 import json,re,html,sys,io,gzip,hashlib
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle,PageBreak,KeepTogether
@@ -83,8 +83,10 @@ def render(context,output,references=None,evidence=None):
    if isinstance(s,dict)and isinstance(s.get('answer'),dict):yield from parts(s['answer'])
  answer=context['answer'];allparts=list(parts(answer));rows=[r for a in allparts for r in a.get('table')or[]if isinstance(r,dict)]
  ids={r['patient_id']for r in rows if r.get('patient_id')};source=context.get('source')or{};cutoff=source.get('as_of','Not recorded');status=answer.get('status','Not recorded')
- story=[P('AGERE  /  PATIENT REVIEW',small),Spacer(1,12),P('Evidence into\nnext steps',title),P(context.get('question','Saved patient analysis')),Spacer(1,10)]
- kpis=Table([[P(str(len(ids)),head),P(str(len(rows)),head),P(status,head)], [P('Distinct patient IDs',small),P('Complete result rows',small),P('Saved analytical status',small)]],colWidths=[180]*3)
+ patient_level=bool(ids)
+ first_metric=(len(ids),'Distinct patient IDs')if patient_level else(len({k for row in rows for k in row}),'Returned fields')
+ story=[P('AGERE  /  '+('PATIENT REVIEW'if patient_level else'ANALYSIS REVIEW'),small),Spacer(1,12),P('Evidence into\nnext steps',title),P(context.get('question','Saved analysis')),Spacer(1,10)]
+ kpis=Table([[P(str(first_metric[0]),head),P(str(len(rows)),head),P(status,head)], [P(first_metric[1],small),P('Complete result rows',small),P('Saved analytical status',small)]],colWidths=[180]*3)
  kpis.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),paper),('LEFTPADDING',(0,0),(-1,-1),12),('BOTTOMPADDING',(0,0),(-1,-1),8),('TOPPADDING',(0,0),(-1,-1),8)]));story+=[kpis,Spacer(1,17),P('Source and scope',head),P('Synthetic warehouse. Source snapshot: '+str(cutoff)+'. Clinical dates follow the simulated source clock. Report rendering adds no clinical interpretation, new care action or acceptance.'),P(answer.get('headline','No headline supplied'))]
  if context.get('retained_inspection'):story.extend([P('Retained analysis for inspection',head),P('Planning code changed after this saved execution. This report preserves the original analysis and source snapshot; rendering adds no new clinical interpretation, acceptance or care authorization.')])
  for index,a in enumerate(allparts):
@@ -98,15 +100,18 @@ def render(context,output,references=None,evidence=None):
    if a.get(k):
     story.append(P(label(k),head))
     for v in a[k] if isinstance(a[k],list)else[a[k]]:story.append(P(value(v)))
- story.extend([P('How to use the patient records',head),P('Each following record presents the saved clinical fields and any patient-specific recommendations the analysis supplied. A missing recommendation is stated explicitly. Dated findings remain dated findings; a recorded fill is not proof of ingestion, and a reference maximum is not a patient-specific tolerated dose. Source-bound quotations retain their source IDs, dates and assertion qualifications. Prior machine observations are indexed for audit. Complete, unmodified saved analysis, executed evidence, original observations and assertion metadata are embedded as Agere-saved-answer.json.gz and available in the interactive companion.')])
+ story.extend([P('How to use the saved records',head),P(
+  ('Patient records present the saved clinical fields and any patient-specific recommendations the analysis supplied. Dated findings remain dated findings; a recorded fill is not proof of ingestion, and a reference maximum is not a patient-specific tolerated dose. 'if patient_level else'Each result record presents the saved analytical fields. Group counts and recorded amounts retain the scope and limitations of the analysis. ')
+  +'Source-bound quotations retain their source IDs, dates and assertion qualifications. Complete, unmodified saved analysis, executed evidence, original observations and assertion metadata are embedded as Agere-saved-answer.json.gz and available in the interactive companion.')])
  groups=[('Recommended next steps',RECOMMENDATION_FIELD_PATTERN),('Medication evidence',r'medication|gdmt|pillar|drug|rasi|hf_bb|mra|sglt|beta.block'),('Dose assessment',r'dose'),('Care team',r'pcp|cardiol|clinician|provider|visit|care_team'),('Documented reasons and evidence',r'reason|finding|note|evidence|review|documentary|relation|correction'),('Other saved fields',r'.')]
  for index,row in enumerate(rows):
   story.append(PageBreak());pid=row.get('patient_id')or'Result '+str(index+1);record_title=P(pid,title)
   record_title.agere_record={'patient_id':str(pid),'record_index':index}
-  story.extend([P('PATIENT RECORD  /  '+str(index+1),small),record_title])
+  is_patient=bool(row.get('patient_id'))
+  story.extend([P(('PATIENT RECORD'if is_patient else'RESULT RECORD')+'  /  '+str(index+1),small),record_title])
   handled={'patient_id','review_json'}
-  if not any(re.search(groups[0][1],k,re.I)for k in row):story.append(P('No individualized recommendation was supplied in this saved analytical row. This is an unresolved output requirement, not a recommendation to change medication.'))
-  for group,pattern in groups:
+  if is_patient and not any(re.search(groups[0][1],k,re.I)for k in row):story.append(P('No individualized recommendation was supplied in this saved analytical row.'))
+  for group,pattern in groups if is_patient else[('Saved analytical fields',r'.')]:
    selected=[(k,v)for k,v in row.items()if k not in handled and re.search(pattern,k,re.I)]
    if not selected:continue
    story.append(P(group,head))
@@ -161,7 +166,7 @@ def render(context,output,references=None,evidence=None):
  buf=io.BytesIO()
  def page(c,doc):
   c.saveState();c.setFillColor(muted);c.setFont('AgereSans',7);c.drawString(36,20,'AGERE  |  SYNTHETIC DATA  |  SNAPSHOT '+str(cutoff));c.drawRightString(576,20,str(doc.page));c.setStrokeColor(line);c.line(36,31,576,31);c.restoreState()
- doc=SimpleDocTemplate(buf,pagesize=(612,792),leftMargin=36,rightMargin=36,topMargin=36,bottomMargin=43,title='Agere patient optimization report',author='Agere')
+ doc=SimpleDocTemplate(buf,pagesize=(612,792),leftMargin=36,rightMargin=36,topMargin=36,bottomMargin=43,title='Agere saved analysis report',author='Agere')
  record_pages=[]
  def after(flowable):
   if hasattr(flowable,'agere_record'):record_pages.append({**flowable.agere_record,'page':doc.page})
@@ -174,7 +179,7 @@ def render(context,output,references=None,evidence=None):
  reader=PdfReader(io.BytesIO(buf.getvalue()));writer=PdfWriter();writer.append(reader)
  writer.add_outline_item('Source, scope and findings',0)
  if record_pages:
-  parent=writer.add_outline_item('Patient records',record_pages[0]['page']-1)
+  parent=writer.add_outline_item('Saved records',record_pages[0]['page']-1)
   for entry in record_pages:writer.add_outline_item(entry['patient_id'],entry['page']-1,parent=parent)
  raw=json.dumps(context,ensure_ascii=False,indent=2).encode();packed=gzip.compress(raw,mtime=0);writer.add_attachment('Agere-saved-answer.json.gz',packed)
  with output.open('wb')as f:writer.write(f)
@@ -182,7 +187,7 @@ def render(context,output,references=None,evidence=None):
          'attachment_name':'Agere-saved-answer.json.gz','attachment_encoding':'gzip',
          'uncompressed_context_sha256':hashlib.sha256(raw).hexdigest(),
          'patient_bookmarks':record_pages,
-         'narrative_display':'Every patient; clinical fields and complete source-bound quotations with dates/qualifications; prior observations indexed for audit. Complete unmodified context and assertion metadata embedded.'}
+         'narrative_display':'Every saved row; patient or grouped fields and complete source-bound quotations with dates/qualifications. Complete unmodified context and assertion metadata embedded.'}
 
 if __name__=='__main__':
  context=json.loads(Path(sys.argv[1]).read_text());print(json.dumps(render(context,sys.argv[2],json.loads(Path(sys.argv[3]).read_text())if len(sys.argv)>3 else None)))
