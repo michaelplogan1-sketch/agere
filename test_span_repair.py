@@ -41,5 +41,21 @@ class SpanRepair(unittest.TestCase):
   self.assertTrue(stop.is_set());self.assertEqual(len(calls),1)
  def test_all_jobs_scheduled_without_population_or_source_loss(self):
   docs,u,q=self.fixture();docs=docs[:1];u=[{**u[0],'field':'f'+str(i)}for i in range(150)];q={r['field']:'What is documented?'for r in u};b=S.batches(u,docs,q);self.assertEqual(sum(map(len,b)),150);self.assertEqual(len(b),3)
+ def test_explicit_single_model_keeps_actual_reader_identity_and_unresolved_fields(self):
+  from test_document_relations import question
+  docs,pending,_=self.fixture();questions={'therapy':question()};seen=[]
+  def send(body):
+   seen.append(body['model']);state=json.loads(body['messages'][0]['content']);keys=list(state['decisions'])
+   answers={keys[0]:{'label':'finding','polarity':'affirmed','temporality':'historical','subject':'patient'},keys[1]:'unknown'}
+   return {'content':[{'type':'text','text':json.dumps({'answers':answers})}]},0,False
+  out=S.repair(SimpleNamespace(as_of='2030-05-27'),'A',pending,docs,questions,send,threading.Event(),[],models=(S.model_policy.SONNET,))
+  self.assertEqual(seen,[S.model_policy.SONNET]);self.assertEqual(len(out['failures']),1)
+  finding=out['findings']['therapy'][0];self.assertEqual(finding['provider'],S.model_policy.SONNET)
+  self.assertEqual(finding['assertion']['reader_model_identity'],S.model_policy.SONNET)
+  self.assertEqual(finding['quote'],docs[0]['text']);self.assertFalse(finding['assertion']['current_clinical_state_established'])
+ def test_invalid_explicit_model_does_not_dispatch(self):
+  docs,pending,questions=self.fixture();send=lambda _:self.fail('Must not call a provider')
+  for models in ([],['new-model']):
+   with self.subTest(models=models),self.assertRaises(ValueError):S.repair(SimpleNamespace(as_of='2030-05-27'),'A',pending,docs,questions,send,threading.Event(),[],models=models)
 
 if __name__=='__main__':unittest.main()

@@ -60,13 +60,16 @@ def batches(unresolved,documents,questions):
     return out
 
 
-def repair(tools,pid,unresolved,documents,questions,send,stop,receipts):
+def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=None):
     from .document_review import parsed,AXES,relation_finding
+    models=(model_policy.HAIKU,model_policy.SONNET) if models is None else tuple(models)
+    if not models or any(model not in (model_policy.HAIKU,model_policy.SONNET)for model in models):
+        raise ValueError('Source reader models must use the existing question model families')
     found={k:[]for k in questions};failures=[];decisions=[]
     for batch in batches(unresolved,documents,questions):
         indexed={'s'+str(i):(key,doc,item)for i,(key,doc,item)in enumerate(batch)}
         pending=dict(indexed);feedback=None
-        for model in (model_policy.HAIKU,model_policy.SONNET):
+        for model in models:
             if not pending:break
             if stop.is_set():raise RuntimeError('Source review stopped after subscription limit')
             contexts={key:doc for key,doc,item in pending.values()}
