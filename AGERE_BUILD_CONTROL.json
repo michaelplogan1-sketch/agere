@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T11:13:40.812216+00:00",
+  "updated_at": "2026-10-29T14:29:45.900905+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "requested_architect_review_with_bottling_prepared",
+    "kind": "claim_local_transport_offline_verified_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
-    "measured_failure_reduction": "Existing SQL now exposes all105complete documentation sections with exact round trip and unchanged source/cohort, while resident system218493to41509bytes (81.0%).156relevant isolated context checks pass;157relevant isolated transport checks passed on prior increment. No provider sends, clinical gain, live cost saving or default activation claimed.",
+    "user_behavior_delta": "Patient source checks retain exact dependencies across global edits; full legacy text evidence fits explicit patient packets. Final native collections retain their source objects. Subscription transport honors disabled tools, removes custom output ceilings, continues partial text safely and preserves failure usage/output.",
+    "measured_failure_reduction": "Native58packet replay restores57patients/606findings exactly; unrelated global edit preserves57/57patient requests vs0/57previously. Global packet676330to138006bytes; maximum210157bytes.355offline checks:354pass/1skip. No new provider calls; readable semantic qualification blocked by automatic approval review, direct answer pending.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -392,11 +392,18 @@
       "artifacts/agere-overnight-2026-10-29/continuation-v2-source-fact-audit.json",
       "artifacts/agere-overnight-2026-10-29/transport-verification.json",
       "artifacts/agere-overnight-2026-10-29/native-documentation-verification.json",
-      "artifacts/agere-overnight-2026-10-29/context-verification.json"
+      "artifacts/agere-overnight-2026-10-29/context-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/initial-source-trace.json",
+      "artifacts/agere-meaning-integration-2026-10-29/collection-visibility-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/entity-relation-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/meaning-composition-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/claim-locality-native-replay-v2.json",
+      "artifacts/agere-meaning-integration-2026-10-29/claim-local-transport-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json"
     ],
-    "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
-    "next_action": "Complete the requested concise Claude architecture review with the supplied bottling paper and exact current code. Preserve the failed first review and its unknown usage; no subscription limit was observed. Preserve source/brief during the new review; then reconcile findings with measured workflow errors before clinical integration. Bottling is partially implemented and has no accepted contribution in the latest cold HFrEF run.",
-    "next": "Complete the requested concise Claude architecture review with the supplied bottling paper and exact current code. Preserve the failed first review and its unknown usage; no subscription limit was observed. Preserve source/brief during the new review; then reconcile findings with measured workflow errors before clinical integration. Bottling is partially implemented and has no accepted contribution in the latest cold HFrEF run.",
+    "remaining_gap": "MVP remains incomplete. Readable packet semantic benefit and claim localization remain unqualified on live providers; v1/v2unknowns and false-promotion attempt retained. Readable first-pass patient bytes increase, so no cost gain is claimed. Full original-question app/artifact acceptance, task-dependent ordering, fair complete controls, broader transfer and useful native-program/SLM learning remain open; all ten areas/G5qualification retained.",
+    "next_action": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
+    "next": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -406,8 +413,8 @@
       ]
     },
     "coordination": {
-      "integration_owner": "01a1787b-6c4f-7683-9967-6fedb2f1ff7a",
-      "status": "Sole Codex integration owner; finite overnight heartbeat authorized by Mike through09:00Chicago October29. No agents or new chats.",
+      "integration_owner": "01a187c0-23ba-7d02-9368-5ff567327554",
+      "status": "This chat remains sole owner; private branch/PR pushes authorized. Recovery heartbeat active; no provider/training job. Source-packet verification requires the currently pending direct approval after automatic review rejected retrieved prior authorization.",
       "queueing_scope_candidate": {
         "status": "integrated_local_evidence_only",
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
@@ -488,12 +495,11 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T11:13:40.812216+00:00",
-      "status": "review_v1_output_limit_failure_preserved_v2_prepared",
+      "at": "2026-10-29T13:39:15.050778+00:00",
+      "status": "shared_meaning_composition_verified_candidate",
       "active_provider_or_training_job": false,
-      "prior_attempt": "/private/tmp/agere-overnight-20261029/architecture-review-20261029/run-receipt.json",
-      "prepared_packet": "/private/tmp/agere-overnight-20261029/architecture-review-v2-20261029/manifest.json",
-      "failed_attempt_usage": "unavailable, do not infer zero cost"
+      "automatic_git_pushes": true,
+      "heartbeat_status": "ACTIVE"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -535,9 +541,9 @@
       "automatic_retry": false
     },
     "latest_human_steering": {
-      "at": "2026-10-29T00:21:47.148580+00:00",
-      "request": "Run the original heart-failure workflow through the intended integrated stack, including trained SLMs, System One, recursive learning, rerankers and BERT components.",
-      "status": "scope_correction_confirmed_from_frozen_harness_and_native_trace"
+      "at": "2026-10-29T13:30:27.775574+00:00",
+      "request": "Confirm review-based stack update toward completing the MVP; access remains available; Git pushes are permitted when useful.",
+      "status": "continuing_implementation_private_branch_push_restriction_removed"
     },
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
@@ -552,13 +558,15 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T09:43:03.236404+00:00",
-    "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected.",
+    "at": "2026-10-29T14:29:45.900905+00:00",
+    "workflow_change": "Patient source checks retain exact dependencies across global edits; full legacy text evidence fits explicit patient packets. Final native collections retain their source objects. Subscription transport honors disabled tools, removes custom output ceilings, continues partial text safely and preserves failure usage/output.",
     "unsealed_work": {
-      "status": "source_audited_transport_contract_offline_verified",
-      "path": "artifacts/agere-overnight-2026-10-29",
-      "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
-      "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open."
+      "status": "claim_local_transport_offline_verified_candidate",
+      "path": "artifacts/agere-meaning-integration-2026-10-29",
+      "remaining_gap": "MVP remains incomplete. Readable packet semantic benefit and claim localization remain unqualified on live providers; v1/v2unknowns and false-promotion attempt retained. Readable first-pass patient bytes increase, so no cost gain is claimed. Full original-question app/artifact acceptance, task-dependent ordering, fair complete controls, broader transfer and useful native-program/SLM learning remain open; all ten areas/G5qualification retained.",
+      "next_action": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
+      "external_verification": "pending_explicit_current_user_approval_after_auto_review_rejection",
+      "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json"
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -567,7 +575,31 @@
       "latest_cold_rung_outcome": "declined",
       "status": "parts wired; workload-level autonomous artifact construction and useful transfer unproven",
       "no_benchmark_or_answer_key_access": true
-    }
+    },
+    "owner_review": {
+      "at": "2026-10-29T11:48:18.601324+00:00",
+      "assessment": "docs/agere/MVP_REVIEW_AND_HANDOFF_2026-10-29.md",
+      "exact_claude_review": "docs/agere/reviews/2026-10-29-claude-chief-architect.md",
+      "source_checks": [
+        "Span selection stores value equal to quote",
+        "Native clinician columns retained but absent from narrative manifest",
+        "Model ladder has no role-specific selection",
+        "Global fields enter each support packet",
+        "All-role invalidation on direct correction",
+        "Replay fresh-executor validation exists; completion selection does not establish semantic accuracy gains",
+        "Typed assertion/state foundations already exist"
+      ],
+      "cold_claude_share_of_known_api_equivalent_pct": 88.33068786691332,
+      "provider_calls": 0,
+      "product_code_edits": 0,
+      "new_training_runs": 0,
+      "all_ten_areas_retained": true,
+      "implementation_status": "recommendation_only_not_activated"
+    },
+    "candidate_commits": [
+      "ce8d759",
+      "f68bd71"
+    ]
   },
   "decisions": [
     {
@@ -1751,13 +1783,43 @@
       "gate": "G3",
       "reason": "Mike explicitly requests the architecture engineering-order Markdown and a Claude chief-architect critique after the completed run. Deliver this independent review before further clinical provider work so the next increment addresses the highest-value shared failure.",
       "scope_impact": "Full ten-area charter and original workflow retained; review only, no new architecture layer, agent/chat, protected data, default activation or acceptance waiver."
+    },
+    {
+      "at": "2026-10-29T11:55:57.347665+00:00",
+      "gate": "G3",
+      "decision": "Human resumed local shared integration after architecture discussion; existing automatic-push stop and heartbeat pause persist.",
+      "basis": "Mike: okay lets ride! How long do you think it will take to undertake this update?",
+      "scope_impact": "One general source-to-result increment, all ten areas retained, no new providers/training or architecture rewrite. Current owner assessment supersedes hypothetical next-step ordering only; no default/model policy promotion."
+    },
+    {
+      "at": "2026-10-29T13:23:03.238201+00:00",
+      "gate": "G3",
+      "decision": "Bind the active document path to existing documentary assertions and reconciliation, preserving legacy requests. Added source_entity subject after a real contract transfer check exposed inability to represent a non-person relation; no new truth store.",
+      "basis": "artifacts/agere-meaning-integration-2026-10-29/entity-relation-verification.json",
+      "scope_impact": "All ten areas retained. Initial missing-unknown schema and invalid contract-subject attempts retained with accounting. No training, model promotion or main/default activation. Continue next connected composition increment."
+    },
+    {
+      "at": "2026-10-29T13:30:27.775574+00:00",
+      "gate": "G3",
+      "decision": "Latest human direction removes inherited Git-push restriction. Push verified coherent changes to the existing private branch/PR when useful; no main merge or publication.",
+      "basis": "Mike: you dont need to turn off Git pushes if that helps you, im not sure if it does but i gave you no such instructions",
+      "scope_impact": "No change to product scope, source protections or provider policy. The user reaffirms full MVP completion objective."
+    },
+    {
+      "at": "2026-10-29T14:29:45.900905+00:00",
+      "gate": "G3",
+      "decision": "Retain claim-local and transport repairs as an offline-verified candidate; stop only the external source-packet check pending current explicit approval.",
+      "basis": "artifacts/agere-meaning-integration-2026-10-29/claim-local-transport-verification.json",
+      "scope_impact": "No charter narrowing, clinical/model promotion, default activation or provider workaround. v2false-positive promotion removed; complete native evidence retained. Private branch pushes remain authorized."
     }
   ],
   "unsealed_work": {
-    "status": "requested_architect_review_with_bottling_prepared",
-    "path": "artifacts/agere-overnight-2026-10-29",
-    "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
-    "next_action": "Complete the requested concise Claude architecture review with the supplied bottling paper and exact current code. Preserve the failed first review and its unknown usage; no subscription limit was observed. Preserve source/brief during the new review; then reconcile findings with measured workflow errors before clinical integration. Bottling is partially implemented and has no accepted contribution in the latest cold HFrEF run."
+    "status": "claim_local_transport_offline_verified_candidate",
+    "path": "artifacts/agere-meaning-integration-2026-10-29",
+    "remaining_gap": "MVP remains incomplete. Readable packet semantic benefit and claim localization remain unqualified on live providers; v1/v2unknowns and false-promotion attempt retained. Readable first-pass patient bytes increase, so no cost gain is claimed. Full original-question app/artifact acceptance, task-dependent ordering, fair complete controls, broader transfer and useful native-program/SLM learning remain open; all ten areas/G5qualification retained.",
+    "next_action": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
+    "external_verification": "pending_explicit_current_user_approval_after_auto_review_rejection",
+    "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json"
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

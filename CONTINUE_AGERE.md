@@ -1,3 +1,101 @@
+# Current Agere checkpoint — 2026-10-29T14:29:45.900905+00:00
+
+ACTIVE sole owner:01a187c0-23ba-7d02-9368-5ff567327554, checkout /private/tmp/agere-codex-integration-20261026, branch codex/integration-20261026. Private branch/PR pushes authorized; no main merge, additional agents/chats or default promotion. Recovery heartbeat active at30minutes; it adds no work while the active turn is running. No provider/training job.
+
+G3 / workflow change: Patient source checks retain exact dependencies across global edits; full legacy text evidence fits explicit patient packets. Final native collections retain their source objects. Subscription transport honors disabled tools, removes custom output ceilings, continues partial text safely and preserves failure usage/output.
+
+Evidence: Native58packet replay restores57patients/606findings exactly; unrelated global edit preserves57/57patient requests vs0/57previously. Global packet676330to138006bytes; maximum210157bytes.355offline checks:354pass/1skip. No new provider calls; readable semantic qualification blocked by automatic approval review, direct answer pending. Receipt: artifacts/agere-meaning-integration-2026-10-29/claim-local-transport-verification.json. Missing token usage stays unknown; no invoice or clinical-accuracy claim. Failed/unknownv1/v2source checks remain unchanged.
+
+Remaining gap: MVP remains incomplete. Readable packet semantic benefit and claim localization remain unqualified on live providers; v1/v2unknowns and false-promotion attempt retained. Readable first-pass patient bytes increase, so no cost gain is claimed. Full original-question app/artifact acceptance, task-dependent ordering, fair complete controls, broader transfer and useful native-program/SLM learning remain open; all ten areas/G5qualification retained.
+
+Exact next action: After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.
+
+External verification is pending a direct current-user answer. Automatic review rejected two attempts, including one supported by retrieved explicit human authorization from the previous chat; the reviewer classified that history as untrusted. The approval question is already surfaced. Do not retry through another route or infer approval from time. This applies to source-packet transmission only, not a user pause of the build. See artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T13:01:14.413920+00:00
+
+EXPLICIT FRESH-CHAT TAKEOVER AND AUTONOMOUS COMPLETION REQUEST. Mike says he instructed completion while away and a new chat because the old context is too long. This supersedes the discussion hold and stop of scheduled work. Automatic Git pushes remain stopped; no instruction to resume pushes. Sender is creating the new chat and transferring the existing heartbeat. New owner: wait only for ownership registration if this header still says pending, while doing read-only orientation; do not ask Mike for routine permission. Sender has stopped all product edits. No active provider/training job to duplicate.
+
+Mike explicitly requests fresh-chat takeover and autonomous completion of the review-based MVP update while he is away. Transfer sole implementation ownership to the new chat; resume scheduled continuation there, keep automatic Git pushes off. First code task: entity/relation-bound review_documents contracts, then claim-domain and clinician-role composition, targeted verification, fair frozen full workflow comparison and reusable learning. Existing code c16cad7 and all frozen evidence remain intact. No new training until a stable runtime target and regression evidence exist.
+
+Code c16cad7 already committed locally; review/owner/continuity docs remain uncommitted. First repair exposes complete JSON collections to the investigator;45checks pass and actual57-row replay preserves106clinician objects across13patients. It does not fix entity semantics yet. The saved MRA-under-RASI error originates in the typed reader, before SQL, as traced in artifacts/agere-meaning-integration-2026-10-29/initial-source-trace.json. No further source changes since c16cad7. Full owner assessment and exact Claude review are in docs/agere/MVP_REVIEW_AND_HANDOFF_2026-10-29.md and docs/agere/reviews/2026-10-29-claude-chief-architect.md. Preserve all ten areas, source/frozen results, subscription-only/no-custom-output-cap rules.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T12:02:41.782599+00:00
+
+Local build ACTIVE after Mike's okay lets ride. Human-turn continuation only; heartbeat remains PAUSED and automatic pushes remain stopped. No provider/training job. First shared collection visibility repair verified:45offline checks, real57-row replay exposes106dated clinician objects across13patients while native rows remain byte-equivalent. Generic collection metadata also covers contract clauses and episode arrays; invalid/null JSON is not an empty finding. This does not establish current clinician assignment or final clinical correctness.
+
+Extend the existing review_documents question contract with explicit target entity/relation bindings and carry those bindings through typed judgments and native findings, retaining legacy string questions. The saved wrong-class trace places the error in the reader before SQL. Use general non-HF regressions and complete source contexts; no new model, training, full-cohort rescan or provider call until the contract is verified. Then enforce claim-domain and care-role composition through the same path.
+
+Evidence: artifacts/agere-meaning-integration-2026-10-29/initial-source-trace.json and collection-visibility-verification.json. The known MRA-under-RASI passage already exists in the saved typed reader output; composition simply copies it. User ETA estimate1–2focused working days for update and full comparison, not client readiness. Full ten areas/G3 remain; no protected keys or source/data modification. Exact reviews and owner handoff retained.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T11:55:57.347665+00:00
+
+Mike explicitly resumed the recommended update with okay lets ride. Local build ACTIVE; heartbeat remains PAUSED and automatic Git pushes remain stopped. No active provider/training job. No new chat/agent requested. Owner assessment remains docs/agere/MVP_REVIEW_AND_HANDOFF_2026-10-29.md; that document's prior pause is historical and this header/control takes precedence.
+
+Mike explicitly resumed the recommended shared update: trace the saved wrong-class reason from reader through SQL and final output, then connect evidence/entity/time and clinician-role fields through existing state/composition. Implement one general source-to-result increment with regression evidence before fresh provider work. Preserve full ten-area charter and frozen runs. Automatic Git pushes and heartbeat remain off; no new training, agents or chats.
+
+First proof: remove wrong-domain dose labeling, wrong-entity reason attribution and lost clinician-role composition through shared contracts; keep57cohort/228source-defined cells/606quote links unchanged where applicable. No clinical-accuracy or MVP-readiness claim from code checks. Claude subscription only; no custom output ceilings/word count, no protected corpora, main merge, publication or real care. Estimated1–2focused engineering days for the update and first full comparison, not a guarantee of client readiness.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T11:48:18.601324+00:00
+
+OWNER ASSESSMENT AND FRESH-CHAT HANDOFF READY: docs/agere/MVP_REVIEW_AND_HANDOFF_2026-10-29.md. Mike requested critical next-step assessment and asked whether a new chat would help; he has not requested creation or resumed implementation. Build and heartbeat remain PAUSED; automatic pushes are stopped. No active provider/training job. No code, model, routing or production policy changed. Exact Claude review saved byte-for-byte at docs/agere/reviews/2026-10-29-claude-chief-architect.md; current review packet source hashes remain intact.
+
+Discuss the owner-assessed MVP sequence with Mike using docs/agere/MVP_REVIEW_AND_HANDOFF_2026-10-29.md and Claude's exact review at docs/agere/reviews/2026-10-29-claude-chief-architect.md. Recommend reusing existing assertion/state/composition for entity/time-bound facts and domain-bound claims, then local verification, task-dependent routing, a valid matched app comparison, and parameterized bottling/role-specific learning after stability. Build/heartbeat/automatic pushes remain PAUSED; no implementation or new provider/training job until Mike explicitly resumes. Fresh-chat handoff is prepared; do not create a new chat without his explicit request.
+
+Owner qualifications: existing assertion/state machinery already handles many typed relations/clocks; wire active document outputs into it instead of adding a parallel universal layer. Typed IDs alone do not prove semantic attribution. Native clinician values were not deleted. Cold split actually exists: Claude88.33%of known9.844572764USD API-equivalent; four failures remain unpriced. No complete clinical-accuracy denominator or new acceptance judgment. Preserve Mike's prior output acceptance, broad ten-area charter, original source and all frozen arms. The handoff contains precise receipts, working tree, standing rules and a discussion-first starting prompt. All new docs/continuity changes are uncommitted/unpushed.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T11:38:50.378683+00:00
+
+BOTH REQUESTED REVIEWS READY. Claude architecture/bottling review returned2026-10-29T11:27:27.913343+00:00,616.76s,59850bytes, source/brief unchanged, no custom response ceiling/word count. Exact review/receipts: /private/tmp/agere-overnight-20261029/architecture-review-v3-20261029. Reported API-equivalent1.375166USD for successful request; two earlier attempts remain unpriced, so not a complete review cost. Actual subscription invoice/allocation not inferred. No active provider/training job.
+
+Both requested reviews are ready for discussion with Mike: Claude architecture/bottling review at /private/tmp/agere-overnight-20261029/architecture-review-v3-20261029/review.md and Codex decision-only repository critique at /private/tmp/agere-decision-only-review-20261029/CRITICAL_REVIEW.md. Build/heartbeat/automatic pushes remain PAUSED. Discuss recommendations before any implementation, training, provider job, commit or Git push. Current read-only repository review made zero model calls or Agere source edits.
+
+External repository pinnedab87ef2ee9c5e8668c8a25a33fcfb1d3021ff9e9; four core source blobs match exactly, eight pure-function/scripted probes, zero providers/training/Agere implementation changes. Full source/probe manifest at /private/tmp/agere-decision-only-review-20261029. Do not read or train from study case corpora or promote its triage thresholds. No code/model/routing change has been made from either review. G3/all ten areas retained.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T11:21:28.698694+00:00
+
+USER DISCUSSION HOLD. Mike is here and explicitly requests stopping automatic pushes, waiting for the existing Claude review, then discussing it together. Automation finish-agere-overnight-mvp-candidate is confirmed PAUSED via app tool. Build is PAUSED for new work; automatic Git pushes are stopped. This pause explicitly permits only current review session34035 and necessary saving/reading of its output. Do not interrupt, duplicate or mutate its frozen source/brief. No new implementation, provider/training jobs, commits or pushes until discussion with Mike.
+
+Mike is present and requests stopping automatic updates/pushes, waiting for the existing Claude review, then discussion. Heartbeat is PAUSED. Allow only the already-running subscription architecture/bottling review session34035 and necessary saving/reading of its result. Do not start new implementation, provider/training jobs, commits or Git pushes before discussing the review with Mike. No custom response ceiling or word count.
+
+Current review receipt /private/tmp/agere-overnight-20261029/architecture-review-v3-20261029/run-receipt.json saysrunning; source packet and prior failures preserved, no subscription limit observed. Request has no custom token ceiling or word count. G3/all ten areas and original cohort remain preserved.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T11:17:52.301413+00:00
+
+Mike explicitly instructed: no custom limit, let Claude answer as long as needed. Active requested architecture/bottling review is running, owned session34035, subscription only, started2026-10-29T11:17:11.144341+00:00. Request has NOmax_tokens, NOoutput_config and NOwordcount; inherited custom CLI token/extra-body variables were absent at preflight. No workflow/time/spend cap. Service-truncated text is saved and continued with distinct full accounting. Source and brief are frozen while running. No clinical/training job.
+
+Observe only owned complete architecture/bottling review session34035; no custom output-token ceiling or word count. Preserve source/brief during review. Service-truncated text is saved and continued as separately metered requests. Prior first output-limit failure and second local receipt-folder failure are preserved with unknown usage, not zero cost. On return save independent review and reconcile recommendations against measured general workflow failures. Then repair shared failure-receipt persistence; no unrelated rewrite/default activation or MVP claim.
+
+The earlier first review failed on16000output setting after562.812s. The second provider returned but the runner had omitted provider-receipts directory; its28.907s attempt lost response/usage and left a pending ledger row. Preserve original failures, do not count costs as zero or call them subscription limits. New runner verifies writable receipt storage BEFORE generation. No quota observed. Packet426260bytes contains brief, source and paper excerpts only; no patient data/protected corpora.
+
+The requested architecture Markdown now explicitly distinguishes local bottled SQL/slot adapters and guarded action reuse from unproven general task-family bottling. Latest cold bottle declined after62.09s. G3/all ten areas retained.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T11:14:45.868754+00:00
+
+Requested concise architecture/bottling review is failed; owned session26242, subscription only, receipt /private/tmp/agere-overnight-20261029/architecture-review-v2-20261029/run-receipt.json. Source/brief frozen while running; no clinical/training job. First review failed on16000response allowance; no subscription quota observed. Preserve failed attempt, unknown usage and all new metering. New request has64000per-response allowance and medium effort, approximately900word delivery. Mike explicitly objected to response-limit termination: increasing a limit alone is a workaround, not the final product fix.
+
+Finish owned architecture/bottling review session26242 without source mutation or duplicate work. Preserve all attempts. After review, repair shared output-exhaustion handling so partial output and reported usage are retained and a task can continue instead of failing at a per-response setting. Then reconcile review findings with the measured clinical workflow errors. No workflow cap, default activation or clinical acceptance claim.
+
+Bottling assessment is in docs/agere/ARCHITECTURE_ORDER_FOR_REVIEW_2026-10-29.md: local SQL/slot adapters and exact guarded action reuse exist; cold SQL rung declined in62.09s. Broader task-family bottling remains unproven. Paper supplied as source, not instructions; no protected-corpus reads. G3/all ten areas remain.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-29T11:13:40.812216+00:00
 
 First Claude architecture review failed after562.812s on its16000output-token maximum. Exact failure/ledger preserved in /private/tmp/agere-overnight-20261029/architecture-review-20261029; no quota observed, failed usage unavailable and must not count as zero. No clinical/training/provider job active. Mike now asks about bottling; read his attached paper and exact current code. Bottled SQL actually declined after62.09s in the cold run; narrow slot adapters and guarded action replay exist but do not prove general transfer. Added the explicit bottling assessment to the requested architecture Markdown.
