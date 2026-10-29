@@ -63,6 +63,7 @@ TOOLS = [
                       'required': ['metric_id', 'period_start', 'period_end'], 'additionalProperties': False}},
     {'name':'compose_table','description':'Combine already executed result views in code. Base defines exact output membership and must be unique on keys. Joins use one for unique relationships or collect to preserve every intact matching source row. In collect mode, items_from may name a native JSON-array column to carry every intact collection object into the final field (for example dated correspondence roles or contract clauses); omit columns for this mode. No clinical inference or source-row sampling. Use the returned result_view as table_from_tool. Missing joins are null, never inferred negatives.',
      'input_schema':{'type':'object','properties':{'base':{'type':'string'},'keys':{'type':'array','items':{'type':'string'}},'base_columns':{'type':'array','items':{'type':'string'}},
+        'rename_columns':{'type':'object','additionalProperties':{'type':'string'},'description':'Explicitly rename received non-key output columns without changing values. Preserves native retention lineage; output names must be distinct.'},
         'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'retain_in_final':{'type':'boolean'},'domain':{'type':'object','properties':{'column':{'type':'string'},'values':{'type':'array','items':{},'minItems':1}},'required':['column','values'],'additionalProperties':False},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
@@ -1162,7 +1163,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                 'meaning':'Executed calculation/source-selection contract, not independent proof of its clinical interpretation.'}
             assembly=result.get('assembly')
             if assembly:
-                contract['assembly']={k:assembly[k]for k in ('schema','base_result_view','keys')if k in assembly}
+                contract['assembly']={k:assembly[k]for k in ('schema','base_result_view','keys','column_renames')if k in assembly}
                 contract['assembly']['joins']=[{k:j[k]for k in ('result_view','as','mode','on','selected_columns','domain','items_from','retain_in_final')if k in j}for j in assembly.get('joins',[])]
             contracts.append(contract)
         return contracts

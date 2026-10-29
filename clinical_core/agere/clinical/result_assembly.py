@@ -129,7 +129,7 @@ def _rows(result):
     return columns,output
 
 
-def compose(results,*,base,keys,joins=None,base_columns=None):
+def compose(results,*,base,keys,joins=None,base_columns=None,rename_columns=None):
     if base not in results:raise ValueError('base must name an executed result_view')
     if not isinstance(keys,list)or not keys or len(keys)!=len(set(keys))or not all(isinstance(k,str)for k in keys):
         raise ValueError('Nonempty distinct base keys required')
@@ -204,8 +204,16 @@ def compose(results,*,base,keys,joins=None,base_columns=None):
             'source_result_digest':digest(results[view]),'retain_in_final':retain,
             **({'items_from':items_from,'source_collection_items':sum(map(len,collections.values())),
                 'output_collection_items':sum(len(row[alias] or []) for row in keyed.values()),'retain_in_final':retain} if items_from is not None else {})})
-    return {'columns':columns,'rows':list(keyed.values()),'truncated':False,
+    if rename_columns is None:rename_columns={}
+    if (not isinstance(rename_columns,dict)or not set(rename_columns)<=set(columns)or set(rename_columns)&set(keys)or
+        any(not isinstance(k,str)or not isinstance(v,str)or not v for k,v in rename_columns.items())or
+        len(set(rename_columns.get(c,c)for c in columns))!=len(columns)):
+        raise ValueError('Column renames require received non-key fields and distinct nonempty output names')
+    output=[{rename_columns.get(k,k):v for k,v in row.items()}for row in keyed.values()]
+    columns=[rename_columns.get(c,c)for c in columns]
+    return {'columns':columns,'rows':output,'truncated':False,
         'assembly':{'schema':VERSION,'base_result_view':base,'base_result_digest':digest(results[base]),'keys':keys,
+            **({'column_renames':rename_columns}if rename_columns else {}),
             'base_rows':len(rows),'output_rows':len(keyed),'joins':coverage,
             'method':'Exact left membership; scalar joins prove uniqueness; collection joins retain intact rows. Missing joins are null, not a clinical negative.'}}
 
@@ -223,6 +231,17 @@ def collection_retention_issues(results,final_rows,dependencies):
     def key(row,names):
         if not isinstance(row,dict) or any(k not in row for k in names):return None
         return json.dumps([row[k]for k in names],sort_keys=True,allow_nan=False)
+    def aliases(name):
+        # Only executed, validated rename contracts may change a retained
+        # collection's address. Exact object/identity checks still apply.
+        names={name};changed=True
+        while changed:
+            before=len(names)
+            for dependent in dependencies:
+                renames=(results[dependent].get('assembly')or{}).get('column_renames')or{}
+                names.update(new for old,new in renames.items()if old in names)
+            changed=len(names)!=before
+        return names
     for view in sorted(dependencies):
         result=results[view];assembly=result.get('assembly') or {};keys=assembly.get('keys') or []
         required=[j for j in assembly.get('joins',[]) if j.get('retain_in_final')]
@@ -233,9 +252,12 @@ def collection_retention_issues(results,final_rows,dependencies):
             if ident not in final:continue
             target=final[ident]
             for join in required:
-                alias=join['as'];expected=decoded(row[alias]) or []
+                original=join['as'];source_alias=(assembly.get('column_renames')or{}).get(original,original)
+                expected=decoded(row[source_alias]) or []
+                addresses=[source_alias]if source_alias in target else sorted(aliases(source_alias)&set(target))
+                alias=addresses[0]if addresses else source_alias
                 value=decoded(target.get(alias))
-                if alias not in target or value is not None and not isinstance(value,list):
+                if not addresses or value is not None and not isinstance(value,list):
                     issues.append('Final field '+alias+' at '+str(ident)+' omits its explicitly retained native collection');continue
                 wanted=Counter(digest(item)for item in expected);observed=Counter(digest(item)for item in value or [])
                 missing=wanted-observed

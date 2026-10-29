@@ -55,6 +55,35 @@ class Collections(unittest.TestCase):
             else:final[0].pop('dated_roles')
             with self.subTest(mutation=mutation):self.assertTrue(A.collection_retention_issues(results,final,{'composed'}))
 
+    def test_explicit_rename_preserves_retention_and_still_rejects_lost_or_mutated_objects(self):
+        items,results,join=self.fixture();join['retain_in_final']=True
+        results['composed']=A.compose(results,base='base',keys=['patient_id'],joins=[join])
+        renamed=A.compose(results,base='composed',keys=['patient_id'],rename_columns={'dated_roles':'legacy_roles'})
+        results['renamed']=renamed
+        self.assertEqual(renamed['rows'][0]['legacy_roles'],items)
+        self.assertEqual(A.collection_retention_issues(results,renamed['rows'],{'composed','renamed'}),[])
+        for mutation in ('drop','change','omit'):
+            final=copy.deepcopy(renamed['rows'])
+            if mutation=='drop':final[0]['legacy_roles'].pop()
+            elif mutation=='change':final[0]['legacy_roles'][0]['date']='2030-05-27'
+            else:final[0].pop('legacy_roles')
+            with self.subTest(mutation=mutation):self.assertTrue(A.collection_retention_issues(results,final,{'composed','renamed'}))
+        # Equal-looking field names outside an executed rename are not proof.
+        self.assertTrue(A.collection_retention_issues(results,renamed['rows'],{'composed'}))
+
+    def test_rename_cannot_drop_identity_overwrite_fields_or_invent_sources(self):
+        _,results,join=self.fixture();results['composed']=A.compose(results,base='base',keys=['patient_id'],joins=[join])
+        for mapping in ({'patient_id':'other_id'},{'dated_roles':'patient_id'},{'missing':'audit'},{'dated_roles':''}):
+            with self.subTest(mapping=mapping),self.assertRaises(ValueError):
+                A.compose(results,base='composed',keys=['patient_id'],rename_columns=mapping)
+
+    def test_financial_audit_alias_uses_the_same_native_retention(self):
+        results={'base':{'rows':[{'contract':'C1'}]},'source':{'rows':[{'contract':'C1','clauses':'[{"record_id":"c","quote":"Payment follows reconciliation."}]'}]}}
+        out=A.compose(results,base='base',keys=['contract'],joins=[{'result':'source','as':'terms','on':{'contract':'contract'},'mode':'collect','items_from':'clauses','retain_in_final':True}],rename_columns={'terms':'prior_terms_for_audit'})
+        results['final']=out
+        self.assertEqual(A.collection_retention_issues(results,out['rows'],{'final'}),[])
+        self.assertEqual(out['rows'][0]['prior_terms_for_audit'][0]['record_id'],'c')
+
     def test_explicit_row_domain_excludes_other_specialties_without_dropping_members(self):
         results={'base':{'rows':[{'patient_id':'A'},{'patient_id':'B'}]},'roles':{'rows':[
             {'patient_id':'A','specialty':'Family Medicine','role':'primary_care','record_id':'p'},
