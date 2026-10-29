@@ -260,9 +260,11 @@ class Tools:
                 'definitions':definitions,'clinical_definitions':clinical_definitions.describe(),
                 'definition_views_version':analyst_definitions.VERSION,
                 'subscription_tool_protocol':hashlib.sha256((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_bytes()).hexdigest(),
+                'documentation_identity':getattr(getattr(self.semantic,'_local',None),'documentation_identity',None),
+                'documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','full'),
                 'explicit_tool_quota':MAX_TOOLS,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','note_evidence.py')},
+                                 for name in ('backstop_agent.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','note_evidence.py')},
                 'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
@@ -1102,6 +1104,11 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     from .drug_classes import GROUPS
     docs += '\nREGISTERED MEDICATION GROUP CONTRACTS (exact class members):\n'+json.dumps(GROUPS)
     docs += '\nGOVERNED SQL MACROS (also accepted by query_sql):\n' + macro_docs + '\nCLINICAL OWNER DEFINITIONS:\n' + json.dumps(describe())
+    full_docs = docs
+    discover_context = os.environ.get('AGERE_ANALYST_CONTEXT') == 'discover'
+    if discover_context:
+        from .analyst_context import install as install_context
+        docs = install_context(wh, full_docs)
     quota = f'The caller configured a quota of {MAX_TOOLS} tool calls.' if MAX_TOOLS is not None else 'There is no fixed tool-call quota.'
     rules = RULES.format(tool_quota=quota) + '\n' + decision_context.prompt_block()
     system = [{'type': 'text', 'text': rules}, {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
@@ -1157,6 +1164,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         if isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed':
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
+                if discover_context: install_context(fresh, full_docs)
                 return Tools(stack,fresh,as_of,cohort=tools.cohort,ledger=ledger)
             candidate=harness.attempt_propose(tools,question,payload,model,run.get('tool_calls') or [],fresh_executor,final_answer=run.get('answer'),baseline_metrics=actor_metrics)
         reviews = run.get('answer_reviews') or []

@@ -129,6 +129,7 @@ def policy_identity():
     from .component_learning import active_identity
     from tools.training import datasets as training_messages
     return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(),
+        'analyst_documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','full'),
         'clinical_input_policy': clinical_input_identity(),'component_releases':active_identity(),
         'local_serving_prompt':request_plan.fingerprint(Path(training_messages.__file__).read_text()),
         'governed_knowledge': governed_knowledge(), 'financial_rulebook': rulebook_digest(),
@@ -148,7 +149,7 @@ def policy_identity():
                      'note_open.py', 'note_evidence.py', 'note_frames.py', 'note_questions.py', 'ocr_passages.py',
                      'atomic_questions.py', 'answer_shape.py', 'semantic_reader.py', 'answer_checks.py', 'system_one_gate.py',
                      'system_one_cross_check.py', 'acceptance_contract.py', 'requirement_ledger.py',
-                     'backstop_agent.py', 'execution_state.py', 'result_assembly.py', 'evidence_projection.py', 'document_review.py', 'span_repair.py', 'typed_document_review.py', 'analysis_tools.py','component_learning.py','adapter_learning.py',
+                     'backstop_agent.py', 'analyst_context.py', 'semantic_docs.py', 'execution_state.py', 'result_assembly.py', 'evidence_projection.py', 'document_review.py', 'span_repair.py', 'typed_document_review.py', 'analysis_tools.py','component_learning.py','adapter_learning.py',
                      'learned_router.py','tier_router.py','learning_hooks.py','semantic_analyst.py', 'harness_improvement.py')}})
 
 # Rule text in named parts: the hosted planner sends them all (SYSTEM); the local shaper (local_prompt.py) sends the core and only

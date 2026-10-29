@@ -1,3 +1,15 @@
+# Current Agere checkpoint — 2026-10-29T10:46:45.948813+00:00
+
+No provider/training job is active. Subscription caller output/effort translation and internal-turn receipts are repaired (157isolated offline checks). The opt-in native documentation lookup uses existing query_sql: every105full sections available and byte-exact, unchanged rules/tools/patient source,218493to41509resident system bytes (81.0%).156relevant isolated context checks pass,0providers; full documentation remains the default. No live cost/accuracy saving or clinical acceptance claimed.
+
+Latest continuation-v2 returned partial:57cohort/228fill-proxy cells/606quotes agree,57proposed actions present,3native assemblies,code-built HTML/PDF ready. Known current errors:89mixed medication dose rows mislabeled GDMT (75tagged other), reason field misalignment persists, dated clinician-role objects incomplete in final interpretation. Historical/current responsibility and individual tolerated dose stay distinct. At least13.041780032API-equivalent for original cold+failed repair+this continuation; four earlier unpriced context failures retained. Baselines/qualification separate. See docs/agere/EXECUTION_SIMPLIFICATION_2026-10-29.md and local receipts.
+
+Next: Freeze the verified subscription/context candidate and run a targeted retained-source integration check of native documentation lookup, caller output settings and semantic reconciliation. Reuse exact validated source observations, never clinical conclusions; audit medication-scope dose denominators, per-field causality and dated clinician roles. Preserve every earlier attempt and do not start a new cold cohort review.
+
+G3/full ten-area charter remains open. Subscription only; stop on actual limit. Existing synthetic/private-PR authorizations persist. No protected keys/corpora, agents/new chats, main/default promotion, publication/contact/care. At09:00Chicago stop new increments, report honestly and pause the finite heartbeat.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-29T10:33:04.549387+00:00
 
 Continuation-v2 session24386 has EXITED normally, partial after1921.509s,281metered attempts,$2.718297068API-equivalent including$0.174670218third-party. Source/code unchanged and zero blocked corpus reads. Context ANS-4dd5bb76817008388b555b37, saved code-built HTML/PDF DLV-D250D6E4744F ready;3compose_table invocations. No provider/training job active. Original cold investigation plus the failed first continuation plus this continuation totals at least$13.041780032API-equivalent with four earlier unpriced context rejections; baselines and component experiments are separate. Do not price this warm continuation as a complete cold answer.

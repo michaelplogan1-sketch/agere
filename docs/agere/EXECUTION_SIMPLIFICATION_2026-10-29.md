@@ -46,13 +46,21 @@ and [CLI reference](https://code.claude.com/docs/en/cli-reference).
 
 ## Next measured reduction
 
-An offline prototype partitions the exact 218,493-byte resident system prompt
-into 105 complete documentation sections. Keeping core rules/tool instructions
-resident and exposing full sections on demand produces a 60,745-byte resident
-representation, with byte-exact reconstruction. This is not integrated or a live
-cost/accuracy gain. Use the existing read-only SQL capability for native lookup;
-retain all source evidence and expose every documentation section. Then qualify
-targeted reconciliation rather than rereading the entire cohort.
+The integrated, opt-in candidate partitions the exact 218,493-byte resident system
+prompt into 105 complete documentation sections. The resident index, unchanged
+core rules and unchanged tools total 41,509 bytes (81.0% smaller). Every full
+section is available through the existing `query_sql` tool in the request-local
+`agere_data_model_context` view. Column signatures, units, assumptions and full
+definitions remain in that view. No new model stage or retrieval cutoff is added.
+
+Enable only the candidate with `AGERE_ANALYST_CONTEXT=discover`; the default still
+sends full documentation. Native source execution retrieved every section without
+truncation, reconstructed the original documentation exactly and retained the
+57-patient cohort with unchanged source identity. Fresh RSI executors install the
+same lookup; mode, documentation and code identities guard replay. 156 relevant
+isolated checks pass with zero provider requests. This is a representation and
+execution result, not a live cost/accuracy gain. Next qualify targeted
+reconciliation rather than rereading the entire cohort.
 
 G3 and the full ten-area product charter remain open. No new fitting, protected
 evaluation, default activation, main merge, publication or real-care execution.

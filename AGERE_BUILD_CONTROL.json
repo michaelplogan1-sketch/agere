@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T10:41:20.421416+00:00",
+  "updated_at": "2026-10-29T10:46:45.948813+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "transport_contract_repaired_offline_native_context_next",
+    "kind": "native_sql_documentation_candidate_offline_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
-    "measured_failure_reduction": "The subscription bridge now propagates an existing caller max_tokens/effort contract and preserves reported CLI internal-turn/model-usage metadata without clipping aggregate usage.157relevant isolated offline checks pass,0providers. No live cost gain claimed. Offline context prototype preserves105whole sections and exact reconstruction,218493to60745resident bytes; not integrated yet.",
+    "measured_failure_reduction": "Existing SQL now exposes all105complete documentation sections with exact round trip and unchanged source/cohort, while resident system218493to41509bytes (81.0%).156relevant isolated context checks pass;157relevant isolated transport checks passed on prior increment. No provider sends, clinical gain, live cost saving or default activation claimed.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -390,11 +390,13 @@
       "artifacts/agere-overnight-2026-10-29/system-context-prototype-receipt.json",
       "artifacts/agere-overnight-2026-10-29/continuation-v2-source-diagnostics.json",
       "artifacts/agere-overnight-2026-10-29/continuation-v2-source-fact-audit.json",
-      "artifacts/agere-overnight-2026-10-29/transport-verification.json"
+      "artifacts/agere-overnight-2026-10-29/transport-verification.json",
+      "artifacts/agere-overnight-2026-10-29/native-documentation-verification.json",
+      "artifacts/agere-overnight-2026-10-29/context-verification.json"
     ],
     "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
-    "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open.",
-    "next": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open.",
+    "next_action": "Freeze the verified subscription/context candidate and run a targeted retained-source integration check of native documentation lookup, caller output settings and semantic reconciliation. Reuse exact validated source observations, never clinical conclusions; audit medication-scope dose denominators, per-field causality and dated clinician roles. Preserve every earlier attempt and do not start a new cold cohort review.",
+    "next": "Freeze the verified subscription/context candidate and run a targeted retained-source integration check of native documentation lookup, caller output settings and semantic reconciliation. Reuse exact validated source observations, never clinical conclusions; audit medication-scope dose denominators, per-field causality and dated clinician roles. Preserve every earlier attempt and do not start a new cold cohort review.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -486,10 +488,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T10:33:04.549387+00:00",
-      "status": "returned_partial_audit_pending",
+      "at": "2026-10-29T10:46:45.948813+00:00",
+      "status": "native_documentation_and_transport_candidates_offline_verified",
       "active_provider_or_training_job": false,
-      "run_receipt": "/private/tmp/agere-overnight-20261029/composition-repair-v2/run-receipt.json"
+      "provider_requests_in_verification": 0
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
