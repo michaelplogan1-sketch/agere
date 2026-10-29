@@ -13,6 +13,46 @@ def response(text,stop='end_turn'):
 
 
 class Protocol(unittest.TestCase):
+    def test_wrapped_xml_tool_request_preserves_exact_literal_arguments(self):
+        call={'name':'query_sql','input':{'complete':True,'sql':"SELECT '; ' AS label, 2030 AS year"}}
+        text='<invoke name="tool_use"><parameter name="name">query_sql</parameter><parameter name="input">'+json.dumps(call['input'])+'</parameter></invoke>'
+        self.assertEqual(T._tool_calls(text,TOOLS),[call])
+        emitted=iter([response(text),response(json.dumps({'status':'answered','value':2030}))]);executed=[]
+        result=S.tool_loop('Annual plan payments',[],TOOLS,lambda use:executed.append(use['input'])or{'value':2030},send=lambda body:(next(emitted),.01,False),model='authored',max_tools=None)
+        self.assertEqual(executed,[call['input']]);self.assertEqual(result['answer']['value'],2030)
+        self.assertEqual(len(result['tool_calls']),1);self.assertEqual(result['new_paid_api_calls'],2)
+
+    def test_every_literal_xml_action_is_retained_in_a_batch(self):
+        text=''.join('<invoke name="query_sql"><parameter name="sql">SELECT '+str(v)+'</parameter></invoke>'for v in (1,2))
+        self.assertEqual(T._tool_calls(text,TOOLS),[{'name':'query_sql','input':{'sql':'SELECT 1'}},{'name':'query_sql','input':{'sql':'SELECT 2'}}])
+
+    def test_unknown_xml_never_extracts_its_inner_sql_as_a_final_answer(self):
+        text='<invoke name="unknown"><parameter name="input">{"sql":"SELECT 1","complete":true}</parameter></invoke>'
+        replies=iter([response(text),response(json.dumps({'status':'partial','missing':['Supported action needed']}))]);reviewed=[];executed=[]
+        result=S.tool_loop('Admissions and cost',[],TOOLS,lambda use:executed.append(use),send=lambda body:(next(replies),.01,False),model='authored',max_tools=None,
+            review=lambda answer,calls:reviewed.append(answer)or{'status':'confirmed'})
+        self.assertEqual(executed,[]);self.assertEqual(len(reviewed),1);self.assertNotIn('sql',reviewed[0])
+        self.assertEqual(len(result['protocol_repairs']),1);self.assertEqual(result['answer']['status'],'partial')
+
+    def test_duplicate_parameters_unclosed_or_unregistered_wrapped_actions_decline(self):
+        samples=[
+            '<invoke name="query_sql"><parameter name="sql">SELECT 1</parameter><parameter name="sql">SELECT 2</parameter></invoke>',
+            '<invoke name="query_sql"><parameter name="sql">SELECT 1</parameter>',
+            '<invoke name="tool_use"><parameter name="name">unknown</parameter><parameter name="input">{}</parameter></invoke>',
+            '<invoke name="tool_use"><parameter name="name">[]</parameter><parameter name="input">{}</parameter></invoke>']
+        for text in samples:
+            with self.subTest(text=text):self.assertEqual(T._tool_calls(text,TOOLS),[])
+
+    def test_xml_inside_a_final_answer_string_is_data_not_an_action(self):
+        text=json.dumps({'status':'answered','value':'Literal source: <invoke name="query_sql"><parameter name="sql">SELECT 1</parameter></invoke>'})
+        self.assertEqual(T._tool_calls(text,TOOLS),[])
+        self.assertEqual(T._tool_calls(json.dumps({'tool_use':CALLS[0],'status':'answered'}),TOOLS),[])
+
+    def test_bare_tool_arguments_are_not_confirmed_as_an_answer(self):
+        with patch.object(B,'materialize_table',side_effect=AssertionError('Not a clinical answer')):
+            result=B.review_final(None,'question',{'sql':'SELECT 1','complete':True},[],None,ledger=None,as_of='2030-01-01')
+        self.assertEqual(result['status'],'repair');self.assertIn('Tool arguments alone',result['feedback'])
+
     def test_empty_unregistered_padding_preserves_every_literal_batch_argument(self):
         text='<invoke name="unused_padding">\n</invoke>\n<invoke name="another_empty_tag"></invoke>\n'+json.dumps({'tool_uses':CALLS})
         self.assertEqual(T._tool_calls(text,TOOLS),CALLS)

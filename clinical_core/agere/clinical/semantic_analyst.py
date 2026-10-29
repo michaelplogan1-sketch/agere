@@ -481,13 +481,20 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
 
                 def reject_constant(value):
                     raise ValueError('Non-finite JSON number: ' + value)
+                unexecuted_markup=not text.startswith(('{','[')) and bool(re.search(r'<invoke\b',text))
                 try:
+                    # Unrecognized invocation markup cannot become a final
+                    # answer by extracting its inner JSON tool arguments.
+                    if unexecuted_markup:
+                        raise ValueError('Unexecuted invocation markup')
                     candidate = json.loads(text, parse_constant=reject_constant)
                 except ValueError:
-                    if not format_retries:
+                    if not format_retries and not unexecuted_markup:
                         raise
                     start, end = text.find('{'), text.rfind('}')
-                    if 0 <= start < end:
+                    if unexecuted_markup:
+                        candidate={'tool_use':{'unresolved_markup':text}}
+                    elif 0 <= start < end:
                         try:
                             candidate = json.loads(text[start:end + 1], parse_constant=reject_constant)
                             result['format_repair'] = 'extracted'

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T09:06:58.468131+00:00",
+  "updated_at": "2026-10-29T09:43:03.236404+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "cold_candidate_returned_partial_baseline_active",
+    "kind": "protocol_and_dependency_repair_offline_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Cold original workflow returned57patient rows,57proposed action fields and all228owner-defined medication-pillar cells. All4610received records/4387unique documents were reviewed;606selected quotations match source.",
-    "measured_failure_reduction": "Cold wall time8015.2 to3426.512seconds and attempts9002 to4157; analytical status remains partial. Known API-equivalent cost worsened4.5753 to9.8446 versus the earlier cold run. Neither is a complete-correct unit-cost result. Actual post-review state leaks800230bytes of expanded native SQL: isolated prototype reduces one retained message1048548 to39170bytes with31checks and no model calls.",
+    "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
+    "measured_failure_reduction": "Actual failed Sonnet final action recovered57rows offline with exact arguments and22/22native result-view equality checks,0model calls. Actual coverage request1,688,111 to102,865bytes; summary799,628 to82,207bytes; largest complete dependency104,092bytes and0oversized packets. Every native table value restores exactly; patient evidence remains unchanged.378offline checks pass; clinical meaning remains unqualified.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -379,11 +379,14 @@
       "artifacts/agere-overnight-2026-10-29/slm-scope-regression.json",
       "artifacts/agere-overnight-2026-10-29/source-fact-audit.json",
       "artifacts/agere-overnight-2026-10-29/economics.json",
-      "artifacts/agere-overnight-2026-10-29/verification-review-state.json"
+      "artifacts/agere-overnight-2026-10-29/verification-review-state.json",
+      "artifacts/agere-overnight-2026-10-29/verification-protocol-dependencies.json",
+      "artifacts/agere-overnight-2026-10-29/dependency-projection-replay.json",
+      "artifacts/agere-overnight-2026-10-29/baselines/sonnet-only-run/offline-literal-recovery-receipt.json"
     ],
     "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-    "next_action": "Observe owned Sonnet-only baseline59101 on immutable d419dee; no duplicate providers. Qualify integrated/Haiku outputs offline; finish general state/provenance repair in separate integration source and preserve frozen source. After Sonnet exits assemble matched accuracy/cost/speed comparison, then use saved evidence for any targeted verified continuation.",
-    "next": "Observe owned Sonnet-only baseline59101 on immutable d419dee; no duplicate providers. Qualify integrated/Haiku outputs offline; finish general state/provenance repair in separate integration source and preserve frozen source. After Sonnet exits assemble matched accuracy/cost/speed comparison, then use saved evidence for any targeted verified continuation.",
+    "next_action": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim.",
+    "next": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -475,12 +478,9 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T09:06:58.468131+00:00",
-      "status": "matched_haiku_returned_sonnet_running_state_fix_offline_verified",
-      "active_provider_or_training_job": true,
-      "session": 59101,
-      "frozen_source_commit": "d419dee9a14c1beb9bf60345b4d457173d92396f",
-      "run_receipt": "/private/tmp/agere-overnight-20261029/baselines/sonnet-only-run/run-receipt.json"
+      "at": "2026-10-29T09:43:03.236404+00:00",
+      "status": "all_frozen_arms_exited_general_repairs_offline_verified",
+      "active_provider_or_training_job": false
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -539,7 +539,7 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T08:52:22.015589+00:00",
+    "at": "2026-10-29T09:43:03.236404+00:00",
     "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected.",
     "unsealed_work": {
       "status": "returned_partial_regression_repair_and_baselines_active",
@@ -1723,7 +1723,7 @@
     "status": "returned_partial_regression_repair_and_baselines_active",
     "path": "artifacts/agere-overnight-2026-10-29",
     "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-    "next_action": "Observe owned Sonnet-only baseline59101 on immutable d419dee; no duplicate providers. Qualify integrated/Haiku outputs offline; finish general state/provenance repair in separate integration source and preserve frozen source. After Sonnet exits assemble matched accuracy/cost/speed comparison, then use saved evidence for any targeted verified continuation."
+    "next_action": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

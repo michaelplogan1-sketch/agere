@@ -108,7 +108,7 @@ def _xml_call(text, names):
     """The model's native tool-call markup (<invoke name="tool"><parameter name="p">value</parameter></invoke>), which it sometimes writes
     instead of the JSON protocol (2026-10-26: x1-25 failed this way) -> {'name', 'input'} or None. A JSON-looking value is decoded."""
     m = INVOKE.search(text or '')
-    if not m or m.group(1) not in names: return None
+    if not m or m.group(1) not in names | {'tool_use'}: return None
     args = {}
     for k, v in PARAM.findall(m.group(2)):
         v = v.strip()
@@ -116,6 +116,9 @@ def _xml_call(text, names):
             args[k] = json.loads(v) if v[:1] in '[{' or v in ('true', 'false', 'null') or re.fullmatch(r'-?\d+(?:\.\d+)?', v) else v
         except ValueError:
             args[k] = v
+    if m.group(1)=='tool_use':
+        if set(args)!={'name','input'} or not isinstance(args['name'],str) or args['name'] not in names or not isinstance(args['input'],dict):return None
+        return args
     return {'name': m.group(1), 'input': args}
 
 
@@ -175,25 +178,28 @@ def _tool_calls(text, tools):
         padding = INVOKE.match(raw)
         if not padding or padding.group(1) in names or padding.group(2).strip(): break
         raw = raw[padding.end():].lstrip()
-    leading = INVOKE.match(raw)
-    if leading and leading.group(1) in names:
-        rest = raw[leading.end():].strip()
-        try: extra = json.loads(rest)
-        except ValueError: extra = None
-        if isinstance(extra, dict) and any(k in extra for k in ('tool_use', 'tool_uses')): return []
-    single = _tool_call(raw, tools)
-    if single:
-        try: json.dumps(single, allow_nan=False)
-        except (TypeError, ValueError): return []
-        return [single]
     if raw.startswith('```'):
         raw = re.sub(r'^```(?:json)?\s*|\s*```$', '', raw)
+    if raw.startswith('<invoke'):
+        calls=[]
+        while raw:
+            invocation=INVOKE.match(raw)
+            if not invocation or not invocation.group(0).rstrip().endswith('</invoke>'):return []
+            parameters=list(PARAM.finditer(invocation.group(2)))
+            keys=[p.group(1)for p in parameters]
+            if len(keys)!=len(set(keys)) or PARAM.sub('',invocation.group(2)).strip():return []
+            call=_xml_call(invocation.group(0),names)
+            if call is None:return []
+            try:json.dumps(call,allow_nan=False)
+            except (TypeError,ValueError):return []
+            calls.append(call);raw=raw[invocation.end():].strip()
+        return calls
     def nonfinite(value): raise ValueError('Nonfinite tool argument')
     try: obj = json.loads(raw, parse_constant=nonfinite)
     except ValueError: return []
-    calls = obj.get('tool_uses') if isinstance(obj, dict) and set(obj) == {'tool_uses'} else None
+    calls = [obj['tool_use']] if isinstance(obj,dict)and set(obj)=={'tool_use'} else obj.get('tool_uses') if isinstance(obj, dict) and set(obj) == {'tool_uses'} else None
     if not isinstance(calls, list) or not calls or any(not isinstance(c, dict) or set(c) != {'name', 'input'}
-            or c['name'] not in names or not isinstance(c['input'], dict) for c in calls):
+            or not isinstance(c['name'],str) or c['name'] not in names or not isinstance(c['input'], dict) for c in calls):
         return []
     return calls
 

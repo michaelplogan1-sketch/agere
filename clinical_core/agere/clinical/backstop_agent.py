@@ -261,7 +261,7 @@ class Tools:
                 'definition_views_version':analyst_definitions.VERSION,
                 'explicit_tool_quota':MAX_TOOLS,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','dose.py','note_evidence.py')},
+                                 for name in ('backstop_agent.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','note_evidence.py')},
                 'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
@@ -876,6 +876,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         return {**assessment, 'status': 'repair', 'feedback': 'Return the required JSON answer object.'}
     if any(k in answer for k in ('tool_use', 'tool_uses')):
         return {**assessment, 'status': 'repair', 'feedback': 'Unexecuted tool requests are not a final answer. Execute the registered tools and finish the requested work.'}
+    if answer.get('status') not in ('answered','partial','unsupported','grounding_failed','not_available'):
+        return {**assessment,'status':'repair','feedback':'Return a final answer with its explicit status and requested answer contract. Tool arguments alone are not an answer.'}
     answer.pop('table_binding', None)  # only materialize_table may establish this proof; it cannot be asserted by the model
     try:
         materialize_table(answer, calls)
@@ -939,7 +941,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         graph['workflow']=workflow
     if context: request += '\nRequest context (including follow-ups and selected population): ' + json.dumps(context, default=str)
     try:
-        coverage = gate.check(request, graph, {'answer': answer}, stack=stack, ledger=ledger, as_of_date=as_of)
+        from .evidence_projection import coverage_answer
+        coverage = gate.check(request, graph, {'answer': coverage_answer(answer)}, stack=stack, ledger=ledger, as_of_date=as_of)
         assessment.update(coverage=coverage, calls=assessment['calls']+coverage['calls'], cost_usd=assessment['cost_usd']+coverage['cost_usd'])
         # All tool results and the cited documents' context, rather than numeric-token overlap or the quote alone.
         bound = (answer.get('table_binding') or {}).get('result_view')
@@ -1031,14 +1034,21 @@ def support_packets(question,answer,calls,document_reviews,as_of):
     summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
     common={'question':question,'as_of':as_of,'shared_evidence':list(shared.values()),'native_bindings':native,
         'instruction':'Review source interpretations as machine observations, not independent clinical truth. Preserve unknowns, dates and negation. Check only this packet scope. Global coverage is checked separately.'}
-    packets=[{'id':'summary','scope':'All global/headline/fact claims; all final rows and shared native scalars',
-        **common,'answer':summary,'all_final_rows':table}]
+    from .evidence_projection import table_view,restore_table
+    summary_rows,dependencies=table_view(table)
+    packets=[{'id':'summary','scope':'Global/headline/fact claims and all final rows. Clinical source collections refer to required patient packets; these references alone cannot establish clinical aggregates or causal claims. Return unknown for an aggregate requiring clinical interpretation not present in actual computed scalars.',
+        **common,'answer':summary,'all_final_rows':summary_rows,'required_clinical_dependencies':dependencies}]
     for pid in sorted(set(by)|{r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')}):
         packets.append({'id':'patient_'+pid,'scope':'All final claims for this patient only',**common,
             'patient_id':pid,'answer_rows':[r for r in table if isinstance(r,dict)and r.get('patient_id')==pid],
+            'global_claims_context':summary,
+            'global_claims_scope':'Check any global statement that makes a claim about this patient. Whole-population arithmetic belongs to the global packet; do not infer it from this patient alone.',
             'evidence':list(by.get(pid,{}).values()),
             'review_scope':[{'questions':m['questions'],'manifest':[x for x in m['manifest']if x['patient_id']==pid],
                 'native_receipt_digest':m['native_receipt_digest']}for m in review_manifests]})
+    leaves={p['id']:p['answer_rows']for p in packets if p['id'].startswith('patient_')}
+    if restore_table(summary_rows,dependencies,leaves)!=table:
+        raise ValueError('Clinical dependency representation did not restore the complete native table')
     # Conservative UTF-8 byte bound beneath the smallest live context's token
     # limit, including prompt overhead. It bounds requests, never population.
     # An oversized dependency cannot be silently sampled or certified.
