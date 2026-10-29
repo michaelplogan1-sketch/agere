@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Run verify_rechecked_workflow.py once:44nativeactions, exact-source observation reuse with new source judgments forbidden, normal final coverage/source checks, and saved-report delivery. Keep the answer analytically partial where source facts are unknown. Freeze product source during validation. On return audit exact57/228/606/436/106fidelity, returned source feedback and all costs, then inspect interactive/PDF output and repair presentation without another source scan. Continue remaining routing, fair baselines, broader transfer/reuse and alltenareas.",
+  "active_work": "Use the completed source-to-report workflow receipts to resolve the remaining G3 engineering gaps: assess why the two patient packets and summary defer despite no localized field fault, distinguish supported data unknowns from missing product wiring, and inspect the cold actor path for use of explicit relation/domain contracts. Measure task-dependent verification routing and repair only the implicated layer; do not repeat the retained 606-source review or promote from field-level pass votes. Then perform the valid matched original-workflow/simple baseline comparison and parameterized bottling/role-attributed learning checks with regressions and rollback. Retain all ten acceptance areas. Automatic prompts remain PAUSED while Mike is present; build remains ACTIVE.",
   "latest_delivery": "docs/agere/INTEGRATED_STACK_DELIVERY_2026-10-29.md",
   "latest_receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
   "owned_server_pid": 1965,
@@ -18,22 +18,22 @@
   "resume_priority": "Follow AGERE_BUILD_CONTROL.json current_gate and checkpoint.next_action.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-29T11:21:28.698694+00:00",
-  "heartbeat_status": "ACTIVE",
+  "heartbeat_status": "PAUSED",
   "resumed_at": "2026-10-29T11:55:57.347665+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-29T17:53:19.973858+00:00",
+  "latest_checkpoint": "2026-10-29T18:57:13.752606+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "No active provider/training/build job. Normal final/source validation prepared after exact44-action zero-call replay and offline checks.",
+  "server_status": "Owned inspection app 8896 running with live generation disabled; actual search/filter/care-role/source checks and all four recorded downloads verified. No provider/training job. Other runtimes untouched.",
   "unsealed_work": {
-    "status": "normal_rechecked_workflow_validation_prepared",
+    "status": "source_report_verified_qualification_open",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "Normal complete-answer/source verification and report/browser acceptance pending; P-HF01reader remains unresolved. No clinical accuracy, recall, current applicability or MVP-ready claim. Broader routing/simple baselines/transfer/reuse and alltenacceptanceareas retained.",
-    "next_action": "Run verify_rechecked_workflow.py once:44nativeactions, exact-source observation reuse with new source judgments forbidden, normal final coverage/source checks, and saved-report delivery. Keep the answer analytically partial where source facts are unknown. Freeze product source during validation. On return audit exact57/228/606/436/106fidelity, returned source feedback and all costs, then inspect interactive/PDF output and repair presentation without another source scan. Continue remaining routing, fair baselines, broader transfer/reuse and alltenareas.",
+    "remaining_gap": "Final source verification supports 55 of 57 patient packets; P-1007, WHP-B4E976A6BC06 and summary remain unresolved without a localized field fault; coverage partial. P-HF01 source reader unresolved. Candidate-only rechecking does not establish whole-document recall or clinical applicability. Actual report presentation/export checks pass; no clinical accuracy, superiority, fair baseline, general bottling/SLM contribution or overall MVP-readiness claim. All ten acceptance areas remain.",
+    "next_action": "Use the completed source-to-report workflow receipts to resolve the remaining G3 engineering gaps: assess why the two patient packets and summary defer despite no localized field fault, distinguish supported data unknowns from missing product wiring, and inspect the cold actor path for use of explicit relation/domain contracts. Measure task-dependent verification routing and repair only the implicated layer; do not repeat the retained 606-source review or promote from field-level pass votes. Then perform the valid matched original-workflow/simple baseline comparison and parameterized bottling/role-attributed learning checks with regressions and rollback. Retain all ten acceptance areas. Automatic prompts remain PAUSED while Mike is present; build remains ACTIVE.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -43,7 +43,7 @@
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
-  "continuation_mode": "scheduled_thread_heartbeat_with_active_build",
+  "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
   "mvp_server": {
     "pid": 51270,
     "session": 60802,
@@ -91,7 +91,7 @@
     "to": "01a15af4-c150-76f2-9df2-a44c1428b70d",
     "transferred_at": "2026-10-20T21:04:37.523810+00:00"
   },
-  "continuation_session": "Current sole implementation owner chat 01a187c0-23ba-7d02-9368-5ff567327554; ACTIVE scheduled heartbeat; verified existing-private-branch pushes authorized.",
+  "continuation_session": "Mike is present; continue the authorized MVP work in this sole owner chat. Automatic heartbeat PAUSED by his direct request, without pausing the build.",
   "task_scoped_integration": {
     "status": "closed_ownership_returned",
     "owner_thread": "01a159cf-8e56-7bb2-be7e-4889268a99c2",
@@ -402,7 +402,10 @@
     "fab7c3a",
     "61d0f34",
     "e516bb9",
-    "99bb472"
+    "99bb472",
+    "880ebd2",
+    "f5fd201",
+    "4c6f2b7"
   ],
   "provider_payload_authorization": {
     "at": "2026-10-29T15:18:31.337417+00:00",
@@ -412,5 +415,6 @@
     "additional_direction": "stop asking for my approval you have my approval for everything in this thread",
     "scope": "Current synthetic warehouse required notes/facts/source observations for the original HFrEF workflow and remaining MVP work, using existing Claude subscription, Jev/TypeSafe and Perplexity integrations. Existing private integration-branch pushes authorized.",
     "repeated_approval_requests": "Do not ask again for already authorized work within this scope."
-  }
+  },
+  "heartbeat_pause_reason": "Mike explicitly requests stopping automatic prompts while present; build remains ACTIVE."
 }

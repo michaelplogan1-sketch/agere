@@ -55,9 +55,11 @@ async function run(fn) {
 }
 function canCreate() { return data && data.context.supports_patient_work !== false && !data.context.stale && !data.context.invalidated && data.context.answer.status === 'answered' && !data.context.answer.missing?.length; }
 function generationLabel(d) {
+  if (d.generation === 'saved_report') return 'Saved evidence report';
   return d.mockup || d.mode === 'reference_example' ? 'Local template' : d.generation === 'frontier' || d.mode === 'composed' ? 'Frontier generated' : 'Generation not recorded';
 }
 function costLabel(d) {
+  if (d.generation === 'saved_report') return 'Rendered locally; no new model calls';
   if (d.mockup || d.mode === 'reference_example') return 'No model/API calls';
   const costs = d.costs || {};
   return costs.total_usd == null
@@ -310,8 +312,22 @@ function preview(d) {
   const frame = document.createElement('iframe');
   frame.title = d.title || 'Custom deliverable';
   frame.sandbox = 'allow-scripts';
-  frame.srcdoc = d.html.replace('<head>','<head><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; script-src &#39;unsafe-inline&#39;; style-src &#39;unsafe-inline&#39;; img-src data:; connect-src &#39;none&#39;; form-action &#39;none&#39;; base-uri &#39;none&#39;">');
+  const exports = d.generation === 'saved_report' ? [['pdf','Download complete PDF'],['json','Download complete evidence'],['csv','Download full worklist'],['html','Download interactive report']].filter(([format]) => d.formats?.[format]?.filename === 'artifact.'+format) : [];
+  const hiddenExports = exports.filter(([format])=>format!=='html').map(([format])=>format==='pdf'?'.toolbar a[download]':format==='json'?'.toolbar #json':'.toolbar #csv');
+  const exportStyle = hiddenExports.length ? '<style>'+hiddenExports.join(',')+'{display:none!important}</style>' : '';
+  frame.srcdoc = d.html.replace('<head>','<head><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; script-src &#39;unsafe-inline&#39;; style-src &#39;unsafe-inline&#39;; img-src data:; connect-src &#39;none&#39;; form-action &#39;none&#39;; base-uri &#39;none&#39;">'+exportStyle);
   $('preview').innerHTML = '<div class="preview-heading"><h2>'+esc(d.title||'Your custom view')+'</h2><button class="text-button" id="close-preview">Close preview ×</button></div>';
+  if (exports.length) {
+    const controls = document.createElement('div');
+    controls.className = 'report-downloads';
+    for (const [format,label] of exports) {
+      const link = document.createElement('a');
+      link.className = 'text-button'; link.textContent = label; link.download = 'Agere-report.'+format;
+      link.href = '/api/stack/action-deliverable?'+new URLSearchParams({context:key,id:d.id,format});
+      controls.append(link,document.createTextNode(' '));
+    }
+    $('preview').append(controls);
+  }
   $('preview').append(frame);
   $('close-preview').onclick = () => $('preview').replaceChildren();
   $('cost').textContent += d.mockup ? ' Fixed synthetic layout.' : data.independent_review?.accepted ? ' Binding and technical presentation checks passed. Independent review of this saved analysis is recorded.' : ' Binding and number checks passed; interpretation still needs review.';

@@ -95,6 +95,22 @@ class SavedReport(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'bytes differ'):R.read_format(self.path,c['id'],d['id'],'pdf')
         with self.assertRaises(ValueError):R.read_format(self.path,c['id'],d['id'],'../../answer.json')
 
+    def test_recorded_exports_match_full_report_payload_and_reject_altered_bytes(self):
+        import csv,io
+        question,result=self.prepare(partial=True);c=A.capture(self.path,question,result)
+        d=R.create(self.path,{'context_id':c['id'],'template':'explore','request':'Inspect every saved record'})
+        payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',d['html'],re.S).group(1))
+        raw,mime,_=R.read_format(self.path,c['id'],d['id'],'json')
+        self.assertEqual(json.loads(raw),payload);self.assertEqual(mime,'application/json; charset=utf-8')
+        raw,_,_=R.read_format(self.path,c['id'],d['id'],'csv')
+        rows=list(csv.DictReader(io.StringIO(raw.decode())))
+        self.assertEqual(len(rows),len(payload['rows']))
+        self.assertEqual([r['patient_id'] for r in rows],[r['patient_id'] for r in payload['rows']])
+        for name in ('json','csv'):
+            f=A.root(self.path)/c['id']/'deliverables'/d['id']/('artifact.'+name)
+            f.write_bytes(b'changed')
+            with self.assertRaisesRegex(ValueError,'bytes differ'):R.read_format(self.path,c['id'],d['id'],name)
+
     def test_supporting_notes_and_medications_survive_final_table_projection(self):
         from clinical_core.agere.deliverables.patient_evidence import projection
         c={'investigation':{'document_reviews':[{'questions':{'reason':'Why?'},'rows':[{'patient_id':'EXAMPLE','review_status':'needs_review',

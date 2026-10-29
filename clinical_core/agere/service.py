@@ -901,8 +901,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                                 raw,mime,filename=read_format(connected_stack.path,key,params.get('id',[''])[0],params['format'][0])
                                 self.send_response(200);self.send_header('Content-Type',mime)
                                 self.send_header('Content-Length',str(len(raw)))
-                                disposition='attachment' if params['format'][0]=='pdf' else 'inline'
-                                self.send_header('Content-Disposition',disposition+'; filename="'+filename+'"')
+                                self.send_header('Content-Disposition','attachment; filename="'+filename+'"')
                                 self.end_headers();self.wfile.write(raw);return
                             spec,_,_,doc=load(ws,params.get('id',[''])[0])
                             result={**spec,'html':doc if spec.get('status')=='delivered' else None}

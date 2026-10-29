@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T17:53:19.973858+00:00",
+  "updated_at": "2026-10-29T18:57:13.752606+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "normal_rechecked_workflow_validation_prepared",
+    "kind": "verified_partial_report_and_exports",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Source recheck removes four named interpretation errors from retained findings;436candidatebindings revalidated and606original observations preserved. Exact candidate recovery now reruns44nativeactions with zero new provider calls and complete source contexts for represented assertions. Per-patient review scope omits global counters/digests. All58verification packets fit the existing envelope (max223964bytes) after removing only a redundant presentation copy of state, while full native state remains.387offline checks:386pass/one skip; final54relevantchecks and renderer syntax pass after source-kind instructions were clarified.",
-    "measured_failure_reduction": "Four named observed source-label errors removed from retained findings;57patients and606original observations preserved.436retainedsourcebindings revalidated; onepatient remains unresolved.",
+    "user_behavior_delta": "Saved reports now show source-bound, dated findings with original machine labels closed in audit sections. The actual application exposes source/hash-verified PDF, JSON evidence, complete CSV worklist and interactive HTML downloads outside the sandboxed preview. Browser search, 38-of-57 RASi zero filtering, PCP/cardiology distinction and exact historical MRA source attribution verified. All four downloaded files match recorded hashes; every CSV cell and JSON payload preserve the saved result. Refreshed partial report includes all 57 patients and a 286-page PDF with the exact saved answer embedded; zero new provider calls.",
+    "measured_failure_reduction": "Four named source errors remain removed. Report no longer presents old wrong-class labels as default findings. All four exports complete through trusted application links while iframe sandbox/CSP stay unchanged; file integrity and full saved data verified.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -428,11 +428,20 @@
       "artifacts/agere-meaning-integration-2026-10-29/retained-source-recheck-audit.json",
       "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-native-replay-v3/receipt.json",
       "artifacts/agere-meaning-integration-2026-10-29/full-source-verification-offline.json",
-      "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-composition-v2/receipt.json"
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-composition-v2/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-composition-v4/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-native-replay-v5/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/native-alias-pdf-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-report-layout-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-workflow-validation-v2/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-report-render-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-report-render-v2/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/report-ui-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/report-export-audit.json"
     ],
-    "remaining_gap": "Normal complete-answer/source verification and report/browser acceptance pending; P-HF01reader remains unresolved. No clinical accuracy, recall, current applicability or MVP-ready claim. Broader routing/simple baselines/transfer/reuse and alltenacceptanceareas retained.",
-    "next_action": "Run verify_rechecked_workflow.py once:44nativeactions, exact-source observation reuse with new source judgments forbidden, normal final coverage/source checks, and saved-report delivery. Keep the answer analytically partial where source facts are unknown. Freeze product source during validation. On return audit exact57/228/606/436/106fidelity, returned source feedback and all costs, then inspect interactive/PDF output and repair presentation without another source scan. Continue remaining routing, fair baselines, broader transfer/reuse and alltenareas.",
-    "next": "Run verify_rechecked_workflow.py once:44nativeactions, exact-source observation reuse with new source judgments forbidden, normal final coverage/source checks, and saved-report delivery. Keep the answer analytically partial where source facts are unknown. Freeze product source during validation. On return audit exact57/228/606/436/106fidelity, returned source feedback and all costs, then inspect interactive/PDF output and repair presentation without another source scan. Continue remaining routing, fair baselines, broader transfer/reuse and alltenareas.",
+    "remaining_gap": "Final source verification supports 55 of 57 patient packets; P-1007, WHP-B4E976A6BC06 and summary remain unresolved without a localized field fault; coverage partial. P-HF01 source reader unresolved. Candidate-only rechecking does not establish whole-document recall or clinical applicability. Actual report presentation/export checks pass; no clinical accuracy, superiority, fair baseline, general bottling/SLM contribution or overall MVP-readiness claim. All ten acceptance areas remain.",
+    "next_action": "Use the completed source-to-report workflow receipts to resolve the remaining G3 engineering gaps: assess why the two patient packets and summary defer despite no localized field fault, distinguish supported data unknowns from missing product wiring, and inspect the cold actor path for use of explicit relation/domain contracts. Measure task-dependent verification routing and repair only the implicated layer; do not repeat the retained 606-source review or promote from field-level pass votes. Then perform the valid matched original-workflow/simple baseline comparison and parameterized bottling/role-attributed learning checks with regressions and rollback. Retain all ten acceptance areas. Automatic prompts remain PAUSED while Mike is present; build remains ACTIVE.",
+    "next": "Use the completed source-to-report workflow receipts to resolve the remaining G3 engineering gaps: assess why the two patient packets and summary defer despite no localized field fault, distinguish supported data unknowns from missing product wiring, and inspect the cold actor path for use of explicit relation/domain contracts. Measure task-dependent verification routing and repair only the implicated layer; do not repeat the retained 606-source review or promote from field-level pass votes. Then perform the valid matched original-workflow/simple baseline comparison and parameterized bottling/role-attributed learning checks with regressions and rollback. Retain all ten acceptance areas. Automatic prompts remain PAUSED while Mike is present; build remains ACTIVE.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -441,58 +450,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": {
-      "integration_owner": "01a187c0-23ba-7d02-9368-5ff567327554",
-      "status": "No active provider/training/build job. Normal final/source validation prepared after exact44-action zero-call replay and offline checks.",
-      "queueing_scope_candidate": {
-        "status": "integrated_local_evidence_only",
-        "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
-        "base_commit": "a2c6335",
-        "blocker": "B2",
-        "reported_defect": "Shared planner attaches a selected cohort, but queueing dispatch discards it and queueing ignores patient_ids/as_of; optional forecast may broaden source/population. Reported by authorized lane; owner integration verification pending. Queueing graph admission also forbids the population input supplied by the shared planner; lane will align only queueing declarations.",
-        "owned_files": [
-          "clinical_core/agere/clinical/queueing.py",
-          "clinical_core/agere/clinical/analysis_graph.py (queueing dispatch/answer sections only)",
-          "focused candidate tests and documentation",
-          "clinical_core/agere/clinical/graph_contracts.py (queueing-only entries)",
-          "clinical_core/agere/clinical/capability_registry.py (queueing-only entries)",
-          "clinical_core/agere/clinical/graph_planner.py (queueing CONTRACTS metadata only; no planner logic)",
-          "clinical_core/agere/clinical/analysis_graph.py (existing demand model dependency conditional, queueing+demand_forecast only)"
-        ],
-        "acceptance": [
-          "exact nonempty subset",
-          "empty subset does not broaden",
-          "as-of cutoff and event window",
-          "forecast source/scope mismatch refusal",
-          "scope and assumptions visible",
-          "shared planner population admission and execution",
-          "omitted population remains distinct from explicit empty population",
-          "queueing nested demand model identity changes invalidate cached results"
-        ],
-        "boundary": "Handoff complete. This chat owns all remaining work; no additional lane task requested. No paid calls or protected evaluation.",
-        "candidate_progress": "Frozen candidate integrated; owner fixed four browser findings. All 226 primary/frozen tests pass; nine received-source checks and isolated shared execution/browser/live checks pass.",
-        "forecast_acceptance": "Unavailable/mismatched automatic forecast must be partial with missing-evidence explanation; historical observations cannot silently substitute for forecast.",
-        "source_commit": "e62bba6a52bd73b50f84bb4f6d052ba43d17dbad",
-        "integrated_release": "8e83d0d945486e6caa9a4921ee2b8bd395e8fc5e",
-        "owner_receipt": "artifacts/agere-queueing-integration-v1/implementation-receipt.json"
-      },
-      "parallel_workflow_review": {
-        "thread_id": "01a17ec0-31d8-7b41-9858-4764b5640360",
-        "host_id": "local",
-        "title": "Review Agere end-to-end workflow",
-        "authorization": "Mike explicitly requested starting the proposed independent review chat on2026-10-27",
-        "scope": "Read-only general workflow/component integration review; notes only in its chat or dedicatedtmpdirectory; no source/control edits, model/GPU/provider jobs, signals, deployment or messaging other chats",
-        "status": "review_received_owner_staging_fixes",
-        "primary_integration_owner": "01a1787b-6c4f-7683-9967-6fedb2f1ff7a",
-        "at": "2026-10-27T19:05:19.644805+00:00",
-        "handoff_authorization": "Mike explicitly asked the review chat to send findings here and authorized further independent review; direct first handoff authorization verified through read_thread.",
-        "reports": [
-          "/private/tmp/agere-workflow-review-20261027/REVIEW.md",
-          "/private/tmp/agere-workflow-review-20261027/ANALYTICAL_REVIEW.md",
-          "/private/tmp/agere-workflow-review-20261027/VBC_COST_REVIEW.md"
-        ]
-      }
-    },
+    "coordination": "Sole owner. No active provider/training job. Owned localhost inspection app on 8896, PID from rechecked-app-inspection-v5 receipt, session 52291; allow_live_stack false. Primary/design/older candidates untouched. Automatic heartbeat PAUSED via app tool at Mike direct request; manual active build.",
     "remaining_blockers": [
       {
         "id": "B1",
@@ -524,10 +482,15 @@
       }
     ],
     "latest_progress": {
-      "status": "prepared",
-      "source_frozen": false,
-      "active_provider_or_training_job": false,
-      "receipt": "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-native-replay-v3/receipt.json"
+      "status": "verified_partial_report",
+      "active_provider_job": false,
+      "normal_verification": "artifacts/agere-meaning-integration-2026-10-29/rechecked-workflow-validation-v2/receipt.json",
+      "report_receipt": "artifacts/agere-meaning-integration-2026-10-29/rechecked-report-render-v2/receipt.json",
+      "tests": {
+        "run": 54,
+        "failed": 0
+      },
+      "browser_and_downloads": "artifacts/agere-meaning-integration-2026-10-29/report-export-audit.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -568,11 +531,7 @@
       "automatic_provider_calls": false,
       "automatic_retry": false
     },
-    "latest_human_steering": {
-      "at": "2026-10-29T13:30:27.775574+00:00",
-      "request": "Confirm review-based stack update toward completing the MVP; access remains available; Git pushes are permitted when useful.",
-      "status": "continuing_implementation_private_branch_push_restriction_removed"
-    },
+    "latest_human_steering": "Mike: stop automatic prompts while he is here; automation PAUSED via app tool. Continue the authorized MVP build without repeated approvals.",
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
       "status": "all_three_returned_analytically_partial",
@@ -586,13 +545,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T17:53:19.973858+00:00",
-    "workflow_change": "Source recheck removes four named interpretation errors from retained findings;436candidatebindings revalidated and606original observations preserved. Exact candidate recovery now reruns44nativeactions with zero new provider calls and complete source contexts for represented assertions. Per-patient review scope omits global counters/digests. All58verification packets fit the existing envelope (max223964bytes) after removing only a redundant presentation copy of state, while full native state remains.387offline checks:386pass/one skip; final54relevantchecks and renderer syntax pass after source-kind instructions were clarified.",
+    "at": "2026-10-29T18:57:13.752606+00:00",
+    "workflow_change": "Saved reports now show source-bound, dated findings with original machine labels closed in audit sections. The actual application exposes source/hash-verified PDF, JSON evidence, complete CSV worklist and interactive HTML downloads outside the sandboxed preview. Browser search, 38-of-57 RASi zero filtering, PCP/cardiology distinction and exact historical MRA source attribution verified. All four downloaded files match recorded hashes; every CSV cell and JSON payload preserve the saved result. Refreshed partial report includes all 57 patients and a 286-page PDF with the exact saved answer embedded; zero new provider calls.",
     "unsealed_work": {
-      "status": "normal_rechecked_workflow_validation_prepared",
+      "status": "source_report_verified_qualification_open",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "Normal complete-answer/source verification and report/browser acceptance pending; P-HF01reader remains unresolved. No clinical accuracy, recall, current applicability or MVP-ready claim. Broader routing/simple baselines/transfer/reuse and alltenacceptanceareas retained.",
-      "next_action": "Run verify_rechecked_workflow.py once:44nativeactions, exact-source observation reuse with new source judgments forbidden, normal final coverage/source checks, and saved-report delivery. Keep the answer analytically partial where source facts are unknown. Freeze product source during validation. On return audit exact57/228/606/436/106fidelity, returned source feedback and all costs, then inspect interactive/PDF output and repair presentation without another source scan. Continue remaining routing, fair baselines, broader transfer/reuse and alltenareas.",
+      "remaining_gap": "Final source verification supports 55 of 57 patient packets; P-1007, WHP-B4E976A6BC06 and summary remain unresolved without a localized field fault; coverage partial. P-HF01 source reader unresolved. Candidate-only rechecking does not establish whole-document recall or clinical applicability. Actual report presentation/export checks pass; no clinical accuracy, superiority, fair baseline, general bottling/SLM contribution or overall MVP-readiness claim. All ten acceptance areas remain.",
+      "next_action": "Use the completed source-to-report workflow receipts to resolve the remaining G3 engineering gaps: assess why the two patient packets and summary defer despite no localized field fault, distinguish supported data unknowns from missing product wiring, and inspect the cold actor path for use of explicit relation/domain contracts. Measure task-dependent verification routing and repair only the implicated layer; do not repeat the retained 606-source review or promote from field-level pass votes. Then perform the valid matched original-workflow/simple baseline comparison and parameterized bottling/role-attributed learning checks with regressions and rollback. Retain all ten acceptance areas. Automatic prompts remain PAUSED while Mike is present; build remains ACTIVE.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -1884,13 +1843,22 @@
       "decision": "Repair demonstrated evidence wiring and retained interpretation faults; do not change verifier thresholds or purchase another blind full-workflow rerun.",
       "basis": "Sonnet diagnosis with validated source IDs/quotes: summary lacks current calculation/domain contracts and contains stale intermediate counts; P1007 unknown-reason spans mislabeled as reasons; P-HF07 legacy wrong RASi label still presented despite canonical correction.",
       "scope_impact": "General existing document-review candidate-span recheck and provenance repair. All original source/audit observations retained. No new model, service, training, disease-specific handler or acceptance-area removal."
+    },
+    {
+      "at": "2026-10-29T18:57:13.752606+00:00",
+      "decision": "Keep heartbeat PAUSED at Mike explicit request while continuing the active build. Complete source-bound report presentation and recorded exports before further model qualification. Fix stale test mock contract without changing production acceptance.",
+      "evidence": [
+        "artifacts/agere-meaning-integration-2026-10-29/report-export-audit.json",
+        "artifacts/agere-meaning-integration-2026-10-29/report-ui-verification.json"
+      ],
+      "scope_impact": "G3 and full ten areas retained. No analytical acceptance override, source repeat, new provider requests, main merge, default activation, external publication or clinical execution."
     }
   ],
   "unsealed_work": {
-    "status": "normal_rechecked_workflow_validation_prepared",
+    "status": "rechecked_workflow_partial_browser_pending",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "Normal complete-answer/source verification and report/browser acceptance pending; P-HF01reader remains unresolved. No clinical accuracy, recall, current applicability or MVP-ready claim. Broader routing/simple baselines/transfer/reuse and alltenacceptanceareas retained.",
-    "next_action": "Run verify_rechecked_workflow.py once:44nativeactions, exact-source observation reuse with new source judgments forbidden, normal final coverage/source checks, and saved-report delivery. Keep the answer analytically partial where source facts are unknown. Freeze product source during validation. On return audit exact57/228/606/436/106fidelity, returned source feedback and all costs, then inspect interactive/PDF output and repair presentation without another source scan. Continue remaining routing, fair baselines, broader transfer/reuse and alltenareas.",
+    "remaining_gap": "Normal final/source verification v2 and actual browser/report acceptance pending; source reader P-HF01 unresolved. Prior normal v1stopped at deterministic alias retention before anyprovider calls, repaired now. No clinicalaccuracy, recall, current applicability or MVP-ready claim; broaderten-area qualification remains open.",
+    "next_action": "Run prepared verify_rechecked_workflow.py v2 once using the v5zero-call native preflight and explicit native aliases.44nativeactions reuse436exact bound source observations; no actor requests or repeat606source judgments. Normal final/source checks then saved-report delivery. Freeze product source while running. On return audit57patients/228fillcells/606audit observations/436bound findings/106datedroles, exact feedback/costs and report fidelity; inspect actual interactive/PDF outputs. Broader routing, fair baselines, transfer/reuse and alltenareas remain.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",

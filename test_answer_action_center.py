@@ -112,6 +112,8 @@ class Workflow(unittest.TestCase):
             text=body['messages'][0]['content']
             self.assertIn('saved_answer',text)
             self.assertIn('Observed missed appointments',text)
+            if 'You review presentation fidelity' in body.get('system',''):
+                return {'content':[{'type':'text','text':json.dumps({'coverage':'complete','support':'supported','issues':[]})}]}, {'cost_estimate':{'estimated_usd':0}}
             return {'content':[{'type':'text','text':'TITLE: Review command center\n```html\n<h1>Review command center</h1><p>Clinical suitability needs review.</p>\n```'}]}, {'cost_estimate':{'estimated_usd':0}}
         with mock.patch.object(C.toolsmod.ToolContext,'call',side_effect=AssertionError('Must not fetch a new cohort')):
             r=A.compose_frontier(self.path,{'context_id':self.c['id'],'request':'Build a war room for these patients'},allow_live=True,send=sender)

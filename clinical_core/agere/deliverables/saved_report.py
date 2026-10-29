@@ -10,7 +10,7 @@ from pathlib import Path
 from . import answer_context as A
 from .receipts import fingerprint
 
-VERSION = 'saved-report/2'
+VERSION = 'saved-report/3'
 
 
 def value(v):
@@ -47,7 +47,7 @@ def create(path, request):
     if retained:context={**context,'retained_inspection':True}
     validator = A.bundle_validator(path, bundle)
     validator()
-    from .patient_dashboard import render as dashboard
+    from .patient_dashboard import render as dashboard, exports
     from .patient_evidence import projection
     from .patient_report_pdf import render as pdf_report
     import hashlib
@@ -78,6 +78,11 @@ def create(path, request):
             pdf_receipt.pop('output', None)
     formats = {'html': {'filename': 'artifact.html', 'mime': 'text/html; charset=utf-8',
                         'sha256': hashlib.sha256(body.encode()).hexdigest()}}
+    downloads = exports(context, title=title, evidence=evidence)
+    for name, data in downloads.items():
+        formats[name] = {'filename':'artifact.'+name,
+                         'mime':'application/json; charset=utf-8' if name=='json' else 'text/csv; charset=utf-8',
+                         'sha256':hashlib.sha256(data).hexdigest()}
     if pdf_bytes is not None:
         formats['pdf'] = {'filename': 'artifact.pdf', 'mime': 'application/pdf',
                           'sha256': hashlib.sha256(pdf_bytes).hexdigest(), **pdf_receipt}
@@ -95,9 +100,11 @@ def create(path, request):
     spec['dependency_validation'] = validator()
     from .compose import _save, _dir
     ws = A.workspace(path, context)
+    folder = _dir(ws) / key
+    folder.mkdir(parents=True, exist_ok=True)
+    for name, data in downloads.items():
+        (folder / ('artifact.'+name)).write_bytes(data)
     if pdf_bytes is not None:
-        folder = _dir(ws) / key
-        folder.mkdir(parents=True, exist_ok=True)
         (folder / 'artifact.pdf').write_bytes(pdf_bytes)
     _save(ws, key, doc=body, body=body, bundle=bundle, spec=spec)
     return {**spec, 'html': body}
@@ -113,8 +120,8 @@ def read_format(path, context_id, deliverable_id, format_name):
     if spec.get('status') != 'delivered' or spec.get('generation') != 'saved_report':
         raise ValueError('No saved report format is available')
     A.bundle_validator(path, bundle)()
-    if format_name not in ('html', 'pdf'):
-        raise ValueError('Choose a recorded HTML or PDF format')
+    if format_name not in ('html', 'pdf', 'json', 'csv'):
+        raise ValueError('Choose a recorded HTML, PDF, JSON or CSV format')
     item = (spec.get('formats') or {}).get(format_name)
     if not item or item.get('filename') != 'artifact.' + format_name:
         raise ValueError('Requested format has not been generated')
