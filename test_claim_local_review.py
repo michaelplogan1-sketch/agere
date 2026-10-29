@@ -35,6 +35,18 @@ class LocalReview(unittest.TestCase):
         calls[1]['result']['rows'][0]['definition']=5
         self.assertNotEqual(before['patient_A']['text'],self.packets(answer,calls)['patient_A']['text'])
 
+    def test_executed_source_contracts_are_bound_to_rows_without_other_patient_values(self):
+        answer,calls=self.fixture();before=self.packets(answer,calls)
+        local=uncompact_json(json.loads(before['patient_B']['text']))
+        self.assertEqual({c['result_view']for c in local['native_calculation_contracts']},{'base','reference','final'})
+        self.assertTrue(all(b['row_digest']and b['origins']for b in local['evidence_provenance']))
+        calls[0]['result']['rows'][0]['rasi_reason'][0]['quote']='A different source passage.'
+        after=self.packets(answer,calls)
+        self.assertNotEqual(before['patient_A']['text'],after['patient_A']['text'])
+        self.assertEqual(before['patient_B']['text'],after['patient_B']['text'])
+        calls[0]['input']['sql']='SELECT * FROM another_received_domain'
+        self.assertNotEqual(before['patient_B']['text'],self.packets(answer,calls)['patient_B']['text'])
+
     def test_unresolved_lineage_keeps_all_shared_evidence(self):
         answer,calls=self.fixture();answer['table_binding']['result_view']='unavailable'
         calls.append({'name':'query_sql','input':{},'result':{'result_view':'extra','rows':[{'extra':9}]}})

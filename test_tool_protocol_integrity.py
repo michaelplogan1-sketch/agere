@@ -90,6 +90,15 @@ class Protocol(unittest.TestCase):
         text='<invoke name="query_sql"><parameter name="sql">SELECT 9</parameter></invoke>\n'+json.dumps({'tool_uses':CALLS})
         self.assertEqual(T._tool_calls(text,TOOLS),[])
 
+    def test_complete_cli_wrapper_preserves_literal_actions_and_current_permissions(self):
+        text='<invoke_tool>\n'+json.dumps({'tool_use':CALLS[0]})+'\n</invoke_tool>'
+        self.assertEqual(T._tool_calls(text,TOOLS),[CALLS[0]])
+        self.assertEqual(T.normalize_tool_response(response(text),TOOLS)['content'][0]['input'],CALLS[0]['input'])
+        self.assertEqual(T.normalize_tool_response(response(text),TOOLS,{'type':'none'}).get('stop_reason'),'end_turn')
+        for bad in (text+'{"value":1}',text.replace('</invoke_tool>',''),'<invoke_tool><unregistered>'+json.dumps({'tool_use':CALLS[0]})+'</unregistered></invoke_tool>'):
+            with self.subTest(text=bad):self.assertEqual(T._tool_calls(bad,TOOLS),[])
+        data=json.dumps({'value':text});self.assertEqual(T._tool_calls(data,TOOLS),[])
+
     def test_unknown_batch_member_rejects_whole_batch(self):
         self.assertEqual(T._tool_calls(json.dumps({'tool_uses':[CALLS[0],{'name':'unknown','input':{}}]}),TOOLS),[])
 

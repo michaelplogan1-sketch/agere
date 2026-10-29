@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T14:29:45.900905+00:00",
+  "updated_at": "2026-10-29T16:03:14.886111+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "claim_local_transport_offline_verified_candidate",
+    "kind": "source_kind_domains_targeted_app_prepared",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Patient source checks retain exact dependencies across global edits; full legacy text evidence fits explicit patient packets. Final native collections retain their source objects. Subscription transport honors disabled tools, removes custom output ceilings, continues partial text safely and preserves failure usage/output.",
-    "measured_failure_reduction": "Native58packet replay restores57patients/606findings exactly; unrelated global edit preserves57/57patient requests vs0/57previously. Global packet676330to138006bytes; maximum210157bytes.355offline checks:354pass/1skip. No new provider calls; readable semantic qualification blocked by automatic approval review, direct answer pending.",
+    "user_behavior_delta": "Explicit native collection domains remove26primary-care objects mislabeled cardiology and retain22datedCardiologyreferrals. Source verification receives executed calculation contracts and source-kind instructions, distinguishing arithmetic/fill-policy observations from clinical meaning.",
+    "measured_failure_reduction": "Sixteen source checks:8/8clean supported,6/8faults detected,2unknown,0false supported;7.248s/$0.001862476knownAPI-equivalent/0unpriced. Native replay corrects26mislabels with0calls. All57patient check requests remain stable on unrelated global edits;58packets restore606findings exactly. Targeted offline32actions preserve57/606/106 and22cardiologyrelationships/14GDMTdoserows;maxpacket224826bytes.361offlinechecks:360pass/1skip.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -399,11 +399,24 @@
       "artifacts/agere-meaning-integration-2026-10-29/meaning-composition-verification.json",
       "artifacts/agere-meaning-integration-2026-10-29/claim-locality-native-replay-v2.json",
       "artifacts/agere-meaning-integration-2026-10-29/claim-local-transport-verification.json",
-      "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json"
+      "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
+      "artifacts/agere-meaning-integration-2026-10-29/claim-source-qualification-v3/results.json",
+      "artifacts/agere-meaning-integration-2026-10-29/native-domain-after-source-check.json",
+      "artifacts/agere-meaning-integration-2026-10-29/reviewed-workflow-preparation.json",
+      "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json",
+      "artifacts/agere-meaning-integration-2026-10-29/workflow-approval-resolution.json",
+      "artifacts/agere-meaning-integration-2026-10-29/reviewed-workflow-source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/reviewed-workflow-run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/source-kind-domain-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/claim-source-qualification-v4/results.json",
+      "artifacts/agere-meaning-integration-2026-10-29/native-domain-role-replay.json",
+      "artifacts/agere-meaning-integration-2026-10-29/claim-locality-native-replay-v3.json",
+      "artifacts/agere-meaning-integration-2026-10-29/targeted-prefix-dependency-preflight.json",
+      "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json"
     ],
-    "remaining_gap": "MVP remains incomplete. Readable packet semantic benefit and claim localization remain unqualified on live providers; v1/v2unknowns and false-promotion attempt retained. Readable first-pass patient bytes increase, so no cost gain is claimed. Full original-question app/artifact acceptance, task-dependent ordering, fair complete controls, broader transfer and useful native-program/SLM learning remain open; all ten areas/G5qualification retained.",
-    "next_action": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
-    "next": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
+    "remaining_gap": "Targeted complete app/source/artifact acceptance remains pending; source unknowns remain explicit. Task-dependent routing, fair complete baselines, broader healthcare/financial transfer and useful parameterized reuse/SLM learning remain open. All ten acceptance areas and G5 retained.",
+    "next_action": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+    "next": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -414,7 +427,7 @@
     },
     "coordination": {
       "integration_owner": "01a187c0-23ba-7d02-9368-5ff567327554",
-      "status": "This chat remains sole owner; private branch/PR pushes authorized. Recovery heartbeat active; no provider/training job. Source-packet verification requires the currently pending direct approval after automatic review rejected retrieved prior authorization.",
+      "status": "Sole owner; current direct synthetic warehouse/provider approval persists. No active provider/training job; targeted continuation prepared.",
       "queueing_scope_candidate": {
         "status": "integrated_local_evidence_only",
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
@@ -495,11 +508,11 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T13:39:15.050778+00:00",
-      "status": "shared_meaning_composition_verified_candidate",
+      "at": "2026-10-29T16:03:14.886111+00:00",
+      "status": "targeted_app_prepared",
       "active_provider_or_training_job": false,
-      "automatic_git_pushes": true,
-      "heartbeat_status": "ACTIVE"
+      "source_frozen": false,
+      "preparation": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -558,15 +571,18 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T14:29:45.900905+00:00",
-    "workflow_change": "Patient source checks retain exact dependencies across global edits; full legacy text evidence fits explicit patient packets. Final native collections retain their source objects. Subscription transport honors disabled tools, removes custom output ceilings, continues partial text safely and preserves failure usage/output.",
+    "at": "2026-10-29T16:03:14.886111+00:00",
+    "workflow_change": "Explicit native collection domains remove26primary-care objects mislabeled cardiology and retain22datedCardiologyreferrals. Source verification receives executed calculation contracts and source-kind instructions, distinguishing arithmetic/fill-policy observations from clinical meaning.",
     "unsealed_work": {
-      "status": "claim_local_transport_offline_verified_candidate",
+      "status": "source_kind_domains_targeted_app_prepared",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "MVP remains incomplete. Readable packet semantic benefit and claim localization remain unqualified on live providers; v1/v2unknowns and false-promotion attempt retained. Readable first-pass patient bytes increase, so no cost gain is claimed. Full original-question app/artifact acceptance, task-dependent ordering, fair complete controls, broader transfer and useful native-program/SLM learning remain open; all ten areas/G5qualification retained.",
-      "next_action": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
-      "external_verification": "pending_explicit_current_user_approval_after_auto_review_rejection",
-      "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json"
+      "remaining_gap": "Targeted complete app/source/artifact acceptance remains pending; source unknowns remain explicit. Task-dependent routing, fair complete baselines, broader healthcare/financial transfer and useful parameterized reuse/SLM learning remain open. All ten acceptance areas and G5 retained.",
+      "next_action": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+      "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
+      "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
+      "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
+      "source_frozen_for_run": false,
+      "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -1811,15 +1827,39 @@
       "decision": "Retain claim-local and transport repairs as an offline-verified candidate; stop only the external source-packet check pending current explicit approval.",
       "basis": "artifacts/agere-meaning-integration-2026-10-29/claim-local-transport-verification.json",
       "scope_impact": "No charter narrowing, clinical/model promotion, default activation or provider workaround. v2false-positive promotion removed; complete native evidence retained. Private branch pushes remain authorized."
+    },
+    {
+      "at": "2026-10-29T15:04:04.137255+00:00",
+      "gate": "G3",
+      "decision": "Release the exact ten-case external qualification after current direct human approval.",
+      "basis": "Mike answered Approve synthetic cases to all three providers to the surfaced payload/destination question in this chat.",
+      "scope_impact": "Only the named synthetic verification cases and existing providers; no new services, training, default activation or charter change."
+    },
+    {
+      "at": "2026-10-29T15:18:31.337417+00:00",
+      "gate": "G3",
+      "decision": "Proceed with the full prepared application workflow and remaining MVP checks under direct current warehouse/provider approval.",
+      "basis": "Approve current synthetic warehouse for full MVP work; stop asking for my approval you have my approval for everything in this thread",
+      "scope_impact": "No new service, publication, main merge, protected-source access or real care. No additional routine approval request for the existing authorized MVP scope."
+    },
+    {
+      "at": "2026-10-29T16:03:14.886111+00:00",
+      "gate": "G3",
+      "decision": "Use exact source-domain collection and native source-kind verification for the measured workflow failures, then targeted continuation of returned calculations.",
+      "basis": "Actual returned workflow mislabeled26primary-care rows ascardiology; source-policy cells and observation counts were exact but some checks required unrelated note corroboration. Native predicates fix the observed join; clean/fault development checks retain uncertainty without lowering thresholds.",
+      "scope_impact": "No clinical qualification inferred, no cohort or acceptance area removed, no whole-cohort reread or training campaign."
     }
   ],
   "unsealed_work": {
-    "status": "claim_local_transport_offline_verified_candidate",
+    "status": "source_kind_domains_targeted_app_prepared",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "MVP remains incomplete. Readable packet semantic benefit and claim localization remain unqualified on live providers; v1/v2unknowns and false-promotion attempt retained. Readable first-pass patient bytes increase, so no cost gain is claimed. Full original-question app/artifact acceptance, task-dependent ordering, fair complete controls, broader transfer and useful native-program/SLM learning remain open; all ten areas/G5qualification retained.",
-    "next_action": "After the current explicit approval answer, run the same ten complete readable cases with source frozen. If unresolved, diagnose the named fields without threshold lowering; then execute the original full question through the existing app using exact-source reuse, verify interactive/PDF output, qualify broader compositions and native reusable programs. Until that answer, no external source-packet run.",
-    "external_verification": "pending_explicit_current_user_approval_after_auto_review_rejection",
-    "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json"
+    "remaining_gap": "Targeted complete app/source/artifact acceptance remains pending; source unknowns remain explicit. Task-dependent routing, fair complete baselines, broader healthcare/financial transfer and useful parameterized reuse/SLM learning remain open. All ten acceptance areas and G5 retained.",
+    "next_action": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+    "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
+    "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
+    "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
+    "source_frozen_for_run": false,
+    "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

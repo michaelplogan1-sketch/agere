@@ -11,6 +11,17 @@ from ...contracts import digest
 VERSION='result-assembly/1'
 
 
+def source_domain(condition,columns):
+    """Compile an explicit exact source-domain predicate, without guessing labels."""
+    if (not isinstance(condition,dict) or set(condition)!={'column','values'} or
+        not isinstance(condition['column'],str) or condition['column'] not in columns or
+        not isinstance(condition['values'],list) or not condition['values'] or
+        any(v is not None and type(v)not in (str,int,float,bool)for v in condition['values'])):
+        raise ValueError('Domain requires a received column and explicit scalar values')
+    accepted={json.dumps(v,sort_keys=True,allow_nan=False)for v in condition['values']}
+    return lambda row:json.dumps(row[condition['column']],sort_keys=True,allow_nan=False)in accepted
+
+
 def measure(results,spec):
     """Compute a claim from complete native rows with explicit scope and domain.
 
@@ -60,7 +71,7 @@ def measure(results,spec):
     domain=spec['domain']
     # null explicitly means all received domains; it must not be relabeled as a
     # narrower domain. Source-based semantic checking still reviews that label.
-    domain_test=predicate(domain,domain=True) if domain is not None else lambda row:True
+    domain_test=source_domain(domain,columns) if domain is not None else lambda row:True
     where=spec.get('where',[])
     if not isinstance(where,list):raise ValueError('Measure where must be a list of source predicates')
     filters=[predicate(p) for p in where]
@@ -144,7 +155,7 @@ def compose(results,*,base,keys,joins=None,base_columns=None):
     if joins is None:joins=[]
     if not isinstance(joins,list):raise ValueError('joins must be a list')
     for join in joins:
-        if not isinstance(join,dict)or not {'result','as','on','mode'}<=set(join)or set(join)-{'result','as','on','mode','columns','items_from','retain_in_final'}:raise ValueError('Join requires result, as, on and mode, with optional columns or items_from')
+        if not isinstance(join,dict)or not {'result','as','on','mode'}<=set(join)or set(join)-{'result','as','on','mode','columns','items_from','retain_in_final','domain'}:raise ValueError('Join requires result, as, on and mode, with optional columns, items_from or explicit source domain')
         view,alias,on,mode=(join[x]for x in ('result','as','on','mode'))
         if view not in results:raise ValueError('Join must name an executed result_view')
         if not isinstance(alias,str)or not alias or alias in columns:raise ValueError('Join alias must be a new nonempty field')
@@ -152,12 +163,15 @@ def compose(results,*,base,keys,joins=None,base_columns=None):
         if not isinstance(on,dict)or not on or not set(on)<=set(keys)or not all(isinstance(v,str)for v in on.values()):
             raise ValueError('on maps received base key columns to received join columns')
         right_columns,right=_rows(results[view]);left_names=list(on);right_names=[on[k]for k in left_names]
+        source_rows=len(right);domain=join.get('domain')
+        if domain is not None:
+            matches=source_domain(domain,right_columns);right=[r for r in right if matches(r)]
         if not set(right_names)<=set(right_columns):raise ValueError('Join key not in received columns')
         selected=join.get('columns',right_columns)
         if not isinstance(selected,list)or not selected or not all(isinstance(c,str)for c in selected)or len(selected)!=len(set(selected))or not set(selected)<=set(right_columns):raise ValueError('Join columns must be distinct received names')
         items_from=join.get('items_from');collections={}
         retain=join.get('retain_in_final',False)
-        if type(retain)is not bool or retain and items_from is None:raise ValueError('Final retention requires an explicit native collection')
+        if type(retain)is not bool or retain and mode!='collect':raise ValueError('Final retention requires a native collect join')
         if items_from is not None:
             if mode!='collect' or not isinstance(items_from,str) or items_from not in right_columns or 'columns' in join:
                 raise ValueError('items_from requires collect and a received collection column, without a columns projection')
@@ -183,10 +197,11 @@ def compose(results,*,base,keys,joins=None,base_columns=None):
                 [{c:v[c]for c in selected}for v in found]if found and mode=='collect'else {c:found[0][c]for c in selected}if found else None)
             if found:matched+=1;matched_right.add(k)
         columns.append(alias)
-        coverage.append({'result_view':view,'as':alias,'mode':mode,'on':on,'selected_columns':selected,'source_rows':len(right),
+        coverage.append({'result_view':view,'as':alias,'mode':mode,'on':on,'selected_columns':selected,'source_rows':source_rows,
+            'domain':domain,'source_rows_in_domain':len(right),'source_rows_outside_domain':source_rows-len(right),
             'base_rows_matched':matched,'base_rows_without_match':len(rows)-matched,
             'source_rows_with_missing_key':missing,'source_rows_outside_base_keys':sum(len(v)for k,v in grouped.items()if k not in matched_right),
-            'source_result_digest':digest(results[view]),
+            'source_result_digest':digest(results[view]),'retain_in_final':retain,
             **({'items_from':items_from,'source_collection_items':sum(map(len,collections.values())),
                 'output_collection_items':sum(len(row[alias] or []) for row in keyed.values()),'retain_in_final':retain} if items_from is not None else {})})
     return {'columns':columns,'rows':list(keyed.values()),'truncated':False,

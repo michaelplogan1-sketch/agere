@@ -218,6 +218,15 @@ def _tool_calls(text, tools):
     raw = (text or '').strip()
     if raw.startswith('```'):
         raw = re.sub(r'^```(?:json)?\s*|\s*```$', '', raw)
+    # Observed CLI formatting wrapper; only its complete literal body is
+    # eligible for the same registered-action parser and per-turn permissions.
+    wrapper=re.fullmatch(r'<invoke_tool>\s*(.*?)\s*</invoke_tool>',raw,re.S)
+    if wrapper:
+        raw=wrapper.group(1).strip()
+        try:
+            _,end=json.JSONDecoder().raw_decode(raw)
+            if not raw.startswith('{') or raw[end:].strip():return []
+        except ValueError:return []
     def nonfinite(value):raise ValueError('Nonfinite tool argument')
     decoder=json.JSONDecoder(parse_constant=nonfinite)
     def call(value):

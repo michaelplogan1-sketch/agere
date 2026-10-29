@@ -63,7 +63,7 @@ TOOLS = [
                       'required': ['metric_id', 'period_start', 'period_end'], 'additionalProperties': False}},
     {'name':'compose_table','description':'Combine already executed result views in code. Base defines exact output membership and must be unique on keys. Joins use one for unique relationships or collect to preserve every intact matching source row. In collect mode, items_from may name a native JSON-array column to carry every intact collection object into the final field (for example dated correspondence roles or contract clauses); omit columns for this mode. No clinical inference or source-row sampling. Use the returned result_view as table_from_tool. Missing joins are null, never inferred negatives.',
      'input_schema':{'type':'object','properties':{'base':{'type':'string'},'keys':{'type':'array','items':{'type':'string'}},'base_columns':{'type':'array','items':{'type':'string'}},
-        'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'retain_in_final':{'type':'boolean'},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
+        'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'retain_in_final':{'type':'boolean'},'domain':{'type':'object','properties':{'column':{'type':'string'},'values':{'type':'array','items':{},'minItems':1}},'required':['column','values'],'additionalProperties':False},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
      "earlier results and compute comparisons/deltas without repeating source scans. Results are paged (2000 rows / 60K characters); aggregate in SQL.",
@@ -127,6 +127,9 @@ has already declined this question, so it is yours to answer completely and corr
   findings even when no preview row fits. A field must be represented by its source findings or a specific supported unknown;
   do not claim that a preview's missing value means no source evidence exists. Use separate source questions for different roles.
   Prefer compose_table for joins of already executed result views. It preserves full rows and base membership without another SQL rewrite.
+  A requested subgroup needs an explicit join domain={{column,values}} over received source values (exact case/type), or a source-filtered SQL view.
+  A collection alias does not filter its source: primary-care rows cannot become cardiology evidence by naming the field cardiology_roles.
+  Keep every relevant care relationship, its source status and dates; consultation is not assignment. Retain native collect joins in the final table.
   For requested clinician evidence, carry source_clinicians_json into a dated_correspondence_roles field using a collect join
   with items_from=source_clinicians_json and retain_in_final=true. Code then rejects dropped or changed objects in a final
   descendant patient table. For any explicitly requested native collection, use this retention contract. Keep dated objects alongside structured care-team relationships;
@@ -1076,7 +1079,7 @@ def support_packets(question,answer,calls,document_reviews,as_of):
     """
     from ...contracts import digest
     from ..deliverables.receipts import compact_json,readable_json
-    by={};shared={};shared_views={};native=[]
+    by={};shared={};shared_views={};native=[];origins={}
     local_dependencies=native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')])
     def decode(value):
         if isinstance(value,str)and value[:1]in ('{','['):
@@ -1085,34 +1088,38 @@ def support_packets(question,answer,calls,document_reviews,as_of):
         if isinstance(value,dict):return {k:decode(v)for k,v in value.items()}
         if isinstance(value,list):return [decode(v)for v in value]
         return value
-    def add(row,view=None):
+    def add(row,view=None,origin=None):
         row=decode(row)
         if not isinstance(row,dict):
             ident=digest(row);shared[ident]=row;shared_views.setdefault(ident,set()).add(view);return
         pid=row.get('patient_id')
         ident=digest(row);(by.setdefault(pid,{})if pid else shared)[ident]=row
+        if pid and origin is not None:
+            origins.setdefault(pid,{}).setdefault(ident,{})[digest(origin)]=origin
         if not pid:shared_views.setdefault(ident,set()).add(view)
     for i,c in enumerate(calls):
         observed=c.get('result')or{}
+        view=observed.get('result_view')if isinstance(observed,dict)else None
+        origin={'kind':'executed_native_result','result_view':view,'tool':c.get('name'),'input_digest':digest(c.get('input'))}
         native.append({'tool_index':i,'tool':c.get('name'),'input_digest':digest(c.get('input')),'result_digest':digest(observed)})
         rows=observed.get('rows')if isinstance(observed,dict)else None
         if isinstance(rows,list):
             columns=observed.get('columns')or[]
-            for row in rows:add(dict(zip(columns,row))if isinstance(row,list)else row,observed.get('result_view'))
+            for row in rows:add(dict(zip(columns,row))if isinstance(row,list)else row,view,origin)
         else:
             add({'tool':c.get('name'),'result':observed,
                  **({'patient_id':observed['patient_id']} if isinstance(observed,dict) and observed.get('patient_id') else {})},
-                observed.get('result_view') if isinstance(observed,dict) else None)
+                view,origin)
     review_manifests=[]
     for review in document_reviews:
         review_manifests.append({'questions':review['questions'],'manifest':review['manifest'],
             'native_receipt_digest':digest(review),'rows':review['rows'],'operational_receipts_retained_in_native':True})
-        for row in review['rows']:add(row)
+        for row in review['rows']:add(row,origin={'kind':'machine_document_observation','question_digest':digest(review['questions'])})
     table=answer.get('table')or[]
     summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
     final_view=(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')
     common={'question':question,'as_of':as_of,'final_result_view':final_view,
-        'instruction':'Review source interpretations as machine observations, not independent clinical truth. Preserve unknowns, dates and negation. Check only this packet scope. Global coverage is checked separately.'}
+        'instruction':'Review each claim against its stated source kind, definition, entity/domain and time. Structured pharmacy/assignment observations and counts of machine findings are source facts or arithmetic, not claims that notes corroborate treatment or that the findings are clinically valid. Check those facts against their executed inputs and scope. Clinical interpretation, reasons, current use and current responsibility need their own source meaning. A dated consultation or authorship object is not itself a current-assignment claim. Review machine interpretations with their limitations; preserve unknowns, dates and negation. Global coverage is checked separately.'}
     from .evidence_projection import table_view,restore_table
     summary_rows,dependencies=table_view(table,defer_native_cells=True)
     packets=[{'id':'summary','scope':'Global/headline/fact claims and all final rows. Clinical source collections refer to required patient packets; these references alone cannot establish clinical aggregates or causal claims. Return unknown for an aggregate requiring clinical interpretation not present in actual computed scalars.',
@@ -1124,11 +1131,28 @@ def support_packets(question,answer,calls,document_reviews,as_of):
     local_shared=[row for ident,row in shared.items() if local_dependencies is None or
                   None in shared_views[ident] or bool(shared_views[ident]&local_dependencies)]
     for pid in sorted(set(by)|{r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')}):
+        bindings=[{'row_digest':ident,'origins':list(sources.values())}for ident,sources in origins.get(pid,{}).items()]
+        views={o.get('result_view')for b in bindings for o in b['origins']if o.get('result_view')}
+        view_dependencies=native_result_dependencies(calls,list(views))if views else set()
+        contracts=[]
+        for c in calls:
+            result=c.get('result')or{}
+            if not isinstance(result,dict)or result.get('result_view')not in (view_dependencies or views):continue
+            contract={'result_view':result['result_view'],'tool':c.get('name'),'input':c.get('input'),
+                'meaning':'Executed calculation/source-selection contract, not independent proof of its clinical interpretation.'}
+            assembly=result.get('assembly')
+            if assembly:
+                # Keep the selection meaning, without global result digests or
+                # counts that would invalidate unaffected patient source checks.
+                contract['assembly']={k:assembly[k]for k in ('schema','base_result_view','keys')if k in assembly}
+                contract['assembly']['joins']=[{k:j[k]for k in ('result_view','as','mode','on','selected_columns','domain','items_from','retain_in_final')if k in j}for j in assembly.get('joins',[])]
+            contracts.append(contract)
         packets.append({'id':'patient_'+pid,'scope':'All final claims for this patient only',**common,
             'patient_id':pid,'answer_rows':[r for r in table if isinstance(r,dict)and r.get('patient_id')==pid],
             'shared_evidence':local_shared,
             'global_claims_scope':'Global/headline/fact claims are checked in the separate summary packet. Check only this patient\'s actual final row fields here. A global edit is not a change to these local claims.',
             'evidence':list(by.get(pid,{}).values()),
+            'evidence_provenance':bindings,'native_calculation_contracts':contracts,
             'review_scope':[{'questions':m['questions'],'manifest':[x for x in m['manifest']if x['patient_id']==pid],
                 'patient_observation_digest':digest({'questions':m['questions'],
                     'manifest':[x for x in m['manifest']if x['patient_id']==pid],
@@ -1167,7 +1191,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
         if packet['bytes']>240000:
             results.append({'id':packet['id'],'label':'unknown','decided_by':None,
                 'reason':'Complete dependency exceeds conservative provider context envelope; retain it for explicit partition/repair, never truncate.'});continue
-        result=decider('Does this COMPLETE dependency packet support the answer claims in its stated scope? Resolve the lossless layout before judging. Check clinical meaning, negation, dated roles and quantity labels, not just literal numeric or quote overlap. Treat source/model review observations as evidence with limitations, not clinical acceptance.',
+        result=decider('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
             task_key='agere_investigation_support_dependency',ledger=ledger,allow_live=True,select_source=False,
             long_context=packet['bytes']>32768)
@@ -1234,7 +1258,7 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
     for start in range(0,len(claims),64):
         chunk=claims[start:start+64]
         named={c['id']:{'type':'choice','instructions':{'claim':c,
-            'task':'Check ONLY this explicit value at the named field/path against its own source context and requested field meaning. Raw documents are source evidence; final/model interpretation rows are proposals, not proof of themselves. Name the concrete fault, not another field\'s error. Quote presence alone does not establish entity/reason binding. Do not turn a supported unknown into missing evidence.'},'criteria':options} for c in chunk}
+            'task':'Check ONLY this value at its named field/path against its source kind, definition, requested entity/domain and time. Validate executed structured facts/arithmetic against their inputs and scope; missing note corroboration does not refute a pharmacy-policy flag or a count of machine findings. Such a count does not assert clinical validity. A dated relationship object does not assert current assignment; its specialty must still fit the field meaning. Raw documents support interpretation; final/model rows cannot prove their own clinical meaning. Name this field\'s concrete fault. Quote presence does not establish entity/reason binding. Preserve supported unknowns.'},'criteria':options} for c in chunk}
         size=len(source_text.encode())+len(json.dumps(named,ensure_ascii=False).encode())+2048
         for claim in chunk:
             value=_claim_value(state,claim['path']);extra=len(json.dumps(value,ensure_ascii=False).encode())+32
