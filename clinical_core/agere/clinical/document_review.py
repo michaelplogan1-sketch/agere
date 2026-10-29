@@ -58,7 +58,52 @@ def validate(data, questions, documents):
     return result
 
 
-def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None, patient_query_sql=None):
+
+
+def validate_fields(data,questions,documents):
+    """Retain valid siblings; malformed/missing source fields remain repair work."""
+    good={};errors={};found=data.get('findings')if isinstance(data,dict)else None
+    for key,question in questions.items():
+        try:good[key]=validate({'findings':{key:found[key]}},{key:question},documents)[key]
+        except (ValueError,KeyError,TypeError)as exc:errors[key]=str(exc)
+    return good,errors
+
+def correspondence_roles(documents):
+    """Literal signed-correspondence roles, never inferred current assignments.
+
+    A referrer/addressee is not automatically a PCP. A specialist author is not
+    automatically the patient's current specialist. Unrecognized layouts remain
+    unknown; every returned name/role retains its intact source passage.
+    """
+    roles=[]
+    name=r"[A-Z][A-Za-z'’.-]+(?:[ \t]+[A-Z][A-Za-z'’.-]+){1,5},?[ \t]+(?:MD|DO|NP|PA-C)\b"
+    for d in documents:
+        text=d['text']
+        signed=re.search(r'(?im)^\s*Sincerely,?\s*\n(?P<name>'+name+r')\s*\n(?P<specialty>[A-Za-z][A-Za-z &/-]{2,70})\s*(?:\n|$)',text)
+        provider=re.search(r'\bProvider\s*:\s*(?P<name>'+name+r')',text)
+        if signed and provider and re.sub(r'[^a-z]','',signed['name'].lower())==re.sub(r'[^a-z]','',provider['name'].lower()):
+            roles.append({'name':signed['name'],'documented_role':signed['specialty'].strip(),
+                'relationship':'signed_correspondence_author','current_assignment':'not_established',
+                'record_id':d['record_id'],'date':d['date'],
+                'quote':text[signed.start():signed.end()].strip(),
+                'method':'exact agreeing Provider header and signed specialty; no inferred current care responsibility'})
+        for m in re.finditer(r'(?im)^\s*(?:PCP|Primary care (?:physician|provider|clinician))\s*:\s*(?P<name>'+name+r')',text):
+            roles.append({'name':m['name'],'documented_role':'primary_care','relationship':'explicit_pcp_label',
+                'current_assignment':'dated_source_statement_only','record_id':d['record_id'],'date':d['date'],
+                'quote':m.group(0).strip(),'method':'literal PCP label; no inferred ongoing attendance'})
+        for m in re.finditer(r'(?im)^\s*(?:Dear|cc:)\s+(?P<name>'+name+r')',text):
+            roles.append({'name':m['name'],'documented_role':'addressee_or_copied_clinician',
+                'relationship':'correspondence_addressee','current_assignment':'not_established',
+                'record_id':d['record_id'],'date':d['date'],'quote':m.group(0).strip(),
+                'method':'literal correspondence label; does not establish PCP role'})
+    return list({digest(r):r for r in roles}.values())
+
+
+def with_correspondence(rows,packages):
+    return [{**r,'source_clinicians_json':json.dumps(correspondence_roles(
+        [d for batch in packages[r['patient_id']]for d in batch]))}for r in rows]
+
+def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None, patient_query_sql=None, record_ids=None):
     if (patient_ids is None)==(patient_query_sql is None):
         raise ValueError('Choose explicit patient_ids OR a complete patient_query_sql')
     if patient_query_sql is not None:
@@ -74,12 +119,17 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         tools.in_scope(p)
         if tools.db.execute('SELECT 1 FROM patient WHERE patient_id=?',(p,)).fetchone() is None:
             raise ValueError('Patient is not in the received warehouse: '+p)
+    if record_ids is not None and (not isinstance(record_ids,list)or not record_ids or any(not isinstance(r,str)or not r for r in record_ids)):
+        raise ValueError('record_ids requires explicit nonempty received source IDs')
+    selected_records=set(record_ids)if record_ids is not None else None
+    received_selected=set()
     guard = digest(tools.continuation_identity())
     packages, manifest = {}, []
     for pid in ids:
         docs, seen = [], {}
-        rows = [r for r in tools._texts(pid) if (not date_from or (r[4] or '')[:10]>=date_from)
+        rows = [r for r in tools._texts(pid) if (selected_records is None or r[0]in selected_records) and (not date_from or (r[4] or '')[:10]>=date_from)
                 and (not date_to or (r[4] or '')[:10]<=date_to)]
+        received_selected.update(r[0]for r in rows)
         for rid,src,stream,kind,day,text,title in rows:
             key = digest([day,text])
             if key in seen:
@@ -103,6 +153,21 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         manifest.append({'patient_id':pid,'received_documents':len(rows),'unique_whole_documents':len(docs),
                          'characters_supplied':sum(len(d['text']) for d in docs),'batches':len(batches),
                          'document_digest':digest(docs)})
+    if selected_records is not None and selected_records!=received_selected:
+        raise ValueError('Requested records are outside this received patient/date scope: '+str(sorted(selected_records-received_selected)))
+    from .harness_improvement import recover_document_observations
+    recovered=recover_document_observations(questions,manifest,packages)
+    if recovered is not None:
+        recovered={**recovered,'rows':with_correspondence(recovered['rows'],packages)}
+        tools.document_reviews.append(recovered)
+        return {'columns':list(recovered['rows'][0])if recovered['rows']else ['patient_id','review_status','documents_reviewed','review_json','review_limitations'],
+            'rows':recovered['rows'],'coverage':manifest,'accounting':{'new_paid_api_calls':0,'known_api_estimate_usd':0,'api_cost_known':True},
+            'observation_reuse':recovered['observation_reuse'],
+            'method':'Exact-source/question machine observations revalidated during explicit owned-run recovery. SQL and interpretation rerun; no clinical acceptance inherited.'}
+    from .harness_improvement import recover_document_fields
+    reused=recover_document_fields(questions,manifest,packages)
+    all_questions=questions
+    questions={k:q for k,q in questions.items()if not reused or k not in reused['fields']}
     stop=threading.Event()
     source_coverage=[]
     coverage_lock=threading.Lock()
@@ -110,7 +175,10 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
     ledger_path = together._ledger_path(tools.stack)
 
     def one(pid):
-        aggregate={k:[] for k in questions};receipts=[];checks=[];failures=[]
+        aggregate={k:[] for k in all_questions};receipts=[];checks=[];failures=[]
+        if reused:
+            aggregate.update(reused['rows'][pid]);failures.extend(reused['limitations'][pid])
+        if not questions:return pid,aggregate,receipts,checks,failures
         if not packages[pid]:return pid,aggregate,receipts,checks,failures
         ledger=BudgetLedger(ledger_path)
         send=together._ledgered_send(tools.stack,ledger,receipts)
@@ -119,7 +187,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                 from .typed_document_review import read
                 for batch in packages[pid]:
                     if stop.is_set():raise RuntimeError('Whole-document review stopped after subscription limit')
-                    typed=read(tools,pid,batch,questions,ledger)
+                    typed=read(tools,pid,batch,questions,ledger,ranking=os.environ.get('AGERE_DOCUMENT_RANKING','on')!='off')
                     with coverage_lock:
                         source_coverage.append({'patient_id':pid,'version':typed['version'],
                             'coverage':typed['coverage'],'ranking':typed['ranking'],
@@ -135,20 +203,26 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                         fields=pending.get(doc['record_id'])
                         if not fields:continue
                         selected={k:questions[k]for k in questions if k in fields}
-                        body={'model':model_policy.HAIKU,'max_tokens':18000,'system':SYSTEM,
-                              'messages':[{'role':'user','content':json.dumps({'patient_id':pid,'as_of':tools.as_of,
-                                'questions':selected,'whole_documents':[doc],
-                                'repair_feedback':'Interpret only these unresolved fields. Other source/field decisions are retained.'})}]}
-                        try:
-                            with component('document_field_repair',patient_id=pid,record_id=doc['record_id'],fields=list(selected)):
-                                with model_policy.question_path(),model_policy.first_rung():raw,_,_=send(body)
-                                if raw.get('stop_reason')=='max_tokens':raise ValueError('Field repair response truncated')
-                                found=validate(parsed(raw),selected,[doc])
-                            for key,values in found.items():aggregate[key].extend(values)
-                        except Exception as exc:
-                            if getattr(exc,'kind',None)=='rate_limit' or re.search(r'subscription.*limit|weekly.*limit|usage.*limit',str(exc),re.I):
-                                stop.set();raise
-                            failures.append('Unresolved source fields '+doc['record_id']+': '+str(exc)[:300])
+                        remaining=selected;last_error=None
+                        for model in (model_policy.HAIKU,model_policy.SONNET):
+                            if not remaining:break
+                            if stop.is_set():raise RuntimeError('Whole-document review stopped after subscription limit')
+                            body={'model':model,'max_tokens':18000,'system':SYSTEM,
+                                'messages':[{'role':'user','content':json.dumps({'patient_id':pid,'as_of':tools.as_of,
+                                    'questions':remaining,'whole_documents':[doc],
+                                    'repair_feedback':last_error or 'Interpret only unresolved fields; retain all previously validated siblings.'})}]}
+                            try:
+                                with component('document_field_repair',patient_id=pid,record_id=doc['record_id'],fields=list(remaining),model=model):
+                                    with model_policy.question_path(),(model_policy.escalation()if model==model_policy.SONNET else model_policy.first_rung()):raw,_,_=send(body)
+                                    if raw.get('stop_reason')=='max_tokens':raise ValueError('Field repair response truncated')
+                                    good,errors=validate_fields(parsed(raw),remaining,[doc])
+                                for key,values in good.items():aggregate[key].extend(values)
+                                remaining={k:remaining[k]for k in errors};last_error=json.dumps(errors)
+                            except Exception as exc:
+                                if getattr(exc,'kind',None)=='rate_limit' or re.search(r'subscription.*limit|weekly.*limit|usage.*limit',str(exc),re.I):
+                                    stop.set();raise
+                                last_error=type(exc).__name__+': '+str(exc)[:500]
+                        if remaining:failures.append('Unresolved source fields '+doc['record_id']+' '+str(list(remaining))+': '+str(last_error)[:300])
                 for key,values in aggregate.items():aggregate[key]=list({digest(v):v for v in values}.values())
                 return pid,aggregate,receipts,checks,failures
             for batch in packages[pid]:
@@ -213,7 +287,8 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
     new_calls=sum(not r.get('cache_hit') for r in all_receipts)+sum(cost(c)[0] for c in all_checks)
     known=sum((r.get('cost_estimate') or {}).get('estimated_usd') or 0 for r in all_receipts if not r.get('cache_hit'))+sum(cost(c)[1] for c in all_checks)
     cost_known=all(r.get('cache_hit') or not r.get('usage_unknown') and (r.get('cost_estimate') or {}).get('estimated_usd') is not None for r in all_receipts)
-    cost_known=cost_known and not any(s.get('error') for c in all_checks for s in c.get('steps') or [])
+    cost_known=cost_known and not any(s.get('error') and not s.get('cache_hit') and s.get('cost_usd') is None
+                                    for c in all_checks for s in c.get('steps') or [])
     tools.subtool_accounting['new_paid_api_calls']+=new_calls;tools.subtool_accounting['estimated_cost_usd']+=known
     tools.subtool_accounting['api_cost_known']=tools.subtool_accounting.get('api_cost_known',True) and cost_known
     rows=[]
@@ -222,10 +297,12 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         row={'patient_id':pid,'review_status':'needs_review' if failures else 'reviewed' if m['received_documents'] else 'no_documents',
              'documents_reviewed':m['received_documents'],'review_json':json.dumps(found),'review_limitations':json.dumps(failures)}
         rows.append(row)
-    tools.document_reviews.append({'questions':questions,'scope':ids,'manifest':manifest,'rows':rows,
-        'provider_receipts':all_receipts,'typed_checks':all_checks,'source_coverage':source_coverage})
+    rows=with_correspondence(rows,packages)
+    tools.document_reviews.append({'questions':all_questions,'scope':ids,'manifest':manifest,'rows':rows,
+        'provider_receipts':all_receipts,'typed_checks':all_checks,'source_coverage':source_coverage,
+        'observation_reuse':{k:v for k,v in reused.items()if k not in ('rows','limitations')}if reused else None})
     return {'columns':list(rows[0]) if rows else ['patient_id','review_status','documents_reviewed','review_json','review_limitations'],
-            'rows':rows,'coverage':manifest,'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
+            'rows':rows,'coverage':manifest,'record_ids_filter':record_ids,'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
             'method':('Every scoped whole document/block read with typed source decisions; only unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
                       if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans' else
                       'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification')}

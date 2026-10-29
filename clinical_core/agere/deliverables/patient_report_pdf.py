@@ -1,6 +1,6 @@
 """Deterministic PDF companion to any saved patient-level analysis; no model calls."""
 from pathlib import Path
-import json,re,html,sys,io
+import json,re,html,sys,io,gzip,hashlib
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle,PageBreak,KeepTogether
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.colors import HexColor,white
@@ -9,6 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader,PdfWriter
 
 def render(context,output,references=None,evidence=None):
+ from .patient_evidence import RECOMMENDATION_FIELD_PATTERN
  output=Path(output);output.parent.mkdir(parents=True,exist_ok=True)
  if evidence is None:
   from .patient_evidence import projection
@@ -40,6 +41,7 @@ def render(context,output,references=None,evidence=None):
  story=[P('AGERE  /  PATIENT REVIEW',small),Spacer(1,12),P('Evidence into\nnext steps',title),P(context.get('question','Saved patient analysis')),Spacer(1,10)]
  kpis=Table([[P(str(len(ids)),head),P(str(len(rows)),head),P(status,head)], [P('Distinct patient IDs',small),P('Complete result rows',small),P('Saved analytical status',small)]],colWidths=[180]*3)
  kpis.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),paper),('LEFTPADDING',(0,0),(-1,-1),12),('BOTTOMPADDING',(0,0),(-1,-1),8),('TOPPADDING',(0,0),(-1,-1),8)]));story+=[kpis,Spacer(1,17),P('Source and scope',head),P('Synthetic warehouse. Source snapshot: '+str(cutoff)+'. Clinical dates follow the simulated source clock. Report rendering adds no clinical interpretation, new care action or acceptance.'),P(answer.get('headline','No headline supplied'))]
+ if context.get('retained_inspection'):story.extend([P('Retained analysis for inspection',head),P('Planning code changed after this saved execution. This report preserves the original analysis and source snapshot; rendering adds no new clinical interpretation, acceptance or care authorization.')])
  for index,a in enumerate(allparts):
   facts=a.get('facts')or{}
   if facts:
@@ -51,8 +53,8 @@ def render(context,output,references=None,evidence=None):
    if a.get(k):
     story.append(P(label(k),head))
     for v in a[k] if isinstance(a[k],list)else[a[k]]:story.append(P(value(v)))
- story.extend([P('How to use the patient records',head),P('Each following record presents the saved fields and any patient-specific recommendations the analysis supplied. A missing recommendation is stated explicitly. Dated findings remain dated findings; a recorded fill is not proof of ingestion, and a reference maximum is not a patient-specific tolerated dose. Full saved answer and row data are embedded in this PDF as Agere-saved-answer.json.')])
- groups=[('Recommended next steps',r'recommend|next_step|action_plan|proposed_action'),('Medication evidence',r'medication|gdmt|pillar|drug|rasi|hf_bb|mra|sglt|beta.block'),('Dose assessment',r'dose'),('Care team',r'pcp|cardiol|clinician|provider|visit'),('Documented reasons and evidence',r'reason|finding|note|evidence|review'),('Other saved fields',r'.')]
+ story.extend([P('How to use the patient records',head),P('Each following record presents the saved fields and any patient-specific recommendations the analysis supplied. A missing recommendation is stated explicitly. Dated findings remain dated findings; a recorded fill is not proof of ingestion, and a reference maximum is not a patient-specific tolerated dose. Complete saved analysis, executed evidence and all narrative findings are embedded as Agere-saved-answer.json.gz. The interactive companion displays every narrative finding. This printed report keeps every patient and complete final result row, without repeating all extracted source passages.')])
+ groups=[('Recommended next steps',RECOMMENDATION_FIELD_PATTERN),('Medication evidence',r'medication|gdmt|pillar|drug|rasi|hf_bb|mra|sglt|beta.block'),('Dose assessment',r'dose'),('Care team',r'pcp|cardiol|clinician|provider|visit'),('Documented reasons and evidence',r'reason|finding|note|evidence|review'),('Other saved fields',r'.')]
  for index,row in enumerate(rows):
   story.append(PageBreak());pid=row.get('patient_id')or'Result '+str(index+1);story.extend([P('PATIENT RECORD  /  '+str(index+1),small),P(pid,title)])
   handled={'patient_id','review_json'}
@@ -79,15 +81,20 @@ def render(context,output,references=None,evidence=None):
    for observation in observations:
     story.append(P(observation.get('drug_name')or observation.get('drug_key')or observation.get('role')or'Source observation',labelstyle))
     story.append(P('; '.join(label(k)+': '+value(v)for k,v in observation.items()if k!='patient_id'),small))
-  for review in evidence.get('notes',{}).get(pid,[]):
-   story.extend([P('Whole-document note findings',head),P(str(review['review_status'])+' / '+str(review['documents_reviewed'])+' received documents. A documented mention does not automatically establish a causal treatment reason.',small)])
-   for field,question in review['questions'].items():
-    story.extend([P(label(field),labelstyle),P(question,small)])
-    found=(review.get('findings')or{}).get(field)or[]
-    if not found:story.append(P('No documented finding returned. See coverage and limitations.',small))
-    for finding in found:
-     story.extend([P(finding['value']),P(str(finding.get('date'))+' / '+str(finding.get('record_id')),small),P('Source: '+str(finding.get('quote')),small)])
-   if review.get('limitations'):story.append(P('Review limitations: '+value(review['limitations']),small))
+  reviews=evidence.get('notes',{}).get(pid,[])
+  roles={json.dumps(r,sort_keys=True):r for review in reviews for r in review.get('source_clinicians')or[]}
+  if roles:
+   story.extend([P('Additional source-linked clinician names',head),P('Historical correspondence roles and explicit labels only. These do not establish current care assignment or active follow-up. An addressee is not automatically a PCP.',small)])
+   for r in roles.values():
+    story.append(P(str(r.get('name'))+' / '+str(r.get('documented_role'))+' / '+str(r.get('relationship')),labelstyle))
+    story.append(P(str(r.get('date'))+' / '+str(r.get('record_id'))+' / '+str(r.get('current_assignment')),small))
+    story.append(P('Source: '+str(r.get('quote')),small))
+  if reviews:
+   inventory={}
+   for review in reviews:
+    for field,findings in (review.get('findings')or{}).items():inventory.setdefault(field,set()).update(json.dumps(f,sort_keys=True)for f in findings or[])
+   story.extend([P('Complete narrative evidence inventory',head),P('; '.join(label(k)+': '+str(len(v))+' dated source findings'for k,v in inventory.items()),small),P('The full findings, their interpretations, exact quotations, source IDs, dates, coverage and limitations remain in the embedded compressed JSON and interactive companion. The final row above retains the analysis-selected examples and proposed actions.',small)])
+
  if references:
   story.extend([PageBreak(),P('Reference framework',title),P('These are source references for the report, not evidence that an individual meets a treatment indication or can tolerate a particular dose.')])
   for ref in references:
@@ -102,9 +109,12 @@ def render(context,output,references=None,evidence=None):
   return Canvas(*args,**kwargs)
  doc.build(story,onFirstPage=page,onLaterPages=page,canvasmaker=deterministic_canvas)
  reader=PdfReader(io.BytesIO(buf.getvalue()));writer=PdfWriter();writer.append(reader)
- raw=json.dumps(context,ensure_ascii=False,indent=2).encode();writer.add_attachment('Agere-saved-answer.json',raw)
+ raw=json.dumps(context,ensure_ascii=False,indent=2).encode();packed=gzip.compress(raw,mtime=0);writer.add_attachment('Agere-saved-answer.json.gz',packed)
  with output.open('wb')as f:writer.write(f)
- return {'output':str(output),'pages':len(reader.pages),'rows':len(rows),'distinct_patient_ids':len(ids),'new_model_calls':0,'analytical_status':status,'source_as_of':cutoff,'attachment_bytes':len(raw)}
+ return {'output':str(output),'pages':len(reader.pages),'rows':len(rows),'distinct_patient_ids':len(ids),'new_model_calls':0,'analytical_status':status,'source_as_of':cutoff,'attachment_bytes':len(packed),'uncompressed_context_bytes':len(raw),
+         'attachment_name':'Agere-saved-answer.json.gz','attachment_encoding':'gzip',
+         'uncompressed_context_sha256':hashlib.sha256(raw).hexdigest(),
+         'narrative_display':'Full narrative evidence in interactive companion and embedded context; printed inventory and complete final patient rows'}
 
 if __name__=='__main__':
  context=json.loads(Path(sys.argv[1]).read_text());print(json.dumps(render(context,sys.argv[2],json.loads(Path(sys.argv[3]).read_text())if len(sys.argv)>3 else None)))

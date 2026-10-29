@@ -188,7 +188,9 @@ def judge_fields(subject,questions,evidence,*,as_of,ledger=None,allow_live=True,
             if raw.get('status')=='prepared':
                 steps.append({'provider':provider,'status':'prepared','cost_usd':0.0,'request_hash':raw.get('request_hash')});continue
             usd=0.0 if raw.get('cache_hit') else (raw.get('cost_estimate') or {}).get('estimated_usd')
-            steps.append({'provider':provider,'status':'answered','cost_usd':usd,'cache_hit':bool(raw.get('cache_hit')),
+            steps.append({'provider':provider,'status':'partial' if raw.get('invalid_fields') or raw.get('unexpected_fields') else 'answered',
+                          'invalid_fields':raw.get('invalid_fields')or{},'unexpected_fields':raw.get('unexpected_fields')or[],
+                          'cost_usd':usd,'cache_hit':bool(raw.get('cache_hit')),
                           'request_hash':raw.get('request_hash'),'fields':list(pending)})
             for key,result in raw['judgments'].items():
                 p=result['probabilities'].get(result['label'],0)

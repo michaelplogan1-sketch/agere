@@ -69,6 +69,41 @@ def verify_spec(cascade_or_stack, question, catalog, plan, *, ledger):
     return spec_verify.verify(stack, question, plan, catalog, ledger=ledger)
 
 
+def merge_fill_receipts(prior,current):
+    if not prior:return current
+    return {**current,'fillers':{**prior.get('fillers',{}),**current.get('fillers',{})},
+        'calls':prior.get('calls',0)+current.get('calls',0),
+        'usd':prior.get('usd',0.)+current.get('usd',0.),
+        'seconds':prior.get('seconds',0.)+current.get('seconds',0.),
+        'cost_known':prior.get('cost_known',True)and current.get('cost_known',True),
+        'scheduling':'nonfrontier_then_hosted'}
+
+
+def fill_in_order(stack,catalog,question,*,fillers=None,**kwargs):
+    names=tuple(fillers)if fillers is not None else spec_fill.enabled_fillers()
+    if os.environ.get('AGERE_NONFRONTIER_FIRST')!='on':
+        return spec_fill.fill(stack,catalog,question,fillers=names,**kwargs)
+    # Unilateral scheduling deadlines must not discard a valid cheap proposal
+    # while its hosted replacement is already being bought. Transport/native
+    # context limits and explicit caller cancellation remain in force.
+    kwargs.setdefault('seconds',float('inf'))
+    kwargs.setdefault('filler_limits',{name:float('inf')for name in names})
+    native=tuple(n for n in names if n!='haiku');prior=None
+    if native:
+        try:return spec_fill.fill(stack,catalog,question,fillers=native,**kwargs)
+        except spec_fill.SpecNotFilled as exc:prior=exc
+    if 'haiku'not in names:
+        if prior is not None:raise prior
+        raise spec_fill.SpecNotFilled('No applicable spec filler configured')
+    try:result=spec_fill.fill(stack,catalog,question,fillers=('haiku',),**kwargs)
+    except spec_fill.SpecNotFilled as exc:
+        exc.receipt=merge_fill_receipts(getattr(prior,'receipt',None),exc.receipt or {})
+        if exc.held is None and prior is not None:exc.held=prior.held
+        raise
+    result['receipt']=merge_fill_receipts(getattr(prior,'receipt',None),result['receipt'])
+    return result
+
+
 def propose(c):
     """Cascade tier body. -> (contract, interpretation), 'held' (an unresolved spec held as the decline), or None / QuestionNotUnderstood."""
     from . import shared_planner
@@ -81,7 +116,7 @@ def propose(c):
         if 'haiku' not in fillers: return None
         fillers = ('haiku',)
     try:
-        filled = spec_fill.fill(c.stack, c.catalog, c.question, population=c.population, ledger=ledger, fillers=fillers,
+        filled = fill_in_order(c.stack, c.catalog, c.question, population=c.population, ledger=ledger, fillers=fillers,
                                 verify=(lambda cand: verify_spec(c, c.question, c.catalog, cand['plan'], ledger=ledger)) if live else None)
     except spec_fill.SpecNotFilled as exc:
         if exc.receipt: spend_receipt(c, exc.receipt)

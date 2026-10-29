@@ -349,6 +349,24 @@ def actor_result(value):
             coverage=shown.pop('coverage')
             shown['coverage_summary']={'patients':len(coverage),'received_documents':sum(x.get('received_documents',0) for x in coverage),
                                        'unique_whole_documents':sum(x.get('unique_whole_documents',0) for x in coverage)}
+        # A row preview must not repeat the complete free-text dataset through
+        # its category-frequency metadata. Keep full native rows and counts;
+        # condense the largest lists only until the existing preview envelope fits.
+        profile=shown.get('computed_row_count_profile')or{}
+        distributions=profile.get('columns')or{}
+        compacted=[]
+        for column,entry in sorted(distributions.items(),key=lambda item:-len(json.dumps(item[1].get('repeated_values'),default=str))):
+            if len(json.dumps(shown,default=str))<=12000:break
+            repeated=entry.get('repeated_values')
+            if not repeated:continue
+            from ...contracts import digest
+            entry.update(repeated_values=None,repeated_category_count=len(repeated),
+                repeated_value_rows=sum(v['rows']for v in repeated),repeated_values_digest=digest(repeated),
+                repeated_values_available_in=shown.get('result_view'))
+            compacted.append(column)
+        if compacted:
+            shown['condensed_frequency_metadata']={'columns':compacted,
+                'instruction':'Complete category values and all data rows remain in result_view. Query it for exact frequencies or source details. No patient or source row was removed.'}
     return shown
 
 

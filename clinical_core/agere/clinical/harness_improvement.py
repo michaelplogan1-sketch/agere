@@ -19,9 +19,9 @@ from contextlib import contextmanager
 _OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
 
 @contextmanager
-def owned_recovery(actions,question=None,feedback=None):
+def owned_recovery(actions,question=None,feedback=None,document_reviews=None):
     """Explicit unfinished-run recovery; never select a learned configuration or reuse an answer."""
-    token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback} if actions is not None else None)
+    token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or []} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
 
@@ -127,6 +127,72 @@ def recover_actions(tools,question):
     if out['downstream_review_feedback']:
         out['feedback_instruction']='Investigate these prior presentation-review error reports against current sources and existing engines. Repair upstream facts/calculations here, not by rewording a dashboard. The reports are machine observations, not clinical truth. Do not invent eligibility, enrollment or shipment to satisfy a proposed design.'
     return out
+
+
+
+def recovering(question):
+    saved=_OWNED_RECOVERY.get()
+    return saved is not None and saved['question']==question and bool(saved['actions'])
+
+
+
+def validate_saved_source_fields(found,questions,documents):
+    """Validate exact saved spans, avoiding first-match normalization of repeats."""
+    if not isinstance(found,dict)or set(found)!=set(questions):raise ValueError('Recovered source fields differ')
+    for field,values in found.items():
+        if not isinstance(values,list):raise ValueError('Recovered field is not a finding list')
+        for value in values:
+            if not isinstance(value,dict)or not isinstance(value.get('value'),str)or not value['value'].strip():raise ValueError('Recovered finding needs documented meaning')
+            quote=value.get('quote')
+            if not isinstance(quote,str)or not quote.strip()or not any(
+                d['record_id']==value.get('record_id')and d['date']==value.get('date')and quote in d['text']for d in documents):
+                raise ValueError('Recovered source quote/record/date changed')
+    return found
+
+def recover_document_fields(questions,manifest,packages):
+    """Reuse each unchanged source question independently of added/changed siblings."""
+    saved=_OWNED_RECOVERY.get()
+    if not saved:return None
+    ids=[m['patient_id']for m in manifest];matched={};rows={p:{}for p in ids};prior=[];limitations={p:[]for p in ids}
+    for old in saved.get('document_reviews',[]):
+        if old.get('manifest')!=manifest:continue
+        subset={k:q for k,q in questions.items()if old.get('questions',{}).get(k)==q and k not in matched}
+        if not subset:continue
+        oldrows=old.get('rows')or[]
+        if [r.get('patient_id')for r in oldrows]!=ids:raise ValueError('Recovered field population differs')
+        for row in oldrows:
+            pid=row['patient_id'];docs=[d for batch in packages[pid]for d in batch]
+            found=json.loads(row['review_json']);selected={k:found[k]for k in subset}
+            validate_saved_source_fields(selected,subset,docs)
+            rows[pid].update(selected)
+            limitations[pid].extend(json.loads(row.get('review_limitations')or'[]'))
+        matched.update(subset);prior.append(digest(old))
+    if not matched:return None
+    return {'fields':matched,'rows':rows,'limitations':limitations,'prior_receipt_digests':prior,
+        'clinical_acceptance_inherited':False,'all_quotes_revalidated':True}
+
+def recover_document_observations(questions,manifest,packages):
+    """Revalidate exact-source, exact-question machine observations during explicit recovery.
+
+    Code/policy changes do not authorize reusing a conclusion. These are source
+    observations only; the caller still reruns all SQL, interpretation and checks.
+    """
+    saved=_OWNED_RECOVERY.get()
+    if not saved:return None
+    for old in saved.get('document_reviews',[]):
+        if old.get('questions')!=questions or old.get('manifest')!=manifest:continue
+        ids=[m['patient_id']for m in manifest]
+        rows=old.get('rows')or[]
+        if [r.get('patient_id')for r in rows]!=ids:raise ValueError('Recovered review population differs')
+        for row in rows:
+            docs=[d for batch in packages[row['patient_id']]for d in batch]
+            found=json.loads(row['review_json'])
+            validate_saved_source_fields(found,questions,docs)
+        return {**old,'observation_reuse':{'kind':'explicit_owned_run_source_observations',
+            'source_manifest_digest':digest(manifest),'question_digest':digest(questions),
+            'finding_digest':digest(rows),'all_quotes_revalidated':True,
+            'clinical_acceptance_inherited':False,'new_provider_calls':0}}
+    return None
 
 
 def attempt_replay(tools,*args,**kwargs):

@@ -77,12 +77,12 @@ class SavedReport(unittest.TestCase):
 
     def test_pdf_is_real_source_bound_and_contains_complete_saved_context(self):
         from pypdf import PdfReader
-        import io
+        import io,gzip
         question,result=self.prepare(partial=True);c=A.capture(self.path,question,result)
         d=R.create(self.path,{'context_id':c['id'],'template':'explore','request':'Interactive dashboard and PDF'})
         raw,mime,name=R.read_format(self.path,c['id'],d['id'],'pdf')
         self.assertTrue(raw.startswith(b'%PDF-'));self.assertEqual(mime,'application/pdf')
-        pdf=PdfReader(io.BytesIO(raw));embedded=json.loads(pdf.attachments['Agere-saved-answer.json'][0])
+        pdf=PdfReader(io.BytesIO(raw));embedded=json.loads(gzip.decompress(pdf.attachments['Agere-saved-answer.json.gz'][0]))
         saved=A.load(self.path,c['id'])
         self.assertEqual(embedded['answer'],saved['answer']);self.assertEqual(embedded['source'],saved['source'])
         self.assertIn('Medication history unavailable','\n'.join(p.extract_text()for p in pdf.pages))
@@ -114,3 +114,33 @@ class SavedReport(unittest.TestCase):
 
 
 if __name__=='__main__':unittest.main()
+
+class RetainedInspection(unittest.TestCase):
+    setUp = F.SharedPlanner.setUp
+    prepare = SavedReport.prepare
+    def test_inspection_can_render_retained_analysis_without_enabling_clinical_work(self):
+        question,result=self.prepare(partial=True);c=A.capture(self.path,question,result)
+        with patch.object(A,'source_identity',return_value={'changed':True}):
+            d=R.create(self.path,{'context_id':c['id'],'template':'brief','request':'Retained analysis PDF','retained_inspection':True})
+            raw,_,_=R.read_format(self.path,c['id'],d['id'],'pdf')
+        self.assertTrue(d['retained_inspection']);self.assertFalse(d['clinical_execution_authorized'])
+        self.assertEqual(d['new_paid_api_calls'],0);self.assertTrue(raw.startswith(b'%PDF-'))
+        self.assertIn('Retained analysis for inspection',d['html'])
+    def test_literal_source_roles_survive_projection_without_becoming_assignments(self):
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        role={'name':'Jane Doe, MD','documented_role':'Cardiology','relationship':'signed_correspondence_author','current_assignment':'not_established','record_id':'R','date':'2030-01-01','quote':'Jane Doe, MD\nCardiology'}
+        c={'investigation':{'document_reviews':[{'questions':{},'rows':[{'patient_id':'A','review_json':'{}','source_clinicians_json':json.dumps([role])}]}]}}
+        evidence=projection(c);self.assertEqual(evidence['notes']['A'][0]['source_clinicians'],[role])
+
+class RecommendationDisplay(unittest.TestCase):
+    def test_proposed_next_action_is_visible_as_a_recommendation_in_pdf(self):
+        import tempfile,io
+        from pathlib import Path
+        from pypdf import PdfReader
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        c={'question':'Review the care gaps','source':{'as_of':'2030-05-27'},'answer':{'status':'partial','table':[{'patient_id':'A','proposed_next_action':'Reconcile the documented medication and confirm the follow-up appointment.'}]}}
+        with tempfile.TemporaryDirectory()as temp:
+            out=Path(temp)/'report.pdf';render(c,out,evidence={});text='\n'.join(p.extract_text()for p in PdfReader(out).pages)
+        self.assertIn('Recommended next steps',text)
+        self.assertIn('Reconcile the documented medication',text)
+        self.assertNotIn('No individualized recommendation was supplied',text)

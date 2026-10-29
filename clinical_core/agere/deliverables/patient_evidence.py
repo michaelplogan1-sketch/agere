@@ -3,7 +3,12 @@
 These are attributed observations, never new medication/reason adjudications.
 Keep the answer intact; the complete native context remains the download.
 """
-import json
+import json,re
+
+RECOMMENDATION_FIELD_PATTERN=r'^(?!.*(?:_status|_count|_type|_number|_n)$).*(?:recommend|next_(?:step|action)|action_plan|proposed_(?:[a-z]+_)*action)'
+
+def recommendation_field(name):
+    return bool(re.search(RECOMMENDATION_FIELD_PATTERN,name,re.I))
 
 
 def projection(context):
@@ -20,7 +25,11 @@ def projection(context):
                 found = json.loads(raw) if isinstance(raw, str) else raw
             except (TypeError, ValueError):
                 found = None
+            raw_roles=row.get('source_clinicians_json')or'[]'
+            try:roles=json.loads(raw_roles)if isinstance(raw_roles,str)else raw_roles
+            except (TypeError,ValueError):roles=None
             notes.setdefault(pid, []).append({
+                'source_clinicians':roles,
                 'questions': questions, 'findings': found,
                 'review_status': row.get('review_status'),
                 'documents_reviewed': row.get('documents_reviewed'),

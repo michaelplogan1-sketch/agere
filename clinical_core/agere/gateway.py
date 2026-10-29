@@ -175,7 +175,7 @@ class PersistentGateway:
         key=digest(identity)
         old=self.ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
         if old and old[0]=='validated':
-            raw=json.loads(old[1]);return {**self._parse(parser,task,raw),'cache_hit':True,'new_paid_api_usd':0}
+            raw=json.loads(old[1]);return {**self._parse(parser,task,raw),'request_hash':key,'cache_hit':True,'new_paid_api_usd':0,'usage':raw.get('usage')}
         if not self.allow_live: return {'status':'prepared','provider':provider,'request_hash':key,'request':body}
         endpoint,variable=self.ENDPOINTS[provider];secret=os.environ.get(variable)
         if not secret:raise ValueError('Missing '+variable)
@@ -186,7 +186,7 @@ class PersistentGateway:
         if provider=='jev' and len(encoded)>32*1024*1024:
             raise ValueError('TypeSafe request exceeds its 32 MiB transport limit; partition the evidence explicitly')
         cached=self.ledger.reserve(key,provider,body['model'])
-        if cached is not None:return self._parse(parser,task,cached)
+        if cached is not None:return {**self._parse(parser,task,cached),'request_hash':key,'cache_hit':True,'new_paid_api_usd':0,'usage':cached.get('usage')}
         headers={'Content-Type':'application/json'}
         if long_context:headers['TypeSafe-Danger-Zone-Long-Context']='true'
         if provider=='claude':headers.update({'x-api-key':secret,'anthropic-version':'2023-06-01'})

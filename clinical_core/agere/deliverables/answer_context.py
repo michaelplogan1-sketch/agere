@@ -479,9 +479,11 @@ def followup(path, key, question, *, scope='result'):
             'new_paid_api_calls': 0, 'planning_economics': {'known_api_estimate_usd': 0, 'new_api_estimate_usd': 0}}
 
 
-def evidence_bundle(path, key):
-    c = load(path, key, current=True)
+def evidence_bundle(path, key, *, retained_inspection=False):
+    if type(retained_inspection)is not bool:raise ValueError('Explicit retained inspection flag required')
+    c = load(path, key, current=not retained_inspection)
     b = Bundle({'workspace': key, 'as_of': c['source']['as_of'], 'synthetic': True,
+                'retained_inspection':retained_inspection,'clinical_execution_authorized':False,
                 'scope': 'Exact saved answer and internal review work only. No new population, eligibility or clinical outcome may be inferred.'})
     b.add('saved_answer', {'context_id': key}, c, definition=c['question'],
           as_of=c['source']['as_of'], data_fp=fingerprint(c['source']), source='server-saved /ask execution')
@@ -498,7 +500,7 @@ def bundle_validator(path, bundle):
         for rid, receipt in bundle.receipts.items():
             if receipt['tool'] != 'saved_answer': continue
             key = receipt['args']['context_id']
-            fresh = load(path, key, current=True)
+            fresh = load(path, key, current=not bool(bundle.meta.get('retained_inspection')))
             if bundle.results[rid].get('dependencies') != fresh.get('dependencies'):
                 raise ValueError('Saved answer bundle differs from its current sealed derivation.')
             contexts[key] = fresh

@@ -739,7 +739,7 @@ def cancel_early(stack, question, population):
 
 
 def fill(stack, catalog, question, *, population=None, ledger=None, decide=None, models=None, as_of=None, verify=None, fillers=None, grace=None,
-         seconds=None, ctx_hook=None):
+         seconds=None, ctx_hook=None, filler_limits=None):
     """Run the fillers and choose. -> {'winner', 'plan', 'contract', 'agreement', 'readings', 'receipt'}; raises SpecNotFilled.
     decide / models: System One / Claude callables (tests pass fakes; None -> the live providers). verify(candidate) -> spec_verify receipt, used
     only to settle a disagreement."""
@@ -761,6 +761,7 @@ def fill(stack, catalog, question, *, population=None, ledger=None, decide=None,
     if candidates.get('grammar', {}).get('status') == 'valid': cancel_early(stack, question, population)  # the grammar's spec wins; stop the early start
     if candidates.get('grammar', {}).get('status') != 'valid' and paid:
         limits = {'s1_slots': env_float('AGERE_SPEC_S1_SECONDS', 8.0), 'haiku': env_float('AGERE_SPEC_HAIKU_SECONDS', 45.0)}
+        if filler_limits is not None: limits.update(filler_limits)
         fns = {'s1_slots': s1_fill, 'haiku': haiku_fill}
         early_ctx, early = take_early(stack, question, population) if decide is PROVIDERS['decide'] and models is PROVIDERS['models'] else (None, {})
         pool = ThreadPoolExecutor(max_workers=len(paid), thread_name_prefix='spec-fill')

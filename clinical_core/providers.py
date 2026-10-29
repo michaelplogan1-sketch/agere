@@ -148,13 +148,21 @@ class JevProvider:
         response = self.gateway.send(self.name, self.request(task))
         answers = response["answers"]
         if task.questions is not None:
-            if set(answers)!=set(task.questions):raise ValueError('Named choice response omitted or invented a question')
+            if not isinstance(answers,dict):raise ValueError('Named choice response must be an object')
+            judgments={};invalid={}
             for key,q in task.questions.items():
-                a=answers[key];probs=a.get('probabilities') or {};choices=q['criteria']
-                if a.get('type')!='choice' or a.get('choice') not in choices or set(probs)!=set(choices) or any(
-                        type(p) not in (int,float) or not math.isfinite(p) or not 0<=p<=1 for p in probs.values()) or abs(sum(probs.values())-1)>.001:
-                    raise ValueError('Invalid named choice: '+key)
-            return {'judgments':{k:{'label':v['choice'],'probabilities':v['probabilities']} for k,v in answers.items()},
+                answer=answers.get(key)
+                probs=answer.get('probabilities') if isinstance(answer,dict) else None
+                choices=q['criteria']
+                valid=isinstance(probs,dict) and answer.get('type')=='choice' and answer.get('choice') in choices and set(probs)==set(choices)
+                valid=valid and all(type(p) in (int,float) and math.isfinite(p) and 0<=p<=1 for p in probs.values())
+                valid=valid and abs(sum(probs.values())-1)<=.001 and probs[answer['choice']]>=max(probs.values())
+                if valid:judgments[key]={'label':answer['choice'],'probabilities':probs}
+                else:
+                    invalid[key]='Missing or invalid named Choice; unresolved, not evidence'
+                    judgments[key]={'label':'unknown','probabilities':{},'error':invalid[key]}
+            return {'judgments':judgments,'invalid_fields':invalid,
+                    'unexpected_fields':sorted(set(answers)-set(task.questions)),
                     'provider':self.name,'model':response.get('model'),'acceptance':'unvalidated_proposal'}
         reason = answers["reason"]
         required=[('reason',reason,task.options)]

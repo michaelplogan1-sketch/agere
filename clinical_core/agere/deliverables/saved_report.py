@@ -35,13 +35,16 @@ def sections(answer):
 
 
 def create(path, request):
-    if set(request) != {'context_id', 'template', 'request'}:
+    if set(request)-{'context_id','template','request','retained_inspection'} or not {'context_id','template','request'}<=set(request):
         raise ValueError('An exact saved answer, report layout and request are required')
     if request['template'] not in ('command', 'brief', 'explore'):
         raise ValueError('Choose command, brief or explore layout')
     if not isinstance(request['request'], str) or not 1 <= len(request['request']) <= 4000:
         raise ValueError('A report request up to 4000 characters is required')
-    context, bundle = A.evidence_bundle(path, request['context_id'])
+    retained=request.get('retained_inspection',False)
+    if type(retained)is not bool:raise ValueError('retained_inspection must be explicit boolean')
+    context, bundle = A.evidence_bundle(path, request['context_id'],retained_inspection=retained)
+    if retained:context={**context,'retained_inspection':True}
     validator = A.bundle_validator(path, bundle)
     validator()
     from .patient_dashboard import render as dashboard
@@ -81,7 +84,7 @@ def create(path, request):
     spec = {'schema': 'agere-deliverable/1', 'id': key, 'title': title, 'status': 'delivered',
             'workspace': context['id'], 'request': title, 'template': request['template'],
             'created_at': A.now(), 'revision': 1, 'synthetic': True, 'mockup': False,
-            'generation': 'saved_report', 'renderer_version': VERSION, 'formats': formats,
+            'generation': 'saved_report','retained_inspection':retained,'clinical_execution_authorized':False, 'renderer_version': VERSION, 'formats': formats,
             'costs': {'total_usd': 0, 'known_api_estimate_usd': 0, 'api_cost_known': True,
                       'scope': 'No model requests for rendering; local compute and upstream analysis are excluded.'},
             'new_paid_api_calls': 0, 'model_calls': [],

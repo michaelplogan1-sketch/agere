@@ -136,6 +136,19 @@ def resident(key, build):
     return _RESIDENT[key]
 
 
+def completion_allowance(prompt_tokens,config,kv_per_token,budget_gb=None):
+    """Complete within the real checkpoint/attention-cache contract, never a 700-token quota."""
+    from .bottled import KV_BUDGET_GB
+    cfg=config.get('text_config',config)
+    context=cfg.get('max_position_embeddings')
+    if type(context)is not int or context<1:raise LocalDeclined('Native checkpoint context capacity is unavailable')
+    if type(prompt_tokens)is not int or prompt_tokens<0:raise ValueError('Prompt token count required')
+    cache_tokens=int((budget_gb or KV_BUDGET_GB)*2**30/kv_per_token)if kv_per_token else context
+    capacity=min(context,cache_tokens)-prompt_tokens
+    if capacity<1:raise LocalDeclined('Complete prompt exhausts the native context/attention-cache capacity; prompt was not shortened')
+    return capacity
+
+
 def _build_typed(adapter):
     os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_HUB_DISABLE_TELEMETRY='1')
     from mlx_lm import load, generate
@@ -150,10 +163,12 @@ def _build_typed(adapter):
 
     def run(messages):
         prompt = tok.apply_chat_template(messages, add_generation_prompt=True, tokenize=False, enable_thinking=False)
-        fit_check(len(tok.encode(prompt, add_special_tokens=False)), 700, kv)
+        n_prompt=len(tok.encode(prompt, add_special_tokens=False))
+        capacity=completion_allowance(n_prompt,json.loads((_base()/'config.json').read_text()),kv)
+        fit_check(n_prompt,capacity,kv)
         try:
             # grammar-constrained: the typed request is one JSON object (constrained_decoding); decode() still parses it
-            return generate(model, tok, prompt=prompt, max_tokens=700, sampler=make_sampler(temp=0.0), verbose=False,
+            return generate(model, tok, prompt=prompt, max_tokens=capacity, sampler=make_sampler(temp=0.0), verbose=False,
                             logits_processors=processors(tok, JsonGrammar(root='object')))
         finally:
             _release()

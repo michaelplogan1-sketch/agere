@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T01:05:13.468845+00:00",
+  "updated_at": "2026-10-29T05:45:10.577661+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,112 +359,30 @@
     }
   ],
   "checkpoint": {
-    "kind": "integrated_full_stack_execution_and_social_assets",
+    "kind": "integrated_stack_engineering_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Opt-in isolated candidate tries all eligible nonfrontier rungs before hosted generation; typed source-span review, UltraBERT/BGE ranking, native Kev/d1 handoffs, pinned trained SLMs and learned router, full-population default, complete narrative manifest and reference-upper dose status. Candidate full-workflow run active.",
-    "measured_failure_reduction": "233 offline checks pass, four optional live skips; native UltraBERT/BGE/SQL/Kev/d1 run with zero network providers in smoke checks. Trained typed adapter malformed output declines. Full live source review active; no final clinical/cost/speed gain claimed yet.",
+    "user_behavior_delta": "The original integrated request returned a57-patient worklist with57 explicit proposed next actions; saved dashboard/PDF and requested flow/carousel/executive summary delivered.",
+    "measured_failure_reduction": "0 to57 explicit proposed actions; oversized cold support packet replaced by58 dependency packets without context rejection in owned continuation;759 to166 printed PDF pages with exact full-evidence attachment.344 offline checks:342 pass/two optional skips. No global clinical or cost advantage.",
     "evidence": [
-      "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
-      "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
-      "artifacts/agere-execution-repair-2026-10-26/engineering-receipt.json",
-      "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json",
-      "artifacts/agere-auto-workflow-2026-10-26/offline/verification.json",
-      "artifacts/agere-components-learning-2026-10-26/verification.json",
-      "artifacts/agere-components-learning-2026-10-26/received-verification.json",
-      "artifacts/agere-slm-learning-2026-10-26/verification.json",
-      "artifacts/agere-slm-learning-2026-10-26/resume-preflight.json",
-      "artifacts/agere-healthcare-learning-2026-10-27/verification.json",
-      "artifacts/agere-healthcare-learning-2026-10-27/resume-preflight.json",
-      "artifacts/agere-healthcare-learning-2026-10-27/research/reading-verification-v2.json",
-      "artifacts/agere-guideline-learning-2026-10-27/verification.json",
-      "artifacts/agere-guideline-learning-2026-10-27/resume-preflight.json",
-      "artifacts/agere-guideline-study-2026-10-27/verification.json",
-      "artifacts/agere-guideline-study-2026-10-27/resume-preflight.json",
-      "artifacts/agere-guideline-study-2026-10-27/queued-study.json",
-      "artifacts/agere-guideline-study-2026-10-27/typed-first-round-review-v2.json",
-      "artifacts/agere-guideline-study-2026-10-27/verification-frozen-v4/tests.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/verification.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/guard-replay-final-v2.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/verification-final/tests.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/native-preflight.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/recovery-plan.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/resume-preflight.json",
-      "artifacts/agere-schema-repair-2026-10-27/verification.json",
-      "artifacts/agere-schema-repair-2026-10-27/serialization-audit.json",
-      "artifacts/agere-schema-repair-2026-10-27/format-verification/tests.json",
-      "artifacts/agere-semantic-fixes-2026-10-27/recovered-sql-format-stop.json",
-      "artifacts/agere-schema-repair-2026-10-27/workflow-followup/fcbc798/workflow-receipt.json",
-      "artifacts/agere-schema-repair-2026-10-27/workflow-followup/c44418e/workflow-receipt-v2.json",
-      "artifacts/agere-schema-repair-2026-10-27/workflow-followup/31bde42/workflow-receipt-v6.json",
-      "artifacts/agere-schema-repair-2026-10-27/workflow-followup/58b1a53/workflow-receipt-v7.json",
-      "artifacts/agere-schema-repair-2026-10-27/format-typed-first-round-review.json",
-      "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-protocol.json",
-      "artifacts/agere-live-integration-2026-10-28/protocol-pair.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-clinical-input.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-lossless.json",
-      "artifacts/agere-live-integration-2026-10-28/lossless-pair.json",
-      "artifacts/agere-live-integration-2026-10-28/dose-alias-pair.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-review-loop.json",
-      "artifacts/agere-live-integration-2026-10-28/latest-workflow-checkpoint.json",
-      "docs/agere/MVP_STATUS_2026-10-28.md",
-      "artifacts/agere-live-integration-2026-10-28/verification-economical-routing.json",
-      "artifacts/agere-live-integration-2026-10-28/routing-before-final.json",
-      "artifacts/agere-live-integration-2026-10-28/routing-after-final.json",
-      "artifacts/agere-live-integration-2026-10-28/native-routing-audit.json",
-      "docs/agere/COST_ROUTING_REPAIR_2026-10-28.md",
-      "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md",
-      "artifacts/agere-live-integration-2026-10-28/verification-automatic-continuation.json",
-      "artifacts/agere-live-integration-2026-10-28/artifact-prompt-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-render-context.json",
-      "artifacts/agere-live-integration-2026-10-28/artifact-role-context-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-render-ladder.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt9-native-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-render-clock.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt10-native-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt10-first-writer-static-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-render-history.json",
-      "artifacts/agere-live-integration-2026-10-28/native-review-history-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt11-native-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt11-controlled-stop.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-evidence-dictionary.json",
-      "artifacts/agere-live-integration-2026-10-28/native-support-dictionary-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-computed-prose.json",
-      "artifacts/agere-live-integration-2026-10-28/native-computed-prose-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/native-dictionary-provider-probe.json",
-      "artifacts/agere-live-integration-2026-10-28/attempt12-native-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/verification-computed-feedback-routing.json",
-      "artifacts/agere-live-integration-2026-10-28/native-compiler-feedback-audit.json",
-      "artifacts/agere-live-integration-2026-10-28/native-computed-feedback-audit.json",
-      "docs/agere/APP_INTEGRATION_2026-10-28.md",
-      "artifacts/agere-app-integration-2026-10-28/startup-verification.json",
-      "artifacts/agere-app-reports-2026-10-28/repairs-verification.json",
-      "artifacts/agere-app-reports-2026-10-28/native-repair-differential.json",
-      "artifacts/agere-app-reports-2026-10-28/reporting-combined-verification.json",
-      "artifacts/agere-app-reports-2026-10-28/reporting-fixture-recheck-verification.json",
-      "artifacts/agere-app-reports-2026-10-28/comparison/results.json",
-      "artifacts/agere-app-reports-2026-10-28/comparison/verification.json",
-      "artifacts/agere-app-reports-2026-10-28/comparison/cold-hybrid-run/run-receipt.json",
-      "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json",
-      "artifacts/agere-full-stack-2026-10-28/verification.json",
-      "artifacts/agere-full-stack-2026-10-28/protocol.json",
-      "artifacts/agere-full-stack-2026-10-28/native-preflight.json",
-      "artifacts/agere-full-stack-2026-10-28/reader-preflight.json",
-      "artifacts/agere-full-stack-2026-10-28/known-followups.json"
+      "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
+      "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
+      "artifacts/agere-full-stack-2026-10-29/pdf-layout-qa.json",
+      "artifacts/agere-full-stack-2026-10-29/final-source-audit.json",
+      "artifacts/agere-full-stack-2026-10-29/report-rerender-receipt.json",
+      "artifacts/agere-full-stack-2026-10-29/total-economics.json",
+      "artifacts/agere-full-stack-2026-10-29/source-reuse-preflight.json",
+      "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
     ],
-    "remaining_gap": "Active full received-source run and final audit/presentation. No clinical superiority, optimal order or MVP-sale readiness established. General followups recorded for spec internal cheap-first scheduling, native generation completion, helper identity dependencies and per-field API healing. No new fitting has been started; RSI observations remain distinct from clinical acceptance.",
-    "next_action": "Keep frozen full-run/session61496 executing. Do not modify product source or run_full.py/config/candidate manifest while active. Audit returned full response, component handoffs, source facts, all-attempt costs (including invalid paid responses), HTML/PDF and matched prior arms. Then finish LinkedIn-ready flow PNG/carousel PDF/executive summary from measured receipts; no publication. Address known-followups.json after this frozen run finishes, with offline verification. Preserve broader admissions/care-service extension separately from matched question.",
-    "next": "Keep product code frozen at d09646e / 857f3cf2f8b28b30be650273a7f61772cc3258071607eba93c5a47cef3c4555a. Finish active cheap_llm arm (exec66916, artifacts/agere-app-reports-2026-10-28/comparison/cheap-llm-run), then run stronger_llm and cold hybrid sequentially against the frozen protocol. Use same source, tools and reusable HTML/PDF; report actual usage, missed/unsupported findings, justified unknowns and unscored items. Do not use warm engineering run as a cold comparator or model confidence as accuracy. Preserve verified report/source/ledgers durably; source branch pushed to draft PR2. Subscription only and stop on limit. No agents, protected keys/corpora, new fitting/default activation, main merge, publication or real care execution.",
+    "remaining_gap": "Analytical output remains partial: two source review flags, three no-document patients, unresolved current clinician responsibility/MTD. Cost and latency remain unacceptable for MVP. Full ten-area scope remains open; no accepted SLM plan, fresh RSI fitting or default promotion.",
+    "next_action": "Compact execution-state catalog and compiled table assembly to replace growing SQL conversation; measure cold workflow quality/cost/latency before any readiness claim.",
+    "next": "Compact execution-state catalog and compiled table assembly to replace growing SQL conversation; measure cold workflow quality/cost/latency before any readiness claim.",
     "latest_review": {
-      "at": "2026-10-28T17:35:55.163291+00:00",
-      "kind": "MVP reassessment, controlled stop and native review-history repair",
+      "at": "2026-10-29T05:45:10.577661+00:00",
+      "kind": "Corrected source audit and final engineering delivery",
       "evidence": [
-        "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md",
-        "artifacts/agere-live-integration-2026-10-28/verification-render-history.json",
-        "artifacts/agere-live-integration-2026-10-28/native-review-history-audit.json",
-        "artifacts/agere-live-integration-2026-10-28/attempt11-native-audit.json",
-        "artifacts/agere-live-integration-2026-10-28/attempt11-controlled-stop.json"
+        "docs/agere/INTEGRATED_STACK_DELIVERY_2026-10-29.md",
+        "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
     "coordination": {
@@ -550,10 +468,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T00:02:03.686914+00:00",
-      "verification": "artifacts/agere-app-reports-2026-10-28/comparison/verification.json",
-      "comparison": "artifacts/agere-app-reports-2026-10-28/comparison/results.json",
-      "status": "matched_comparison_complete_clinical_workflow_incomplete"
+      "at": "2026-10-29T05:45:10.577661+00:00",
+      "status": "engineering_delivery_complete_analytical_partial",
+      "receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
+      "active_provider_or_training_job": false
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -611,7 +529,9 @@
       "durable_root": "/Users/mikel/clinical-insights-local/artifacts/agere-workflow-comparison-2026-10-28",
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
-    }
+    },
+    "at": "2026-10-29T05:45:10.577661+00:00",
+    "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected."
   },
   "decisions": [
     {
@@ -1770,116 +1690,19 @@
     {
       "at": "2026-10-28T21:46:44.346012+00:00",
       "decision": "Measured ordinary-app definition and presentation-cost failures justify shared registered-subtype checks and reusable saved-answer rendering. Retain all historical results; engineering checks do not confer clinical correctness or broad MVP readiness."
+    },
+    {
+      "at": "2026-10-29T05:45:10.577661+00:00",
+      "decision": "Correct false source-pair audit and remove its syntax-only blocker. Seal engineering/report assets without claiming clinical/MVP acceptance. Cost >=25.81 requires compact execution-state/table assembly next.",
+      "evidence": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
+      "scope_impact": "All ten areas preserved. No protected evaluation, new model fitting, default activation, main merge or publication."
     }
   ],
   "unsealed_work": {
-    "status": "specific_compiler_feedback_and_economical_repair_verified",
-    "path": "artifacts/agere-schema-repair-2026-10-27",
-    "source_base_commit": "eb8713485c3f6cffc6384409add6751a89793b65",
-    "source": "Verified workflow source integrated only after frozen studies completed",
-    "latest_review": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/completion-receipt.json",
-    "remaining_gap": "No current accepted automatic deliverable. Run12 exposes vague static feedback, unnecessary source-observation extraction and premature Sonnet escalation; current general repairs pass517checks516pass/one skip. Native continuation13 and clinical/ordinaryUI/export/accepted-answer economics remain pending.",
-    "training_root": "artifacts/agere-schema-repair-2026-10-27",
-    "dependent_training": "artifacts/agere-schema-repair-2026-10-27/revised-status.json",
-    "superseded_training": "artifacts/agere-guideline-study-2026-10-27/dependent-study-status.json",
-    "candidate_workspace": "/private/tmp/agere-codex-integration-20261026",
-    "candidate_commit": "c6da2892bb8c3559940f7020e11d9bf8df232def",
-    "active_original_training": "artifacts/agere-semantic-fixes-2026-10-27/recovered-sql-format-stop.json",
-    "results_report": "artifacts/agere-schema-repair-2026-10-27/before-after.md",
-    "results_collector_session": 83290,
-    "qualification_followup": {
-      "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
-      "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
-      "workspace": "/private/tmp/agere-native-shape-qualification-20261027",
-      "source_fingerprint": "8c78097e89133ecd83dbe1a5ed3c988d872a220fc577d57031840111af43d9d1",
-      "kind": "classifier-native-baseline-qualification",
-      "adapter_serving_contracts_unchanged": true,
-      "tests": {
-        "run": 560,
-        "passed": 556,
-        "skipped": 4
-      },
-      "integration": "Integrated by merge before format repair; no classifier candidate activated",
-      "no_default_activation": true
-    },
-    "workflow_followup": {
-      "workspace": "/private/tmp/agere-denial-timing-followup-20261028",
-      "branch": "codex/workflow-integrity-20261027",
-      "commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8",
-      "status": "integrated_offline_verified",
-      "receipt": "/private/tmp/agere-denial-timing-followup-20261028/artifacts/agere-interpretation-followup-2026-10-27/release-receipt.json",
-      "source_fingerprint": "fa1cd528164afea8cec1447e2b3340d526ab77c2369a2f6edbe3baa06b531595",
-      "scope": "General workflow/evidence/analytics/economics, medication arithmetic, unknown supply and shared cohort semantics.",
-      "evidence": "992 unique offline checks:990pass/two live skips through received finding65; new isolated live protocol/startup/routing verification165pass, not an additive clinical accuracy score. Both actual saved padded tool batches change0to3 recognized literal actions with unchanged arguments/usage. SQL55to173correct/304 with62wrong/69declines remains unselected; typed corrective round gains11loses11 and wrong33to42. Full ordinary clinical completion remains pending.",
-      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open.",
-      "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
-    },
-    "finite_completion": {
-      "kind": "finite_local_poststudy_completion",
-      "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
-      "status_file": "artifacts/agere-offline-finish-2026-10-27/finalization-status.json",
-      "expected_study_pid": 29583,
-      "source_rule": "Wait for both final native reviews and exact study-process exit; verify frozen and staged source, clean pinned checkouts and preserved final study bytes before fast-forward. No duplicate training, default/model activation or live clinical run.",
-      "scope": "Integrate already-tested general repairs; write paired/domain gains, losses and cost limitation; refresh offline preflight; preserve final source/report; update already-approved private draft PR branch.",
-      "tests": "Five completion safety/hash checks pass; seven actual-results reporting checks pass.",
-      "automatic_provider_calls": false,
-      "automatic_retry": false
-    },
-    "live_resume": {
-      "workspace": "/private/tmp/agere-codex-integration-20261026",
-      "source_fingerprint": "97a0678f44aa381c7919d0be14bafd14cac47b82e3bebbe10553e8de82533366",
-      "attempt": "/private/tmp/agere-live-resume-20261028/attempt11",
-      "evidence": "artifacts/agere-live-integration-2026-10-28/attempt11-native-audit.json",
-      "explicit_payload_approval": true,
-      "status": "controlled_stop_completed_no_pending_provider_calls"
-    },
-    "cost_routing_candidate": {
-      "workspace": "/private/tmp/agere-codex-integration-20261026",
-      "commit": "953648bf51efefb6193c7ae297347b4ae7ec24d7",
-      "source_fingerprint": "f61b308fdd47302c4892bb68de31f4b3f7010fc25ae86168241098286930228a",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-economical-routing.json",
-      "runtime_promoted": false,
-      "live_cost_saving_measured": false
-    },
-    "automatic_review_candidate": {
-      "workspace": "/private/tmp/agere-codex-integration-20261026",
-      "commit": "8e53fb0",
-      "source_fingerprint": "588596c6cdad55ffc954bbae5b74b0aac0a1b249989ee5a789a1cd2a6aabdfa1",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-automatic-continuation.json",
-      "runtime_promoted": false,
-      "clinical_gain_measured": false,
-      "numeric_role_check": "off after native regressions"
-    },
-    "artifact_role_candidate": {
-      "commit": "905f80a",
-      "source_fingerprint": "4c99792bbbd708292dec97d6b10c93fb1fb9ef55c571bddf070af756e09c5ad6",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-context.json",
-      "runtime_promoted": false,
-      "clinical_gain_measured": false
-    },
-    "render_ladder_candidate": {
-      "commit": "d5241ee",
-      "source_fingerprint": "a68e3818e97cfdf3a33858fe1e0fd848ced2a6c31c22415873a7d5a44d23fa55",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-ladder.json",
-      "runtime_promoted": false,
-      "clinical_gain_measured": false,
-      "native_retry": "/private/tmp/agere-live-resume-20261028/attempt10"
-    },
-    "render_clock_candidate": {
-      "commit": "2609e36",
-      "source_fingerprint": "97a0678f44aa381c7919d0be14bafd14cac47b82e3bebbe10553e8de82533366",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-clock.json",
-      "runtime_promoted": false,
-      "clinical_gain_measured": false,
-      "native_continuation": "/private/tmp/agere-live-resume-20261028/attempt11"
-    },
-    "review_history_candidate": {
-      "commit": "33b99a6",
-      "source_fingerprint": "6ea4430b004885cf0a8437e53958bb20f99b7554a9f257af9fcdb9899b3912cf",
-      "verification": "artifacts/agere-live-integration-2026-10-28/verification-render-history.json",
-      "runtime_promoted": false,
-      "clinical_gain_measured": false
-    }
+    "status": "remaining_general_product_fix",
+    "path": "artifacts/agere-full-stack-2026-10-29",
+    "remaining_gap": "Analytical output remains partial: two source review flags, three no-document patients, unresolved current clinician responsibility/MTD. Cost and latency remain unacceptable for MVP. Full ten-area scope remains open; no accepted SLM plan, fresh RSI fitting or default promotion.",
+    "next_action": "Compact execution-state catalog and compiled table assembly to replace growing SQL conversation; measure cold workflow quality/cost/latency before any readiness claim."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
@@ -1887,26 +1710,12 @@
     "evidence": "Populate execution, cost and contribution claims only from measured candidate run; distinguish attempted, used, skipped and unqualified components."
   },
   "full_stack_candidate_checkpoint": {
-    "at": "2026-10-29T00:50:23.082726+00:00",
-    "status": "active_frozen_full_execution",
-    "workflow_change": "All eligible nonfrontier stages before hosted generation, no speculative Claude, full-population default, whole-document typed source extraction, source-block UltraBERT/BGE, pinned trained candidates, complete narrative field manifest and reference-upper dose assessment.",
-    "evidence": "/private/tmp/agere-full-stack-20261028/verification.json",
-    "offline_checks": {
-      "tests": 237,
-      "passed": 233,
-      "failures": 0,
-      "errors": 0,
-      "skipped": 4,
-      "provider_calls": 0
-    },
-    "native_checks": "/private/tmp/agere-full-stack-20261028/native-preflight.json",
-    "reader_checks": "/private/tmp/agere-full-stack-20261028/reader-preflight.json",
-    "remaining_gap": "Full workflow execution and actual component/cost/quality comparison; trained typed proposal currently malformed, SQL proposal must pass runtime checks; no global model promotion.",
-    "exact_next_action": "Execute run_full.py --output full-run --execute with subscription transport; retain source/code freeze, then audit and render deliverables plus LinkedIn-ready evidence-based flow assets.",
-    "session": 61496,
-    "run": "/private/tmp/agere-full-stack-20261028/full-run",
-    "log": "/private/tmp/agere-full-stack-20261028/full-run.log",
-    "visual_builder": "/private/tmp/agere-full-stack-20261028/build_social.py",
-    "visual_request": "Completed assets after the workflow: flow PNG, PDF carousel, executive summary and LinkedIn draft. No posting authorized."
+    "at": "2026-10-29T05:45:10.577661+00:00",
+    "status": "returned_partial_engineering_assets_delivered",
+    "frozen_cold_commit": "48930f7",
+    "active_session": null,
+    "receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
+    "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-full-stack-2026-10-29",
+    "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
   }
 }

@@ -411,6 +411,11 @@ class Cascade:
     def order(self):
         """A recorded correction is read only by the hosted interpreter, so it goes first for that question; every other
         proposer still follows in its usual order."""
+        from .harness_improvement import recovering
+        if recovering(self.question):
+            self.routing={'route':'explicit_owned_investigation_continuation','cold_benchmark':False,
+                'reason':'Continue recorded read-only work; reexecute SQL and source-question checks. Prior proposal stages already ran in the owned investigation.'}
+            return ('backstop_agent',)
         from .learning import correction_context
         try:
             corrected = bool(correction_context(self.stack.path, self.question))
