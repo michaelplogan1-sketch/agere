@@ -170,6 +170,7 @@ class SemanticWarehouse:
             db.execute('PRAGMA query_only=ON')
             db.set_authorizer(self._authorize)
         self._local.defined, self._local.defined_names = day, list(views)
+        self._local.defined_views = dict(views)
         return self._local.defined_names
 
     def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
@@ -178,8 +179,36 @@ class SemanticWarehouse:
         # Product investigation uses governed definitions; the standalone reader
         # remains independent of product compiler imports and type checks share
         # the query's existing timeout.
-        return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars,
-                             check_date_types=bool(getattr(self._local, 'defined', None)))
+        defined = getattr(self._local, 'defined', None)
+        if not defined:
+            return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars)
+        reads, definitions = set(), set()
+        views = self._local.defined_views
+        def authorize(action, arg1, arg2, database, source):
+            verdict = self._authorize(action, arg1, arg2, database, source)
+            if verdict == sqlite3.SQLITE_OK:
+                if action == sqlite3.SQLITE_READ:
+                    if database == 'main': reads.add(arg1)
+                    if database == 'temp' and arg1 in views: definitions.add(arg1)
+                if source in views: definitions.add(source)
+            return verdict
+        db = self.db
+        db.set_authorizer(authorize)
+        try:
+            result = bounded_query(db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars,
+                                   check_date_types=True)
+        finally:
+            db.set_authorizer(self._authorize)
+        from ...contracts import digest
+        meanings = semantic_docs.schema_doc()
+        result['source_contracts'] = {'schema':'executed-source-contracts/1','as_of':defined,
+            'source_digest':self.meta.get('source_digest'),'semantic_version':self.meta.get('version'),
+            'definitions':[{'name':name,'query':views[name],'query_digest':digest(views[name])}
+                           for name in sorted(definitions)],
+            'relations':[{'name':name,'meaning':meanings.get(name),'columns':self.columns.get(name,[])}
+                         for name in sorted(reads)],
+            'scope':'Inherited definitions and source-table semantics from actual authorized SQLite reads. These describe computation and received evidence, not independent clinical support.'}
+        return result
 
     def close(self):
         with self._lock:

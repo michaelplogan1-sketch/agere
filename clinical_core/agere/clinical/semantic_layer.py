@@ -319,6 +319,11 @@ def upgrade_concept_patient(path, *, force=False):
 
 
 SCHEMA_DOC = {
+    'fill': 'Canonical picked-up fills (fill-events/3), one row per patient/class/ingredient fill event. '
+            'Built only from medication rows with picked_up = 1 in payer_pharmacy_claims, pharmacy_dispenses or pharmacy_claims. '
+            'Unpaid, reversed, returned-to-stock and prepared-only events do not qualify. Matching source channels within one day '
+            'are deduplicated; source record_ids remain. A fill in a lookback is received dispensing evidence, not current use, '
+            'adherence or an individualized tolerated dose. Unknown/conflicting duration does not establish supply end or a gap.',
     'patient': 'One row per roster patient. age_reported/sex_reported as received; coverage_type/status from latest coverage record, '
                'Use age_at(birth_date, as_of) for age. Feed-reported ages are historical metadata, never analytical age. '
                'else (population-feed members without one) coverage_type = line_of_business of the latest enrollment month and '

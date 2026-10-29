@@ -913,11 +913,36 @@ def numeric_role_review(question,answer,calls,*,decider,as_of,ledger):
             'scope':'Model-selected meaning with code-checked values; no independent clinical acceptance'}
 
 
+def source_contract_definitions(result):
+    """Exact inherited definitions from an executed query, deduplicated by content."""
+    from ...contracts import digest
+    inherited=result.get('source_contracts') if isinstance(result,dict) else None
+    if not isinstance(inherited,dict) or inherited.get('schema')!='executed-source-contracts/1':return {}
+    identity={k:inherited.get(k)for k in ('schema','as_of','source_digest','semantic_version','scope')}
+    definitions={}
+    for kind in ('definitions','relations'):
+        for item in inherited.get(kind,[]):
+            entry={**identity,'kind':kind,**item};definitions[digest(entry)]=entry
+    return definitions
+
+
+def execution_review_graph(calls):
+    """Coverage gets the same executed SQL and source meanings as source review."""
+    from .semantic_analyst import successful_sql_calls
+    graph={'nodes':[]};definitions={}
+    for i,c in enumerate(successful_sql_calls(calls)):
+        inherited=source_contract_definitions(c.get('result'));definitions.update(inherited)
+        params={'query':(c.get('input')or{}).get('sql')or c['sql']}
+        if inherited:params['source_definition_keys']=list(inherited)
+        graph['nodes'].append({'id':f'query_{i}','operation':'sql','parameters':params})
+    if definitions:graph['executed_source_definitions']=definitions
+    return graph
+
+
 def review_final(stack, question, answer, calls, tools, *, ledger, as_of, context=None):
     """Review the complete proposed answer, then return actionable feedback to the SAME investigation, not a new planner.
     This is a recorded model judgment, not clinical qualification. Quote provenance and claim support remain distinct."""
     from . import system_one_gate as gate
-    from .semantic_analyst import successful_sql_calls
     assessment = {'status': 'unavailable', 'calls': 0, 'cost_usd': 0.0, 'feedback': None}
     if not isinstance(answer, dict):
         return {**assessment, 'status': 'repair', 'feedback': 'Return the required JSON answer object.'}
@@ -986,8 +1011,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     if contradicted:
         return {**assessment,'status':'repair','feedback':'Quantitative meaning check failed: '+json.dumps(
             {k:numeric['claims'][k] for k in contradicted})+'. Recompute the named quantities from their exact source columns/categories using tools; correct wrong role labels. Do not reword an overlapping group as an exclusive group.'}
-    graph = {'nodes': [{'id': f'query_{i}', 'operation': 'sql', 'parameters': {'query': (c.get('input') or {}).get('sql') or c['sql']}}
-                       for i, c in enumerate(successful_sql_calls(calls))]}
+    graph = execution_review_graph(calls)
     from .decision_context import prompt_block
     from .clinical_definitions import describe
     from .drug_classes import GROUPS
@@ -1155,7 +1179,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
     final_view=(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')
     def contracts_for(views):
-        contracts=[]
+        contracts=[];source_definitions={}
         for c in calls:
             result=c.get('result')or{}
             if not isinstance(result,dict)or not result.get('result_view')or result['result_view']not in views:continue
@@ -1165,8 +1189,11 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             if assembly:
                 contract['assembly']={k:assembly[k]for k in ('schema','base_result_view','keys','column_renames')if k in assembly}
                 contract['assembly']['joins']=[{k:j[k]for k in ('result_view','as','mode','on','selected_columns','domain','items_from','retain_in_final')if k in j}for j in assembly.get('joins',[])]
+            inherited=source_contract_definitions(result)
+            if inherited:
+                source_definitions.update(inherited);contract['source_definition_keys']=list(inherited)
             contracts.append(contract)
-        return contracts
+        return {'executions':contracts,'source_definitions':source_definitions}
     common={'question':question,'as_of':as_of,'final_result_view':final_view,
         'instruction':'Review each claim against its stated source kind, definition, entity/domain and time. Structured pharmacy/assignment observations and counts of machine findings are source facts or arithmetic, not claims that notes corroborate treatment or that the findings are clinically valid. Check those facts against their executed inputs and scope. Explicit legacy/audit fields preserve prior machine observations, not endorsed clinical findings; check their fidelity against the original native observations, and assess the source-bound candidate relations separately. Clinical interpretation, reasons, current use and current responsibility need their own source meaning. An assertion temporality of current means current at its source statement; it does not override current_clinical_state_established=false or establish snapshot-current care. A dated consultation or authorship object is not itself a current-assignment claim. Review machine interpretations with their limitations; preserve unknowns, dates and negation. Global coverage is checked separately.'}
     from .evidence_projection import table_view,restore_table
@@ -1196,10 +1223,12 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                     isinstance(document.get('text'),str)and quote in document['text']):
                 cited_sources.append({'citation':citation,'executed_source_document':document})
                 break
+    global_contracts=contracts_for({n['result_view']for n in native if n['result_view']})
     packets=[{'id':'summary','scope':'Global/headline/fact claims and all final rows. Clinical source collections refer to required patient packets; these references alone cannot establish clinical aggregates or causal claims. Return unknown for an aggregate requiring clinical interpretation not present in actual computed scalars.',
         **common,'shared_evidence':list(shared.values()),'native_bindings':native,
         'shared_evidence_provenance':[{'row_digest':ident,'origins':list(sources.values())}for ident,sources in shared_origins.items()],
-        'native_calculation_contracts':contracts_for({n['result_view']for n in native if n['result_view']}),
+        'native_calculation_contracts':global_contracts['executions'],
+        'executed_source_definitions':global_contracts['source_definitions'],
         'source_precedence':'Final answer claims bind to final_result_view and their computed_claims sources. Earlier intermediate results are retained as observations, not alternative final claims. Reconcile differing counts using each executed selection/domain contract; neither a shared number nor a digest establishes its meaning.',
         'cited_source_evidence':cited_sources,
         'answer':summary,'all_final_rows':summary_rows,'required_clinical_dependencies':dependencies,
@@ -1221,7 +1250,8 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             'shared_evidence':local_shared,
             'global_claims_scope':'Global/headline/fact claims are checked in the separate summary packet. Check only this patient\'s actual final row fields here. A global edit is not a change to these local claims.',
             'evidence':list(by.get(pid,{}).values()),
-            'evidence_provenance':bindings,'native_calculation_contracts':contracts,
+            'evidence_provenance':bindings,'native_calculation_contracts':contracts['executions'],
+            'executed_source_definitions':contracts['source_definitions'],
             'review_scope':[{'questions':m['questions'],'manifest':[x for x in m['manifest']if x['patient_id']==pid],
                 'patient_observation_digest':digest({'questions':m['questions'],
                     'manifest':[x for x in m['manifest']if x['patient_id']==pid],
