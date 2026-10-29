@@ -151,7 +151,22 @@ def _runtime_model(role,root=None):
 
 
 def runtime_model(role,root=None):
-    try:return _runtime_model(role,root)
+    try:
+        selected=_runtime_model(role,root)
+        if selected is not None:return selected
+        # Isolated routing candidates may reorder checked proposals; they do
+        # not acquire answer authority or alter global activated pointers.
+        manifest=os.environ.get('AGERE_ADAPTER_CANDIDATES')
+        if not manifest or role not in ('router','tier_router'):return None
+        spec=json.loads(checked_path(manifest).read_text())
+        if spec.get('schema')!='checked-adapter-candidates/1' or spec.get('authority')!='isolated_checked_proposal':return None
+        entry=spec.get('components',{}).get(role)
+        if not entry:return None
+        found=next((m for m in models(entry['registry']) if m['id']==entry['revision'] and m['role']==role),None)
+        if not found or found['state']=='quarantined':return None
+        path=checked_path(found['model_path'])
+        if hashlib.sha256(path.read_bytes()).hexdigest()!=found['model_sha256']:return None
+        return path
     except (ValueError,KeyError,OSError,sqlite3.Error):return None
 
 
@@ -164,10 +179,15 @@ def active_identity():
     try:revision=db.execute("SELECT COALESCE(MAX(seq),0) FROM component_events WHERE kind IN ('activated','quarantined') OR (kind='user_feedback' AND json_extract(payload,'$.accepted')=0)").fetchone()[0]
     finally:db.close()
     from .adapter_learning import release_identity
-    selected={role:(release_identity(role[4:],root) if role in ADAPTER_ROLES else str(p))
-                if (p:=runtime_model(role,root)) is not None else None for role in ALL_ROLES}
+    selected={}
+    for role in ALL_ROLES:
+        if role in ADAPTER_ROLES:selected[role]=release_identity(role[4:],root)
+        else:
+            p=runtime_model(role,root);selected[role]=str(p)if p is not None else None
     if revision==0 and not any(selected.values()):return None
-    return {'root':str(checked_path(root)),'revision':revision,'models':selected}
+    manifest=os.environ.get('AGERE_ADAPTER_CANDIDATES')
+    return {'root':str(checked_path(root)),'revision':revision,'models':selected,
+            **({'isolated_candidate_manifest':hashlib.sha256(checked_path(manifest).read_bytes()).hexdigest()}if manifest else {})}
 
 
 def register(root,role,model,qualification,*,parent=None,activate=False):

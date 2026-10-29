@@ -5,7 +5,7 @@
   "heartbeat_id": "continue-building-the-agere-stack",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Matched hybrid/Haiku-only/Sonnet-only comparison completed and source-audited; shared clinical composition/dose assessment remains next. Paper held.",
+  "active_work": "Active frozen integrated full-stack HFrEF execution, followed by measured comparison and requested LinkedIn flow/executive assets.",
   "latest_delivery": "docs/agere/AUTOMATIC_REVIEW_REPAIR_2026-10-28.md",
   "latest_receipt": "artifacts/agere-live-integration-2026-10-28/delivery-receipt.json",
   "owned_server_pid": 1965,
@@ -22,13 +22,13 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-29T00:02:03.686914+00:00",
+  "latest_checkpoint": "2026-10-29T01:05:13.468845+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "Primary :8885 reusable-report app remains owned (PID1965/session81853); all three comparison executions finished. No active provider/training job.",
+  "server_status": "Existing primary :8885 status not freshly rechecked. Isolated full-run session61496 active; no new training job.",
   "unsealed_work": {
     "status": "ordinary_app_e2e_measurement",
     "path": "artifacts/agere-schema-repair-2026-10-27",
@@ -362,5 +362,33 @@
     "allow_live": false,
     "source_fingerprint": "6432e94052c5b405c0a9aa50c17bcf9e5feff216cdf0d65afe3c01a58a78c314",
     "session": 30529
+  },
+  "current_visual_request": {
+    "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
+    "publication": "Draft assets only; no posting authorized.",
+    "evidence": "Populate execution, cost and contribution claims only from measured candidate run; distinguish attempted, used, skipped and unqualified components."
+  },
+  "full_stack_candidate_checkpoint": {
+    "at": "2026-10-29T00:50:23.082726+00:00",
+    "status": "active_frozen_full_execution",
+    "workflow_change": "All eligible nonfrontier stages before hosted generation, no speculative Claude, full-population default, whole-document typed source extraction, source-block UltraBERT/BGE, pinned trained candidates, complete narrative field manifest and reference-upper dose assessment.",
+    "evidence": "/private/tmp/agere-full-stack-20261028/verification.json",
+    "offline_checks": {
+      "tests": 237,
+      "passed": 233,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "provider_calls": 0
+    },
+    "native_checks": "/private/tmp/agere-full-stack-20261028/native-preflight.json",
+    "reader_checks": "/private/tmp/agere-full-stack-20261028/reader-preflight.json",
+    "remaining_gap": "Full workflow execution and actual component/cost/quality comparison; trained typed proposal currently malformed, SQL proposal must pass runtime checks; no global model promotion.",
+    "exact_next_action": "Execute run_full.py --output full-run --execute with subscription transport; retain source/code freeze, then audit and render deliverables plus LinkedIn-ready evidence-based flow assets.",
+    "session": 61496,
+    "run": "/private/tmp/agere-full-stack-20261028/full-run",
+    "log": "/private/tmp/agere-full-stack-20261028/full-run.log",
+    "visual_builder": "/private/tmp/agere-full-stack-20261028/build_social.py",
+    "visual_request": "Completed assets after the workflow: flow PNG, PDF carousel, executive summary and LinkedIn draft. No posting authorized."
   }
 }

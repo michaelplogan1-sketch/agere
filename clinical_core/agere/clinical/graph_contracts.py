@@ -320,7 +320,8 @@ def parameter_schema(op, catalog):
                     'sub_question_count': {'type': 'integer', 'minimum': 1, 'maximum': 8},
                     'aggregation': string(aq.AGGREGATIONS), 'returns': string(aq.RETURNS), 'unit': string(aq.UNITS),
                     'select_labels': array(string(), 'Option labels that select a patient'),
-                    'maximum_patients': {'type': 'integer', 'minimum': 1, 'maximum': aq.HARD_MAX_PATIENTS},
+                    'maximum_patients': {'type': ['integer','null'], 'minimum': 1,
+                        'description': 'Null reviews the entire scoped population; a positive limit must be explicit.'},
                     'window': WINDOW_SCHEMA, 'sources': array(string(aq.SOURCES)), 'providers': array(string(aq.PROVIDERS))})
     if op == 'hcc_suspects':
         from . import hcc_suspecting as hs

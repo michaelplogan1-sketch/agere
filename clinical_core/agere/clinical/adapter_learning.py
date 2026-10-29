@@ -85,7 +85,11 @@ def release_identity(learner,root=None,base=None):
     from . import component_learning as C
     try:
         path=C.runtime_model(role(learner),root)
-        if path is None:return None
+        candidate=None
+        if path is None:
+            candidate=candidate_metadata(learner)
+            if candidate is None:return None
+            path=Path(candidate['model_path'])
         model=json.loads(path.read_text())
         pinned=pin_base(base or model['base']['path'])
         if model.get('schema')!=VERSION or model.get('learner')!=learner or pinned['identity']!=model['base']['identity']:return None
@@ -94,8 +98,33 @@ def release_identity(learner,root=None,base=None):
         for name,entry in model['files'].items():
             p=checked_child(directory,name)
             if p.stat().st_size!=entry['bytes'] or file_hash(p)!=entry['sha256']:return None
-        return {'adapter':str(directory),'base_identity':pinned['identity'],'artifact_identity':model['artifact_identity']}
+        return {'adapter':str(directory),'base_identity':pinned['identity'],'artifact_identity':model['artifact_identity'],
+                **({'candidate':True,'revision':candidate['revision'],'qualification':'checked proposal only; not a promoted model',
+                    'training_contract':candidate['training_contract'],'runtime_contract':contract(learner)} if candidate else {})}
     except (OSError,ValueError,KeyError,TypeError):return None
+
+
+def candidate_metadata(learner):
+    """Explicit isolated-study candidates, never production activation or a scan of old lessons.
+
+    The current native compiler checks each proposal. A changed serving contract
+    is recorded rather than pretending that historical qualification transfers.
+    Metadata and weights still have to match their immutable registry hashes.
+    """
+    from . import component_learning as C
+    manifest=os.environ.get('AGERE_ADAPTER_CANDIDATES')
+    if not manifest:return None
+    spec=json.loads(C.checked_path(manifest).read_text())
+    if spec.get('schema')!='checked-adapter-candidates/1' or spec.get('authority')!='isolated_checked_proposal':
+        raise ValueError('Explicit isolated checked-proposal candidate manifest required')
+    entry=spec.get('learners',{}).get(learner)
+    if entry is None:return None
+    root=C.checked_path(entry['registry']);revision=entry['revision']
+    found=next((m for m in C.models(root) if m['id']==revision and m['role']==role(learner)),None)
+    if not found or found['state']=='quarantined':raise ValueError('Missing or quarantined adapter candidate')
+    path=C.checked_path(found['model_path'])
+    if file_hash(path)!=found['model_sha256']:raise ValueError('Adapter candidate metadata changed')
+    return {'revision':revision,'model_path':str(path),'training_contract':found['contract']}
 
 
 def runtime_adapter(learner,base):

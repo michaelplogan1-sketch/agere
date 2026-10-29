@@ -235,6 +235,12 @@ def backstop_before_generalists(order):
     return tuple(order)
 
 
+def nonfrontier_first(order):
+    """Candidate execution order: a permutation with hosted generation last."""
+    hosted=set(CLAUDE_TIERS)|{'spec_path'}
+    return tuple(t for t in order if t not in hosted)+tuple(t for t in order if t in hosted)
+
+
 def stage_of(tier):
     if tier in STAGE_OF: return STAGE_OF[tier]
     return STAGE_INDEX['system_one_choice'] if tier.startswith(('system_one_', 's1_')) else len(STAGES) - 1
@@ -446,6 +452,18 @@ class Cascade:
             from .system_one_gate import ROUTES
             routed = tuple(t for t in ROUTES.get(self.routing.get('label'), ()) if stage_of(t) != len(STAGES) - 1)
         order = backstop_before_generalists(self.heavy_last(self.free_first(staged(order, routed))))
+        if os.environ.get('AGERE_ADAPTER_CANDIDATES'):
+            # Explicit isolated candidates are checked before generative hosted
+            # interpretation. This is a permutation, never model promotion.
+            trained=[t for t in ('qwen_typed_interpreter','bottled_sql') if t in order]
+            rest=[t for t in order if t not in trained]
+            at=min((i for i,t in enumerate(rest) if stage_of(t)>=STAGE_INDEX['spec_path']),default=len(rest))
+            order=tuple(rest[:at]+trained+rest[at:])
+        if os.environ.get('AGERE_NONFRONTIER_FIRST')=='on':
+            # Keep every applicable component available, but finish the code,
+            # local-model and System One stages before hosted interpretation.
+            # The spec path may generate a Claude request, so it is hosted here.
+            return nonfrontier_first(order)
         return investigator_first_for_one_patient(order) if self.one_patient() else order
 
     def heavy_last(self, order):

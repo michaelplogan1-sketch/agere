@@ -110,8 +110,17 @@ has already declined this question, so it is yours to answer completely and corr
   or conflicting in structured data, explicitly ask the narrative reviewer for that value and its dates/status, not merely reasons.
   Prefer patient_query_sql to bind the complete cohort in code. Use complete=true on the final query_sql so table_from_tool copies
   EVERY computed row; model previews do not limit the stored result or patient membership.
+  Before composing the final table, enumerate EVERY requested narrative field: medication doses, reasons, named clinicians,
+  relationships, dates and patient-specific recommendations as applicable. The narrative_field_manifest lists available
+  findings even when no preview row fits. A field must be represented by its source findings or a specific supported unknown;
+  do not claim that a preview's missing value means no source evidence exists. Use separate source questions for different roles.
+  Preserve every patient's recommendation in an explicit final table column when recommendations were requested; counts of plans
+  or quotes alone do not supply recommendations. Keep historical consultants distinct from assigned current clinicians.
 - query_sql also accepts the existing governed macros documented below, including current_dose, medication_dose, care_team and
   phenotype. Use dose evidence with administration/frequency and formulation, not product strength alone. Compute comparisons in SQL.
+  An at_target label means the published target RANGE, not its upper dose. For a maximum-dose question compare documented_daily_mg
+  with target_max_daily_mg and preserve reference_max_status/documented_reference_max_status. A reference upper dose does not establish
+  an individual maximum tolerated dose or a need to increase treatment; weight-conditional targets and unresolved use stay explicit.
 - For mathematical analysis, discover list_analyses, inspect describe_analysis, then execute_analysis with native typed parameters.
   Use existing trajectory/change-point, survival, forecast, queueing, allocation, financial and causal engines when the question needs
   them. Bind the exact population, keep uncertainty/assumptions and unavailable prerequisites, and compose their result_views in SQL.

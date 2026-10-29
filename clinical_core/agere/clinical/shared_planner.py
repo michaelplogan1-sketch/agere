@@ -113,7 +113,8 @@ def isolated_local(catalog, question, population, worker=None):
         reply = (worker or _WORKER).call(payload, limit)
         if 'declined' in reply: raise QuestionNotUnderstood(f"{reply['declined']}; no reduced question was executed.")
         if 'ok' not in reply:
-            raise QuestionNotUnderstood('Local interpretation failed in its isolated worker; no reduced question was executed.')
+            detail=str(reply.get('error') or 'No worker error detail')[:500]
+            raise QuestionNotUnderstood('Local interpretation failed in its isolated worker: '+detail+'; no reduced question was executed.')
         try: contract, interpretation = reply['ok']
         except (TypeError, ValueError) as exc: raise QuestionNotUnderstood('Local interpreter returned an invalid contract.') from exc
         return contract, interpretation
@@ -1100,6 +1101,7 @@ def start_spec_early(stack, catalog, question, population):
     """The grammar declined: the spec path's paid fillers (System One slots, the Haiku spec writer) start now, in parallel with the cascade's
     earlier stages (spec_fill.start_early). Not for a rewording (free stages only), a question naming one patient (the chart reader answers
     those) or without Claude."""
+    if os.environ.get('AGERE_NONFRONTIER_FIRST') == 'on': return
     from . import spec_path, spec_fill, patient_ids
     from .proposers import FREE_ONLY, claude_available
     if FREE_ONLY.get() or not getattr(stack, 'allow_live', False) or not spec_path.enabled(stack) or not claude_available(): return

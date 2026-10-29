@@ -4,6 +4,7 @@ The caller supplies the population and narrative questions. No disease handler,
 patient sampling, extracted-fact substitution or clinical-policy mutation.
 """
 import json
+import os
 import re
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -103,6 +104,8 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                          'characters_supplied':sum(len(d['text']) for d in docs),'batches':len(batches),
                          'document_digest':digest(docs)})
     stop=threading.Event()
+    source_coverage=[]
+    coverage_lock=threading.Lock()
     from . import together, system_one
     ledger_path = together._ledger_path(tools.stack)
 
@@ -112,6 +115,42 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         ledger=BudgetLedger(ledger_path)
         send=together._ledgered_send(tools.stack,ledger,receipts)
         try:
+            if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans':
+                from .typed_document_review import read
+                for batch in packages[pid]:
+                    if stop.is_set():raise RuntimeError('Whole-document review stopped after subscription limit')
+                    typed=read(tools,pid,batch,questions,ledger)
+                    with coverage_lock:
+                        source_coverage.append({'patient_id':pid,'version':typed['version'],
+                            'coverage':typed['coverage'],'ranking':typed['ranking'],
+                            'all_blocks_processed':typed['all_blocks_processed'],
+                            'unresolved_fields':len(typed['unresolved'])})
+                    checks.extend(typed['checks'])
+                    for key,values in typed['findings'].items():aggregate[key].extend(values)
+                    # Source/field-specific repair retains already selected
+                    # findings. One unclear block no longer rereads the patient.
+                    pending={}
+                    for item in typed['unresolved']:pending.setdefault(item['record_id'],set()).add(item['field'])
+                    for doc in batch:
+                        fields=pending.get(doc['record_id'])
+                        if not fields:continue
+                        selected={k:questions[k]for k in questions if k in fields}
+                        body={'model':model_policy.HAIKU,'max_tokens':18000,'system':SYSTEM,
+                              'messages':[{'role':'user','content':json.dumps({'patient_id':pid,'as_of':tools.as_of,
+                                'questions':selected,'whole_documents':[doc],
+                                'repair_feedback':'Interpret only these unresolved fields. Other source/field decisions are retained.'})}]}
+                        try:
+                            with component('document_field_repair',patient_id=pid,record_id=doc['record_id'],fields=list(selected)):
+                                with model_policy.question_path(),model_policy.first_rung():raw,_,_=send(body)
+                                if raw.get('stop_reason')=='max_tokens':raise ValueError('Field repair response truncated')
+                                found=validate(parsed(raw),selected,[doc])
+                            for key,values in found.items():aggregate[key].extend(values)
+                        except Exception as exc:
+                            if getattr(exc,'kind',None)=='rate_limit' or re.search(r'subscription.*limit|weekly.*limit|usage.*limit',str(exc),re.I):
+                                stop.set();raise
+                            failures.append('Unresolved source fields '+doc['record_id']+': '+str(exc)[:300])
+                for key,values in aggregate.items():aggregate[key]=list({digest(v):v for v in values}.values())
+                return pid,aggregate,receipts,checks,failures
             for batch in packages[pid]:
                 feedback=None;accepted=None
                 for model in (model_policy.HAIKU,model_policy.SONNET):
@@ -183,7 +222,10 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         row={'patient_id':pid,'review_status':'needs_review' if failures else 'reviewed' if m['received_documents'] else 'no_documents',
              'documents_reviewed':m['received_documents'],'review_json':json.dumps(found),'review_limitations':json.dumps(failures)}
         rows.append(row)
-    tools.document_reviews.append({'questions':questions,'scope':ids,'manifest':manifest,'rows':rows,'provider_receipts':all_receipts,'typed_checks':all_checks})
+    tools.document_reviews.append({'questions':questions,'scope':ids,'manifest':manifest,'rows':rows,
+        'provider_receipts':all_receipts,'typed_checks':all_checks,'source_coverage':source_coverage})
     return {'columns':list(rows[0]) if rows else ['patient_id','review_status','documents_reviewed','review_json','review_limitations'],
             'rows':rows,'coverage':manifest,'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
-            'method':'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification'}
+            'method':('Every scoped whole document/block read with typed source decisions; only unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
+                      if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans' else
+                      'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification')}

@@ -36,7 +36,6 @@ UNITS = ('patient', 'document')
 SOURCES = ('passages', 'medication_state', 'therapy_barriers', 'external')  # external = cited Perplexity Agent search
 PROVIDERS = ('jev', 'perplexity')
 COST_PER_CALL = {'jev': 0.0002, 'perplexity': 0.0001}  # measured 2026-10-22; used only when System One reports no cost
-HARD_MAX_PATIENTS = 200
 PASSAGES_PER_ATOM = 6
 DOCUMENTS_PER_PATIENT = 6
 TEXT_CHARS = 700
@@ -79,8 +78,12 @@ _MEMO, _MEMO_LOCK, MEMO_SIZE = OrderedDict(), threading.Lock(), 4096
 
 
 def max_patients():
-    try: return max(1, min(HARD_MAX_PATIENTS, int(os.environ.get('AGERE_ATOMIC_MAX_PATIENTS', '25'))))
-    except ValueError: return 25
+    """No default population cap. An explicit deployment limit is reported."""
+    raw = os.environ.get('AGERE_ATOMIC_MAX_PATIENTS')
+    if not raw: return None
+    value = int(raw)
+    if value < 1: raise ValueError('AGERE_ATOMIC_MAX_PATIENTS must be positive')
+    return value
 
 
 def code_identity():
@@ -274,7 +277,9 @@ def plan(stack, question, population=None, *, maximum_patients=None, ledger=None
     if any(s['task_key'] == 'atomic_why_factor' and s['subject'] for s in subs): sources.append('therapy_barriers')
     from . import external_evidence
     if any(external_evidence.needs_external(s['atom']) for s in subs): sources.append('external')
-    cap = max(1, min(HARD_MAX_PATIENTS, int(maximum_patients or max_patients())))
+    cap = maximum_patients if maximum_patients is not None else max_patients()
+    if cap is not None and (type(cap) is not int or cap < 1):
+        raise ValueError('maximum_patients must be a positive integer or null')
     return {'schema': VERSION, 'question': question, 'subject_question': subs[0]['atom'], 'options': subs[0]['options'],
             'sub_questions': subs, 'scope': {'patients': list(core['patients'] or []) or None, 'cohort': spec,
                                              'population_concept': core.get('concept'), 'sources': sources,
@@ -325,7 +330,8 @@ def validate(p):
     if not isinstance(labels, list) or any(not any(l in s['options'] for s in subs) for l in labels):
         raise ValueError('select_labels must be option labels')
     cap = p.get('maximum_patients', max_patients())
-    if type(cap) is not int or not 1 <= cap <= HARD_MAX_PATIENTS: raise ValueError(f'maximum_patients: 1..{HARD_MAX_PATIENTS}')
+    if cap is not None and (type(cap) is not int or cap < 1):
+        raise ValueError('maximum_patients must be a positive integer or null')
     sources = p.get('sources') or ['passages']
     if not isinstance(sources, list) or any(s not in SOURCES for s in sources): raise ValueError(f'sources: {SOURCES}')
     providers = p.get('providers') or list(PROVIDERS)
@@ -450,7 +456,7 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
     started = time.perf_counter()
     p = validate(params)
     scoped = sorted(patient_ids)
-    ids = scoped[:p['maximum_patients']]
+    ids = scoped if p['maximum_patients'] is None else scoped[:p['maximum_patients']]
     subs = p['sub_questions']
     meds = medication_rows(stack, ids, [s['subject'] for s in subs if s['subject']]) if 'medication_state' in p['sources'] else {}
     live = bool(getattr(stack, 'allow_live', False))

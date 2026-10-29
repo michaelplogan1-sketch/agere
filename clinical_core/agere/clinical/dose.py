@@ -303,7 +303,7 @@ def _structured_current_dose_sql(as_of, lookback_days):
             "WHERE latest=1 OR undated=1 GROUP BY patient_id,drug_key))")
 
 
-def current_dose_sql(as_of, lookback_days, *, note_changes=False):
+def _current_dose_sql(as_of, lookback_days, *, note_changes=False):
     """Reconcile structured regimens with candidate note changes when available.
 
     A note extraction is an interpretation prerequisite, never a confirmed stop,
@@ -353,3 +353,21 @@ def current_dose_sql(as_of, lookback_days, *, note_changes=False):
             "1 AS note_scan_available,json_array_length(note_evidence)>0 AS note_review_required,note_evidence, "
             "(SELECT max(json_extract(value,'$.source_date')) FROM json_each(note_evidence)) AS latest_note_date "
             "FROM combined)")
+
+
+def current_dose_sql(as_of, lookback_days, *, note_changes=False):
+    """Keep target-range and reference-upper-dose comparisons distinct.
+
+    The documented comparison remains available when a later note makes current
+    use unresolved. Neither comparison establishes a patient-specific tolerated
+    dose, a prescribing instruction or a weight-dependent target.
+    """
+    source=_current_dose_sql(as_of,lookback_days,note_changes=note_changes)
+    def status(value,state):
+        return (f"CASE WHEN {state}!='active_documentation' THEN {state} "
+                f"WHEN {value} IS NULL THEN 'unknown_dose' WHEN target_max_daily_mg IS NULL THEN 'no_reference' "
+                f"WHEN {value}<target_max_daily_mg THEN 'below_reference_upper' "
+                f"WHEN {value}=target_max_daily_mg THEN 'at_reference_upper' ELSE 'above_reference_upper' END")
+    return ('(SELECT d.*,'+status('daily_mg','statement_state')+' AS reference_max_status,'+
+            status('documented_daily_mg','documented_statement_state')+' AS documented_reference_max_status,'+
+            "'Published reference upper bound; individual tolerance and conditional targets remain separate' AS reference_max_basis FROM "+source+' d)')

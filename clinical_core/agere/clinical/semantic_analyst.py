@@ -315,6 +315,20 @@ def actor_result(value):
         from ...contracts import digest
         shown['executed_query_digest']=digest(value['executed_query'])
     rows=shown.get('rows')
+    # Required narrative fields must remain visible even when the first patient's
+    # long JSON leaves no room for a row preview. Counts describe availability,
+    # not clinical acceptance; the native SQL view remains the source of values.
+    if isinstance(rows,list) and any(isinstance(r,dict) and 'review_json' in r for r in rows):
+        fields={}
+        for row in rows:
+            if not isinstance(row,dict):continue
+            try:findings=json.loads(row.get('review_json') or '{}')
+            except (ValueError,TypeError):continue
+            for key,items in findings.items():
+                if not isinstance(items,list):continue
+                f=fields.setdefault(key,{'patients_with_findings':0,'findings':0,'json_path':'$.'+key})
+                f['patients_with_findings']+=bool(items);f['findings']+=len(items)
+        shown['narrative_field_manifest']={'fields':fields,'instruction':'Carry every requested field into the final assessment. Query review_json using these paths; a preview omission is not absence of source findings. Counts are not clinical accuracy.'}
     if isinstance(rows,list) and len(json.dumps(shown,default=str))>12000:
         preview=[]
         for row in rows[:3]:

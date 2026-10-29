@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T00:02:03.686914+00:00",
+  "updated_at": "2026-10-29T01:05:13.468845+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "reusable_patient_dashboard_pdf_and_matched_comparison",
+    "kind": "integrated_full_stack_execution_and_social_assets",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Three sequential matched whole-workflow comparison arms have returned on frozen d09646e / 857f source. Each has native results, actual usage, source-policy audit and a common interactive HTML/actual PDF. Local comparison dashboard records confirmed errors and incomplete domains.",
-    "measured_failure_reduction": "No clinical interpretation repair in this increment. Reporting generates complete source-bound HTML/PDF at zero extra model requests, verified separately by 179 offline checks. Comparison exposes composition omissions and repeated full-patient Sonnet rereads; no hybrid accuracy advantage established. Thirty-four offline comparison-integrity checks pass.",
+    "user_behavior_delta": "Opt-in isolated candidate tries all eligible nonfrontier rungs before hosted generation; typed source-span review, UltraBERT/BGE ranking, native Kev/d1 handoffs, pinned trained SLMs and learned router, full-population default, complete narrative manifest and reference-upper dose status. Candidate full-workflow run active.",
+    "measured_failure_reduction": "233 offline checks pass, four optional live skips; native UltraBERT/BGE/SQL/Kev/d1 run with zero network providers in smoke checks. Trained typed adapter malformed output declines. Full live source review active; no final clinical/cost/speed gain claimed yet.",
     "evidence": [
       "artifacts/agere-general-investigation-2026-10-26/engineering-receipt.json",
       "artifacts/agere-hf-wraparound-2026-10-26/workflow-receipt.json",
@@ -445,10 +445,16 @@
       "artifacts/agere-app-reports-2026-10-28/reporting-fixture-recheck-verification.json",
       "artifacts/agere-app-reports-2026-10-28/comparison/results.json",
       "artifacts/agere-app-reports-2026-10-28/comparison/verification.json",
-      "artifacts/agere-app-reports-2026-10-28/comparison/cold-hybrid-run/run-receipt.json"
+      "artifacts/agere-app-reports-2026-10-28/comparison/cold-hybrid-run/run-receipt.json",
+      "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json",
+      "artifacts/agere-full-stack-2026-10-28/verification.json",
+      "artifacts/agere-full-stack-2026-10-28/protocol.json",
+      "artifacts/agere-full-stack-2026-10-28/native-preflight.json",
+      "artifacts/agere-full-stack-2026-10-28/reader-preflight.json",
+      "artifacts/agere-full-stack-2026-10-28/known-followups.json"
     ],
-    "remaining_gap": "All three fresh analytical answers remain partial. Maximum-reference-dose assessment, complete note-derived clinician roles and faithful patient recommendations remain unresolved in different arms. Cohort/pillar source-policy agreement is not overall clinical accuracy; cost per fully acceptable workflow remains unestablished. No recursive-learning benefit or experimental SLM activation demonstrated. G3/full ten-area charter open; paper held.",
-    "next_action": "Comparison provider work is finished: no background training/provider run is active. Preserve native comparison results/ledgers and report measured costs and confirmed limitations to Mike. The next authorized shared product increment is evidence-field completeness through preview/final composition and exact reference-upper-dose comparison in the existing workflow, followed by targeted saved-evidence repair and paired source-based checks. Read the current control/reviews and propose the brief plain-language fix before product edits. Preserve d09646e frozen comparison artifacts; do not rerun whole-note reads merely to reformat a deliverable. No agents, protected keys/corpora, fitting/default activation, main merge, publication or real care execution. Subscription only, stop on limit.",
+    "remaining_gap": "Active full received-source run and final audit/presentation. No clinical superiority, optimal order or MVP-sale readiness established. General followups recorded for spec internal cheap-first scheduling, native generation completion, helper identity dependencies and per-field API healing. No new fitting has been started; RSI observations remain distinct from clinical acceptance.",
+    "next_action": "Keep frozen full-run/session61496 executing. Do not modify product source or run_full.py/config/candidate manifest while active. Audit returned full response, component handoffs, source facts, all-attempt costs (including invalid paid responses), HTML/PDF and matched prior arms. Then finish LinkedIn-ready flow PNG/carousel PDF/executive summary from measured receipts; no publication. Address known-followups.json after this frozen run finishes, with offline verification. Preserve broader admissions/care-service extension separately from matched question.",
     "next": "Keep product code frozen at d09646e / 857f3cf2f8b28b30be650273a7f61772cc3258071607eba93c5a47cef3c4555a. Finish active cheap_llm arm (exec66916, artifacts/agere-app-reports-2026-10-28/comparison/cheap-llm-run), then run stronger_llm and cold hybrid sequentially against the frozen protocol. Use same source, tools and reusable HTML/PDF; report actual usage, missed/unsupported findings, justified unknowns and unscored items. Do not use warm engineering run as a cold comparator or model confidence as accuracy. Preserve verified report/source/ledgers durably; source branch pushed to draft PR2. Subscription only and stop on limit. No agents, protected keys/corpora, new fitting/default activation, main merge, publication or real care execution.",
     "latest_review": {
       "at": "2026-10-28T17:35:55.163291+00:00",
@@ -589,10 +595,9 @@
       "automatic_retry": false
     },
     "latest_human_steering": {
-      "at": "2026-10-28T22:31:45.882287+00:00",
-      "request": "Compare entire requested workflow against cheap/expensive LLM-only agents with actual cost and accuracy",
-      "comparison_protocol": "artifacts/agere-app-reports-2026-10-28/comparison/protocol.json",
-      "status": "comparison_executed_and_source_audited"
+      "at": "2026-10-29T00:21:47.148580+00:00",
+      "request": "Run the original heart-failure workflow through the intended integrated stack, including trained SLMs, System One, recursive learning, rerankers and BERT components.",
+      "status": "scope_correction_confirmed_from_frozen_harness_and_native_trace"
     },
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
@@ -604,7 +609,8 @@
       "results": "artifacts/agere-app-reports-2026-10-28/comparison/results.json",
       "verification": "artifacts/agere-app-reports-2026-10-28/comparison/verification.json",
       "durable_root": "/Users/mikel/clinical-insights-local/artifacts/agere-workflow-comparison-2026-10-28",
-      "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator."
+      "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
+      "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     }
   },
   "decisions": [
@@ -1874,5 +1880,33 @@
       "runtime_promoted": false,
       "clinical_gain_measured": false
     }
+  },
+  "current_visual_request": {
+    "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
+    "publication": "Draft assets only; no posting authorized.",
+    "evidence": "Populate execution, cost and contribution claims only from measured candidate run; distinguish attempted, used, skipped and unqualified components."
+  },
+  "full_stack_candidate_checkpoint": {
+    "at": "2026-10-29T00:50:23.082726+00:00",
+    "status": "active_frozen_full_execution",
+    "workflow_change": "All eligible nonfrontier stages before hosted generation, no speculative Claude, full-population default, whole-document typed source extraction, source-block UltraBERT/BGE, pinned trained candidates, complete narrative field manifest and reference-upper dose assessment.",
+    "evidence": "/private/tmp/agere-full-stack-20261028/verification.json",
+    "offline_checks": {
+      "tests": 237,
+      "passed": 233,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4,
+      "provider_calls": 0
+    },
+    "native_checks": "/private/tmp/agere-full-stack-20261028/native-preflight.json",
+    "reader_checks": "/private/tmp/agere-full-stack-20261028/reader-preflight.json",
+    "remaining_gap": "Full workflow execution and actual component/cost/quality comparison; trained typed proposal currently malformed, SQL proposal must pass runtime checks; no global model promotion.",
+    "exact_next_action": "Execute run_full.py --output full-run --execute with subscription transport; retain source/code freeze, then audit and render deliverables plus LinkedIn-ready evidence-based flow assets.",
+    "session": 61496,
+    "run": "/private/tmp/agere-full-stack-20261028/full-run",
+    "log": "/private/tmp/agere-full-stack-20261028/full-run.log",
+    "visual_builder": "/private/tmp/agere-full-stack-20261028/build_social.py",
+    "visual_request": "Completed assets after the workflow: flow PNG, PDF carousel, executive summary and LinkedIn draft. No posting authorized."
   }
 }
