@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T10:46:45.948813+00:00",
+  "updated_at": "2026-10-29T10:58:13.039339+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,7 +359,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_sql_documentation_candidate_offline_verified",
+    "kind": "chief_architect_review_prepared",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
@@ -395,8 +395,8 @@
       "artifacts/agere-overnight-2026-10-29/context-verification.json"
     ],
     "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
-    "next_action": "Freeze the verified subscription/context candidate and run a targeted retained-source integration check of native documentation lookup, caller output settings and semantic reconciliation. Reuse exact validated source observations, never clinical conclusions; audit medication-scope dose denominators, per-field causality and dated clinician roles. Preserve every earlier attempt and do not start a new cold cohort review.",
-    "next": "Freeze the verified subscription/context candidate and run a targeted retained-source integration check of native documentation lookup, caller output settings and semantic reconciliation. Reuse exact validated source observations, never clinical conclusions; audit medication-scope dose denominators, per-field causality and dated clinician roles. Preserve every earlier attempt and do not start a new cold cohort review.",
+    "next_action": "Complete Mike's explicitly requested Claude chief-architect review of the written architecture/order brief and exact code packet via subscription. Preserve source/brief bytes during the review, retain all metering, then save the independent Markdown and reconcile recommendations with measured evidence before the targeted clinical integration check. Do not mistake advisory approval for MVP acceptance.",
+    "next": "Complete Mike's explicitly requested Claude chief-architect review of the written architecture/order brief and exact code packet via subscription. Preserve source/brief bytes during the review, retain all metering, then save the independent Markdown and reconcile recommendations with measured evidence before the targeted clinical integration check. Do not mistake advisory approval for MVP acceptance.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -1735,6 +1735,12 @@
       "reason": "Mike explicitly requests a simpler, measured component order and architect-owned MVP execution. Returned source diagnostics identify recurring composition errors and a1017.87s/128199output-token subscription action. Repair native execution/context/transport contracts before another cold run; no new architecture layer, training, population cap or acceptance waiver.",
       "scope_impact": "All ten areas preserved; no default/main promotion.",
       "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open."
+    },
+    {
+      "at": "2026-10-29T10:58:13.039339+00:00",
+      "gate": "G3",
+      "reason": "Mike explicitly requests the architecture engineering-order Markdown and a Claude chief-architect critique after the completed run. Deliver this independent review before further clinical provider work so the next increment addresses the highest-value shared failure.",
+      "scope_impact": "Full ten-area charter and original workflow retained; review only, no new architecture layer, agent/chat, protected data, default activation or acceptance waiver."
     }
   ],
   "unsealed_work": {

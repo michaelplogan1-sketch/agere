@@ -1,3 +1,13 @@
+# Current Agere checkpoint — 2026-10-29T10:58:13.039339+00:00
+
+Mike explicitly requested an architecture/order Markdown and Claude review from a critical TypeSafe/System One chief-architect perspective. The prior provider continuation is finished; no provider or training job is active. Brief: docs/agere/ARCHITECTURE_ORDER_FOR_REVIEW_2026-10-29.md. Prepared exact source packet/manifest: /private/tmp/agere-overnight-20261029/architecture-review-20261029 (352852bytes,12full modules/5exact-excerpt modules, no patient records/protected corpora). Review is subscription-only, independent advisory engineering work, separate from clinical/unit economics.
+
+Next: Complete Mike's explicitly requested Claude chief-architect review of the written architecture/order brief and exact code packet via subscription. Preserve source/brief bytes during the review, retain all metering, then save the independent Markdown and reconcile recommendations with measured evidence before the targeted clinical integration check. Do not mistake advisory approval for MVP acceptance.
+
+Verified product candidate remains1fffde9;157relevant isolated transport checks and156context checks passed (overlap; do not sum). Native documentation system218493to41509bytes,105whole sections exact; opt-in/default off,0providers in checks. Latest clinical continuation partial with unresolved dose domain, causal reason and dated role issues. No new clinical or MVP acceptance. Preserve G3/all ten areas and all-attempt costs.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-29T10:46:45.948813+00:00
 
 No provider/training job is active. Subscription caller output/effort translation and internal-turn receipts are repaired (157isolated offline checks). The opt-in native documentation lookup uses existing query_sql: every105full sections available and byte-exact, unchanged rules/tools/patient source,218493to41509resident system bytes (81.0%).156relevant isolated context checks pass,0providers; full documentation remains the default. No live cost/accuracy saving or clinical acceptance claimed.
