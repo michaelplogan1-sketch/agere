@@ -1028,8 +1028,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
         if support.get('label') in ('contradicted', 'not_established'):
             feedback.append('Evidence check: ' + support['label'].replace('_', ' ') + ' in '+str(support.get('failed_packet_ids',[]))+'. Recheck each claim against its own computed rows or document context; correct unsupported claims and compute numbers in tools.')
-            if support.get('claim_feedback'):
-                feedback.append('Targeted claim/source repairs: '+json.dumps(support['claim_feedback'])+'. Repair only the named field/source dependencies; retain unaffected native work and supported unknowns.')
+        elif support.get('label')!='supported' or not support.get('decided_by'):
+            responded=any(s.get('status') in ('answered','partial') for s in support.get('steps',[]))
+            if responded or support.get('claim_feedback'):
+                unresolved=[p['id'] for p in support.get('packets',[]) if p.get('label')!='supported' or not p.get('decided_by')]
+                feedback.append('Source support remains unresolved for '+json.dumps(unresolved)+'. Recheck these exact dependencies using the retained native evidence. Bind quantitative claims to an explicit population/domain/grain/unit measure and recompute in tools. Resolve unsupported interpretations or report a source-supported unknown; an uncertain verifier is not a supported check.')
+            else:assessment['reason']='Source verification unavailable; no successful source check inferred and no retry requested for a provider outage.'
+        if support.get('claim_feedback'):
+            feedback.append('Targeted claim/source repairs: '+json.dumps(support['claim_feedback'])+'. Repair only the named field/source dependencies; retain unaffected native work and supported unknowns. Unknown feedback names an unresolved dependency, not a proven source fault.')
         numeric_unknown=any(not r.get('decided_by') for r in numeric.get('judgments',{}).values())
         if numeric_unknown:assessment['reason']='One or more quantitative field-meaning checks remain uncertain or unavailable'
         confirmed = coverage['label'] == 'answers_fully' and support.get('label') == 'supported' and bool(support.get('decided_by')) and not feedback and not numeric_unknown
@@ -1352,6 +1358,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'model_escalations':run.get('model_escalations',[]),
                'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),
                'guarded_continuations':run.get('guarded_continuations',[]),
+               'output_continuation_receipts':run.get('output_continuation_receipts',[]),
+               'completed_output_continuations':run.get('completed_output_continuations',0),
                'error': run.get('error'), 'final_text': run.get('final_text'), 'seconds': round(time.perf_counter() - started, 1), 'version': VERSION}
         out['new_paid_api_calls'] += tools.subtool_accounting['new_paid_api_calls']
         out['known_cost_usd']=(run.get('known_cost_usd') if run.get('known_cost_usd') is not None else run.get('estimated_cost_usd') or 0)+review_cost+tools.subtool_accounting['estimated_cost_usd']

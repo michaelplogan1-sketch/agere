@@ -1,8 +1,8 @@
 """Local source checks retain dependencies and report actionable field faults."""
 import copy,json,unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
-from clinical_core.agere.clinical import backstop_agent as B,execution_state as E
+from unittest.mock import Mock,patch
+from clinical_core.agere.clinical import backstop_agent as B,execution_state as E,system_one_gate as G
 from clinical_core.agere.deliverables.receipts import uncompact_json
 
 
@@ -101,6 +101,26 @@ class LocalReview(unittest.TestCase):
             lambda *a,**kw:{'label':'unknown','decided_by':None,'steps':[{'provider':'fixture','status':'error'}]},
             as_of='2030-05-27',ledger=None,field_decider=judge)
         self.assertIsNone(out['decided_by']);judge.assert_not_called()
+
+    def test_unresolved_provider_reading_reaches_the_actor_but_an_outage_does_not_request_retries(self):
+        answer,calls=self.fixture()
+        calls[-1]['result']['columns']=list(calls[-1]['result']['rows'][0])
+        answer.update(status='answered',answer_type='table',table_from_tool='final')
+        answer.pop('table_binding');answer.pop('table')
+        tools=SimpleNamespace(read={},document_reviews=[],rows_by_record={})
+        def judge(task,questions,evidence,**kw):
+            return {'judgments':{key:{'label':'unknown','decided_by':None}for key in questions},'steps':[]}
+        for responded in (True,False):
+            model=SimpleNamespace(decide=lambda *a,**kw:{'label':'unknown','decided_by':None,
+                'probabilities':{'unknown':.9}if responded else {},
+                'steps':[{'provider':'fixture','status':'answered'if responded else 'error','error':None if responded else 'outage'}]},judge_fields=judge)
+            with self.subTest(responded=responded),patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=model),patch.object(G,'check',return_value={'label':'answers_fully','calls':0,'cost_usd':0}):
+                out=B.review_final(SimpleNamespace(),'Review the exact recorded care relationships.',copy.deepcopy(answer),calls,tools,ledger=None,as_of='2030-05-27')
+                if responded:
+                    self.assertEqual(out['status'],'repair');self.assertIn('Source support remains unresolved',out['feedback'])
+                    self.assertIn('current_assignment',out['feedback']);self.assertIn('population/domain/grain/unit',out['feedback'])
+                else:
+                    self.assertEqual(out['status'],'unavailable');self.assertIsNone(out['feedback'])
 
 
 if __name__=='__main__':unittest.main()
