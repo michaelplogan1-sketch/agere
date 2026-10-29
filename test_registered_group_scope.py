@@ -22,6 +22,27 @@ class Scope(unittest.TestCase):
  def test_repair_can_keep_original_evidence_and_use_correct_group(self):
   c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')"),call('agere_result_2',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b')"),call('agere_result_3','SELECT a.patient_id,b.therapy FROM agere_result_1 a JOIN agere_result_2 b USING(patient_id)')]
   self.assertEqual(D.group_query_issues('Assess prevention medications',c,'agere_result_3'),[])
+ def test_exact_joined_reference_cannot_repair_a_different_output_column(self):
+  with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
+   c=[call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class IN ('narrow_a','broad') THEN 1 ELSE 0 END) AS therapy FROM fill GROUP BY patient_id"),call('agere_result_2',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b')"),call('agere_result_3','SELECT a.patient_id,a.therapy,b.therapy AS reference FROM agere_result_1 a JOIN agere_result_2 b USING(patient_id)')]
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_3'))
+   c[0]=call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_3'))
+ def test_counted_identifier_retains_its_group_scope(self):
+  c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')"),call('agere_result_2',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b')"),call('agere_result_3','SELECT COUNT(DISTINCT a.patient_id) AS n,MAX(b.therapy) AS reference FROM agere_result_1 a LEFT JOIN agere_result_2 b USING(patient_id)')]
+  c[-1]['result']['columns']=['n','reference']
+  self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_3'))
+ def test_exact_row_filter_can_narrow_an_earlier_group(self):
+  c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')"),call('agere_result_2',"SELECT * FROM agere_result_1 WHERE drug_class IN ('narrow_a','narrow_b')")]
+  self.assertEqual(D.group_query_issues('Assess prevention medications',c,'agere_result_2'),[])
+  c[-1]=call('agere_result_2',"SELECT * FROM agere_result_1 WHERE drug_class IN ('narrow_a','narrow_b') OR therapy='broad'")
+  self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_2'))
+ def test_native_assembly_and_rename_keep_the_widened_field_dependency(self):
+  with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
+   c=[call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class IN ('narrow_a','broad') THEN 1 ELSE 0 END) AS therapy FROM fill GROUP BY patient_id"),call('agere_result_2',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b')")]
+   c.append({'name':'compose_table','input':{},'result':{'result_view':'agere_result_3','columns':['patient_id','current','reference'],'rows':[],
+    'assembly':{'base_result_view':'agere_result_1','column_renames':{'therapy':'current'},'joins':[{'result_view':'agere_result_2','as':'reference','selected_columns':['therapy']}]}}})
+   self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_3'))
  def test_partial_case_filter_cannot_widen_one_registered_subtype(self):
   with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
    c=[call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class IN ('narrow_a','broad') THEN 1 ELSE 0 END) AS therapy FROM fill GROUP BY patient_id"),call('agere_result_2','SELECT * FROM agere_result_1')]
@@ -34,6 +55,6 @@ class Scope(unittest.TestCase):
   with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}),patch.object(D,'GROUPS',{'maintenance':['narrow_a','broad']}):
    self.assertEqual(D.group_query_issues('Assess maintenance medications',[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','broad')")],'agere_result_1'),[])
  def test_blocked_group_review_preserves_computed_rows(self):
-  c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")];a={'table_from_tool':'agere_result_1'}
+  c=[call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")];a={'status':'answered','answer_type':'table','table_from_tool':'agere_result_1'}
   r=B.review_final(None,'Assess prevention medications',a,c,None,ledger=None,as_of='2030-05-27');self.assertEqual(r['status'],'repair');self.assertEqual(len(a['table']),1)
 if __name__=='__main__':unittest.main()

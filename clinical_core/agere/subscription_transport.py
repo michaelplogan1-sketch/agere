@@ -226,8 +226,9 @@ def _tool_calls(text, tools):
     """Recognize every unambiguous literal action, allowing surrounding prose.
 
     A complete answer JSON object is never searched for embedded actions. Mixed
-    action/data objects, unknown actions and mixed XML/JSON actions decline as a
-    whole. Ordinary introductory text or a trailing transport marker is inert.
+    action/data objects, unknown actions and differing XML/JSON actions decline
+    as a whole. Equivalent alternative encodings execute once. Ordinary
+    introductory text or a trailing transport marker is inert.
     """
     if not tools: return []
     names = {t.get('name') for t in tools}
@@ -263,12 +264,24 @@ def _tool_calls(text, tools):
         if not isinstance(values,list)or not values:return None
         parsed=[call(v)for v in values]
         return parsed if all(v is not None for v in parsed)else None
+    def same_calls(first, second):
+        # Alternative encodings of one action must preserve literal types too:
+        # Python equality alone would equate a boolean argument with 0 or 1.
+        return second is not None and json.dumps(first,sort_keys=True,allow_nan=False)==json.dumps(second,sort_keys=True,allow_nan=False)
     # Do not find XML/JSON actions inside a literal final-answer object.
     if raw.startswith('['):return []
     if raw.startswith('{'):
-        try:first,_=decoder.raw_decode(raw)
+        try:first,end=decoder.raw_decode(raw)
         except ValueError:return []
-        if envelope(first)is None:return []
+        first_calls=envelope(first)
+        if first_calls is None:return []
+        tail=raw[end:].strip()
+        if tail.startswith('<invoke'):
+            # The subscription can emit the same literal request in JSON and
+            # XML. Execute that request once, without accepting differing or
+            # unregistered companion actions as a partial valid batch.
+            xml_calls=_tool_calls(tail,tools)
+            return first_calls if same_calls(first_calls,xml_calls) else []
     while True:
         padding = INVOKE.match(raw)
         if not padding or padding.group(1) in names or padding.group(2).strip(): break
@@ -289,7 +302,12 @@ def _tool_calls(text, tools):
         remainder.append(raw[cursor:]);tail=''.join(remainder)
         if '<invoke'in tail:return []
         if not calls:return _tool_calls(tail,tools)
-        if '{'in tail:return []
+        if '{'in tail:
+            try:
+                alternative,end=decoder.raw_decode(tail.strip())
+                if tail.strip()[end:].strip():return []
+            except ValueError:return []
+            return calls if same_calls(calls,envelope(alternative)) else []
         return calls
     calls=[];cursor=0
     while True:

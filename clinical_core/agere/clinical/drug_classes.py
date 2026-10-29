@@ -221,21 +221,30 @@ def group_query_issues(question, calls, final_view=None):
     from sqlglot import exp
     named={k:set(v) for k,v in GROUPS.items() if re.search(r'(?<!\w)'+re.escape(k).replace('_',r'[ _]+')+r's?(?!\w)',str(question),re.I)}
     if not named:return []
-    filters={};parents={};positions={}
+    filters={};parents={};positions={};queries={};results={}
+    def projection(node):
+        while node.parent is not None and not isinstance(node.parent,exp.Select):node=node.parent
+        return (node.alias_or_name or '*') if isinstance(node.parent,exp.Select) and node in node.parent.expressions else None
     for index,call in enumerate(calls):
         result=call.get('result') or {}
         if not isinstance(result,dict) or result.get('error'):continue
         view=result.get('result_view')
         if not view:continue
+        results[view]=result;positions[view]=index
+        assembly=result.get('assembly') or {}
+        if assembly:
+            parents[view]={assembly['base_result_view']}|{j['result_view']for j in assembly.get('joins',[])}
+            filters[view]=[]
         sql=(call.get('input') or {}).get('sql')
         if not isinstance(sql,str):continue
         parents[view]=set(re.findall(r'\bagere_result_\d+\b',sql));positions[view]=index
         try:tree=sqlglot.parse_one(sql,read='sqlite')
         except sqlglot.errors.ParseError:continue
+        queries[view]=tree
         values=[]
         for node in tree.find_all(exp.In):
             if isinstance(node.this,exp.Column) and node.this.name.lower()=='drug_class' and node.expressions and all(isinstance(v,exp.Literal) and v.is_string for v in node.expressions):
-                values.append({v.this for v in node.expressions})
+                values.append(({v.this for v in node.expressions},projection(node)))
         for node in tree.find_all(exp.Or):
             terms=[]
             def alternatives(n):
@@ -247,7 +256,7 @@ def group_query_issues(question, calls, final_view=None):
                     if isinstance(col,exp.Column) and col.name.lower()=='drug_class' and isinstance(lit,exp.Literal) and lit.is_string:
                         terms.append(lit.this);return True
                 return False
-            if alternatives(node):values.append(set(terms))
+            if alternatives(node):values.append((set(terms),projection(node)))
         filters[view]=values
     reached=set()
     def visit(view):
@@ -256,21 +265,87 @@ def group_query_issues(question, calls, final_view=None):
         for parent in parents.get(view,()):visit(parent)
     if final_view:visit(final_view)
     else:reached.update(parents)
+    schema={v:dict.fromkeys(r.get('columns') or [],'UNKNOWN') for v,r in results.items()}
+    def consumed_columns(members):
+        # Trace native output columns, rather than letting an exact filter on
+        # an unrelated joined result certify every contributing value.
+        from sqlglot.lineage import lineage
+        used={};visited=set()
+        def trace(view,column,measured=False):
+            key=(view,column,measured)
+            if key in visited:return
+            visited.add(key);used.setdefault(view,set()).add((column,measured))
+            if column=='*':
+                for name in results.get(view,{}).get('columns') or []:trace(view,name,measured)
+                return
+            assembly=results.get(view,{}).get('assembly') or {}
+            if assembly:
+                original=next((k for k,v in assembly.get('column_renames',{}).items()if v==column),column)
+                join=next((j for j in assembly.get('joins',[])if j['as']==original),None)
+                if join:
+                    for name in ([join['items_from']]if join.get('items_from')else join['selected_columns']):trace(join['result_view'],name,measured)
+                else:trace(assembly['base_result_view'],original,measured)
+                return
+            if not parents.get(view):return
+            tree=queries.get(view)
+            try:
+                if tree is None:raise ValueError('Native SQL lineage is unavailable')
+                root=lineage(column,tree,schema=schema,dialect='sqlite',trim_selects=False)
+                aggregate=measured or any(isinstance(n,exp.AggFunc)for n in root.expression.walk())
+                barriers=set()
+                where=tree.args.get('where') if isinstance(tree,exp.Select) else None
+                tables=[t for t in tree.find_all(exp.Table) if t.find_ancestor(exp.Select) is tree]
+                if where is not None:
+                    for predicate in where.find_all(exp.In):
+                        col=predicate.this
+                        if not isinstance(col,exp.Column) or col.name.lower()!='drug_class':continue
+                        if not predicate.expressions or not all(isinstance(v,exp.Literal) and v.is_string for v in predicate.expressions):continue
+                        if {v.this for v in predicate.expressions}!=members:continue
+                        parent=predicate.parent;conjunctive=True
+                        while parent is not None and parent is not where:
+                            if isinstance(parent,(exp.Or,exp.Not)):conjunctive=False;break
+                            parent=parent.parent
+                        if not conjunctive:continue
+                        for table in tables:
+                            if table.name in results and (col.table==table.alias_or_name or not col.table and len(tables)==1):barriers.add(table.name)
+                sources=[]
+                for node in root.walk():
+                    if isinstance(node.expression,exp.Table) and node.expression.name in results:
+                        name=sqlglot.parse_one(node.name,into=exp.Column,read='sqlite').name
+                        sources.append((node.expression.name,name))
+                for parent,name in sources:
+                    if parent not in barriers:trace(parent,name,aggregate)
+                if not sources:
+                    # COUNT(*) and unresolved projections depend on row scope.
+                    for parent in parents[view]:trace(parent,'*',True)
+            except (sqlglot.errors.SqlglotError,ValueError,RecursionError):
+                for parent in parents[view]:trace(parent,'*',True)
+        for view in ([final_view]if final_view else reached):
+            trace(view,'*')
+        return used
+    used_cache={}
     issues=[]
     for group,members in named.items():
         bad=[]
         for view,sets in filters.items():
             if view not in reached:continue
-            for selected in sets:
+            for selected,affected in sets:
                 # A CASE expression can widen one pillar without containing
                 # the entire registered group in any single IN filter.
                 widened={parent for child,parent in SUBCLASS_PARENTS.items()
                          if child in members and child in selected and parent in selected and parent not in members}
                 extra=(selected-members) if selected>members else widened
-                if extra:bad.append((positions[view],view,extra))
-        exact=[positions[v] for v,sets in filters.items() if v in reached and members in sets]
-        for position,view,extra in bad:
-            if any(i>position for i in exact):continue
+                if extra:bad.append((positions[view],view,extra,affected))
+        exact=[v for v,sets in filters.items() if v in reached and any(selected==members for selected,_ in sets)]
+        for position,view,extra,affected in bad:
+            group_key=tuple(sorted(members))
+            if group_key not in used_cache:used_cache[group_key]=consumed_columns(members)
+            used=used_cache[group_key]
+            columns=used.get(view,set())
+            if affected is not None:
+                if not any(name in (affected,'*')for name,_ in columns):continue
+            elif any(positions[v]>position and any(name!='patient_id' or counted for name,counted in used.get(v,set()))for v in exact):
+                if not any(name!='patient_id' or counted for name,counted in columns):continue
             issues.append('Registered medication group '+group+' has exact members '+', '.join(sorted(members))+
                 '; contributing query '+view+' widened that set with '+', '.join(sorted(extra))+
                 '. Recompute the requested group using its exact members and bind the final table to that repaired result. '

@@ -142,6 +142,12 @@ has already declined this question, so it is yours to answer completely and corr
   Preserve intact finding JSON objects with value/quote/date/record_id together. Never use independent MIN/MAX on those properties.
   Preserve every patient's recommendation in an explicit final table column when recommendations were requested; counts of plans
   or quotes alone do not supply recommendations. Use separate columns for historical documented plans and proposed next actions.
+  Derive each entity's proposed review steps from its own computed gaps, dated findings and specific unresolved dependencies.
+  Include that native basis alongside the proposal. A repeated general review instruction does not answer an entity-specific
+  recommendation request when the available evidence differs. Preserve a historical reason as historical and identify what
+  needs current verification. Keep other domains as separate context: evidence outside the requested registered group cannot
+  supply its status, dose or proposed review step. An empty scoped result means that scoped evidence is unavailable; it does
+  not establish that no documentation exists. Proposals do not establish suitability, authority or completed action.
   Keep historical consultants distinct from assigned current clinicians. Ask who the named specialty/PCP clinicians are,
   their dated roles and whether responsibility/current follow-up is established; do not require them to manage one particular disease.
   A source record is linked by the warehouse patient association; the pseudonymous patient ID need not occur in the source prose.

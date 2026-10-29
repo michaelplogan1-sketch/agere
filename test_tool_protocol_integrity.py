@@ -47,6 +47,47 @@ class Protocol(unittest.TestCase):
         text=''.join('<invoke name="query_sql"><parameter name="sql">SELECT '+str(v)+'</parameter></invoke>'for v in (1,2))
         self.assertEqual(T._tool_calls(text,TOOLS),[{'name':'query_sql','input':{'sql':'SELECT 1'}},{'name':'query_sql','input':{'sql':'SELECT 2'}}])
 
+    def test_same_xml_and_json_request_executes_once_per_actor_turn(self):
+        action={'name':'query_sql','input':{'sql':'SELECT * FROM agere_result_32'}}
+        xml='<invoke name="query_sql">\n<parameter name="sql">SELECT * FROM agere_result_32</parameter>\n</invoke>'
+        companion=json.dumps({'tool_use':action})
+        for text in (xml+'\n\n'+companion,companion+'\n\n'+xml):
+            with self.subTest(text=text):
+                self.assertEqual(T._tool_calls(text,TOOLS),[action])
+                first=T.normalize_tool_response(response(text),TOOLS)
+                second=T.normalize_tool_response(response(text),TOOLS)
+                self.assertNotEqual(first['content'][0]['id'],second['content'][0]['id'])
+                emitted=iter([response(text),response('{"status":"answered","value":1}')])
+                executed=[]
+                result=S.tool_loop('Inspect the native result',[],TOOLS,
+                    lambda use:executed.append(use['input']) or {'value':1},
+                    send=lambda body:(next(emitted),.01,False),model='authored',max_tools=None)
+                self.assertEqual(executed,[action['input']])
+                self.assertEqual(len(result['tool_calls']),1)
+                self.assertEqual(result['answer']['value'],1)
+
+    def test_equivalent_mixed_batch_retains_order_and_distinct_actions(self):
+        actions=[{'name':'query_sql','input':{'sql':'SELECT '+str(n)}} for n in (1,2)]
+        xml=''.join('<invoke name="query_sql"><parameter name="sql">'+a['input']['sql']+'</parameter></invoke>' for a in actions)
+        self.assertEqual(T._tool_calls(xml+json.dumps({'tool_uses':actions}),TOOLS),actions)
+        # Repeated actions in the same declared encoding remain separate calls.
+        self.assertEqual(T._tool_calls(json.dumps({'tool_uses':[actions[0],actions[0]]}),TOOLS),[actions[0],actions[0]])
+
+    def test_mixed_companion_cannot_change_arguments_permissions_or_final_answer(self):
+        xml='<invoke name="query_sql"><parameter name="sql">SELECT 1</parameter></invoke>'
+        for companion in (
+            {'tool_use':{'name':'query_sql','input':{'sql':'SELECT 2'}}},
+            {'tool_use':{'name':'unregistered','input':{'sql':'SELECT 1'}}},
+            {'status':'answered','value':1},
+        ):
+            text=xml+json.dumps(companion)
+            self.assertEqual(T._tool_calls(text,TOOLS),[])
+            self.assertEqual(T._tool_calls(json.dumps(companion)+xml,TOOLS),[])
+        out=T.normalize_tool_response(response(xml+json.dumps({'tool_use':{'name':'query_sql','input':{'sql':'SELECT 1'}}})),TOOLS,{'type':'none'})
+        self.assertEqual(out['content'][0]['type'],'text')
+        numeric='<invoke name="query_sql"><parameter name="complete">1</parameter></invoke>'
+        self.assertEqual(T._tool_calls(numeric+json.dumps({'tool_use':{'name':'query_sql','input':{'complete':True}}}),TOOLS),[])
+
     def test_unknown_xml_never_extracts_its_inner_sql_as_a_final_answer(self):
         text='<invoke name="unknown"><parameter name="input">{"sql":"SELECT 1","complete":true}</parameter></invoke>'
         replies=iter([response(text),response(json.dumps({'status':'partial','missing':['Supported action needed']}))]);reviewed=[];executed=[]

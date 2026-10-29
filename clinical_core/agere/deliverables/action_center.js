@@ -330,7 +330,7 @@ function preview(d) {
   }
   $('preview').append(frame);
   $('close-preview').onclick = () => $('preview').replaceChildren();
-  $('cost').textContent += d.mockup ? ' Fixed synthetic layout.' : data.independent_review?.accepted ? ' Binding and technical presentation checks passed. Independent review of this saved analysis is recorded.' : ' Binding and number checks passed; interpretation still needs review.';
+  $('cost').textContent += d.mockup ? ' Fixed synthetic layout.' : data.independent_review?.accepted ? ' Binding and technical presentation checks passed. Independent review of this saved analysis is recorded.' : ' This view preserves the saved analysis; unresolved items still require review.';
   if (data.context.stale || data.context.invalidated) $('cost').textContent += ' Historical artifact: the source answer is stale or invalidated. Re-run the analysis before creating new work.';
   $('preview').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
 }

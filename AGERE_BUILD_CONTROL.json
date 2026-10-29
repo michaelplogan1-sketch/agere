@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T19:17:36.435029+00:00",
+  "updated_at": "2026-10-29T19:36:20.489197+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "executed_source_provenance_verified",
+    "kind": "shared_boundary_repairs_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Actual SQLite reads now carry inherited governed-view SQL and source-table meanings into native execution receipts. Coverage and source review both receive the same deduplicated definitions and exact bindings. The canonical fill meaning is documented at its existing schema definition. Actual zero-provider 44-action replay preserves every final row, 57 patients, 228 fill cells, 606 original observations and 436 retained findings; all 58 packets have source context and fit (max229635bytes). Coverage projection roundtrips exactly (219658bytes).",
-    "measured_failure_reduction": "Verifier provenance now includes exact living/phenotype definitions and canonical picked-up-fill semantics; two diagnosed missing-filter objections are disproved without altering the cohort or fills.",
+    "user_behavior_delta": "The observed equivalent XML/JSON tool emission executes once under the same permissions; unrelated exact-class queries no longer waive a widened contributing output field, including native composition/aliases and counted IDs. Report UI no longer describes source-number bindings as passed when upstream analysis is partial. General recommendation instructions require each entity\u2019s own native basis; that behavior awaits actual recovery verification.",
+    "measured_failure_reduction": "Offline saved-response dispatch0to1; deterministic final-class issues0to1 on the actual frozen result. No corrected clinical result or readiness claim.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -441,11 +441,33 @@
       "artifacts/agere-meaning-integration-2026-10-29/current-verification-diagnostic-v1/result.json",
       "artifacts/agere-meaning-integration-2026-10-29/current-verification-diagnostic-v1/source-audit.json",
       "artifacts/agere-meaning-integration-2026-10-29/execution-source-contract-verification.json",
-      "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-native-replay-v6/receipt.json"
+      "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-native-replay-v6/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/protocol.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/adapter-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/preflight/verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/preflight-baseline/verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/owned-run.json",
+      "artifacts/agere-meaning-integration-2026-10-29/correction-attribution-probe/result.json",
+      "artifacts/agere-meaning-integration-2026-10-29/correction-attribution-probe/reuse-guard-result.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/source-basis.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/document-inventory.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/broad-structured-source-basis.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/accounting-in-progress.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/app-run/run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/baseline-run/run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/pair-summary.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/app-native-source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/beta-blocker-disagreement-source.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/existing-guard-diagnostic.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-app-inspection-v2/download-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/proof.json",
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/app-source-assertion-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/matched-app-inspection-v2/saved-export-audit.json"
     ],
-    "remaining_gap": "Live source acceptance remains partial: prior55of57patientpackets supported, two plus summary unresolved. The focused diagnostic failed exact-quote validation after two metered attempts; its objections are hypotheses, and no accepted result or source change was inferred. Existing baseline reader accepts legacy string questions only and is incompatible with current bound-question/source-clock contracts; align that existing comparison adapter before one matched frozen run. Broader routing, transferable bottling and role-attributed learning qualification remain.",
-    "next_action": "Prepare the existing single-model comparison harness against the current bound question/source-clock and native final-action contracts, without changing product architecture or inheriting prior findings. Remove stale output ceilings and make its allowed tools truthful. Test its same-model reader/closed-span path and final-action parsing offline. Then freeze current code, source and configuration for one matched original full HFrEF application run and corrected simple single-model baseline, with identical definitions/deliverable expectations and isolated all-attempt accounting. Preserve all older failed/invalid arms; never call the warm source replay a cold comparison. Retain all ten areas and automatic prompts PAUSED.",
-    "next": "Prepare the existing single-model comparison harness against the current bound question/source-clock and native final-action contracts, without changing product architecture or inheriting prior findings. Remove stale output ceilings and make its allowed tools truthful. Test its same-model reader/closed-span path and final-action parsing offline. Then freeze current code, source and configuration for one matched original full HFrEF application run and corrected simple single-model baseline, with identical definitions/deliverable expectations and isolated all-attempt accounting. Preserve all older failed/invalid arms; never call the warm source replay a cold comparison. Retain all ten areas and automatic prompts PAUSED.",
+    "remaining_gap": "The candidate now parses the exact failed XML/JSON duplicate as one registered action and flags the actual class error through final native field lineage; original eight bad cells are still preserved in the frozen result and need native recomputation. Quantitative prose remains unbound and recommendations generic in that old result. Source assertions126 and all saved/exported data have exact fidelity, but their interpretation and full workflow remain unverified. Baseline original has no final answer/report. Broader transfer and model/clinical qualification remain open.",
+    "next_action": "Prepare one owned recovery on a separate source-only clone of the same received warehouse. Reexecute all31current application native actions and revalidate its complete returned document observations with0new source-reader calls. Continue through the existing backstop/component and saved-report path with the measured feedback: exact registered medication classes, source/domain-scoped doses, native scalar prose bindings, and patient-specific proposed review actions with dated source basis and explicit unknowns. Run normal coverage/source checks without acceptance override. Preserve both original frozen arms; no repeated full warehouse review. Then varied healthcare/financial transfer, parameterized bottling and role-attributed learning against regressions/rollback, retaining all ten areas. No provider/training job or preview is running. Scheduler remains PAUSED after automatic review rejected reactivation; continue this active chat directly.",
+    "next": "Prepare one owned recovery on a separate source-only clone of the same received warehouse. Reexecute all31current application native actions and revalidate its complete returned document observations with0new source-reader calls. Continue through the existing backstop/component and saved-report path with the measured feedback: exact registered medication classes, source/domain-scoped doses, native scalar prose bindings, and patient-specific proposed review actions with dated source basis and explicit unknowns. Run normal coverage/source checks without acceptance override. Preserve both original frozen arms; no repeated full warehouse review. Then varied healthcare/financial transfer, parameterized bottling and role-attributed learning against regressions/rollback, retaining all ten areas. No provider/training job or preview is running. Scheduler remains PAUSED after automatic review rejected reactivation; continue this active chat directly.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -486,11 +508,36 @@
       }
     ],
     "latest_progress": {
-      "status": "offline_verified_no_acceptance_change",
+      "status": "offline_candidate_verified_recovery_pending",
+      "receipt": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/pair-summary.json",
       "active_provider_job": false,
-      "receipt": "artifacts/agere-meaning-integration-2026-10-29/execution-source-contract-verification.json",
-      "native_replay": "artifacts/agere-meaning-integration-2026-10-29/rechecked-source-native-replay-v6/receipt.json",
-      "provider_calls": 0
+      "active_training_job": false,
+      "phase": "prepare_exact_source_recovery",
+      "code_commit": "59cb2d9",
+      "controller_receipt": "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/owned-run.json",
+      "application_context_id": "ANS-41e9ba8445d3da4b371f2c02",
+      "readonly_preview": {
+        "status": "stopped",
+        "previous_pid": 76480,
+        "previous_session": 87697,
+        "port": 8896,
+        "receipt": "artifacts/agere-meaning-integration-2026-10-29/matched-app-inspection-v2/receipt.json"
+      },
+      "prior_offline_probes": {
+        "correction_attribution": [
+          "artifacts/agere-meaning-integration-2026-10-29/correction-attribution-probe/result.json",
+          "artifacts/agere-meaning-integration-2026-10-29/correction-attribution-probe/reuse-guard-result.json"
+        ],
+        "source_basis": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/source-basis.json",
+        "provider_calls": 0,
+        "training_jobs": 0,
+        "product_code_changed": false,
+        "document_inventory": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/document-inventory.json",
+        "broad_financial_source_basis": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/broad-structured-source-basis.json",
+        "provisional_accounting": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/accounting-in-progress.json",
+        "qualification": "Source baselines and diagnostic behavior only; no question-path, clinical or superiority acceptance."
+      },
+      "verification": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/verification.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -531,7 +578,7 @@
       "automatic_provider_calls": false,
       "automatic_retry": false
     },
-    "latest_human_steering": "Mike: stop automatic prompts while he is here; automation PAUSED via app tool. Continue the authorized MVP build without repeated approvals.",
+    "latest_human_steering": "Mike is stepping away and explicitly requests continued autonomous MVP completion. Continue active work directly; do not repeat scope approvals. Attempted heartbeat reactivation was rejected by automatic approval review because the earlier automatic-prompt pause lacked explicit reversal. Heartbeat remains PAUSED; no workaround or retry without new human authorization.",
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
       "status": "all_three_returned_analytically_partial",
@@ -545,13 +592,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T19:17:36.435029+00:00",
+    "at": "2026-10-29T21:21:27.078417+00:00",
     "workflow_change": "Actual SQLite reads now carry inherited governed-view SQL and source-table meanings into native execution receipts. Coverage and source review both receive the same deduplicated definitions and exact bindings. The canonical fill meaning is documented at its existing schema definition. Actual zero-provider 44-action replay preserves every final row, 57 patients, 228 fill cells, 606 original observations and 436 retained findings; all 58 packets have source context and fit (max229635bytes). Coverage projection roundtrips exactly (219658bytes).",
     "unsealed_work": {
-      "status": "source_provenance_verified_comparison_pending",
+      "status": "shared_boundary_repairs_verified_recovery_pending",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "Live source acceptance remains partial: prior55of57patientpackets supported, two plus summary unresolved. The focused diagnostic failed exact-quote validation after two metered attempts; its objections are hypotheses, and no accepted result or source change was inferred. Existing baseline reader accepts legacy string questions only and is incompatible with current bound-question/source-clock contracts; align that existing comparison adapter before one matched frozen run. Broader routing, transferable bottling and role-attributed learning qualification remain.",
-      "next_action": "Prepare the existing single-model comparison harness against the current bound question/source-clock and native final-action contracts, without changing product architecture or inheriting prior findings. Remove stale output ceilings and make its allowed tools truthful. Test its same-model reader/closed-span path and final-action parsing offline. Then freeze current code, source and configuration for one matched original full HFrEF application run and corrected simple single-model baseline, with identical definitions/deliverable expectations and isolated all-attempt accounting. Preserve all older failed/invalid arms; never call the warm source replay a cold comparison. Retain all ten areas and automatic prompts PAUSED.",
+      "remaining_gap": "The candidate now parses the exact failed XML/JSON duplicate as one registered action and flags the actual class error through final native field lineage; original eight bad cells are still preserved in the frozen result and need native recomputation. Quantitative prose remains unbound and recommendations generic in that old result. Source assertions126 and all saved/exported data have exact fidelity, but their interpretation and full workflow remain unverified. Baseline original has no final answer/report. Broader transfer and model/clinical qualification remain open.",
+      "next_action": "Prepare one owned recovery on a separate source-only clone of the same received warehouse. Reexecute all31current application native actions and revalidate its complete returned document observations with0new source-reader calls. Continue through the existing backstop/component and saved-report path with the measured feedback: exact registered medication classes, source/domain-scoped doses, native scalar prose bindings, and patient-specific proposed review actions with dated source basis and explicit unknowns. Run normal coverage/source checks without acceptance override. Preserve both original frozen arms; no repeated full warehouse review. Then varied healthcare/financial transfer, parameterized bottling and role-attributed learning against regressions/rollback, retaining all ten areas. No provider/training job or preview is running. Scheduler remains PAUSED after automatic review rejected reactivation; continue this active chat directly.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -589,7 +636,15 @@
     "candidate_commits": [
       "ce8d759",
       "f68bd71"
-    ]
+    ],
+    "continuation_scheduler": {
+      "status": "PAUSED",
+      "id": "finish-agere-overnight-mvp-candidate",
+      "observed_at": "2026-10-29T20:50:27.829000+00:00",
+      "reactivation_attempt": "rejected_by_automatic_approval_review",
+      "reason": "Earlier explicit automatic-prompt pause; the request to continue while away did not clearly authorize recurring prompts.",
+      "unaffected_work": "Continue the active authorized build directly in this chat."
+    }
   },
   "decisions": [
     {
@@ -1861,6 +1916,13 @@
         "artifacts/agere-meaning-integration-2026-10-29/execution-source-contract-verification.json"
       ],
       "scope_impact": "No selection, source or clinical definition changed. Engineering provenance only; no acceptance override, role/model default promotion or repeated source reader. All ten acceptance areas and manual continuation retained."
+    },
+    {
+      "at": "2026-10-29T20:47:53.311008+00:00",
+      "gate": "G3",
+      "reason": "The completed fresh run reproduces a source-class broadening and fails quantitative binding/recommendation completeness; baseline also fails the shared tool envelope. Fix these measured shared integration failures before new bottling or training work. Prior passing components are insufficient to close G3.",
+      "evidence": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/pair-summary.json",
+      "scope_impact": "All ten areas and both frozen arms retained. Reuse/revalidate complete returned source observations; no repeat warehouse campaign, threshold relaxation, protected data, default promotion or overall model winner."
     }
   ],
   "unsealed_work": {
@@ -1871,7 +1933,7 @@
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
-    "source_frozen_for_run": false,
+    "source_frozen_for_run": true,
     "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
   },
   "current_visual_request": {
