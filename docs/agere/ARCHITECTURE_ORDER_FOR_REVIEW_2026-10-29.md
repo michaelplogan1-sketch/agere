@@ -223,6 +223,59 @@ Retrieval from updated knowledge and changing weights are different operations.
 The most urgent learning target is correct reusable relation interpretation and
 execution, rather than unlimited new examples or autonomous self-approval.
 
+### Bottling: retained, partially implemented, not yet an earned saving
+
+Mike supplied *Agent in a Bottle: Can LLM Agents Turn Their Capabilities into
+Cheap, Scalable Artifacts?* (BOTTLED, arXiv:2610.08775v1) on October 29. The
+attached paper describes a generalist building an artifact once, then applying it
+across many related inputs: reusable code, a small trained model, a retrieval
+index, or a hybrid with fallback. It evaluates narrow repeated tasks; it does not
+establish healthcare accuracy or universal question answering. Its benchmark's
+fixed budgets are experimental conditions, not new Agere spending restrictions.
+
+Agere already implements parts of this idea:
+
+- `bottled.BottledModel` serves a local Qwen/LoRA SQL candidate through the existing
+  `Cascade.tier_bottled_sql` path. `bottled.answer` checks read-only execution and
+  candidate agreement. Agreement is not clinical or semantic truth. This SQL rung
+  is off by default unless explicitly enabled or a qualified replacement is
+  installed; the narrow cohort-slot hook has its own separate configuration.
+- `adapter_learning` and `component_learning` retain role-specific training,
+  artifact identity, feedback, quarantine and release mechanisms. Available
+  weights or completed training alone do not establish useful workflow transfer.
+- `harness_improvement.propose/replay` can validate and rerun literal read-only
+  action traces under exact question/source/meaning/model guards. This is limited
+  execution reuse, not demonstrated generalization to new question shapes.
+- Existing SQL/engines, native result assembly and code-built deliverables already
+  perform repeatable work without an LLM per patient or per page. An answer cache
+  alone is not bottling a general capability.
+
+The latest integrated cold run actually attempted `bottled_sql`: its component
+receipt records **62.09 seconds and a decline**, so it earned no accepted answer
+or saving in that workflow. The RSI candidate path remained observation-only.
+Historical benchmark comments are not current clinical evidence and will not be
+rerun or used as answer keys under Mike's standing restriction.
+
+The next bottling target should be a frequent, stable operation inside broad
+questions, rather than a new hard-coded heart-failure handler or an attempt to
+distill an entire compound request into one SQL statement. For example, bind the
+entity, medication/class, event time, documented reason and source span into a
+typed relation; let native code join and calculate; route genuinely unresolved
+meaning to the appropriate reader or frontier model. Reuse the resulting program
+or adapter only where its declared meaning applies, and reconsider it when the
+source contract or clinical reference changes.
+
+Measure **build/validation cost + local execution + fallback + failed attempts**
+across realistic repeated workloads, alongside clinically meaningful gains,
+regressions and total latency. Quality must hold before savings count. The paper
+itself reports substantial quality loss in many runs; its headline cost savings
+are not evidence that an Agere bottle will be accurate or economical.
+
+Claude's review should explicitly assess whether guarded program reuse or
+role-specific distillation is the better next investment, what breaks the current
+whole-question SQL approach, and the minimum experiment that could demonstrate
+useful transfer without another large undirected training run.
+
 ## 7. Relevant external ideas to evaluate, not automatically install
 
 These primary sources were checked on October 29. Their experiments do not prove

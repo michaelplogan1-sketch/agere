@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T10:58:13.039339+00:00",
+  "updated_at": "2026-10-29T11:13:40.812216+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,7 +359,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "chief_architect_review_prepared",
+    "kind": "requested_architect_review_with_bottling_prepared",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
@@ -395,8 +395,8 @@
       "artifacts/agere-overnight-2026-10-29/context-verification.json"
     ],
     "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
-    "next_action": "Complete Mike's explicitly requested Claude chief-architect review of the written architecture/order brief and exact code packet via subscription. Preserve source/brief bytes during the review, retain all metering, then save the independent Markdown and reconcile recommendations with measured evidence before the targeted clinical integration check. Do not mistake advisory approval for MVP acceptance.",
-    "next": "Complete Mike's explicitly requested Claude chief-architect review of the written architecture/order brief and exact code packet via subscription. Preserve source/brief bytes during the review, retain all metering, then save the independent Markdown and reconcile recommendations with measured evidence before the targeted clinical integration check. Do not mistake advisory approval for MVP acceptance.",
+    "next_action": "Complete the requested concise Claude architecture review with the supplied bottling paper and exact current code. Preserve the failed first review and its unknown usage; no subscription limit was observed. Preserve source/brief during the new review; then reconcile findings with measured workflow errors before clinical integration. Bottling is partially implemented and has no accepted contribution in the latest cold HFrEF run.",
+    "next": "Complete the requested concise Claude architecture review with the supplied bottling paper and exact current code. Preserve the failed first review and its unknown usage; no subscription limit was observed. Preserve source/brief during the new review; then reconcile findings with measured workflow errors before clinical integration. Bottling is partially implemented and has no accepted contribution in the latest cold HFrEF run.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -488,10 +488,12 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T10:46:45.948813+00:00",
-      "status": "native_documentation_and_transport_candidates_offline_verified",
+      "at": "2026-10-29T11:13:40.812216+00:00",
+      "status": "review_v1_output_limit_failure_preserved_v2_prepared",
       "active_provider_or_training_job": false,
-      "provider_requests_in_verification": 0
+      "prior_attempt": "/private/tmp/agere-overnight-20261029/architecture-review-20261029/run-receipt.json",
+      "prepared_packet": "/private/tmp/agere-overnight-20261029/architecture-review-v2-20261029/manifest.json",
+      "failed_attempt_usage": "unavailable, do not infer zero cost"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -557,6 +559,14 @@
       "path": "artifacts/agere-overnight-2026-10-29",
       "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
       "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open."
+    },
+    "bottling_assessment": {
+      "source": "/Users/mikel/Desktop/bottling.pdf",
+      "brief_section": "docs/agere/ARCHITECTURE_ORDER_FOR_REVIEW_2026-10-29.md#bottling-retained-partially-implemented-not-yet-an-earned-saving",
+      "latest_cold_rung_seconds": 62.08981475001201,
+      "latest_cold_rung_outcome": "declined",
+      "status": "parts wired; workload-level autonomous artifact construction and useful transfer unproven",
+      "no_benchmark_or_answer_key_access": true
     }
   },
   "decisions": [
@@ -1744,10 +1754,10 @@
     }
   ],
   "unsealed_work": {
-    "status": "source_audited_transport_contract_offline_verified",
+    "status": "requested_architect_review_with_bottling_prepared",
     "path": "artifacts/agere-overnight-2026-10-29",
     "remaining_gap": "Retained continuation remains partial;57cohort/228fill-proxy cells/606quotes agree and57actions are present, but89mixed dose rows were mislabeled GDMT (75tagged other), causal field misalignment persists and dated clinician role objects are not fully composed. Rendering is ready with0modelcalls. No complete clinical/cost acceptance or default activation.",
-    "next_action": "Integrate and verify the measured native documentation lookup through existing SQL, preserving all rules, full documentation and patient evidence. Then make a targeted subscription check of caller output settings and fresh semantic reconciliation on the retained source; do not repeat the cold population review. Clinical dose denominators, field causality and dated clinician-role composition remain open."
+    "next_action": "Complete the requested concise Claude architecture review with the supplied bottling paper and exact current code. Preserve the failed first review and its unknown usage; no subscription limit was observed. Preserve source/brief during the new review; then reconcile findings with measured workflow errors before clinical integration. Bottling is partially implemented and has no accepted contribution in the latest cold HFrEF run."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

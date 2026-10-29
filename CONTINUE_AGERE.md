@@ -1,3 +1,21 @@
+# Current Agere checkpoint — 2026-10-29T11:13:40.812216+00:00
+
+First Claude architecture review failed after562.812s on its16000output-token maximum. Exact failure/ledger preserved in /private/tmp/agere-overnight-20261029/architecture-review-20261029; no quota observed, failed usage unavailable and must not count as zero. No clinical/training/provider job active. Mike now asks about bottling; read his attached paper and exact current code. Bottled SQL actually declined after62.09s in the cold run; narrow slot adapters and guarded action replay exist but do not prove general transfer. Added the explicit bottling assessment to the requested architecture Markdown.
+
+Complete the requested concise Claude architecture review with the supplied bottling paper and exact current code. Preserve the failed first review and its unknown usage; no subscription limit was observed. Preserve source/brief during the new review; then reconcile findings with measured workflow errors before clinical integration. Bottling is partially implemented and has no accepted contribution in the latest cold HFrEF run.
+
+Prepared new packet/manifest at /private/tmp/agere-overnight-20261029/architecture-review-v2-20261029,426259bytes, code/brief/paper only, no patient records or protected corpora. One concise900word Sonnet review via subscription, medium effort, native64000output allowance to avoid repeating the small per-request output failure; no workflow/spend quota or automatic retries. Preserve all attempts and G3/all ten areas.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-29T10:58:54.613429+00:00
+
+Claude chief-architect review is RUNNING, owned session9764, subscription only, started2026-10-29T10:58:18.647336+00:00. Inspect /private/tmp/agere-overnight-20261029/owned-job.json and architecture-review-20261029/run-receipt.json. No clinical provider/training job. Do not duplicate this review or mutate the pinned product source/architecture brief while it runs. No quota has been observed. Review packet352852bytes, engineering code/brief only; no patient records/protected corpora. Advisory engineering cost is separate from product answer cost.
+
+The user-requested brief is saved as docs/agere/ARCHITECTURE_ORDER_FOR_REVIEW_2026-10-29.md (commit867bb31; product candidate1fffde9). On return preserve exact Claude Markdown/raw usage/transport details, distinguish its recommendations from delivered evidence, reconcile the highest-value shared fixes and update the requested Markdown links. Original clinical continuation remains partial;156context/157transport offline checks overlap, no live gain/readiness claim. G3/all ten areas preserved.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-29T10:58:13.039339+00:00
 
 Mike explicitly requested an architecture/order Markdown and Claude review from a critical TypeSafe/System One chief-architect perspective. The prior provider continuation is finished; no provider or training job is active. Brief: docs/agere/ARCHITECTURE_ORDER_FOR_REVIEW_2026-10-29.md. Prepared exact source packet/manifest: /private/tmp/agere-overnight-20261029/architecture-review-20261029 (352852bytes,12full modules/5exact-excerpt modules, no patient records/protected corpora). Review is subscription-only, independent advisory engineering work, separate from clinical/unit economics.
