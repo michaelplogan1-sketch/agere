@@ -79,6 +79,23 @@ class Fixture(unittest.TestCase):
 
 
 class Definitions(Fixture):
+    def test_explicit_all_received_rows_preserve_patient_counts_within_events(self):
+        q='Across all received appointment rows, show appointment counts and distinct patients.'
+        self.assertFalse(DC.population(q)['living_only'])
+        self.assertTrue(DC.population(q)['all_received_rows'])
+        self.assertTrue(DC.population(q+' For living patients only.')['living_only'])
+        sql='SELECT count(DISTINCT patient_id) FROM utilization_event'
+        self.assertEqual(self.run_sql(q,sql)['value'],3)
+        self.assertEqual(self.run_sql('How many patients had a utilization event?',sql)['value'],2)
+        with DC.scope(q):
+            verdict=DC.verify(q,{},sqls=['SELECT count(*) FROM living_patient'])
+            self.assertFalse(verdict['ok'])
+            self.assertIn('all-received-row',verdict['reasons'][0])
+            good={'table_binding':{'query':'SELECT count(DISTINCT patient_id) FROM utilization_event'}}
+            self.assertTrue(DC.verify(q,good,sqls=['SELECT count(*) FROM living_patient'])['ok'])
+            bad={**good,'computed_prose':[{'sources':{'patients':{'input':{'sql':'SELECT count(*) FROM living_patient'}}}}]}
+            self.assertFalse(DC.verify(q,bad)['ok'])
+
     def test_patients_are_living_unless_the_question_asks_for_the_deceased(self):
         self.assertTrue(DC.population('How many patients have diabetes?')['living_only'])
         self.assertTrue(DC.population('How many living patients have diabetes?')['living_only'])

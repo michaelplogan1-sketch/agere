@@ -663,6 +663,52 @@ _CODE_COLS = r'icd10|icd_10|icd10_code|code|dx_code|snomed|loinc|rxnorm|ndc|cpt|
 _NOT_ALIAS = {'where', 'join', 'left', 'right', 'inner', 'outer', 'cross', 'on', 'group', 'order', 'limit', 'union', 'using', 'natural'}
 
 
+def _scoped_value_filters(sql, names):
+    """Only direct physical-column predicates in their own SQL lexical scope.
+
+    A CTE/result column can contain computed labels. A same-named physical
+    column elsewhere in the statement cannot supply its value domain.
+    """
+    from sqlglot import parse_one, exp
+    from sqlglot.errors import ParseError, OptimizeError
+    from sqlglot.optimizer.scope import build_scope
+    try:
+        tree = parse_one(sql, read='sqlite')
+        root = build_scope(tree)
+    except (ParseError, OptimizeError, ValueError):
+        # An unparseable query cannot justify a raw-column value verdict.
+        return []
+    if root is None: return []
+    found = []
+    for scope in root.traverse():
+        for predicate in list(scope.expression.find_all(exp.EQ, exp.In)):
+            if predicate.find_ancestor(exp.Select) is not scope.expression: continue
+            if predicate.find_ancestor(exp.Where, exp.Having, exp.Join) is None: continue
+            column = predicate.this
+            values = predicate.expressions if isinstance(predicate, exp.In) else [predicate.expression]
+            if not isinstance(column, exp.Column) or not values or any(
+                    not isinstance(v, exp.Literal) or not v.is_string for v in values): continue
+            owner = scope
+            source = None
+            if column.table:
+                while owner is not None:
+                    sources = {alias.lower(): value for alias, value in owner.sources.items()}
+                    if column.table.lower() in sources:
+                        source = sources[column.table.lower()]; break
+                    owner = owner.parent
+            elif len(scope.sources) == 1:
+                source = next(iter(scope.sources.values()))
+            if not isinstance(source, exp.Table): continue
+            table = names.get(source.name.lower())
+            if table is None: continue
+            replacement = exp.true()
+            predicate.replace(replacement)
+            relaxed = tree.sql(dialect='sqlite')
+            replacement.replace(predicate)
+            found.append((table, column.name, column.table, [v.this for v in values], relaxed))
+    return found
+
+
 def value_existence(stack, graph, answer, *, catalog=None, target=None):
     """Text filters (col = 'x', col IN ('a', 'b')) whose values the column never holds (case-insensitive) AND whose removal makes
     the same plan return rows: the made-up label alone emptied or narrowed the answer (BH-07: codes F20/F25/F31 find patients,
@@ -678,28 +724,17 @@ def value_existence(stack, graph, answer, *, catalog=None, target=None):
         names = {r[0].lower(): r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")}
         cols = {}
         for sql in sqls:
-            aliases, used = {}, []
-            for t, a in _ALIAS.findall(sql):
-                table = names.get(t.lower())
-                if table is None: continue
-                used.append(table); aliases[t.lower()] = table
-                if a and a.lower() not in _NOT_ALIAS: aliases[a.lower()] = table
-            for m in _FILTER.finditer(sql):
-                alias, col, eq, val, listed = m.groups()
-                table = aliases.get(alias.lower()) if alias else (used[0] if len(set(used)) == 1 else None)
-                if table is None: continue
+            for table, col, alias, values, relaxed in _scoped_value_filters(sql, names):
                 if table not in cols: cols[table] = {r[1].lower(): (r[1], (r[2] or '').upper()) for r in db.execute(f'PRAGMA table_info("{table}")')}
                 info = cols[table].get(col.lower())
                 if info is None or any(k in info[1] for k in ('INT', 'REAL', 'NUM', 'DATE', 'BOOL')): continue
-                values = [val] if eq else re.findall(r"'((?:[^']|'')*)'", listed)
-                values = [v.replace("''", "'") for v in values if v and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?|\d{4}-\d{2}-\d{2}.*', v)]
+                values = [v for v in values if v and not re.fullmatch(r'[-+]?\d+(?:\.\d+)?|\d{4}-\d{2}-\d{2}.*', v)]
                 if not values: continue
                 try:
                     hit = db.execute(f'SELECT 1 FROM "{table}" WHERE lower("{info[0]}") IN ({",".join("?" * len(values))}) LIMIT 1',
                                      [v.lower() for v in values]).fetchone()
                 except _sqlite3.Error:
                     continue  # time budget or an unreadable column: no verdict
-                relaxed = sql[:m.start()] + '1=1' + sql[m.end():]
                 if hit is not None:  # the label exists; beside a code filter on the same table it must not drop coded rows
                     if not (_LABEL_COL.fullmatch(info[0]) and re.search(r'\b(?:' + re.escape(alias or table) + r'\.)?(?:' + _CODE_COLS + r')\s+(?:LIKE|=|IN)\b', relaxed, re.I)):
                         continue

@@ -39,6 +39,9 @@ DECEASED_ASK = re.compile(
     r"\b(?:deceased|died|dead|death|deaths|dying|die|dies|mortality|passed away|fatal(?:ity|ities)?|survival|survivors?|vital status|"
     r"all patients ever|ever[- ]enrolled|everyone ever|including (?:the )?(?:deceased|dead|death))\b", re.I)
 LIVING_ASK = re.compile(r'\b(?:living|alive)\b', re.I)
+ALL_RECEIVED_ROWS = re.compile(
+    r'\b(?:all|every)\s+(?:the\s+)?received\s+(?:[a-z_]+[ -]+){0,5}'
+    r'(?:rows?|records?|events?|claims?|stays?|appointments?|encounters?|observations?)\b', re.I)
 PATIENT_WORDS = re.compile(r'\b(?:patients?|people|persons?|individuals?|who|whom|whose|adults?|children|women|men|females?|males?|seniors?|elderly)\b', re.I)
 # questions about money or membership months are not patient counts: the living rule does not apply to them (they say "members",
 # "claims", "paid", "PMPM", never a count of patients)
@@ -152,6 +155,9 @@ def population(question):
     """-> {'living_only': bool, 'reason': str}. Counts and lists of patients are living patients unless the question asks for the
     deceased; counts of events include every patient who had them (Mike 2026-10-25)."""
     q = question or ''
+    if ALL_RECEIVED_ROWS.search(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'all_received_rows': True,
+                'reason': 'explicit all-received-row scope includes every received patient ID in those rows'}
     if counts_events(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'reason': 'a count of events, not of patients: the events of every patient count (Mike 2026-10-25)'}
     if asks_deceased(q):
@@ -237,7 +243,9 @@ def prompt_block():
         '1. Counts and lists of PATIENTS are LIVING patients. Exclude anyone with a row in the death table: add patient_id NOT IN (SELECT patient_id FROM death) '
         'to every patient-keyed table a patient count or list reads. Include the deceased only when the question asks (deceased, died, death, '
         'mortality, "including deceased", "all patients ever"). Counts, volumes, rates and shares of EVENTS (admissions, ED visits, stays, fills, '
-        'appointments, no-shows, discharges) include every patient who had them: no living filter on events.\n'
+        'appointments, no-shows, discharges) include every patient who had them: no living filter on events. '
+        'An explicit all-received-row scope also includes all patient IDs within those rows, including distinct-patient '
+        'counts inside grouped event summaries. Do not add living_patient or death exclusions there unless the question asks for living patients.\n'
         '2. Labs: the LATEST result per patient and concept (measurement_latest). Use measurement (every result) only when the question says ever, '
         'any, at any time, history of, at least once, highest, lowest or asks for a trend.\n'
         '3. A condition is documented by ONE evidence rule: an EHR diagnosis (condition with is_diagnosis = 1, plus problem-list rows whose flag is '
@@ -560,6 +568,27 @@ def verify(question, answer, state=None, db=None, sqls=()):
     restrict, when a patient list of a living-only answer holds a deceased patient, or when an event is read from an EHR-only table."""
     state = state or _SCOPE.get() or Scope(question)
     reasons = [*state.problems, *event_source_findings(question, sqls)]
+    if state.population.get('all_received_rows'):
+        # Native bindings describe the returned fields. Earlier exploratory
+        # queries remain in the audit but must not poison a repaired answer.
+        bound = []
+        for key in ('table_binding', 'query_evidence'):
+            query = (answer.get(key) or {}).get('query') if isinstance(answer, dict) else None
+            if isinstance(query, str): bound.append(query)
+        def bound_prose(value):
+            if isinstance(value, dict):
+                query = (value.get('input') or {}).get('sql')
+                if isinstance(query, str): bound.append(query)
+                for child in value.values(): bound_prose(child)
+            elif isinstance(value, list):
+                for child in value: bound_prose(child)
+        if isinstance(answer, dict): bound_prose(answer.get('computed_prose') or [])
+        for sql in bound or sqls or []:
+            masked, _ = _mask(sql)
+            if re.search(r'\b(?:FROM|JOIN)\s+living_patient\b', masked, re.I):
+                reasons.append('an explicit all-received-row question is narrowed by living_patient; distinct patients must '
+                               'include every patient ID in the requested received rows unless living patients were requested')
+                break
     dead = []
     if state.living_only and db is not None and isinstance(answer, dict):
         ids = [*(answer.get('patient_ids') or []), *(answer.get('unknown_patient_ids') or [])]
