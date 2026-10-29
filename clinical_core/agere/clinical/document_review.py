@@ -306,6 +306,12 @@ def retained_candidates(tools,view,patient_ids,questions):
         'scope':'Retained candidate spans only, each rechecked with its complete source document; no whole-document absence or recall established.'}
 
 
+def candidate_row_scope(receipt,manifest):
+    """Keep a patient's review identity independent of global audit counters."""
+    return {'result_view':receipt['result_view'],'patient_id':manifest['patient_id'],
+        **manifest['candidate_scope'],'scope':receipt['scope']}
+
+
 def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None, patient_query_sql=None, record_ids=None,candidate_result_view=None):
     if (patient_ids is None)==(patient_query_sql is None):
         raise ValueError('Choose explicit patient_ids OR a complete patient_query_sql')
@@ -391,13 +397,29 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                              'whole_document_absence_established':False}}if candidates is not None else {})})
     if selected_records is not None and selected_records!=received_selected:
         raise ValueError('Requested records are outside this received patient/date scope: '+str(sorted(selected_records-received_selected)))
+    # Reuse the investigator's existing full-document cache for downstream
+    # verification. A digest/selected quote alone cannot establish its context.
+    if candidates is not None and isinstance(getattr(tools,'read',None),dict):
+        for pid,batches in packages.items():
+            for batch in batches:
+                for doc in batch:
+                    cached=tools.read.get(doc['record_id'])
+                    if cached and (cached.get('text')!=doc['text']or str(cached.get('date')or'')[:10]!=doc['date']):
+                        raise ValueError('Candidate source differs from the existing document cache')
+                    tools.read.setdefault(doc['record_id'],{'patient_id':pid,'date':doc['date'],'text':doc['text'],
+                        'available':doc.get('available_date')})
     from .harness_improvement import recover_document_observations
-    recovered=recover_document_observations(questions,manifest,packages)if candidates is None else None
+    recovered=recover_document_observations(questions,manifest,packages)
     if recovered is not None:
         recovered={**recovered,'rows':with_correspondence(recovered['rows'],packages,questions,tools.as_of)}
+        if candidate_receipt:
+            recovered['candidate_observation_review']=candidate_receipt
+            scopes={m['patient_id']:candidate_row_scope(candidate_receipt,m)for m in manifest}
+            recovered['rows']=[{**row,'candidate_review_scope':json.dumps(scopes[row['patient_id']])}for row in recovered['rows']]
         tools.document_reviews.append(recovered)
         return {'columns':list(recovered['rows'][0])if recovered['rows']else ['patient_id','review_status','documents_reviewed','review_json','review_limitations'],
             'rows':recovered['rows'],'coverage':manifest,'accounting':{'new_paid_api_calls':0,'known_api_estimate_usd':0,'api_cost_known':True},
+            **({'candidate_observation_review':candidate_receipt}if candidate_receipt else {}),
             'observation_reuse':recovered['observation_reuse'],
             'method':'Exact-source/question machine observations revalidated during explicit owned-run recovery. SQL and interpretation rerun; no clinical acceptance inherited.'}
     from .harness_improvement import recover_document_fields
@@ -545,7 +567,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
              ('reviewed_candidates'if m['received_documents']else 'no_candidates')if candidates is not None else
              'reviewed' if m['received_documents'] else 'no_documents',
              'documents_reviewed':m['received_documents'],'review_json':json.dumps(found),'review_limitations':json.dumps(failures)}
-        if candidate_receipt:row['candidate_review_scope']=json.dumps({**candidate_receipt,**m['candidate_scope']})
+        if candidate_receipt:row['candidate_review_scope']=json.dumps(candidate_row_scope(candidate_receipt,m))
         rows.append(row)
     rows=with_correspondence(rows,packages,all_questions,tools.as_of)
     tools.document_reviews.append({'questions':all_questions,'scope':ids,'manifest':manifest,'rows':rows,

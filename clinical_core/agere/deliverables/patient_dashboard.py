@@ -43,7 +43,8 @@ const candidate=review.candidate_review_scope,audit=new Set(review.audit_only_fi
 const body=Object.entries(review.questions||{}).map(([k,q])=>{
 const findings=(review.findings?.[k]||[]).map(f=>'<article class="recommendation">'+nativeValue(f)+'</article>').join('')||'<p class="subtle">No finding returned within this review scope. This does not establish that no reason exists.</p>';
 const content='<p>'+esc(typeof q==='object'?q.question:q)+'</p>'+findings;
-return audit.has(k)?'<details><summary>Prior machine observations for audit: '+esc(label(k))+'</summary><p class="notice">These original labels were rechecked below. They are retained for audit and do not establish the requested relationship.</p>'+content+'</details>':'<h3>'+esc(label(k))+'</h3>'+content;
+const title=typeof q==='object'&&q.relation?label(q.relation)+' / '+q.entity.id:label(k);
+return audit.has(k)?'<details><summary>Prior machine observations for audit: '+esc(label(k))+'</summary><p class="notice">These original labels were rechecked below. They are retained for audit and do not establish the requested relationship.</p>'+content+'</details>':'<h3>'+esc(title)+'</h3>'+content;
 }).join('');
 return '<h3>'+(candidate?'Source-bound candidate recheck':'Whole-document note review')+'</h3><p class="subtle">'+esc(review.review_status)+' · '+esc(review.documents_reviewed)+' received documents. '+(candidate?'Only retained candidate spans were rechecked in their complete source contexts. Whole-document absence and recall are not established.':'Dated extracted findings retain their source; a mention is not automatically a causal treatment reason.')+'</p>'+body+(review.limitations?'<details><summary>Review limitations</summary><pre>'+esc(val(review.limitations))+'</pre></details>':'');
 }).join('')}

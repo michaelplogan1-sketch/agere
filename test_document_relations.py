@@ -100,6 +100,7 @@ class Relations(unittest.TestCase):
             value=self.finding();legacy={'patient_id':'A','review_json':json.dumps({'reason':[value]})}
             tools=SimpleNamespace(db=db,as_of='2030-05-27',stack=SimpleNamespace(path=root,ledger_path=root/'ledger.sqlite3',allow_live=False),
                 in_scope=lambda pid:None,continuation_identity=lambda:{'source':'fixture'},document_reviews=[],
+                read={},
                 executed_results={'native':{'rows':[legacy]}},subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0},
                 semantic=SimpleNamespace(columns={'record':[],'scanned_document':[]}),
                 _texts=lambda pid:[('r','note','notes','office',self.doc['date'],self.doc['text'],'')]if pid=='A'else[])
@@ -112,10 +113,25 @@ class Relations(unittest.TestCase):
             self.assertEqual([r['review_status']for r in out['rows']],['reviewed_candidates','no_candidates'])
             self.assertEqual(out['candidate_observation_review']['requested_candidates'],1)
             self.assertFalse(out['coverage'][1]['candidate_scope']['whole_document_absence_established'])
+            self.assertEqual(tools.read['r']['text'],self.doc['text'])
+            prior=copy.deepcopy(tools.document_reviews)
+            with H.owned_recovery([],question='Recheck',document_reviews=prior),patch.object(T,'read',side_effect=AssertionError('Exact candidate observations must not be bought again')):
+                reused=D.review(tools,['A','B'],{'reason':question()},candidate_result_view='native')
+            self.assertEqual(reused['accounting']['new_paid_api_calls'],0)
+            self.assertFalse(reused['observation_reuse']['clinical_acceptance_inherited'])
+            self.assertEqual(json.loads(reused['rows'][0]['review_json'])['reason'],[value])
+            local_scope=json.loads(reused['rows'][0]['candidate_review_scope'])
+            self.assertNotIn('native_result_digest',local_scope);self.assertNotIn('requested_candidates',local_scope)
             for change in [{'quote':'Invented passage.'},{'date':'2029-01-01'},{'span_start':1}]:
                 legacy['review_json']=json.dumps({'reason':[{**value,**change}]})
                 with self.subTest(change=change),patch.object(T,'read',side_effect=AssertionError('No provider before exact-source validation')),self.assertRaises(ValueError):
                     D.review(tools,['A'],{'reason':question()},candidate_result_view='native')
+
+    def test_patient_candidate_scope_does_not_include_other_patient_counts_or_result_digests(self):
+        m={'patient_id':'A','candidate_scope':{'candidates':1,'candidate_digest':'source-A','whole_document_absence_established':False}}
+        before=D.candidate_row_scope({'result_view':'native','requested_candidates':10,'native_result_digest':'old','scope':'Candidate only'},m)
+        after=D.candidate_row_scope({'result_view':'native','requested_candidates':11,'native_result_digest':'new','scope':'Candidate only'},m)
+        self.assertEqual(before,after)
 
     def test_frontier_cannot_accept_finding_without_axes_and_keeps_valid_siblings(self):
         pending=[{'field':k,'record_id':'r','quote':self.doc['text'],'span_start':0,'span_end':len(self.doc['text'])}for k in ('mra','rasi')]

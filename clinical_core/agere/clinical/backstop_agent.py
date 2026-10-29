@@ -964,6 +964,13 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         feedback.append('Cite the exact supporting passage, record ID and date for the document answer.')
     if static_feedback:return {**assessment,'status':'repair','repair_kind':'deterministic_compiler',
                                'feedback':' '.join(static_feedback+feedback)}
+    for source in documentary_sources(answer.get('table')or[]):
+        # Local warehouse reads only, through the same scope/as-of guards as
+        # explicit document tools. A missing source remains a packet gap.
+        try:
+            if hasattr(tools,'_doc'):tools._doc(source['record_id'])
+            elif hasattr(tools,'read_document'):tools.read_document(source['record_id'])
+        except (ValueError,KeyError):pass
     shaped(answer)
     if not gate.ready(stack, 'AGERE_S1_CHECK'):
         return {**assessment, 'reason': 'System One answer review unavailable', 'feedback': ' '.join(feedback) or None}
@@ -1070,6 +1077,30 @@ def native_result_dependencies(calls,roots):
     return selected
 
 
+def documentary_sources(value):
+    """Exact full-source dependencies of represented documentary assertions."""
+    found={}
+    def walk(node):
+        if isinstance(node,str)and node[:1]in ('[','{'):
+            try:node=json.loads(node)
+            except ValueError:return
+        if isinstance(node,list):
+            for item in node:walk(item)
+        elif isinstance(node,dict):
+            assertion=node.get('assertion')if isinstance(node.get('assertion'),dict)else node
+            source=assertion.get('source')or{}
+            if assertion.get('binding_version')=='documentary-relation/1'and isinstance(source,dict):
+                if all(isinstance(source.get(k),str)for k in ('patient_id','record_id','document_text_digest')):
+                    dependency={k:source[k]for k in ('patient_id','record_id','document_text_digest')}
+                    dependency['date']=source.get('event_date')
+                    found[json.dumps(dependency,sort_keys=True)]=dependency
+                return  # assertion values/quotes are source data, not references
+            for key,item in node.items():
+                if key not in ('value','quote','text'):walk(item)
+    walk(value)
+    return list(found.values())
+
+
 def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None):
     """All clinical rows, deduplicated and grouped by patient dependency.
 
@@ -1136,7 +1167,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             contracts.append(contract)
         return contracts
     common={'question':question,'as_of':as_of,'final_result_view':final_view,
-        'instruction':'Review each claim against its stated source kind, definition, entity/domain and time. Structured pharmacy/assignment observations and counts of machine findings are source facts or arithmetic, not claims that notes corroborate treatment or that the findings are clinically valid. Check those facts against their executed inputs and scope. Clinical interpretation, reasons, current use and current responsibility need their own source meaning. A dated consultation or authorship object is not itself a current-assignment claim. Review machine interpretations with their limitations; preserve unknowns, dates and negation. Global coverage is checked separately.'}
+        'instruction':'Review each claim against its stated source kind, definition, entity/domain and time. Structured pharmacy/assignment observations and counts of machine findings are source facts or arithmetic, not claims that notes corroborate treatment or that the findings are clinically valid. Check those facts against their executed inputs and scope. Explicit legacy/audit fields preserve prior machine observations, not endorsed clinical findings; check their fidelity against the original native observations, and assess the source-bound candidate relations separately. Clinical interpretation, reasons, current use and current responsibility need their own source meaning. An assertion temporality of current means current at its source statement; it does not override current_clinical_state_established=false or establish snapshot-current care. A dated consultation or authorship object is not itself a current-assignment claim. Review machine interpretations with their limitations; preserve unknowns, dates and negation. Global coverage is checked separately.'}
     from .evidence_projection import table_view,restore_table
     summary_rows,dependencies=table_view(table,defer_native_cells=True,index_dependencies=True)
     # Global prose can cite a patient's source directly. Its dependency marker
@@ -1145,6 +1176,15 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     cited_sources=[]
     read_documents=[{**doc,'record_id':rid}for rid,doc in (source_documents or{}).items()if isinstance(doc,dict)]+[
         c['result']for c in calls if c.get('name')=='read_document'and isinstance(c.get('result'),dict)]
+    contexts={};context_gaps={}
+    for dependency in documentary_sources(table):
+        pid=dependency['patient_id'];rid=dependency['record_id']
+        document=next((doc for doc in read_documents if doc.get('record_id')==rid and doc.get('patient_id')==pid and
+            str(doc.get('date')or'')[:10]==dependency['date'] and isinstance(doc.get('text'),str)and
+            digest(doc['text'])==dependency['document_text_digest']),None)
+        if document is None:
+            context_gaps.setdefault(pid,[]).append({**dependency,'reason':'Complete source context with matching patient, source clock and text digest is unavailable; a quote/digest alone does not establish support.'})
+        else:contexts.setdefault(pid,{})[rid]=document
     for citation in answer.get('sources')or[]:
         if not isinstance(citation,dict):continue
         for document in read_documents:
@@ -1175,6 +1215,8 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         contracts=contracts_for(view_dependencies or views)
         packets.append({'id':'patient_'+pid,'scope':'All final claims for this patient only',**common,
             'patient_id':pid,'answer_rows':[r for r in table if isinstance(r,dict)and r.get('patient_id')==pid],
+            'source_contexts':list(contexts.get(pid,{}).values()),
+            'source_context_gaps':context_gaps.get(pid,[]),
             'shared_evidence':local_shared,
             'global_claims_scope':'Global/headline/fact claims are checked in the separate summary packet. Check only this patient\'s actual final row fields here. A global edit is not a change to these local claims.',
             'evidence':list(by.get(pid,{}).values()),
@@ -1206,7 +1248,9 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         packet['claim_manifest']=claims
         readable=json.dumps(readable_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
         text=readable if len(readable.encode())<=230000 else json.dumps(compact_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
-        result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':True,'claim_manifest':claims,'result_view':final_view,
+        result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':True,
+            'source_context_complete':not bool(packet.get('source_context_gaps')),
+            'claim_manifest':claims,'result_view':final_view,
             'representation':'readable_native_json' if text==readable else 'lossless_compact_fallback'})
     return result
 
@@ -1214,6 +1258,10 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
 def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
     results=[];steps=[]
     for packet in packets:
+        if packet.get('source_context_complete')is False:
+            results.append({'id':packet['id'],'label':'unknown','decided_by':None,
+                'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'})
+            continue
         if packet['bytes']>240000:
             results.append({'id':packet['id'],'label':'unknown','decided_by':None,
                 'reason':'Complete dependency exceeds conservative provider context envelope; retain it for explicit partition/repair, never truncate.'});continue

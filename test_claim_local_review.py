@@ -98,6 +98,27 @@ class LocalReview(unittest.TestCase):
             answer['sources']=[changed]
             self.assertEqual(uncompact_json(json.loads(self.packets(answer,calls)['summary']['text']))['cited_source_evidence'],[])
 
+    def test_bound_assertions_require_complete_matching_context_and_never_buy_a_vote_for_a_gap(self):
+        from test_document_relations import question
+        from clinical_core.agere.clinical import document_review as D
+        answer,calls=self.fixture();text='Prior entry: MRA held for potassium. Current applicability is not documented.'
+        doc={'patient_id':'A','record_id':'n1','date':'2030-01-01','text':text}
+        quote='MRA held for potassium.';start=text.index(quote)
+        finding=D.relation_finding('A','rasi_reason',question(),doc,{'start':start,'end':start+len(quote),'text':quote},
+            {'polarity':'affirmed','temporality':'historical','subject':'patient'},'fixture')
+        answer['table'][0]['rasi_reason']=[finding]
+        def packets(cache):return {p['id']:p for p in B.support_packets('Check exact source',answer,calls,[],'2030-05-27',source_documents=cache)}
+        complete=packets({'n1':doc});state=uncompact_json(json.loads(complete['patient_A']['text']))
+        self.assertEqual(state['source_contexts'],[doc]);self.assertEqual(state['source_context_gaps'],[])
+        self.assertTrue(complete['patient_A']['source_context_complete'])
+        for cache in ({},{'n1':{**doc,'text':quote}},{'n1':{**doc,'patient_id':'B'}},{'n1':{**doc,'date':'2029-01-01'}}):
+            with self.subTest(cache=cache):
+                incomplete=packets(cache);self.assertFalse(incomplete['patient_A']['source_context_complete'])
+                judge=Mock(side_effect=AssertionError('No vote can replace full source context'))
+                out=B.check_support_packets([incomplete['patient_A']],judge,as_of='2030-05-27',ledger=None,field_decider=judge)
+                self.assertEqual(out['label'],'unknown');judge.assert_not_called()
+                self.assertEqual(complete['patient_B']['text'],incomplete['patient_B']['text'])
+
     def test_failed_packet_localizes_entity_error_and_preserves_supported_unknown(self):
         answer,calls=self.fixture();packet=self.packets(answer,calls)['patient_A'];seen=[]
         def decide(*args,**kw):return {'label':'contradicted','decided_by':'fixture','steps':[]}
