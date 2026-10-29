@@ -89,15 +89,26 @@ def build_prompt(body):
     """-> (system text, user text) for one Messages API body."""
     system = body.get('system') or ''
     system = _text(system) if not isinstance(system, str) else system
-    tools = body.get('tools') or []
+    tools = allowed_tools(body.get('tools'),body.get('tool_choice'))
     if tools:
         listing = json.dumps([{'name': t.get('name'), 'description': t.get('description'), 'input_schema': t.get('input_schema')} for t in tools], indent=1)
         system += TOOL_PROTOCOL.format(tools=listing)
+    elif body.get('tools'):
+        system += '\nTools are disabled for this turn. Return the final answer in the required contract. Tool requests will not execute.'
     turns = []
     for m in body.get('messages') or []:
         turns.append(('USER' if m.get('role') == 'user' else 'ASSISTANT') + ':\n' + _text(m.get('content')))
     user = turns[-1].split(':\n', 1)[1] if len(turns) == 1 else 'Conversation so far:\n\n' + '\n\n'.join(turns) + '\n\nReply as the ASSISTANT to the last USER message.'
     return system, user
+
+
+def allowed_tools(tools,choice=None):
+    """Honor the current turn's tool permission before advertising or parsing."""
+    kind=(choice or {}).get('type','auto')
+    if kind=='none':return []
+    if kind=='tool':return [t for t in tools or [] if t.get('name')==choice.get('name')]
+    if kind not in ('auto','any'):raise ValueError('Unsupported tool_choice')
+    return tools or []
 
 
 INVOKE = re.compile(r'<invoke\s+name="([^"]+)"\s*>(.*?)(?:</invoke>|$)', re.S)
@@ -145,19 +156,20 @@ def _tool_call(text, tools):
 def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None):
     """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure."""
     env = cli_env()  # never the API account: the subscription login / token only
-    # Translate the caller's existing request contract; do not introduce a
-    # workflow quota or silently inherit a different per-request output size.
-    # EXTRA_BODY also keeps the limit explicit on the native Messages request.
-    # The CLI may make internal recovery requests; its aggregate usage is NOT
-    # bounded by one request's max_tokens and must remain fully accounted for.
+    # Mike's explicit subscription policy: no custom response ceiling. Legacy
+    # API callers still include max_tokens; validate and record it but do not
+    # enforce it through the CLI or inherit an earlier custom output setting.
     if max_tokens is not None:
         if type(max_tokens) is not int or max_tokens <= 0:
             raise ValueError('max_tokens must be a positive integer')
-        extra = json.loads(env.get('CLAUDE_CODE_EXTRA_BODY') or '{}')
+    env.pop('CLAUDE_CODE_MAX_OUTPUT_TOKENS',None)
+    if 'CLAUDE_CODE_EXTRA_BODY' in env:
+        extra=json.loads(env['CLAUDE_CODE_EXTRA_BODY'])
         if not isinstance(extra, dict):
             raise ValueError('CLAUDE_CODE_EXTRA_BODY must be a JSON object')
-        env['CLAUDE_CODE_MAX_OUTPUT_TOKENS'] = str(max_tokens)
-        env['CLAUDE_CODE_EXTRA_BODY'] = json.dumps({**extra, 'max_tokens': max_tokens})
+        extra.pop('max_tokens',None)
+        if extra:env['CLAUDE_CODE_EXTRA_BODY']=json.dumps(extra)
+        else:env.pop('CLAUDE_CODE_EXTRA_BODY')
     if effort is not None:
         if effort not in ('low', 'medium', 'high', 'xhigh', 'max'):
             raise ValueError('Unsupported caller effort level')
@@ -168,17 +180,29 @@ def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None):
            '--strict-mcp-config', '--no-session-persistence']
     try:
         done = subprocess.run(cmd, input=user, capture_output=True, text=True, timeout=timeout, env=env)
+    except subprocess.TimeoutExpired as exc:
+        partial=exc.stdout or ''
+        if isinstance(partial,bytes):partial=partial.decode('utf-8',errors='replace')
+        exc.subscription_cli_result={'result':partial,'usage':None,'subtype':'timeout','partial_format':'cli_stdout'}
+        raise
     finally:
         os.unlink(path)
     lines = [l for l in done.stdout.splitlines() if l.strip().startswith('{')]
-    if not lines: raise RuntimeError(f'claude CLI returned no JSON (exit {done.returncode}): {(done.stderr or done.stdout)[-300:]}')
-    out = json.loads(lines[-1])
-    if out.get('is_error') or out.get('terminal_reason') == 'api_error':
+    try:
+        out=json.loads(lines[-1]) if lines else None
+        if not isinstance(out,dict):raise ValueError('No JSON result object')
+    except ValueError:
+        error=RuntimeError(f'claude CLI returned no complete JSON result (exit {done.returncode})')
+        error.subscription_cli_result={'result':done.stdout,'usage':None,'subtype':'invalid_cli_result',
+            'exit_code':done.returncode,'partial_format':'cli_stdout'}
+        raise error from None
+    if done.returncode or out.get('is_error') or out.get('terminal_reason') == 'api_error':
         message = str(out.get('result') or '')
         from .gateway import ProviderUnavailable, subscription_limit
-        if subscription_limit(message):
-            raise ProviderUnavailable('Claude subscription limit reached: ' + message[:300], kind='rate_limit')
-        raise RuntimeError('claude CLI error: ' + str(out.get('result'))[:300])
+        error=(ProviderUnavailable('Claude subscription limit reached: ' + message[:300], kind='rate_limit')
+               if subscription_limit(message) else RuntimeError('claude CLI error: ' + message[:300]))
+        error.subscription_cli_result=out
+        raise error
     return out
 
 
@@ -257,9 +281,17 @@ def _tool_calls(text, tools):
     return calls
 
 
-def normalize_tool_response(response, tools):
+def normalize_tool_response(response, tools, tool_choice=None):
     """Free literal normalization also applies to cached or non-CLI text responses."""
     blocks = response.get('content') or []
+    permitted=allowed_tools(tools,tool_choice);names={t.get('name')for t in permitted}
+    if any(b.get('type')=='tool_use' and b.get('name')not in names for b in blocks):
+        # Native/cached actions have the same permissions as emulated text.
+        # Preserve every block as inert text; reject the whole mixed batch.
+        return {**response,'stop_reason':'end_turn','content':[{'type':'text','text':json.dumps(
+            {'tool_uses':[{'name':b.get('name'),'input':b.get('input')}for b in blocks if b.get('type')=='tool_use'],
+             'unexecuted_blocks':blocks})}], 'tool_permission_rejected':True}
+    tools=permitted
     if not tools or response.get('stop_reason') == 'max_tokens' or any(b.get('type') == 'tool_use' for b in blocks): return response
     calls = _tool_calls('\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text'), tools)
     if not calls: return response
@@ -281,17 +313,25 @@ def respond(body, *, timeout=None):
     output_config = body.get('output_config') or {}
     if not isinstance(output_config, dict):
         raise ValueError('output_config must be an object')
-    out = run_cli(model, system, user, timeout=timeout,
-                  max_tokens=body.get('max_tokens'), effort=output_config.get('effort'))
+    try:
+        out = run_cli(model, system, user, timeout=timeout,
+                      max_tokens=body.get('max_tokens'), effort=output_config.get('effort'))
+    except Exception as exc:
+        raw=getattr(exc,'subscription_cli_result',None)
+        if isinstance(raw,dict):
+            exc.provider_response={'model':model,'transport':'claude-code-subscription',
+                'usage':raw.get('usage'),'subscription_cli_result':raw,'status':'failed'}
+        raise
     text = out.get('result') or ''
     reported_usage = out.get('usage') or {}
-    usage = {k: reported_usage.get(k, 0) for k in ('input_tokens', 'output_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens')}
+    usage = {k: reported_usage.get(k) for k in ('input_tokens', 'output_tokens')}
+    usage.update({k:reported_usage.get(k,0)for k in ('cache_creation_input_tokens','cache_read_input_tokens')})
     if 'cache_creation' in reported_usage:
         # Preserve reported cache TTLs for pricing. Never turn a one-hour write
         # into a cheaper five-minute write by dropping the provider breakdown.
         usage['cache_creation'] = reported_usage['cache_creation']
     truncated = out.get('stop_reason') == 'max_tokens'
-    calls = [] if truncated else _tool_calls(text, body.get('tools'))
+    calls = [] if truncated else _tool_calls(text, allowed_tools(body.get('tools'),body.get('tool_choice')))
     if calls:
         content, stop = [{'type': 'tool_use', 'id': 'toolu_' + uuid.uuid4().hex[:20], 'name': call['name'], 'input': call['input']} for call in calls], 'tool_use'
     else:
@@ -301,6 +341,8 @@ def respond(body, *, timeout=None):
             'transport_details': {
                 'schema': 'subscription-cli-receipt/1',
                 'caller_max_tokens': body.get('max_tokens'),
+                'caller_max_tokens_enforced':False,
+                'output_policy':'Service boundary only; no custom output ceiling',
                 'caller_effort': output_config.get('effort'),
                 'cli': {k: out[k] for k in ('num_turns', 'duration_ms', 'duration_api_ms', 'subtype', 'stop_reason', 'modelUsage') if k in out},
                 'usage_scope': 'CLI aggregate, including reported internal recovery requests; internal API attempt count is unknown unless explicitly reported. No subscription allocation or invoice inferred.'}}

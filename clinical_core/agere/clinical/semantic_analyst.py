@@ -454,6 +454,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     turns, repairs, reviewed = 0, 0, set()
     rejected_protocol = set()
     last_tools = None
+    pending_output = None
     if initial_answer is not None and review is not None:
         import copy
         candidate=copy.deepcopy(initial_answer)
@@ -475,12 +476,17 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             if continuation_guard is not None:
                 try: guard_identity=digest(continuation_guard())
                 except (ValueError,OSError,sqlite3.Error): pass
-            if compact_execution_state:
+            if pending_output is not None:
+                if continuation_guard is not None and (guard_identity is None or guard_identity!=pending_output['guard_identity']):
+                    raise ValueError('Source/scope changed during output continuation; no pending actions executed')
+                actor_messages=pending_output['messages']
+            elif compact_execution_state:
                 from .execution_state import messages as state_messages
                 actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate)
             else:actor_messages=messages
             body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': actor_messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
+            if pending_output is not None:body['tool_choice']=pending_output['tool_choice']
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
             try:
@@ -505,16 +511,40 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 result['estimated_cost_usd'] = (result['estimated_cost_usd'] + cost
                                                  if result['estimated_cost_usd'] is not None and cost is not None else None)
             from ..subscription_transport import normalize_tool_response
-            if response.get('stop_reason') == 'max_tokens':
-                raise ValueError('Provider response was truncated; no tool actions executed')
-            response = normalize_tool_response(response, tools)
+            blocks=response.get('content') or []
+            if response.get('stop_reason')=='max_tokens' or pending_output is not None:
+                text=''.join(b.get('text','')for b in blocks if b.get('type')=='text')
+                result.setdefault('output_continuation_receipts',[]).append({'turn':turns,'response':response,
+                    'source_guard':guard_identity,'tool_actions_executed':False})
+                if any(b.get('type')!='text'for b in blocks):
+                    raise ValueError('Truncated or continued structured action requires a complete decision; no partial actions executed')
+                if response.get('stop_reason')=='max_tokens':
+                    if not text or pending_output is not None and text==pending_output['last_chunk']:
+                        raise ValueError('Provider response was truncated and repeated without output progress; partial output retained')
+                    accumulated=(pending_output['text'] if pending_output else '')+text
+                    pending_output={'text':accumulated,'last_chunk':text,'guard_identity':guard_identity,
+                        'tool_choice':body['tool_choice'],
+                        'messages':actor_messages+[{'role':'assistant','content':blocks},{'role':'user','content':
+                            'The service stopped this response at its output boundary. Continue exactly from its final character. '
+                            'Return only the remaining suffix, without repeating prior text or adding Markdown. '
+                            'No actions from the incomplete response have executed. The complete joined response will undergo the same source, permission and answer checks.'}]}
+                    result['final_text']=accumulated
+                    repairs+=1
+                    continue
+                if continuation_guard is not None:
+                    try:current_guard=digest(continuation_guard())
+                    except (ValueError,OSError,sqlite3.Error):current_guard=None
+                    if current_guard is None or current_guard!=pending_output['guard_identity']:
+                        raise ValueError('Source/scope changed during output continuation; no pending actions executed')
+                response={**response,'content':[{'type':'text','text':pending_output['text']+text}]}
+                result['completed_output_continuations']=result.get('completed_output_continuations',0)+1
+                pending_output=None
+            response = normalize_tool_response(response, tools,body.get('tool_choice'))
             blocks = response.get('content', [])
             uses = [b for b in blocks if b.get('type') == 'tool_use']
             if not uses:
                 text = '\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text').strip()
                 result['final_text'] = text
-                if response.get('stop_reason') == 'max_tokens':
-                    raise ValueError('Provider answer was truncated')
                 if text.startswith('```'):
                     text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text)
 

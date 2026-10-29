@@ -10,19 +10,19 @@ from clinical_core.agere import subscription_transport as T
 
 
 class Translation(unittest.TestCase):
-    def test_existing_caller_output_contract_reaches_subscription_cli(self):
+    def test_legacy_and_inherited_output_ceilings_are_not_enforced(self):
         done = subprocess.CompletedProcess([], 0, json.dumps({'result': '{}'}), '')
         inherited = {'CLAUDE_CODE_MAX_OUTPUT_TOKENS': '128000',
-                     'CLAUDE_CODE_EXTRA_BODY': '{"metadata":{"user_id":"local"}}',
+                     'CLAUDE_CODE_EXTRA_BODY': '{"metadata":{"user_id":"local"},"max_tokens":4096}',
                      'CLAUDE_CODE_EFFORT_LEVEL': 'max'}
         with patch.object(T, 'cli_path', return_value='scripted-cli'), \
              patch.object(T, 'cli_env', return_value=inherited.copy()), \
              patch.object(T.subprocess, 'run', return_value=done) as call:
             T.run_cli('claude-haiku-5-5', 'rules', 'question', max_tokens=8192, effort='medium')
         env = call.call_args.kwargs['env']
-        self.assertEqual(env['CLAUDE_CODE_MAX_OUTPUT_TOKENS'], '8192')
+        self.assertNotIn('CLAUDE_CODE_MAX_OUTPUT_TOKENS',env)
         self.assertEqual(json.loads(env['CLAUDE_CODE_EXTRA_BODY']),
-                         {'metadata': {'user_id': 'local'}, 'max_tokens': 8192})
+                         {'metadata': {'user_id': 'local'}})
         self.assertEqual(env['CLAUDE_CODE_EFFORT_LEVEL'], 'medium')
         self.assertEqual(call.call_count, 1)
 
@@ -59,6 +59,7 @@ class Translation(unittest.TestCase):
         self.assertEqual(details['cli']['modelUsage'], raw['modelUsage'])
         self.assertNotIn('result', details['cli'])
         self.assertNotIn('total_cost_usd', details)
+        self.assertFalse(details['caller_max_tokens_enforced'])
 
     def test_reported_truncated_action_is_not_executable(self):
         out = {'result': '{"tool_use":{"name":"sql","input":{"query":"SELECT 1"}}}',
@@ -114,6 +115,42 @@ class Translation(unittest.TestCase):
         system, user = T.build_prompt(body)
         self.assertIn('Be exact.', system); self.assertIn('"name": "sql"', system); self.assertIn('tool_use', system)
         self.assertIn('How many?', user); self.assertIn('[tool result for t1] [[1]]', user)
+
+    def test_disabled_or_named_tools_are_honored_in_prompt_and_response(self):
+        tools=[{'name':'sql','description':'Unique SQL tool'},{'name':'review','description':'Unique review tool'}]
+        body={'tools':tools,'tool_choice':{'type':'none'},'messages':[{'role':'user','content':'Return the final answer'}]}
+        system,_=T.build_prompt(body)
+        self.assertNotIn('Unique SQL tool',system);self.assertIn('Tools are disabled',system)
+        action='{"tool_use":{"name":"sql","input":{"query":"SELECT 1"}}}'
+        with patch.object(T,'run_cli',return_value={'result':action}):result=T.respond(body)
+        self.assertEqual(result['content'],[{'type':'text','text':action}]);self.assertEqual(result['stop_reason'],'end_turn')
+        selected=T.allowed_tools(tools,{'type':'tool','name':'review'})
+        self.assertEqual(selected,[tools[1]])
+
+    def test_failed_cli_output_and_usage_survive_on_the_exception(self):
+        raw={'is_error':True,'result':'Partial output before terminal failure','usage':{'output_tokens':19}}
+        done=subprocess.CompletedProcess([],1,json.dumps(raw),'')
+        with patch.object(T,'cli_path',return_value='scripted-cli'),patch.object(T,'cli_env',return_value={}),patch.object(T.subprocess,'run',return_value=done):
+            with self.assertRaises(RuntimeError) as raised:T.respond({'model':'authored'})
+        self.assertEqual(raised.exception.provider_response['subscription_cli_result'],raw)
+        self.assertEqual(raised.exception.provider_response['usage'],raw['usage'])
+
+    def test_invalid_cli_result_and_timeout_preserve_partial_stdout_without_invented_usage(self):
+        outcomes=[subprocess.CompletedProcess([],1,'{"result":"unfinished',''),
+                  subprocess.TimeoutExpired('scripted',900,output=b'partial stdout')]
+        for outcome in outcomes:
+            kwargs={'side_effect':outcome} if isinstance(outcome,Exception) else {'return_value':outcome}
+            with self.subTest(outcome=type(outcome).__name__),patch.object(T,'cli_path',return_value='scripted-cli'),patch.object(T,'cli_env',return_value={}),patch.object(T.subprocess,'run',**kwargs) as call:
+                with self.assertRaises(Exception) as raised:T.respond({'model':'authored'})
+                self.assertIsNone(raised.exception.provider_response['usage'])
+                self.assertTrue(raised.exception.provider_response['subscription_cli_result']['result'])
+                self.assertEqual(call.call_count,1)
+
+    def test_missing_token_usage_is_unknown_and_cannot_be_priced_as_zero(self):
+        from clinical_core.agere.economics import usage_cost
+        with patch.object(T,'run_cli',return_value={'result':'{}'}):out=T.respond({})
+        self.assertIsNone(out['usage']['input_tokens']);self.assertIsNone(out['usage']['output_tokens'])
+        self.assertIsNone(usage_cost(out['model'],out['usage']))
 
     def test_a_tool_call_reply_becomes_a_tool_use_block_and_text_stays_text(self):
         tools = [{'name': 'sql'}]

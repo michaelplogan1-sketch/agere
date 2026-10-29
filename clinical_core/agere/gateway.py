@@ -201,6 +201,7 @@ class PersistentGateway:
             from .economics import usage_cost
             return {**parsed,'request_hash':key,'usage':raw.get('usage'),'cost_estimate':usage_cost(body['model'],raw.get('usage'))}
         except Exception as e:
+            if raw is None and isinstance(getattr(e,'provider_response',None),dict):raw=e.provider_response
             error=type(e).__name__+': '+str(e)
             if isinstance(e,urllib.error.HTTPError):
                 try:detail=e.read().decode('utf-8',errors='replace')

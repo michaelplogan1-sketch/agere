@@ -6,7 +6,7 @@ are separated before generation; test families never enter fitting/calibration.
 """
 from pathlib import Path
 from collections import Counter
-import json,math,os,time,urllib.request,urllib.error
+import json,math,os,tempfile,time,urllib.request,urllib.error
 from ...contracts import digest
 from ..gateway import BudgetLedger,PersistentGateway
 from ..economics import usage_cost
@@ -88,7 +88,11 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
         with ledger.db:ledger.db.execute("UPDATE calls SET status='abandoned' WHERE id=? AND status='failed'",(key,))
     endpoint,var=PersistentGateway.ENDPOINTS[provider]
     if not os.environ.get(var):raise ValueError('Missing '+var)
-    # Max 8,192 output tokens and 20KB request keeps the configured token estimate below this hold.
+    # Prove receipt storage is writable before a generation can incur usage.
+    out=Path(out);out.mkdir(parents=True,exist_ok=True)
+    with tempfile.TemporaryFile(dir=out) as probe:
+        probe.write(b'agere receipt storage preflight');probe.flush()
+    # This is an accounting reservation, not a request or output ceiling.
     ledger.reserve(key,provider,ledger_model)
     headers={'Content-Type':'application/json'}
     if provider=='claude':headers.update({'x-api-key':os.environ[var],'anthropic-version':'2023-06-01'})
@@ -108,6 +112,9 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
         (out/(key+'.json')).write_text(json.dumps({'response':raw,'receipt':receipt},indent=2))
         return result,receipt
     except Exception as e:
+        if raw is None and isinstance(getattr(e,'provider_response',None),dict):raw=e.provider_response
+        if raw is not None:
+            (out/(key+'.json')).write_text(json.dumps({'response':raw,'status':'failed'},indent=2))
         error='HTTP '+str(e.code) if isinstance(e,urllib.error.HTTPError) else type(e).__name__+': '+str(e)[:200]
         if isinstance(e,urllib.error.HTTPError):
             try:
@@ -120,7 +127,10 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
                     error+=': '+diagnostic[:600]
             except (ValueError,TypeError,AttributeError):pass
         (out/(key+'-failure.json')).write_text(json.dumps({'status':'failed','error':error,'request_hash':key,'returned_usage':raw.get('usage') if isinstance(raw,dict) else None},indent=2))
-        ledger.finish(key,error=error,seconds=time.perf_counter()-t);raise RuntimeError(error) from None
+        ledger.finish(key,response=raw,error=error,seconds=time.perf_counter()-t)
+        failure=RuntimeError(error)
+        if raw is not None:failure.provider_response=raw
+        raise failure from None
 
 
 def _compact_agent_response(raw):

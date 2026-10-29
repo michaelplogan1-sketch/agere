@@ -99,6 +99,22 @@ class Protocol(unittest.TestCase):
         self.assertIs(T.normalize_tool_response(out,TOOLS),out)
         self.assertEqual(T._tool_calls(json.dumps({'tool_uses':CALLS,'value':'not an action envelope'}),TOOLS),[])
 
+    def test_disabled_tools_remain_inert_for_text_and_native_cached_responses(self):
+        disabled={'type':'none'}
+        text=response(json.dumps({'tool_uses':CALLS}))
+        self.assertIs(T.normalize_tool_response(text,TOOLS,disabled),text)
+        native={**text,'content':[{'type':'tool_use','id':'a','name':CALLS[0]['name'],'input':CALLS[0]['input']}]}
+        out=T.normalize_tool_response(native,TOOLS,disabled)
+        self.assertTrue(out['tool_permission_rejected']);self.assertTrue(all(b['type']=='text'for b in out['content']))
+
+    def test_format_repair_cannot_execute_a_tool_when_choice_is_none(self):
+        emitted=iter([response('invalid answer'),response(json.dumps({'tool_use':CALLS[0]})),response('{"status":"partial"}')])
+        sent=[];executed=[]
+        def send(body):sent.append(body);return next(emitted),.01,False
+        r=S.tool_loop('authored question',[],TOOLS,lambda use:executed.append(use),send=send,model='authored',max_tools=None,format_retries=1)
+        self.assertEqual(sent[1]['tool_choice'],{'type':'none'});self.assertEqual(executed,[])
+        self.assertEqual(r['answer']['status'],'partial')
+
     def test_nonfinite_batch_arguments_are_not_executed(self):
         self.assertEqual(T._tool_calls('{"tool_uses":[{"name":"query_sql","input":{"sql":NaN}}]}',TOOLS),[])
 
