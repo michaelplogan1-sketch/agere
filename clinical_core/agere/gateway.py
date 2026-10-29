@@ -1,6 +1,6 @@
 """Persistent request reservations, validated replay, and bounded provider alternatives."""
 from __future__ import annotations
-import json,math,os,sqlite3,time,urllib.request,urllib.error
+import json,math,os,sqlite3,time,threading,urllib.request,urllib.error
 from pathlib import Path
 from datetime import date
 from ..contracts import digest
@@ -8,6 +8,11 @@ from ..providers import JevProvider,ClaudeProvider,EvidenceTask
 from .request_lineage import ledger_event
 
 _DEFAULT_LEDGER=Path(__file__).resolve().parents[2]/'artifacts'/'agere-full'/'provider-budget.sqlite3'
+# An observed account-level rejection applies to different live requests too.
+# Successful exact cache reads stay available. A new process or credential can
+# probe restored service; this never changes provider configuration or budgets.
+_BILLING_FAILURES={}
+_BILLING_LOCK=threading.Lock()
 
 
 def default_ledger_path():
@@ -179,6 +184,14 @@ class PersistentGateway:
         if not self.allow_live: return {'status':'prepared','provider':provider,'request_hash':key,'request':body}
         endpoint,variable=self.ENDPOINTS[provider];secret=os.environ.get(variable)
         if not secret:raise ValueError('Missing '+variable)
+        credential=digest([provider,endpoint,secret])
+        with _BILLING_LOCK:blocked=_BILLING_FAILURES.get(credential)
+        if blocked:
+            error=ProviderUnavailable(provider+' billing is unavailable after an HTTP 402 in this process; use the configured fallback. Restored credits can be probed in a new process.',kind='billing')
+            error.provider_receipt={'provider':provider,'request_hash':key,'attempted':False,
+                'blocked_by_request_hash':blocked,'reason':'billing_circuit_open',
+                'model':body['model'],'cost_usd':None,'usage':None}
+            raise error
         encoded=json.dumps(body,allow_nan=False).encode()
         # The old 20 KB pilot quota prevented whole-document and compound-answer review before a provider was called.
         # Use the actual TypeSafe transport limit; other providers report their own context/transport constraints.
@@ -209,6 +222,8 @@ class PersistentGateway:
                 raw={'provider_error':{'http_status':e.code,'body':detail}}
                 error='HTTP '+str(e.code)+': '+detail
             self.ledger.finish(key,response=raw,error=error,seconds=time.perf_counter()-start)
+            if isinstance(e,urllib.error.HTTPError) and e.code==402:
+                with _BILLING_LOCK:_BILLING_FAILURES[credential]=key
             from .economics import usage_cost
             price=usage_cost(body['model'],raw.get('usage')) if isinstance(raw,dict) and raw.get('model')==body['model'] else None
             e.provider_receipt={'attempt_id':key,'request_hash':key,'attempted':True,'model':body['model'],

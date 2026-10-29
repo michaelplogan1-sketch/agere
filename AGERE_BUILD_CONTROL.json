@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T22:49:31.853240+00:00",
+  "updated_at": "2026-10-29T23:02:51.115425+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,7 +359,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "claim_partition_and_source_bindings_ready",
+    "kind": "billing_circuit_verified_broad_transfer_next",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Retained-source continuation now computes exact registered-GDMT source cells, keeps broader beta-blocker context separate, compiles numeric prose and proposes conditional per-patient review steps. The remaining blocker is localized to JSON argument dependency resolution.",
@@ -484,10 +484,12 @@
       "artifacts/agere-meaning-integration-2026-10-29/source-support-layout-v1/claim-partition-sizing.json",
       "artifacts/agere-meaning-integration-2026-10-29/source-support-layout-v1/partition-proof.json",
       "artifacts/agere-meaning-integration-2026-10-29/ef-source-supplement-v1/source-audit.json",
-      "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/preflight-v1/receipt.json"
+      "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/preflight-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/provider-credit-protection-v1/receipt.json"
     ],
     "remaining_gap": "Eight registered-policy cell failures are removed and quantitative prose bindings now compile in the returned candidate. Analysis remains partial/unverified because JSON_EACH(current_dose) is not recognized as a value dependency by SQLGlot lineage and the guard falls back to every parent column, flagging an unrelated historical class CASE. Dose-domain completeness, source-supported proposals and normal final source/coverage acceptance still need verification. Broader transfer and model/clinical qualification remain open.",
-    "next_action": "The exact claim-partition repair passes75focused checks, including later-part faults, unresolved checks, missing source and manifest closure. Actual oversized packets now fit in two complete-source partitions each (max202423bytes). New zero-provider53-action replay passes in32.065s:57patients,228policy cells,123retained bound readings,15group-dose/74other/9unclassified observations,58logical dependencies/60scheduled packets, max211084bytes, all source contexts complete. Six exact note_fact/source-text rows match the three EF proxy minima33/35/23. Global dose coverage is now explicitly bound as12with requested-group dose evidence/45without, separately28without broader all-medication context. Next: run normal final source/coverage recheck using the prior exact provider ledger as cache, accounting inherited versus new requests separately; do not rerun unchanged document readers, waive unknown judgments or alter thresholds. Preserve all frozen attempts and faithfully render current partial/unknown status. Then run prepared varied finance/utilization/access transfers through the shared question path and parameterized reuse/scoped learning with regressions and rollback. All ten areas remain; scheduler paused; no active provider/training/preview job.",
+    "next_action": "The provider billing circuit is verified: 108 offline tests passed, two optional live tests skipped. The first HTTP402 stays metered; subsequent new requests for that provider/credential in the same process are skipped before reservation, while exact successful cache reads and configured fallback still work. Another credential or a new process can probe restored service. No provider configuration, spending cap or model activation changed; no credits purchased. Next pin the three prepared finance/utilization/access protocols to this code and run them sequentially through the actual shared question-to-report path, with independent source baselines kept out of execution. Retain all failed attempts, cache/contribution/accounting, exact source/code pins and partial outputs; stop provider work on an actual Claude subscription limit. Do not repeat the unchanged HFrEF source review; its reports, field-level support and remaining broad-verifier uncertainty stay explicit. Then exercise parameterized reuse and scoped learning with regression/rollback evidence. All ten acceptance areas remain; scheduler paused; no active owned job.",
     "next": "The owned recovery PID78956/session42023 has RETURNED; no provider/training/preview job. Audit its retained result, then repair the measured JSON table-function value-lineage gap in the existing medication group checker: dose_summary/proposed_dose_action incorrectly fall back to all parent columns and propagate an unrelated old beta-blocker CASE. Preserve strict actual class/predicate/count scope and use named generic regressions; no threshold waiver. The recovered57patient/228policy cells now exactly match source (8old discrepancies removed), numeric headline/facts have compiled bindings and proposals use per-patient native context, but the class guard still blocks final verification. Preserve all attempts and reuse complete source readings/native calculation state for the next normal verification or continuation; no full warehouse rescan. Then complete varied healthcare/financial transfer, parameterized bottling and role-attributed learning with regressions/rollback and all ten areas. Scheduler remains PAUSED after automatic review rejected reactivation; keep working directly in this active chat.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
@@ -624,13 +626,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T22:49:31.853240+00:00",
-    "workflow_change": "Oversized verification dependencies are scheduled as exact disjoint claim partitions, each carrying all original source input. No source population, observations, checks or thresholds were reduced. Native dose-coverage claims distinguish requested-group evidence from broader context; three EF proxy values now carry their exact parsed observations and complete source text.",
+    "at": "2026-10-29T23:02:51.115425+00:00",
+    "workflow_change": "Actual TypeSafe credit failure now opens a process/credential-scoped billing circuit. New requests use the configured fallback without repeatedly hitting an account with no credits. Existing successful exact provider receipts remain reusable; the first failed attempt and later skip receipts stay distinct.",
     "unsealed_work": {
-      "status": "claim_partition_and_source_bindings_ready",
+      "status": "billing_circuit_verified_broad_transfer_next",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "Technical packet overflow is repaired without dropping source input or claims; EF source inputs and dose-domain prose are explicit. Normal source/coverage acceptance remains unconfirmed. Most earlier uncertain broad checks had supported local fields, but their original uncertainty remains; no promotion by inference. Varied transfer, reuse/learning qualification and independent clinical/model review remain.",
-      "next_action": "The exact claim-partition repair passes75focused checks, including later-part faults, unresolved checks, missing source and manifest closure. Actual oversized packets now fit in two complete-source partitions each (max202423bytes). New zero-provider53-action replay passes in32.065s:57patients,228policy cells,123retained bound readings,15group-dose/74other/9unclassified observations,58logical dependencies/60scheduled packets, max211084bytes, all source contexts complete. Six exact note_fact/source-text rows match the three EF proxy minima33/35/23. Global dose coverage is now explicitly bound as12with requested-group dose evidence/45without, separately28without broader all-medication context. Next: run normal final source/coverage recheck using the prior exact provider ledger as cache, accounting inherited versus new requests separately; do not rerun unchanged document readers, waive unknown judgments or alter thresholds. Preserve all frozen attempts and faithfully render current partial/unknown status. Then run prepared varied finance/utilization/access transfers through the shared question path and parameterized reuse/scoped learning with regressions and rollback. All ten areas remain; scheduler paused; no active provider/training/preview job.",
+      "remaining_gap": "The named source-class, role, dose-domain, EF-source and packet-envelope defects are repaired and source/claim closures pass. Broad source-verifier confidence and full clinical qualification remain unresolved, with no named field fault in latest checks; candidate reports remain partial. Jev has no available TypeSafe API credits. Broader transfer, parameterized reuse and scoped learning remain engineering work.",
+      "next_action": "The provider billing circuit is verified: 108 offline tests passed, two optional live tests skipped. The first HTTP402 stays metered; subsequent new requests for that provider/credential in the same process are skipped before reservation, while exact successful cache reads and configured fallback still work. Another credential or a new process can probe restored service. No provider configuration, spending cap or model activation changed; no credits purchased. Next pin the three prepared finance/utilization/access protocols to this code and run them sequentially through the actual shared question-to-report path, with independent source baselines kept out of execution. Retain all failed attempts, cache/contribution/accounting, exact source/code pins and partial outputs; stop provider work on an actual Claude subscription limit. Do not repeat the unchanged HFrEF source review; its reports, field-level support and remaining broad-verifier uncertainty stay explicit. Then exercise parameterized reuse and scoped learning with regression/rollback evidence. All ten acceptance areas remain; scheduler paused; no active owned job.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -679,10 +681,19 @@
     },
     "owned_recovery_run": {
       "status": "returned",
-      "pid": 80962,
-      "session": 30511,
-      "receipt": "artifacts/agere-meaning-integration-2026-10-29/native-targeted-composition-v1/recovery/validation-v1/receipt.json",
+      "pid": 81718,
+      "session": 88379,
+      "receipt": "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/receipt.json",
       "source_frozen": false
+    },
+    "provider_dependency": {
+      "provider": "jev",
+      "status": "billing_unavailable",
+      "observed_error": "HTTP402: TypeSafe organization has no available API credits",
+      "observed_in": "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/provider-budget.sqlite3",
+      "fallback": "perplexity served new checks; exact cached Jev readings remain reusable",
+      "human_notified": true,
+      "new_credit_purchase": false
     }
   },
   "decisions": [
@@ -1969,13 +1980,20 @@
       "basis": "Three exact-role rechecks removed unsupportedcurrentassignmentreadings; no source contradictions in latest146requestreview. Two reconstructedcompletepackets exceedtechnicalenvelope, while exactsingle-claim scopesretainallevidence andfitmax196846bytes. Globaldosecoverage28describesbroadercontext; needexplicitrequested-groupcount. EFvaluesneedtheiractualnote_factsourceinputs.",
       "scope_impact": "Keep thresholds, uncertainty and originalobservations; partition verification claims with sourceclosure, never evidence sampling or a new truthstore. Alltenareas and G3active/G5unqualified retained.",
       "evidence": "artifacts/agere-meaning-integration-2026-10-29/source-support-layout-v1/claim-partition-sizing.json"
+    },
+    {
+      "at": "2026-10-29T22:59:49.618830+00:00",
+      "decision": "Freeze the improved HFrEF result and move to service-failure protection and varied transfer; preserve unresolved qualification.",
+      "basis": "Exact source/class/dose/role/envelope repairs and53-action replay pass; latest normal check reports no named field faults but uncertain broad judgments. Repeating unchanged evidence will not establish qualification. TypeSafe returned16HTTP402credit failures while Perplexity served fallback.",
+      "scope_impact": "No threshold waiver, clinical/readiness claim or scope reduction. Fix billing retry behavior, then exercise the same shared product outside HF. All ten areas remain.",
+      "evidence": "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/receipt.json"
     }
   ],
   "unsealed_work": {
-    "status": "claim_partition_and_source_bindings_ready",
+    "status": "billing_circuit_verified_broad_transfer_next",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "Technical packet overflow is repaired without dropping source input or claims; EF source inputs and dose-domain prose are explicit. Normal source/coverage acceptance remains unconfirmed. Most earlier uncertain broad checks had supported local fields, but their original uncertainty remains; no promotion by inference. Varied transfer, reuse/learning qualification and independent clinical/model review remain.",
-    "next_action": "The exact claim-partition repair passes75focused checks, including later-part faults, unresolved checks, missing source and manifest closure. Actual oversized packets now fit in two complete-source partitions each (max202423bytes). New zero-provider53-action replay passes in32.065s:57patients,228policy cells,123retained bound readings,15group-dose/74other/9unclassified observations,58logical dependencies/60scheduled packets, max211084bytes, all source contexts complete. Six exact note_fact/source-text rows match the three EF proxy minima33/35/23. Global dose coverage is now explicitly bound as12with requested-group dose evidence/45without, separately28without broader all-medication context. Next: run normal final source/coverage recheck using the prior exact provider ledger as cache, accounting inherited versus new requests separately; do not rerun unchanged document readers, waive unknown judgments or alter thresholds. Preserve all frozen attempts and faithfully render current partial/unknown status. Then run prepared varied finance/utilization/access transfers through the shared question path and parameterized reuse/scoped learning with regressions and rollback. All ten areas remain; scheduler paused; no active provider/training/preview job.",
+    "remaining_gap": "The named source-class, role, dose-domain, EF-source and packet-envelope defects are repaired and source/claim closures pass. Broad source-verifier confidence and full clinical qualification remain unresolved, with no named field fault in latest checks; candidate reports remain partial. Jev has no available TypeSafe API credits. Broader transfer, parameterized reuse and scoped learning remain engineering work.",
+    "next_action": "The provider billing circuit is verified: 108 offline tests passed, two optional live tests skipped. The first HTTP402 stays metered; subsequent new requests for that provider/credential in the same process are skipped before reservation, while exact successful cache reads and configured fallback still work. Another credential or a new process can probe restored service. No provider configuration, spending cap or model activation changed; no credits purchased. Next pin the three prepared finance/utilization/access protocols to this code and run them sequentially through the actual shared question-to-report path, with independent source baselines kept out of execution. Retain all failed attempts, cache/contribution/accounting, exact source/code pins and partial outputs; stop provider work on an actual Claude subscription limit. Do not repeat the unchanged HFrEF source review; its reports, field-level support and remaining broad-verifier uncertainty stay explicit. Then exercise parameterized reuse and scoped learning with regression/rollback evidence. All ten acceptance areas remain; scheduler paused; no active owned job.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
