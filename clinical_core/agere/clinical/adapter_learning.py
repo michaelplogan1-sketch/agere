@@ -156,7 +156,7 @@ def export(root,output,learner,family_splits):
     finally:db.close()
     latest={}
     for row in rows:
-        if row.get('role')==role(learner) or row.get('source_kind')=='user_correction':latest[' '.join(row['question'].split()).casefold()]=row
+        if row.get('role')==role(learner) or C.correction_affects(row,role(learner)):latest[' '.join(row['question'].split()).casefold()]=row
     selected=[]
     for row in latest.values():
         if not row.get('eligible') or row.get('source_kind')!='user_review':continue

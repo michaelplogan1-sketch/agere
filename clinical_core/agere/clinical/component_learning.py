@@ -18,6 +18,24 @@ ALL_ROLES=ROLES+ADAPTER_ROLES
 _ENCODERS={}
 
 
+def correction_roles(correction):
+    """Explicit negative role scope; unscoped historical corrections stay conservative."""
+    if not isinstance(correction,dict):raise ValueError('Correction needs a note and optional roles')
+    roles=correction.get('roles',list(ALL_ROLES))
+    if (not isinstance(roles,list) or not roles or any(not isinstance(r,str)or r not in ALL_ROLES for r in roles)
+            or len(set(roles))!=len(roles)):raise ValueError('Correction roles must be distinct supported component roles')
+    return roles
+
+
+def correction_affects(row,role):
+    if row.get('source_kind')!='user_correction':return False
+    roles=row.get('roles')
+    # Old observations did not store scope. Malformed persisted scope cannot
+    # restore training authority that a client previously rejected.
+    if not isinstance(roles,list)or not roles or any(r not in ALL_ROLES for r in roles):return True
+    return role in roles
+
+
 def checked_path(path):
     p=Path(path).resolve()
     # /private/tmp and /private/var are macOS system temp locations; a
@@ -239,9 +257,11 @@ def observe(stack,question,result,body=None):
     if review is not None and adapter_review is not None:raise ValueError('Review one component role per observation')
     answer_review=requests.get('answer_review');derived=[]
     if answer_review is not None:
-        if not isinstance(answer_review,dict) or set(answer_review)-{'accepted','note','family','acceptance','population','learners'} or type(answer_review.get('accepted')) is not bool or not isinstance(answer_review.get('note'),str) or not answer_review['note'].strip():raise ValueError('Explicit saved-answer acceptance and reason required')
+        if not isinstance(answer_review,dict) or set(answer_review)-{'accepted','note','family','acceptance','population','learners','roles'} or type(answer_review.get('accepted')) is not bool or not isinstance(answer_review.get('note'),str) or not answer_review['note'].strip():raise ValueError('Explicit saved-answer acceptance and reason required')
         if review is not None or adapter_review is not None:raise ValueError('Use answer review or direct component review')
-        if not answer_review['accepted']:requests={**requests,'correction':{'note':answer_review['note']}}
+        if answer_review['accepted']and 'roles'in answer_review:raise ValueError('Correction roles apply only to negative feedback')
+        if not answer_review['accepted']:requests={**requests,'correction':{'note':answer_review['note'],**({'roles':answer_review['roles']}if 'roles'in answer_review else{})}}
+    affected=correction_roles(requests['correction'])if requests.get('correction') else None
     answer=result.get('answer') or {};row={'schema':VERSION,'question':question,'at_ns':time.time_ns(),
         'source_identity':(result.get('execution_snapshot') or {}),'status':answer.get('status'),
         'source_kind':'machine_observation','eligible':False,'role':None,'accepted_labels':[],
@@ -307,14 +327,14 @@ def observe(stack,question,result,body=None):
         # A direct client correction retires learned components and execution
         # reuse without inventing replacement labels from an unreviewed answer.
         reason=str(requests['correction'].get('note') or 'User correction')
-        for role in ALL_ROLES:feedback(os.environ.get('AGERE_COMPONENT_RELEASE_ROOT') or root,role,accepted=False,reason=reason)
+        for role in affected:feedback(os.environ.get('AGERE_COMPONENT_RELEASE_ROOT') or root,role,accepted=False,reason=reason)
         info=(result.get('investigation') or {}).get('recursive_improvement') or {}
         from .harness_improvement import record_feedback
         for ident in {x for x in ((info.get('candidate') or {}).get('id'),(info.get('replay') or {}).get('used')) if x}:
             record_feedback(stack.path,ident,accepted=False,reason=reason)
         from .harness_improvement import record_question_correction
         record_question_correction(stack.path,question,reason)
-        row.update(source_kind='user_correction',note=reason)
+        row.update(source_kind='user_correction',note=reason,roles=affected,eligible=False,role=None,accepted_labels=[],family=None)
     db=database(root)
     try:
         with db:
@@ -323,15 +343,19 @@ def observe(stack,question,result,body=None):
             for task in derived[1:]:
                 db.execute('INSERT INTO component_observations(payload) VALUES (?)',(json.dumps({**row,**task},sort_keys=True),))
     finally:db.close()
-    return {'status':'recorded','observation':seq,'derived_adapter_tasks':len(derived),'eligible':row['eligible'],'source_kind':row['source_kind'],'root':str(root)}
+    return {'status':'recorded','observation':seq,'derived_adapter_tasks':len(derived),'eligible':row['eligible'],'source_kind':row['source_kind'],'root':str(root),
+            **({'affected_roles':affected}if affected is not None else{})}
 
 
 def handle_feedback(stack,body):
     """Existing correction endpoint: review an exact saved execution without legacy stores."""
     from ..deliverables import answer_context
-    if not isinstance(body,dict) or set(body)-{'context_id','question','note','accepted','acceptance','family','learners','expected','rule'}:raise ValueError('Unknown saved-answer feedback fields')
+    if not isinstance(body,dict) or set(body)-{'context_id','question','note','accepted','acceptance','family','learners','expected','rule','roles'}:raise ValueError('Unknown saved-answer feedback fields')
     accepted=body.get('accepted',False)
     if type(accepted) is not bool or not isinstance(body.get('note'),str) or not body['note'].strip():raise ValueError('Explicit feedback judgment and note required')
+    if 'roles'in body:
+        if accepted:raise ValueError('Correction roles apply only to negative feedback')
+        correction_roles(body)
     result={};question=body.get('question');key=body.get('context_id')
     if key is not None:
         import re
@@ -344,7 +368,7 @@ def handle_feedback(stack,body):
             if data['source']!=answer_context.source_identity(stack.path) or data.get('context_policy_identity')!=policy_identity():raise ValueError('Saved answer source/policy changed; rerun before using it for adapter learning')
     elif accepted:raise ValueError('Positive adapter feedback requires an exact saved answer context')
     if not isinstance(question,str) or not question.strip():raise ValueError('Feedback question required')
-    review={k:body[k] for k in ('acceptance','family','learners') if k in body}|{'accepted':accepted,'note':body['note']}
+    review={k:body[k] for k in ('acceptance','family','learners','roles') if k in body}|{'accepted':accepted,'note':body['note']}
     if key is not None:review['population']=result.get('input_patient_ids')
     if review.get('population') is None:review.pop('population',None)
     receipt=observe(stack,question,result,{'learning':{'answer_review':review}})
@@ -365,7 +389,7 @@ def export(root,output,role,family_splits,*,include_machine=False):
     finally:db.close()
     latest={}
     for row in rows:
-        if row.get('role')==role or row.get('source_kind')=='user_correction':
+        if row.get('role')==role or correction_affects(row,role):
             latest[' '.join(row['question'].split()).casefold()]=row
     selected=[]
     for row in latest.values():
