@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T16:03:14.886111+00:00",
+  "updated_at": "2026-10-29T17:13:39.423518+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_kind_domains_targeted_app_prepared",
+    "kind": "retained_candidate_recheck_prepared",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Explicit native collection domains remove26primary-care objects mislabeled cardiology and retain22datedCardiologyreferrals. Source verification receives executed calculation contracts and source-kind instructions, distinguishing arithmetic/fill-policy observations from clinical meaning.",
-    "measured_failure_reduction": "Sixteen source checks:8/8clean supported,6/8faults detected,2unknown,0false supported;7.248s/$0.001862476knownAPI-equivalent/0unpriced. Native replay corrects26mislabels with0calls. All57patient check requests remain stable on unrelated global edits;58packets restore606findings exactly. Targeted offline32actions preserve57/606/106 and22cardiologyrelationships/14GDMTdoserows;maxpacket224826bytes.361offlinechecks:360pass/1skip.",
+    "user_behavior_delta": "General source recheck now accepts an executed native review result and binds each retained candidate to its exact patient, source date, full document and original offsets before any model call. Rechecked legacy fields display as audit observations. Summary verification now carries executed calculation/domain contracts and scalar origins; lossless indexed references reduce the actual summary packet to 215752 bytes of readable native JSON without removing a patient or source dependency. Subscription schema repair committed e516bb9. New source/model behavior still requires the prepared actual recheck.",
+    "measured_failure_reduction": "385 offline checks:384 pass/one skip. Retained global packet is readable native JSON at215752bytes with all57patient dependencies; no new clinical/model gain claimed.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -412,11 +412,22 @@
       "artifacts/agere-meaning-integration-2026-10-29/native-domain-role-replay.json",
       "artifacts/agere-meaning-integration-2026-10-29/claim-locality-native-replay-v3.json",
       "artifacts/agere-meaning-integration-2026-10-29/targeted-prefix-dependency-preflight.json",
-      "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json"
+      "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
+      "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/retained-report-layout-inspection.json",
+      "artifacts/agere-meaning-integration-2026-10-29/native-completion-preflight.json",
+      "artifacts/agere-meaning-integration-2026-10-29/global-source-recheck-v1/result.json",
+      "artifacts/agere-meaning-integration-2026-10-29/bound-source-correction-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/completed-native-validation-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/frontier-source-qualification-v3/result.json",
+      "artifacts/agere-meaning-integration-2026-10-29/source-objection-diagnostic-v1/result.json",
+      "artifacts/agere-meaning-integration-2026-10-29/candidate-recheck-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/retained-source-recheck-preparation.json"
     ],
-    "remaining_gap": "Targeted complete app/source/artifact acceptance remains pending; source unknowns remain explicit. Task-dependent routing, fair complete baselines, broader healthcare/financial transfer and useful parameterized reuse/SLM learning remain open. All ten acceptance areas and G5 retained.",
-    "next_action": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
-    "next": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+    "remaining_gap": "Actual source recheck and canonical composition pending. Current saved answer remains partial with demonstrated old semantic errors and unresolved global provenance. Candidate review cannot establish whole-document recall, current clinical applicability or independent clinical accuracy. Interactive/PDF fidelity, fair baselines, routing, reusable qualification and the remaining ten-area acceptance work remain open.",
+    "next_action": "Run the prepared retained-source recheck v1 once on all 606 original native observations through review_documents(candidate_result_view), with exact full source contexts, typed judgments and unresolved-only frontier repair. Freeze product source while it runs. On return validate known wrong-class/unknown-reason cases and all accounting; compose source-bound candidate relations with explicit legacy audit fields and domain measures, then normal final/source verification and report/browser checks. Do not infer clinical state, whole-document absence or recall from a candidate recheck.",
+    "next": "Run the prepared retained-source recheck v1 once on all 606 original native observations through review_documents(candidate_result_view), with exact full source contexts, typed judgments and unresolved-only frontier repair. Freeze product source while it runs. On return validate known wrong-class/unknown-reason cases and all accounting; compose source-bound candidate relations with explicit legacy audit fields and domain measures, then normal final/source verification and report/browser checks. Do not infer clinical state, whole-document absence or recall from a candidate recheck.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -427,7 +438,7 @@
     },
     "coordination": {
       "integration_owner": "01a187c0-23ba-7d02-9368-5ff567327554",
-      "status": "Sole owner; current direct synthetic warehouse/provider approval persists. No active provider/training job; targeted continuation prepared.",
+      "status": "No active provider/training job. Prepared source recheck after385offline checks.",
       "queueing_scope_candidate": {
         "status": "integrated_local_evidence_only",
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
@@ -508,11 +519,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T16:03:14.886111+00:00",
-      "status": "targeted_app_prepared",
+      "status": "prepared",
       "active_provider_or_training_job": false,
       "source_frozen": false,
-      "preparation": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json"
+      "receipt": "artifacts/agere-meaning-integration-2026-10-29/retained-source-recheck-preparation.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -571,13 +581,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T16:03:14.886111+00:00",
-    "workflow_change": "Explicit native collection domains remove26primary-care objects mislabeled cardiology and retain22datedCardiologyreferrals. Source verification receives executed calculation contracts and source-kind instructions, distinguishing arithmetic/fill-policy observations from clinical meaning.",
+    "at": "2026-10-29T17:13:39.423518+00:00",
+    "workflow_change": "General source recheck now accepts an executed native review result and binds each retained candidate to its exact patient, source date, full document and original offsets before any model call. Rechecked legacy fields display as audit observations. Summary verification now carries executed calculation/domain contracts and scalar origins; lossless indexed references reduce the actual summary packet to 215752 bytes of readable native JSON without removing a patient or source dependency. Subscription schema repair committed e516bb9. New source/model behavior still requires the prepared actual recheck.",
     "unsealed_work": {
-      "status": "source_kind_domains_targeted_app_prepared",
+      "status": "retained_candidate_recheck_prepared",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "Targeted complete app/source/artifact acceptance remains pending; source unknowns remain explicit. Task-dependent routing, fair complete baselines, broader healthcare/financial transfer and useful parameterized reuse/SLM learning remain open. All ten acceptance areas and G5 retained.",
-      "next_action": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+      "remaining_gap": "Actual source recheck and canonical composition pending. Current saved answer remains partial with demonstrated old semantic errors and unresolved global provenance. Candidate review cannot establish whole-document recall, current clinical applicability or independent clinical accuracy. Interactive/PDF fidelity, fair baselines, routing, reusable qualification and the remaining ten-area acceptance work remain open.",
+      "next_action": "Run the prepared retained-source recheck v1 once on all 606 original native observations through review_documents(candidate_result_view), with exact full source contexts, typed judgments and unresolved-only frontier repair. Freeze product source while it runs. On return validate known wrong-class/unknown-reason cases and all accounting; compose source-bound candidate relations with explicit legacy audit fields and domain measures, then normal final/source verification and report/browser checks. Do not infer clinical state, whole-document absence or recall from a candidate recheck.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -1848,13 +1858,34 @@
       "decision": "Use exact source-domain collection and native source-kind verification for the measured workflow failures, then targeted continuation of returned calculations.",
       "basis": "Actual returned workflow mislabeled26primary-care rows ascardiology; source-policy cells and observation counts were exact but some checks required unrelated note corroboration. Native predicates fix the observed join; clean/fault development checks retain uncertainty without lowering thresholds.",
       "scope_impact": "No clinical qualification inferred, no cohort or acceptance area removed, no whole-cohort reread or training campaign."
+    },
+    {
+      "at": "2026-10-29T16:28:36.096650+00:00",
+      "gate": "G3",
+      "decision": "Complete the retained workflow through native source correction and revalidation rather than another actor/frozen population reread.",
+      "basis": "All57patientpackets now supported and domain faults corrected. Remaining global attribution was too strong about current applicability; source reader establishes historicalMRA, notRASi. Original machine observations remain for audit. Report inspection also reproduced rawJSONreadability failure.",
+      "scope_impact": "No thresholds lowered or acceptance removed. Costs of the unmatched recheck retained; no cache saving claimed. Native status calculations remain reference comparisons, not patient-specific tolerated maxima."
+    },
+    {
+      "at": "2026-10-29T16:38:56.351694+00:00",
+      "gate": "G3",
+      "decision": "Reassess repeated unresolved source-review control before another feature increment. Measure existing subscription frontier adjudication only on the named verification role.",
+      "basis": "Native source-domain/class faults are corrected; current review still leaves global/P-HF07 support uncertain and flagsP1007noGDMTsource-row despite exact native predicate/absence. Rewording and enlarging complete packets have not settled these checks. Another actor run is not the correction.",
+      "scope_impact": "Fifteen small, predeclared source-contract cases; no training, clinical qualification, new model/provider or threshold lowering. ExistingHaikufirst andsubscriptiononlyrules retained."
+    },
+    {
+      "at": "2026-10-29T17:01:32.304435+00:00",
+      "gate": "G3",
+      "decision": "Repair demonstrated evidence wiring and retained interpretation faults; do not change verifier thresholds or purchase another blind full-workflow rerun.",
+      "basis": "Sonnet diagnosis with validated source IDs/quotes: summary lacks current calculation/domain contracts and contains stale intermediate counts; P1007 unknown-reason spans mislabeled as reasons; P-HF07 legacy wrong RASi label still presented despite canonical correction.",
+      "scope_impact": "General existing document-review candidate-span recheck and provenance repair. All original source/audit observations retained. No new model, service, training, disease-specific handler or acceptance-area removal."
     }
   ],
   "unsealed_work": {
-    "status": "source_kind_domains_targeted_app_prepared",
+    "status": "retained_candidate_recheck_prepared",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "Targeted complete app/source/artifact acceptance remains pending; source unknowns remain explicit. Task-dependent routing, fair complete baselines, broader healthcare/financial transfer and useful parameterized reuse/SLM learning remain open. All ten acceptance areas and G5 retained.",
-    "next_action": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+    "remaining_gap": "Actual source recheck and canonical composition pending. Current saved answer remains partial with demonstrated old semantic errors and unresolved global provenance. Candidate review cannot establish whole-document recall, current clinical applicability or independent clinical accuracy. Interactive/PDF fidelity, fair baselines, routing, reusable qualification and the remaining ten-area acceptance work remain open.",
+    "next_action": "Run the prepared retained-source recheck v1 once on all 606 original native observations through review_documents(candidate_result_view), with exact full source contexts, typed judgments and unresolved-only frontier repair. Freeze product source while it runs. On return validate known wrong-class/unknown-reason cases and all accounting; compose source-bound candidate relations with explicit legacy audit fields and domain measures, then normal final/source verification and report/browser checks. Do not infer clinical state, whole-document absence or recall from a candidate recheck.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",

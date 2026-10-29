@@ -132,7 +132,41 @@ class RetainedInspection(unittest.TestCase):
         c={'investigation':{'document_reviews':[{'questions':{},'rows':[{'patient_id':'A','review_json':'{}','source_clinicians_json':json.dumps([role])}]}]}}
         evidence=projection(c);self.assertEqual(evidence['notes']['A'][0]['source_clinicians'],[role])
 
+    def test_rechecked_legacy_fields_remain_audit_only_with_exact_original_findings(self):
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        from clinical_core.contracts import digest
+        original={'record_id':'n','date':'2030-01-01','quote':'MRA held.','value':'MRA held.'}
+        rows=[{'patient_id':'A','review_json':json.dumps({'rasi_reason':[original],'pcp_named':[]})}]
+        scope={'result_view':'native','source_rows_digest':digest(rows),'checked_fields':['rasi_reason'],
+            'scope':'Retained candidate spans only; no whole-document absence.'}
+        context={'investigation':{'document_reviews':[
+            {'questions':{'rasi_reason':'Original question','pcp_named':'PCP?'},'rows':rows},
+            {'questions':{'rasi_reason':'Bound question'},'candidate_observation_review':scope,
+             'rows':[{'patient_id':'A','review_json':'{"rasi_reason":[]}','review_status':'reviewed_candidates'}]}]}}
+        evidence=projection(context);prior,current=evidence['notes']['A']
+        self.assertEqual(prior['audit_only_fields'],['rasi_reason']);self.assertEqual(prior['findings']['rasi_reason'],[original])
+        self.assertEqual(current['candidate_review_scope'],scope);self.assertEqual(current['findings']['rasi_reason'],[])
+
 class RecommendationDisplay(unittest.TestCase):
+    def test_pdf_displays_every_nested_source_object_without_duplicating_equal_quote_value(self):
+        import tempfile
+        from pathlib import Path
+        from pypdf import PdfReader
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        findings=[{'value':'Medication held in prior record.','quote':'Medication held in prior record.',
+            'record_id':'SOURCE-A','date':'2030-01-02','temporality':'historical'},
+            {'value':'Different interpretation','quote':'Separate exact passage.','record_id':'SOURCE-B','date':'2030-02-03'}]
+        c={'question':'Inspect the source findings','source':{'as_of':'2030-05-27'},'answer':{'status':'partial',
+            'table':[{'patient_id':'A','documentary_findings':json.dumps(findings),'proposed_next_action':'Confirm applicability.'}]}}
+        with tempfile.TemporaryDirectory()as temp:
+            out=Path(temp)/'report.pdf';render(c,out,evidence={});pdf=PdfReader(out);text='\n'.join(p.extract_text()for p in pdf.pages)
+            bookmarks=[entry.title for group in pdf.outline if isinstance(group,list)for entry in group]
+        self.assertEqual(text.count('Medication held in prior record.'),1)
+        for exact in ('SOURCE-A','SOURCE-B','2030-01-02','2030-02-03','historical','Different interpretation','Separate exact passage.'):
+            self.assertIn(exact,text)
+        self.assertNotIn('{"value"',text)
+        self.assertIn('A',bookmarks)
+
     def test_proposed_next_action_is_visible_as_a_recommendation_in_pdf(self):
         import tempfile,io
         from pathlib import Path

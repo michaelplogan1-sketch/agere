@@ -79,6 +79,44 @@ class Relations(unittest.TestCase):
         with self.assertRaises(ValueError):H.validate_saved_source_fields({'reason':[old]},{'reason':question()},[self.doc],patient_id='A')
         H.validate_saved_source_fields({'reason':[value]},{'reason':question()},[self.doc],patient_id='A')
 
+    def test_candidate_review_uses_complete_native_observations_and_rejects_unbound_questions(self):
+        value=self.finding();view={'columns':['patient_id','review_json'],'rows':[
+            {'patient_id':'A','review_json':json.dumps({'reason':[value]})},
+            {'patient_id':'B','review_json':json.dumps({'reason':[{**value,'quote':'Other patient'}]})}]}
+        tools=SimpleNamespace(executed_results={'native':view})
+        selected,receipt=D.retained_candidates(tools,'native',['A'],{'reason':question()})
+        self.assertEqual(len(selected['A']),1);self.assertEqual(selected['A'][0]['quote'],value['quote'])
+        self.assertEqual(receipt['requested_candidates'],1);self.assertIn('no whole-document absence',receipt['scope'])
+        self.assertEqual(json.loads(view['rows'][0]['review_json'])['reason'],[value])
+        with self.assertRaises(ValueError):D.retained_candidates(tools,'missing',['A'],{'reason':question()})
+        with self.assertRaises(ValueError):D.retained_candidates(tools,'native',['A'],{'reason':'Unbound question'})
+        view['truncated']=True
+        with self.assertRaises(ValueError):D.retained_candidates(tools,'native',['A'],{'reason':question()})
+
+    def test_candidate_review_preflights_sources_before_provider_and_preserves_empty_scope(self):
+        with tempfile.TemporaryDirectory()as temp:
+            root=Path(temp);db=sqlite3.connect(':memory:');self.addCleanup(db.close)
+            db.executescript("CREATE TABLE patient(patient_id); INSERT INTO patient VALUES('A'),('B')")
+            value=self.finding();legacy={'patient_id':'A','review_json':json.dumps({'reason':[value]})}
+            tools=SimpleNamespace(db=db,as_of='2030-05-27',stack=SimpleNamespace(path=root,ledger_path=root/'ledger.sqlite3',allow_live=False),
+                in_scope=lambda pid:None,continuation_identity=lambda:{'source':'fixture'},document_reviews=[],
+                executed_results={'native':{'rows':[legacy]}},subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0},
+                semantic=SimpleNamespace(columns={'record':[],'scanned_document':[]}),
+                _texts=lambda pid:[('r','note','notes','office',self.doc['date'],self.doc['text'],'')]if pid=='A'else[])
+            def read(tools,pid,docs,questions,ledger,**kw):
+                self.assertEqual(pid,'A');self.assertEqual(len(kw['candidates']),1)
+                self.assertEqual(docs[0]['text'],self.doc['text'])
+                return {'findings':{'reason':[value]},'checks':[],'unresolved':[],
+                    'coverage':[],'ranking':{},'all_blocks_processed':False,'all_candidates_processed':True,'version':T.VERSION}
+            with patch.object(T,'read',side_effect=read):out=D.review(tools,['A','B'],{'reason':question()},candidate_result_view='native')
+            self.assertEqual([r['review_status']for r in out['rows']],['reviewed_candidates','no_candidates'])
+            self.assertEqual(out['candidate_observation_review']['requested_candidates'],1)
+            self.assertFalse(out['coverage'][1]['candidate_scope']['whole_document_absence_established'])
+            for change in [{'quote':'Invented passage.'},{'date':'2029-01-01'},{'span_start':1}]:
+                legacy['review_json']=json.dumps({'reason':[{**value,**change}]})
+                with self.subTest(change=change),patch.object(T,'read',side_effect=AssertionError('No provider before exact-source validation')),self.assertRaises(ValueError):
+                    D.review(tools,['A'],{'reason':question()},candidate_result_view='native')
+
     def test_frontier_cannot_accept_finding_without_axes_and_keeps_valid_siblings(self):
         pending=[{'field':k,'record_id':'r','quote':self.doc['text'],'span_start':0,'span_end':len(self.doc['text'])}for k in ('mra','rasi')]
         seen=[]
@@ -137,6 +175,10 @@ class Relations(unittest.TestCase):
             'rows':[{'patient_id':'A','review_json':json.dumps({'mra':[value],'rasi':[]})}]}]
         answer={'table':[{'patient_id':'A','mra':[value]}]}
         self.assertEqual(D.relation_composition_issues(answer,reviews),[])
+        flat={'table':[{'patient_id':'A','bound_findings':[{'field':'mra',**value}]}]}
+        self.assertEqual(D.relation_composition_issues(flat,reviews),[])
+        flat['table'][0]['bound_findings'][0]['field']='rasi'
+        self.assertTrue(D.relation_composition_issues(flat,reviews))
         for row in [{'patient_id':'A','rasi':[value]},{'patient_id':'B','mra':[value]},
                     {'patient_id':'A','mra':[{**value,'quote':'changed'}]}]:
             self.assertTrue(D.relation_composition_issues({'table':[row]},reviews))

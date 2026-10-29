@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+  "active_work": "Run the prepared retained-source recheck v1 once on all 606 original native observations through review_documents(candidate_result_view), with exact full source contexts, typed judgments and unresolved-only frontier repair. Freeze product source while it runs. On return validate known wrong-class/unknown-reason cases and all accounting; compose source-bound candidate relations with explicit legacy audit fields and domain measures, then normal final/source verification and report/browser checks. Do not infer clinical state, whole-document absence or recall from a candidate recheck.",
   "latest_delivery": "docs/agere/INTEGRATED_STACK_DELIVERY_2026-10-29.md",
   "latest_receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
   "owned_server_pid": 1965,
@@ -22,18 +22,18 @@
   "resumed_at": "2026-10-29T11:55:57.347665+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-29T16:03:14.886111+00:00",
+  "latest_checkpoint": "2026-10-29T17:13:39.423518+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "Previous original application workflow returned partial and source-audited; no provider/training process. Targeted continuation prepared.",
+  "server_status": "No active provider/training job. Prepared source recheck after385offline checks.",
   "unsealed_work": {
-    "status": "source_kind_domains_targeted_app_prepared",
+    "status": "retained_candidate_recheck_prepared",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "Targeted complete app/source/artifact acceptance remains pending; source unknowns remain explicit. Task-dependent routing, fair complete baselines, broader healthcare/financial transfer and useful parameterized reuse/SLM learning remain open. All ten acceptance areas and G5 retained.",
-    "next_action": "Run and observe only the prepared targeted original application continuation in /private/tmp/agere-reviewed-workflow-targeted-20261029. Keep its pinned source unchanged, retain all57patients/606findings/106dated role objects, verify corrected source domains and recommendations, then inspect interactive/PDF fidelity. Continue broader composition/reuse after the returned result; no duplicate provider/training job.",
+    "remaining_gap": "Actual source recheck and canonical composition pending. Current saved answer remains partial with demonstrated old semantic errors and unresolved global provenance. Candidate review cannot establish whole-document recall, current clinical applicability or independent clinical accuracy. Interactive/PDF fidelity, fair baselines, routing, reusable qualification and the remaining ten-area acceptance work remain open.",
+    "next_action": "Run the prepared retained-source recheck v1 once on all 606 original native observations through review_documents(candidate_result_view), with exact full source contexts, typed judgments and unresolved-only frontier repair. Freeze product source while it runs. On return validate known wrong-class/unknown-reason cases and all accounting; compose source-bound candidate relations with explicit legacy audit fields and domain measures, then normal final/source verification and report/browser checks. Do not infer clinical state, whole-document absence or recall from a candidate recheck.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -284,7 +284,16 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [],
+  "active_jobs": [
+    {
+      "kind": "targeted_frontier_source_role_qualification",
+      "status": "running",
+      "pid": 63112,
+      "session": 85382,
+      "receipt": "artifacts/agere-meaning-integration-2026-10-29/frontier-source-qualification-v3/result.json",
+      "source_frozen": true
+    }
+  ],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
@@ -390,8 +399,9 @@
   },
   "push_authorization": "Mike: you dont need to turn off Git pushes if that helps you, im not sure if it does but i gave you no such instructions",
   "current_candidate_commits": [
-    "ce8d759",
-    "f68bd71"
+    "fab7c3a",
+    "61d0f34",
+    "e516bb9"
   ],
   "provider_payload_authorization": {
     "at": "2026-10-29T15:18:31.337417+00:00",

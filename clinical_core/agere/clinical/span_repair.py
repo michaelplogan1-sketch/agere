@@ -27,6 +27,9 @@ retracted or conflicting statements; selecting a passage does not establish curr
 For an entity-bound question, finding requires that exact entity, relation and subject. A reason about
 a different medication class, service, person or contract is irrelevant even when the same block
 mentions the requested entity. Resolve references from the complete source; ambiguous attribution is unknown.
+Every condition in the question belongs to the relation. An explicitly unknown or undocumented reason
+cannot affirm a causal relation: retain its uncertain or negated polarity. Deferral pending verification
+does not establish intolerance, a current dose, a below-target dose or an individual tolerated maximum.
 For these bound decisions return an object {"label":"finding|irrelevant|unknown", "polarity":
 "affirmed|negated|uncertain", "temporality":"current|historical|planned|hypothetical|retracted|unspecified",
 "subject":"patient|family_member|other|source_entity"}. Assertion axes are required only for finding. For legacy

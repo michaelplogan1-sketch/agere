@@ -149,7 +149,11 @@ def relation_composition_issues(answer,reviews):
             if 'assertion' in value:
                 a=value['assertion'];ident=a.get('id') if isinstance(a,dict) else None
                 original=known.get(ident)
-                if original is None or value!=original[2]:issues.append(path+': documentary assertion differs from its native finding')
+                # source_findings_json adds only the exact originating field
+                # to the intact finding. That flat collection is a native
+                # representation, not an alteration of the assertion.
+                native_value={k:v for k,v in value.items()if k!='field'} if 'field'in value else value
+                if original is None or native_value!=original[2] or ('field'in value and value['field']!=original[1]):issues.append(path+': documentary assertion differs from its native finding')
                 elif patient is not None and patient!=original[0]:issues.append(path+': documentary assertion moved to another patient')
                 elif field in bindings and a.get('question_digest') not in bindings[field]:issues.append(path+': entity/relation belongs to '+original[1]+', not '+field)
                 return
@@ -270,7 +274,39 @@ def with_correspondence(rows,packages,questions=None,as_of=None):
         output.append(result)
     return output
 
-def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None, patient_query_sql=None, record_ids=None):
+def retained_candidates(tools,view,patient_ids,questions):
+    """Select exact native observations for rechecking, never new source claims.
+
+    This limits the decisions, not their complete source context. An empty or
+    rejected candidate cannot establish whole-document absence or reader recall.
+    """
+    from .result_assembly import _rows
+    source=getattr(tools,'executed_results',{}).get(view)
+    if source is None:raise ValueError('Candidate source must name an executed result_view')
+    columns,rows=_rows(source)
+    if not {'patient_id','review_json'}<=set(columns):raise ValueError('Candidate source requires native patient_id and review_json')
+    if any(not isinstance(q,dict)for q in questions.values()):raise ValueError('Candidate recheck requires explicit entity/relation questions')
+    selected={p:[]for p in patient_ids}
+    for row in rows:
+        pid=row['patient_id']
+        if pid not in selected:continue
+        found=json.loads(row['review_json'])if isinstance(row['review_json'],str)else row['review_json']
+        if not isinstance(found,dict):raise ValueError('Candidate source has invalid native review_json')
+        for field in questions:
+            values=found.get(field,[])
+            if not isinstance(values,list):raise ValueError('Candidate field must be an observation list')
+            for value in values:
+                if (not isinstance(value,dict)or not isinstance(value.get('record_id'),str)or
+                    not isinstance(value.get('date'),str)or not isinstance(value.get('quote'),str)or not value['quote']):
+                    raise ValueError('Candidate requires an exact source record, date and quote')
+                selected[pid].append({**value,'field':field})
+    return selected,{'result_view':view,'native_result_digest':digest(source),'source_rows_digest':digest(rows),
+        'checked_fields':list(questions),
+        'requested_candidates':sum(len(v)for v in selected.values()),
+        'scope':'Retained candidate spans only, each rechecked with its complete source document; no whole-document absence or recall established.'}
+
+
+def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None, patient_query_sql=None, record_ids=None,candidate_result_view=None):
     if (patient_ids is None)==(patient_query_sql is None):
         raise ValueError('Choose explicit patient_ids OR a complete patient_query_sql')
     if patient_query_sql is not None:
@@ -280,13 +316,19 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         raise ValueError('Use explicit received patient IDs')
     ids = list(dict.fromkeys(patient_ids))
     validate_questions(questions)
+    candidates=candidate_receipt=None
+    if candidate_result_view is not None:
+        if record_ids is not None or date_from is not None or date_to is not None:
+            raise ValueError('Candidate recheck uses its exact native source scope; filter the executed candidate view first')
+        candidates,candidate_receipt=retained_candidates(tools,candidate_result_view,ids,questions)
     for p in ids:
         tools.in_scope(p)
         if tools.db.execute('SELECT 1 FROM patient WHERE patient_id=?',(p,)).fetchone() is None:
             raise ValueError('Patient is not in the received warehouse: '+p)
     if record_ids is not None and (not isinstance(record_ids,list)or not record_ids or any(not isinstance(r,str)or not r for r in record_ids)):
         raise ValueError('record_ids requires explicit nonempty received source IDs')
-    selected_records=set(record_ids)if record_ids is not None else None
+    selected_records=({v['record_id']for values in candidates.values()for v in values}if candidates is not None else
+                      set(record_ids)if record_ids is not None else None)
     received_selected=set()
     guard = digest(tools.continuation_identity())
     packages, manifest = {}, []
@@ -311,7 +353,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                     arrivals.update(tools.db.execute('SELECT record_id,available_date FROM '+table+
                         ' WHERE patient_id=? AND record_id IN ('+','.join('?' for _ in chunk)+')',(pid,*chunk)))
         for rid,src,stream,kind,day,text,title in rows:
-            key = digest([day,text])
+            key = digest([rid,day,text]if candidates is not None else [day,text])
             if key in seen:
                 seen[key]['duplicate_record_ids'].append(rid)
             else:
@@ -323,7 +365,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         batches, batch, chars = [], [], 0
         for doc in docs:
             text=doc['text']
-            segments=[text[i:i+180000] for i in range(0,len(text),179800)] or ['']
+            segments=([text]if candidates is not None else [text[i:i+180000] for i in range(0,len(text),179800)] or [''])
             for segment in segments:
                 item={**doc,'text':segment}
                 if batch and chars+len(segment)>240000:
@@ -331,13 +373,26 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                 batch.append(item);chars+=len(segment)
         if batch:batches.append(batch)
         packages[pid]=batches
+        if candidates is not None:
+            for item in candidates[pid]:
+                matching=[d for d in docs if d['record_id']==item['record_id']and d['date']==item['date']]
+                if len(matching)!=1:raise ValueError('Candidate source differs from the selected patient/document clock')
+                doc=matching[0];a,b=item.get('span_start'),item.get('span_end')
+                if a is None and b is None:
+                    if doc['text'].count(item['quote'])!=1:raise ValueError('Candidate has ambiguous source offsets')
+                    a=doc['text'].index(item['quote']);b=a+len(item['quote'])
+                if type(a)is not int or type(b)is not int or not 0<=a<b<=len(doc['text'])or doc['text'][a:b]!=item['quote']:
+                    raise ValueError('Candidate source span differs from retained native evidence')
+                item.update(span_start=a,span_end=b,document_text_digest=digest(doc['text']))
         manifest.append({'patient_id':pid,'received_documents':len(rows),'unique_whole_documents':len(docs),
                          'characters_supplied':sum(len(d['text']) for d in docs),'batches':len(batches),
-                         'document_digest':digest([{k:v for k,v in d.items() if k!='available_date'} for d in docs])})
+                         'document_digest':digest([{k:v for k,v in d.items() if k!='available_date'} for d in docs]),
+                         **({'candidate_scope':{'candidates':len(candidates[pid]),'candidate_digest':digest(candidates[pid]),
+                             'whole_document_absence_established':False}}if candidates is not None else {})})
     if selected_records is not None and selected_records!=received_selected:
         raise ValueError('Requested records are outside this received patient/date scope: '+str(sorted(selected_records-received_selected)))
     from .harness_improvement import recover_document_observations
-    recovered=recover_document_observations(questions,manifest,packages)
+    recovered=recover_document_observations(questions,manifest,packages)if candidates is None else None
     if recovered is not None:
         recovered={**recovered,'rows':with_correspondence(recovered['rows'],packages,questions,tools.as_of)}
         tools.document_reviews.append(recovered)
@@ -346,7 +401,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
             'observation_reuse':recovered['observation_reuse'],
             'method':'Exact-source/question machine observations revalidated during explicit owned-run recovery. SQL and interpretation rerun; no clinical acceptance inherited.'}
     from .harness_improvement import recover_document_fields
-    reused=recover_document_fields(questions,manifest,packages)
+    reused=recover_document_fields(questions,manifest,packages)if candidates is None else None
     all_questions=questions
     questions={k:q for k,q in questions.items()if not reused or k not in reused['fields']}
     stop=threading.Event()
@@ -368,12 +423,16 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                 from .typed_document_review import read
                 for batch in packages[pid]:
                     if stop.is_set():raise RuntimeError('Whole-document review stopped after subscription limit')
-                    typed=read(tools,pid,batch,questions,ledger,ranking=os.environ.get('AGERE_DOCUMENT_RANKING','on')!='off')
+                    selected=([v for v in candidates[pid]if any(v['record_id']==d['record_id']and v['document_text_digest']==digest(d['text'])for d in batch)]
+                              if candidates is not None else None)
+                    typed=read(tools,pid,batch,questions,ledger,ranking=os.environ.get('AGERE_DOCUMENT_RANKING','on')!='off',
+                        **({'candidates':selected}if candidates is not None else {}))
                     with coverage_lock:
                         source_coverage.append({'patient_id':pid,'version':typed['version'],
                             'coverage':typed['coverage'],'ranking':typed['ranking'],
                             'all_blocks_processed':typed['all_blocks_processed'],
-                            'unresolved_fields':len(typed['unresolved'])})
+                            'unresolved_fields':len(typed['unresolved']),
+                            **({'candidate_count':len(selected),'all_candidates_processed':typed['all_candidates_processed']}if candidates is not None else {})})
                     checks.extend(typed['checks'])
                     for key,values in typed['findings'].items():aggregate[key].extend(values)
                     if os.environ.get('AGERE_DOCUMENT_FRONTIER')=='select_spans' or any(isinstance(q,dict) for q in questions.values()):
@@ -482,15 +541,22 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
     rows=[]
     for m in manifest:
         pid=m['patient_id'];found,failures=results[pid]
-        row={'patient_id':pid,'review_status':'needs_review' if failures else 'reviewed' if m['received_documents'] else 'no_documents',
+        row={'patient_id':pid,'review_status':'needs_review' if failures else
+             ('reviewed_candidates'if m['received_documents']else 'no_candidates')if candidates is not None else
+             'reviewed' if m['received_documents'] else 'no_documents',
              'documents_reviewed':m['received_documents'],'review_json':json.dumps(found),'review_limitations':json.dumps(failures)}
+        if candidate_receipt:row['candidate_review_scope']=json.dumps({**candidate_receipt,**m['candidate_scope']})
         rows.append(row)
     rows=with_correspondence(rows,packages,all_questions,tools.as_of)
     tools.document_reviews.append({'questions':all_questions,'scope':ids,'manifest':manifest,'rows':rows,
         'provider_receipts':all_receipts,'typed_checks':all_checks,'source_coverage':source_coverage,
+        **({'candidate_observation_review':candidate_receipt}if candidate_receipt else {}),
         'observation_reuse':{k:v for k,v in reused.items()if k not in ('rows','limitations')}if reused else None})
     return {'columns':list(rows[0]) if rows else ['patient_id','review_status','documents_reviewed','review_json','review_limitations'],
-            'rows':rows,'coverage':manifest,'record_ids_filter':record_ids,'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
-            'method':('Every scoped whole document/block read with typed source decisions; only unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
+            'rows':rows,'coverage':manifest,'record_ids_filter':record_ids,
+            **({'candidate_observation_review':candidate_receipt}if candidate_receipt else {}),
+            'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
+            'method':(candidate_receipt['scope']+' Not independent clinical qualification.'if candidate_receipt else
+                      'Every scoped whole document/block read with typed source decisions; only unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
                       if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans' else
                       'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification')}

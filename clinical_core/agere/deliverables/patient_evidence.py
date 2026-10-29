@@ -12,10 +12,17 @@ def recommendation_field(name):
 
 
 def projection(context):
+    from ...contracts import digest
     investigation = context.get('investigation') or {}
     notes = {}
+    replacements={}
+    for review in investigation.get('document_reviews')or[]:
+        recheck=review.get('candidate_observation_review')or{}
+        if recheck.get('source_rows_digest'):
+            replacements.setdefault(recheck['source_rows_digest'],set()).update(recheck.get('checked_fields')or[])
     for review in investigation.get('document_reviews') or []:
         questions = review.get('questions') or {}
+        audit_fields=sorted(replacements.get(digest(review.get('rows')or[]),set()))
         for row in review.get('rows') or []:
             pid = row.get('patient_id')
             if not pid:
@@ -31,6 +38,8 @@ def projection(context):
             notes.setdefault(pid, []).append({
                 'source_clinicians':roles,
                 'questions': questions, 'findings': found,
+                'audit_only_fields':audit_fields,
+                'candidate_review_scope':review.get('candidate_observation_review'),
                 'review_status': row.get('review_status'),
                 'documents_reviewed': row.get('documents_reviewed'),
                 'limitations': row.get('review_limitations')})

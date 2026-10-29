@@ -43,6 +43,17 @@ class Projection(unittest.TestCase):
             with self.assertRaises(ValueError):E.restore_table(view,changed_edges,{'patient_A':bad})
         with self.assertRaises(KeyError):E.restore_table(view,edges,{})
 
+    def test_indexed_dependencies_restore_every_exact_cell_and_reject_swapped_indices(self):
+        table=[{'patient_id':'A','reason':[finding('a','A source.')],'role':'Dated role'},
+               {'patient_id':'B','reason':[finding('b','B source.')],'role':'Unknown'}]
+        view,edges=E.table_view(table,defer_native_cells=True,index_dependencies=True)
+        leaves={'patient_A':table[:1],'patient_B':table[1:]}
+        self.assertEqual(view[0]['reason']['clinical_evidence_dependency'],0)
+        self.assertEqual(E.restore_table(view,edges,leaves),table)
+        for changed in (True,1,-1,999):
+            bad=copy.deepcopy(view);bad[0]['reason']['clinical_evidence_dependency']=changed
+            with self.subTest(changed=changed),self.assertRaises(ValueError):E.restore_table(bad,edges,leaves)
+
     def test_coverage_keeps_uncertainty_and_native_executable_provenance(self):
         answer={'status':'partial','table':[{'patient_id':'A','findings':[finding('r','Dose unknown.')]}],
                 'table_binding':{'result_view':'v','rows':1,'query':'SELECT '+('1,'*20000)+'1'},

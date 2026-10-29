@@ -24,6 +24,34 @@ class TypedDocuments(unittest.TestCase):
   def judge(subject,questions,evidence,**kw):return {'judgments':{k:{'label':'unknown','decided_by':None}for k in questions},'steps':[],'cost_usd':0}
   out=T.read(SimpleNamespace(as_of='2030-05-27',stack=SimpleNamespace(allow_live=False)),'A',[{'record_id':'r','date':'','text':'Unclear current use.'}],{'use':'Current use?'},None,judge=judge,ranking=False)
   self.assertEqual(out['findings']['use'],[]);self.assertEqual(out['unresolved'][0]['field'],'use')
+ def test_candidate_recheck_judges_only_exact_observations_with_complete_source_context(self):
+  from clinical_core.contracts import digest
+  text='Earlier proposal: treatment was withheld.\n\nCorrection: The reason for nonuse is not documented.'
+  quote='The reason for nonuse is not documented.';start=text.index(quote)
+  doc={'record_id':'r','date':'2030-01-01','text':text}
+  q={'question':'What reason for treatment nonuse is explicitly documented?',
+     'entity':{'kind':'therapy','id':'treatment','aliases':['treatment']},'relation':'reason_for_nonuse','subject':'patient'}
+  c={'field':'reason','record_id':'r','date':doc['date'],'document_text_digest':digest(text),'quote':quote,'span_start':start,'span_end':start+len(quote)}
+  seen=[]
+  def judge(subject,named,evidence,**kw):
+   seen.extend(named.values());self.assertEqual(evidence[0]['text'],text)
+   axes={'polarity':'uncertain','temporality':'current','subject':'patient'}
+   return {'judgments':{k:{'label':axes[v['instructions']['axis']]if v['instructions'].get('axis')else'finding','decided_by':'fixture','provider':'fixture'}for k,v in named.items()},'steps':[],'cost_usd':0}
+  tools=SimpleNamespace(as_of='2030-05-27',stack=SimpleNamespace(allow_live=False))
+  with patch.dict(os.environ,{'AGERE_DOCUMENT_LOCAL_READERS':''}):out=T.read(tools,'A',[doc],{'reason':q},None,judge=judge,ranking=False,candidates=[c])
+  self.assertEqual(out['findings']['reason'][0]['quote'],quote)
+  self.assertEqual(out['findings']['reason'][0]['polarity'],'uncertain')
+  self.assertFalse(out['all_blocks_processed']);self.assertTrue(out['all_candidates_processed']);self.assertEqual(out['candidate_count'],1)
+  self.assertEqual(len(seen),4);self.assertTrue(all(v['instructions']['target_block']==quote for v in seen))
+  for mutation in [{'date':'2029-01-01'},{'span_start':0},{'document_text_digest':'changed'},{'field':'unrequested'}]:
+   with self.subTest(mutation=mutation),self.assertRaises(ValueError):T.source_batches([doc],{'reason':q},{},candidates=[{**c,**mutation}])
+ def test_candidate_batches_schedule_every_retained_observation_without_new_blocks(self):
+  from clinical_core.contracts import digest
+  d={'record_id':'r','date':'2030-01-01','text':'One exact source passage.\n\nOther source context.'}
+  c={'field':'reason','record_id':'r','date':d['date'],'document_text_digest':digest(d['text']),'quote':'One exact source passage.','span_start':0,'span_end':25}
+  jobs=T.source_batches([d],{'reason':'What is documented?'},{},candidates=[dict(c)for _ in range(150)])
+  self.assertEqual(sum(map(len,jobs)),150);self.assertEqual(len(jobs),3)
+  self.assertTrue(all(job[2]['text']==c['quote']for batch in jobs for job in batch))
  def test_large_preview_retains_named_field_counts_from_all_patients(self):
   rows=[{'patient_id':'A','review_json':json.dumps({'care_team':[{'value':'x'*16000}]})},{'patient_id':'B','review_json':json.dumps({'care_team':[{'value':'Named clinician'}],'dose_reason':[]})}]
   shown=S.actor_result({'columns':['patient_id','review_json'],'rows':rows,'result_view':'v'})

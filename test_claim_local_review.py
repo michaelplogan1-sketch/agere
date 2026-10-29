@@ -47,6 +47,20 @@ class LocalReview(unittest.TestCase):
         calls[0]['input']['sql']='SELECT * FROM another_received_domain'
         self.assertNotEqual(before['patient_B']['text'],self.packets(answer,calls)['patient_B']['text'])
 
+    def test_summary_receives_calculation_contracts_and_scalar_origins(self):
+        answer,calls=self.fixture()
+        before=self.packets(answer,calls)
+        summary=uncompact_json(json.loads(before['summary']['text']))
+        contracts={c['result_view']:c for c in summary['native_calculation_contracts']}
+        self.assertEqual(contracts['reference']['input'],{'sql':'SELECT 4 AS definition'})
+        self.assertEqual(summary['native_bindings'][1]['result_view'],'reference')
+        self.assertEqual(summary['shared_evidence_provenance'][0]['origins'][0]['result_view'],'reference')
+        self.assertIn('Earlier intermediate results',summary['source_precedence'])
+        calls[1]['input']['sql']='SELECT 4 AS definition FROM another_source'
+        after=self.packets(answer,calls)
+        self.assertNotEqual(before['summary']['text'],after['summary']['text'])
+        self.assertEqual(uncompact_json(json.loads(after['summary']['text']))['native_calculation_contracts'][1]['input'],calls[1]['input'])
+
     def test_unresolved_lineage_keeps_all_shared_evidence(self):
         answer,calls=self.fixture();answer['table_binding']['result_view']='unavailable'
         calls.append({'name':'query_sql','input':{},'result':{'result_view':'extra','rows':[{'extra':9}]}})
@@ -67,6 +81,22 @@ class LocalReview(unittest.TestCase):
         packets=self.packets(answer,calls)
         self.assertNotIn('B has a documented account.',packets['patient_A']['text'])
         self.assertIn('B has a documented account.',packets['patient_B']['text'])
+
+    def test_global_source_claim_receives_exact_cited_document_without_changing_patient_claims(self):
+        answer,calls=self.fixture();calls.append({'name':'read_document','input':{'record_id':'n1'},
+            'result':{'patient_id':'A','record_id':'n1','date':'2030-01-01','text':'Prior entry: MRA held for potassium.'}})
+        before=self.packets(answer,calls)
+        answer['facts']['dated_attribution']='The prior MRA hold is historical (n1).'
+        citation={'record_id':'n1','date':'2030-01-01','quote':'Prior entry: MRA held for potassium.'}
+        answer['sources']=[citation]
+        after=self.packets(answer,calls);summary=uncompact_json(json.loads(after['summary']['text']))
+        self.assertEqual(summary['cited_source_evidence'],[{'citation':citation,'executed_source_document':calls[-1]['result']}])
+        only_cached=B.support_packets('Check source claims',answer,calls[:-1],[],'2030-05-27',source_documents={'n1':{k:v for k,v in calls[-1]['result'].items()if k!='record_id'}})
+        self.assertEqual(uncompact_json(json.loads(only_cached[0]['text']))['cited_source_evidence'],summary['cited_source_evidence'])
+        for pid in ('A','B'):self.assertEqual(before['patient_'+pid]['text'],after['patient_'+pid]['text'])
+        for changed in ({**citation,'date':'2029-01-01'},{**citation,'quote':'Invented current contraindication.'}):
+            answer['sources']=[changed]
+            self.assertEqual(uncompact_json(json.loads(self.packets(answer,calls)['summary']['text']))['cited_source_evidence'],[])
 
     def test_failed_packet_localizes_entity_error_and_preserves_supported_unknown(self):
         answer,calls=self.fixture();packet=self.packets(answer,calls)['patient_A'];seen=[]
