@@ -29,6 +29,20 @@ class Relations(unittest.TestCase):
         for q in [dict(question(),subject='unsure'),dict(question(),entity={'id':'mra'}),dict(question(),relation='')]:
             with self.assertRaises(ValueError):D.validate_questions({'reason':q})
 
+    def test_assignment_boundary_reaches_typed_and_frontier_source_readers(self):
+        q={**question(), 'entity':{'kind':'clinician_role','id':'renal','aliases':['renal clinician']},
+           'relation':'clinician_of_record','question':'Who is assigned ongoing renal care?'}
+        seen=[]
+        def judge(task,named,evidence,**kw):
+            seen.extend(v['instructions']['task'] for v in named.values())
+            return {'judgments':{k:{'label':'irrelevant','decided_by':'fixture'} for k in named},
+                    'steps':[],'cost_usd':0}
+        T.read(self.tools,'A',[{**self.doc,'text':'Sincerely, Alice Rivera, MD, Nephrology'}],
+               {'assigned_role':q},None,judge=judge,ranking=False)
+        self.assertTrue(seen)
+        self.assertTrue(all(D.RELATION_RULES in instruction for instruction in seen))
+        self.assertIn(D.RELATION_RULES,D.SYSTEM)
+
     def test_class_swap_changes_only_the_bound_finding_and_keeps_exact_source(self):
         seen=[]
         def judge(task,named,evidence,**kw):

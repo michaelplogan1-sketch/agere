@@ -61,7 +61,7 @@ def batches(unresolved,documents,questions):
 
 
 def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=None):
-    from .document_review import parsed,AXES,relation_finding
+    from .document_review import parsed,AXES,relation_finding,RELATION_RULES
     models=(model_policy.HAIKU,model_policy.SONNET) if models is None else tuple(models)
     if not models or any(model not in (model_policy.HAIKU,model_policy.SONNET)for model in models):
         raise ValueError('Source reader models must use the existing question model families')
@@ -79,7 +79,7 @@ def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=
                     'answer_contract':{'label':['finding','irrelevant','unknown'],
                         'required_finding_axes':AXES} if isinstance(questions[item['field']],dict) else 'finding|irrelevant|unknown'}for ident,(key,doc,item)in pending.items()},
                 'repair_feedback':feedback}
-            body={'model':model,'max_tokens':8192,'system':SYSTEM,'messages':[{'role':'user','content':json.dumps(state,ensure_ascii=False)}]}
+            body={'model':model,'max_tokens':8192,'system':RELATION_RULES+SYSTEM,'messages':[{'role':'user','content':json.dumps(state,ensure_ascii=False)}]}
             received=False
             try:
                 with component('document_span_repair',patient_id=pid,fields=len(pending),documents=len(contexts),model=model):

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T21:54:29.814966+00:00",
+  "updated_at": "2026-10-29T22:14:02.389647+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,7 +359,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "json_lineage_fixed_dose_scope_pending",
+    "kind": "targeted_role_repaired_native_proposals_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Retained-source continuation now computes exact registered-GDMT source cells, keeps broader beta-blocker context separate, compiles numeric prose and proposes conditional per-patient review steps. The remaining blocker is localized to JSON argument dependency resolution.",
@@ -474,10 +474,12 @@
       "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/guard-field-diagnostic.json",
       "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/accounting.json",
       "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/json-lineage-proof.json",
-      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/dose-domain-source-audit.json"
+      "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/dose-domain-source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/targeted-dose-composition-v1/recovery/source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/source-role-repair-v1/receipt.json"
     ],
     "remaining_gap": "Eight registered-policy cell failures are removed and quantitative prose bindings now compile in the returned candidate. Analysis remains partial/unverified because JSON_EACH(current_dose) is not recognized as a value dependency by SQLGlot lineage and the guard falls back to every parent column, flagging an unrelated historical class CASE. Dose-domain completeness, source-supported proposals and normal final source/coverage acceptance still need verification. Broader transfer and model/clinical qualification remain open.",
-    "next_action": "Prepare one targeted native-composition continuation from the returned recovery: replay46 successful actions and reuse exact126 source-bound findings, without repeating document readers. Compute requested-group dose rows from received medication identity/class and the existing vocabulary, separate all-medication and unclassified context, retain dated structured dose and note-change evidence, and make per-patient review proposals depend on these fields. Use normal coverage/source verification and faithful saved reports. Preserve original frozen runs, all attempts and accounting; no clinical acceptance inherited. Then finish varied healthcare/financial transfer and parameterized bottling/role learning with regressions and rollback, retaining all ten areas. Scheduler remains PAUSED; continue directly in this chat.",
+    "next_action": "Exact-record role repair80652/session48685 finished8.553s,6Jev/Perplexity requests/$0.000164528knownAPI-equivalent/0unpriced. The flagged consultation no longer produces an assigned-cardiologist finding; literal signed author/addressee objects remain. Three generic assignment/author/copied-recipient cases resolve correctly. No owned job; product freeze ends. Merge this revised one-record/one-field machine observation into explicit owned-recovery input with original immutable observation and repair receipt retained. Prepare native SQL that derives dose proposals only from requested_group_dose and class proposals only from each missing class's own dated reason fields; preserve source scope,228correct cells, all narrative roles and uncertainties. Zero-provider replay before normal final source/coverage checks and faithful reports. No full source rescan. Then varied transfer, parameterized reuse, scoped role learning; alltenareas retained; schedulerPAUSED.",
     "next": "The owned recovery PID78956/session42023 has RETURNED; no provider/training/preview job. Audit its retained result, then repair the measured JSON table-function value-lineage gap in the existing medication group checker: dose_summary/proposed_dose_action incorrectly fall back to all parent columns and propagate an unrelated old beta-blocker CASE. Preserve strict actual class/predicate/count scope and use named generic regressions; no threshold waiver. The recovered57patient/228policy cells now exactly match source (8old discrepancies removed), numeric headline/facts have compiled bindings and proposals use per-patient native context, but the class guard still blocks final verification. Preserve all attempts and reuse complete source readings/native calculation state for the next normal verification or continuation; no full warehouse rescan. Then complete varied healthcare/financial transfer, parameterized bottling and role-attributed learning with regressions/rollback and all ten areas. Scheduler remains PAUSED after automatic review rejected reactivation; keep working directly in this active chat.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
@@ -614,13 +616,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T21:54:29.814966+00:00",
-    "workflow_change": "JSON table-function summaries now retain actual argument value lineage through correlated scopes and CTEs. Actual old wrong-class result remains rejected and recovered corrected table clears this deterministic guard.157 relevant regressions pass. Offline source dose audit isolates15requested-group rows from89all-medication rows; no providers or source edits.",
+    "at": "2026-10-29T22:14:02.389647+00:00",
+    "workflow_change": "Added separate requested_group_dose collection containing15source-class-bound objects across12patients; original89dose objects conserved as15+74. All228source-policy cells remaincorrect. Actual normal review localizes one clinician-role claim; dose proposal still inherited broad context, so source/coverage acceptance remains partial.559.339s/158newrequests/$0.937178808knownAPI-equivalent/0unpriced; source/code/harness preserved.",
     "unsealed_work": {
-      "status": "json_lineage_fixed_dose_scope_pending",
+      "status": "targeted_role_repaired_native_proposals_pending",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "All228 recovered source-policy cells match (8old errors removed), numeric prose compiles and JSON dependency false-positive is fixed while original true error remains blocked. Current dose collection remains all-medication context:89rows,15received-class matched group rows across12patients and9unclassified rows. Group-specific final composition, normal source/coverage acceptance and report checks remain; broader transfer/qualification open.",
-      "next_action": "Prepare one targeted native-composition continuation from the returned recovery: replay46 successful actions and reuse exact126 source-bound findings, without repeating document readers. Compute requested-group dose rows from received medication identity/class and the existing vocabulary, separate all-medication and unclassified context, retain dated structured dose and note-change evidence, and make per-patient review proposals depend on these fields. Use normal coverage/source verification and faithful saved reports. Preserve original frozen runs, all attempts and accounting; no clinical acceptance inherited. Then finish varied healthcare/financial transfer and parameterized bottling/role learning with regressions and rollback, retaining all ten areas. Scheduler remains PAUSED; continue directly in this chat.",
+      "remaining_gap": "Group-dose scope now wired (15objects/12patients), all228source-policy cells match. One source-role assertion remains flagged, dose recommendations still use inherited all-medication text, coverage partial and final source acceptance unpassed. Report faithfully remains partial. Broader transfer/learning and independent clinical/model qualification remain.",
+      "next_action": "Exact-record role repair80652/session48685 finished8.553s,6Jev/Perplexity requests/$0.000164528knownAPI-equivalent/0unpriced. The flagged consultation no longer produces an assigned-cardiologist finding; literal signed author/addressee objects remain. Three generic assignment/author/copied-recipient cases resolve correctly. No owned job; product freeze ends. Merge this revised one-record/one-field machine observation into explicit owned-recovery input with original immutable observation and repair receipt retained. Prepare native SQL that derives dose proposals only from requested_group_dose and class proposals only from each missing class's own dated reason fields; preserve source scope,228correct cells, all narrative roles and uncertainties. Zero-provider replay before normal final source/coverage checks and faithful reports. No full source rescan. Then varied transfer, parameterized reuse, scoped role learning; alltenareas retained; schedulerPAUSED.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -666,6 +668,13 @@
       "reactivation_attempt": "rejected_by_automatic_approval_review",
       "reason": "Earlier explicit automatic-prompt pause; the request to continue while away did not clearly authorize recurring prompts.",
       "unaffected_work": "Continue the active authorized build directly in this chat."
+    },
+    "owned_recovery_run": {
+      "status": "returned",
+      "pid": 80652,
+      "session": 48685,
+      "receipt": "artifacts/agere-meaning-integration-2026-10-29/source-role-repair-v1/receipt.json",
+      "source_frozen": false
     }
   },
   "decisions": [
@@ -1948,10 +1957,10 @@
     }
   ],
   "unsealed_work": {
-    "status": "json_lineage_fixed_dose_scope_pending",
+    "status": "targeted_role_repaired_native_proposals_pending",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "All228 recovered source-policy cells match (8old errors removed), numeric prose compiles and JSON dependency false-positive is fixed while original true error remains blocked. Current dose collection remains all-medication context:89rows,15received-class matched group rows across12patients and9unclassified rows. Group-specific final composition, normal source/coverage acceptance and report checks remain; broader transfer/qualification open.",
-    "next_action": "Prepare one targeted native-composition continuation from the returned recovery: replay46 successful actions and reuse exact126 source-bound findings, without repeating document readers. Compute requested-group dose rows from received medication identity/class and the existing vocabulary, separate all-medication and unclassified context, retain dated structured dose and note-change evidence, and make per-patient review proposals depend on these fields. Use normal coverage/source verification and faithful saved reports. Preserve original frozen runs, all attempts and accounting; no clinical acceptance inherited. Then finish varied healthcare/financial transfer and parameterized bottling/role learning with regressions and rollback, retaining all ten areas. Scheduler remains PAUSED; continue directly in this chat.",
+    "remaining_gap": "Group-dose scope now wired (15objects/12patients), all228source-policy cells match. One source-role assertion remains flagged, dose recommendations still use inherited all-medication text, coverage partial and final source acceptance unpassed. Report faithfully remains partial. Broader transfer/learning and independent clinical/model qualification remain.",
+    "next_action": "Exact-record role repair80652/session48685 finished8.553s,6Jev/Perplexity requests/$0.000164528knownAPI-equivalent/0unpriced. The flagged consultation no longer produces an assigned-cardiologist finding; literal signed author/addressee objects remain. Three generic assignment/author/copied-recipient cases resolve correctly. No owned job; product freeze ends. Merge this revised one-record/one-field machine observation into explicit owned-recovery input with original immutable observation and repair receipt retained. Prepare native SQL that derives dose proposals only from requested_group_dose and class proposals only from each missing class's own dated reason fields; preserve source scope,228correct cells, all narrative roles and uncertainties. Zero-provider replay before normal final source/coverage checks and faithful reports. No full source rescan. Then varied transfer, parameterized reuse, scoped role learning; alltenareas retained; schedulerPAUSED.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
