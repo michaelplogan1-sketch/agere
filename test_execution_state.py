@@ -59,6 +59,35 @@ class Assembly(unittest.TestCase):
   out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'passages','as':'sources','on':{'patient_id':'patient_id'},'mode':'collect'}]);self.assertEqual(out['rows'][0]['sources'][0]['text'],'Documented source.')
 
 class State(unittest.TestCase):
+ def test_rejected_draft_keeps_binding_and_uncertainty_without_expanded_native_sql(self):
+  query='SELECT '+"'native evidence'"*20000
+  candidate={'table':[{'patient_id':'A','cost_dollars':42}],
+   'table_binding':{'result_view':'agere_result_1','rows':1,'columns':['patient_id','cost_dollars'],'query':query},
+   'missing':['Current treatment unknown'],'limitations':['No causal inference'],'verification':'unverified',
+   'investigation_review':{'steps':[{'raw':'old receipt'*20000}]}}
+  before=copy.deepcopy(candidate);state=json.loads(E.messages('Paid claims and clinical context',[],candidate=candidate)[0]['content'])
+  self.assertLess(len(json.dumps(state)),5000)
+  self.assertEqual(state['last_draft_table_binding']['result_view'],'agere_result_1')
+  self.assertEqual(state['last_draft_table_binding']['rows'],1)
+  self.assertTrue(state['last_draft_table_binding']['native_query_digest'])
+  self.assertEqual(state['last_draft']['missing'],candidate['missing'])
+  self.assertEqual(state['last_draft']['limitations'],candidate['limitations'])
+  self.assertEqual(state['last_draft']['verification'],'unverified');self.assertEqual(candidate,before)
+
+ def test_review_retains_exact_repairs_and_every_unresolved_dependency(self):
+  feedback={'status':'repair','feedback':'Reconcile the episode denominator.','reason':'Conflicting dates',
+   'coverage':{'label':'unknown','reasons':['One period is unresolved'],'reject':False,'probabilities':{'unknown':.9}},
+   'support':{'failed_packet_ids':['patient_A'],'packets':[{'id':'patient_A','label':'contradicted'},
+    {'id':'patient_B','label':'unknown','reason':'Source unavailable'},{'id':'patient_C','label':'supported'}]},
+   'steps':[{'provider':'test','raw':'operational receipt'*20000}]}
+  before=copy.deepcopy(feedback);state=json.loads(E.messages('Admissions and outcomes',[],feedback=feedback)[0]['content']);view=state['current_review_feedback']
+  self.assertLess(len(json.dumps(state)),5000);self.assertEqual(view['feedback'],feedback['feedback'])
+  self.assertEqual(view['reason'],feedback['reason']);self.assertEqual(view['coverage']['label'],'unknown')
+  self.assertEqual(view['failed_dependency_ids'],['patient_A'])
+  self.assertEqual([r['id']for r in view['unresolved_dependencies']],['patient_A','patient_B'])
+  self.assertEqual(view['unresolved_dependencies'][1]['reason'],'Source unavailable')
+  self.assertTrue(state['current_review_native_digest']);self.assertEqual(feedback,before)
+
  def test_catalog_keeps_all_views_failed_inputs_and_field_availability(self):
   calls=[{'name':'query_sql','input':{'sql':'select x'},'result':{'result_view':'agere_result_1',**result([{'patient_id':'A','review_json':json.dumps({'barrier':[{'quote':'Cost','record_id':'n','date':'2030-01-01','value':'Cost'}]})}])}},
    {'name':'query_sql','input':{'sql':'select bad'},'result':{'error':'Unknown column'}}]

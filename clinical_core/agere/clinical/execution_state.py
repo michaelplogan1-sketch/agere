@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/1'
+VERSION = 'execution-state/2'
 
 
 def catalog(calls):
@@ -64,10 +64,33 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None):
             'A missing preview is not missing evidence. Preserve original scope and all requested outputs. '
             'Avoid repeating successful work; correct unresolved errors and current review feedback. '
             'Return table_from_tool naming the complete composed result; never transcribe patient tables.'}
-    if feedback is not None:state['current_review_feedback']=feedback
+    if feedback is not None:
+        # Operational reviewer receipts remain native; preserve the exact current
+        # repair instructions without resending all model probabilities/costs.
+        if isinstance(feedback,dict):
+            state['current_review_feedback']={k:feedback[k]for k in ('status','feedback','reason','repair_kind')if k in feedback}
+            state['current_review_native_digest']=digest(feedback)
+            coverage=feedback.get('coverage')or{}
+            if coverage:
+                state['current_review_feedback']['coverage']={k:coverage[k]for k in ('label','reasons','reject')if k in coverage}
+            support=feedback.get('support')or{}
+            pending=[{k:r[k]for k in ('id','label','reason')if k in r}for r in support.get('packets',[])if r.get('label')!='supported']
+            if pending:state['current_review_feedback']['unresolved_dependencies']=pending
+            if support.get('failed_packet_ids'):
+                state['current_review_feedback']['failed_dependency_ids']=support['failed_packet_ids']
+        else:state['current_review_feedback']=feedback
     if candidate is not None:
-        state['last_draft']={k:v for k,v in candidate.items()if k not in ('table','sources','evidence_text','system_one_judgments')}if isinstance(candidate,dict)else candidate
+        state['last_draft']={k:v for k,v in candidate.items()if k not in ('table','sources','evidence_text','system_one_judgments','table_binding','investigation_review','verification','limitations')}if isinstance(candidate,dict)else candidate
         state['last_draft_digest']=digest(candidate)
+        if isinstance(candidate,dict)and isinstance(candidate.get('table_binding'),dict):
+            binding=candidate['table_binding']
+            state['last_draft_table_binding']={k:v for k,v in binding.items()if k!='query'}
+            if 'query'in binding:state['last_draft_table_binding']['native_query_digest']=digest(binding['query'])
+        if isinstance(candidate,dict):
+            # Keep exact uncertainty/limitations; only prior reviewer operational
+            # receipts and expanded executable provenance are native references.
+            for key in ('verification','limitations'):
+                if key in candidate:state['last_draft'][key]=candidate[key]
         if isinstance(candidate,dict)and isinstance(candidate.get('table'),list):
             state['last_draft_rows']=len(candidate['table'])
             state['last_draft_table_instruction']='The last draft table is preserved natively. Reconstruct it only from the matching executed result_view; do not infer omitted values.'

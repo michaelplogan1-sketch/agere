@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T06:57:24.010960+00:00",
+  "updated_at": "2026-10-29T09:06:58.468131+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "frozen_cold_candidate_running",
+    "kind": "cold_candidate_returned_partial_baseline_active",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Generic native execution catalog avoids repeated expanding SQL transcripts; compose_table preserves exact base membership and whole source relationships. Source-partition guard rejects unasked technical filtering. Frontier repair selects exact bound source spans; no generated quotes.",
-    "measured_failure_reduction": "Actual retained53-tool replay: cumulative message representation17,465,251 to1,904,184bytes (89.1% smaller);57/57 assembled rows and all22 matching care relationships preserved. Newly served SLM unasked-year partition proposal declined.355 focused offline checks pass. Live end-to-end benefit remains unmeasured.",
+    "user_behavior_delta": "Cold original workflow returned57patient rows,57proposed action fields and all228owner-defined medication-pillar cells. All4610received records/4387unique documents were reviewed;606selected quotations match source.",
+    "measured_failure_reduction": "Cold wall time8015.2 to3426.512seconds and attempts9002 to4157; analytical status remains partial. Known API-equivalent cost worsened4.5753 to9.8446 versus the earlier cold run. Neither is a complete-correct unit-cost result. Actual post-review state leaks800230bytes of expanded native SQL: isolated prototype reduces one retained message1048548 to39170bytes with31checks and no model calls.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -376,11 +376,14 @@
       "artifacts/agere-overnight-2026-10-29/verification.json",
       "artifacts/agere-overnight-2026-10-29/state-replay.json",
       "artifacts/agere-overnight-2026-10-29/routing-decision.json",
-      "artifacts/agere-overnight-2026-10-29/slm-scope-regression.json"
+      "artifacts/agere-overnight-2026-10-29/slm-scope-regression.json",
+      "artifacts/agere-overnight-2026-10-29/source-fact-audit.json",
+      "artifacts/agere-overnight-2026-10-29/economics.json",
+      "artifacts/agere-overnight-2026-10-29/verification-review-state.json"
     ],
-    "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
-    "next_action": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines.",
-    "next": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines.",
+    "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
+    "next_action": "Observe owned Sonnet-only baseline59101 on immutable d419dee; no duplicate providers. Qualify integrated/Haiku outputs offline; finish general state/provenance repair in separate integration source and preserve frozen source. After Sonnet exits assemble matched accuracy/cost/speed comparison, then use saved evidence for any targeted verified continuation.",
+    "next": "Observe owned Sonnet-only baseline59101 on immutable d419dee; no duplicate providers. Qualify integrated/Haiku outputs offline; finish general state/provenance repair in separate integration source and preserve frozen source. After Sonnet exits assemble matched accuracy/cost/speed comparison, then use saved evidence for any targeted verified continuation.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -472,12 +475,12 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T06:57:24.010960+00:00",
-      "status": "cold_original_workflow_running",
+      "at": "2026-10-29T09:06:58.468131+00:00",
+      "status": "matched_haiku_returned_sonnet_running_state_fix_offline_verified",
       "active_provider_or_training_job": true,
-      "session": 96258,
+      "session": 59101,
       "frozen_source_commit": "d419dee9a14c1beb9bf60345b4d457173d92396f",
-      "run_receipt": "/private/tmp/agere-overnight-20261029/full-run/run-receipt.json"
+      "run_receipt": "/private/tmp/agere-overnight-20261029/baselines/sonnet-only-run/run-receipt.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -536,13 +539,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T06:56:19.093644+00:00",
+    "at": "2026-10-29T08:52:22.015589+00:00",
     "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected.",
     "unsealed_work": {
-      "status": "offline_verified_candidate_live_qualification_pending",
+      "status": "returned_partial_regression_repair_and_baselines_active",
       "path": "artifacts/agere-overnight-2026-10-29",
-      "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
-      "next_action": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines."
+      "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
+      "next_action": "Observe owned matched Haiku baseline54754 on immutable d419dee; do not duplicate it. Repair the measured general review-state provenance leak and preserve prompt receipts in the separate integration checkout, leaving frozen source unchanged. Qualify fixed native replay offline; start Sonnet baseline only after Haiku exits. Preserve clinical unknowns and all-attempt accounting."
     }
   },
   "decisions": [
@@ -1717,10 +1720,10 @@
     }
   ],
   "unsealed_work": {
-    "status": "offline_verified_candidate_live_qualification_pending",
+    "status": "returned_partial_regression_repair_and_baselines_active",
     "path": "artifacts/agere-overnight-2026-10-29",
-    "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
-    "next_action": "Observe owned cold candidate session96258; do not duplicate provider/model work or mutate frozen source. After return measure coverage, complete requested meaning, actual component use and all-attempt costs; then matched compiled-state baselines."
+    "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
+    "next_action": "Observe owned Sonnet-only baseline59101 on immutable d419dee; no duplicate providers. Qualify integrated/Haiku outputs offline; finish general state/provenance repair in separate integration source and preserve frozen source. After Sonnet exits assemble matched accuracy/cost/speed comparison, then use saved evidence for any targeted verified continuation."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

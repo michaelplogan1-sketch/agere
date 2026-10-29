@@ -296,11 +296,13 @@ class FinalReview(unittest.TestCase):
         cascade.catalog = SimpleNamespace(identity={'as_of': '2030-01-01'})
         run = {'answer': {'status': 'answered', 'answer_type': 'note', 'headline': 'Continued.',
                           'sources': [{'record_id': 'N1', 'quote': 'Stopped.'}],
-                          'investigation_review': {'status': 'repair', 'feedback': 'Contradicted.'}}, 'tool_calls': []}
+                          'investigation_review': {'status': 'repair', 'feedback': 'Contradicted.'}}, 'tool_calls': [],
+               'actor_prompt_receipts':[{'turn':1,'execution_state':True,'message_bytes':1200,'native_tool_calls_retained':0}]}
         with patch.object(P, 'claude_available', return_value=True), patch.object(B, 'answer', return_value=run):
             contract, _ = cascade.tier_backstop_agent()
         self.assertEqual(contract['executed']['answer']['verification'], 'unverified')
         self.assertEqual(contract['executed']['answer']['status'], 'partial')
+        self.assertEqual(contract['executed']['investigation']['actor_prompt_receipts'],run['actor_prompt_receipts'])
 
     def test_certified_patient_answer_can_still_be_sent_for_completeness_repair(self):
         cascade = P.Cascade.__new__(P.Cascade)
