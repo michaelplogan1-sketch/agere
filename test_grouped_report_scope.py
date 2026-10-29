@@ -6,6 +6,14 @@ from clinical_core.agere.deliverables.patient_report_pdf import render
 
 
 class ReportScope(unittest.TestCase):
+    def test_common_report_masthead_does_not_label_grouped_results_as_patient_review(self):
+        from clinical_core.agere.deliverables.patient_dashboard import render as dashboard
+        context={'question':'Recorded amounts by payer.','source':{'as_of':'2030-05-27'},
+            'answer':{'status':'answered','table':[{'payer_id':'PAYER','recorded_cents':105}]}}
+        body=dashboard(context)
+        self.assertIn('Evidence / Saved analysis',body)
+        self.assertNotIn('Clinical evidence / Patient review',body)
+
     def test_grouped_values_and_unknowns_survive_without_inventing_care_requirements(self):
         context={'question':'Recorded amounts by payer.','source':{'as_of':'2030-05-27'},
             'answer':{'status':'answered','headline':'Recorded amounts.',
