@@ -1,12 +1,18 @@
-# Current Agere checkpoint — 2026-10-29T08:52:22.015589+00:00
+# Current Agere checkpoint — 2026-10-29T10:01:51.044221+00:00
 
-G3/all ten areas remain open. Cold candidate d419dee completed in57.1minutes:57patient rows,228/228source-defined pillar cells,57proposed action fields,606/606exact quotations,4610records/4387unique documents. Analytical status remains partial; known API-equivalent cost9.8446plus4unpriced context rejections. Earlier cold run133.6minutes/4.5753; this is a speed improvement and a cost regression, with differing partial output completeness. No claim of a complete correct answer or MVP readiness.
+G3 and all ten acceptance areas remain open. Frozen cold/comparison results: integrated partial, 57 patients / 228 matching source-defined pillar cells, 57.1 minutes, at least $9.8446 plus four unpriced context rejections; Haiku-only partial, same cohort/pillar agreement, 31.5 minutes, $3.8188; Sonnet-only 17.6 minutes / $11.0814 but invalid final contract. Source/meaning correctness beyond finite checks remains unscored; no MVP claim. All frozen arms are preserved.
 
-Matched Haiku-only baseline session54754 completed partial ($3.8188 API-equivalent,31.5minutes,228/228 source-defined fill cells). Owned matched Sonnet-only baseline session59101 is RUNNING from immutable /private/tmp/agere-overnight-frozen-20261029. Inspect /private/tmp/agere-overnight-20261029/owned-job.json and active baseline run receipt before any provider action. No training job. Exact question/source and fresh ledgers retained. Next: Observe owned matched Haiku baseline54754 on immutable d419dee; do not duplicate it. Repair the measured general review-state provenance leak and preserve prompt receipts in the separate integration checkout, leaving frozen source unchanged. Qualify fixed native replay offline; start Sonnet baseline only after Haiku exits. Preserve clinical unknowns and all-attempt accounting.
+The shared state, clinical dependency and literal-tool repairs pass 381 offline checks. Actual replay preserves every native clinical table cell, reduces coverage from 1,688,111 to 102,865 bytes and summary from 799,628 to 82,207, with largest complete packet 104,092 bytes. A first continuation failed on a stricter parser's prose/transport-marker compatibility regression after seven paid calls ($0.4789102), all retained. All three actual rejected responses now normalize offline with exact arguments. Overall failure messages no longer falsely claim zero model calls or zero execution.
 
-Actual final-state replay exposed800230bytes of native SQL provenance copied into the actor draft; isolated prototype reduces retained message1048548 to39170bytes (96.3%),31offline checks,0model calls. Global coverage still oversized; largest patient dependency is97750bytes, summary799628. Prototype is separate from frozen source. Previous acceptance and all frozen results remain bound to their exact versions. Claude subscription only; stop on actual limit. Finite overnight heartbeat until09:00Chicago; no agents/new chats, protected keys/corpora, main/default promotion, publication or care.
+Owned continuation-v2 session24386 is RUNNING from /private/tmp/agere-overnight-repair-v2-frozen-20261029 (4d037b6). Inspect /private/tmp/agere-overnight-20261029/owned-job.json and composition-repair-v2/run-receipt.json before provider work. It reuses only exact original integrated source observations, reruns SQL and fresh interpretation, and inherits no answer or clinical acceptance. No new cold run, whole-cohort reinvestigation or training. Do not duplicate jobs or mutate frozen source. Next: Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly.
+
+Claude subscription only; stop provider work on an actual subscription limit. Existing synthetic-payload authorizations persist. No protected keys/corpora, agents/new chats, main/default promotion, publication, contact or care. At 09:00 Chicago stop new increments, report honestly and pause the finite heartbeat.
 
 ## Earlier checkpoint (superseded)
+
+
+
+
 
 
 

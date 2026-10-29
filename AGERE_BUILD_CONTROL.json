@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T09:53:47.551388+00:00",
+  "updated_at": "2026-10-29T10:01:51.044221+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,7 +359,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_continuation_failed_general_protocol_format_repair",
+    "kind": "prose_compatible_continuation_v2_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
@@ -382,11 +382,13 @@
       "artifacts/agere-overnight-2026-10-29/verification-review-state.json",
       "artifacts/agere-overnight-2026-10-29/verification-protocol-dependencies.json",
       "artifacts/agere-overnight-2026-10-29/dependency-projection-replay.json",
-      "artifacts/agere-overnight-2026-10-29/baselines/sonnet-only-run/offline-literal-recovery-receipt.json"
+      "artifacts/agere-overnight-2026-10-29/baselines/sonnet-only-run/offline-literal-recovery-receipt.json",
+      "artifacts/agere-overnight-2026-10-29/verification-prose-compatible.json",
+      "artifacts/agere-overnight-2026-10-29/prose-tool-regression-replay.json"
     ],
-    "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-    "next_action": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart.",
-    "next": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart.",
+    "remaining_gap": "All three frozen comparison arms have exited: integrated and Haiku partial; Sonnet invalid final contract. Shared state/dependency/protocol repairs pass381offline checks; source clinical meaning and live cost still require the running owned continuation. Complete medication naming, reference-dose interpretation, causal field alignment and clinician role/attendance must be assessed from its actual output. All ten-area readiness remains open.",
+    "next_action": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly.",
+    "next": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -478,9 +480,12 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T09:53:47.551388+00:00",
-      "status": "first_continuation_exited_prose_tool_regression_reproduced",
-      "active_provider_or_training_job": false
+      "at": "2026-10-29T10:01:51.044221+00:00",
+      "status": "owned_source_observation_continuation_v2_running",
+      "session": 24386,
+      "active_provider_or_training_job": true,
+      "frozen_source_commit": "4d037b62df93b3086841040abaa80d5c3abdbaec",
+      "run_receipt": "/private/tmp/agere-overnight-20261029/composition-repair-v2/run-receipt.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -542,10 +547,10 @@
     "at": "2026-10-29T09:43:03.236404+00:00",
     "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected.",
     "unsealed_work": {
-      "status": "returned_partial_regression_repair_and_baselines_active",
+      "status": "verified_general_repairs_owned_continuation_v2_running",
       "path": "artifacts/agere-overnight-2026-10-29",
-      "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-      "next_action": "Observe owned matched Haiku baseline54754 on immutable d419dee; do not duplicate it. Repair the measured general review-state provenance leak and preserve prompt receipts in the separate integration checkout, leaving frozen source unchanged. Qualify fixed native replay offline; start Sonnet baseline only after Haiku exits. Preserve clinical unknowns and all-attempt accounting."
+      "remaining_gap": "All three frozen comparison arms have exited: integrated and Haiku partial; Sonnet invalid final contract. Shared state/dependency/protocol repairs pass381offline checks; source clinical meaning and live cost still require the running owned continuation. Complete medication naming, reference-dose interpretation, causal field alignment and clinician role/attendance must be assessed from its actual output. All ten-area readiness remains open.",
+      "next_action": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly."
     }
   },
   "decisions": [
@@ -1720,10 +1725,10 @@
     }
   ],
   "unsealed_work": {
-    "status": "returned_partial_regression_repair_and_baselines_active",
+    "status": "verified_general_repairs_owned_continuation_v2_running",
     "path": "artifacts/agere-overnight-2026-10-29",
-    "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-    "next_action": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart."
+    "remaining_gap": "All three frozen comparison arms have exited: integrated and Haiku partial; Sonnet invalid final contract. Shared state/dependency/protocol repairs pass381offline checks; source clinical meaning and live cost still require the running owned continuation. Complete medication naming, reference-dose interpretation, causal field alignment and clinician role/attendance must be assessed from its actual output. All ten-area readiness remains open.",
+    "next_action": "Observe owned continuation-v2 session24386 from immutable4d037b6; do not duplicate it or mutate frozen source. The first failed continuation and seven paid attempts remain preserved. After return audit complete clinical fields, actual prompt/dependency sizes, source reuse, costs and rendered artifacts; finish the morning comparison honestly."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
