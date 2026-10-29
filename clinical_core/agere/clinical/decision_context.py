@@ -577,7 +577,8 @@ def verify(question, answer, state=None, db=None, sqls=()):
             if isinstance(query, str): bound.append(query)
         def bound_prose(value):
             if isinstance(value, dict):
-                query = (value.get('input') or {}).get('sql')
+                source_input = value.get('input')
+                query = source_input.get('sql') if isinstance(source_input, dict) else None
                 if isinstance(query, str): bound.append(query)
                 for child in value.values(): bound_prose(child)
             elif isinstance(value, list):

@@ -95,6 +95,8 @@ class Definitions(Fixture):
             self.assertTrue(DC.verify(q,good,sqls=['SELECT count(*) FROM living_patient'])['ok'])
             bad={**good,'computed_prose':[{'sources':{'patients':{'input':{'sql':'SELECT count(*) FROM living_patient'}}}}]}
             self.assertFalse(DC.verify(q,bad)['ok'])
+            data={**good,'computed_prose':[{'sources':{'patient':{'source_row':{'input':'received source value'}}}}]}
+            self.assertTrue(DC.verify(q,data)['ok'])
 
     def test_patients_are_living_unless_the_question_asks_for_the_deceased(self):
         self.assertTrue(DC.population('How many patients have diabetes?')['living_only'])
