@@ -307,6 +307,40 @@ def row_count_profile(columns,rows):
     return {'rows':len(rows),'columns':out,'meaning':'Code-computed row counts, repeated categories, singleton counts and arithmetic over numeric non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums; counts and sums do not establish distinct patient/event grain, current therapy or clinical appropriateness. Singleton values and all original rows remain in the native result_view; query it for exact details.'}
 
 
+def collection_manifest(rows):
+    """Expose native JSON collections even when their row preview is empty.
+
+    Counts describe observed result rows, not patients or clinical validity.
+    Full collection values stay in the native result view. The existing
+    review_json field manifest describes that column separately.
+    """
+    columns={}
+    for row in rows:
+        if not isinstance(row,dict):continue
+        for column,raw in row.items():
+            if not isinstance(column,str) or not column.endswith('_json') or column=='review_json':continue
+            entry=columns.setdefault(column,{'rows_observed':0,'collections':{}})
+            entry['rows_observed']+=1
+            if raw is None:
+                entry['null_rows']=entry.get('null_rows',0)+1;continue
+            try:value=json.loads(raw) if isinstance(raw,str) else raw
+            except (ValueError,TypeError,RecursionError):
+                entry['unparseable_rows']=entry.get('unparseable_rows',0)+1;continue
+            if isinstance(value,list):collections={'$':value}
+            elif isinstance(value,dict):
+                collections={'$.'+json.dumps(key):items for key,items in value.items()if isinstance(items,list)}
+            else:collections={}
+            if not collections:
+                entry['noncollection_rows']=entry.get('noncollection_rows',0)+1;continue
+            for path,items in collections.items():
+                found=entry['collections'].setdefault(path,{'rows_with_items':0,'items':0,'item_fields':[]})
+                found['rows_with_items']+=bool(items);found['items']+=len(items)
+                fields=set(found['item_fields'])
+                fields.update(key for item in items if isinstance(item,dict)for key in item)
+                found['item_fields']=sorted(fields)
+    return columns
+
+
 def actor_result(value):
     """A model preview, while native receipts and SQL result views retain ALL rows."""
     if not isinstance(value,dict):return value
@@ -315,6 +349,11 @@ def actor_result(value):
         from ...contracts import digest
         shown['executed_query_digest']=digest(value['executed_query'])
     rows=shown.get('rows')
+    if isinstance(rows,list):
+        collections=collection_manifest(rows)
+        if collections:
+            shown['structured_collection_manifest']=collections
+            shown['structured_collection_instruction']='Query these complete JSON collections in the native result_view and compose applicable dated relations. Collection counts and field names do not establish current assignment, attendance or clinical meaning. Invalid or null JSON is not an empty clinical finding.'
     # Required narrative fields must remain visible even when the first patient's
     # long JSON leaves no room for a row preview. Counts describe availability,
     # not clinical acceptance; the native SQL view remains the source of values.

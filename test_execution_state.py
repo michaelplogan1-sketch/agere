@@ -59,6 +59,51 @@ class Assembly(unittest.TestCase):
   out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'passages','as':'sources','on':{'patient_id':'patient_id'},'mode':'collect'}]);self.assertEqual(out['rows'][0]['sources'][0]['text'],'Documented source.')
 
 class State(unittest.TestCase):
+ def test_dated_role_collections_survive_empty_preview_and_compact_state(self):
+  roles=[{'name':'Alex Rivera','relationship':'signed_correspondence_author','date':'2030-01-01',
+          'current_assignment':'not_established','record_id':'letter','quote':'Signed by Alex Rivera.'}]
+  rows=[{'patient_id':'A','review_json':json.dumps({'reason':[{'value':'x'*16000}]}),
+         'source_clinicians_json':json.dumps(roles)},
+        {'patient_id':'B','review_json':'{}','source_clinicians_json':'[]'}]
+  value={'result_view':'agere_result_roles',**result(rows)};before=copy.deepcopy(value)
+  shown=S.actor_result(value)
+  self.assertEqual(shown['rows'],[])
+  manifest=shown['structured_collection_manifest']['source_clinicians_json']
+  self.assertEqual(manifest['rows_observed'],2)
+  self.assertEqual(manifest['collections']['$']['rows_with_items'],1)
+  self.assertEqual(manifest['collections']['$']['items'],1)
+  self.assertIn('current_assignment',manifest['collections']['$']['item_fields'])
+  state=json.loads(E.messages('Identify dated care relationships',[
+   {'name':'review_documents','input':{},'result':value}])[0]['content'])
+  entry=state['executed_results'][0]
+  self.assertEqual(entry['structured_collection_manifest'],shown['structured_collection_manifest'])
+  self.assertEqual(entry['result_view'],'agere_result_roles');self.assertEqual(value,before)
+  db=sqlite3.connect(':memory:')
+  try:
+   db.execute('create table native(patient_id,source_clinicians_json)')
+   db.executemany('insert into native values(?,?)',[(r['patient_id'],r['source_clinicians_json'])for r in rows])
+   actual=db.execute("select n.patient_id,json_extract(j.value,'$.relationship'),json_extract(j.value,'$.current_assignment') from native n,json_each(n.source_clinicians_json) j").fetchall()
+   self.assertEqual(actual,[('A','signed_correspondence_author','not_established')])
+  finally:db.close()
+
+ def test_collection_manifest_handles_contract_and_episode_collections_without_clinical_rules(self):
+  rows=[{'contract_id':'C1','clauses_json':json.dumps({'terms':[{'record_id':'t1','rate_percent':15}],'exceptions':[]}),
+         'episodes_json':[{'encounter_id':'e1','status':'reported'}]},
+        {'contract_id':'C2','clauses_json':'{invalid','episodes_json':None}]
+  before=copy.deepcopy(rows);m=S.collection_manifest(rows)
+  self.assertEqual(m['clauses_json']['unparseable_rows'],1)
+  self.assertEqual(m['clauses_json']['collections']['$."terms"']['items'],1)
+  self.assertEqual(m['clauses_json']['collections']['$."exceptions"']['items'],0)
+  self.assertEqual(m['episodes_json']['null_rows'],1)
+  self.assertEqual(m['episodes_json']['collections']['$']['item_fields'],['encounter_id','status'])
+  self.assertEqual(rows,before)
+
+ def test_missing_json_is_not_reported_as_an_empty_collection(self):
+  m=S.collection_manifest([{'events_json':'null'},{'events_json':None},{'events_json':'bad'},{'events_json':'[]'}])['events_json']
+  self.assertEqual(m['rows_observed'],4);self.assertEqual(m['noncollection_rows'],1)
+  self.assertEqual(m['null_rows'],1);self.assertEqual(m['unparseable_rows'],1)
+  self.assertEqual(m['collections']['$'],{'rows_with_items':0,'items':0,'item_fields':[]})
+
  def test_rejected_draft_keeps_binding_and_uncertainty_without_expanded_native_sql(self):
   query='SELECT '+"'native evidence'"*20000
   candidate={'table':[{'patient_id':'A','cost_dollars':42}],

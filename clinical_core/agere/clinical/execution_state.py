@@ -26,6 +26,9 @@ def catalog(calls):
                 entry.update(result_view=out['result_view'],columns=out.get('columns')or
                     list(dict.fromkeys(k for r in rows if isinstance(r,dict)for k in r)),
                     rows_computed=len(rows),truncated=bool(out.get('truncated')))
+                from .semantic_analyst import collection_manifest
+                collections=collection_manifest(rows)
+                if collections:entry['structured_collection_manifest']=collections
                 # Small scalar/aggregate results are useful exact observations;
                 # patient/free-text tables stay native and queryable by view.
                 if not any(isinstance(r,dict)and'patient_id'in r for r in rows) and len(json.dumps(rows,default=str))<2500:
