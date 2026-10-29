@@ -1,5 +1,6 @@
 """Source/entity integrity regressions, without provider or protected-data reads."""
-import copy,json,os,threading,unittest
+import copy,json,os,sqlite3,tempfile,threading,unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 from clinical_core.agere.clinical import document_review as D,typed_document_review as T,span_repair as S
@@ -107,6 +108,29 @@ class Relations(unittest.TestCase):
     def test_analyst_prompt_formats_with_the_new_relation_contract(self):
         from clinical_core.agere.clinical import backstop_agent as B
         self.assertIn('entity:{kind,id,aliases}',B.RULES.format(tool_quota='No fixed quota'))
+
+    def test_source_arrival_clock_uses_cached_schema_on_governed_connection(self):
+        with tempfile.TemporaryDirectory() as temp:
+            db=sqlite3.connect(':memory:');self.addCleanup(db.close)
+            db.executescript("CREATE TABLE patient(patient_id); INSERT INTO patient VALUES('A'); CREATE TABLE record(record_id,patient_id,available_date); INSERT INTO record VALUES('r','A','2030-01-03')")
+            db.set_authorizer(lambda action,*args:sqlite3.SQLITE_DENY if action==sqlite3.SQLITE_PRAGMA else sqlite3.SQLITE_OK)
+            root=Path(temp)
+            tools=SimpleNamespace(db=db,semantic=SimpleNamespace(columns={'record':['record_id','patient_id','available_date']}),
+                as_of=self.tools.as_of,stack=SimpleNamespace(path=root,ledger_path=root/'ledger.sqlite3',allow_live=False),
+                in_scope=lambda pid:None,continuation_identity=lambda:{'fixture':1},document_reviews=[],
+                subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0},
+                _texts=lambda pid:[('r','note','notes','office',self.doc['date'],self.doc['text'],'')])
+            def read(tool,pid,docs,questions,ledger,**kw):
+                self.assertEqual(docs[0]['available_date'],'2030-01-03')
+                value=D.relation_finding(pid,'reason',questions['reason'],docs[0],
+                    {'start':0,'end':len(docs[0]['text']),'text':docs[0]['text']},{**self.axes,'temporality':'current'},'fixture')
+                return {'findings':{'reason':[value]},'checks':[],'unresolved':[],'version':T.VERSION,
+                    'coverage':[],'ranking':{},'all_blocks_processed':True}
+            with patch.object(T,'read',side_effect=read):out=D.review(tools,['A'],{'reason':question()})
+            state=json.loads(out['rows'][0]['documentary_state_json'])
+            self.assertEqual(state['assertions'][0]['clocks']['arrival_date'],'2030-01-03')
+            self.assertEqual(state['groups'][0]['status'],'dated_documentary_accounts')
+            self.assertFalse(state['current_clinical_state_established'])
 
     def test_final_assembly_detects_wrong_field_patient_or_mutated_assertion(self):
         value=self.finding();reviews=[{'questions':{'mra':question(),'rasi':question('rasi')},

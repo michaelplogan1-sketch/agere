@@ -61,9 +61,9 @@ TOOLS = [
                                                        'period_end': {'type': 'string'},
                                                        'group_by': {'type': 'array', 'items': {'type': 'string'}}},
                       'required': ['metric_id', 'period_start', 'period_end'], 'additionalProperties': False}},
-    {'name':'compose_table','description':'Combine already executed result views in code. Base defines exact output membership and must be unique on keys. Joins use one for unique relationships or collect to preserve every intact matching source row. No clinical inference or source-row sampling. Use the returned result_view as table_from_tool. Missing joins are null, never inferred negatives.',
+    {'name':'compose_table','description':'Combine already executed result views in code. Base defines exact output membership and must be unique on keys. Joins use one for unique relationships or collect to preserve every intact matching source row. In collect mode, items_from may name a native JSON-array column to carry every intact collection object into the final field (for example dated correspondence roles or contract clauses); omit columns for this mode. No clinical inference or source-row sampling. Use the returned result_view as table_from_tool. Missing joins are null, never inferred negatives.',
      'input_schema':{'type':'object','properties':{'base':{'type':'string'},'keys':{'type':'array','items':{'type':'string'}},'base_columns':{'type':'array','items':{'type':'string'}},
-        'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
+        'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
      "earlier results and compute comparisons/deltas without repeating source scans. Results are paged (2000 rows / 60K characters); aggregate in SQL.",
@@ -127,6 +127,9 @@ has already declined this question, so it is yours to answer completely and corr
   findings even when no preview row fits. A field must be represented by its source findings or a specific supported unknown;
   do not claim that a preview's missing value means no source evidence exists. Use separate source questions for different roles.
   Prefer compose_table for joins of already executed result views. It preserves full rows and base membership without another SQL rewrite.
+  For requested clinician evidence, carry source_clinicians_json into a dated_correspondence_roles field using a collect join
+  with items_from=source_clinicians_json. Keep these literal dated objects alongside structured care-team relationships;
+  authors/addressees are not current assignments. The same collection join retains native contract clauses or episode evidence.
   Preserve intact finding JSON objects with value/quote/date/record_id together. Never use independent MIN/MAX on those properties.
   Preserve every patient's recommendation in an explicit final table column when recommendations were requested; counts of plans
   or quotes alone do not supply recommendations. Use separate columns for historical documented plans and proposed next actions.
@@ -180,6 +183,16 @@ has already declined this question, so it is yours to answer completely and corr
                 "people":{{"result_view":"agere_result_9","row":0,"column":"distinct_patients"}}}}}}
   First query SQL for the named scalars, percentages or amounts, with meaningful aliases and the correct grain/window.
   Bindings use zero-based rows from complete executed results. Code inserts the exact scalar; no formatting expressions.
+  For a count or sum about a named domain, bind its native rows, exact population, predicate, grain and unit with measure:
+  {{"measure":{{"result_view":"agere_result_2","operation":"count_rows","grain":["patient_id","visit_id"],
+     "unit":"hospital stays","population":{{"result_view":"agere_result_0","on":{{"patient_id":"patient_id"}}}},
+     "domain":{{"column":"setting","values":["inpatient"]}},"where":[]}}}}
+  Code applies that population/domain and computes the value; no new source query is needed. Use count_distinct with
+  distinct=[received columns] or sum with column=received numeric column. Null numeric inputs stay unknown unless an
+  explicit null_policy=exclude asks for a known subtotal. A null domain means all received domains, not a named subset.
+  You may add measure to a scalar address to require that it agrees with these source rows; wrong-domain totals are rejected.
+  Do not label all medication rows as one therapy group, all encounters as admissions, all balances as paid amounts, or
+  all received people as the applicable denominator. Keep the native predicate and its unit in each claim's meaning.
   Use SQL ROUND for display precision. Put a percent sign or dollar sign in the template when those are the source units.
   Fixed numeric definitions used in a quantitative sentence can be returned as explicitly named SQL columns too.
   Keep dates and patient/record identifiers literal. A bound text column may supply an exact source observation.
@@ -719,6 +732,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
     import string
     import math
     formatter=string.Formatter();proofs=[]
+    native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     def numeric(text):
         # Dates/identifiers are addresses or temporal anchors, not row counts.
@@ -755,7 +769,14 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
         if not names or set(names)!=set(bindings):raise ValueError('Computed prose bindings must exactly match placeholders at '+field)
         resolved={};sources={}
         for name,binding in bindings.items():
-            if not isinstance(binding,dict) or set(binding)!={'result_view','row','column'} or type(binding['row']) is not int or binding['row']<0:
+            measured=None
+            if isinstance(binding,dict) and 'measure' in binding:
+                from .result_assembly import measure
+                measured=measure(native,binding['measure'])
+                if set(binding)=={'measure'}:
+                    cell=measured['value'];resolved[name]='unknown' if cell is None else str(cell)
+                    sources[name]={'binding':binding,'value':cell,'measure':measured};continue
+            if not isinstance(binding,dict) or set(binding)-{'measure'}!={'result_view','row','column'} or type(binding['row']) is not int or binding['row']<0:
                 raise ValueError('Invalid computed scalar address at '+field+'.'+name)
             call=next((c for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')==binding['result_view']),None)
             if call is None:raise ValueError('Computed scalar must name an executed result_view at '+field+'.'+name)
@@ -766,9 +787,15 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
             cell=rows[binding['row']][columns.index(binding['column'])]
             if cell is not None and type(cell) not in (str,int,float,bool):raise ValueError('Computed prose requires scalar cells at '+field+'.'+name)
             if isinstance(cell,float) and not math.isfinite(cell):raise ValueError('Computed scalar must be finite at '+field+'.'+name)
+            if measured is not None:
+                from decimal import Decimal,InvalidOperation
+                target=measured['value']
+                try:matches=(cell is None and target is None) or (cell is not None and target is not None and type(cell)is not bool and Decimal(str(cell))==Decimal(str(target)))
+                except InvalidOperation:matches=cell==target
+                if not matches:raise ValueError('Scalar '+field+'.'+name+' disagrees with its declared population/domain/grain: bound '+str(cell)+', recomputed '+str(target))
             resolved[name]='unknown' if cell is None else str(cell)
             sources[name]={'binding':binding,'value':cell,'source_row':dict(zip(columns,rows[binding['row']])),
-                           'input':call.get('input'),'tool':call.get('name')}
+                           'input':call.get('input'),'tool':call.get('name'),**({'measure':measured} if measured is not None else {})}
         rendered=template.format_map(resolved)
         proofs.append({'field':field,'template':template,'bindings':bindings,'rendered':rendered,'sources':sources})
         return rendered

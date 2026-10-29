@@ -14,6 +14,22 @@ class Composition(unittest.TestCase):
  def test_only_explicit_pcp_label_is_pcp_source_statement(self):
   rows=D.correspondence_roles([{'record_id':'r','date':'2030-01-01','text':'PCP: Jane Doe, MD\n'}])
   self.assertEqual(rows[0]['relationship'],'explicit_pcp_label');self.assertEqual(rows[0]['current_assignment'],'dated_source_statement_only')
+ def test_middle_initial_or_missing_provider_header_does_not_drop_signed_author(self):
+  for header in ['Provider: Jane A. Smith, MD\n','']:
+   text=header+'Sincerely,\nJane Smith, MD\nCardiology\n'
+   rows=D.correspondence_roles([{'record_id':'r','date':'2030-01-01','text':text}])
+   self.assertEqual(len(rows),1);self.assertEqual(rows[0]['name'],'Jane Smith, MD')
+   self.assertEqual(rows[0]['current_assignment'],'not_established');self.assertIn(rows[0]['quote'],text)
+ def test_doctor_initials_and_explicit_pcp_labels_keep_dated_roles(self):
+  text='PCP: Dr. J. Smith\nSincerely,\nDr. A. Jones\nEndocrinology\n'
+  rows=D.correspondence_roles([{'record_id':'r','date':'2030-01-01','text':text}])
+  self.assertEqual({r['relationship']for r in rows},{'signed_correspondence_author','explicit_pcp_label'})
+  self.assertEqual({r['name']for r in rows},{'Dr. J. Smith','Dr. A. Jones'})
+ def test_practice_name_remains_unclassified_text_not_a_specialty(self):
+  text='Sincerely,\nJane Smith, MD\nExample Medical Group\n'
+  row=D.correspondence_roles([{'record_id':'r','date':'2030-01-01','text':text}])[0]
+  self.assertIsNone(row['documented_role']);self.assertEqual(row['unclassified_signed_text'],'Example Medical Group')
+  self.assertEqual(row['relationship'],'signed_correspondence_author')
  def fixture(self):
   q={'therapy_reason':'What happened to therapy?'};m=[{'patient_id':'A','document_digest':'d'}]
   docs={'A':[[{'record_id':'r','date':'2030-01-01','text':'Therapy held.'}]]}

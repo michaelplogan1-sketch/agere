@@ -222,17 +222,21 @@ def correspondence_roles(documents):
     unknown; every returned name/role retains its intact source passage.
     """
     roles=[]
-    name=r"[A-Z][A-Za-z'’.-]+(?:[ \t]+[A-Z][A-Za-z'’.-]+){1,5},?[ \t]+(?:MD|DO|NP|PA-C)\b"
+    person=r"[A-Z][A-Za-z'’.-]*(?:[ \t]+[A-Z][A-Za-z'’.-]*){1,5}"
+    credential=r'(?:M\.?D\.?|D\.?O\.?|NP|PA-C|PharmD|RN)'
+    name=r'(?:Dr\.?[ \t]+'+person+r'(?:,?[ \t]+'+credential+r')?|'+person+r',?[ \t]+'+credential+r')(?=[ \t,\n]|$)'
     for d in documents:
         text=d['text']
         signed=re.search(r'(?im)^\s*Sincerely,?\s*\n(?P<name>'+name+r')\s*\n(?P<specialty>[A-Za-z][A-Za-z &/-]{2,70})\s*(?:\n|$)',text)
-        provider=re.search(r'\bProvider\s*:\s*(?P<name>'+name+r')',text)
-        if signed and provider and re.sub(r'[^a-z]','',signed['name'].lower())==re.sub(r'[^a-z]','',provider['name'].lower()):
-            roles.append({'name':signed['name'],'documented_role':signed['specialty'].strip(),
+        if signed:
+            role_text=signed['specialty'].strip()
+            organization=bool(re.search(r'\b(?:clinic|practice|group|hospital|associates|medical cent(?:er|re)|health system)\b',role_text,re.I))
+            roles.append({'name':signed['name'],'documented_role':None if organization else role_text,
                 'relationship':'signed_correspondence_author','current_assignment':'not_established',
                 'record_id':d['record_id'],'date':d['date'],
                 'quote':text[signed.start():signed.end()].strip(),
-                'method':'exact agreeing Provider header and signed specialty; no inferred current care responsibility'})
+                'method':'literal signed author and next-line role text; no inferred current care responsibility',
+                **({'unclassified_signed_text':role_text} if organization else {})})
         for m in re.finditer(r'(?im)^\s*(?:PCP|Primary care (?:physician|provider|clinician))\s*:\s*(?P<name>'+name+r')',text):
             roles.append({'name':m['name'],'documented_role':'primary_care','relationship':'explicit_pcp_label',
                 'current_assignment':'dated_source_statement_only','record_id':d['record_id'],'date':d['date'],
@@ -293,7 +297,11 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
             # Read source-clock metadata only; retain the existing text scope.
             # Chunking follows SQLite's parameter boundary, never source sampling.
             for table in ('record','scanned_document'):
-                if 'available_date' not in {c[1] for c in tools.db.execute('PRAGMA table_info('+table+')')}:continue
+                # The governed connection denies PRAGMA; its warehouse already
+                # captured the source schema before enabling the authorizer.
+                schema=getattr(getattr(tools,'semantic',None),'columns',None)
+                columns=schema.get(table,[]) if schema is not None else [c[1] for c in tools.db.execute('PRAGMA table_info('+table+')')]
+                if 'available_date' not in columns:continue
                 keys=list(dict.fromkeys(r[0] for r in rows))
                 for start in range(0,len(keys),900):
                     chunk=keys[start:start+900]
