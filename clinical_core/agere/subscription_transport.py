@@ -89,6 +89,9 @@ def build_prompt(body):
     """-> (system text, user text) for one Messages API body."""
     system = body.get('system') or ''
     system = _text(system) if not isinstance(system, str) else system
+    schema=output_schema(body)
+    if schema is not None:
+        system+='\nThe final text answer must be ONLY a JSON value satisfying this JSON Schema, without Markdown or commentary: '+json.dumps(schema)
     tools = allowed_tools(body.get('tools'),body.get('tool_choice'))
     if tools:
         listing = json.dumps([{'name': t.get('name'), 'description': t.get('description'), 'input_schema': t.get('input_schema')} for t in tools], indent=1)
@@ -100,6 +103,16 @@ def build_prompt(body):
         turns.append(('USER' if m.get('role') == 'user' else 'ASSISTANT') + ':\n' + _text(m.get('content')))
     user = turns[-1].split(':\n', 1)[1] if len(turns) == 1 else 'Conversation so far:\n\n' + '\n\n'.join(turns) + '\n\nReply as the ASSISTANT to the last USER message.'
     return system, user
+
+
+def output_schema(body):
+    config=body.get('output_config')or{}
+    if not isinstance(config,dict):raise ValueError('output_config must be an object')
+    form=config.get('format')
+    if form is None:return None
+    if not isinstance(form,dict)or form.get('type')!='json_schema' or not isinstance(form.get('schema'),dict):
+        raise ValueError('Subscription output format requires a JSON Schema object')
+    return form['schema']
 
 
 def allowed_tools(tools,choice=None):
@@ -153,7 +166,7 @@ def _tool_call(text, tools):
     return None
 
 
-def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None):
+def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None, json_schema=None):
     """-> the CLI's JSON result (dict). Raises RuntimeError on a CLI or authentication failure."""
     env = cli_env()  # never the API account: the subscription login / token only
     # Mike's explicit subscription policy: no custom response ceiling. Legacy
@@ -174,10 +187,13 @@ def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None):
         if effort not in ('low', 'medium', 'high', 'xhigh', 'max'):
             raise ValueError('Unsupported caller effort level')
         env['CLAUDE_CODE_EFFORT_LEVEL'] = effort
+    if json_schema is not None and not isinstance(json_schema,dict):
+        raise ValueError('json_schema must be an object')
     with tempfile.NamedTemporaryFile('w', suffix='.txt', delete=False) as f:
         f.write(system); path = f.name
     cmd = [cli_path(), '-p', '--model', model, '--system-prompt-file', path, '--output-format', 'json', '--tools', '',
            '--strict-mcp-config', '--no-session-persistence']
+    if json_schema is not None:cmd+=['--json-schema',json.dumps(json_schema)]
     try:
         done = subprocess.run(cmd, input=user, capture_output=True, text=True, timeout=timeout, env=env)
     except subprocess.TimeoutExpired as exc:
@@ -323,8 +339,10 @@ def respond(body, *, timeout=None):
     if not isinstance(output_config, dict):
         raise ValueError('output_config must be an object')
     try:
+        schema=output_schema(body)
+        schema_kw={'json_schema':schema} if schema is not None and not allowed_tools(body.get('tools'),body.get('tool_choice')) else {}
         out = run_cli(model, system, user, timeout=timeout,
-                      max_tokens=body.get('max_tokens'), effort=output_config.get('effort'))
+                      max_tokens=body.get('max_tokens'), effort=output_config.get('effort'),**schema_kw)
     except Exception as exc:
         raw=getattr(exc,'subscription_cli_result',None)
         if isinstance(raw,dict):
@@ -332,6 +350,8 @@ def respond(body, *, timeout=None):
                 'usage':raw.get('usage'),'subscription_cli_result':raw,'status':'failed'}
         raise
     text = out.get('result') or ''
+    if schema_kw and out.get('stop_reason')!='max_tokens'and 'structured_output'in out:
+        text=json.dumps(out['structured_output'],ensure_ascii=False)
     reported_usage = out.get('usage') or {}
     usage = {k: reported_usage.get(k) for k in ('input_tokens', 'output_tokens')}
     usage.update({k:reported_usage.get(k,0)for k in ('cache_creation_input_tokens','cache_read_input_tokens')})
@@ -353,7 +373,9 @@ def respond(body, *, timeout=None):
                 'caller_max_tokens_enforced':False,
                 'output_policy':'Service boundary only; no custom output ceiling',
                 'caller_effort': output_config.get('effort'),
-                'cli': {k: out[k] for k in ('num_turns', 'duration_ms', 'duration_api_ms', 'subtype', 'stop_reason', 'modelUsage') if k in out},
+                'structured_output_mode':'native_cli_schema'if schema_kw else 'final_schema_prompt'if schema is not None else None,
+                'cli': {k: out[k] for k in ('num_turns', 'duration_ms', 'duration_api_ms', 'subtype', 'stop_reason', 'modelUsage','structured_output') if k in out},
+                **({'native_text':out['result']}if schema_kw and out.get('result')and 'structured_output'in out else {}),
                 'usage_scope': 'CLI aggregate, including reported internal recovery requests; internal API attempt count is unknown unless explicitly reported. No subscription allocation or invoice inferred.'}}
 
 

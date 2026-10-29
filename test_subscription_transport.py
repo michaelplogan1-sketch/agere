@@ -10,6 +10,37 @@ from clinical_core.agere import subscription_transport as T
 
 
 class Translation(unittest.TestCase):
+    def test_native_json_schema_is_forwarded_without_an_output_ceiling(self):
+        schema={'type':'object','properties':{'label':{'enum':['supported','unknown']}},'required':['label']}
+        done=subprocess.CompletedProcess([],0,json.dumps({'structured_output':{'label':'supported'},'result':''}),'')
+        with patch.object(T,'cli_path',return_value='scripted-cli'),patch.object(T,'cli_env',return_value={}),patch.object(T.subprocess,'run',return_value=done)as call:
+            T.run_cli('claude-haiku-5-5','rules','question',json_schema=schema)
+        args=call.call_args.args[0];self.assertEqual(json.loads(args[args.index('--json-schema')+1]),schema)
+        self.assertNotIn('CLAUDE_CODE_MAX_OUTPUT_TOKENS',call.call_args.kwargs['env'])
+
+    def test_structured_cli_output_is_the_text_contract_with_original_output_retained(self):
+        schema={'type':'object'};body={'output_config':{'format':{'type':'json_schema','schema':schema}},'tools':[{'name':'sql'}],'tool_choice':{'type':'none'}}
+        native={'result':'Native commentary','structured_output':{'label':'supported'},'usage':{'input_tokens':2,'output_tokens':7}}
+        with patch.object(T,'run_cli',return_value=native)as call:response=T.respond(body)
+        self.assertEqual(call.call_args.kwargs['json_schema'],schema)
+        self.assertEqual(json.loads(response['content'][0]['text']),native['structured_output'])
+        self.assertEqual(response['transport_details']['native_text'],'Native commentary')
+        self.assertEqual(response['usage']['output_tokens'],7)
+        self.assertEqual(response['stop_reason'],'end_turn')
+        self.assertIn('JSON Schema',call.call_args.args[1])
+        body['tool_choice']={'type':'auto'}
+        with patch.object(T,'run_cli',return_value={'result':'{"tool_use":{"name":"sql","input":{}}}'})as call:response=T.respond(body)
+        self.assertNotIn('json_schema',call.call_args.kwargs);self.assertEqual(response['stop_reason'],'tool_use')
+
+    def test_incomplete_structured_output_stays_inert_and_invalid_format_does_not_generate(self):
+        body={'output_config':{'format':{'type':'json_schema','schema':{'type':'object'}}}}
+        with patch.object(T,'run_cli',return_value={'result':'partial text','structured_output':{'label':'supported'},'stop_reason':'max_tokens'}):response=T.respond(body)
+        self.assertEqual(response['content'][0]['text'],'partial text');self.assertEqual(response['stop_reason'],'max_tokens')
+        self.assertEqual(response['transport_details']['cli']['structured_output'],{'label':'supported'})
+        with patch.object(T,'run_cli')as call:
+            with self.assertRaises(ValueError):T.respond({'output_config':{'format':{'type':'json_schema','schema':'bad'}}})
+        call.assert_not_called()
+
     def test_legacy_and_inherited_output_ceilings_are_not_enforced(self):
         done = subprocess.CompletedProcess([], 0, json.dumps({'result': '{}'}), '')
         inherited = {'CLAUDE_CODE_MAX_OUTPUT_TOKENS': '128000',
