@@ -50,6 +50,20 @@ def render(context,output,references=None,evidence=None):
    return out
   if isinstance(v,dict):
    if not v:return [P('No recorded fields',small)]
+   assertion=v.get('assertion')
+   if isinstance(assertion,dict)and isinstance(v.get('quote'),str)and v.get('record_id'):
+    # The source passage and its clinical qualifications belong in print.
+    # Repeating the same passage in value/evidence/assertion plus internal
+    # hashes adds no clinical information. Exact bindings stay embedded.
+    entity=v.get('entity')or{};clocks=assertion.get('clocks')or{}
+    out=[P(label(v.get('relation'))+' / '+str(entity.get('id')or'Unspecified entity'),labelstyle),
+         P('Polarity: '+str(v.get('polarity'))+'; source timing: '+str(v.get('temporality'))+'; subject: '+str(v.get('subject')),small),
+         P(v['quote'],small),P('Source: '+str(v['record_id'])+'; source date: '+str(v.get('date'))+
+             '; received: '+str(clocks.get('arrival_date')or'Not recorded'),small)]
+    for clock in ('clinical_date','reference_date'):
+     if clocks.get(clock):out.append(P(label(clock)+': '+str(clocks[clock]),small))
+    out.append(P('Current clinical applicability: '+('not established'if not assertion.get('current_clinical_state_established')else'refer to the saved source assessment')+'. Complete assertion bindings are in the embedded evidence.',small))
+    return out
    out=[];same_quote=isinstance(v.get('quote'),str)and v.get('value')==v['quote']
    scalar=[];nested=[]
    for k,item in v.items():
@@ -84,8 +98,8 @@ def render(context,output,references=None,evidence=None):
    if a.get(k):
     story.append(P(label(k),head))
     for v in a[k] if isinstance(a[k],list)else[a[k]]:story.append(P(value(v)))
- story.extend([P('How to use the patient records',head),P('Each following record presents the saved fields and any patient-specific recommendations the analysis supplied. A missing recommendation is stated explicitly. Dated findings remain dated findings; a recorded fill is not proof of ingestion, and a reference maximum is not a patient-specific tolerated dose. Complete saved analysis, executed evidence and all narrative findings are embedded as Agere-saved-answer.json.gz. The interactive companion displays every narrative finding. This printed report keeps every patient and complete final result row, without repeating all extracted source passages.')])
- groups=[('Recommended next steps',RECOMMENDATION_FIELD_PATTERN),('Medication evidence',r'medication|gdmt|pillar|drug|rasi|hf_bb|mra|sglt|beta.block'),('Dose assessment',r'dose'),('Care team',r'pcp|cardiol|clinician|provider|visit'),('Documented reasons and evidence',r'reason|finding|note|evidence|review'),('Other saved fields',r'.')]
+ story.extend([P('How to use the patient records',head),P('Each following record presents the saved clinical fields and any patient-specific recommendations the analysis supplied. A missing recommendation is stated explicitly. Dated findings remain dated findings; a recorded fill is not proof of ingestion, and a reference maximum is not a patient-specific tolerated dose. Source-bound quotations retain their source IDs, dates and assertion qualifications. Prior machine observations are indexed for audit. Complete, unmodified saved analysis, executed evidence, original observations and assertion metadata are embedded as Agere-saved-answer.json.gz and available in the interactive companion.')])
+ groups=[('Recommended next steps',RECOMMENDATION_FIELD_PATTERN),('Medication evidence',r'medication|gdmt|pillar|drug|rasi|hf_bb|mra|sglt|beta.block'),('Dose assessment',r'dose'),('Care team',r'pcp|cardiol|clinician|provider|visit|care_team'),('Documented reasons and evidence',r'reason|finding|note|evidence|review|documentary|relation|correction'),('Other saved fields',r'.')]
  for index,row in enumerate(rows):
   story.append(PageBreak());pid=row.get('patient_id')or'Result '+str(index+1);record_title=P(pid,title)
   record_title.agere_record={'patient_id':str(pid),'record_index':index}
@@ -99,6 +113,14 @@ def render(context,output,references=None,evidence=None):
    cells=[]
    for k,v in selected:
     handled.add(k)
+    audit=decoded(v)
+    if k.startswith(('legacy_','initial_source_'))and isinstance(audit,list)and all(isinstance(item,dict)and item.get('record_id')for item in audit):
+     if cells:
+      t=Table(cells,colWidths=[145,395]);t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOTTOMPADDING',(0,0),(-1,-1),5)]));story.append(t);cells=[]
+     story.extend([P(label(k)+' / audit index',labelstyle),
+        P(str(len(audit))+' original machine observations. These prior labels are not endorsed clinical reasons. Full original quotations, labels and metadata remain unchanged in the embedded evidence and interactive audit view.',small)])
+     for item in audit:story.append(P(str(item.get('date')or'Unknown date')+' / '+str(item['record_id']),small))
+     continue
     if isinstance(decoded(v),(dict,list))or len(value(v))>2000:
      if cells:
       t=Table(cells,colWidths=[145,395]);t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BOTTOMPADDING',(0,0),(-1,-1),5)]));story.append(t);cells=[]
@@ -160,7 +182,7 @@ def render(context,output,references=None,evidence=None):
          'attachment_name':'Agere-saved-answer.json.gz','attachment_encoding':'gzip',
          'uncompressed_context_sha256':hashlib.sha256(raw).hexdigest(),
          'patient_bookmarks':record_pages,
-         'narrative_display':'Full narrative evidence in interactive companion and embedded context; printed inventory and complete final patient rows'}
+         'narrative_display':'Every patient; clinical fields and complete source-bound quotations with dates/qualifications; prior observations indexed for audit. Complete unmodified context and assertion metadata embedded.'}
 
 if __name__=='__main__':
  context=json.loads(Path(sys.argv[1]).read_text());print(json.dumps(render(context,sys.argv[2],json.loads(Path(sys.argv[3]).read_text())if len(sys.argv)>3 else None)))

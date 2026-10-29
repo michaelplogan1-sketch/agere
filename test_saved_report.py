@@ -147,6 +147,32 @@ class RetainedInspection(unittest.TestCase):
         self.assertEqual(prior['audit_only_fields'],['rasi_reason']);self.assertEqual(prior['findings']['rasi_reason'],[original])
         self.assertEqual(current['candidate_review_scope'],scope);self.assertEqual(current['findings']['rasi_reason'],[])
 
+    def test_pdf_prints_bound_source_meaning_once_and_embeds_every_original_audit_value(self):
+        import gzip,tempfile
+        from pathlib import Path
+        from pypdf import PdfReader
+        from clinical_core.agere.clinical import document_review as D
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        from test_document_relations import question
+        quote='Prior source: MRA held for potassium.'
+        doc={'record_id':'current-source','date':'2029-02-03','available_date':'2029-02-04','text':quote}
+        finding=D.relation_finding('A','mra',question(),doc,{'start':0,'end':len(quote),'text':quote},
+            {'polarity':'affirmed','temporality':'historical','subject':'patient'},'fixture')
+        legacy={'record_id':'audit-source','date':'2028-01-01','quote':quote,'field':'gdmt_not_on_rasi_reason','value':quote}
+        context={'id':'authored','question':'Review source accounts','source':{'as_of':'2030-05-27'},
+            'patient_ids':['A'],'answer':{'status':'partial','table':[{'patient_id':'A',
+                'documentary_relations':[finding],'legacy_machine_findings':[legacy]}]}}
+        with tempfile.TemporaryDirectory()as tmp:
+            output=Path(tmp)/'report.pdf';render(context,output)
+            reader=PdfReader(output);text=' '.join(' '.join(page.extract_text()or''for page in reader.pages).split())
+            self.assertEqual(text.count(quote),1)
+            self.assertIn('Polarity: affirmed; source timing: historical',text)
+            self.assertIn('Current clinical applicability: not established',text)
+            self.assertIn('audit-source',text);self.assertIn('2028-01-01',text)
+            self.assertNotIn('gdmt_not_on_rasi_reason',text)
+            self.assertNotIn(finding['assertion']['id'],text)
+            self.assertEqual(json.loads(gzip.decompress(reader.attachments['Agere-saved-answer.json.gz'][0])),context)
+
 class RecommendationDisplay(unittest.TestCase):
     def test_pdf_displays_every_nested_source_object_without_duplicating_equal_quote_value(self):
         import tempfile
