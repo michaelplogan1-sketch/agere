@@ -259,6 +259,7 @@ class Tools:
                 'cohort':self.cohort,'scope':sorted(self.scope) if self.scope is not None else None,
                 'definitions':definitions,'clinical_definitions':clinical_definitions.describe(),
                 'definition_views_version':analyst_definitions.VERSION,
+                'subscription_tool_protocol':hashlib.sha256((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_bytes()).hexdigest(),
                 'explicit_tool_quota':MAX_TOOLS,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                                  for name in ('backstop_agent.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','note_evidence.py')},

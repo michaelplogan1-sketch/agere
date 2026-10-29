@@ -13,6 +13,27 @@ def response(text,stop='end_turn'):
 
 
 class Protocol(unittest.TestCase):
+    def test_prose_and_trailing_transport_marker_do_not_hide_a_literal_action(self):
+        prefaced='I will inspect the completed results.\n\n'+json.dumps({'tool_use':CALLS[0]})
+        self.assertEqual(T._tool_calls(prefaced,TOOLS),[CALLS[0]])
+        native='<invoke name="query_sql"><parameter name="sql">SELECT 1</parameter></invoke>\n_end'
+        self.assertEqual(T._tool_calls(native,TOOLS),[{'name':'query_sql','input':{'sql':'SELECT 1'}}])
+        self.assertEqual(T._tool_calls(prefaced+'\n'+json.dumps({'tool_use':CALLS[1]}),TOOLS),CALLS)
+
+    def test_native_metadata_is_inert_and_markup_inside_literal_arguments_is_data(self):
+        action={'name':'query_sql','input':{'sql':'SELECT \'<invoke name="unknown">literal source</invoke>\' AS text'},'type':'tool_use','id':'model_call_1'}
+        self.assertEqual(T._tool_calls(json.dumps({'tool_use':action}),TOOLS),[{k:action[k]for k in ('name','input')}])
+        self.assertEqual(T._tool_calls(json.dumps({'tool_use':{**action,'type':'different'}}),TOOLS),[])
+        self.assertEqual(T._tool_calls(json.dumps({'tool_use':CALLS[0]})+'\n'+json.dumps({'status':'answered','value':1}),TOOLS),[])
+
+    def test_final_json_followed_by_pending_xml_is_repaired_without_silently_dropping_it(self):
+        text=json.dumps({'status':'answered','value':1})+'\n<invoke name="query_sql"><parameter name="sql">SELECT 2</parameter></invoke>'
+        replies=iter([response(text),response(json.dumps({'status':'partial','missing':['Pending work remains']}))]);reviewed=[]
+        result=S.tool_loop('Annual payments',[],TOOLS,lambda use:self.fail('Ambiguous mixed response must not execute'),send=lambda body:(next(replies),.01,False),model='authored',max_tools=None,
+            review=lambda answer,calls:reviewed.append(answer)or{'status':'confirmed'})
+        self.assertEqual(len(reviewed),1);self.assertEqual(reviewed[0]['status'],'partial')
+        self.assertEqual(len(result['protocol_repairs']),1)
+
     def test_wrapped_xml_tool_request_preserves_exact_literal_arguments(self):
         call={'name':'query_sql','input':{'complete':True,'sql':"SELECT '; ' AS label, 2030 AS year"}}
         text='<invoke name="tool_use"><parameter name="name">query_sql</parameter><parameter name="input">'+json.dumps(call['input'])+'</parameter></invoke>'

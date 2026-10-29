@@ -729,8 +729,8 @@ class Cascade:
                 raise self.provider_error
             reasons = [f"{e['proposer']}: {e['detail']}" for e in self.log if e['outcome'] == 'rejected']
             exc = QuestionNotUnderstood(
-                'The original question was preserved; no proposer produced a plan that keeps all of it, so nothing was '
-                'executed.' + (' Closest proposals and what they dropped: ' + ' | '.join(reasons[:4]) if reasons else ''))
+                'The original question was preserved, but the available attempts did not produce a complete supported '
+                'answer.' + (' Attempt diagnostics: ' + ' | '.join(reasons[:4]) if reasons else ''))
             self.queue_background()
             exc.planner_receipt = self.usage()
             exc.planner_receipt['answer_timing'] = self.timing()

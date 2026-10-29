@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T09:43:03.236404+00:00",
+  "updated_at": "2026-10-29T09:53:47.551388+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,7 +359,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "protocol_and_dependency_repair_offline_verified",
+    "kind": "source_continuation_failed_general_protocol_format_repair",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Wrapped native XML actions normalize to exact registered actions rather than falsely accepted inner arguments. Clinical source cells remain unchanged in required patient dependencies, while global coverage uses explicit references and native SQL provenance digests.",
@@ -385,8 +385,8 @@
       "artifacts/agere-overnight-2026-10-29/baselines/sonnet-only-run/offline-literal-recovery-receipt.json"
     ],
     "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-    "next_action": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim.",
-    "next": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim.",
+    "next_action": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart.",
+    "next": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -478,8 +478,8 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T09:43:03.236404+00:00",
-      "status": "all_frozen_arms_exited_general_repairs_offline_verified",
+      "at": "2026-10-29T09:53:47.551388+00:00",
+      "status": "first_continuation_exited_prose_tool_regression_reproduced",
       "active_provider_or_training_job": false
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
@@ -1723,7 +1723,7 @@
     "status": "returned_partial_regression_repair_and_baselines_active",
     "path": "artifacts/agere-overnight-2026-10-29",
     "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-    "next_action": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim."
+    "next_action": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

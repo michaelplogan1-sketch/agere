@@ -133,6 +133,7 @@ def policy_identity():
         'local_serving_prompt':request_plan.fingerprint(Path(training_messages.__file__).read_text()),
         'governed_knowledge': governed_knowledge(), 'financial_rulebook': rulebook_digest(),
         'answer_context.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'answer_context.py').read_text()), **{
+        'subscription_transport.py':request_plan.fingerprint((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_text()),
         'deliverables/workflow.py': request_plan.fingerprint((Path(__file__).resolve().parents[1]/'deliverables'/'workflow.py').read_text())}, **{
         name: request_plan.fingerprint(Path(__file__).with_name(name).read_text())
         for name in ('shared_planner.py', 'request_plan.py', 'request_language.py', 'analysis_graph.py',
@@ -1061,7 +1062,9 @@ def plan(stack, question, ledger=None, frontier=None, *, population=None, model=
                     contract, interpretation = Cascade(stack, catalog, question, population=population, ledger=ledger,
                                                        hosted_model=hosted_model, memory_identity=memory_identity).run()
                 except QuestionNotUnderstood as failed:
-                    failed.args = (str(declined) + ' ' + str(failed),)
+                    # The initial reader's "no model called" statement applies
+                    # only to that stage. Keep its native cause without turning
+                    # it into a false claim about the completed paid cascade.
                     raise failed from declined
                 interpretation['deterministic_decline'] = str(declined)
     if not hit and model is None: store_request(cache_path, key, stable_key, question, contract, interpretation)

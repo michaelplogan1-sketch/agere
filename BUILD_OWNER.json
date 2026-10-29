@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim.",
+  "active_work": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart.",
   "latest_delivery": "docs/agere/INTEGRATED_STACK_DELIVERY_2026-10-29.md",
   "latest_receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
   "owned_server_pid": 1965,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-29T09:43:03.236404+00:00",
+  "latest_checkpoint": "2026-10-29T09:53:47.551388+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -33,7 +33,7 @@
     "status": "returned_partial_regression_repair_and_baselines_active",
     "path": "artifacts/agere-overnight-2026-10-29",
     "remaining_gap": "Complete medication naming/clinical dose interpretation and causal field alignment remain unresolved; one MRA finding is under a RASi field. Coverage tried an oversized request four times; source-supported unknowns/current care responsibility remain. State binding provenance and old review receipts inflate prompts. Frozen matched baselines are still running/pending; overall correctness and all ten-area readiness remain open.",
-    "next_action": "Freeze the verified protocol/dependency/state repair and continue the original integrated investigation from exact source observations, with fresh SQL/interpretation and all-attempt accounting. Do not reread the entire cohort or restart declined local tiers. Preserve all three frozen comparison arms, including Sonnet\u2019s invalid final contract. Measure new coverage/support envelopes and deliverables; no clinical/MVP acceptance claim."
+    "next_action": "Offline-verify the repaired prose-compatible literal tool normalizer against all three actual rejected responses, preserving the failed continuation and its seven paid attempts. Freeze the corrected source, then resume the same owned source observations in a separate metered continuation; no cold/whole-cohort restart."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
@@ -333,6 +333,21 @@
       "exit_code": 0,
       "seconds": 1056.643,
       "known_api_equivalent_usd": 11.0814199
+    },
+    "composition_repair_attempt1": {
+      "kind": "owned_source_composition_continuation",
+      "session": 46590,
+      "source_checkout": "/private/tmp/agere-overnight-repair-frozen-20261029",
+      "source_commit": "173b6f78ac6e3ca07c2fe2a2b9387746316afcc5",
+      "output": "/private/tmp/agere-overnight-20261029/composition-repair",
+      "log": "/private/tmp/agere-overnight-20261029/composition-repair.log",
+      "started_at": "2026-10-29T09:46:21.900189+00:00",
+      "transport": "subscription",
+      "cold_benchmark": false,
+      "no_duplicate": true,
+      "frozen_source_do_not_mutate": true,
+      "status": "failed_protocol_format_regression",
+      "exit_code": 1
     }
   }
 }

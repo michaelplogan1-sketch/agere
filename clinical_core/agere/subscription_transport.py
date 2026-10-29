@@ -166,41 +166,77 @@ def run_cli(model, system, user, timeout=None):
 
 
 def _tool_calls(text, tools):
-    """Recognize literal protocol actions; empty unknown XML padding carries no action.
+    """Recognize every unambiguous literal action, allowing surrounding prose.
 
-    Never discard a nonempty unknown invocation, accept an unknown batch member,
-    or mix a native invocation with a second JSON action envelope.
+    A complete answer JSON object is never searched for embedded actions. Mixed
+    action/data objects, unknown actions and mixed XML/JSON actions decline as a
+    whole. Ordinary introductory text or a trailing transport marker is inert.
     """
     if not tools: return []
     names = {t.get('name') for t in tools}
     raw = (text or '').strip()
+    if raw.startswith('```'):
+        raw = re.sub(r'^```(?:json)?\s*|\s*```$', '', raw)
+    def nonfinite(value):raise ValueError('Nonfinite tool argument')
+    decoder=json.JSONDecoder(parse_constant=nonfinite)
+    def call(value):
+        if not isinstance(value,dict)or not {'name','input'}<=set(value)or set(value)-{'name','input','id','type'}:return None
+        if not isinstance(value['name'],str)or value['name']not in names or not isinstance(value['input'],dict):return None
+        if 'type'in value and value['type']!='tool_use':return None
+        if 'id'in value and not isinstance(value['id'],str):return None
+        result={'name':value['name'],'input':value['input']}
+        try:json.dumps(result,allow_nan=False)
+        except (TypeError,ValueError):return None
+        return result
+    def envelope(value):
+        if not isinstance(value,dict):return None
+        if set(value)=={'tool_use'}:values=[value['tool_use']]
+        elif set(value)=={'tool_uses'}:values=value['tool_uses']
+        elif value.get('type')=='tool_use':values=[value]
+        else:return None
+        if not isinstance(values,list)or not values:return None
+        parsed=[call(v)for v in values]
+        return parsed if all(v is not None for v in parsed)else None
+    # Do not find XML/JSON actions inside a literal final-answer object.
+    if raw.startswith('['):return []
+    if raw.startswith('{'):
+        try:first,_=decoder.raw_decode(raw)
+        except ValueError:return []
+        if envelope(first)is None:return []
     while True:
         padding = INVOKE.match(raw)
         if not padding or padding.group(1) in names or padding.group(2).strip(): break
         raw = raw[padding.end():].lstrip()
-    if raw.startswith('```'):
-        raw = re.sub(r'^```(?:json)?\s*|\s*```$', '', raw)
-    if raw.startswith('<invoke'):
-        calls=[]
-        while raw:
-            invocation=INVOKE.match(raw)
-            if not invocation or not invocation.group(0).rstrip().endswith('</invoke>'):return []
+    xml_start=raw.find('<invoke');json_start=raw.find('{')
+    if xml_start>=0 and (json_start<0 or xml_start<json_start):
+        calls=[];cursor=0;remainder=[]
+        for invocation in INVOKE.finditer(raw):
+            remainder.append(raw[cursor:invocation.start()]);cursor=invocation.end()
+            if not invocation.group(0).rstrip().endswith('</invoke>'):return []
             parameters=list(PARAM.finditer(invocation.group(2)))
             keys=[p.group(1)for p in parameters]
             if len(keys)!=len(set(keys)) or PARAM.sub('',invocation.group(2)).strip():return []
-            call=_xml_call(invocation.group(0),names)
-            if call is None:return []
-            try:json.dumps(call,allow_nan=False)
-            except (TypeError,ValueError):return []
-            calls.append(call);raw=raw[invocation.end():].strip()
+            if invocation.group(1)not in names|{'tool_use'}and not invocation.group(2).strip():continue
+            parsed=call(_xml_call(invocation.group(0),names))
+            if parsed is None:return []
+            calls.append(parsed)
+        remainder.append(raw[cursor:]);tail=''.join(remainder)
+        if '<invoke'in tail:return []
+        if not calls:return _tool_calls(tail,tools)
+        if '{'in tail:return []
         return calls
-    def nonfinite(value): raise ValueError('Nonfinite tool argument')
-    try: obj = json.loads(raw, parse_constant=nonfinite)
-    except ValueError: return []
-    calls = [obj['tool_use']] if isinstance(obj,dict)and set(obj)=={'tool_use'} else obj.get('tool_uses') if isinstance(obj, dict) and set(obj) == {'tool_uses'} else None
-    if not isinstance(calls, list) or not calls or any(not isinstance(c, dict) or set(c) != {'name', 'input'}
-            or not isinstance(c['name'],str) or c['name'] not in names or not isinstance(c['input'], dict) for c in calls):
-        return []
+    calls=[];cursor=0
+    while True:
+        start=raw.find('{',cursor)
+        if start<0:
+            if '<invoke'in raw[cursor:]:return []
+            break
+        if '<invoke'in raw[cursor:start]:return []
+        try:obj,end=decoder.raw_decode(raw,start)
+        except ValueError:return []
+        parsed=envelope(obj)
+        if parsed is None:return []
+        calls.extend(parsed);cursor=end
     return calls
 
 
