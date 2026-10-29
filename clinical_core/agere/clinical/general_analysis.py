@@ -578,11 +578,13 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
         name = step.get('name')
         if not isinstance(name, str) or not _NAME.match(name) or name in names or name in catalog.tables or name == 'population':
             raise PlanError('Step names must be new unique snake_case identifiers: ' + str(name))
-        code = re.sub(r'--[^\n]*', '', step['sql']).strip().rstrip(';').strip()
+        code = step['sql'].strip().rstrip(';').strip()
+        try:boundary_code=sql_query.statement_code(code).strip()
+        except ValueError as exc:raise PlanError(str(exc)) from exc
         # A step may carry its own nested WITH; SQLite evaluates it inside the step's CTE.
-        if not re.match(r'(?is)^(?:select|with|values)\b', code) or ';' in code or re.search(r'(?i)\bwith\s+recursive\b|\bage_latest\b', code):
+        if not re.match(r'(?is)^(?:select|with|values)\b', boundary_code) or ';' in boundary_code or re.search(r'(?i)\bwith\s+recursive\b|\bage_latest\b', boundary_code):
             raise PlanError(f'Step {name} must be one SELECT or WITH ... SELECT statement (no ;, recursion or age_latest)')
-        qualifiers = re.sub(r'/\*.*?\*/', ' ', code, flags=re.S)
+        qualifiers = boundary_code
         if re.search(r'(?i)\b(?:main|temp)\s*\.', qualifiers) or re.search(r'(?i)["\[`](?:main|temp)["\]`]\s*\.', qualifiers):
             raise PlanError('Use unqualified catalog tables so saved population scope cannot be bypassed')
         parts.append((name, _expand(code, catalog, macros, parameters)))
@@ -635,7 +637,11 @@ def prepare(catalog, question, spec, *, population=None, relaxed=False):
         query = parts[0][1]
     else:
         query = 'WITH ' + ', '.join(f'{n} AS ({s})' for n, s in parts) + f' SELECT * FROM {final}'
-    sql_query.validate({'query': query, 'returns': returns})
+    try:sql_query.validate({'query': query, 'returns': returns})
+    except ValueError as exc:raise PlanError(str(exc)) from exc
+    from .source_scope import problem as source_scope_problem
+    scope_gap=source_scope_problem(question,query)
+    if scope_gap:raise PlanError(scope_gap)
     from .literal_check import aggregate_misfit
     measure_gap = aggregate_misfit(question, query)
     if measure_gap:

@@ -173,6 +173,10 @@ def missing(question, evidence):
     if AVERAGE_ASKED.search(q) and not AVERAGE_DONE.search(text):
         gaps.append('the question asks for an average; the plan computes none')
     query = _single_query(evidence)
+    if query:
+        from .source_scope import problem as source_scope_problem
+        source_gap=source_scope_problem(question,query)
+        if source_gap:gaps.append(source_gap)
     misfit = aggregate_misfit(q, query) if query else None
     if misfit:
         gaps.append(misfit)

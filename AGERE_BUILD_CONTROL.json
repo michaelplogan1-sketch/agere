@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T05:45:10.577661+00:00",
+  "updated_at": "2026-10-29T06:56:19.093644+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "integrated_stack_engineering_delivery",
+    "kind": "overnight_candidate_offline_verified",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The original integrated request returned a57-patient worklist with57 explicit proposed next actions; saved dashboard/PDF and requested flow/carousel/executive summary delivered.",
-    "measured_failure_reduction": "0 to57 explicit proposed actions; oversized cold support packet replaced by58 dependency packets without context rejection in owned continuation;759 to166 printed PDF pages with exact full-evidence attachment.344 offline checks:342 pass/two optional skips. No global clinical or cost advantage.",
+    "user_behavior_delta": "Generic native execution catalog avoids repeated expanding SQL transcripts; compose_table preserves exact base membership and whole source relationships. Source-partition guard rejects unasked technical filtering. Frontier repair selects exact bound source spans; no generated quotes.",
+    "measured_failure_reduction": "Actual retained53-tool replay: cumulative message representation17,465,251 to1,904,184bytes (89.1% smaller);57/57 assembled rows and all22 matching care relationships preserved. Newly served SLM unasked-year partition proposal declined.355 focused offline checks pass. Live end-to-end benefit remains unmeasured.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -372,11 +372,15 @@
       "artifacts/agere-full-stack-2026-10-29/report-rerender-receipt.json",
       "artifacts/agere-full-stack-2026-10-29/total-economics.json",
       "artifacts/agere-full-stack-2026-10-29/source-reuse-preflight.json",
-      "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
+      "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
+      "artifacts/agere-overnight-2026-10-29/verification.json",
+      "artifacts/agere-overnight-2026-10-29/state-replay.json",
+      "artifacts/agere-overnight-2026-10-29/routing-decision.json",
+      "artifacts/agere-overnight-2026-10-29/slm-scope-regression.json"
     ],
-    "remaining_gap": "Analytical output remains partial: two source review flags, three no-document patients, unresolved current clinician responsibility/MTD. Cost and latency remain unacceptable for MVP. Full ten-area scope remains open; no accepted SLM plan, fresh RSI fitting or default promotion.",
-    "next_action": "Compact execution-state catalog and compiled table assembly to replace growing SQL conversation; measure cold workflow quality/cost/latency before any readiness claim.",
-    "next": "Compact execution-state catalog and compiled table assembly to replace growing SQL conversation; measure cold workflow quality/cost/latency before any readiness claim.",
+    "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
+    "next_action": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim.",
+    "next": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -387,7 +391,7 @@
     },
     "coordination": {
       "integration_owner": "01a1787b-6c4f-7683-9967-6fedb2f1ff7a",
-      "status": "Mike transferred sole ownership to this Codex chat; Claude stopped. No delegated lanes or heartbeat created.",
+      "status": "Sole Codex integration owner; finite overnight heartbeat authorized by Mike through09:00Chicago October29. No agents or new chats.",
       "queueing_scope_candidate": {
         "status": "integrated_local_evidence_only",
         "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
@@ -468,10 +472,10 @@
       }
     ],
     "latest_progress": {
-      "at": "2026-10-29T05:45:10.577661+00:00",
-      "status": "engineering_delivery_complete_analytical_partial",
-      "receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
-      "active_provider_or_training_job": false
+      "at": "2026-10-29T06:56:19.093644+00:00",
+      "status": "candidate_offline_verified_cold_workflow_pending",
+      "active_provider_or_training_job": false,
+      "evidence": "artifacts/agere-overnight-2026-10-29/verification.json"
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -530,7 +534,7 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T05:45:10.577661+00:00",
+    "at": "2026-10-29T06:56:19.093644+00:00",
     "workflow_change": "General exact-source reuse, targeted field repair, literal care-role projection, complete dependency verification and deterministic report fixes are implemented and verified. No source-pair defect was present; false audit corrected."
   },
   "decisions": [
@@ -1696,13 +1700,19 @@
       "decision": "Correct false source-pair audit and remove its syntax-only blocker. Seal engineering/report assets without claiming clinical/MVP acceptance. Cost >=25.81 requires compact execution-state/table assembly next.",
       "evidence": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
       "scope_impact": "All ten areas preserved. No protected evaluation, new model fitting, default activation, main merge or publication."
+    },
+    {
+      "at": "2026-10-29T05:53:10.811814+00:00",
+      "decision": "Mike authorized overnight completion work and stack-order qualification; finite heartbeat restored until09:00Chicago. Existing clinical/source/provider boundaries persist.",
+      "evidence": "Human message in current owner chat",
+      "scope_impact": "No narrowed charter or readiness claim."
     }
   ],
   "unsealed_work": {
-    "status": "remaining_general_product_fix",
-    "path": "artifacts/agere-full-stack-2026-10-29",
-    "remaining_gap": "Analytical output remains partial: two source review flags, three no-document patients, unresolved current clinician responsibility/MTD. Cost and latency remain unacceptable for MVP. Full ten-area scope remains open; no accepted SLM plan, fresh RSI fitting or default promotion.",
-    "next_action": "Compact execution-state catalog and compiled table assembly to replace growing SQL conversation; measure cold workflow quality/cost/latency before any readiness claim."
+    "status": "offline_verified_candidate_live_qualification_pending",
+    "path": "artifacts/agere-overnight-2026-10-29",
+    "remaining_gap": "Candidate not yet cold-workflow qualified. Native source readers made incorrect proposals in small authored checks; trained typed model timed out on the full request and produced an unasked filter on an ordinary finance proposal. Whole clinical accuracy, complete-correct cost and all ten acceptance areas remain open.",
+    "next_action": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim."
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

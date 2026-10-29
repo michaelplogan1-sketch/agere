@@ -60,6 +60,9 @@ TOOLS = [
                                                        'period_end': {'type': 'string'},
                                                        'group_by': {'type': 'array', 'items': {'type': 'string'}}},
                       'required': ['metric_id', 'period_start', 'period_end'], 'additionalProperties': False}},
+    {'name':'compose_table','description':'Combine already executed result views in code. Base defines exact output membership and must be unique on keys. Joins use one for unique relationships or collect to preserve every intact matching source row. No clinical inference or source-row sampling. Use the returned result_view as table_from_tool. Missing joins are null, never inferred negatives.',
+     'input_schema':{'type':'object','properties':{'base':{'type':'string'},'keys':{'type':'array','items':{'type':'string'}},'base_columns':{'type':'array','items':{'type':'string'}},
+        'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
      "earlier results and compute comparisons/deltas without repeating source scans. Results are paged (2000 rows / 60K characters); aggregate in SQL.",
@@ -115,6 +118,7 @@ has already declined this question, so it is yours to answer completely and corr
   relationships, dates and patient-specific recommendations as applicable. The narrative_field_manifest lists available
   findings even when no preview row fits. A field must be represented by its source findings or a specific supported unknown;
   do not claim that a preview's missing value means no source evidence exists. Use separate source questions for different roles.
+  Prefer compose_table for joins of already executed result views. It preserves full rows and base membership without another SQL rewrite.
   Preserve intact finding JSON objects with value/quote/date/record_id together. Never use independent MIN/MAX on those properties.
   Preserve every patient's recommendation in an explicit final table column when recommendations were requested; counts of plans
   or quotes alone do not supply recommendations. Use separate columns for historical documented plans and proposed next actions.
@@ -214,6 +218,7 @@ class Tools:
         self.db, self.stack, self.governed, self.seen = note_evidence.connect(stack), stack, [], []
         self.read, self.rows_by_record, self.judged, self.ledger = {}, {}, [], ledger
         self.result_sources = {}
+        self.executed_results = {}
         self.document_reviews = []
         self.subtool_accounting = {'new_paid_api_calls':0,'estimated_cost_usd':0.0}
         self.cohort = list(dict.fromkeys(cohort)) if cohort is not None else None
@@ -235,6 +240,7 @@ class Tools:
                     name = f'agere_result_{len(self.seen) + 1}'
                     self.result_sources[name] = define_result(self.semantic, name, columns, rows)
                     out = {**out, 'result_view': name}
+                    self.executed_results[name]=out
             self.seen.append(json.dumps(out, default=str))
             for row in rows_with_record(out):  # a returned row that names its record: a quote of it is verified against that row only
                 self.rows_by_record.setdefault(str(row['record_id']), []).append(json.dumps(row, default=str))
@@ -255,7 +261,7 @@ class Tools:
                 'definition_views_version':analyst_definitions.VERSION,
                 'explicit_tool_quota':MAX_TOOLS,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','document_review.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','dose.py','note_evidence.py')},
+                                 for name in ('backstop_agent.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','dose.py','note_evidence.py')},
                 'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
@@ -270,6 +276,9 @@ class Tools:
             self.subtool_accounting['new_paid_api_calls']+=out.get('new_paid_api_calls',0)
             if out.get('new_paid_api_calls'):self.subtool_accounting['api_cost_known']=False
             return out
+        if name == 'compose_table':
+            from .result_assembly import compose
+            return compose(self.executed_results,**args)
         if name == 'query_sql':
             if set(args)-{'sql','complete'} or 'sql' not in args or type(args.get('complete',False)) is not bool:
                 raise ValueError('query_sql takes sql and optional complete boolean')
@@ -1127,7 +1136,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=actor_send, model=model,
                                          max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'}}, format_retries=1, max_tokens=8192,
                                          review=review, continuation_guard=tools.continuation_identity,initial_calls=replay['calls'],initial_answer=replay.get('final_answer'),
-                                         escalation_model=model_policy.SONNET if model==model_policy.HAIKU and model_policy.escalation_enabled() else None)
+                                         escalation_model=model_policy.SONNET if model==model_policy.HAIKU and model_policy.escalation_enabled() else None,
+                                         compact_execution_state=os.environ.get('AGERE_ANALYST_STATE')=='compiled')
         model=run.get('model') or model
         candidate=None
         actor_metrics={'new_paid_api_calls':run.get('new_paid_api_calls',0),'estimated_cost_usd':run.get('estimated_cost_usd'),
@@ -1145,6 +1155,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'new_paid_api_calls': run.get('new_paid_api_calls', 0) + sum(r.get('calls') or 0 for r in reviews),
                'answer_reviews': reviews, 'review_stopped': run.get('review_stopped'),
                'model_escalations':run.get('model_escalations',[]),
+               'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),
                'guarded_continuations':run.get('guarded_continuations',[]),
                'error': run.get('error'), 'final_text': run.get('final_text'), 'seconds': round(time.perf_counter() - started, 1), 'version': VERSION}
         out['new_paid_api_calls'] += tools.subtool_accounting['new_paid_api_calls']

@@ -59,11 +59,42 @@ def _relations(target):
     return _RELATIONS[key]
 
 
+def statement_code(sql):
+    """SQL code with literals/comments masked and quoted identifiers retained.
+
+    Delimiters inside source strings or quoted identifiers are data. This small
+    lexer establishes statement boundaries; SQLite remains the syntax authority.
+    """
+    out=[];i=0
+    while i<len(sql):
+        if sql.startswith('--',i):
+            end=sql.find('\n',i+2);end=len(sql)if end<0 else end
+            out.append(' '*(end-i));i=end;continue
+        if sql.startswith('/*',i):
+            end=sql.find('*/',i+2)
+            if end<0:raise ValueError('Unterminated SQL comment')
+            out.append(' '*(end+2-i));i=end+2;continue
+        ch=sql[i]
+        if ch in ("'",'"','`','['):
+            close=']'if ch=='['else ch;single=ch=="'";i+=1;out.append(' ')
+            while i<len(sql):
+                c=sql[i]
+                if c==close:
+                    if close!=']'and i+1<len(sql)and sql[i+1]==close:
+                        out.extend([' ',' ']);i+=2;continue
+                    out.append(' ');i+=1;break
+                out.append(' 'if single or c==';'else c);i+=1
+            else:raise ValueError('Unterminated SQL quoted value or identifier')
+            continue
+        out.append(ch);i+=1
+    return ''.join(out)
+
+
 def validate(p):
     if not isinstance(p, dict) or set(p) - {'query', 'returns'} or not isinstance(p.get('query'), str):
         raise ValueError('sql parameters: query (one SELECT), returns')
     q = p['query'].strip().rstrip(';').strip()
-    code = re.sub(r'--[^\n]*', '', q).strip().rstrip(';').strip()  # comments (e.g. the stated definition) are not statements
+    code = statement_code(q).strip().rstrip(';').strip()
     if not code: raise ValueError('A SQL query is required')  # no length cap (Mike, 2026-10-20): governed macros expand inline
     if not re.match(r'(?is)^(select|with)\b', code) or ';' in code:
         raise ValueError('Exactly one SELECT/WITH statement is allowed')

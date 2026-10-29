@@ -134,6 +134,9 @@ def check(stack_path, profile, question, sql, roster):
     """lint -> read-only execution -> sanity. Returns a candidate dict; 'ok' only when every check passes."""
     cand = {'sql': sql}
     if not sql or not re.search(r'(?i)\bselect\b', sql): return {**cand, 'ok': False, 'rejected': 'no SQL'}
+    from .source_scope import problem as source_scope_problem
+    scope_gap=source_scope_problem(question,sql)
+    if scope_gap:return {**cand,'ok':False,'rejected':scope_gap}
     problems = verify.lint(profile, sql)
     if problems: return {**cand, 'ok': False, 'rejected': 'lint: ' + '; '.join(problems)[:300]}
     try:

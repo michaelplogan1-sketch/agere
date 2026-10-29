@@ -98,7 +98,10 @@ def source_batches(documents,questions,priority,*,cross_document=False):
 
 def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True):
     from . import system_one
-    judge=judge or system_one.judge_fields
+    if judge is None:
+        order=[p.strip()for p in os.environ.get('AGERE_DOCUMENT_TYPED_ORDER','jev,perplexity').split(',')if p.strip()]
+        if not order or len(set(order))!=len(order)or any(p not in system_one.PROVIDERS for p in order):raise ValueError('Document typed order requires distinct supported providers')
+        def judge(*a,**kw):return system_one.judge_fields(*a,order=order,**kw)
     priority,ranking_receipt=rank(tools,questions,documents) if ranking else ({},{'all_blocks_retained':True,'ranking':'not required for exhaustive source coverage'})
     found={k:[]for k in questions};checks=[];unresolved=[];coverage=[]
     for doc in documents:
@@ -142,7 +145,8 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True):
             reading=result['judgments'].get('f'+str(i),{})
             if not reading.get('decided_by'):
                 unresolved.append({'field':field,'record_id':doc['record_id'],'quote':span['text'],
-                    'reason':'Typed source decision unresolved','reading':reading})
+                    'reason':'Typed source decision unresolved','reading':reading,
+                    'document_text_digest':digest(doc['text']),'span_start':span['start'],'span_end':span['end']})
             elif reading.get('label')=='finding':
                 found[field].append({'value':span['text'],'record_id':doc['record_id'],'date':doc['date'],
                     'quote':span['text'],'span_start':span['start'],'span_end':span['end'],

@@ -27,7 +27,7 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None):
 
 
 VERSION='recursive-harness/1'
-READ_ONLY={'query_sql','list_documents','read_document','review_documents','execute_metric','list_metrics',
+READ_ONLY={'query_sql','compose_table','list_documents','read_document','review_documents','execute_metric','list_metrics',
            'list_analyses','describe_analysis','execute_analysis','search_documents'}
 VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',
           'estimated_cost_usd','provider_receipts','typed_checks'}

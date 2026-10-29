@@ -2,10 +2,10 @@
   "schema": "agere-build-owner/1",
   "thread_id": "01a1787b-6c4f-7683-9967-6fedb2f1ff7a",
   "previous_thread_id": "claude-code:local_1c579565-09b5-4e07-a223-1ae6016e7664",
-  "heartbeat_id": "continue-building-the-agere-stack",
+  "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike directly transferred integration, runtime and fixes to Codex on 2026-10-26; Claude has stopped.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "No provider or training run active. Integrated execution/repair assets delivered; next general fix is compact execution state and compiled composition.",
+  "active_work": "Freeze verified execution-state/assembly/source-scope/span-selection candidate in an isolated source copy and run the exact original HFrEF workflow cold, with all eligible trained proposals, native readers and RSI receipts. Measure all attempts, source coverage, clinical meaning and cost/latency; then matched compiled-state LLM-only baselines. No default promotion or MVP claim.",
   "latest_delivery": "docs/agere/INTEGRATED_STACK_DELIVERY_2026-10-29.md",
   "latest_receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
   "owned_server_pid": 1965,
@@ -18,11 +18,11 @@
   "resume_priority": "Follow AGERE_BUILD_CONTROL.json current_gate and checkpoint.next_action.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-12T21:05:53.583462+00:00",
-  "heartbeat_status": "DELETED",
+  "heartbeat_status": "ACTIVE",
   "resumed_at": "2026-10-19T12:38:11.040529+00:00",
   "heartbeat_interval_minutes": 5,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-29T05:45:10.577661+00:00",
+  "latest_checkpoint": "2026-10-29T06:56:19.093644+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "AGERE_MORNING_STATUS_2026-10-11.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -38,7 +38,7 @@
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
-  "continuation_mode": "human_turns_with_outcome_next_step_and_master_plan_update",
+  "continuation_mode": "scheduled_thread_heartbeat_with_active_build",
   "mvp_server": {
     "pid": 51270,
     "session": 60802,
@@ -272,5 +272,25 @@
     "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-full-stack-2026-10-29",
     "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
   },
-  "previous_engineering_receipt": "artifacts/agere-live-integration-2026-10-28/delivery-receipt.json"
+  "previous_engineering_receipt": "artifacts/agere-live-integration-2026-10-28/delivery-receipt.json",
+  "overnight_authorization": {
+    "at": "2026-10-29T05:53:10.811814+00:00",
+    "basis": "Mike explicitly asked to keep working overnight on stack order and earned contribution, aiming for MVP readiness by morning. This supersedes the earlier no-heartbeat restriction for this finite overnight request.",
+    "until": "2026-10-29T14:00:00Z",
+    "no_readiness_guarantee": true
+  },
+  "active_jobs": [],
+  "overnight_completed_jobs": {
+    "local_adapter_qualification": {
+      "session": 96934,
+      "status": "completed",
+      "exit_code": 0,
+      "receipt": "/private/tmp/agere-overnight-20261029/slm-qualification/results.json"
+    },
+    "offline_regression_suites": {
+      "status": "completed",
+      "tests": 355,
+      "provider_calls": 0
+    }
+  }
 }

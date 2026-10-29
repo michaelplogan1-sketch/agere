@@ -195,6 +195,13 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                             'unresolved_fields':len(typed['unresolved'])})
                     checks.extend(typed['checks'])
                     for key,values in typed['findings'].items():aggregate[key].extend(values)
+                    if os.environ.get('AGERE_DOCUMENT_FRONTIER')=='select_spans':
+                        from .span_repair import repair as repair_spans
+                        repaired=repair_spans(tools,pid,typed['unresolved'],batch,questions,send,stop,receipts)
+                        for key,values in repaired['findings'].items():aggregate[key].extend(values)
+                        failures.extend(repaired['failures'])
+                        with coverage_lock:source_coverage.append({'patient_id':pid,'frontier_span_repair':repaired['receipt']})
+                        continue
                     # Source/field-specific repair retains already selected
                     # findings. One unclear block no longer rereads the patient.
                     pending={}

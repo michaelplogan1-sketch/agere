@@ -372,7 +372,7 @@ def actor_result(value):
 
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
               format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None,
-              escalation_model=None):
+              escalation_model=None, compact_execution_state=False):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -397,6 +397,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         result['model'] = model
         return True
     messages = [{'role': 'user', 'content': user}]
+    state_feedback=None; state_candidate=None; latest_calls=[]
     if initial_calls:
         # Certified literal replay enters through the same native tool protocol.
         # The actor sees actual current receipts, never a cached final answer.
@@ -418,6 +419,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         import copy
         candidate=copy.deepcopy(initial_answer)
         assessment=review(candidate,result['tool_calls'])
+        state_feedback=assessment;state_candidate=candidate
         result.setdefault('answer_reviews',[]).append(assessment)
         if assessment.get('status')=='confirmed' and not assessment.get('feedback'):
             result.update(answer=candidate,final_decision_reused=True)
@@ -434,7 +436,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             if continuation_guard is not None:
                 try: guard_identity=digest(continuation_guard())
                 except (ValueError,OSError,sqlite3.Error): pass
-            body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': messages, 'tools': tools,
+            if compact_execution_state:
+                from .execution_state import messages as state_messages
+                actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate)
+            else:actor_messages=messages
+            body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': actor_messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
@@ -446,6 +452,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 result['known_cost_usd'] = result['estimated_cost_usd']
                 result['estimated_cost_usd'] = None
                 raise
+            result.setdefault('actor_prompt_receipts',[]).append({'turn':turns,'execution_state':compact_execution_state,
+                'message_bytes':len(json.dumps(actor_messages,default=str).encode()),'native_tool_calls_retained':len(result['tool_calls'])})
             usage = response.get('usage', {})
             if cache_hit:
                 result['cache_hits'] = result.get('cache_hits', 0) + 1
@@ -495,6 +503,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             retries_left -= 1
                         result['format_repair'] = 'asked_again'
                         force_text = True
+                        state_feedback='Your reply was not valid JSON. Return only the required JSON object.'
                         messages.append({'role': 'assistant', 'content': blocks})
                         messages.append({'role': 'user', 'content': 'Your reply was not a valid JSON answer object. Reply with '
                                          'ONLY the JSON answer object in the required contract, no other text.'})
@@ -504,6 +513,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     if signature in rejected_protocol:
                         if not escalate('Repeated unexecuted tool envelope'):
                             raise ValueError('Investigation made no progress: repeated unexecuted tool request, not a final answer')
+                    state_feedback='Unexecuted tool envelope. Use the registered tools with literal arguments before returning a final answer.'
                     rejected_protocol.add(signature)
                     repairs += 1
                     result.setdefault('protocol_repairs', []).append({'reason': 'Unexecuted tool request is not a final answer',
@@ -517,6 +527,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     continue
                 if review is not None:
                     assessment = review(candidate, result['tool_calls'])
+                    state_feedback=assessment;state_candidate=candidate
                     result.setdefault('answer_reviews', []).append(assessment)
                     feedback = assessment.get('feedback')
                     if feedback:
@@ -549,6 +560,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 return result
             messages.append({'role': 'assistant', 'content': blocks})
             answers = []
+            latest_calls=[]
             predecessor_failed=False
             for index,use in enumerate(uses):
                 failure = False
@@ -585,6 +597,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 result['tool_calls'].append({'name': use.get('name'), 'input': use.get('input') or {},
                                             'sql': (output.get('executed_query') if isinstance(output, dict) else None) or use.get('input', {}).get('sql'), 'result': output,
                                             'actor_callback_id':digest(body),'actor_turn':turns})
+                latest_calls.append(result['tool_calls'][-1])
                 answers.append({'type': 'tool_result', 'tool_use_id': use['id'],
                                  'content': json.dumps(actor_result(output), allow_nan=False), 'is_error': failure})
                 predecessor_failed=predecessor_failed or failure
