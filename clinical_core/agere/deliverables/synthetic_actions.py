@@ -31,6 +31,8 @@ def advance(path, request):
             if type(request['revision']) is not int or row[0] != request['revision']:
                 raise ValueError('Work changed in another window. Reload before advancing.')
             item = json.loads(row[1])
+            if item['program'] not in STEPS:
+                raise ValueError('Evidence review has no care simulation; record source review progress instead')
             if item['patient_id'] not in c['patient_ids'] or item['state'] not in ('needs_review', 'in_review'):
                 raise ValueError('Select active work within this saved cohort')
             sim = item.get('simulation') or {'scenario': request['scenario'], 'receipts': [], 'status': 'running',

@@ -17,6 +17,7 @@ from .receipts import Bundle, fingerprint
 from ..plans import backbone
 
 PROGRAMS = {
+    'evidence_review': {'label': 'Review unresolved evidence', 'requirements': ['Reconcile unresolved source support against the saved evidence and original question', 'Retain missing evidence, conflicting accounts and machine uncertainty explicitly', 'Record review findings without establishing clinical eligibility or authorizing care']},
     'pharmd': {'label': 'PharmD program review', 'requirements': ['Reconcile current therapy, doses and documented exceptions', 'Confirm clinical suitability and prescribing oversight', 'Confirm patient preference, consent, service availability and coverage']},
     'rpm': {'label': 'Remote monitoring review', 'requirements': ['Confirm monitoring need and appropriate care-team response', 'Confirm patient preference, consent and ability to use equipment', 'Confirm service availability, coverage and responsible team']},
     'custom': {'label': 'Custom follow-up review', 'requirements': ['Define the intended action and evidence needed', 'Confirm suitability, patient preferences and responsible team']},
@@ -319,13 +320,15 @@ def create_work(path, request):
     if set(request) != {'context_id', 'program', 'patient_ids', 'owner', 'note'}:
         raise ValueError('Exact answer, program, selected patients, owner and note are required')
     c = load(path, request['context_id'], current=True)
-    if c['answer'].get('status') != 'answered' or c['answer'].get('missing'):
-        raise ValueError('Resolve the incomplete answer before preparing program work')
-    if not supports_patient_work(c):
-        raise ValueError('This analytical summary does not select an action population; ask for the intended patient cohort.')
     program = request['program']
     if program not in PROGRAMS:
         raise ValueError('Unknown review program')
+    if (c['answer'].get('status') not in ('answered', 'partial', 'low_confidence') or
+            (program != 'evidence_review' and
+             (c['answer'].get('status') != 'answered' or c['answer'].get('missing')))):
+        raise ValueError('Resolve the incomplete answer before preparing program work')
+    if not supports_patient_work(c):
+        raise ValueError('This analytical summary does not select an action population; ask for the intended patient cohort.')
     ids = request['patient_ids']
     if not isinstance(ids, list) or not ids or any(not isinstance(p, str) for p in ids) or len(set(ids)) != len(ids):
         raise ValueError('Select distinct patients from this answer')
@@ -356,6 +359,13 @@ def create_work(path, request):
                 key = 'WI-' + fingerprint([c['id'], program, pid])[:16]
                 assessment = {'patient_id': pid, 'context_id': c['id'], 'program': program, 'source': c['source'],
                               'requirements': PROGRAMS[program]['requirements'], 'clinical_eligibility_established': False}
+                if program == 'evidence_review':
+                    assessment['evidence_review'] = {
+                        'scope': 'source_evidence_only', 'answer_status': c['answer'].get('status'),
+                        'unresolved_requirements': c['answer'].get('missing') or [],
+                        'limitations': c.get('limitations') or c['answer'].get('limitations') or [],
+                        'clinical_execution_authorized': False,
+                    }
                 aid = fingerprint(assessment)
                 db.execute('INSERT OR IGNORE INTO work_assessments VALUES (?,?,?,?)', (aid, pid, lane, json.dumps(assessment)))
                 existing = db.execute('SELECT payload FROM work_items WHERE id=?', (key,)).fetchone()
@@ -367,6 +377,8 @@ def create_work(path, request):
                         'decision_id': decision_id, 'assessment_id': aid, 'revision': 1, 'state': 'needs_review',
                         'owner': owner, 'note': note, 'requirements': assessment['requirements'], 'updated_at': now(),
                         'synthetic': True, 'external_dispatch_performed': False}
+                if program == 'evidence_review':
+                    item['evidence_review'] = assessment['evidence_review']
                 db.execute('INSERT INTO work_items VALUES (?,?,?,?,?)', (key, pid, lane, 1, json.dumps(item)))
                 db.execute('INSERT INTO question_decision_tasks VALUES (?,?,?)', (decision_id, key, json.dumps({'patient_id': pid})))
                 db.execute('INSERT INTO work_events VALUES (?,?,?)', (key, 1, json.dumps({'action': 'review_created', 'item': item})))

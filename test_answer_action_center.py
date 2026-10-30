@@ -105,6 +105,57 @@ class Workflow(unittest.TestCase):
         self.assertEqual(len(b.receipts),2)
         self.assertEqual(len(A.listing(self.path)),1)
 
+    def test_partial_answer_can_prepare_only_source_evidence_review(self):
+        from clinical_core.agere.deliverables import synthetic_actions
+        for status in ('answered', 'partial', 'low_confidence'):
+            with self.subTest(status=status):
+                self.result['answer'].update(status=status, missing=['PCP relation is unresolved'],
+                    limitations=['Machine support check inconclusive; no clinical validation'])
+                self.c=A.capture(self.path,self.question,self.result)
+                before=A.load(self.path,self.c['id'])
+                for program in ('custom','pharmd','rpm'):
+                    with self.assertRaisesRegex(ValueError,'incomplete'):
+                        A.create_work(self.path,self.req(program=program))
+                req=self.req(program='evidence_review',patient_ids=['A'])
+                item=A.create_work(self.path,req)['items'][0]
+                self.assertEqual(item['state'],'needs_review')
+                self.assertEqual(item['evidence_review']['answer_status'],status)
+                self.assertEqual(item['evidence_review']['unresolved_requirements'],['PCP relation is unresolved'])
+                self.assertIn('inconclusive',item['evidence_review']['limitations'][0])
+                self.assertFalse(item['evidence_review']['clinical_execution_authorized'])
+                self.assertFalse(item['external_dispatch_performed'])
+                self.assertEqual(A.create_work(self.path,req)['items'],[item])
+                with self.assertRaisesRegex(ValueError,'no care simulation'):
+                    synthetic_actions.advance(self.path,dict(context_id=self.c['id'],item_id=item['id'],
+                        revision=1,scenario='happy_path'))
+                for revision,state in ((1,'in_review'),(2,'review_complete')):
+                    A.update_work(self.path,dict(context_id=self.c['id'],item_id=item['id'],revision=revision,
+                        state=state,owner=item['owner'],note='Source review progress only'))
+                self.assertEqual(A.load(self.path,self.c['id']),before)
+                self.assertEqual(A.inspect(self.path,self.c['id'])['items'][0]['state'],'review_complete')
+
+    def test_evidence_review_keeps_scope_freshness_and_revision_guards(self):
+        self.result['answer'].update(status='partial',missing=['Source check inconclusive'])
+        self.c=A.capture(self.path,self.question,self.result)
+        req=self.req(program='evidence_review')
+        with self.assertRaisesRegex(ValueError,'outside'):
+            A.create_work(self.path,{**req,'patient_ids':['OUTSIDE']})
+        item=A.create_work(self.path,req)['items'][0]
+        with self.assertRaisesRegex(ValueError,'changed in another'):
+            A.update_work(self.path,dict(context_id=self.c['id'],item_id=item['id'],revision=0,
+                state='in_review',owner=item['owner'],note=''))
+        with sqlite3.connect(self.path/'semantic.sqlite3')as db:
+            db.execute("UPDATE meta SET value='changed' WHERE key='source_digest'")
+        with self.assertRaisesRegex(ValueError,'data changed'):
+            A.create_work(self.path,req)
+
+    def test_evidence_review_cannot_turn_summary_membership_into_work(self):
+        self.result['answer'].update(status='partial',answer_type='value',actionable_cohort=False,
+                                    missing=['No actionable cohort'])
+        self.c=A.capture(self.path,self.question,self.result)
+        with self.assertRaisesRegex(ValueError,'analytical summary'):
+            A.create_work(self.path,self.req(program='evidence_review'))
+
     def test_frontier_uses_same_frozen_evidence_and_no_other_data_tools(self):
         C=importlib.import_module('clinical_core.agere.deliverables.compose')
         def sender(body):

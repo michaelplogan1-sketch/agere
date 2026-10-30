@@ -7,7 +7,7 @@ const PAGE_SIZE = 15;
 let selectedTemplate = 'command';
 const states = {needs_review:'Ready to review', in_review:'In progress', blocked:'Needs attention', review_complete:'Review complete', cancelled:'Cancelled'};
 const stateHints = {needs_review:'Ready for a first look', in_review:'Someone is on it', blocked:'Waiting on a next step', review_complete:'Review wrapped up'};
-const programNames = {pharmd:'PharmD review', rpm:'Remote monitoring', custom:'Custom follow-up'};
+const programNames = {evidence_review:'Evidence review', pharmd:'PharmD review', rpm:'Remote monitoring', custom:'Custom follow-up'};
 const icons = {
   overview:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   people:'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-4-5.65"/>',
@@ -53,7 +53,13 @@ async function run(fn) {
   try { await fn(); } catch (error) { notify(error.message, true); }
   finally { busy = false; }
 }
-function canCreate() { return data && data.context.supports_patient_work !== false && !data.context.stale && !data.context.invalidated && data.context.answer.status === 'answered' && !data.context.answer.missing?.length; }
+function canCreate(program = intent || $('program').value) {
+  if (!data || data.context.supports_patient_work === false || data.context.stale || data.context.invalidated) return false;
+  const answer = data.context.answer;
+  return program === 'evidence_review'
+    ? ['answered','partial','low_confidence'].includes(answer.status)
+    : answer.status === 'answered' && !answer.missing?.length;
+}
 function generationLabel(d) {
   if (d.generation === 'saved_report') return 'Saved evidence report';
   return d.mockup || d.mode === 'reference_example' ? 'Local template' : d.generation === 'frontier' || d.mode === 'composed' ? 'Frontier generated' : 'Generation not recorded';
@@ -213,7 +219,7 @@ function render() {
   const warnings = [];
   if (c.invalidated) warnings.push('This answer uses an older or invalidated planning definition. Its history is preserved; refresh the answer before new work or demo actions.');
   if (c.stale) warnings.push('Source data has changed. This saved answer is still visible; ask again before changing work.');
-  if (c.answer.status !== 'answered') warnings.push('This answer is '+pretty(c.answer.status)+'. Complete the analysis before creating review work.');
+  if (c.answer.status !== 'answered' || c.answer.missing?.length) warnings.push('This answer has unresolved evidence. You can prepare source-evidence review; clinical program work requires a complete answer.');
   if (c.answer.missing?.length) warnings.push('Not covered: '+c.answer.missing.join('; '));
   if (c.supports_patient_work === false) warnings.push('This is an analytical summary. Build a view or monitor it; ask for a specific patient cohort before preparing follow-up work.');
   const accepted = data.independent_review?.accepted === true;
@@ -227,7 +233,7 @@ function render() {
   if (!$('program').options.length) {
     const options = Object.entries(data.programs).map(([id,p])=>'<option value="'+esc(id)+'">'+esc(p.label)+'</option>').join('');
     $('program').innerHTML = options;
-    if (data.programs.custom) $('program').value = 'custom';
+    $('program').value = (c.answer.status !== 'answered' || c.answer.missing?.length) && data.programs.evidence_review ? 'evidence_review' : 'custom';
     $('work-program').insertAdjacentHTML('beforeend',options);
     $('work-filter').insertAdjacentHTML('beforeend',Object.keys(stateHints).map(s=>'<option value="'+s+'">'+states[s]+' only</option>').join(''));
   }
@@ -243,6 +249,7 @@ async function refresh() {
 function program() {
   const p = data.programs[$('program').value];
   $('requirements').innerHTML = p.requirements.map(r => '<li>'+esc(r)+'</li>').join('');
+  $('create').disabled = !canCreate($('program').value);
 }
 function openReview() {
   if (!selected.size || !canCreate()) return;
@@ -276,7 +283,7 @@ function editWork(id) {
     (sim ? '<span class="badge">Simulated · '+esc(pretty(sim.status))+'</span><ol>'+sim.receipts.map(r=>'<li><strong>'+esc(pretty(r.step))+' → '+esc(pretty(r.outcome))+'</strong><p>'+esc(r.reason)+'</p></li>').join('')+'</ol>'+(sim.follow_up?'<p class="warning">'+esc(sim.follow_up)+'</p>':'') :
       '<label for="demo-scenario">Demo scenario</label><select id="demo-scenario"><option value="happy_path">Successful journey</option><option value="records_needed">Missing records</option><option value="patient_declines">Patient declines</option></select>')+
     (!sim || sim.status==='running' ? '<button type="button" id="demo-advance" class="button primary" '+(data.context.stale||data.context.invalidated||!['needs_review','in_review'].includes(item.state)?'disabled':'')+'>'+(sim?'Simulate '+esc(pretty(sim.next_step)):'Start demo agent')+' →</button>' : '<p>Demo finished. Its history stays attached to this review.</p>');
-  $('detail-content').append(demo);
+  if (item.program !== 'evidence_review') $('detail-content').append(demo);
   if ($('demo-advance')) $('demo-advance').onclick = () => run(async () => {
     $('demo-advance').disabled = true;
     try {
@@ -369,7 +376,11 @@ $('select-all').onclick = () => { filteredPatients().forEach(p=>selected.add(p.p
 $('previous-page').onclick = () => { pageIndex--; showPatients(); };
 $('next-page').onclick = () => { pageIndex++; showPatients(); };
 $('clear').onclick = () => { selected.clear(); showPatients(); };
-$('cancel-intent').onclick = () => { intent=null; showIntent(); };
+$('cancel-intent').onclick = () => {
+  intent=null;
+  if (data.context.answer.status !== 'answered' || data.context.answer.missing?.length) $('program').value='evidence_review';
+  showIntent(); updateSelection();
+};
 $('continue').onclick = openReview;
 $('program').onchange = program;
 $('work-filter').onchange = showWork;
@@ -390,7 +401,7 @@ $('review-form').onsubmit = event => {
       go('work');
       notify('Review work saved for your selection. Existing progress was preserved.');
     } catch (error) { $('review-error').textContent = error.message; }
-    finally { $('create').disabled = false; }
+    finally { $('create').disabled = !canCreate($('program').value); }
   });
 };
 $('compose').onclick = () => run(async () => {
