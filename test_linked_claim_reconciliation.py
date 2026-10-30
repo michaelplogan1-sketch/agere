@@ -65,6 +65,21 @@ class LinkedClaims(unittest.TestCase):
   job=L.request(self.parent,row,self.refs,self.received)
   self.assertEqual(len(job['source_records']),133)
   self.assertEqual(set(job['source_records']),set(sources))
+ def test_subscription_keeps_every_cross_group_claim_and_duplicate_guard(self):
+  parent=copy.deepcopy(self.parent);template=parent['passes'][0]['result']['findings'][0]
+  parent['passes'][0]['result']['findings']=[{**copy.deepcopy(template),'id':'g'+str(n)}for n in range(133)]
+  parent['passes']=parent['passes'][:1]
+  with patch.object(G,'maximum_request_bytes',return_value=None):
+   job=L.request(parent,self.row,self.refs,self.received)
+   self.assertEqual(len(job['finding_ids']),133)
+   rows=json.loads(job['body']['messages'][0]['content'])['claims']['rows']
+   self.assertEqual([r[0]for r in rows],['g'+str(n)for n in range(133)])
+   self.assertTrue(all(r[3:5]==[template['text'],template['unresolved']]for r in rows))
+   parent['passes'][0]['result']['findings'][-1]['id']='g0'
+   with self.assertRaisesRegex(ValueError,'Unique'):L.request(parent,self.row,self.refs,self.received)
+  parent['passes'][0]['result']['findings'][-1]['id']='g132'
+  with patch.object(G,'maximum_request_bytes',return_value=32768):
+   with self.assertRaisesRegex(ValueError,'bounded'):L.request(parent,self.row,self.refs,self.received)
  def test_missing_duplicate_unknown_claim_dispositions_rejected(self):
   for kind in ['missing','duplicate','unknown']:
    v=self.result()

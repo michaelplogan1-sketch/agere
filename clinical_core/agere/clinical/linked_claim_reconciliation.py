@@ -48,7 +48,11 @@ def request(parent,row,refs,received):
                 citations.append(pool[token])
             claims.append([f['id'],packet['pass_number'],f['kind'],f['text'],f['unresolved'],citations]);originals.append(f)
     ids=[f['id'] for f in originals]
-    if not 1<=len(ids)<=64 or len(ids)!=len(set(ids)):raise ValueError('Unique bounded source-pass claims required')
+    # Subscription admission follows its complete request/service context
+    # boundary. A multi-group plan must retain every already-validated claim;
+    # the legacy API keeps its existing claim and byte admission limits.
+    if not ids or len(ids)!=len(set(ids)) or (G.maximum_request_bytes() is not None and len(ids)>64):
+        raise ValueError('Unique bounded source-pass claims required')
     cols=['record_id','source_table','source_system','organization_id','event_date','recorded_date','available_date','status','supersedes_record_id']
     coverage={k:parent['coverage'].get(k) for k in ('received_units','submitted_units','model_accounted_units','system_unassessed_units')}
     wire={'schema':VERSION,'stage':'saved_claims_and_exact_excerpts','synthetic':True,'question':row['parameters']['question'],
