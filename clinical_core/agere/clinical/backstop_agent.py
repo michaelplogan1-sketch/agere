@@ -138,6 +138,9 @@ has already declined this question, so it is yours to answer completely and corr
   relationships, dates and patient-specific recommendations as applicable. The narrative_field_manifest lists available
   findings even when no preview row fits. A field must be represented by its source findings or a specific supported unknown;
   do not claim that a preview's missing value means no source evidence exists. Use separate source questions for different roles.
+  When asked which medications a patient is on, return the received drug names/ingredients and dated medication or fill evidence
+  alongside class indicators. Pillar flags alone do not identify the drugs. Keep the declared observation window and source IDs;
+  order/list documentation, picked-up fills and confirmed current use retain their different meanings.
   Prefer compose_table for joins of already executed result views. It preserves full rows and base membership without another SQL rewrite.
   A requested subgroup needs an explicit join domain={{column,values}} over received source values (exact case/type), or a source-filtered SQL view.
   A collection alias does not filter its source: primary-care rows cannot become cardiology evidence by naming the field cardiology_roles.
