@@ -49,7 +49,10 @@ def send(body,ledger,out,*,parse):
     raw=None;start=time.perf_counter()
     try:
         request=urllib.request.Request(endpoint,data=json.dumps(body,allow_nan=False).encode(),headers={'Content-Type':'application/json','x-api-key':os.environ[var],'anthropic-version':'2023-06-01'})
-        with urllib.request.urlopen(request,timeout=150) as response:raw=json.load(response)
+        # Complete claim accounting can legitimately take longer than the old
+        # API timeout. Subscription completion is governed by its own service
+        # boundary; retain every returned/partial attempt through that transport.
+        with urllib.request.urlopen(request,timeout=None if maximum_request_bytes() is None else 150) as response:raw=json.load(response)
         (out/(key+'.json')).write_text(json.dumps({'response':raw,'status':'received_pending_validation'},indent=2))
         result=parse(raw);seconds=time.perf_counter()-start;ledger.finish(key,response=raw,seconds=seconds)
         receipt={'request_hash':key,'model':raw['model'],'seconds':seconds,'usage':raw.get('usage'),'cost_estimate':usage_cost(raw['model'],raw.get('usage'))}

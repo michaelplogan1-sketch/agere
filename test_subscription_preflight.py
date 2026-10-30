@@ -49,6 +49,7 @@ class SubscriptionPreflight(unittest.TestCase):
    first,receipt=G.send(self.body,ledger,self.path,parse=lambda r:r['content'][0]['text'])
    again,cached=G.send(self.body,ledger,self.path,parse=lambda r:r['content'][0]['text'])
   self.assertEqual(first,again);self.assertEqual(wire.call_count,1)
+  self.assertIsNone(wire.call_args.kwargs['timeout'])
   self.assertEqual(receipt['usage'],raw['usage']);self.assertTrue(cached['cache_hit'])
   self.assertEqual(ledger.db.execute('SELECT count(*) FROM calls').fetchone()[0],1)
  def test_complete_large_claim_request_uses_subscription_context_without_trimming(self):
