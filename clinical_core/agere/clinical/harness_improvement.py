@@ -39,7 +39,20 @@ def enabled():
 
 
 def semantic_result(value):
-    if isinstance(value,dict):return {k:semantic_result(v) for k,v in value.items() if k not in VOLATILE}
+    if isinstance(value,dict):
+        out={}
+        for k,v in value.items():
+            if k in VOLATILE:continue
+            if k=='assembly'and isinstance(v,dict)and v.get('schema')=='result-assembly/1'and isinstance(value.get('rows'),list)and isinstance(value.get('columns'),list):
+                # Raw input hashes include elapsed time and accounting. Keep
+                # them in the immutable native receipt, while comparing actual
+                # source outputs separately at every guarded replay action.
+                # Membership, projections, domains and all row values remain.
+                v={a:b for a,b in v.items()if a!='base_result_digest'}
+                if isinstance(v.get('joins'),list):
+                    v={**v,'joins':[{a:b for a,b in j.items()if a!='source_result_digest'}if isinstance(j,dict)else j for j in v['joins']]}
+            out[k]=semantic_result(v)
+        return out
     if isinstance(value,list):return [semantic_result(v) for v in value]
     return value
 

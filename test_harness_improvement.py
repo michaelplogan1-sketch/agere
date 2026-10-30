@@ -23,6 +23,23 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def test_fresh_composition_preserves_raw_provenance_without_mistaking_elapsed_time_for_changed_evidence(self):
+        from clinical_core.agere.clinical.result_assembly import compose
+        import copy
+        results={'base':{'columns':['patient_id'],'rows':[{'patient_id':'A'}],'elapsed_s':1},
+                 'source':{'columns':['patient_id','value','record_id'],'rows':[{'patient_id':'A','value':3,'record_id':'R1'}],'accounting':{'new_paid_api_calls':1}}}
+        def build():return compose(results,base='base',keys=['patient_id'],joins=[{'result':'source','as':'evidence','on':{'patient_id':'patient_id'},'mode':'collect'}])
+        first=build();saved=copy.deepcopy(first)
+        results['base']['elapsed_s']=9;results['source']['accounting']['new_paid_api_calls']=0
+        second=build()
+        self.assertNotEqual(first['assembly']['base_result_digest'],second['assembly']['base_result_digest'])
+        self.assertNotEqual(first['assembly']['joins'][0]['source_result_digest'],second['assembly']['joins'][0]['source_result_digest'])
+        self.assertEqual(H.semantic_result(first),H.semantic_result(second));self.assertEqual(first,saved)
+        results['source']['rows'][0]['record_id']='R2'
+        self.assertNotEqual(H.semantic_result(first),H.semantic_result(build()))
+        results['source']['rows'][0].update(record_id='R1',value=4)
+        self.assertNotEqual(H.semantic_result(first),H.semantic_result(build()))
+
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup);self.root=Path(self.temp.name)
         env=patch.dict(os.environ,{'AGERE_RECURSIVE_IMPROVEMENT':'on','AGERE_EVALUATION':'0'});env.start();self.addCleanup(env.stop)
