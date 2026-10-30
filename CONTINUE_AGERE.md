@@ -1,10 +1,8 @@
-# Current Agere checkpoint — 2026-10-30T23:06:12.065979+00:00
+# Current Agere checkpoint — 2026-10-30T23:49:55.416070+00:00
 
-Build ACTIVE,G5; sole owner; schedulerPAUSED. Current actual recovery test on frozen9222b9d.
+Build ACTIVE,G5; sole owner; scheduler PAUSED. Sole installed recovery v4 PID45687/session21252 runs on frozeneb3929a. Final report visual/exact export/current reopen QA passed57patients,1254cells,64medgroups,110PDFpages. All failed and interrupted attempts retained. No new provider calls or weights.
 
-Source transport now fits every previously oversized dependency with exact reconstruction, no sampling or lost sources;161relevant regressions and linked/background live controls pass. The new source-level review exposed a timing disagreement in one continuation/plan note and left other candidate source readings uncertain/unchecked. It is not expert-adjudicated ground truth. Final report remains explicitly partial/unverified:57patients,1254exactCSVcells,112-pagePDF with full current context,64namedmedicationgroups,26currentPCPs,noestablishedcurrentcardiologist. Current physical installation/restart/restore is running. No trained-model gain or newweightactivation has been demonstrated.
-
-Next action: Inspect sole actual installed-recovery job PID36665/session21637 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json until terminal. Product/source frozen on9222b9d; do not duplicate archive/checkpoint or provider work. Current partial report ANS-268f5cd8a87b74dca8659e38 /DLV-1AA3FF5EA616 has passed exact export/current reopen. Verify installed report/work, restart, WAL rollback, real changed-source refusal and fresh restore with current shared accounting unchanged. Then durable evidence/UI/cost/private-push closeout. Keep source model disagreement provisional and all ten areas/qualification/external dependencies explicit; no new weights/default/clinical promotion.
+Next action: Inspect sole installed-recovery v4 PID45687/session21252 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json until terminal; product/source frozeneb3929a. Final canonical report ANS-268f5cd8a87b74dca8659e38 /DLV-EACE9CC83FE9 passes57patients/1254cells/64medicationgroups/110PDFpages and actual browser/PDF visual QA. Complete saved report/work/restart/WAL/source-change/freshrestore, retain all failures/accounting and then seal engineering increment, update private draft and next justified G5 qualification. Do not duplicate provider/training/build work or claim clinical/model readiness.
 
 ## Earlier checkpoint (superseded)
 

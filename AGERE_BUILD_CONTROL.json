@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T23:06:12.065979+00:00",
+  "updated_at": "2026-10-30T23:49:55.416070+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -642,10 +642,17 @@
       "artifacts/agere-full-stack-rerun-2026-10-30/source-transport-live-controls-v2/receipt.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/current-source-partition-review/run-receipt.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report/receipt.json",
-      "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-failure-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-failure-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v2-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v2-failed-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/policy-differences.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/visual-qa.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json"
     ],
-    "remaining_gap": "Source transport now fits every previously oversized dependency with exact reconstruction, no sampling or lost sources;161relevant regressions and linked/background live controls pass. The new source-level review exposed a timing disagreement in one continuation/plan note and left other candidate source readings uncertain/unchecked. It is not expert-adjudicated ground truth. Final report remains explicitly partial/unverified:57patients,1254exactCSVcells,112-pagePDF with full current context,64namedmedicationgroups,26currentPCPs,noestablishedcurrentcardiologist. Current physical installation/restart/restore is running. No trained-model gain or newweightactivation has been demonstrated.",
-    "next_action": "Inspect sole actual installed-recovery job PID36665/session21637 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json until terminal. Product/source frozen on9222b9d; do not duplicate archive/checkpoint or provider work. Current partial report ANS-268f5cd8a87b74dca8659e38 /DLV-1AA3FF5EA616 has passed exact export/current reopen. Verify installed report/work, restart, WAL rollback, real changed-source refusal and fresh restore with current shared accounting unchanged. Then durable evidence/UI/cost/private-push closeout. Keep source model disagreement provisional and all ten areas/qualification/external dependencies explicit; no new weights/default/clinical promotion.",
+    "remaining_gap": "Current installed recovery is running after complete configuration closure and visual QA. Source semantics/model/clinical qualification remain open; known total API-equivalent accounting unchanged.",
+    "next_action": "Inspect sole installed-recovery v4 PID45687/session21252 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json until terminal; product/source frozeneb3929a. Final canonical report ANS-268f5cd8a87b74dca8659e38 /DLV-EACE9CC83FE9 passes57patients/1254cells/64medicationgroups/110PDFpages and actual browser/PDF visual QA. Complete saved report/work/restart/WAL/source-change/freshrestore, retain all failures/accounting and then seal engineering increment, update private draft and next justified G5 qualification. Do not duplicate provider/training/build work or claim clinical/model readiness.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -715,15 +722,15 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T21:38:59.857278+00:00",
+    "at": "2026-10-30T23:49:55.416070+00:00",
     "workflow_change": "Ordinary compose controller now saves and generates named report/PDF automatically; handoff repaired. New temporal guard has a proven column-lineage false positive.",
     "unsealed_work": {
-      "status": "native_fill_evidence_completion_prepared",
+      "status": "current_installed_recovery_v4_running",
       "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction",
-      "remaining_gap": "The ordinary controller now saved57patients and generated the report automatically. Confirmed temporal-guard false positive is repaired using native column lineage, including macro-source membership keys; actual retained result now has0scope errors. Recursive equivalence now tolerates only known operational assembly hashes while preserving raw receipts and every native value/source/domain check;50real actions reexecute identically. Typed source review still diagnoses specific field/evidence faults and leaves45packets unchecked. Named drug/fill provenance is being completed through existing native tools. Model/clinical qualification and current installed recovery remain open.",
-      "next_action": "Inspect owned native fill-evidence completion PID32556/session41147 at artifacts/agere-full-stack-rerun-2026-10-30/native-fill-evidence-completion/run-receipt.json until terminal. Product/source frozen on387df4f; no duplicate execution or product edits. Then audit exact original cells, drug names/fill source/window, current exports and three targeted support checks; persist durable evidence, private candidate commits and current installed/recovery acceptance. G5/alltenareas retained; no model/clinical/default promotion.",
+      "remaining_gap": "Current installed recovery is running after complete configuration closure and visual QA. Source semantics/model/clinical qualification remain open; known total API-equivalent accounting unchanged.",
+      "next_action": "Inspect sole installed-recovery v4 PID45687/session21252 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json until terminal; product/source frozeneb3929a. Final canonical report ANS-268f5cd8a87b74dca8659e38 /DLV-EACE9CC83FE9 passes57patients/1254cells/64medicationgroups/110PDFpages and actual browser/PDF visual QA. Complete saved report/work/restart/WAL/source-change/freshrestore, retain all failures/accounting and then seal engineering increment, update private draft and next justified G5 qualification. Do not duplicate provider/training/build work or claim clinical/model readiness.",
       "source_frozen_for_run": true,
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/native-fill-evidence-completion/run-receipt.json",
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
       "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
     },
     "bottling_assessment": {
@@ -790,14 +797,15 @@
     },
     "active_jobs": [
       {
-        "kind": "current_installed_recovery",
+        "kind": "current_installed_recovery_v4",
+        "pid": 45687,
+        "session": 21252,
         "status": "running",
-        "source_frozen": true,
-        "commit": "9222b9d",
-        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json",
-        "pid": 36665,
-        "session": 21637,
-        "scope": "Actual current archive/install/report/work restart/WALrollback/source-change/freshrestore.0providers; no primary/default changes or clinical/model acceptance."
+        "phase": "consistent_checkpoint",
+        "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
+        "physical_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json",
+        "commit": "eb3929a",
+        "source_frozen": true
       }
     ],
     "previous_finite_completion": {
@@ -2241,15 +2249,44 @@
         "artifacts/agere-full-stack-rerun-2026-10-30/source-transport-diagnosis/breakdown.json"
       ],
       "scope_impact": "Alltenareas retained; no acceptance/qualification claim or source sampling."
+    },
+    {
+      "at": "2026-10-30T23:25:13.022508+00:00",
+      "gate": "G5",
+      "decision": "Failed installed test stopped; fix observed nested runtime dependency and measure consistent cold-copy optimization before rerun. No source/model change from unresolved model timing feedback.",
+      "evidence": [
+        "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-failure-receipt.json"
+      ],
+      "scope_impact": "All ten areas retained; source and previous known-good recovery preserved."
+    },
+    {
+      "at": "2026-10-30T23:44:49.498687+00:00",
+      "gate": "G5",
+      "decision": "Reassess packaging closure after two first-use dependency failures: compare actual policy inputs and runtime consumers, include JSONL knowledge/CQL, and require isolated cross-path policy equality. Avoid bypassing dependency checks or rewriting saved identities. Fix observed object-heading presentation in same connected report increment.",
+      "evidence": [
+        "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v2-failed-receipt.json",
+        "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/policy-differences.json"
+      ],
+      "scope_impact": "All ten areas retained; no runtime source or reviewed knowledge content changed. Model feedback remains provisional."
+    },
+    {
+      "at": "2026-10-30T23:47:31.588355+00:00",
+      "gate": "G5",
+      "decision": "Run visual final-artifact QA before another installation. Observed raw bound templates in recorded findings are unresolved specifications, not displayed clinical prose; retain every field in embedded context/audit export while keeping clinician summary readable. Interrupted pre-installation v3; no child server/provider or source mutation.",
+      "evidence": [
+        "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v3-interrupted-receipt.json",
+        "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-release/qa-cover.png"
+      ],
+      "scope_impact": "Exact native evidence preserved; no acceptance area removed."
     }
   ],
   "unsealed_work": {
-    "status": "current_installed_recovery_running",
-    "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-fill-evidence-completion",
-    "remaining_gap": "Source transport now fits every previously oversized dependency with exact reconstruction, no sampling or lost sources;161relevant regressions and linked/background live controls pass. The new source-level review exposed a timing disagreement in one continuation/plan note and left other candidate source readings uncertain/unchecked. It is not expert-adjudicated ground truth. Final report remains explicitly partial/unverified:57patients,1254exactCSVcells,112-pagePDF with full current context,64namedmedicationgroups,26currentPCPs,noestablishedcurrentcardiologist. Current physical installation/restart/restore is running. No trained-model gain or newweightactivation has been demonstrated.",
-    "next_action": "Inspect sole actual installed-recovery job PID36665/session21637 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json until terminal. Product/source frozen on9222b9d; do not duplicate archive/checkpoint or provider work. Current partial report ANS-268f5cd8a87b74dca8659e38 /DLV-1AA3FF5EA616 has passed exact export/current reopen. Verify installed report/work, restart, WAL rollback, real changed-source refusal and fresh restore with current shared accounting unchanged. Then durable evidence/UI/cost/private-push closeout. Keep source model disagreement provisional and all ten areas/qualification/external dependencies explicit; no new weights/default/clinical promotion.",
+    "status": "current_installed_recovery_v4_running",
+    "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction",
+    "remaining_gap": "Current installed recovery is running after complete configuration closure and visual QA. Source semantics/model/clinical qualification remain open; known total API-equivalent accounting unchanged.",
+    "next_action": "Inspect sole installed-recovery v4 PID45687/session21252 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json until terminal; product/source frozeneb3929a. Final canonical report ANS-268f5cd8a87b74dca8659e38 /DLV-EACE9CC83FE9 passes57patients/1254cells/64medicationgroups/110PDFpages and actual browser/PDF visual QA. Complete saved report/work/restart/WAL/source-change/freshrestore, retain all failures/accounting and then seal engineering increment, update private draft and next justified G5 qualification. Do not duplicate provider/training/build work or claim clinical/model readiness.",
     "source_frozen_for_run": true,
-    "active_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json",
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
     "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
   },
   "current_visual_request": {
@@ -2280,14 +2317,15 @@
   },
   "active_jobs": [
     {
-      "kind": "current_installed_recovery",
+      "kind": "current_installed_recovery_v4",
+      "pid": 45687,
+      "session": 21252,
       "status": "running",
-      "source_frozen": true,
-      "commit": "9222b9d",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json",
-      "pid": 36665,
-      "session": 21637,
-      "scope": "Actual current archive/install/report/work restart/WALrollback/source-change/freshrestore.0providers; no primary/default changes or clinical/model acceptance."
+      "phase": "consistent_checkpoint",
+      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
+      "physical_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json",
+      "commit": "eb3929a",
+      "source_frozen": true
     }
   ]
 }
