@@ -300,6 +300,28 @@ class CitationRecovery(unittest.TestCase):
         with patch.object(R,'identity',return_value=digest(['new-admission-implementation'])):
             with self.assertRaises(ValueError):R.inspect(self.path,saved['id'])
 
+    def test_source_field_cardinality_requests_provider_restructuring_keeps_strict_parser(self):
+        raw=self.answer(self.bad_body);value=json.loads(raw['content'][0]['text'])
+        finding=value['findings'][0];used={c['unit']for c in finding['citations']}
+        for unit,item in self.bad_units.items():
+            if unit in used:continue
+            quote=item['text'][:80]
+            if item['text'].count(quote)!=1:continue
+            finding['citations'].append({'unit':unit,'quote':quote})
+            if len(finding['citations'])==3:break
+        self.assertEqual(len(finding['citations']),3)
+        raw={**raw,'content':[{'type':'text','text':json.dumps(value)}]}
+        failure={**self.failure,'error':'ValueError: '+R.EVIDENCE_ERROR}
+        corrected,issues=R.diagnose(self.bad_body,self.bad_units,self.row,failure,raw)
+        self.assertTrue(any(i['diagnosis']=='source_evidence_cardinality'for i in issues))
+        self.assertEqual(corrected['messages'],self.bad_body['messages'])
+        with self.assertRaisesRegex(ValueError,R.EVIDENCE_ERROR):R.O.parsed(raw,corrected,self.bad_units,self.row)
+        feedback,_,_=R.quotation_feedback(self.bad_body,self.bad_units,self.row,failure,raw)
+        self.assertIn('maximum_citations_per_finding',feedback['system'])
+        key=failure['request_hash'];(self.source_out/(key+'.json')).write_text(json.dumps({'response':raw}));(self.source_out/(key+'-failure.json')).write_text(json.dumps(failure))
+        plan=R.preview(self.path,{'context_id':self.row['id']});self.request['recovery_id']=plan['id']
+        saved=self.execute();self.assertEqual(R.inspect(self.path,saved['id']),saved);self.assertNotIn(key,self.network)
+
     def test_stale_plan_disabled_live_and_failed_corrected_key_block(self):
         with patch.object(R.O.single,'send') as send:
             with self.assertRaisesRegex(ValueError,'plan changed'):

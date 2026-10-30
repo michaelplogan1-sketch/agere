@@ -17,6 +17,7 @@ VERSION = 'source-citation-recovery/1'
 ERROR = 'Citation is absent or ambiguous in its exact source unit'
 MODEL_BINDING_ERROR = 'Incomplete pass or unexpected model revision'
 DISPOSITION_ERROR = 'Discussed source unit must be cited'
+EVIDENCE_ERROR = 'Source-pass evidence bound exceeded'
 INSTRUCTION = (' Every citation.quote must be a single contiguous, unique substring of its unit text. '
                'Never join nonadjacent JSON fields into one quote. Use separate citations for separate '
                'fields, or include intervening text within the existing 400-character quote bound.')
@@ -42,14 +43,14 @@ def validate_request_size(body):
 
 def diagnose(body, units, row, failure, raw):
     if (failure.get('status') != 'failed' or failure.get('request_hash') != O.request_key(body)
-            or failure.get('error') not in ('ValueError: '+ERROR, 'ValueError: '+MODEL_BINDING_ERROR, 'ValueError: '+DISPOSITION_ERROR)
+            or failure.get('error') not in ('ValueError: '+ERROR, 'ValueError: '+MODEL_BINDING_ERROR, 'ValueError: '+DISPOSITION_ERROR,'ValueError: '+EVIDENCE_ERROR)
             or raw.get('model') != body['model'] or raw.get('stop_reason') != 'end_turn'):
         raise ValueError('No eligible completed response with a citation failure')
     try:
         O.parsed(raw, body, units, row)
     except ValueError as exc:
         replay_error=str(exc)
-        if replay_error not in (ERROR,DISPOSITION_ERROR):
+        if replay_error not in (ERROR,DISPOSITION_ERROR,EVIDENCE_ERROR):
             raise ValueError('Failure no longer reproduces as an exact citation or coverage error') from exc
     else:
         raise ValueError('Saved response already validates; no new request justified')
@@ -71,6 +72,11 @@ def diagnose(body, units, row, failure, raw):
                'original_failure_error':failure['error'],'strict_replay_error':replay_error}
               for r in value['unit_reviews']if r['status']=='discussed'and r['unit']not in cited]
     issues.extend(coverage)
+    cardinality=[{'finding_id':f['id'],'diagnosis':'source_evidence_cardinality',
+                  'citation_count':len(f['citations']),'unresolved_count':len(f['unresolved']),
+                  'original_failure_error':failure['error'],'strict_replay_error':replay_error}
+                 for f in value['findings']if replay_error==EVIDENCE_ERROR and (len(f['citations'])>2 or len(f['unresolved'])>2)]
+    issues.extend(cardinality)
     if not issues:
         raise ValueError('No diagnosed invalid exact quotation')
     corrected = copy.deepcopy(body)
@@ -80,6 +86,12 @@ def diagnose(body, units, row, failure, raw):
             +json.dumps([i['unit']for i in coverage])+'. Every unit still needs one disposition. '
             'Use discussed only when a returned finding actually cites that unit. Otherwise preserve unresolved meaning '
             'as unresolved or assess not_relevant_to_question where supported. Do not invent a finding or citation to satisfy coverage.')
+    if cardinality:
+        corrected['system'] += ('\nThe preceding response exceeded the EXISTING source-pass field contract: '
+            +json.dumps(cardinality,separators=(',',':'))+'. Each finding permits at most two citations and two unresolved items. '
+            'Return a complete response, faithfully restructure findings within the original contract, and retain source qualifications. '
+            'If evidence cannot be represented faithfully, keep its interpretation explicitly unresolved in the unit review. '
+            'Do not truncate source input or manufacture a claim to meet the format.')
     validate_request_size(corrected)
     return corrected, issues
 
@@ -89,7 +101,10 @@ def quotation_feedback(body, units, row, failure, raw):
     _, issues = diagnose(body,units,row,failure,raw)
     value=json.loads(''.join(c['text'] for c in raw['content'] if c.get('type')=='text'))
     findings={f['id']:f for f in value['findings']}
-    rejected=[({'unit':i['unit'],'status':'discussed','returned_findings_citing_unit':0}
+    rejected=[({'finding_id':i['finding_id'],'citation_count':i['citation_count'],'unresolved_count':i['unresolved_count'],
+                'maximum_citations_per_finding':2,'maximum_unresolved_items_per_finding':2}
+               if i['diagnosis']=='source_evidence_cardinality'else
+               {'unit':i['unit'],'status':'discussed','returned_findings_citing_unit':0}
                if i['diagnosis']=='discussed_without_citation' else
                {'unit':i['unit'],'quote':findings[i['finding_id']]['citations'][i['citation_index']]['quote'],
                 'exact_occurrences_in_unit_text':i['occurrences']}) for i in issues]
@@ -103,6 +118,10 @@ def quotation_feedback(body, units, row, failure, raw):
         'Do not leave an ambiguous repeated sentence unchanged. Preserve source qualifications and unresolved meaning. '
         +('A unit labeled discussed must be cited by a returned finding; otherwise preserve an appropriate unresolved or not_relevant_to_question disposition. '
           if any(i['diagnosis']=='discussed_without_citation'for i in issues)else'')+
+        ('The original source-pass format permits at most two citations and two unresolved items per finding. '
+         'Faithfully restructure findings; where that cannot preserve meaning, keep the interpretation explicitly unresolved. '
+         'All original source units still require dispositions. '
+         if any(i['diagnosis']=='source_evidence_cardinality'for i in issues)else'')+
         'Mechanical quotation rejections: '+json.dumps(rejected,ensure_ascii=False,separators=(',',':')))
     validate_request_size(revised)
     return revised,issues,signature
