@@ -8,6 +8,7 @@ from .case_synthesis import input_token_total, token_count_calls
 from pathlib import Path
 import copy, hashlib, json
 from ...contracts import digest
+from ..model_policy import claude_model
 from . import case_passes as P, case_synthesis as C, stable_reconciliation as R
 from . import source_synthesis as S, synthesis_availability as A, interpretation_recovery as recovery
 from . import linked_claim_gateway as G
@@ -28,7 +29,7 @@ def exists(path,key):return location(path,key).exists()
 
 def request(parent,row,refs,received):
     sources=row['model_context']['sources']
-    if not 1<=len(sources)<=24:raise ValueError('Linked review supports at most 24 selected records')
+    if not sources:raise ValueError('Linked review requires selected records')
     if any(v['source'].get('identity_status')!='matched' or v['source'].get('patient_id')!=row['patient_id'] for v in sources.values()):
         raise ValueError('Canonical same-patient source identity required')
     mapped=P.unit_map(row['model_context']);by_id={v['unit']['id']:v for v in mapped.values()}
@@ -60,7 +61,7 @@ def request(parent,row,refs,received):
       'typed_source_links':parent['dependencies']['edges'],'unresolved_typed_references':parent['dependencies']['unresolved_references'],
       'scope':'All source-pass claims, unresolved qualifications and exact cited excerpts are supplied. Full source units, uncited text and historical review questions are NOT supplied; they remain in the parent. No source coverage is upgraded.',
       'quarantined_passes':len(parent.get('quarantined_source_passes',[]))}
-    body={'model':G.PersistentGateway.MODELS['claude'],'max_tokens':8192,'system':INSTRUCTIONS,'messages':[{'role':'user','content':P.context.encode(wire).decode()}],'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}
+    body={'model':claude_model(G.PersistentGateway.MODELS['claude']),'max_tokens':8192,'system':INSTRUCTIONS,'messages':[{'role':'user','content':P.context.encode(wire).decode()}],'output_config':{'format':{'type':'json_schema','schema':SCHEMA}}}
     G.validate(body)
     job_excerpts={name:{'excerpts':[v['quote'] for v in excerpts.values() if v['unit']==name]} for name in units}
     return {'body':body,'units':units,'excerpts':job_excerpts,'excerpt_pool':excerpts,'row':row,'source_records':sorted(sources),'finding_ids':ids,'original_findings':originals}

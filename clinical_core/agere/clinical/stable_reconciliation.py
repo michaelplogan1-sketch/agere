@@ -9,6 +9,7 @@ import hashlib
 import json
 import re
 from ...contracts import digest
+from ..model_policy import claude_model
 from . import case_passes as passes, case_synthesis as single
 
 VERSION = 'stable-reference-reconciliation/1'
@@ -60,6 +61,7 @@ def request(row, source_passes, links, reference_map):
     # Use the established lossless excerpt/source factoring, then replace every
     # structured reconciliation alias. Original model prose remains unmodified.
     body, old_units, old_excerpts = passes.reconciliation_request(row, source_passes, links)
+    body['model'] = claude_model(body['model'])
     by_id = {v['source_unit_id']: name for name, v in reference_map.items()}
     rename = {name: by_id[v['unit']['id']] for name, v in old_units.items()}
     units = {rename[k]: value for k, value in old_units.items()}

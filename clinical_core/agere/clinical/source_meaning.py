@@ -6,6 +6,7 @@ are unvalidated model judgments, never substituted for source text or care state
 from pathlib import Path
 import copy, hashlib, json
 from ...contracts import digest
+from ..model_policy import claude_model
 from . import synthesis_availability as A, case_passes as P, record_synthesis as R
 
 VERSION = 'source-meaning/1'
@@ -46,6 +47,9 @@ def schema():
 
 def envelope(body, units, received):
     result = copy.deepcopy(body)
+    # Bind the actual policy model before packing, request identity or parsing.
+    # Historical source codecs and their saved context identities stay intact.
+    result['model'] = claude_model(result['model'])
     wire = json.loads(result['messages'][0]['content'])
     patient = received['packet']['patient_id']
     records = sorted({v['unit']['source_ref'] for v in units.values()})

@@ -10,7 +10,7 @@ from clinical_core.contracts import digest
 class SubscriptionPreflight(unittest.TestCase):
  def setUp(self):
   self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.path=Path(self.tmp.name)
-  self.body={'model':PersistentGateway.MODELS['claude'],'messages':[{'role':'user','content':json.dumps({'schema':G.CONTRACT,'stage':'saved_claims_and_exact_excerpts','synthetic':True})}],
+  self.body={'model':G.claude_model(PersistentGateway.MODELS['claude']),'messages':[{'role':'user','content':json.dumps({'schema':G.CONTRACT,'stage':'saved_claims_and_exact_excerpts','synthetic':True})}],
    'system':'Authored synthetic test.','output_config':{},'max_tokens':8192}
   env=patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription','ANTHROPIC_API_KEY':'subscription-transport'});env.start();self.addCleanup(env.stop)
  def test_unknown_count_is_local_and_replays_without_generation_or_network(self):

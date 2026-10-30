@@ -10,6 +10,7 @@ from ...contracts import digest
 from ..gateway import PersistentGateway
 from ..economics import usage_cost
 from .case_synthesis import valid_token_preflight
+from ..model_policy import claude_model
 
 MAX_BYTES=32768
 CONTRACT='linked-claim-reconciliation/1'
@@ -21,7 +22,7 @@ def validate(body):
     if wire.get('schema')!=CONTRACT or wire.get('stage')!='saved_claims_and_exact_excerpts' or wire.get('synthetic') is not True:
         raise ValueError('Exact synthetic claim-reconciliation contract required')
     if len(json.dumps(body,allow_nan=False).encode())>MAX_BYTES:raise ValueError('Linked claim request exceeds 32768 bytes')
-    if body['model']!=PersistentGateway.MODELS['claude'] or body['max_tokens']!=8192:raise ValueError('Unexpected model or output bound')
+    if body['model']!=claude_model(PersistentGateway.MODELS['claude']) or body['max_tokens']!=8192:raise ValueError('Unexpected model or output bound')
 
 def send(body,ledger,out,*,parse):
     validate(body);key=request_key(body)

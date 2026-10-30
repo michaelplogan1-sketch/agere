@@ -339,13 +339,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     from .clinical.scoped_review_compiler import prepare_decision
                     result=prepare_decision(connected_stack.retriever,body)
                 elif path in ('/api/stack/context/output-recovery-plan','/api/stack/context/output-recover'):
-                    from .clinical import source_output_recovery
-                    if path.endswith('/output-recovery-plan'):result=source_output_recovery.preview(connected_stack.path,body)
+                    from .clinical.source_citation_recovery import recovery_engine
+                    engine=recovery_engine(connected_stack.path,body.get('context_id'))
+                    if path.endswith('/output-recovery-plan'):result=engine.preview(connected_stack.path,body)
                     else:
                         from .clinical.stack_runtime import ROOT
                         from .gateway import BudgetLedger, default_ledger_path
                         ledger=BudgetLedger(default_ledger_path())
-                        try:result=source_output_recovery.run(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
+                        try:result=engine.run(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path in ('/api/stack/context/recovery-plan','/api/stack/context/recover'):
                     from .clinical import interpretation_recovery

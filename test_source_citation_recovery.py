@@ -81,7 +81,10 @@ class CitationRecovery(unittest.TestCase):
         self.assertFalse(answer['coverage']['cross_group_relations_assessed'])
         self.assertEqual(R.inspect(self.path,answer['id']),answer)
         self.assertEqual(R.saved_for_context(self.path,self.row['id']),answer)
-        self.assertEqual({f.name:f.read_bytes() for f in self.source_out.glob('*')},self.before)
+        self.assertEqual({name:(self.source_out/name).read_bytes() for name in self.before},self.before)
+        for stage in answer['passes']:
+            if stage['original_request']:
+                self.assertTrue((self.source_out/(stage['usage']['request_hash']+'.json')).exists())
         failed = self.plan['failures'][0]['failed_request_hash']
         self.assertNotIn(failed,self.network)
         self.assertEqual(self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(failed,)).fetchone()[0],'failed')
@@ -99,8 +102,135 @@ class CitationRecovery(unittest.TestCase):
                 R.diagnose(self.bad_body,self.bad_units,self.row,failure,raw)
         value = json.loads(self.bad_raw['content'][0]['text'])
         value['findings'][0]['citations'][-1]['quote'] = '"invented":"field","another":"absent"'
-        with self.assertRaises(ValueError):
-            R.diagnose(self.bad_body,self.bad_units,self.row,self.failure,self.raw(self.bad_body,value))
+        raw=self.raw(self.bad_body,value)
+        revised,issues=R.diagnose(self.bad_body,self.bad_units,self.row,self.failure,raw)
+        self.assertEqual(issues[-1]['diagnosis'],'absent_exact_quote')
+        self.assertEqual(revised['messages'],self.bad_body['messages'])
+        with self.assertRaisesRegex(ValueError,R.ERROR):
+            R.O.parsed(raw,revised,self.bad_units,self.row)
+
+    def test_ambiguous_quote_requires_provider_correction_without_local_repair(self):
+        value=json.loads(self.bad_raw['content'][0]['text'])
+        citation=value['findings'][0]['citations'][-1]
+        citation['quote']=':'
+        self.assertGreater(self.bad_units[citation['unit']]['text'].count(':'),1)
+        raw=self.raw(self.bad_body,value);before=copy.deepcopy(raw)
+        revised,issues=R.diagnose(self.bad_body,self.bad_units,self.row,self.failure,raw)
+        self.assertEqual(raw,before)
+        self.assertEqual(issues[-1]['diagnosis'],'ambiguous_exact_quote')
+        self.assertGreater(issues[-1]['occurrences'],1)
+        with self.assertRaisesRegex(ValueError,R.ERROR):
+            R.O.parsed(raw,revised,self.bad_units,self.row)
+
+    def test_canonical_wire_model_failure_must_reproduce_as_citation_error(self):
+        failure={**self.failure,'error':'ValueError: '+R.MODEL_BINDING_ERROR}
+        revised,issues=R.diagnose(self.bad_body,self.bad_units,self.row,failure,self.bad_raw)
+        self.assertEqual(revised['model'],self.bad_raw['model'])
+        self.assertTrue(all(i['original_failure_error']==failure['error'] for i in issues))
+        for raw in [self.answer(self.bad_body),dict(self.bad_raw,model='different')]:
+            with self.assertRaises(ValueError):R.diagnose(self.bad_body,self.bad_units,self.row,failure,raw)
+
+    def test_canonical_source_lookup_reopens_corrected_receipt(self):
+        saved=self.execute()
+        self.assertEqual(S.inspect(self.path,saved['id']),saved)
+        with patch.object(S,'context',return_value=self.row):
+            view=S.saved_source_stage(self.path,self.row['id'])
+        self.assertEqual(view['answer'],saved)
+        self.assertEqual(view['new_paid_api_calls'],0)
+
+    def test_synthesis_reuses_completed_correction_before_reconciliation(self):
+        from unittest.mock import Mock
+        saved=self.execute();reconciliation=Mock()
+        reconciliation.synthesize.return_value={'id':'reconciled','new_paid_api_calls':0,
+                                                'new_token_count_calls':0,'cache_hit':True}
+        legacy=Mock();legacy.synthesize.side_effect=ValueError('Live synthesis route disabled')
+        with patch.object(S,'engine',return_value=legacy),patch.object(S,'context',return_value=self.row), \
+                patch.object(S,'stages',return_value=(R.O.M,reconciliation)), \
+                patch.object(R.O.M,'synthesize')as source:
+            result=S.synthesize(self.path,self.row['id'],self.ledger)
+        source.assert_not_called()
+        reconciliation.synthesize.assert_called_once_with(self.path,saved['id'],self.ledger,allow_live=False)
+        self.assertEqual(result['new_paid_api_calls'],0)
+        self.assertTrue(result['cache_hit'])
+
+    def test_new_original_pass_failure_resumes_without_repeating_completed_correction(self):
+        self.assertGreater(len(self.packets),2)
+        body,units=self.packets[2];failed=R.O.request_key(body)
+        def fail_later(body,provider,ledger,out,*,parse):
+            if R.O.request_key(body)!=failed:return self.send(body,provider,ledger,out,parse=parse)
+            raw=self.answer(body);value=json.loads(raw['content'][0]['text'])
+            value['findings'][0]['citations'][0]['quote']='not present in this source'
+            raw={**raw,'content':[{'type':'text','text':json.dumps(value)}]}
+            failure={'status':'failed','request_hash':failed,'error':'ValueError: '+R.ERROR}
+            ledger.reserve(failed,provider,body['model']);ledger.finish(failed,error=failure['error'])
+            (out/(failed+'.json')).write_text(json.dumps({'response':raw}))
+            (out/(failed+'-failure.json')).write_text(json.dumps(failure))
+            raise ValueError(R.ERROR)
+        with patch.object(R.O.single,'send',side_effect=fail_later),patch.object(R.O.single,'token_check',return_value={'input_tokens':500,'provider_count_cached':True}):
+            with self.assertRaisesRegex(ValueError,R.ERROR):R.run(self.path,self.request,self.ledger,allow_live=True)
+        self.assertTrue((self.source_out/(failed+'-failure.json')).exists())
+        first_corrected=self.plan['failures'][0]['corrected_request_hash']
+        updated=R.preview(self.path,{'context_id':self.row['id']})
+        self.assertEqual(len(updated['failures']),2)
+        self.request['recovery_id']=updated['id'];answer=self.execute()
+        self.assertEqual(self.network.count(first_corrected),1)
+        self.assertNotIn(failed,self.network)
+        self.assertEqual(R.inspect(self.path,answer['id']),answer)
+
+    def failed_correction(self,body):
+        key=R.O.request_key(body);raw=self.answer(body)
+        value=json.loads(raw['content'][0]['text'])
+        unit=next(k for k,v in self.bad_units.items()if v['unit']['kind']=='structured')
+        value['findings'][0]['citations']=[{'unit':unit,'quote':':'}]
+        raw={**raw,'content':[{'type':'text','text':json.dumps(value)}]}
+        failure={'status':'failed','request_hash':key,'error':'ValueError: '+R.ERROR}
+        out=R.location(self.path,'0'*64).parent/'provider';out.mkdir(parents=True,exist_ok=True)
+        (out/(key+'.json')).write_text(json.dumps({'response':raw}))
+        (out/(key+'-failure.json')).write_text(json.dumps(failure))
+        self.ledger.reserve(key,'claude',body['model']);self.ledger.finish(key,error=failure['error'])
+        return key
+
+    def test_failed_correction_gets_exact_feedback_and_is_never_resent(self):
+        body=R.prepare(self.path,self.row['id'])[3][1][0]
+        failed=self.failed_correction(body)
+        plan=R.preview(self.path,{'context_id':self.row['id']})
+        chain=plan['failures'][0]['correction_failures']
+        self.assertEqual([x['failed_request_hash']for x in chain],[failed])
+        next_body=R.prepare(self.path,self.row['id'])[3][1][0]
+        self.assertEqual(next_body['messages'],body['messages'])
+        self.assertIn('Mechanical quotation rejections:',next_body['system'])
+        self.assertIn('exact_occurrences_in_unit_text',next_body['system'])
+        self.request['recovery_id']=plan['id'];answer=self.execute()
+        self.assertNotIn(failed,self.network)
+        self.assertEqual(self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(failed,)).fetchone()[0],'failed')
+        self.assertEqual(R.inspect(self.path,answer['id']),answer)
+
+    def test_repeated_identical_quotation_feedback_cannot_loop(self):
+        first=R.prepare(self.path,self.row['id'])[3][1][0];self.failed_correction(first)
+        second=R.prepare(self.path,self.row['id'])[3][1][0];self.failed_correction(second)
+        with patch.object(R.O.single,'send')as send:
+            with self.assertRaisesRegex(ValueError,'Same invalid quotation'):
+                R.preview(self.path,{'context_id':self.row['id']})
+            send.assert_not_called()
+
+    def test_discussed_without_citation_needs_new_complete_provider_response(self):
+        raw=self.answer(self.bad_body);value=json.loads(raw['content'][0]['text'])
+        cited={c['unit']for f in value['findings']for c in f['citations']}
+        unit=next(r for r in value['unit_reviews']if r['unit']not in cited)
+        unit['status']='discussed'
+        raw={**raw,'content':[{'type':'text','text':json.dumps(value)}]}
+        failure={**self.failure,'error':'ValueError: '+R.DISPOSITION_ERROR}
+        revised,issues=R.diagnose(self.bad_body,self.bad_units,self.row,failure,raw)
+        self.assertEqual([i['unit']for i in issues],[unit['unit']])
+        self.assertEqual(issues[0]['diagnosis'],'discussed_without_citation')
+        self.assertEqual(revised['messages'],self.bad_body['messages'])
+        with self.assertRaisesRegex(ValueError,R.DISPOSITION_ERROR):R.O.parsed(raw,revised,self.bad_units,self.row)
+        key=failure['request_hash']
+        (self.source_out/(key+'.json')).write_text(json.dumps({'response':raw}))
+        (self.source_out/(key+'-failure.json')).write_text(json.dumps(failure))
+        plan=R.preview(self.path,{'context_id':self.row['id']});self.request['recovery_id']=plan['id']
+        saved=self.execute();self.assertEqual(R.inspect(self.path,saved['id']),saved)
+        self.assertNotIn(key,self.network)
 
     def test_stale_plan_disabled_live_and_failed_corrected_key_block(self):
         with patch.object(R.O.single,'send') as send:
