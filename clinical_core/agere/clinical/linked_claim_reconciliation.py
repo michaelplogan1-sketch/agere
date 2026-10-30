@@ -4,6 +4,7 @@ Every source-pass claim and its unresolved qualifications survives unchanged.
 Full source units and old review questions remain in the immutable parent, not
 in this narrower review. Unassessed source units never become assessed by it.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from pathlib import Path
 import copy, hashlib, json
 from ...contracts import digest
@@ -136,8 +137,8 @@ def synthesize(path,answer_id,ledger,*,allow_live=False):
           'coverage':{**parent['coverage'],'reconciliation_groups':1,'cross_group_relations_assessed':True,'all_source_claims_accounted':True,'source_meaning_revalidated':False},
           'citation_context_expansions':[],
           'claim_scope':{'input_claims':len(job['finding_ids']),'cited_excerpts':len(job['excerpt_pool']),'original_claims_unchanged':True,'historical_review_questions_submitted':False,'complete_source_units_submitted':False,'canonical_identity_basis':'verified explicit source crosswalk; prose subject not inferred'},
-          'usage':[p['usage'] for p in parent['passes']]+[usage],'token_check':{'input_tokens':sum(p['token_check']['input_tokens'] for p in parent['passes'])+tokens['input_tokens']},
-          'new_paid_api_calls':int(not usage.get('cache_hit',False)),'new_token_count_calls':int(not tokens['provider_count_cached']),'cache_hit':False,
+          'usage':[p['usage'] for p in parent['passes']]+[usage],'token_check':{'input_tokens':input_token_total([p['token_check'] for p in parent['passes']] + [tokens])},
+          'new_paid_api_calls':int(not usage.get('cache_hit',False)),'new_token_count_calls':token_count_calls(tokens),'cache_hit':False,
           'limits':parent['limits']+['All saved source claims reviewed together against their cited excerpts only. Unit coverage is unchanged. Original source-pass findings are historical, not additional consolidated conclusions. Clinical accuracy is unvalidated.']}
         saved['result_digest']=digest(saved);fresh();P.atomic_write(target,saved);progress.update(status='complete',new_paid_api_calls=saved['new_paid_api_calls']);P.atomic_write(progress_path,progress);return saved
     except Exception as exc:

@@ -2,6 +2,7 @@
 
 Keeps the historical source-stage engine and its paid receipts immutable.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from collections import Counter
 from pathlib import Path
 import hashlib
@@ -83,7 +84,7 @@ def synthesize(path,context_id,ledger,*,allow_live=False):
         for packet,(body,units) in zip(bundle['passes'],packets):
             if passes.request_bytes(body)>20000:raise ValueError('Source pass exceeds gateway bound')
             cached(body);fresh();tokens=single.token_check(body,out,allow_live=allow_live)
-            state['new_token_count_calls']+=int(not tokens['provider_count_cached']);fresh()
+            state['new_token_count_calls']+=token_count_calls(tokens);fresh()
             result,usage=single.send(body,'claude',ledger,out,parse=lambda raw:passes.parse_pass(raw,body,units,row))
             state['new_paid_api_calls']+=int(not usage.get('cache_hit',False))
             if usage.get('cache_hit'):
@@ -116,7 +117,7 @@ def synthesize(path,context_id,ledger,*,allow_live=False):
                 'reconciliation_groups':0,'cross_group_relations_assessed':len(stages)==1,
                 'interpretation_accuracy_assessed':False,'retrieval_recall_assessed':False},
             'provider':'claude','model':packets[0][0]['model'],'usage':[p['usage'] for p in stages],
-            'token_check':{'input_tokens':sum(p['token_check']['input_tokens'] for p in stages)},
+            'token_check':{'input_tokens':input_token_total(p['token_check'] for p in stages)},
             'new_paid_api_calls':state['new_paid_api_calls'],'new_token_count_calls':state['new_token_count_calls'],'cache_hit':False,
             'clinical_state_established':False,'clinical_execution_authorized':False,
             'limits':single.LIMITS+['Source-stage completion accounts for submitted units only; multi-pass reconciliation is a separate stage.']}

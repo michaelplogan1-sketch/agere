@@ -3,6 +3,7 @@
 Reuses immutable source passes and the existing bounded excerpt gateway. Previous
 answers and pinned context routes remain readable with their original engines.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from copy import deepcopy
 from pathlib import Path
 import hashlib
@@ -189,8 +190,8 @@ def synthesize(path, parent_id, ledger, *, allow_live=False):
                          'original_claims_unchanged': True, 'historical_review_questions_submitted': False,
                          'complete_source_units_submitted': False},
             usage=[p['usage'] for p in parent['passes']] + [usage],
-            token_check={'input_tokens': sum(p['token_check']['input_tokens'] for p in parent['passes']) + tokens['input_tokens']},
-            new_paid_api_calls=int(not usage.get('cache_hit', False)), new_token_count_calls=int(not tokens['provider_count_cached']),
+            token_check={'input_tokens': input_token_total([p['token_check'] for p in parent['passes']] + [tokens])},
+            new_paid_api_calls=int(not usage.get('cache_hit', False)), new_token_count_calls=token_count_calls(tokens),
             cache_hit=False, clinical_execution_authorized=False,
             limits=parent['limits'] + ['Explicit references verify supplied source identities, not clinical meaning. Claim/excerpt review does not reassess full units or resolve original unassessed source content.'])
         saved['result_digest'] = digest(saved)

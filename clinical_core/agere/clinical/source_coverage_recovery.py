@@ -3,6 +3,7 @@
 Omitted dispositions never become model judgments or assessed source coverage.
 Original returned responses and failed ledger entries remain unchanged.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from collections import Counter
 from pathlib import Path
 import copy,hashlib,json
@@ -115,7 +116,7 @@ def synthesize(path,context_id,ledger,*,allow_live=False):
         for packet,(body,units) in zip(bundle['passes'],packets):
             if passes.request_bytes(body)>20000:raise ValueError('Source pass exceeds gateway bound')
             cached(body);fresh();is_failed=failed(ledger,body);tokens=single.token_check(body,out,allow_live=False if is_failed else allow_live)
-            state['new_token_count_calls']+=int(not tokens['provider_count_cached']);fresh()
+            state['new_token_count_calls']+=token_count_calls(tokens);fresh()
             result,usage=single.send(body,'claude',ledger,out,parse=lambda raw:parse(raw,body,units,row),allow_failed_response_revalidation=is_failed,revalidation_reason=VERSION)
             state['new_paid_api_calls']+=int(not usage.get('cache_hit',False))
             if usage.get('cache_hit') and not usage.get('offline_revalidation'):
@@ -150,7 +151,7 @@ def synthesize(path,context_id,ledger,*,allow_live=False):
             'quarantined_source_passes':[{'pass_number':p['pass_number'],**p['result']['coverage_recovery']} for p in stages if p['result'].get('coverage_recovery',{}).get('quarantined_output_reason')],
             'interpretation_status':'partial_unassessed_source_units' if any(p['result'].get('coverage_recovery',{}).get('system_unassessed_dispositions') for p in stages) else 'model_accounted_source_units',
             'provider':'claude','model':packets[0][0]['model'],'usage':[p['usage'] for p in stages],
-            'token_check':{'input_tokens':sum(p['token_check']['input_tokens'] for p in stages)},
+            'token_check':{'input_tokens':input_token_total(p['token_check'] for p in stages)},
             'new_paid_api_calls':state['new_paid_api_calls'],'new_token_count_calls':state['new_token_count_calls'],'cache_hit':False,
             'clinical_state_established':False,'clinical_execution_authorized':False,
             'limits':single.LIMITS+['Source-stage completion accounts for submitted units only; multi-pass reconciliation is a separate stage.']}

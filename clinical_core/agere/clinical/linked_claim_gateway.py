@@ -9,6 +9,7 @@ import json, os, time, urllib.request, urllib.error
 from ...contracts import digest
 from ..gateway import PersistentGateway
 from ..economics import usage_cost
+from .case_synthesis import valid_token_preflight
 
 MAX_BYTES=32768
 CONTRACT='linked-claim-reconciliation/1'
@@ -31,8 +32,8 @@ def send(body,ledger,out,*,parse):
     # The exact complete request must already have a successful native token check.
     count_key=digest({k:body[k] for k in ('model','messages','system','output_config')})
     tokens=json.loads((out/(count_key+'-tokens.json')).read_text())
-    if tokens['request_hash']!=count_key or type(tokens['input_tokens']) is not int or not 0<tokens['input_tokens']<=16000:
-        raise ValueError('Native token receipt required')
+    if not valid_token_preflight(body,tokens):
+        raise ValueError('Native token or subscription preflight receipt required')
     endpoint,var=PersistentGateway.ENDPOINTS['claude']
     if not os.environ.get(var):raise ValueError('Missing '+var)
     raced=ledger.reserve(key,'claude',body['model'])

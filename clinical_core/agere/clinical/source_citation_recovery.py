@@ -4,6 +4,7 @@ Same evidence, model, output allowance and original strict parser. Never repair
 model text locally or retry an original/failed corrected key. Existing output
 recovery remains byte-for-byte unchanged and owns its historical receipts.
 """
+from .case_synthesis import token_count_calls
 import copy
 import hashlib
 import json
@@ -183,7 +184,7 @@ def run(path, request, ledger, *, allow_live=False):
             reused = bool(old and body == original and (source_out/(O.request_key(body)+'.json')).exists())
             origin = source_out if reused else out
             tokens = O.single.token_check(body,origin,allow_live=False if reused else allow_live)
-            counts['new_token_count_calls'] += int(not tokens['provider_count_cached'])
+            counts['new_token_count_calls'] += token_count_calls(tokens)
             fresh()
             result,usage = O.single.send(body,'claude',ledger,origin,parse=lambda raw:O.parsed(raw,body,units,row))
             counts['new_paid_api_calls'] += int(not usage.get('cache_hit',False))

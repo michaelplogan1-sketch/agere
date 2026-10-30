@@ -86,6 +86,7 @@ class SourceSelectionTests(unittest.TestCase):
                  patch.object(S, 'rank', return_value={'selected_categories': ['x']}), \
                  patch.object(S, 'preserve_references', return_value={'additional_categories': []}), \
                  patch.object(S.R, 'prepare', return_value={'comparison': {'id': 'c'}}), \
+                 patch.object(S.Q, 'prepare', return_value={'id': 'default-scope', 'connected_record_ids': []}), \
                  patch.object(S.P, 'preview', return_value=preview), \
                  patch.object(S.P, 'prepare') as assemble:
                 result = S.prepare(path, 'P-1', 'Original question', r)
@@ -107,6 +108,7 @@ class SourceSelectionTests(unittest.TestCase):
                  patch.object(S, 'rank', return_value={'selected_categories': []}), \
                  patch.object(S, 'preserve_references', return_value={'additional_categories': []}), \
                  patch.object(S.R, 'prepare', return_value={'comparison': {'id': 'c'}}), \
+                 patch.object(S.Q, 'prepare', return_value={'id': 'default-scope', 'connected_record_ids': []}), \
                  patch.object(S.P, 'preview', return_value={'can_prepare': False}):
                 with self.assertRaisesRegex(ValueError, 'changed'): S.prepare(path, 'P-1', 'Question', r)
                 self.assertFalse(list(Path(path).glob('source-selections/*.json')))
@@ -119,6 +121,17 @@ class SourceSelectionTests(unittest.TestCase):
             result = S.preserve_references(rows, comparison, ['already_included'], '2029-08-15')
         self.assertEqual(result['additional_categories'], ['linked'])
         self.assertEqual(result['connected_record_ids'], ['a','b','c'])
+
+    def test_completed_default_search_roots_remain_in_the_whole_record_plan(self):
+        rows = [{'record_id': 'a', 'source_table': 'paired'},
+                {'record_id': 'b', 'source_table': 'default_completion'},
+                {'record_id': 'c', 'source_table': 'linked'}]
+        comparison = {'variants': {'bge_reranked': ['p']}, 'candidates': [{'id': 'p', 'source': {'record_id': 'a'}}]}
+        with patch.object(S.Q, 'select_sources', return_value={'connected_record_ids': ['a','b','c'], 'reference_edges': []}) as closure:
+            result = S.preserve_references(rows, comparison, [], '2029-08-15', default_record_ids=['b'])
+        self.assertEqual(closure.call_args.args[1], {'a', 'b'})
+        self.assertEqual(result['additional_categories'], ['default_completion', 'linked'])
+        self.assertEqual(result['default_reference_record_ids'], ['b'])
 
 
 if __name__ == '__main__': unittest.main()

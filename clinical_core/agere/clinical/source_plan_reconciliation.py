@@ -4,6 +4,7 @@ Reuses the bounded claim/excerpt gateway, exact citation parser and ledger.
 Original prose and original answers remain unchanged. This cannot enlarge source
 coverage, infer omitted care, or authorize a clinical/work action.
 """
+from .case_synthesis import token_count_calls
 from pathlib import Path
 import copy
 import hashlib
@@ -141,7 +142,7 @@ def reconcile(retriever, body, ledger, *, allow_live=False):
                 'source_coverage_upgraded':False,'complete_chart':False,'clinical_validated':False},
             'request_bytes':P.request_bytes(job['body']),'usage':usage,'token_check':tokens,
             'new_paid_api_calls':int(not usage.get('cache_hit',False)),
-            'new_token_count_calls':int(not tokens['provider_count_cached']),'cache_hit':False,
+            'new_token_count_calls':token_count_calls(tokens),'cache_hit':False,
             'clinical_execution_authorized':False,'human_review_created':False}
         saved['result_digest']=digest(saved);P.atomic_write(target,saved)
         progress['status']='complete';P.atomic_write(progress_path,progress);return saved

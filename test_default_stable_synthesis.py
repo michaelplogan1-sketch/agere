@@ -16,9 +16,24 @@ class DefaultStable(unittest.TestCase):
     sender=fixture.CasePasses.sender
     run_legacy=fixture.CasePasses.run_synthesis
 
-    def run_default(self,sender=None):
-        with patch.object(stage.single,'send',side_effect=sender or self.sender),patch.object(stage.single,'token_check',return_value={'input_tokens':500,'provider_count_cached':False}):
+    def run_default(self,sender=None,token_receipt=None):
+        tokens=token_receipt if token_receipt is not None else {'input_tokens':500,'provider_count_cached':False}
+        with patch.object(stage.single,'send',side_effect=sender or self.sender),patch.object(stage.single,'token_check',return_value=tokens):
             return router.synthesize(self.path,self.row['id'],self.ledger,allow_live=True)
+
+    def test_subscription_unknown_count_survives_source_passes_reconciliation_and_reopen(self):
+        out=self.run_default(token_receipt={'input_tokens':None,'provider_count_cached':False,'new_token_count_calls':0})
+        self.assertIsNone(out['token_check']['input_tokens'])
+        self.assertEqual(out['new_token_count_calls'],0)
+        self.assertTrue(all(p['token_check']['input_tokens'] is None for p in out['passes']))
+        self.assertTrue(out['coverage']['complete_declared_scope'])
+        saved=router.inspect(self.path,out['id'])
+        # The dispatch wrapper reports calls made in this whole action; the
+        # saved reconciliation reports its own calls. Evidence stays identical.
+        self.assertEqual(out['new_paid_api_calls'],len(out['passes'])+len(out['reconciliation']['groups']))
+        self.assertEqual(saved['new_paid_api_calls'],len(out['reconciliation']['groups']))
+        self.assertEqual({k:v for k,v in saved.items()if k!='new_paid_api_calls'},
+                         {k:v for k,v in out.items()if k!='new_paid_api_calls'})
 
     def test_new_context_calls_source_then_stable_once(self):
         seen=[]

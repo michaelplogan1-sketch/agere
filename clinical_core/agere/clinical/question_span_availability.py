@@ -4,6 +4,7 @@ Reuses current acquisition exclusions, received-source contracts, the shared
 provider ledger and the existing question-task path. No model-written label,
 clinical conclusion, automatic task selection, or change to a frozen cohort.
 """
+from .case_synthesis import token_count_calls
 from pathlib import Path
 import fcntl
 import json
@@ -167,7 +168,7 @@ def propose(path, request, ledger, *, allow_live=False):
                  'source_availability':p['wire']['source_availability'],
                  **result,'provider':'claude','model':p['body']['model'],'request_bytes':p['request_bytes'],
                  'token_check':tokens,'usage':usage,'new_paid_api_calls':int(not usage.get('cache_hit',False)),
-                 'new_token_count_calls':int(not tokens['provider_count_cached']),
+                 'new_token_count_calls':token_count_calls(tokens),
                  'cache_hit':False,'human_reviews_created':0,'training_labels_created':0,
                  'question_resolved':False,'clinical_execution_authorized':False,'limits':LIMITS}
             row['result_digest']=digest(row);save(target,row);return row

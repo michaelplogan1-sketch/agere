@@ -21,6 +21,7 @@ import subprocess
 import tempfile
 import threading
 import urllib.request
+from urllib.parse import urlsplit
 import uuid
 
 MESSAGES_URL = 'api.anthropic.com/v1/messages'
@@ -419,6 +420,9 @@ def install():
         def urlopen(url, data=None, timeout=None, *args, **kwargs):
             full = url.full_url if isinstance(url, urllib.request.Request) else str(url)
             if MESSAGES_URL in full:
+                address = urlsplit(full)
+                if address.scheme != 'https' or (address.hostname or '') + address.path.rstrip('/') != MESSAGES_URL:
+                    raise ValueError('The configured subscription transport supports generation only; count_tokens and other Messages subroutes must not invoke generation')
                 payload = data if data is not None else (url.data if isinstance(url, urllib.request.Request) else None)
                 body = json.loads(payload.decode() if isinstance(payload, (bytes, bytearray)) else payload)
                 return _Response(json.dumps(respond(body, timeout=timeout)).encode())

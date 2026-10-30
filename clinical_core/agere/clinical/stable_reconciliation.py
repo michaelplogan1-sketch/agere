@@ -3,6 +3,7 @@
 Old answers and source-pass calls are reused unchanged. Only new excerpt
 reconciliation requests are dispatched; no clinical authority is conferred.
 """
+from .case_synthesis import input_token_total, token_count_calls
 from pathlib import Path
 import hashlib
 import json
@@ -188,7 +189,7 @@ def synthesize(path, answer_id, ledger, *, allow_live=False):
     try:
         for i, job in enumerate(planned,1):
             body=job['body'];fresh();cached(body);tokens=single.token_check(body,out,allow_live=allow_live)
-            progress['new_token_count_calls']+=int(not tokens['provider_count_cached']);fresh()
+            progress['new_token_count_calls']+=token_count_calls(tokens);fresh()
             result,usage=single.send(body,'claude',ledger,out,parse=lambda raw:parse(raw,job,refs))
             progress['new_paid_api_calls']+=int(not usage.get('cache_hit',False))
             if usage.get('cache_hit'):
@@ -208,7 +209,7 @@ def synthesize(path, answer_id, ledger, *, allow_live=False):
                             for i,s in enumerate(s for p in stages for s in p['result']['review_steps'])],
             'unanswered':list(dict.fromkeys([u for p in source_passes for u in p['result']['unanswered']]+final['unanswered'])),
             'reconciliation':{'result':final,'groups':groups},'usage':[p['usage'] for p in stages],
-            'token_check':{'input_tokens':sum(p['token_check']['input_tokens'] for p in stages)},
+            'token_check':{'input_tokens':input_token_total(p['token_check'] for p in stages)},
             'coverage':{**parent['coverage'],'reconciliation_groups':len(groups),'cross_group_relations_assessed':len(groups)<=1},
             'new_paid_api_calls':progress['new_paid_api_calls'],'new_token_count_calls':progress['new_token_count_calls'],'cache_hit':False,
             'reused_source_passes':len(source_passes),'limits':parent['limits']+['Pass-qualified references verify transport identity, not semantic or clinical correctness. Previous reconciliation remains in the immutable parent answer.']}

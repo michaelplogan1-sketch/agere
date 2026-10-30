@@ -4,6 +4,7 @@ No additional interpretation is invented by joining groups. An optional existing
 cross-group reconciliation can supply conclusions; otherwise that uncertainty
 remains explicit. Parent answers and their local reference scopes are preserved.
 """
+from .case_synthesis import input_token_total
 import copy
 import hashlib
 import json
@@ -104,7 +105,7 @@ def assemble(result,reconciliation=None):
             'cross_group_relations_assessed':bool(reconciliation),'group_answers':len(snap['groups']),'reconciliation_groups':0},
         'dependencies':{'group_answers':lineage,'source_plan_digest':digest(plan),'answer_selection_digest':digest(snap)},
         'cross_group_reconciliation_id':reconciliation['id'] if reconciliation else None,
-        'model':'saved group interpretations','usage':usage,'token_check':{'input_tokens':sum(a['token_check']['input_tokens'] for a in result['answers'])+(reconciliation['token_check']['input_tokens'] if reconciliation else 0)},
+        'model':'saved group interpretations','usage':usage,'token_check':{'input_tokens':input_token_total([a['token_check'] for a in result['answers']] + ([reconciliation['token_check']] if reconciliation else []))},
         'new_paid_api_calls':0,'cache_hit':True,'clinical_execution_authorized':False,
         'limits':['Complete means every declared group has an accounted saved answer; it does not mean the whole chart or clinical completeness.',
                   'Original group prose and local reference aliases retain their group/answer scope. Equal aliases across groups are not identical sources.',

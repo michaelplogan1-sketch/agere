@@ -156,15 +156,61 @@ def parse(raw, body, units, row):
     return {**result, 'findings': findings}
 
 
+def input_token_total(receipts):
+    """A missing measurement stays unknown across passes and reconciliation."""
+    values = [r['input_tokens'] for r in receipts]
+    if any(v is not None and (type(v) is not int or v < 0) for v in values):
+        raise ValueError('Invalid input-token measurement')
+    return None if any(v is None for v in values) else sum(values)
+
+
+def token_count_calls(receipt):
+    value = receipt['new_token_count_calls'] if 'new_token_count_calls' in receipt else int(not receipt['provider_count_cached'])
+    if type(value) is not int or value not in (0, 1):
+        raise ValueError('Invalid token-count call accounting')
+    return value
+
+
+def valid_token_preflight(body, receipt):
+    count_body = {k: body[k] for k in ('model','messages','system','output_config')}
+    if receipt.get('request_hash') != digest(count_body): return False
+    count = receipt.get('input_tokens')
+    if type(count) is int: return 0 < count <= 16000
+    from .. import subscription_transport
+    return (count is None and subscription_transport.enabled()
+        and receipt.get('schema') == 'subscription-context-preflight/1'
+        and receipt.get('transport') == 'claude-code-subscription'
+        and receipt.get('input_token_count_status') == 'unavailable_in_configured_subscription_transport'
+        and receipt.get('context_limit_enforcement') == 'subscription_service'
+        and receipt.get('request_bytes') == len(context.encode(count_body)))
+
+
 def token_check(body, out, *, allow_live):
     count_body = {k: body[k] for k in ('model','messages','system','output_config')}
     key = digest(count_body); target = Path(out)/(key+'-tokens.json')
     if target.exists():
         saved = json.loads(target.read_text())
-        if saved.get('request_hash') != key: raise ValueError('Token receipt identity mismatch')
-        count = saved['input_tokens']; cached = True
+        if not valid_token_preflight(body, saved): raise ValueError('Native token receipt invalid or unavailable for this transport')
+        return {**saved, 'provider_count_cached': True, 'new_token_count_calls': 0}
     else:
         if not allow_live: raise ValueError('Live token-count route disabled')
+        from .. import subscription_transport
+        if subscription_transport.enabled():
+            # The configured CLI transport exposes generation, not count_tokens.
+            # Do not make an unmetered generation or borrow an external API key.
+            # Its service enforces the context window; actual usage is retained
+            # by the subsequent, ledger-backed generation.
+            receipt = {'schema':'subscription-context-preflight/1', 'request_hash':key,
+                'model':body['model'], 'transport':'claude-code-subscription',
+                'input_tokens':None, 'input_token_count_status':'unavailable_in_configured_subscription_transport',
+                'request_bytes':len(context.encode(count_body)), 'max_input_tokens':None,
+                'reserved_output_tokens':None, 'caller_max_tokens':body.get('max_tokens'),
+                'context_limit_enforcement':'subscription_service', 'provider_count_cached':False,
+                'new_token_count_calls':0,
+                'basis':'Complete request identity and bytes checked locally. No token count measured or generation requested; actual generation usage is recorded separately.'}
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(json.dumps(receipt,indent=2))
+            return receipt
         secret = os.environ.get('ANTHROPIC_API_KEY')
         if not secret: raise ValueError('Missing ANTHROPIC_API_KEY')
         headers = {'Content-Type':'application/json','x-api-key':secret,'anthropic-version':'2023-06-01'}
@@ -182,7 +228,7 @@ def token_check(body, out, *, allow_live):
     receipt = {'request_hash':key,'model':body['model'],'input_tokens':count,
         'max_input_tokens':16000,'reserved_output_tokens':body['max_tokens'],
         'basis':'Provider count_tokens for the complete request including schema; application operating limits',
-        'provider_count_cached':cached}
+        'provider_count_cached':cached, 'new_token_count_calls':int(not cached)}
     target.write_text(json.dumps(receipt,indent=2)); return receipt
 
 
@@ -234,7 +280,7 @@ def synthesize(path, context_id, ledger, *, allow_live=False):
         **result,'review_steps':steps,'provider':'claude','model':body['model'],
         'route_reason':'Cross-source synthesis and open-ended explanation; bounded choice readers cannot emit this answer contract.',
         'token_check':tokens,'usage':usage,'new_paid_api_calls':int(not usage.get('cache_hit',False)),
-        'new_token_count_calls':int(not tokens['provider_count_cached']),
+        'new_token_count_calls':token_count_calls(tokens),
         'cache_hit':False,'clinical_state_established':False,'clinical_execution_authorized':False,'limits':LIMITS}
     temporary = target.with_suffix('.tmp'); temporary.write_text(json.dumps(saved,indent=2)); temporary.replace(target)
     return saved
