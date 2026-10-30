@@ -826,10 +826,10 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
             elif parsed.path in ('/stack-evaluation','/api/stack/workflow-evaluation'):
                 from .clinical.stack_runtime import ROOT
                 from .workflow_evaluation_view import page as evaluation_page
-                report_path=ROOT/'artifacts/agere-workflow-evaluation-v1/scorecard.json'
-                if not report_path.exists():self.send_error(404);return
-                report=json.loads(report_path.read_text())
-                from .workflow_scorecard import source_selection_decision, release_acceptance
+                from .workflow_scorecard import source_selection_decision, release_acceptance, saved_report
+                try:report=saved_report(ROOT,connected_stack.retriever.meta['snapshot'] if connected_stack is not None else None)
+                except FileNotFoundError:self.send_error(404);return
+                except (ValueError,KeyError,TypeError):self.send_error(409,'Saved workflow report evidence needs revalidation');return
                 report['source_selection_decision']=source_selection_decision(ROOT)
                 evidence_config=ROOT/'config/agere/capability_acceptance.json'
                 if evidence_config.exists() and connected_stack is not None:

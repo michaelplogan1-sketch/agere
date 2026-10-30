@@ -2,7 +2,8 @@
 import hashlib,json,tempfile,unittest
 from pathlib import Path
 from clinical_core.contracts import digest
-from clinical_core.agere.workflow_scorecard import release_acceptance,capability_checks
+from clinical_core.agere.workflow_scorecard import release_acceptance,capability_checks,saved_report
+from clinical_core.agere import workflow_scorecard
 from clinical_core.agere.workflow_evaluation_view import page
 
 class ReleaseEvidence(unittest.TestCase):
@@ -57,5 +58,20 @@ class ReleaseEvidence(unittest.TestCase):
   value=self.report()['requirements'][1];self.assertEqual(value['status'],'passed');self.assertEqual(value['workflow_verification']['rows'][0]['current_status'],'historical')
   r['snapshot_digest']='different';p.write_text(json.dumps(r));self.receipt['checks'][0]['evidence'][-1]['sha256']=self.sha(p);self.save()
   self.assertEqual(self.report()['requirements'][1]['status'],'blocked')
+
+class CurrentReport(unittest.TestCase):
+ def test_current_trace_and_snapshot_identity_with_historical_fallback(self):
+  with tempfile.TemporaryDirectory()as tmp:
+   root=Path(tmp);old=root/'artifacts/agere-workflow-evaluation-v1/scorecard.json';old.parent.mkdir(parents=True);old.write_text('{"historical":true}')
+   self.assertEqual(saved_report(root),{'historical':True})
+   raw=root/'execution.json';raw.write_text('{"actual":"saved"}')
+   current=root/'artifacts/agere-workflow-evaluation-current/scorecard.json';current.parent.mkdir(parents=True)
+   row={'snapshot':{'release':'current'},'trace_sha256':{'execution.json':hashlib.sha256(raw.read_bytes()).hexdigest()},'scorecard_implementation_sha256':hashlib.sha256(Path(workflow_scorecard.__file__).read_bytes()).hexdigest()}
+   current.write_text(json.dumps(row));self.assertEqual(saved_report(root,row['snapshot']),row)
+   with self.assertRaisesRegex(ValueError,'another source'):saved_report(root,{'release':'old'})
+   raw.write_text('{}')
+   with self.assertRaisesRegex(ValueError,'evidence changed'):saved_report(root,row['snapshot'])
+   row['trace_sha256']={'../outside.json':'invented'};current.write_text(json.dumps(row))
+   with self.assertRaisesRegex(ValueError,'evidence changed'):saved_report(root,row['snapshot'])
 
 if __name__=='__main__':unittest.main()

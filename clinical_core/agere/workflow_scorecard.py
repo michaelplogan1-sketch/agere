@@ -8,6 +8,26 @@ STAGES=('retrieval','reranking','source_scope','source_interpretation','reader_c
 ROOT=Path(__file__).resolve().parents[2]
 CONTRACT=ROOT/'config/agere/release_acceptance.json'
 
+def saved_report(root=ROOT, snapshot=None):
+    """Prefer the current evidence bundle; never present another source as current."""
+    root=Path(root).resolve()
+    current=root/'artifacts/agere-workflow-evaluation-current/scorecard.json'
+    path=current if current.exists() else root/'artifacts/agere-workflow-evaluation-v1/scorecard.json'
+    report=json.loads(path.read_text())
+    if path==current:
+        if not snapshot or report.get('snapshot')!=snapshot:
+            raise ValueError('Current workflow report belongs to another source snapshot')
+        traces=report.get('trace_sha256')
+        if not isinstance(traces,dict) or not traces:
+            raise ValueError('Current workflow report lacks saved execution evidence')
+        for name,expected in traces.items():
+            source=(root/name).resolve()
+            if not source.is_relative_to(root) or not source.is_file() or hashlib.sha256(source.read_bytes()).hexdigest()!=expected:
+                raise ValueError('Current workflow report execution evidence changed')
+        if report.get('scorecard_implementation_sha256')!=hashlib.sha256(Path(__file__).read_bytes()).hexdigest():
+            raise ValueError('Current workflow report scoring implementation changed')
+    return report
+
 def source_selection_decision(root=ROOT):
     """Attach engineering diagnostics only; never provide patient/model evidence.
 
