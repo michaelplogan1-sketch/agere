@@ -167,6 +167,8 @@ def render(context,output,references=None,evidence=None):
  if context.get('retained_inspection'):story.extend([P('Retained analysis for inspection',head),P('Planning code changed after this saved execution. This report preserves the original analysis and source snapshot; rendering adds no new clinical interpretation, acceptance or care authorization.')])
  for index,a in enumerate(allparts):
   facts=a.get('facts')or{}
+  if isinstance(facts,dict):
+   facts={k:v for k,v in facts.items() if not (isinstance(v,dict)and 'template'in v and 'bindings'in v)}
   if facts:
    story.append(P('Recorded findings'+(' / output '+str(index+1)if len(allparts)>1 else''),head))
    if isinstance(facts,dict):

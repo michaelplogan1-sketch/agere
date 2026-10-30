@@ -102,6 +102,7 @@ class SavedReport(unittest.TestCase):
         headline={'template':'There are {unresolved_count} records.',
                   'bindings':{'unresolved_count':{'result_view':'native_result','row':0,'column':'count'}}}
         result['answer']['headline']=headline
+        result['answer']['facts']={'unresolved_formula':headline,'recorded_finding':'The saved data remain incomplete.'}
         ref=A.capture(self.path,question,result)
         d=R.create(self.path,{'context_id':ref['id'],'template':'explore','request':'Interactive review and PDF'})
         payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',d['html'],re.S).group(1))
@@ -109,8 +110,10 @@ class SavedReport(unittest.TestCase):
         raw,_,_=R.read_format(self.path,ref['id'],d['id'],'pdf');pdf=PdfReader(io.BytesIO(raw))
         text='\n'.join(p.extract_text()for p in pdf.pages)
         self.assertNotIn('There are {unresolved_count}',text)
+        self.assertIn('The saved data remain incomplete.',text)
         embedded=json.loads(gzip.decompress(pdf.attachments['Agere-saved-answer.json.gz'][0]))
         self.assertEqual(embedded['answer']['headline'],headline)
+        self.assertEqual(embedded['answer']['facts'],result['answer']['facts'])
 
     def test_recorded_exports_match_full_report_payload_and_reject_altered_bytes(self):
         import csv,io
