@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T04:23:01.137367+00:00",
+  "updated_at": "2026-10-30T04:58:04.230432+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_native_and_dependencies_passed_individual_v8_running",
+    "kind": "current_native_passed_individual_v9_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current API reuses a complete corrected source stage and its exact saved typed reconciliation, preserving all supplied unique references. First medication group canonically reopens and attaches to its original full source plan. Native finance/timing/discovery and exact changed-evidence/acquisition workflows now have dedicated current-source receipts.",
-    "measured_failure_reduction": "Retrieval and subscription preflight defects removed; original source/model parser binding repaired. Complete 33,213-byte claim request no longer hits an API-only32KiB limit in subscription mode. Five valid supplied source references no longer fail a four-reference metadata cap: all other contracts pass, 24 claims retained, failed request preserved, zero new provider calls. Three full-roster evidence mutations each affect one member and preserve4,114 exact member states. Source and all241 original internal handoffs retained.",
+    "user_behavior_delta": "A completed typed reconciliation with a broken supported-claim link now receives targeted full-candidate feedback through the existing recovery route; the unchanged strict parser admits only a valid replacement. Medication group6 now reopens and attaches, and all five earlier paid answers retain exact identities.",
+    "measured_failure_reduction": "One actual group6 typed-link failure removed by a corrected complete response, without rerunning its six source passes or 23 source claims. Prior five canonical answers independently revalidated exactly. Complete subscription reconciliation waits for service completion rather than an arbitrary 150-second API timer.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -530,10 +530,13 @@
       "artifacts/agere-current-mvp-2026-10-30/configured-ledger-release-receipt.json",
       "artifacts/agere-current-mvp-2026-10-30/source-feedback-admission-receipt.json",
       "artifacts/agere-current-mvp-2026-10-30/source-field-feedback-receipt.json",
-      "artifacts/agere-current-mvp-2026-10-30/source-field-feedback-native-compatibility.json"
+      "artifacts/agere-current-mvp-2026-10-30/source-field-feedback-native-compatibility.json",
+      "artifacts/agere-current-mvp-2026-10-30/typed-recovery-native-compatibility.json",
+      "artifacts/agere-current-mvp-2026-10-30/typed-recovery-group6-preview.json",
+      "artifacts/agere-current-mvp-2026-10-30/complete-reconciliation-transport-receipt.json"
     ],
-    "remaining_gap": "Individual v8 is still running in medication group6; remaining medication groups and five original questions, installed startup/restart/backup/restore/transaction recovery and the final current acceptance package remain. Model/clinical qualification, TypeSafe new credits, unpriced review/local costs, source completeness and external production authority remain explicit.",
-    "next_action": "Current full six-question workflow continuation v8 RUNNING PID91569/session1032 on frozen92b42cf. Candidate8888ready PID91542/session51654. Do not duplicate provider work or mutate integration product source until this worker is terminal. Five of nine medication source groups now canonically reopen and attach to the complete original plan; all five saved answers were independently revalidated exactly with zero provider calls. Group6 complete source correction has returned successfully and its typed reconciliation is running. Latest repair targets a reproduced source-pass citation-format error through the original strict parser; full source evidence is retained. Current subscription source-correction feedback no longer fails an API-only20KB input limit; exact historical source stages preserve their original IDs only after full current parser and assembled-field revalidation, protecting completed paid progress. Native two-program population work, finance/outcome/timing/discovery and all three changed/late/conflicting source dependency scenarios passed;241 internal tasks and4,114 unaffected members per mutation preserved. When the six workflows finish, run prepared verify_operations_v1.py against the exact passed individual/server receipts: create durable checkpoint, executable/runtime archive and local operations installations, verify all saved work, idempotency/CAS, restart/reopen, uncommitted actual-task WAL rollback and fresh restore without rolling back the current shared provider ledger. Operations outputs target /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1; not started before full individual acceptance. Then bind dedicated current-snapshot capability receipts, current computed scorecard and truthful private draft/package; preserve all ten areas, independent model/clinical qualifications and production dependencies. No default model promotion, main merge, publication, real care, new services or scheduler restart.",
+    "remaining_gap": "Six individual workflows remain running; medication group7 underway after six canonical groups. Installed operations and current final acceptance package remain. Independent model/clinical qualification, TypeSafe credits, unpriced review/local costs, source completeness and production authority remain explicit.",
+    "next_action": "Continue the already-running six original full-source workflows v9 PID92260 on frozen bdb66aa, served by owned candidate8888 PID92223/session69379. Do not duplicate provider work or edit integration product source until terminal. Medication groups1-6 now canonically reopen and attach; group6 typed correction succeeded through the existing strict recovery route without repeating source passes. Group7 is running. Preserve every original/corrected response, failed key and source stage. After all six cases pass, run prepared verify_operations_v1.py using individual-v9 and server-v12 receipts to verify checkpoint, archived-runtime startup, all saved decisions/work, idempotency/CAS, restart, actual uncommitted-task WAL rollback and fresh restore without rolling back the shared provider ledger. Then bind current-snapshot capability receipts, compute the final acceptance report, verify its actual UI and update the private draft/package. Retain all ten scope areas and separate model/clinical and external dependencies. No global activation, main merge, publication, new services, real care or scheduler restart.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
