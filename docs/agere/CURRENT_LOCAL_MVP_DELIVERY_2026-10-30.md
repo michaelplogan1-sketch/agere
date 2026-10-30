@@ -4,7 +4,7 @@ Candidate branch: `codex/integration-20261026`. Product implementation: `5f095dc
 
 **Scope correction following Mike's October 30 review:** the sealed nine checks below establish the six-case source/reconciliation/work path and local recovery. They do not establish the intended integrated model roles or full-stack MVP completion. Those six source-synthesis cases hard-code Claude; they bypass the ordinary Ask planner's System One document reader. G5 is active again for the explicitly requested integrated rerun. The normal Ask screen already calls `/api/stack/compose`; the verification path and completion framing were wrong.
 
-Jev credit access is restored and confirmed live. The retained 16-case development source controls matched 14 expected outcomes for Jev and 13 for Perplexity. Jev incorrectly accepted one mixed-domain count; Perplexity left three cases unresolved. These controls establish neither clinical accuracy nor model qualification. A fresh ordinary-route run of the original full HFrEF question is in progress with isolated accounting, complete source scope and actual component traces; no prior answer or owned-recovery shortcut is injected. Current receipts: `artifacts/agere-full-stack-rerun-2026-10-30/`. The earlier sealed acceptance manifest and recovery archive remain historical evidence unchanged.
+Jev credit access is restored and confirmed live. The retained 16-case development source controls matched 14 expected outcomes for Jev and 13 for Perplexity. Jev incorrectly accepted one mixed-domain count; Perplexity left three cases unresolved. These controls establish neither clinical accuracy nor model qualification. The fresh ordinary-route original full HFrEF attempt was stopped after exposing blanket document-by-field scheduling and expensive repeated fallbacks. Its1465 validated responses and native actions are preserved; no final answer was accepted. A focused noncold continuation is prepared using the same source, complete57-patient population and unchanged original ledger; no prior accepted answer is inherited. Current receipts: `artifacts/agere-full-stack-rerun-2026-10-30/`. The earlier sealed acceptance manifest and recovery archive remain historical evidence unchanged.
 
 **Local engineering acceptance: 9 of 9 requirements passed.** All ten charter areas remain represented. Independent model/method qualification, qualified clinical review and authorized production connections remain unassessed. Full research/clinical/product-charter acceptance is not claimed.
 
@@ -20,6 +20,12 @@ The shared source-to-answer-to-owned-work path now completes all six original in
 | payer | 25 | 1 | 1 | passed |
 
 Both respiratory and behavioral programs retain all 4,115 members, independently reconcile 112 and 129 documentary nominations, and preserve 241 internal software review handoffs. Combined with eight individual tasks, 249 tasks persist; these are internal software actions, not completed clinical services.
+
+## Focused evidence-routing candidate (unsealed)
+
+The existing investigator now defaults to field-specific whole-source retrieval and native patient applicability, with explicit searchable inventory, unknowns and targeted expansion. Exact machine source-field observations reuse their original provenance across rebatching; changed source, question, date, patient or provider policy misses. Implicit d1/Kev fallback is opt-in pending evidence for its task. Native schema discovery retains lossless full documentation access.
+
+Same-source offline preflight schedules14,469 rather than56,063 block-field tasks (74.19% fewer), retains all57 patients and106 dated clinician-role objects, and retains all69 previously observed machine-positive source candidates. Resident system bytes fall217,811 to35,963 (83.49%);212 relevant offline regressions pass. No provider calls occur in these checks. These measures establish neither retrieval recall nor interpretation accuracy, live latency or workflow completion. The original full continuation and artifact/domain/source audits remain required. Receipts: `artifacts/agere-full-stack-rerun-2026-10-30/focused/`.
 
 ## Question flow and component roles
 

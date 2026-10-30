@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T13:01:07.959782+00:00",
+  "updated_at": "2026-10-30T15:18:35.203879+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -375,11 +375,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "full_stack_execution_scope_reopened",
+    "kind": "candidate_evidence_routing_repair",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Ordinary full-question app rerun now uses the intended integrated route; successful Jev/Perplexity decisions and native57-patient SQL are traced. Source-reader/full-result acceptance remains pending. Normal Ask already used this endpoint; earlier verification and completion framing were incorrect.",
-    "measured_failure_reduction": "Jev credit unavailability disproved live. Scoped9/9 full-stack overclaim corrected in delivery report and draft PR. Paired16-case controls expose one Jev false support and unresolved role/domain checks; no qualification inferred.",
+    "user_behavior_delta": "Existing Ask investigator now defaults to requirement-bound focused whole-source review and native per-field patient applicability; retains all patients/source inventory, explicit unknowns and targeted expansion. Exact machine source-field cache survives rebatching, source/task/policy changes miss. Native schema discovery is default; implicit unqualified d1/Kev fallback is opt-in.",
+    "measured_failure_reduction": "Original same-source preflight56063 to14469 block-field tasks (74.19% fewer);57patients/106dated-role objects retained;69prior machine-positive candidate sources retained. Resident schema217811 to35963bytes (83.49% smaller), lossless native full lookup.212 offline regressions pass;0provider calls. These do not establish recall, clinical accuracy, complete output or live latency.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -582,10 +582,23 @@
       "artifacts/agere-full-stack-rerun-2026-10-30/integrated/protocol.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/protocol.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/integrated/run-receipt.json",
-      "artifacts/agere-full-stack-rerun-2026-10-30/all-attempt-accounting.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/all-attempt-accounting.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/domain-diagnosis/receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/domain-diagnosis/native-measure-proof.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/completion-audit.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/domain-diagnosis/current-admission-proof.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/note-reader-progress.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/latency-diagnosis.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/interruption-preservation.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/retained-native-actions.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/selection-preflight-v3.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/prior-positive-retention.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/regression-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/prompt-discovery-preflight.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/run-protocol.json"
     ],
-    "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
-    "next_action": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
+    "remaining_gap": "Focused runtime engineering candidate remains unsealed. Live original full workflow, exact sources, GDMT-domain dose semantics, faithful saved outputs and actual role/time evidence still required. Independent model/clinical qualification and external prerequisites remain distinct.",
+    "next_action": "Execute the prepared focused original57-patient continuation through existing /api/stack/compose, preserving1465 prior ledger rows and exact native/source-field reuse. Product/source frozen for this attempt; inspect its owned receipt and trace, never duplicate. Verify full native cohort/pillar/domain/dated-role/source evidence and saved dashboard/PDF/reopen before claiming complete workflow or activating candidate. Scheduler PAUSED; independent model/clinical/external qualifications remain open.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -682,16 +695,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T13:12:25.828032+00:00",
-    "workflow_change": "Ordinary full-question app rerun now uses the intended integrated route; successful Jev/Perplexity decisions and native57-patient SQL are traced. Source-reader/full-result acceptance remains pending. Normal Ask already used this endpoint; earlier verification and completion framing were incorrect.",
+    "at": "2026-10-30T15:18:35.203879+00:00",
+    "workflow_change": "Field-specific source retrieval and native applicability replace blanket every-document/every-field scheduling; unchanged observations reuse original request provenance.",
     "unsealed_work": {
-      "status": "integrated_normal_route_running",
+      "status": "focused_continuation_prepared",
       "path": "artifacts/agere-full-stack-rerun-2026-10-30",
       "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
-      "next_action": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
+      "next_action": "Execute the prepared focused original57-patient continuation through existing /api/stack/compose, preserving1465 prior ledger rows and exact native/source-field reuse. Product/source frozen for this attempt; inspect its owned receipt and trace, never duplicate. Verify full native cohort/pillar/domain/dated-role/source evidence and saved dashboard/PDF/reopen before claiming complete workflow or activating candidate. Scheduler PAUSED; independent model/clinical/external qualifications remain open.",
       "source_frozen_for_run": true,
       "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json"
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/run-protocol.json"
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -754,17 +767,7 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [
-      {
-        "kind": "integrated_normal_route",
-        "status": "running",
-        "pid": 10857,
-        "session": 24153,
-        "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json",
-        "protocol": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/protocol.json",
-        "source_frozen": true
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2121,16 +2124,23 @@
         "clinical_core/agere/clinical/decision_planner.py"
       ],
       "scope_impact": "Full existing ten-area charter and agreed modular architecture retained; role execution/routing is required evidence, not a component catalog or forced all-model cascade."
+    },
+    {
+      "at": "2026-10-30T14:17:49.497472+00:00",
+      "gate": "G5",
+      "decision": "Stop user-rejected inefficient attempt and correct source/role routing before another execution. This is a defect-driven run interruption, not a build pause or capability cap.",
+      "evidence": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/latency-diagnosis.json",
+      "scope_impact": "Full ten-area charter and full57-patient question unchanged. Prior9/9 scoped engineering receipt unchanged; qualification remains open."
     }
   ],
   "unsealed_work": {
-    "status": "integrated_normal_route_running",
+    "status": "focused_continuation_prepared",
     "path": "artifacts/agere-full-stack-rerun-2026-10-30",
     "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
-    "next_action": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
+    "next_action": "Execute the prepared focused original57-patient continuation through existing /api/stack/compose, preserving1465 prior ledger rows and exact native/source-field reuse. Product/source frozen for this attempt; inspect its owned receipt and trace, never duplicate. Verify full native cohort/pillar/domain/dated-role/source evidence and saved dashboard/PDF/reopen before claiming complete workflow or activating candidate. Scheduler PAUSED; independent model/clinical/external qualifications remain open.",
     "source_frozen_for_run": true,
     "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
-    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json"
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/run-protocol.json"
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
@@ -2154,15 +2164,5 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "kind": "integrated_normal_route",
-      "status": "running",
-      "pid": 10857,
-      "session": 24153,
-      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json",
-      "protocol": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/protocol.json",
-      "source_frozen": true
-    }
-  ]
+  "active_jobs": []
 }

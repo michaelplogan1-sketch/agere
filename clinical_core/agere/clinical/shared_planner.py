@@ -129,7 +129,7 @@ def policy_identity():
     from .component_learning import active_identity
     from tools.training import datasets as training_messages
     return request_plan.fingerprint({'governed_definitions': definitions(), 'concept_definitions': concept_definitions(),
-        'analyst_documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','full'),
+        'analyst_documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','discover'),
         'clinical_input_policy': clinical_input_identity(),'component_releases':active_identity(),
         'local_serving_prompt':request_plan.fingerprint(Path(training_messages.__file__).read_text()),
         'governed_knowledge': governed_knowledge(), 'financial_rulebook': rulebook_digest(),

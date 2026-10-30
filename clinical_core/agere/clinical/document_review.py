@@ -50,6 +50,16 @@ def question_text(question):
     return question if isinstance(question,str) else question['question']
 
 
+def source_scope_limits(reviews):
+    """Keep code-owned retrieval limits in the saved answer and its exports."""
+    focused=[r for r in reviews if r.get('source_scope')=='focused']
+    if not focused:return []
+    return ['Narrative evidence was retrieved for explicit requested entities and fields. '
+            'Unmatched source/field combinations were not exhaustively interpreted; an empty finding '
+            'does not establish chart-wide absence. Source inventories, field applicability and search scope '
+            'are retained in the document review. Unresolved requirements need targeted expansion.']
+
+
 def validate_questions(questions):
     if not isinstance(questions,dict) or not questions:
         raise ValueError('Narrative questions require named precise questions')
@@ -316,7 +326,8 @@ def candidate_row_scope(receipt,manifest):
         **manifest['candidate_scope'],'scope':receipt['scope']}
 
 
-def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None, patient_query_sql=None, record_ids=None,candidate_result_view=None):
+def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None, patient_query_sql=None, record_ids=None,candidate_result_view=None,
+           source_scope='all',field_patient_queries=None,exhaustive_reason=None):
     if (patient_ids is None)==(patient_query_sql is None):
         raise ValueError('Choose explicit patient_ids OR a complete patient_query_sql')
     if patient_query_sql is not None:
@@ -326,6 +337,21 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         raise ValueError('Use explicit received patient IDs')
     ids = list(dict.fromkeys(patient_ids))
     validate_questions(questions)
+    if source_scope not in ('focused','all'):raise ValueError('Source scope must be focused or all')
+    focused=source_scope=='focused' and record_ids is None and candidate_result_view is None
+    if focused and any(not isinstance(q,dict)for q in questions.values()):
+        raise ValueError('Focused review requires an explicit entity/relation/subject binding for every field; '
+                         'use the actual requested concept and its aliases. Exact record_ids can target a source repair. '
+                         'An exhaustive source_scope=all must be an intentional coverage decision, not the default.')
+    if field_patient_queries is not None and (not isinstance(field_patient_queries,dict)or
+        not set(field_patient_queries)<=set(questions)or any(not isinstance(v,str)or not v.strip()for v in field_patient_queries.values())):
+        raise ValueError('Field patient queries must map requested fields to complete read-only patient queries')
+    applicable={field:set(ids)for field in questions}
+    for field,query in (field_patient_queries or {}).items():
+        from .analysis_tools import population
+        members=set(population(tools,patient_query_sql=query))
+        if not members<=set(ids):raise ValueError('Field patient scope exceeds the selected population')
+        applicable[field]=members
     candidates=candidate_receipt=None
     if candidate_result_view is not None:
         if record_ids is not None or date_from is not None or date_to is not None:
@@ -341,7 +367,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                       set(record_ids)if record_ids is not None else None)
     received_selected=set()
     guard = digest(tools.continuation_identity())
-    packages, manifest = {}, []
+    packages, manifest, correspondence_packages, retrievals, field_scopes = {}, [], {}, {}, {}
     for pid in ids:
         docs, seen = [], {}
         rows = [r for r in tools._texts(pid) if (selected_records is None or r[0]in selected_records) and (not date_from or (r[4] or '')[:10]>=date_from)
@@ -370,6 +396,24 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                 doc={'record_id':rid,'date':(day or '')[:10],'type':kind,'text':text,'duplicate_record_ids':[]}
                 if rid in arrivals:doc['available_date']=arrivals[rid]
                 seen[key]=doc;docs.append(doc)
+        correspondence_packages[pid]=[docs]
+        inventory_docs=docs
+        if focused:
+            from .note_evidence import focused_documents
+            from .typed_document_review import prior_source_candidates
+            seeds=prior_source_candidates(tools.stack.path,docs,questions,patient_id=pid)
+            fields,selection=focused_documents(docs,questions,prior_sources=seeds)
+            for field in fields:
+                if pid not in applicable[field]:fields[field]=set()
+            for doc in docs:doc['source_document_identity']=digest([doc['record_id'],doc['date'],doc['text']])
+            docs=[d for d in docs if any(d['source_document_identity']in values for values in fields.values())]
+            selection['selected_documents']=len(docs)
+            selection['field_documents']={field:len(values)for field,values in fields.items()}
+            selection['field_applicability']={field:pid in members for field,members in applicable.items()}
+            retrievals[pid]=selection;field_scopes[pid]=fields
+        elif field_patient_queries:
+            field_scopes[pid]={field:{digest([d['record_id'],d['date'],d['text']])for d in docs}if pid in applicable[field]else set()for field in questions}
+            for doc in docs:doc['source_document_identity']=digest([doc['record_id'],doc['date'],doc['text']])
         # A scheduling batch bounds each model context, never the reviewed population.
         # Oversized documents are continued in overlapping complete-coverage segments.
         batches, batch, chars = [], [], 0
@@ -399,6 +443,9 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                          'document_digest':digest([{k:v for k,v in d.items() if k!='available_date'} for d in docs]),
                          **({'candidate_scope':{'candidates':len(candidates[pid]),'candidate_digest':digest(candidates[pid]),
                              'whole_document_absence_established':False}}if candidates is not None else {})})
+        if focused:
+            manifest[-1].update(inventory_whole_documents=len(inventory_docs),source_selection=retrievals[pid],
+                                complete_chart_review=False,absence_established=False)
     if selected_records is not None and selected_records!=received_selected:
         raise ValueError('Requested records are outside this received patient/date scope: '+str(sorted(selected_records-received_selected)))
     # Reuse the investigator's existing full-document cache for downstream
@@ -413,7 +460,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                     tools.read.setdefault(doc['record_id'],{'patient_id':pid,'date':doc['date'],'text':doc['text'],
                         'available':doc.get('available_date')})
     from .harness_improvement import recover_document_observations
-    recovered=recover_document_observations(questions,manifest,packages)
+    recovered=recover_document_observations(questions,manifest,packages)if not focused and not field_patient_queries else None
     if recovered is not None:
         recovered={**recovered,'rows':with_correspondence(recovered['rows'],packages,questions,tools.as_of)}
         if candidate_receipt:
@@ -427,11 +474,12 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
             'observation_reuse':recovered['observation_reuse'],
             'method':'Exact-source/question machine observations revalidated during explicit owned-run recovery. SQL and interpretation rerun; no clinical acceptance inherited.'}
     from .harness_improvement import recover_document_fields
-    reused=recover_document_fields(questions,manifest,packages)if candidates is None else None
+    reused=recover_document_fields(questions,manifest,packages)if candidates is None and not focused and not field_patient_queries else None
     all_questions=questions
     questions={k:q for k,q in questions.items()if not reused or k not in reused['fields']}
     stop=threading.Event()
     source_coverage=[]
+    deferred_fields={pid:[]for pid in ids}
     coverage_lock=threading.Lock()
     from . import together, system_one
     ledger_path = together._ledger_path(tools.stack)
@@ -441,6 +489,13 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         if reused:
             aggregate.update(reused['rows'][pid]);failures.extend(reused['limitations'][pid])
         if not questions:return pid,aggregate,receipts,checks,failures
+        if focused:
+            failures.append('Focused source retrieval; no chart-wide absence is established. '+json.dumps({
+                'inventory_documents':retrievals[pid]['inventory_documents'],
+                'selected_documents':retrievals[pid]['selected_documents'],
+                'field_documents':retrievals[pid]['field_documents'],
+                'field_applicability':retrievals[pid]['field_applicability'],
+                'expansion':retrievals[pid]['expansion']}))
         if not packages[pid]:return pid,aggregate,receipts,checks,failures
         ledger=BudgetLedger(ledger_path)
         send=together._ledgered_send(tools.stack,ledger,receipts)
@@ -452,7 +507,8 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                     selected=([v for v in candidates[pid]if any(v['record_id']==d['record_id']and v['document_text_digest']==digest(d['text'])for d in batch)]
                               if candidates is not None else None)
                     typed=read(tools,pid,batch,questions,ledger,ranking=os.environ.get('AGERE_DOCUMENT_RANKING','on')!='off',
-                        **({'candidates':selected}if candidates is not None else {}))
+                        **({'candidates':selected}if candidates is not None else {}),
+                        **({'field_documents':field_scopes[pid]}if pid in field_scopes else {}))
                     with coverage_lock:
                         source_coverage.append({'patient_id':pid,'version':typed['version'],
                             'coverage':typed['coverage'],'ranking':typed['ranking'],
@@ -463,7 +519,16 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                     for key,values in typed['findings'].items():aggregate[key].extend(values)
                     if os.environ.get('AGERE_DOCUMENT_FRONTIER')=='select_spans' or any(isinstance(q,dict) for q in questions.values()):
                         from .span_repair import repair as repair_spans
-                        repaired=repair_spans(tools,pid,typed['unresolved'],batch,questions,send,stop,receipts)
+                        unresolved=typed['unresolved']
+                        if focused:
+                            # A suspected positive needs disambiguation. An
+                            # uncertain relevance vote does not justify a blind
+                            # generative reread. Keep it addressable for an
+                            # actual unresolved requirement, never as a negative.
+                            deferred=[u for u in unresolved if (u.get('reading')or{}).get('label')!='finding']
+                            deferred_fields[pid].extend({k:u.get(k)for k in ('field','record_id','reason','document_text_digest','span_start','span_end')}for u in deferred)
+                            unresolved=[u for u in unresolved if (u.get('reading')or{}).get('label')=='finding']
+                        repaired=repair_spans(tools,pid,unresolved,batch,questions,send,stop,receipts)
                         for key,values in repaired['findings'].items():aggregate[key].extend(values)
                         failures.extend(repaired['failures'])
                         with coverage_lock:source_coverage.append({'patient_id':pid,'frontier_span_repair':repaired['receipt']})
@@ -570,19 +635,25 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
         row={'patient_id':pid,'review_status':'needs_review' if failures else
              ('reviewed_candidates'if m['received_documents']else 'no_candidates')if candidates is not None else
              'reviewed' if m['received_documents'] else 'no_documents',
-             'documents_reviewed':m['received_documents'],'review_json':json.dumps(found),'review_limitations':json.dumps(failures)}
+             'documents_reviewed':m['unique_whole_documents']if focused else m['received_documents'],'review_json':json.dumps(found),'review_limitations':json.dumps(failures)}
+        if focused:row['evidence_scope_json']=json.dumps(retrievals[pid])
+        if focused:row['review_unresolved_json']=json.dumps(deferred_fields[pid])
+        if field_patient_queries:row['field_patient_scope_json']=json.dumps({field:{'applicable':pid in applicable[field],'patient_query_sql':query}for field,query in field_patient_queries.items()})
         if candidate_receipt:row['candidate_review_scope']=json.dumps(candidate_row_scope(candidate_receipt,m))
         rows.append(row)
-    rows=with_correspondence(rows,packages,all_questions,tools.as_of)
+    rows=with_correspondence(rows,correspondence_packages,all_questions,tools.as_of)
     tools.document_reviews.append({'questions':all_questions,'scope':ids,'manifest':manifest,'rows':rows,
         'provider_receipts':all_receipts,'typed_checks':all_checks,'source_coverage':source_coverage,
+        'source_scope':source_scope,'field_patient_queries':field_patient_queries,'exhaustive_reason':exhaustive_reason,
         **({'candidate_observation_review':candidate_receipt}if candidate_receipt else {}),
         'observation_reuse':{k:v for k,v in reused.items()if k not in ('rows','limitations')}if reused else None})
     return {'columns':list(rows[0]) if rows else ['patient_id','review_status','documents_reviewed','review_json','review_limitations'],
             'rows':rows,'coverage':manifest,'record_ids_filter':record_ids,
+            'source_scope':source_scope,'field_patient_queries':field_patient_queries,'exhaustive_reason':exhaustive_reason,
             **({'candidate_observation_review':candidate_receipt}if candidate_receipt else {}),
             'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
-            'method':(candidate_receipt['scope']+' Not independent clinical qualification.'if candidate_receipt else
+            'method':('Focused whole-document candidates for each bound field; unmatched sources and unresolved findings require explicit expansion. No chart-wide absence or independent clinical qualification.'if focused else
+                      candidate_receipt['scope']+' Not independent clinical qualification.'if candidate_receipt else
                       'Every scoped whole document/block read with typed source decisions; only unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
                       if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans' else
                       'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification')}

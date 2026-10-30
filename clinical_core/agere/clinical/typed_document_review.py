@@ -1,6 +1,7 @@
 """Source-span decisions for the existing whole-document review tool.
 
-Every source block is read in context. Ranking changes order, never coverage.
+Every scheduled source block is read in context. Explicit field/source scopes
+retain their coverage limits; ranking changes order, never scheduled membership.
 Typed models select evidence; code copies it. No disease-specific answer path.
 """
 import json
@@ -8,12 +9,20 @@ import re
 import threading
 import os
 import time
+import sqlite3
 from ...contracts import digest
 from ..request_lineage import component
 
 VERSION='typed-whole-document-review/2'
 _RANK_LOCK=threading.Lock()
 _READER_LOCK=threading.Lock()
+OBSERVATION_VERSION='source-field-observation/3'
+SOURCE_INDEX="CREATE INDEX IF NOT EXISTS observations_source_lookup ON observations(json_extract(payload,'$.patient_id'),json_extract(payload,'$.question_text')) WHERE json_extract(payload,'$.reading.label')='finding'"
+
+
+def observation_path(path):
+    from .evaluation import operational_path
+    return operational_path(path,'typed-document-observations.sqlite3')
 OPTIONS={'finding':'This exact source block contains a documented finding answering the question. Read the whole document for whose care, clinical role, dates, negation and qualifications. Copying the block would give useful evidence for this requested field.',
          'irrelevant':'This block does not answer the question. A drug/person name alone, unrelated specialty, hypothetical reason or administrative text is insufficient.',
          'unknown':'The context does not settle whether this block answers the question.'}
@@ -73,7 +82,7 @@ def _rank(tools,questions,documents):
 
 
 
-def source_batches(documents,questions,priority,*,cross_document=False,candidates=None):
+def source_batches(documents,questions,priority,*,cross_document=False,candidates=None,field_documents=None):
     """Batch independent named decisions with their complete source contexts.
 
     64 is the existing named-field transport schedule; the byte envelope is a
@@ -96,7 +105,9 @@ def source_batches(documents,questions,priority,*,cross_document=False,candidate
     else:
         for doc in documents:
             spans=sorted(blocks(doc['text']),key=lambda b:-priority.get((doc['record_id'],b['start']),0))
-            decisions.extend((field,instruction,span,doc)for span in spans for field,instruction in questions.items())
+            identity=doc.get('source_document_identity')or digest([doc['record_id'],doc['date'],doc['text']])
+            decisions.extend((field,instruction,span,doc)for span in spans for field,instruction in questions.items()
+                             if field_documents is None or identity in field_documents.get(field,set()))
     jobs=[];batch=[];source_keys=set();size=2048;last=None
     for field,instruction,span,doc in decisions:
         source_key=digest([doc['record_id'],doc['date'],doc['text']])
@@ -111,7 +122,88 @@ def source_batches(documents,questions,priority,*,cross_document=False,candidate
     return jobs
 
 
-def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidates=None):
+def cached_source_judge(tools, judge, *, patient_id=None):
+    """Reuse a machine judgment only for the same task and complete source.
+
+    Batch neighbors and transport field IDs are not semantic dependencies of a
+    source-bound task. Keep their original request hashes as provenance. This
+    cache never upgrades unknowns or clinical authority and never stores an
+    unsent/prepared result. Source/date/question/policy changes miss the cache.
+    """
+    path=getattr(getattr(tools,'stack',None),'path',None)
+    if path is None:return judge
+    target=observation_path(path)
+    from ..gateway import PersistentGateway
+    policy={'order':os.environ.get('AGERE_DOCUMENT_TYPED_ORDER','jev,perplexity'),
+            'models':{p:PersistentGateway.MODELS[p]for p in ('jev','perplexity')},'acceptance_threshold':0.8}
+    def source_key(subject,question,evidence,as_of):
+        instructions=question.get('instructions')
+        cid=instructions.get('source_context_id')if isinstance(instructions,dict)else None
+        matches=[e for e in evidence if e.get('id')==cid]if cid else []
+        if len(matches)!=1:return None
+        return digest([OBSERVATION_VERSION,patient_id,subject,as_of,policy,question,matches[0]])
+    def checked(subject,named,evidence,**kwargs):
+        keys={k:source_key(subject,q,evidence,kwargs.get('as_of'))for k,q in named.items()}
+        with sqlite3.connect(target,timeout=30)as db:
+            db.execute('CREATE TABLE IF NOT EXISTS observations(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
+            db.execute(SOURCE_INDEX)
+            hits={}
+            for field,key in keys.items():
+                row=db.execute('SELECT payload FROM observations WHERE id=?',(key,)).fetchone()if key else None
+                if row:
+                    saved=json.loads(row[0])
+                    if saved['id']!=key or digest(saved['reading'])!=saved['reading_digest']:
+                        raise ValueError('Source-field observation integrity changed')
+                    hits[field]=saved['reading']
+        pending={k:q for k,q in named.items()if k not in hits}
+        result=judge(subject,pending,evidence,**kwargs)if pending else {'judgments':{},'steps':[],'cost_usd':0.0}
+        receipts=[s.get('request_hash')for s in result.get('steps',[])if s.get('request_hash')]
+        with sqlite3.connect(target,timeout=30)as db:
+            for field,reading in result['judgments'].items():
+                key=keys.get(field)
+                if not key or not reading.get('probabilities') or not receipts:continue
+                instructions=named[field]['instructions'];cid=instructions['source_context_id']
+                source=next(e for e in evidence if e.get('id')==cid)
+                saved={'id':key,'reading':reading,'reading_digest':digest(reading),
+                       'schema':OBSERVATION_VERSION,'patient_id':patient_id,'question_text':instructions.get('question'),
+                       'source':{'record_id':source.get('record_id',source['id']),'date':source.get('date'),
+                                 'document_text_digest':digest(source['text'])},
+                       'source_request_hashes':receipts,'original_batch_digest':digest(evidence),
+                       'authority':'source-bound machine observation; no clinical qualification'}
+                db.execute('INSERT OR IGNORE INTO observations VALUES (?,?)',(key,json.dumps(saved)))
+        if hits:
+            result.setdefault('steps',[]).append({'provider':'source_field_cache','status':'reused','cache_hit':True,
+                'cost_usd':0.0,'fields':len(hits),'observation_ids':[keys[k]for k in hits]})
+        result['judgments']={**hits,**result['judgments']}
+        return result
+    return checked
+
+
+def prior_source_candidates(path,documents,questions,*,patient_id=None):
+    """Prior positive machine observations seed retrieval, never final meaning."""
+    from .document_review import question_text
+    target=observation_path(path)
+    selected={field:set()for field in questions}
+    if not target.exists():return selected
+    sources={(d['record_id'],d['date'],digest(d['text'])):digest([d['record_id'],d['date'],d['text']])for d in documents}
+    with sqlite3.connect(target,timeout=30)as db:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE name='observations'").fetchone():return selected
+        db.execute(SOURCE_INDEX)
+        query="SELECT payload FROM observations WHERE json_extract(payload,'$.reading.label')='finding'"
+        params=()
+        if patient_id is not None:
+            query+=" AND json_extract(payload,'$.patient_id')=?";params=(patient_id,)
+        for raw, in db.execute(query,params):
+            saved=json.loads(raw);source=saved.get('source')or{};reading=saved.get('reading')or{}
+            if not reading.get('decided_by') or digest(reading)!=saved.get('reading_digest'):continue
+            identity=sources.get((source.get('record_id'),source.get('date'),source.get('document_text_digest')))
+            if identity:
+                for field,q in questions.items():
+                    if saved.get('question_text')==question_text(q):selected[field].add(identity)
+    return selected
+
+
+def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidates=None,field_documents=None):
     from . import system_one
     from .document_review import validate_questions,question_text,relation_finding,RELATION_RULES
     validate_questions(questions)
@@ -119,16 +211,20 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
         order=[p.strip()for p in os.environ.get('AGERE_DOCUMENT_TYPED_ORDER','jev,perplexity').split(',')if p.strip()]
         if not order or len(set(order))!=len(order)or any(p not in system_one.PROVIDERS for p in order):raise ValueError('Document typed order requires distinct supported providers')
         def judge(*a,**kw):return system_one.judge_fields(*a,order=order,**kw)
+    judge=cached_source_judge(tools,judge,patient_id=pid)
     priority,ranking_receipt=rank(tools,questions,documents) if ranking and candidates is None else ({},{'all_blocks_retained':candidates is None,'ranking':'not required for explicit exhaustive decisions'})
     found={k:[]for k in questions};checks=[];unresolved=[];coverage=[]
     for doc in documents:
         spans=blocks(doc['text'])
+        identity=doc.get('source_document_identity')or digest([doc['record_id'],doc['date'],doc['text']])
+        selected_fields=[f for f in questions if field_documents is None or identity in field_documents.get(f,set())]
         coverage.append({'record_id':doc['record_id'],'blocks':len(spans),
-                         'field_decisions':len(spans)*len(questions) if candidates is None else sum(c['record_id']==doc['record_id']for c in candidates),
-                         'scope':'all_source_blocks' if candidates is None else 'retained_candidate_spans_only',
+                         'field_decisions':len(spans)*len(selected_fields) if candidates is None else sum(c['record_id']==doc['record_id']for c in candidates),
+                         'selected_fields':selected_fields,
+                         'scope':'focused_field_candidates'if field_documents is not None else 'all_source_blocks' if candidates is None else 'retained_candidate_spans_only',
                          'text_digest':digest(doc['text'])})
     cross=os.environ.get('AGERE_DOCUMENT_CROSS_BATCH','off')=='on'
-    batches=source_batches(documents,questions,priority,cross_document=cross,candidates=candidates)
+    batches=source_batches(documents,questions,priority,cross_document=cross,candidates=candidates,field_documents=field_documents)
     for batch in batches:
         unique={digest([d['record_id'],d['date'],d['text']]):d for field,instruction,span,d in batch}
         counts={d['record_id']:sum(v['record_id']==d['record_id']for v in unique.values())for d in unique.values()}
@@ -180,7 +276,8 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
                     'interpretation':'source span selected by typed model; not independent clinical acceptance','provider':reading.get('provider')}
                 found[field].append(finding)
     return {'findings':found,'checks':checks,'unresolved':unresolved,'coverage':coverage,'ranking':ranking_receipt,
-        'version':VERSION,'all_blocks_processed':candidates is None,
+        'version':VERSION,'all_blocks_processed':candidates is None and field_documents is None,
+        'all_selected_blocks_processed':True,'focused_field_scope':field_documents is not None,
         'all_candidates_processed':True if candidates is not None else None,
         'candidate_count':len(candidates)if candidates is not None else None,
         'cross_document_batching':cross,'provider_batches':len(batches)}
@@ -258,7 +355,7 @@ def local_readers_then_recheck(tools,questions,evidence,result,ledger,judge):
     """
     from . import document_readers
     pending={k:q for k,q in questions.items()if not result['judgments'].get(k,{}).get('decided_by')}
-    for provider in os.environ.get('AGERE_DOCUMENT_LOCAL_READERS','kev,d1').split(','):
+    for provider in os.environ.get('AGERE_DOCUMENT_LOCAL_READERS','').split(','):
         if not pending:break
         provider=provider.strip()
         if not provider:continue

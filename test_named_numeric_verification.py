@@ -20,7 +20,11 @@ class Batch(unittest.TestCase):
   p.gateway=SimpleNamespace(send=lambda *a:raw)
   self.assertEqual(set(p.classify(task)['judgments']),set(QS))
   del raw['answers']['second']
-  with self.assertRaisesRegex(ValueError,'omitted'):p.classify(task)
+  partial=p.classify(task)
+  self.assertIn('second',partial['invalid_fields'])
+  self.assertEqual(partial['judgments']['second']['label'],'unknown')
+  self.assertEqual(partial['judgments']['second']['probabilities'],{})
+  self.assertEqual(partial['judgments']['first']['label'],'consistent')
 
  def test_only_uncertain_field_falls_back_and_strong_primary_disagreement_is_not_overwritten(self):
   calls=[]

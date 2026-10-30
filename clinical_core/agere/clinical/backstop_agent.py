@@ -69,9 +69,13 @@ TOOLS = [
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
      "earlier results and compute comparisons/deltas without repeating source scans. Results are paged (2000 rows / 60K characters); aggregate in SQL.",
      'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'},'complete':{'type':'boolean','description':'Store the complete final table in its result_view; the actor receives a preview.'}}, 'required': ['sql'], 'additionalProperties': False}},
-    {'name': 'review_documents', 'description': 'Review ALL whole clinical documents for every selected patient, including notes, HIE and scanned text. '
+    {'name': 'review_documents', 'description': 'Retrieve source candidates for each requested entity/relation, then review their whole document contexts. '
      'Use for population note review, open clinical reasons, medication reconciliation or other multi-field narrative questions. '
      'Supply the complete received patient IDs and a map of field names to precise questions. No patient or document sampling. '
+     'Focused scope selects every matching concept/alias without a top-K or date cutoff. '
+     'Unmatched sources and empty findings do not establish chart-wide absence. Expand a missing field with additional aliases or exact record_ids. '
+     'source_scope=all explicitly requests exhaustive source coverage when needed. '
+     'Use field_patient_queries to apply conditional fields to native patient subsets while retaining the full output population. '
      'Returns coverage and a SQL result_view containing patient_id, review_status, documents_reviewed and review_json. '
      'Each review_json field is a list of {value,record_id,date,quote}; empty means no documented finding, not absent disease. '
      'For a relation about a specific entity use {question,entity:{kind,id,aliases},relation,subject} instead of a question string. '
@@ -81,7 +85,10 @@ TOOLS = [
           'patient_query_sql':{'type':'string','description':'Preferred for a population: a read-only SELECT returning every patient_id, e.g. SELECT patient_id FROM a governed phenotype or cohort view. Avoid transcribing IDs.'},
           'record_ids':{'type':'array','items':{'type':'string'},'description':'Optional exact received source IDs for targeted repair. Reviews only these records, never a complete-patient absence claim.'},
           'candidate_result_view':{'type':'string','description':'Existing complete result_view with patient_id and review_json. Recheck all observations for the requested bound fields against their complete source documents; no whole-document absence or recall claim. Incompatible with record/date filters.'},
-          'questions':{'type':'object','additionalProperties':QUESTION_SCHEMA},'date_from':{'type':'string'},'date_to':{'type':'string'}},
+          'questions':{'type':'object','additionalProperties':QUESTION_SCHEMA},'date_from':{'type':'string'},'date_to':{'type':'string'},
+          'source_scope':{'enum':['focused','all'],'default':'focused'},
+          'exhaustive_reason':{'type':'string','description':'Required for source_scope=all: identify the unresolved requirement and why focused retrieval or exact-source expansion cannot settle it.'},
+          'field_patient_queries':{'type':'object','additionalProperties':{'type':'string'},'description':'Requested field to read-only patient query over native results. A conditional narrative field is reviewed only for those patients; every patient remains in the final population.'}},
           'required':['questions'],'oneOf':[{'required':['patient_ids']},{'required':['patient_query_sql']}],'additionalProperties':False}},
     {'name': 'list_documents', 'description': "One patient's clinical notes, HIE documents and scanned documents, newest first: record_id, "
      "source, document type, date, title, length. Optional inclusive date range (YYYY-MM-DD). Follow next_offset for further pages.",
@@ -112,8 +119,11 @@ has already declined this question, so it is yours to answer completely and corr
 - Plan first: break the question into the simple facts it needs (each measure, population, period and comparison group). Get each number
   from a governed source first: execute_metric when a governed metric fits (list_metrics shows them), else ask_agere (one simple
   sub-question per call); use query_sql for what neither answers or to break a result down further, following the decision context.
-- For a population note review, call review_documents with ALL selected patient IDs and the specific narrative questions. It reads
-  every whole document and returns source-quoted findings and coverage.
+- First settle each requirement with governed metrics, SQL and explicit structured source relationships where available.
+  For narrative gaps, call review_documents with the complete population, precise entity/relation bindings and focused source scope.
+  Supply field_patient_queries for conditional requirements, using executed native eligibility predicates. Review only relevant
+  fields for each patient. Read whole matching source contexts; keep searched and unreviewed coverage distinct. An empty retrieval
+  is not chart-wide absence: expand the exact field's aliases/source records or explicitly request exhaustive coverage when needed.
   For an entity-specific reason or relationship, bind the question explicitly: {{question,entity:{{kind,id,aliases}},relation,subject}}.
   Use a distinct binding per medication class, service, access barrier, person or contract. Aliases identify the entity, not proof of
   the relation. Keep each finding's entity/relation/polarity/temporality/assertion intact in composition; a related entity's reason
@@ -297,7 +307,7 @@ class Tools:
                 'definition_views_version':analyst_definitions.VERSION,
                 'subscription_tool_protocol':hashlib.sha256((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_bytes()).hexdigest(),
                 'documentation_identity':getattr(getattr(self.semantic,'_local',None),'documentation_identity',None),
-                'documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','full'),
+                'documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','discover'),
                 'explicit_tool_quota':MAX_TOOLS,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                                  for name in ('backstop_agent.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','note_evidence.py')},
@@ -342,7 +352,9 @@ class Tools:
             return out
         if name == 'review_documents':
             from .document_review import review
-            return review(self, **args)
+            if args.get('source_scope')=='all' and not str(args.get('exhaustive_reason')or'').strip():
+                raise ValueError('Exhaustive review requires exhaustive_reason naming the unresolved requirement and why focused or source-specific expansion is insufficient. Empty retrieval alone is not a reason to reread every field across the population.')
+            return review(self, **{'source_scope':'focused',**args})
         if name == 'ask_agere': return self.ask_agere(**args)
         if name == 'list_metrics': return self.list_metrics()
         if name == 'execute_metric': return self.execute_metric(**args)
@@ -966,7 +978,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     kept, dropped = verified_sources(answer, tools)
     answer['sources'] = kept
     static_feedback=[]
-    from .document_review import relation_composition_issues
+    from .document_review import relation_composition_issues,source_scope_limits
+    limits=source_scope_limits(getattr(tools,'document_reviews',[]))
+    if limits:
+        answer['limitations']=list(dict.fromkeys([*(answer.get('limitations')or[]),*limits]))
     static_feedback.extend(relation_composition_issues(answer,getattr(tools,'document_reviews',[])))
     from .result_assembly import collection_retention_issues
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
@@ -1434,7 +1449,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     docs += '\nREGISTERED MEDICATION GROUP CONTRACTS (exact class members):\n'+json.dumps(GROUPS)
     docs += '\nGOVERNED SQL MACROS (also accepted by query_sql):\n' + macro_docs + '\nCLINICAL OWNER DEFINITIONS:\n' + json.dumps(describe())
     full_docs = docs
-    discover_context = os.environ.get('AGERE_ANALYST_CONTEXT') == 'discover'
+    discover_context = os.environ.get('AGERE_ANALYST_CONTEXT','discover') == 'discover'
     if discover_context:
         from .analyst_context import install as install_context
         docs = install_context(wh, full_docs)

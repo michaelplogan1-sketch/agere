@@ -416,7 +416,9 @@ def actor_result(value):
         if isinstance(shown.get('coverage'),list):
             coverage=shown.pop('coverage')
             shown['coverage_summary']={'patients':len(coverage),'received_documents':sum(x.get('received_documents',0) for x in coverage),
-                                       'unique_whole_documents':sum(x.get('unique_whole_documents',0) for x in coverage)}
+                                       'unique_whole_documents':sum(x.get('unique_whole_documents',0) for x in coverage),
+                                       'inventory_whole_documents':sum(x.get('inventory_whole_documents',x.get('unique_whole_documents',0))for x in coverage),
+                                       'source_scope':shown.get('source_scope'),'chart_wide_absence_established':False}
         # A row preview must not repeat the complete free-text dataset through
         # its category-frequency metadata. Keep full native rows and counts;
         # condense the largest lists only until the existing preview envelope fits.
