@@ -340,13 +340,19 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     result=prepare_decision(connected_stack.retriever,body)
                 elif path in ('/api/stack/context/output-recovery-plan','/api/stack/context/output-recover'):
                     from .clinical.source_citation_recovery import recovery_engine
-                    engine=recovery_engine(connected_stack.path,body.get('context_id'))
-                    if path.endswith('/output-recovery-plan'):result=engine.preview(connected_stack.path,body)
+                    from .clinical import reconciliation as current_reconciliation
+                    if current_reconciliation.context_recovery_available(connected_stack.path,body.get('context_id')):
+                        preview_recovery=current_reconciliation.preview_context_recovery
+                        run_recovery=current_reconciliation.run_context_recovery
+                    else:
+                        engine=recovery_engine(connected_stack.path,body.get('context_id'))
+                        preview_recovery,run_recovery=engine.preview,engine.run
+                    if path.endswith('/output-recovery-plan'):result=preview_recovery(connected_stack.path,body)
                     else:
                         from .clinical.stack_runtime import ROOT
                         from .gateway import BudgetLedger, default_ledger_path
                         ledger=BudgetLedger(default_ledger_path())
-                        try:result=engine.run(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
+                        try:result=run_recovery(connected_stack.path,body,ledger,allow_live=connected_stack.allow_live)
                         finally:ledger.close()
                 elif path in ('/api/stack/context/recovery-plan','/api/stack/context/recover'):
                     from .clinical import interpretation_recovery

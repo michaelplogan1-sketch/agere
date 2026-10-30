@@ -83,6 +83,8 @@ class Reconciliation(unittest.TestCase):
     def fake_send(self, body, ledger, out, *, parse):
         raw = self.raw(body, self.result()); result = parse(raw); key = R.G.request_key(body)
         ledger.reserve(key, 'claude', body['model']); ledger.finish(key, response=raw)
+        out.mkdir(parents=True,exist_ok=True)
+        (out/(key+'.json')).write_text(json.dumps({'response':raw}))
         return result, {'cache_hit': False, 'request_hash': key, 'usage': {}}
 
     def test_receipt_replays_without_resend_and_preserves_parent_coverage(self):
@@ -171,6 +173,77 @@ class Reconciliation(unittest.TestCase):
         with patch.object(R, 'context_route', return_value=None), patch.object(R.S, 'synthesize', return_value={'old': True}) as old:
             self.assertEqual(R.synthesize_context(self.path, 'pinned', self.ledger), {'old': True})
             old.assert_called_once()
+
+    def failed_supported_link(self):
+        parent,row,refs,job,key=R.prepare(self.path,self.parent['id']);self.job=job
+        value=self.result();value['claim_reviews'][0]['status']=R.L.STATES[0]
+        raw=self.raw(job['body'],value)
+        with self.assertRaisesRegex(ValueError,'need a consolidated finding'):R.parse(raw,job,refs)
+        request=R.G.request_key(job['body']);out=R.location(self.path,key).parent/'provider';out.mkdir(parents=True)
+        (out/(request+'.json')).write_text(json.dumps({'response':raw}))
+        (out/(request+'-failure.json')).write_text(json.dumps({'request_hash':request,'error':'Supported or qualified claims need a consolidated finding'}))
+        self.ledger.reserve(request,'claude',job['body']['model']);self.ledger.finish(request,error='Supported or qualified claims need a consolidated finding')
+        return request,out
+
+    def test_exact_typed_recovery_preserves_sources_failures_and_reopens(self):
+        failed,out=self.failed_supported_link();before=(out/(failed+'.json')).read_bytes()
+        context=self.parent['context_id']
+        with patch.object(R,'recovery_parent',return_value=self.parent):
+            self.assertTrue(R.context_recovery_available(self.path,context))
+            plan=R.preview_context_recovery(self.path,{'context_id':context})
+            with patch.object(R.G,'send',side_effect=self.fake_send)as send,patch.object(R.C,'token_check',return_value={'input_tokens':750,'provider_count_cached':True}):
+                saved=R.run_context_recovery(self.path,{'context_id':context,'recovery_id':plan['id']},self.ledger,allow_live=True)
+                self.assertEqual(send.call_count,1)
+            corrected=saved['validation_recovery']['corrected_body']
+            R.validate_corrected_body(self.job['body'],corrected)
+            self.assertEqual(corrected['messages'],self.job['body']['messages'])
+            self.assertEqual(saved['passes'],self.parent['passes'])
+            self.assertEqual(len(saved['claim_reviews']),len(self.job['finding_ids']))
+            self.assertEqual(R.inspect(self.path,saved['id']),saved)
+            with patch.object(R.G,'send')as send:
+                self.assertEqual(R.synthesize(self.path,self.parent['id'],self.ledger)['id'],saved['id']);send.assert_not_called()
+        self.assertEqual((out/(failed+'.json')).read_bytes(),before)
+        self.assertEqual(self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(failed,)).fetchone()[0],'failed')
+
+    def test_typed_recovery_requires_current_plan_and_never_resends_failed_correction(self):
+        self.failed_supported_link();context=self.parent['context_id']
+        with patch.object(R,'recovery_parent',return_value=self.parent):
+            plan=R.preview_context_recovery(self.path,{'context_id':context})
+            with patch.object(R.G,'send')as send:
+                with self.assertRaisesRegex(ValueError,'plan changed'):
+                    R.run_context_recovery(self.path,{'context_id':context,'recovery_id':'wrong'},self.ledger,allow_live=True)
+                with self.assertRaisesRegex(ValueError,'disabled'):
+                    R.run_context_recovery(self.path,{'context_id':context,'recovery_id':plan['id']},self.ledger)
+                send.assert_not_called()
+            key=plan['corrected_request_hash'];self.ledger.reserve(key,'claude',self.job['body']['model']);self.ledger.finish(key,error='uncertain transport attempt')
+            with patch.object(R.G,'send')as send:
+                with self.assertRaisesRegex(ValueError,'no silent retry'):
+                    R.run_context_recovery(self.path,{'context_id':context,'recovery_id':plan['id']},self.ledger,allow_live=True)
+                send.assert_not_called()
+
+    def test_typed_recovery_rejects_duplicate_diagnostic_loop_and_source_edits(self):
+        self.failed_supported_link();context=self.parent['context_id']
+        with patch.object(R,'recovery_parent',return_value=self.parent):
+            parent,row,refs,job,key,binding,rid=R.recovery_plan(self.path,context)
+            changed=copy.deepcopy(binding['corrected_body']);changed['messages'][0]['content']+=' changed source'
+            with self.assertRaisesRegex(ValueError,'changed original'):R.validate_corrected_body(job['body'],changed)
+            corrected=binding['corrected_body'];request=R.G.request_key(corrected);out=R.location(self.path,key).parent/'provider'
+            value=self.result();value['claim_reviews'][0]['status']=R.L.STATES[0]
+            (out/(request+'.json')).write_text(json.dumps({'response':self.raw(corrected,value)}))
+            (out/(request+'-failure.json')).write_text(json.dumps({'request_hash':request,'error':'Supported or qualified claims need a consolidated finding'}))
+            with self.assertRaisesRegex(ValueError,'Same typed validation fault'):
+                R.preview_context_recovery(self.path,{'context_id':context})
+
+    def test_current_parser_preserves_historical_typed_answer_identity(self):
+        with patch.object(R.G,'send',side_effect=self.fake_send),patch.object(R.C,'token_check',return_value={'input_tokens':750,'provider_count_cached':False}):
+            saved=R.synthesize(self.path,self.parent['id'],self.ledger,allow_live=True)
+        before=R.location(self.path,saved['id']).read_bytes()
+        with patch.object(R,'identity',return_value=digest(['new-recovery-code',R.identity()])),patch.object(R.G,'send')as send:
+            self.assertEqual(R.inspect(self.path,saved['id']),saved)
+            self.assertEqual(R.saved_for_parent(self.path,self.parent['id']),saved)
+            self.assertEqual(R.synthesize(self.path,self.parent['id'],self.ledger)['id'],saved['id'])
+            send.assert_not_called()
+        self.assertEqual(R.location(self.path,saved['id']).read_bytes(),before)
 
 
 if __name__ == '__main__': unittest.main()
