@@ -143,15 +143,25 @@ class CitationRecovery(unittest.TestCase):
         saved=self.execute();reconciliation=Mock()
         reconciliation.synthesize.return_value={'id':'reconciled','new_paid_api_calls':0,
                                                 'new_token_count_calls':0,'cache_hit':True}
-        legacy=Mock();legacy.synthesize.side_effect=ValueError('Live synthesis route disabled')
+        for error in ['Live synthesis route disabled','Prior source pass pending/failed; no silent paid retry']:
+            reconciliation.reset_mock();legacy=Mock();legacy.synthesize.side_effect=ValueError(error)
+            with patch.object(S,'engine',return_value=legacy),patch.object(S,'context',return_value=self.row), \
+                    patch.object(S,'stages',return_value=(R.O.M,reconciliation)), \
+                    patch.object(R.O.M,'synthesize')as source:
+                result=S.synthesize(self.path,self.row['id'],self.ledger)
+            source.assert_not_called()
+            reconciliation.synthesize.assert_called_once_with(self.path,saved['id'],self.ledger,allow_live=False)
+            self.assertEqual(result['new_paid_api_calls'],0)
+            self.assertTrue(result['cache_hit'])
+
+    def test_incomplete_correction_keeps_original_failed_source_guard(self):
+        from unittest.mock import Mock
+        legacy=Mock();legacy.synthesize.side_effect=ValueError('Prior source pass pending/failed; no silent paid retry')
         with patch.object(S,'engine',return_value=legacy),patch.object(S,'context',return_value=self.row), \
-                patch.object(S,'stages',return_value=(R.O.M,reconciliation)), \
                 patch.object(R.O.M,'synthesize')as source:
-            result=S.synthesize(self.path,self.row['id'],self.ledger)
+            with self.assertRaisesRegex(ValueError,'Prior source pass pending/failed'):
+                S.synthesize(self.path,self.row['id'],self.ledger,allow_live=True)
         source.assert_not_called()
-        reconciliation.synthesize.assert_called_once_with(self.path,saved['id'],self.ledger,allow_live=False)
-        self.assertEqual(result['new_paid_api_calls'],0)
-        self.assertTrue(result['cache_hit'])
 
     def test_new_original_pass_failure_resumes_without_repeating_completed_correction(self):
         self.assertGreater(len(self.packets),2)

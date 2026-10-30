@@ -91,7 +91,13 @@ def synthesize(path,key,ledger,*,allow_live=False):
     # run source passes followed directly by stable-reference reconciliation.
     try:return engine(path,key).synthesize(path,key,DispatchLedger(ledger),allow_live=False)
     except ValueError as exc:
-        if 'Live synthesis route disabled' not in str(exc):raise
+        if 'Live synthesis route disabled' not in str(exc):
+            # A complete, original-parser-validated correction supersedes the
+            # failed *source attempt* for downstream use, never its ledger status.
+            # Incomplete recovery and historical engines keep their retry guard.
+            if str(exc)!='Prior source pass pending/failed; no silent paid retry':raise
+            candidate,_=stages(path,key)
+            if candidate.VERSION!='meaning-source-stage/1' or saved_source_stage(path,key)['answer'] is None:raise
     source_stage_synthesis,stable_reconciliation=stages(path,key)
     completed=saved_source_stage(path,key) if source_stage_synthesis.VERSION=='meaning-source-stage/1' else None
     parent=({**completed['answer'],'new_paid_api_calls':0,'new_token_count_calls':0,'cache_hit':True}
