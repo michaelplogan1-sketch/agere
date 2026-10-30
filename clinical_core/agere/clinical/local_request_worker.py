@@ -213,6 +213,8 @@ def handle(item, *, generate_factory=mlx_generate, fallback=long_prompt):
     c = item['catalog']
     catalog = Catalog(Path(c['target']), c['tables'], c['identity'], c['stream_fields'])
     adapter, short_error = typed_adapter(), None
+    if adapter is None and os.environ.get('AGERE_LOCAL_TYPED_FALLBACK','on')=='off':
+        raise LocalDeclined('No qualified typed adapter is available; base-model fallback is disabled')
     if adapter is not None:
         try:
             contract, interpretation = interpret_short(catalog, item['question'], item['population'], generate_factory(adapter), adapter)

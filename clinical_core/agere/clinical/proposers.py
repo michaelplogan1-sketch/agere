@@ -1176,6 +1176,10 @@ class Cascade:
 
     def tier_qwen_typed_interpreter(self):
         if os.environ.get('AGERE_LOCAL_TYPED', 'on') == 'off': return None
+        if os.environ.get('AGERE_LOCAL_TYPED_FALLBACK','on')=='off':
+            from .local_request_worker import typed_adapter
+            if typed_adapter()is None:
+                return self.reject('qwen_typed_interpreter',['No qualified typed adapter; base-model fallback is disabled'])
         from .nl2sql import MODEL_DIR
         if not MODEL_DIR.exists(): return None
         from .shared_planner import isolated_local

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T19:11:18.466635+00:00",
+  "updated_at": "2026-10-30T19:18:23.046552+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -379,7 +379,7 @@
     "gate_id": "G5",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Named patient/clinician profiles and readable HTML/PDF/CSV are offline verified. Browser QA found a background-only source block under a beta-blocker reason. Shared reader now checks whole-source entity linkage and independently classifies target-block relation support before accepting polarity/time/subject axes. Unsupported/background candidates remain explicit gaps and avoid repeated frontier reads. Both Jev and Perplexity rejected the original background block and retained the actual non-use account in the matched two-case probe.",
-    "measured_failure_reduction": "187focused regressions pass. Existing57-patient render retained1653original cells,228pillar fields,225original observations and17dose/state rows; PDF105vs239pages. Native link replay withheld23unlinked machine candidates, retained57patients/106datedroles,zero providers and unchanged source/ledger. The distinct original background example required relation support: bothproviders rejected it and retained the actual non-use account in2.145842seconds,5validatedattempts,$0.000618576APIestimate. Offline transport1376421\u219233601requestbytes,63108compiledmessagebytes with lossless native feedback. These are scoped evidence, not clinical accuracy or full integrated cost savings.",
+    "measured_failure_reduction": "187focused regressions pass. Existing57-patient render retained1653original cells,228pillar fields,225original observations and17dose/state rows; PDF105vs239pages. Native link replay withheld23unlinked machine candidates, retained57patients/106datedroles,zero providers and unchanged source/ledger. The distinct original background example required relation support: bothproviders rejected it and retained the actual non-use account in2.145842seconds,5validatedattempts,$0.000618576APIestimate. Offline transport1376421\u219233601requestbytes,63108compiledmessagebytes with lossless native feedback. These are scoped evidence, not clinical accuracy or full integrated cost savings. Ordinary route exposed ignored fallback-off for missing typed adapter; controlled interruption preserved all accounting. Parent and worker now enforce configured decline;13native-worker and93targeted regressions pass.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -615,10 +615,14 @@
       "artifacts/agere-source-entity-link-2026-10-30/source-link-regression.json",
       "artifacts/agere-source-entity-link-2026-10-30/support-probe/receipt.json",
       "artifacts/agere-source-entity-link-2026-10-30/support-probe/cost.json",
-      "artifacts/agere-source-entity-link-2026-10-30/final-regressions.log"
+      "artifacts/agere-source-entity-link-2026-10-30/final-regressions.log",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/interruption-diagnosis.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/local-worker-native-tests.log",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/routing-fix-tests.log"
     ],
-    "remaining_gap": "New ordinary-route full question and complete cost/role accounting have not run yet. Rendering still shows retained partial225-observation result; it does not inherit the new source guard. Current semantic/model/clinical qualification and current installed recovery evidence remain open; two prior packet unknowns must be reassessed against new output. Candidate not default activated.",
-    "next_action": "Freeze the verified named-review/source-relation candidate and execute artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run.py through the ordinary compose route on the existing received warehouse. No owned recovery actions, draft, answer or feedback are supplied. Per-source/model caches are warm and must be reported as warm. Full-call/failed/pending/cache accounting, actual component contributions, current source-support unknowns, report fidelity and post-run recursive-candidate outcome must be assessed. No model fitting plan is configured. Preserve all ten areas and known-good recovery; complete current installed verification and private-branch delivery after the run.",
+    "remaining_gap": "Ordinary attempt1 exposed and was stopped for a confirmed configuration bug: no typed adapter plus fallback-off still entered the base-model long-prompt path. It is terminal,source/code/prior ledger unchanged and zero new API attempts. Fix passes13native-worker tests and93targeted routing/source/learning tests. Full integrated result/cost and current acceptance/recovery remain pending.",
+    "next_action": "Commit the verified local typed-fallback fix, then pin and launch a new ordinary-route attempt in artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair. Retain the failed first attempt and195.874832seconds/zero new provider calls. Missing qualified adapter plus explicit fallback-off must decline before spawning/generation. Keep source/model caches explicitly warm; supply no recovery actions or prior answer. Freeze product during the new job, then audit full cost/roles, source relations, current unknowns, report fidelity and post-run candidates before delivery. All ten areas and qualification/recovery requirements remain.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -688,15 +692,15 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T19:11:18.466635+00:00",
+    "at": "2026-10-30T19:18:23.046552+00:00",
     "workflow_change": "Named patient/clinician profiles and readable HTML/PDF/CSV are offline verified. Browser QA found a background-only source block under a beta-blocker reason. Shared reader now checks whole-source entity linkage and independently classifies target-block relation support before accepting polarity/time/subject axes. Unsupported/background candidates remain explicit gaps and avoid repeated frontier reads. Both Jev and Perplexity rejected the original background block and retained the actual non-use account in the matched two-case probe.",
     "unsealed_work": {
-      "status": "reader_review_candidate_verified_pending_ordinary_run",
+      "status": "typed_fallback_repair_verified_pending_next_ordinary_attempt",
       "path": "artifacts/agere-source-entity-link-2026-10-30",
-      "remaining_gap": "New ordinary-route full question and complete cost/role accounting have not run yet. Rendering still shows retained partial225-observation result; it does not inherit the new source guard. Current semantic/model/clinical qualification and current installed recovery evidence remain open; two prior packet unknowns must be reassessed against new output. Candidate not default activated.",
-      "next_action": "Freeze the verified named-review/source-relation candidate and execute artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run.py through the ordinary compose route on the existing received warehouse. No owned recovery actions, draft, answer or feedback are supplied. Per-source/model caches are warm and must be reported as warm. Full-call/failed/pending/cache accounting, actual component contributions, current source-support unknowns, report fidelity and post-run recursive-candidate outcome must be assessed. No model fitting plan is configured. Preserve all ten areas and known-good recovery; complete current installed verification and private-branch delivery after the run.",
+      "remaining_gap": "Ordinary attempt1 exposed and was stopped for a confirmed configuration bug: no typed adapter plus fallback-off still entered the base-model long-prompt path. It is terminal,source/code/prior ledger unchanged and zero new API attempts. Fix passes13native-worker tests and93targeted routing/source/learning tests. Full integrated result/cost and current acceptance/recovery remain pending.",
+      "next_action": "Commit the verified local typed-fallback fix, then pin and launch a new ordinary-route attempt in artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair. Retain the failed first attempt and195.874832seconds/zero new provider calls. Missing qualified adapter plus explicit fallback-off must decline before spawning/generation. Keep source/model caches explicitly warm; supply no recovery actions or prior answer. Freeze product during the new job, then audit full cost/roles, source relations, current unknowns, report fidelity and post-run candidates before delivery. All ten areas and qualification/recovery requirements remain.",
       "source_frozen_for_run": false,
-      "active_receipt": "artifacts/agere-source-entity-link-2026-10-30/support-probe/receipt.json",
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/interruption-diagnosis.json",
       "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
     },
     "bottling_assessment": {
@@ -2166,15 +2170,21 @@
       "decision": "A full-source entity anchor is necessary but insufficient: the original bad block had its medication elsewhere in the same document. Add independent target-block relation support through existing typed source/axis judgments. Keep machine-proposed background as pending evidence, not a treatment reason, and avoid repeated frontier reading of a known context-only block.",
       "basis": "Matched two-case live Jev and Perplexity probe; original source/ledger preserved;187regressions.",
       "scope_impact": "Shared reader only; no disease handler, model retraining, default promotion or removed acceptance area."
+    },
+    {
+      "at": "2026-10-30T19:18:23.046552+00:00",
+      "decision": "Stop the faulty ordinary attempt and honor the existing explicit no-base-fallback configuration at both parent and worker boundaries. This is a qualified-role/configuration guard, not a new time/spend ceiling or model disablement.",
+      "basis": "Frozen ordinary trace and no-adapter preflight;195.874832seconds,0new provider attempts;caller/workerterminated;13native-worker+93targeted regressions.",
+      "scope_impact": "Ordinary complete run deferred until this repair; all attempts and ten-area scope retained."
     }
   ],
   "unsealed_work": {
-    "status": "reader_review_candidate_verified_pending_ordinary_run",
+    "status": "typed_fallback_repair_verified_pending_next_ordinary_attempt",
     "path": "artifacts/agere-source-entity-link-2026-10-30",
-    "remaining_gap": "New ordinary-route full question and complete cost/role accounting have not run yet. Rendering still shows retained partial225-observation result; it does not inherit the new source guard. Current semantic/model/clinical qualification and current installed recovery evidence remain open; two prior packet unknowns must be reassessed against new output. Candidate not default activated.",
-    "next_action": "Freeze the verified named-review/source-relation candidate and execute artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run.py through the ordinary compose route on the existing received warehouse. No owned recovery actions, draft, answer or feedback are supplied. Per-source/model caches are warm and must be reported as warm. Full-call/failed/pending/cache accounting, actual component contributions, current source-support unknowns, report fidelity and post-run recursive-candidate outcome must be assessed. No model fitting plan is configured. Preserve all ten areas and known-good recovery; complete current installed verification and private-branch delivery after the run.",
+    "remaining_gap": "Ordinary attempt1 exposed and was stopped for a confirmed configuration bug: no typed adapter plus fallback-off still entered the base-model long-prompt path. It is terminal,source/code/prior ledger unchanged and zero new API attempts. Fix passes13native-worker tests and93targeted routing/source/learning tests. Full integrated result/cost and current acceptance/recovery remain pending.",
+    "next_action": "Commit the verified local typed-fallback fix, then pin and launch a new ordinary-route attempt in artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair. Retain the failed first attempt and195.874832seconds/zero new provider calls. Missing qualified adapter plus explicit fallback-off must decline before spawning/generation. Keep source/model caches explicitly warm; supply no recovery actions or prior answer. Freeze product during the new job, then audit full cost/roles, source relations, current unknowns, report fidelity and post-run candidates before delivery. All ten areas and qualification/recovery requirements remain.",
     "source_frozen_for_run": false,
-    "active_receipt": "artifacts/agere-source-entity-link-2026-10-30/support-probe/receipt.json",
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/interruption-diagnosis.json",
     "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
   },
   "current_visual_request": {
