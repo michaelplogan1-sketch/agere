@@ -263,6 +263,43 @@ class CitationRecovery(unittest.TestCase):
         saved=self.execute();self.assertEqual(R.inspect(self.path,saved['id']),saved)
         self.assertNotIn(key,self.network)
 
+    def test_subscription_feedback_keeps_complete_input_above_legacy_admission(self):
+        import os
+        body={**self.bad_body,'system':self.bad_body['system']+' diagnostic context '*1500}
+        failure={**self.failure,'request_hash':R.O.request_key(body)}
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
+            revised,_=R.diagnose(body,self.bad_units,self.row,failure,self.bad_raw)
+            feedback,_,_=R.quotation_feedback(body,self.bad_units,self.row,failure,self.bad_raw)
+            self.assertGreater(R.O.passes.request_bytes(feedback),20000)
+            self.assertEqual(revised['messages'],body['messages']);self.assertEqual(feedback['messages'],body['messages'])
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':''}):
+            with self.assertRaisesRegex(ValueError,'request bound'):
+                R.diagnose(body,self.bad_units,self.row,failure,self.bad_raw)
+
+    def test_admission_update_revalidates_immutable_completed_stage_and_preserves_id(self):
+        from clinical_core.contracts import digest
+        saved=self.execute();before=R.location(self.path,saved['id']).read_bytes()
+        changed=digest(['new-admission-implementation',R.identity()])
+        with patch.object(R,'identity',return_value=changed),patch.object(R.O.single,'send')as send:
+            self.assertEqual(R.inspect(self.path,saved['id']),saved)
+            self.assertEqual(R.saved_for_context(self.path,self.row['id']),saved)
+            plan=R.preview(self.path,{'context_id':self.row['id']})
+            self.assertNotEqual(plan['id'],saved['id']);self.assertEqual(plan['saved_answer_id'],saved['id'])
+            cached=R.run(self.path,{'context_id':self.row['id'],'recovery_id':plan['id']},self.ledger)
+            self.assertEqual(cached['id'],saved['id']);self.assertEqual(cached['new_paid_api_calls'],0)
+            send.assert_not_called()
+        self.assertEqual(R.location(self.path,saved['id']).read_bytes(),before)
+        proof=json.loads(R.location(self.path,saved['id']).with_name(saved['id']+'-current-revalidation.json').read_text())
+        self.assertTrue(proof['all_current_original_parser_results_and_assembled_fields_exact'])
+
+    def test_implementation_revalidation_still_rejects_edited_assembled_answer(self):
+        from clinical_core.contracts import digest
+        saved=self.execute();saved['findings'][0]['text']='Invented edited conclusion'
+        saved['source_stage_digest']=digest({k:v for k,v in saved.items()if k!='source_stage_digest'})
+        R.location(self.path,saved['id']).write_text(json.dumps(saved))
+        with patch.object(R,'identity',return_value=digest(['new-admission-implementation'])):
+            with self.assertRaises(ValueError):R.inspect(self.path,saved['id'])
+
     def test_stale_plan_disabled_live_and_failed_corrected_key_block(self):
         with patch.object(R.O.single,'send') as send:
             with self.assertRaisesRegex(ValueError,'plan changed'):

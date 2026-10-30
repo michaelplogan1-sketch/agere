@@ -34,6 +34,12 @@ def exists(path, key):
     return location(path, key).exists()
 
 
+def validate_request_size(body):
+    from ..subscription_transport import enabled
+    if not enabled() and O.passes.request_bytes(body)>20000:
+        raise ValueError('Citation correction exceeds existing request bound; no source omitted')
+
+
 def diagnose(body, units, row, failure, raw):
     if (failure.get('status') != 'failed' or failure.get('request_hash') != O.request_key(body)
             or failure.get('error') not in ('ValueError: '+ERROR, 'ValueError: '+MODEL_BINDING_ERROR, 'ValueError: '+DISPOSITION_ERROR)
@@ -74,8 +80,7 @@ def diagnose(body, units, row, failure, raw):
             +json.dumps([i['unit']for i in coverage])+'. Every unit still needs one disposition. '
             'Use discussed only when a returned finding actually cites that unit. Otherwise preserve unresolved meaning '
             'as unresolved or assess not_relevant_to_question where supported. Do not invent a finding or citation to satisfy coverage.')
-    if O.passes.request_bytes(corrected) > 20000:
-        raise ValueError('Citation correction exceeds existing request bound')
+    validate_request_size(corrected)
     return corrected, issues
 
 
@@ -99,8 +104,7 @@ def quotation_feedback(body, units, row, failure, raw):
         +('A unit labeled discussed must be cited by a returned finding; otherwise preserve an appropriate unresolved or not_relevant_to_question disposition. '
           if any(i['diagnosis']=='discussed_without_citation'for i in issues)else'')+
         'Mechanical quotation rejections: '+json.dumps(rejected,ensure_ascii=False,separators=(',',':')))
-    if O.passes.request_bytes(revised)>20000:
-        raise ValueError('Citation feedback exceeds existing request bound; no source omitted')
+    validate_request_size(revised)
     return revised,issues,signature
 
 
@@ -146,10 +150,11 @@ def preview(path, request):
     if S.stages(path, request['context_id'])[0] is not O.M:
         raise ValueError('Historical source engines retain their original recovery contracts')
     row, bundle, _, packets, key, binding, _ = prepare(path, request['context_id'])
+    prior=saved_for_context(path,request['context_id'])
     return {'schema':VERSION, 'id':key, **binding, 'patient_id':row['patient_id'],
         'source_units':len(bundle['unit_manifest']), 'source_passes':len(packets),
         'request_bytes':[O.passes.request_bytes(b) for b, _ in packets],
-        'saved_answer_available':exists(path,key), 'new_paid_api_calls':0,
+        'saved_answer_available':prior is not None,'saved_answer_id':prior['id'] if prior else None,'new_paid_api_calls':0,
         'failed_requests_resent':0, 'clinical_validated':False,
         'scope':'Request contiguous exact quotations for the diagnosed failed pass. Same evidence, model and strict parser; preserve failed requests. Cross-pass relationships remain unassessed.'}
 
@@ -165,11 +170,12 @@ def assemble(*args):
 
 def inspect(path, key):
     saved = json.loads(location(path,key).read_text())
-    if (saved.get('id') != key or saved.get('code_identity') != identity() or saved.get('status') != 'complete'
+    if (saved.get('id') != key or saved.get('schema')!=VERSION or saved.get('status') != 'complete'
             or saved.get('source_stage_digest') != digest({k:v for k,v in saved.items() if k != 'source_stage_digest'})):
         raise ValueError('Citation recovery receipt integrity changed')
     row,bundle,links,packets,expected,binding,source_out = prepare(path,saved['context_id'])
-    if expected != key or len(saved['passes']) != len(packets):
+    if (saved.get('recovery')!=binding or key!=digest([VERSION,saved.get('code_identity'),binding])
+            or len(saved['passes']) != len(packets)):
         raise ValueError('Citation recovery dependencies or pass coverage changed')
     for packet,stage,(body,units) in zip(bundle['passes'],saved['passes'],packets):
         request = O.request_key(body)
@@ -181,8 +187,21 @@ def inspect(path, key):
                 or stage['usage']['request_hash'] != request or stage['result'] != expected_result):
             raise ValueError('Citation recovery differs from original-parser validated output')
     counts = {k:saved[k] for k in ('new_paid_api_calls','new_token_count_calls','reused_source_passes')}
-    if assemble(row,bundle,links,packets,key,binding,saved['passes'],counts) != saved:
+    rebuilt=assemble(row,bundle,links,packets,key,binding,saved['passes'],counts)
+    # Preserve immutable historical provenance only after every current source,
+    # request, original-parser result and assembled field revalidates exactly.
+    rebuilt['code_identity']=saved['code_identity']
+    rebuilt['source_stage_digest']=digest({k:v for k,v in rebuilt.items()if k!='source_stage_digest'})
+    if rebuilt != saved:
         raise ValueError('Recovered answer no longer matches its exact passes')
+    if saved['code_identity']!=identity():
+        proof={'schema':'source-citation-current-revalidation/1','status':'passed','answer_id':key,
+               'historical_code_identity':saved['code_identity'],'current_code_identity':identity(),
+               'source_stage_digest':saved['source_stage_digest'],'context_digest':digest(row),
+               'recovery_binding_digest':digest(binding),'provider_calls':0,
+               'all_current_original_parser_results_and_assembled_fields_exact':True}
+        target=location(path,key).with_name(key+'-current-revalidation.json')
+        if not target.exists()or json.loads(target.read_text())!=proof:O.passes.atomic_write(target,proof)
     return saved
 
 
@@ -191,7 +210,15 @@ def saved_for_context(path, context_id):
         key = prepare(path,context_id)[4]
     except (ValueError,FileNotFoundError):
         return None
-    return inspect(path,key) if exists(path,key) else None
+    if exists(path,key):return inspect(path,key)
+    # Admission-only implementation updates must not force source interpretation
+    # or downstream inference again. Each historical candidate is fully checked.
+    directory=location(path,key).parent
+    for candidate in sorted(directory.glob('*.json'),key=lambda p:(p.stat().st_mtime_ns,p.name)):
+        if len(candidate.stem)!=64 or any(c not in '0123456789abcdef'for c in candidate.stem):continue
+        value=json.loads(candidate.read_text())
+        if value.get('context_id')==context_id and value.get('status')=='complete':return inspect(path,candidate.stem)
+    return None
 
 
 def run(path, request, ledger, *, allow_live=False):
@@ -201,8 +228,9 @@ def run(path, request, ledger, *, allow_live=False):
     if request['recovery_id'] != plan['id']:
         raise ValueError('Recovery plan changed; inspect exact current failure')
     row,bundle,links,packets,key,binding,source_out = prepare(path,request['context_id'])
-    if exists(path,key):
-        return {**inspect(path,key),'cache_hit':True,'new_paid_api_calls':0,'new_token_count_calls':0}
+    prior=saved_for_context(path,request['context_id'])
+    if prior is not None:
+        return {**prior,'cache_hit':True,'new_paid_api_calls':0,'new_token_count_calls':0}
     if not allow_live:
         raise ValueError('Live citation recovery disabled')
     for failure in binding['failures']:
