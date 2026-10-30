@@ -1356,6 +1356,10 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
     worker_ledger=getattr(ledger,'path',ledger)if parallel_safe else ledger
     def check(packet):
         steps=[]
+        if (packet.get('source_dependency_mechanical_only')is True and not packet.get('claim_manifest')and
+                packet.get('source_dependency_roundtrip_verified')is True and packet.get('required_source_packet_ids')):
+            return {'id':packet['id'],'label':'supported','decided_by':'native_source_dependency_closure',
+                'reason':'Only exact native binding remains in this parent. Every source-local claim is required in separately checked complete-source children; this establishes no clinical acceptance.'},steps
         if packet.get('source_context_complete')is False:
             return {'id':packet['id'],'label':'unknown','decided_by':None,
                 'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'},steps

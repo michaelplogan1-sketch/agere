@@ -255,6 +255,47 @@ def source_dependency_packets(packet, *, max_bytes=230000):
         return value
     if restore(parent)!=state:raise ValueError('Source dependencies did not restore every original native value')
 
+    provenance={p['row_digest']:p.get('origins',[])for p in state.get('evidence_provenance',[])}
+    native_reviews=[row for row in state.get('evidence',[])if isinstance(row,dict)and any(
+        origin.get('tool')=='review_documents'for origin in provenance.get(digest(row),[]))]
+    def decoded(value):
+        parsed=parsed_string(value)
+        if parsed:return decoded(parsed[0])
+        if isinstance(value,list):return[decoded(v)for v in value]
+        if isinstance(value,dict):return{k:decoded(v)for k,v in value.items()}
+        return value
+    def source_field(value):
+        value=decoded(value)
+        if not isinstance(value,list)or not value:return False
+        def bound(item):
+            if not isinstance(item,dict):return False
+            a=item.get('assertion')if isinstance(item.get('assertion'),dict)else item
+            return a.get('binding_version')==RELATION_VERSION
+        if all(bound(item)for item in value):return True
+        # A collected native review may contain operational scope metadata as
+        # well as source objects. Only an exact projection of a recorded review
+        # qualifies; arbitrary clinical prose containing a source does not.
+        return all(isinstance(item,dict)and {'review_status','documents_reviewed','source_findings_json'}<=set(item)and any(
+            set(item)<=set(row)and all(item[k]==row[k]for k in item)for row in native_reviews)for item in value)
+    def at(value,path):
+        for key in path:value=value[key]
+        return value
+    original_claims=state.get('claim_manifest')or[]
+    deferred=[claim['id']for claim in original_claims if source_field(at(state,claim['path']))]
+    parent['claim_manifest']=[claim for claim in original_claims if claim['id']not in deferred]
+    field_uses={}
+    def references(value):
+        if isinstance(value,list):
+            return set().union(*(references(v)for v in value))if value else set()
+        if isinstance(value,dict):
+            if set(value)=={marker,'kind'}:return{value[marker]}
+            return set().union(*(references(v)for v in value.values()))if value else set()
+        return set()
+    for claim in original_claims:
+        use={**claim,'native_value_digest':digest(at(state,claim['path']))}
+        for key in references(at(parent,claim['path'])):
+            if kinds[key]=='observations':field_uses.setdefault(key,[]).append(use)
+
     def encode(value):
         readable=json.dumps(readable_json(value),ensure_ascii=False,separators=(',',':'))
         if len(readable.encode())<=max_bytes:return readable
@@ -264,13 +305,14 @@ def source_dependency_packets(packet, *, max_bytes=230000):
         if uncompact_json(json.loads(text))!=value:raise ValueError('Source dependency transport did not round-trip')
         return text
 
-    parent['scope']=('Check the visible native claims and their source kind, scope and bindings. Source-local documentary '
+    parent['scope']=('Check ONLY the listed claim_manifest fields and their source kind, scope and bindings. Source-local documentary '
         'objects and complete contexts are required child dependencies, restored exactly by code. Their references alone '
         'establish no clinical fact or aggregate. Deferred documentary objects are checked in their source dependencies. '
         'Return unknown for any additional clinical interpretation requiring deferred content rather than the visible native evidence. '
         'source_dependency_json_string preserves a native JSON-string cell: its value is the complete parsed value; code restores its exact format.')
     parent['source_dependency_contract']={'parent_fingerprint':digest(state),'native_roundtrip_verified':True,
         'required_objects':len(originals),'complete_sources':len(contexts),
+        'deferred_source_claim_ids':deferred,
         'acceptance':'This parent and every required complete-source child must pass; no clinical support is inherited from a reference.'}
     parent_text=encode(parent)
     if len(parent_text.encode())>max_bytes:raise ValueError('Non-source dependency still exceeds provider envelope')
@@ -278,11 +320,11 @@ def source_dependency_packets(packet, *, max_bytes=230000):
     def child(selected,index,*,transport=True):
         docs={k:v for group in selected for k,v in group['contexts'].items()}
         observations={k:v for group in selected for k,v in group['observations'].items()}
-        rows=[{'dependency_id':key,'observation':value}for key,value in observations.items()]
+        rows=[{'dependency_id':key,'observation':value,'final_field_uses':field_uses.get(key,[])}for key,value in observations.items()]
         claims=[{'id':'source_'+str(i),'field':(v.get('field')or (v.get('assertion')or v).get('concept')or 'documentary_observation'),
                  'path':['answer_rows',i,'observation']}for i,v in enumerate(observations.values())]
         value={'id':packet['id']+'__sources_'+str(index),'patient_id':pid,'question':state.get('question'),'as_of':state.get('as_of'),
-            'scope':'Check every supplied source-local documentary observation against its complete matching source and exact bound question. Check entity, relation, subject, negation and time; a mention or matching quote alone is insufficient. Current means current at the source statement, not snapshot-current care. These are machine source observations, not clinical certification. Do not infer chart-wide absence, eligibility or current treatment.',
+            'scope':'Check every supplied source-local documentary observation against its complete matching source and exact bound question. Check entity, relation, subject, negation and time; a mention or matching quote alone is insufficient. For every final_field_uses entry, also check that the observation matches that final field meaning: a different drug, service, person or relation cannot establish it. A neutral source-observation collection is not itself a current-treatment claim. Current means current at the source statement, not snapshot-current care. These are machine source observations, not clinical certification. Do not infer chart-wide absence, eligibility or current treatment.',
             'source_contexts':list(docs.values()),'source_context_dependency_ids':list(docs),'source_questions':questions,
             'answer_rows':rows,'claim_manifest':claims,
             'source_dependency_contract':{'parent_packet_id':packet['id'],'parent_fingerprint':digest(state),
@@ -307,8 +349,10 @@ def source_dependency_packets(packet, *, max_bytes=230000):
     parent_text=encode(parent)
     if len(parent_text.encode())>max_bytes:raise ValueError('Source dependency manifest exceeds provider envelope')
     output=[{**packet,'text':parent_text,'bytes':len(parent_text.encode()),'representation':'source_dependency_parent',
+             'claim_manifest':parent['claim_manifest'],
              'source_dependency_roundtrip_verified':True,'required_source_packet_ids':required_ids,
-             'source_dependency_fingerprint':digest(state)}]
+             'source_dependency_fingerprint':digest(state),
+             'source_dependency_mechanical_only':bool(original_claims)and len(deferred)==len(original_claims)}]
     output.extend({**packet,'id':value['id'],'text':text,'bytes':len(text.encode()),'claim_manifest':value['claim_manifest'],
                    'parent_packet_id':packet['id'],'representation':'complete_source_dependency',
                    'source_dependency_roundtrip_verified':True,'source_dependency_parent_id':packet['id'],

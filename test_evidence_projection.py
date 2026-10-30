@@ -130,7 +130,20 @@ class SourceDependencies(unittest.TestCase):
         observations=[r['observation']for leaf in leaves for r in leaf['answer_rows']]
         self.assertEqual(supplied,state['source_contexts'])
         self.assertEqual(observations,json.loads(state['answer_rows'][0]['findings']))
+        self.assertTrue(all(r['final_field_uses'][0]['field']=='findings'for leaf in leaves for r in leaf['answer_rows']))
         self.assertIn('no clinical fact',parent['scope'])
+
+    def test_pure_source_claims_move_to_children_but_mixed_interpretation_stays_in_parent(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        packet,state=self.packet();state['answer_rows'][0].pop('amount');state['answer_rows'][0].pop('literal')
+        state['claim_manifest']=state['claim_manifest'][:1];packet['claim_manifest']=state['claim_manifest']
+        packet['text']=json.dumps(readable_json(state));parts=E.source_dependency_packets(packet)
+        self.assertTrue(parts[0]['source_dependency_mechanical_only']);self.assertEqual(parts[0]['claim_manifest'],[])
+        values=json.loads(state['answer_rows'][0]['findings'])
+        state['answer_rows'][0]['findings']={'interpretation':'Current therapy is established','observations':values}
+        packet['text']=json.dumps(readable_json(state));parts=E.source_dependency_packets(packet)
+        self.assertFalse(parts[0]['source_dependency_mechanical_only'])
+        self.assertEqual(parts[0]['claim_manifest'],state['claim_manifest'])
 
     def test_missing_or_changed_source_and_forged_current_state_fail_closed(self):
         from clinical_core.agere.deliverables.receipts import readable_json
