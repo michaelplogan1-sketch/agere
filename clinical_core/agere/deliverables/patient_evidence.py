@@ -189,8 +189,13 @@ def review_cards(context, evidence=None):
             findings=items(row.get('documentary_findings'));fills=items(row.get('recent_gdmt_fill_observations'));doses=items(row.get('gdmt_dose_rows'))
             therapy=[]
             window_start=row.get('fill_window_start_exclusive');window_end=row.get('fill_window_end_inclusive')
-            historical_fill=not(window_start and window_end)and any(re.search(r'\{\{\s*drug_fill:',str(t.get('input',{}).get('sql')or''))for t in(context.get('investigation')or{}).get('tool_calls')or[])
+            declared_scopes=[g for g in answer.get('grounding')or[]if isinstance(g,str)and re.search(r'\b(?:fills?|pillars?)\b',g,re.I)and re.search(r'\b(?:months?|years?|window)\b',g,re.I)]
+            # Exploratory history may remain in the investigation after its
+            # flags were replaced. Report the saved declaration as a declaration;
+            # an earlier macro call alone cannot establish the final time basis.
+            historical_fill=not(window_start and window_end)and not declared_scopes and any(re.search(r'\{\{\s*drug_fill:',str(t.get('input',{}).get('sql')or''))for t in(context.get('investigation')or{}).get('tool_calls')or[])
             fill_scope=('Picked-up fill after '+str(window_start)+' through '+str(window_end)if window_start and window_end else
+                'Saved analysis time basis: '+' '.join(declared_scopes)if declared_scopes else
                 'Received fill history through the snapshot; no recency window is established by these membership flags'if historical_fill else'Recent-fill observation window defined by the saved analysis')
             # These labels describe the source-defined fields returned by the
             # analysis, not a fresh treatment rule or an individual dose target.
@@ -206,7 +211,7 @@ def review_cards(context, evidence=None):
                 # Drug classification supplies presentation grouping only. Any
                 # unmapped dose observation is retained separately below.
                 therapy.append({'group':group,'label':label,'observed_status':
-                    ('Historical fill observed'if historical_fill else'Recent fill observed')if row[field]==1 else('No fill observed in the returned history'if historical_fill else'No recent fill observed')if row[field]==0 else'Fill status unresolved',
+                    ('Historical fill observed'if historical_fill else'Fill observed in the saved analysis'if declared_scopes and not(window_start and window_end)else'Recent fill observed')if row[field]==1 else('No fill observed in the returned history'if historical_fill else'No fill observed in the saved analysis'if declared_scopes and not(window_start and window_end)else'No recent fill observed')if row[field]==0 else'Fill status unresolved',
                     'fill_scope':fill_scope,
                     'current_use':'Confirm current regimen','fills':observed,'dose_observations':ds,
                     'documented_reasons':reasons(findings,entity)})

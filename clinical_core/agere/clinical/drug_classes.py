@@ -259,7 +259,11 @@ def group_query_issues(question, calls, final_view=None):
         sql=(call.get('input') or {}).get('sql')
         if not isinstance(sql,str):continue
         parents[view]=set(re.findall(r'\bagere_result_\d+\b',sql));positions[view]=index
-        try:tree=sqlglot.parse_one(sql,read='sqlite')
+        try:
+            # Macros already executed successfully. For lineage, an opaque
+            # source preserves the surrounding native joins and membership
+            # predicates without re-expanding clinical SQL or inline rows.
+            tree=sqlglot.parse_one(re.sub(r'\{\{[^{}]+\}\}','__agere_macro_source__',sql),read='sqlite')
         except sqlglot.errors.ParseError:continue
         queries[view]=tree
         values=[]
@@ -286,16 +290,6 @@ def group_query_issues(question, calls, final_view=None):
         for parent in parents.get(view,()):visit(parent)
     if final_view:visit(final_view)
     else:reached.update(parents)
-    # Detect the observed scope loss before a model review: the all-history
-    # membership macro cannot supply current GDMT flags. Only contributing
-    # results matter; an unused historical exploration remains available.
-    temporal_issues=[]
-    if 'gdmt'in named and not re.search(r'\b(?:history|historical|ever|any time)\b',str(question),re.I):
-        for call in calls:
-            out=call.get('result')or{};sql=(call.get('input')or{}).get('sql')
-            if not isinstance(out,dict)or out.get('result_view')not in reached or not isinstance(sql,str):continue
-            if re.search(r'\{\{\s*drug_fill:',sql)and re.search(r'\bAS\s+on_\w+',sql,re.I)and not re.search(r'\bevent_date\b',sql,re.I):
-                temporal_issues.append('Contributing query '+out['result_view']+' computed GDMT fill flags from all-history drug_fill membership without a fill-date predicate. Recompute from picked-up fills in the governed 12 months ending at the snapshot; historical patient membership cannot recover that window after aggregation. Keep historical evidence separately labelled.')
     schema={v:dict.fromkeys(r.get('columns') or [],'UNKNOWN') for v,r in results.items()}
     def consumed_columns(members):
         # Trace native output columns, rather than letting an exact filter on
@@ -386,13 +380,41 @@ def group_query_issues(question, calls, final_view=None):
                     if parent not in barriers:trace(parent,name,aggregate)
                 if not sources and not resolved_json:
                     # COUNT(*) and unresolved projections depend on row scope.
-                    for parent in parents[view]:trace(parent,'*',True)
+                    for parent in parents[view]:
+                        references=[t for t in tree.find_all(exp.Table)if t.name==parent]
+                        def membership_only(table):
+                            select=table.find_ancestor(exp.Select)
+                            if select is None or len(select.expressions)!=1:return False
+                            value=select.expressions[0]
+                            if not isinstance(value,exp.Column)or value.name!='patient_id':return False
+                            if any(select.args.get(k)for k in('joins','where','group','having','qualify','limit','offset')):return False
+                            holder=select.parent
+                            if not isinstance(holder,exp.Subquery)or not isinstance(holder.parent,exp.In)or holder.parent.args.get('query')is not holder:return False
+                            return list(select.find_all(exp.Table))==[table]
+                        # IN(SELECT patient_id FROM native_view) uses membership,
+                        # not every historical medication flag in that view.
+                        key_only=bool(references)and all(membership_only(t)for t in references)
+                        trace(parent,'patient_id'if key_only else'*',True)
             except (sqlglot.errors.SqlglotError,ValueError,RecursionError):
                 for parent in parents[view]:trace(parent,'*',True)
         for view in ([final_view]if final_view else reached):
             trace(view,'*')
         return used
     used_cache={}
+    # Check the medication columns actually consumed by the final result.
+    # The same historical intermediate may legitimately supply patient IDs,
+    # source quotations or care records after its fill flags were replaced.
+    temporal_issues=[]
+    if 'gdmt'in named and not re.search(r'\b(?:history|historical|ever|any time)\b',str(question),re.I):
+        used=consumed_columns(named['gdmt'])
+        for call in calls:
+            out=call.get('result')or{};sql=(call.get('input')or{}).get('sql')
+            if not isinstance(out,dict)or out.get('result_view')not in reached or not isinstance(sql,str):continue
+            if not re.search(r'\{\{\s*drug_fill:',sql)or re.search(r'\bevent_date\b',sql,re.I):continue
+            flags=set(re.findall(r'\bAS\s+(on_\w+)',sql,re.I))
+            consumed={name.lower()for name,_ in used.get(out['result_view'],set())}
+            if flags and (flags&consumed or '*'in consumed):
+                temporal_issues.append('Contributing query '+out['result_view']+' computed GDMT fill flags from all-history drug_fill membership without a fill-date predicate. Recompute from picked-up fills in the governed 12 months ending at the snapshot; historical patient membership cannot recover that window after aggregation. Keep historical evidence separately labelled.')
     issues=[]
     for group,members in named.items():
         bad=[]

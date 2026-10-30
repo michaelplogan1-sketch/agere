@@ -57,6 +57,10 @@ class Profiles(unittest.TestCase):
   self.assertIn('returned history',card['program_review']['rationale'][1])
   self.assertTrue(any(v['label']=='Lowest documented EF'for v in card['clinical_context']))
   self.assertEqual(json.dumps(answer,sort_keys=True),before)
+  answer['grounding']=['Pillar use: picked-up fills in the 12 months ending 2030-05-27. Historical queries remain for audit.']
+  card=P.review_cards(c)['A']
+  self.assertEqual(card['therapy'][0]['observed_status'],'Fill observed in the saved analysis')
+  self.assertIn(answer['grounding'][0],card['therapy'][0]['fill_scope'])
   row.update(fill_window_start_exclusive='2029-05-27',fill_window_end_inclusive='2030-05-27')
   card=P.review_cards(c)['A']
   self.assertEqual(card['therapy'][0]['observed_status'],'Recent fill observed')
