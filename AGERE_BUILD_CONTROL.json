@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T00:38:17.033703+00:00",
+  "updated_at": "2026-10-30T02:26:03.968289+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_population_first_program_passed_two_individual_path_defects_reproduced",
+    "kind": "current_native_followups_running_source_model_citation_repair_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Shared source-to-result composition now preserves requested medication class/dose domains, dated literal roles, numeric bindings and complete source-verification envelopes. Actual finance question produced an answered32group report; a failed provider account falls back after one retained billing attempt per process.",
-    "measured_failure_reduction": "Original HFrEF8of228source-policycells repaired to0;3unsupported assigned-clinician observations removed by source-specific rechecks; corrected15group-dose objects separated from74other/9unclassified; latest fieldfeedback empty. Finance32groups and256source-or-derivedcells match withheld baseline; all352CSVcells and native JSON rows exact. No broad clinical or whole-packet qualification inferred.",
+    "user_behavior_delta": "Source preflights now dispatch without phantom token generation or recorder drift; durable full-roster decisions reopen against exact native revalidation.",
+    "measured_failure_reduction": "Two individual preflight defects removed across all six original cases; zero source/assessment/task drift. One newly observed model-policy mismatch and two strict quote errors preserved for targeted repair.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -509,10 +509,17 @@
       "artifacts/agere-current-mvp-2026-10-30/final-grouped-report-v2/receipt.json",
       "artifacts/agere-current-mvp-2026-10-30/population-v2/respiratory/reopened.json",
       "artifacts/agere-current-mvp-2026-10-30/retrieval-comparison-defect.json",
-      "artifacts/agere-current-mvp-2026-10-30/adapter-v2/run-receipt.json"
+      "artifacts/agere-current-mvp-2026-10-30/adapter-v2/run-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/source-conformance-v1/run-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/preflight-repair-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/individual-preflight-v2/run-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/population-reopen-v3/receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/current-assessment-repair-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/model-alias-diagnostic.json"
     ],
-    "remaining_gap": "Current-snapshot connected workflow and installed operations evidence remain unfinished. An offline reproduction now identifies a subscription token-preflight wiring defect on the retained six-question path. Independent clinical/model qualification and external production authority remain separate.",
-    "next_action": "Keep the owned current population v2 worker PID85043/session70400 running without duplication or product-source edits. Respiratory is fully passed: all 4,115 roster members accounted, 112 independently reconciled nominees, 112 durable question-bound internal handoffs. Behavioral has 129 independent source nominees and is routing/preparing every one. No clinical staffing capacity, eligibility, payer benefit or consent is inferred. After this native run terminates, product source may be unfrozen for two measured six-question-path repairs: (1) retrieval_comparison fixed-candidate recording is overwritten by nested evidence-completeness searches; explicitly compare a single candidate universe while preserving ordinary expanded passage/reference roots in source_selection; (2) case_synthesis token_check sends /count_tokens through the subscription generation intercept and raises KeyError; support honest unavailable token preflight plus nullable rollups and exact generation usage, never external Anthropic keys. Both defects reproduce offline with zero provider requests. The six-question preflight stopped before inference at the retrieval guard; preserve that attempt. Current isolated intake adapter acceptance v2 passed after correcting only a harness roster-table name, reusing four saved successes; original source and code unchanged. Then continue prepared current-snapshot finance/outcome, prediction/discovery, changed-evidence/reassessment, six individual workflows and package startup/restart/recovery checks. Run verify_followups_v1.py only after population passes, updating its declared code pin if an unrelated transport repair is made; do not rerun the unchanged frozen population job just to relabel a receipt. Keep full ten-area scope, prior results and all-attempt accounting. Qualification and external production dependencies stay explicit. Scheduler remains paused; continue directly under Mike's overnight completion instruction.",
+    "remaining_gap": "Six current individual workflows remain blocked on canonical model request wiring and strict citation correction; native followups running; changed-evidence and installed operations/current acceptance package pending. Clinical/model qualification and external production authority remain distinct unmet dependencies.",
+    "next_action": "Current native finance/outcome, prediction and discovery worker PID87278/session70866 is running on frozen 4c4a8c5; do not duplicate or modify product source until its terminal receipt. Respiratory checks passed; behavioral work follows. Both population programs already passed full 4,115-member accounting and all 241 internal handoffs; all 8,230 assessments revalidated exactly across engine update, no task rerun. Exhaustive source conformance covers 2,396,490 received records/237 streams; independent adapter variant passes. Retrieval/source-scope and subscription preflights repaired and verified (269 offline checks plus six complete original source scopes). The first individual medication pass is terminal: one complete subscription Sonnet response rejected because the source constructor declared Opus while send resolved Sonnet on a copy. Exact actual-wire offline replay also reproduces one absent and one ambiguous quote. Preserve failed key/raw usage; after frozen native worker returns, canonicalize configured model before request identity/preflight/parser and use existing source citation recovery for a targeted exact-quotation correction. Then resume six complete individual workflows, changed/conflicting/late dependency checks, installed restart/restore and final current acceptance package. Native worker final global-ledger assertion may observe the separately attributed single failed source attempt: reconcile complete saved native outputs and exact request attribution without repeating successful calls. All ten areas, original source, independent qualifications and external prerequisites remain. No default model promotion, main merge, publication, real care or new services. Heartbeat stays paused; continue directly under latest overnight completion instruction.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -617,13 +624,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T00:23:18.994541+00:00",
-    "workflow_change": "Shared source-to-result composition now preserves requested medication class/dose domains, dated literal roles, numeric bindings and complete source-verification envelopes. Actual finance question produced an answered32group report; a failed provider account falls back after one retained billing attempt per process.",
+    "at": "2026-10-30T02:26:03.968289+00:00",
+    "workflow_change": "Fixed candidate retrieval comparison and subscription-only preflight now preserve full source scope and unknown token counts. All current population assessments revalidate exactly after code change; source and work preserved.",
     "unsealed_work": {
-      "status": "current_population_v2_running",
-      "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "Dedicated current-snapshot connected-workflow and installed-operation evidence must be refreshed. Existing broad numeric/source/reuse results pass. Independent model/clinical qualification, unpriced local/reviewer economics, TypeSafe credits and external real-care connections remain explicit.",
-      "next_action": "Current full-population acceptance v2 RUNNING PID85043/session70400, receiptartifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json; freeze product sourceab73a77 and do not duplicate. Candidate8888readyPID84880/session91532 on isolated current-source runtime; source containsall4115rosterpatients. Respiratory112nominations match independent received-recordSQL exactly; all112member routes/internal review handoffs are being executed. V1stopped on an obsolete harness equality check: per-request request_execution_id differs, while saved decision/content was unchanged. V2 preserves both responses and compares all immutable data, excluding only the new per-request ID. No patient/service/work cap; clinicalservicecapacityunknown. Await actual terminal v2 receipt and then continue current-source finance/outcomes, prediction/discovery, changed-evidence, six original retained individual workflows and portable startup/recovery through existing modules. No old snapshot green status copiedforward; oldscorecardreceiptsremainhistorical. Broadsource32/237/196groups and typedreuse240cells/zero-provider changedyear resultsalready pass. Independentclinical/modelqualification and HFrEF19broadunknowns remain explicit. Alltenareasretained; no globalmodelpromotion, realcare, publication or newexternalservices. Schedulerpaused after rejectedreactivation; latesthuman directs overnightcompletion, so keepworkingdirectlywith no repeatedapprovals.",
+      "status": "native_followups_running_individual_model_citation_blocker",
+      "path": "artifacts/agere-current-mvp-2026-10-30",
+      "remaining_gap": "Six current individual workflows remain blocked on canonical model request wiring and strict citation correction; native followups running; changed-evidence and installed operations/current acceptance package pending. Clinical/model qualification and external production authority remain distinct unmet dependencies.",
+      "next_action": "Current native finance/outcome, prediction and discovery worker PID87278/session70866 is running on frozen 4c4a8c5; do not duplicate or modify product source until its terminal receipt. Respiratory checks passed; behavioral work follows. Both population programs already passed full 4,115-member accounting and all 241 internal handoffs; all 8,230 assessments revalidated exactly across engine update, no task rerun. Exhaustive source conformance covers 2,396,490 received records/237 streams; independent adapter variant passes. Retrieval/source-scope and subscription preflights repaired and verified (269 offline checks plus six complete original source scopes). The first individual medication pass is terminal: one complete subscription Sonnet response rejected because the source constructor declared Opus while send resolved Sonnet on a copy. Exact actual-wire offline replay also reproduces one absent and one ambiguous quote. Preserve failed key/raw usage; after frozen native worker returns, canonicalize configured model before request identity/preflight/parser and use existing source citation recovery for a targeted exact-quotation correction. Then resume six complete individual workflows, changed/conflicting/late dependency checks, installed restart/restore and final current acceptance package. Native worker final global-ledger assertion may observe the separately attributed single failed source attempt: reconcile complete saved native outputs and exact request attribution without repeating successful calls. All ten areas, original source, independent qualifications and external prerequisites remain. No default model promotion, main merge, publication, real care or new services. Heartbeat stays paused; continue directly under latest overnight completion instruction.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -672,9 +679,9 @@
     },
     "owned_recovery_run": {
       "status": "running",
-      "pid": 85043,
-      "session": 70400,
-      "receipt": "artifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json",
+      "pid": 87278,
+      "session": 70866,
+      "receipt": "artifacts/agere-current-mvp-2026-10-30/followups-v1/run-receipt.json",
       "source_frozen": true
     },
     "provider_dependency": {
@@ -1985,13 +1992,20 @@
       "basis": "All three source-only varied transfers and typed-parameter reuse pass, but unchanged historical dedicated capability receipts do not match the current source snapshot; historical individual medication trace was incomplete.",
       "scope_impact": "Retain all ten areas and all old evidence. Execute existing connected workflows against current approved source; do not relabel old results as current, write a replacement architecture, or infer clinical/model qualification from local engineering.",
       "evidence": "artifacts/agere-meaning-integration-2026-10-29/finite-current-receipt-audit.json"
+    },
+    {
+      "at": "2026-10-30T01:45:39.181482+00:00",
+      "decision": "Revalidate complete native population assessments when an unrelated engine dependency changes, preserving original decisions and work only on exact evidence equality.",
+      "basis": "Current preflight repairs pass 269 regressions and all six real question scopes prepare. Reopening unchanged population work exposed a broad storage -> synthesis_work -> source_synthesis implementation dependency: currentness failed although original decision and 112 respiratory task payloads were exact. Source conformance had already verified all 2,396,490 received rows unchanged.",
+      "scope_impact": "No model, clinical or source waiver. Recompute current native assessments without executing work; ignore only their derived receipt ID and engine identity. Every other assessment field, patient membership, source hash, rule, buyer and attached context remains exact; changed evidence, changed nominations, missing/duplicate members and dependency races still invalidate. All ten areas remain.",
+      "evidence": "artifacts/agere-current-mvp-2026-10-30/population-reopen-v2/currentness-diagnostic.json"
     }
   ],
   "unsealed_work": {
-    "status": "current_population_v2_running",
-    "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "Dedicated current-snapshot connected-workflow and installed-operation evidence must be refreshed. Existing broad numeric/source/reuse results pass. Independent model/clinical qualification, unpriced local/reviewer economics, TypeSafe credits and external real-care connections remain explicit.",
-    "next_action": "Current full-population acceptance v2 RUNNING PID85043/session70400, receiptartifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json; freeze product sourceab73a77 and do not duplicate. Candidate8888readyPID84880/session91532 on isolated current-source runtime; source containsall4115rosterpatients. Respiratory112nominations match independent received-recordSQL exactly; all112member routes/internal review handoffs are being executed. V1stopped on an obsolete harness equality check: per-request request_execution_id differs, while saved decision/content was unchanged. V2 preserves both responses and compares all immutable data, excluding only the new per-request ID. No patient/service/work cap; clinicalservicecapacityunknown. Await actual terminal v2 receipt and then continue current-source finance/outcomes, prediction/discovery, changed-evidence, six original retained individual workflows and portable startup/recovery through existing modules. No old snapshot green status copiedforward; oldscorecardreceiptsremainhistorical. Broadsource32/237/196groups and typedreuse240cells/zero-provider changedyear resultsalready pass. Independentclinical/modelqualification and HFrEF19broadunknowns remain explicit. Alltenareasretained; no globalmodelpromotion, realcare, publication or newexternalservices. Schedulerpaused after rejectedreactivation; latesthuman directs overnightcompletion, so keepworkingdirectlywith no repeatedapprovals.",
+    "status": "native_followups_running_individual_model_citation_blocker",
+    "path": "artifacts/agere-current-mvp-2026-10-30",
+    "remaining_gap": "Six current individual workflows remain blocked on canonical model request wiring and strict citation correction; native followups running; changed-evidence and installed operations/current acceptance package pending. Clinical/model qualification and external production authority remain distinct unmet dependencies.",
+    "next_action": "Current native finance/outcome, prediction and discovery worker PID87278/session70866 is running on frozen 4c4a8c5; do not duplicate or modify product source until its terminal receipt. Respiratory checks passed; behavioral work follows. Both population programs already passed full 4,115-member accounting and all 241 internal handoffs; all 8,230 assessments revalidated exactly across engine update, no task rerun. Exhaustive source conformance covers 2,396,490 received records/237 streams; independent adapter variant passes. Retrieval/source-scope and subscription preflights repaired and verified (269 offline checks plus six complete original source scopes). The first individual medication pass is terminal: one complete subscription Sonnet response rejected because the source constructor declared Opus while send resolved Sonnet on a copy. Exact actual-wire offline replay also reproduces one absent and one ambiguous quote. Preserve failed key/raw usage; after frozen native worker returns, canonicalize configured model before request identity/preflight/parser and use existing source citation recovery for a targeted exact-quotation correction. Then resume six complete individual workflows, changed/conflicting/late dependency checks, installed restart/restore and final current acceptance package. Native worker final global-ledger assertion may observe the separately attributed single failed source attempt: reconcile complete saved native outputs and exact request attribution without repeating successful calls. All ten areas, original source, independent qualifications and external prerequisites remain. No default model promotion, main merge, publication, real care or new services. Heartbeat stays paused; continue directly under latest overnight completion instruction.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
