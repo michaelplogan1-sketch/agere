@@ -279,20 +279,23 @@ class Tools:
 
     def __call__(self, use):
         try:
-            out = self._call(use)
-            if isinstance(out, dict) and not out.get('error'):
-                columns, rows = output_table(out)
-                if columns and self.semantic is not None:
-                    name = f'agere_result_{len(self.seen) + 1}'
-                    self.result_sources[name] = define_result(self.semantic, name, columns, rows)
-                    out = {**out, 'result_view': name}
-                    self.executed_results[name]=out
-            self.seen.append(json.dumps(out, default=str))
-            for row in rows_with_record(out):  # a returned row that names its record: a quote of it is verified against that row only
-                self.rows_by_record.setdefault(str(row['record_id']), []).append(json.dumps(row, default=str))
-            return out
+            return self.retain_result(self._call(use))
         except TypeError as exc:  # a malformed call (unknown argument): a tool error the model can correct, not the end of the loop
             raise ValueError(f'bad arguments for {use.get("name")}: {exc}') from exc
+
+    def retain_result(self, out):
+        """Register complete request-local results through the native view path."""
+        if isinstance(out, dict) and not out.get('error'):
+            columns, rows = output_table(out)
+            if columns and self.semantic is not None:
+                name = f'agere_result_{len(self.seen) + 1}'
+                self.result_sources[name] = define_result(self.semantic, name, columns, rows)
+                out = {**out, 'result_view': name}
+                self.executed_results[name]=out
+        self.seen.append(json.dumps(out, default=str))
+        for row in rows_with_record(out):
+            self.rows_by_record.setdefault(str(row['record_id']), []).append(json.dumps(row, default=str))
+        return out
 
     def continuation_identity(self):
         from ..deliverables.answer_context import source_identity
@@ -1532,7 +1535,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         from . import harness_improvement as harness
         replay=harness.attempt_replay(tools,question,payload,model)
         if replay.get('used') or replay.get('recovered_read_only_actions') or replay.get('downstream_review_feedback'):
-            user=json.dumps({**payload,'execution_reuse':{k:v for k,v in replay.items() if k not in ('calls','final_answer')},
+            from .execution_state import recovery_context
+            user=json.dumps({**payload,'execution_reuse':recovery_context(replay,tools),
                              'instruction':'Retained receipts are current native executions. Recheck any abstention; complete every unresolved requirement and the downstream workflow.'},default=str)
         def review(a, calls):
             assessment = review_final(stack, question, a, calls, tools, ledger=ledger, as_of=str(as_of)[:10], context=payload)

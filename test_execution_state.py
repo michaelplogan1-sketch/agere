@@ -59,6 +59,26 @@ class Assembly(unittest.TestCase):
   out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'passages','as':'sources','on':{'patient_id':'patient_id'},'mode':'collect'}]);self.assertEqual(out['rows'][0]['sources'][0]['text'],'Documented source.')
 
 class State(unittest.TestCase):
+ def test_expanded_recovery_draft_stays_native_before_original_request_encoding(self):
+  feedback=['Repair the current unresolved source check.',{'unverified_retained_draft':{
+   'table':[{'patient_id':'A','quote':'retained source '*20000}],
+   'table_from_tool':'agere_result_16','status':'partial','missing':['Current tolerance unknown'],
+   'limitations':['Historical source only'],'verification':'unverified',
+   'table_binding':{'result_view':'agere_result_16','rows':1,'query':'SELECT '+"'source'"*20000}}}]
+  db=sqlite3.connect(':memory:');self.addCleanup(db.close)
+  tools=SimpleNamespace(semantic=SimpleNamespace(db=db,_authorize=lambda *args:sqlite3.SQLITE_OK),result_sources={},executed_results={},seen=[],rows_by_record={})
+  tools.retain_result=lambda out:B.Tools.retain_result(tools,out)
+  replay={'calls':[],'downstream_review_feedback':feedback,'recovered_read_only_actions':19};before=copy.deepcopy(replay)
+  projected=E.recovery_context(replay,tools);ref=projected['downstream_review_native']
+  self.assertEqual(json.loads(db.execute('SELECT feedback_json FROM "'+ref['result_view']+'"').fetchone()[0]),feedback)
+  state=json.loads(E.messages(json.dumps({'question':'Review current evidence','execution_reuse':projected}),[])[0]['content'])
+  self.assertLess(len(json.dumps(state)),8000)
+  draft=projected['downstream_review_feedback'][1]['unverified_retained_draft']
+  self.assertEqual(draft['last_draft']['missing'],['Current tolerance unknown'])
+  self.assertEqual(draft['last_draft']['status'],'partial')
+  self.assertEqual(draft['last_draft_table_binding']['result_view'],'agere_result_16')
+  self.assertEqual(replay,before);self.assertEqual(E.recovery_context(replay,tools),projected)
+
  def test_dated_role_collections_survive_empty_preview_and_compact_state(self):
   roles=[{'name':'Alex Rivera','relationship':'signed_correspondence_author','date':'2030-01-01',
           'current_assignment':'not_established','record_id':'letter','quote':'Signed by Alex Rivera.'}]

@@ -128,13 +128,16 @@ def capture(path, question, result, *, original_question=None):
             'patient_rows': rows, 'patient_ids': [r['patient_id'] for r in rows],
             'input_patient_ids': input_ids,
             'synthetic': True, 'clinical_eligibility_established': False}
+    from .patient_evidence import capture_profiles
+    data['patient_profiles']=capture_profiles(path,data['patient_ids'],answer)
     from ..clinical import answer_dependencies
     data['dependencies'] = answer_dependencies.seal(path, data)
     # Identity describes the executed answer, not punctuation, elapsed time,
     # cache state or cost. Keep the first complete execution receipt immutable.
     graph = data.get('graph') or {}
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
-    key = 'ANS-' + fingerprint({'version': 7, 'context_policy_identity': context_policy,
+    key = 'ANS-' + fingerprint({'version': 8, 'context_policy_identity': context_policy,
+                               'patient_profiles':data['patient_profiles'],
                                'input_patient_ids': input_ids,
                                'feedback_identity': (data.get('planner_receipt') or {}).get('feedback_identity'),
                                'procedural_memory_identity': ((data.get('planner_receipt') or {}).get('interpretation', {}).get('procedural_memory') or {}).get('identity'),
@@ -170,6 +173,9 @@ def load(path, key, *, current=False, follow_up=False):
         raise ValueError('Saved answer not found in this warehouse')
     data = json.loads(f.read_text())
     stale = data['source'] != source_identity(path)
+    if data.get('patient_profiles') is not None:
+        from .patient_evidence import capture_profiles
+        stale = stale or data['patient_profiles']!=capture_profiles(path,data['patient_ids'],data['answer'])
     invalidated = ((data.get('planner_receipt') or {}).get('version') == 'patient-therapy-review/1')
     from ..clinical.cohort_families import scope_rejection
     receipt = data.get('planner_receipt') or {}

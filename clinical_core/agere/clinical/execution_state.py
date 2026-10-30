@@ -6,7 +6,56 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/2'
+VERSION = 'execution-state/3'
+
+
+def draft_state(candidate):
+    """Reference an unverified draft without copying its native patient table."""
+    state={'last_draft':{k:v for k,v in candidate.items()if k not in (
+        'table','sources','evidence_text','system_one_judgments','table_binding','investigation_review','verification','limitations')},
+        'last_draft_digest':digest(candidate)}if isinstance(candidate,dict)else{'last_draft':candidate,'last_draft_digest':digest(candidate)}
+    if not isinstance(candidate,dict):return state
+    binding=candidate.get('table_binding')
+    if isinstance(binding,dict):
+        state['last_draft_table_binding']={k:v for k,v in binding.items()if k!='query'}
+        if'query'in binding:state['last_draft_table_binding']['native_query_digest']=digest(binding['query'])
+    for key in ('verification','limitations'):
+        if key in candidate:state['last_draft'][key]=candidate[key]
+    if isinstance(candidate.get('table'),list):
+        state['last_draft_rows']=len(candidate['table'])
+        state['last_draft_table_instruction']='The last draft table is preserved natively. Reconstruct it only from the matching executed result_view; do not infer omitted values.'
+    return state
+
+
+def recovery_context(replay,tools):
+    """Keep complete recovery feedback queryable; send native draft references.
+
+    Owned recovery is still unfinished work, never an accepted learned answer.
+    This handles the draft before it can become nested original-request text.
+    """
+    meta={k:v for k,v in replay.items()if k not in ('calls','final_answer')}
+    feedback=meta.get('downstream_review_feedback')
+    if not feedback or tools.semantic is None:return meta
+    native_digest=digest(feedback)
+    raw=json.dumps(feedback,default=str,allow_nan=False)
+    columns=['feedback_json','feedback_digest'];rows=[[raw,native_digest]]
+    existing=next((v for v in tools.executed_results.values()if v.get('kind')=='unverified_recovery_feedback'and v.get('feedback_digest')==native_digest),None)
+    if existing is not None:
+        if existing.get('rows')!=[dict(zip(columns,rows[0]))]:
+            raise ValueError('Recovery feedback native view changed')
+    else:
+        existing=tools.retain_result({'columns':columns,'rows':[dict(zip(columns,rows[0]))],
+            'truncated':False,'kind':'unverified_recovery_feedback','feedback_digest':native_digest})
+    name=existing['result_view']
+    reference={'result_view':name,'json_column':'feedback_json','feedback_digest':native_digest,
+        'instruction':'Full original feedback and draft remain queryable with query_sql/json_extract. Draft values are unverified; bind any final answer to current executed results and complete verification.'}
+    def project(value):
+        if isinstance(value,list):return[project(v)for v in value]
+        if not isinstance(value,dict):return value
+        return{k:({'native_feedback':reference,**draft_state(v)}if k=='unverified_retained_draft'else project(v))for k,v in value.items()}
+    meta['downstream_review_feedback']=project(feedback)
+    meta['downstream_review_native']=reference
+    return meta
 
 
 def catalog(calls):
@@ -85,18 +134,5 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None):
                 state['current_review_feedback']['failed_dependency_ids']=support['failed_packet_ids']
         else:state['current_review_feedback']=feedback
     if candidate is not None:
-        state['last_draft']={k:v for k,v in candidate.items()if k not in ('table','sources','evidence_text','system_one_judgments','table_binding','investigation_review','verification','limitations')}if isinstance(candidate,dict)else candidate
-        state['last_draft_digest']=digest(candidate)
-        if isinstance(candidate,dict)and isinstance(candidate.get('table_binding'),dict):
-            binding=candidate['table_binding']
-            state['last_draft_table_binding']={k:v for k,v in binding.items()if k!='query'}
-            if 'query'in binding:state['last_draft_table_binding']['native_query_digest']=digest(binding['query'])
-        if isinstance(candidate,dict):
-            # Keep exact uncertainty/limitations; only prior reviewer operational
-            # receipts and expanded executable provenance are native references.
-            for key in ('verification','limitations'):
-                if key in candidate:state['last_draft'][key]=candidate[key]
-        if isinstance(candidate,dict)and isinstance(candidate.get('table'),list):
-            state['last_draft_rows']=len(candidate['table'])
-            state['last_draft_table_instruction']='The last draft table is preserved natively. Reconstruct it only from the matching executed result_view; do not infer omitted values.'
+        state.update(draft_state(candidate))
     return [{'role':'user','content':json.dumps(state,default=str,allow_nan=False)}]

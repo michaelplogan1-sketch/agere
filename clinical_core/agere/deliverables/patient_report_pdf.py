@@ -9,7 +9,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader,PdfWriter
 
 def render(context,output,references=None,evidence=None):
- from .patient_evidence import RECOMMENDATION_FIELD_PATTERN
+ from .patient_evidence import RECOMMENDATION_FIELD_PATTERN,review_cards
  output=Path(output);output.parent.mkdir(parents=True,exist_ok=True)
  if evidence is None:
   from .patient_evidence import projection
@@ -88,7 +88,72 @@ def render(context,output,references=None,evidence=None):
   yield a
   for s in a.get('sections')or[]:
    if isinstance(s,dict)and isinstance(s.get('answer'),dict):yield from parts(s['answer'])
+ def clinical_story(c):
+  """The clinical reading path; original analytical rows stay embedded intact."""
+  out=[];profile=c['profile']
+  age=str(profile['age_at_snapshot'])+' years'if profile.get('age_at_snapshot')is not None else'Age not established'
+  out.append(P(age+' / '+str(profile.get('sex_reported')or'Sex not recorded')+' / '+c['patient_id'],small))
+  out.append(P('Clinical context',head))
+  observations=[]
+  for f in c['clinical_context']:
+   text=f['label']+': '+str(f.get('value_censor')or'')+value(f.get('value'))+(' '+str(f['unit'])if f.get('unit')else'')
+   if f.get('date'):text+=' / '+str(f['date'])
+   if f.get('interpretation'):text+=' / '+f['interpretation']
+   if(f.get('same_day_values')or 0)>1:text+=' / '+str(f['same_day_values'])+' values that day; minimum '+str(f.get('same_day_min'))+'; review source values'
+   observations.append(P(text,small))
+  if observations:
+   cells=[observations[i:i+2]for i in range(0,len(observations),2)]
+   if len(cells[-1])<2:cells[-1].append('')
+   grid=Table(cells,colWidths=[270,270]);grid.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,-1),paper),('BOTTOMPADDING',(0,0),(-1,-1),6),('TOPPADDING',(0,0),(-1,-1),6)]));out.append(grid)
+  out.append(P('Responsible clinicians',head))
+  for team in c['care_team']:
+   out.append(P(team['role']+': '+team['status'],labelstyle))
+   for a in team['current']:
+    out.append(P(a['name']+' / '+str(a.get('specialty'))+' / effective '+str(a.get('effective_start'))+' / source '+str(a.get('source_date'))))
+   for a in team['other_records']:
+    out.append(P('Other record: '+a['name']+' / '+str(a.get('assignment_status'))+' / source '+str(a.get('source_date')),small))
+  program=c['program_review']
+  if program:
+   out.extend([P('Why review for '+program['title'],head),P(program['status'],labelstyle)])
+   out.extend(P('• '+reason)for reason in program['rationale'])
+   out.append(P('Before enrollment or titration: '+'; '.join(program['confirm'])+'.',small))
+  out.extend([P('Four-pillar medication and dose review',head),P('Fills describe the analysis window and require current-regimen confirmation. A reference maximum does not establish this patient’s maximum tolerated dose.',small)])
+  def grouped_reasons(groups):
+   text=[]
+   if not groups:return[P('No explicit reason returned in the reviewed scope. Confirm with the patient and responsible clinician.',small)]
+   for g in groups:
+    text.extend([P('Documented account / '+str(g.get('polarity'))+' / '+str(g.get('temporality'))+' / '+str(g.get('subject')),labelstyle),P(g.get('quote'),small)])
+    text.append(P('Dated sources: '+'; '.join(str(s.get('date'))+' / '+str(s.get('record_id'))for s in g['sources']),small))
+   return text
+  if c['cardiology_statements']:
+   out.extend([P('Dated cardiology follow-up accounts',head),*grouped_reasons(c['cardiology_statements'])])
+  matrix=[[P(v,labelstyle)for v in('Pillar','Observed therapy','Dose / reference evidence','Documented reasons')]]
+  for t in c['therapy']:
+   fill=t['observed_status']+'\n'+'\n'.join(str(f.get('drug_name'))+'; latest '+str(f.get('latest_fill_date_in_window'))for f in t['fills'])
+   doses=[]
+   for d in t['dose_observations']:
+    dose='not established'if d.get('documented_daily_mg')is None else str(d['documented_daily_mg'])+' mg/day'
+    reference='not supplied'if d.get('target_max_daily_mg')is None else str(d['target_max_daily_mg'])+' mg/day'
+    doses.append(label(d.get('drug_key'))+'; recorded '+dose+'; '+label(d.get('statement_state')or d.get('dose_status'))+'; reference comparison '+label(d.get('documented_reference_max_status')or d.get('reference_max_status'))+'; reference max '+reference+'; dose date '+str(d.get('dose_date')or'unknown')+'; latest note '+str(d.get('latest_note_date')or'unknown'))
+   reasons=str(len(t['documented_reasons']))+' distinct source account(s); see quotations below'if t['documented_reasons']else'No explicit reason returned in reviewed scope'
+   matrix.append([P(t['label'],labelstyle),P(fill,small),P('\n'.join(doses)or'No dose/state observation supplied; confirm current regimen',small),P(reasons,small)])
+  table=Table(matrix,colWidths=[100,120,180,140],repeatRows=1)
+  table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),paper),('LINEBELOW',(0,0),(-1,-1),.25,line),('BOTTOMPADDING',(0,0),(-1,-1),7),('TOPPADDING',(0,0),(-1,-1),7)]));out.append(table)
+  for t in c['therapy']:
+   if t['documented_reasons']:out.extend([P(t['label']+' / documented accounts',head),*grouped_reasons(t['documented_reasons'])])
+  out.extend([P('Individual dose tolerance',head),P(c['individual_max_tolerated_dose'],labelstyle),*grouped_reasons(c['dose_limiting_statements'])])
+  if c['dated_correspondence_roles']:
+   out.extend([P('Dated correspondence / additional clinician names',head),P('These source roles do not establish current assignment. Complete correspondence quotations and bindings remain in the embedded evidence.',small)])
+   roles={}
+   for r in c['dated_correspondence_roles']:
+    key=(r.get('name'),r.get('documented_role'),r.get('relationship'))
+    roles.setdefault(key,[]).append(str(r.get('date'))+' / '+str(r.get('record_id')))
+   for(name,role,relationship),sources in roles.items():
+    out.extend([P(str(name)+' / '+str(role)+' / '+str(relationship),labelstyle),P('; '.join(sources),small)])
+  out.append(P('Source-bound observations retain the original focused review scope and unresolved items. Complete original result fields, original analysis-proposed steps, all dose observations, source IDs and assertion metadata remain in the embedded evidence and interactive companion.',small))
+  return out
  answer=context['answer'];allparts=list(parts(answer));rows=[r for a in allparts for r in a.get('table')or[]if isinstance(r,dict)]
+ cards=review_cards(context,evidence)
  ids={r['patient_id']for r in rows if r.get('patient_id')};source=context.get('source')or{};cutoff=source.get('as_of','Not recorded');status=answer.get('status','Not recorded')
  patient_level=bool(ids)
  first_metric=(len(ids),'Distinct patient IDs')if patient_level else(len({k for row in rows for k in row}),'Returned fields')
@@ -113,10 +178,12 @@ def render(context,output,references=None,evidence=None):
   +'Source-bound quotations retain their source IDs, dates and assertion qualifications. Complete, unmodified saved analysis, executed evidence, original observations and assertion metadata are embedded as Agere-saved-answer.json.gz and available in the interactive companion.')])
  groups=[('Recommended next steps',RECOMMENDATION_FIELD_PATTERN),('Medication evidence',r'medication|gdmt|pillar|drug|rasi|hf_bb|mra|sglt|beta.block'),('Dose assessment',r'dose'),('Care team',r'pcp|cardiol|clinician|provider|visit|care_team'),('Documented reasons and evidence',r'reason|finding|note|evidence|review|documentary|relation|correction'),('Other saved fields',r'.')]
  for index,row in enumerate(rows):
-  story.append(PageBreak());pid=row.get('patient_id')or'Result '+str(index+1);record_title=P(pid,title)
+  story.append(PageBreak());pid=row.get('patient_id')or'Result '+str(index+1);card=cards.get(pid);record_title=P(card['patient_name']if card else pid,title)
   record_title.agere_record={'patient_id':str(pid),'record_index':index}
   is_patient=bool(row.get('patient_id'))
   story.extend([P(('PATIENT RECORD'if is_patient else'RESULT RECORD')+'  /  '+str(index+1),small),record_title])
+  if card and card['therapy']:
+   story.extend(clinical_story(card));continue
   handled={'patient_id','review_json'}
   if is_patient and not any(re.search(groups[0][1],k,re.I)for k in row):story.append(P('No individualized recommendation was supplied in this saved analytical row.'))
   for group,pattern in groups if is_patient else[('Saved analytical fields',r'.')]:
@@ -195,14 +262,15 @@ def render(context,output,references=None,evidence=None):
  writer.add_outline_item('Source, scope and findings',0)
  if record_pages:
   parent=writer.add_outline_item('Saved records',record_pages[0]['page']-1)
-  for entry in record_pages:writer.add_outline_item(entry['patient_id'],entry['page']-1,parent=parent)
+  for entry in record_pages:
+   c=cards.get(entry['patient_id']);writer.add_outline_item((c['patient_name']+' / 'if c and c['profile'].get('display_name')else'')+entry['patient_id'],entry['page']-1,parent=parent)
  raw=json.dumps(context,ensure_ascii=False,indent=2).encode();packed=gzip.compress(raw,mtime=0);writer.add_attachment('Agere-saved-answer.json.gz',packed)
  with output.open('wb')as f:writer.write(f)
  return {'output':str(output),'pages':len(reader.pages),'rows':len(rows),'distinct_patient_ids':len(ids),'new_model_calls':0,'analytical_status':status,'source_as_of':cutoff,'attachment_bytes':len(packed),'uncompressed_context_bytes':len(raw),
          'attachment_name':'Agere-saved-answer.json.gz','attachment_encoding':'gzip',
          'uncompressed_context_sha256':hashlib.sha256(raw).hexdigest(),
          'patient_bookmarks':record_pages,
-         'narrative_display':'Every saved row; patient or grouped fields and complete source-bound quotations with dates/qualifications. Complete unmodified context and assertion metadata embedded.'}
+         'narrative_display':'Named clinical reviews with dated care, therapy, dose and grouped source quotations; generic fields for other analyses. Complete unmodified context, all original rows and assertion metadata embedded.'}
 
 if __name__=='__main__':
  context=json.loads(Path(sys.argv[1]).read_text());print(json.dumps(render(context,sys.argv[2],json.loads(Path(sys.argv[3]).read_text())if len(sys.argv)>3 else None)))

@@ -218,12 +218,14 @@ def attempt_propose(*args,**kwargs):
 
 def failed(path,question,error):
     """Retain failed-request feedback without deriving actions or answer keys from it."""
-    if not enabled():return
+    from .evaluation import active
+    if active():return
     try:
         db=database(path)
         try:
             with db:event(db,None,'failed_request',{'question_digest':digest(question),'error_type':type(error).__name__,
-                'kind':getattr(error,'kind',None),'reason':str(error)[:1000]})
+                'kind':getattr(error,'kind',None),'reason':str(error)[:1000],
+                'candidate_selection_enabled':enabled(),'clinical_qualification':False})
         finally:db.close()
     except (sqlite3.Error,OSError) as exc:
         error.harness_bookkeeping_error=str(exc)
@@ -328,7 +330,9 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
 
 def _finish(path,result):
     """The completed request is feedback for selection and the next recursive round."""
-    if not enabled():return
+    from .evaluation import active
+    if active():return
+    selecting=enabled()
     info=(result.get('investigation') or {}).get('recursive_improvement') or {}
     candidate=info.get('candidate') or {};used=(info.get('replay') or {}).get('used')
     ident=candidate.get('id') or used
@@ -339,7 +343,7 @@ def _finish(path,result):
     db=database(path)
     try:
         stored=db.execute('SELECT payload FROM harness_candidates WHERE id=?',(ident,)).fetchone() if ident else None
-        expected=(json.loads(stored[0]).get('workflow_contract') or []) if stored else []
+        expected=(json.loads(stored[0]).get('workflow_contract') or []) if stored else(result.get('answer')or{}).get('workflow')or[]
         actual_steps=result.get('workflow') or []
         complete=complete and [(s.get('kind'),s.get('quote')) for s in actual_steps]==[
             (s.get('kind'),s.get('quote')) for s in expected]
@@ -362,15 +366,16 @@ def _finish(path,result):
         any_regression=bool(regression or full_regression)
         with db:
             event(db,ident,'outcome',{'complete_request':complete,'workflow_statuses':[s.get('status') for s in result.get('workflow',[])],
+                                    'candidate_selection_enabled':selecting,'clinical_qualification':False,
                                     'feedback':(result.get('answer') or {}).get('missing',[]),'actor_metrics':actual,
                                     'observed_actor_cost_regression':regression,
                                     'full_request_cost':full_cost,'baseline_full_request_cost':baseline_full,
                                     'observed_full_request_api_cost_regression':bool(full_regression),
                                     'total_cost_qualified':False,
                                     'cost_scope':'API estimates include readers, review, repair, validation and artifacts when ledger attribution is complete. Total cost remains unmeasured.'})
-            if candidate.get('status')=='validated_pending_complete_workflow':
+            if selecting and candidate.get('status')=='validated_pending_complete_workflow':
                 event(db,ident,'selected' if complete and not any_regression else 'quarantined',{'reason':'Full request and native-output validation passed; total cost benefit remains unqualified' if complete and not any_regression else 'Incomplete request or observed cost regression; retain known-good configuration'})
-            if used and (not complete or any_regression):
+            if selecting and used and (not complete or any_regression):
                 event(db,used,'quarantined',{'reason':'Complete request not established or observed cost regressed; resume the retained actor on the next request'})
     finally:db.close()
 

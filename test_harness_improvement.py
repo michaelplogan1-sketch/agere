@@ -171,5 +171,28 @@ class Harness(unittest.TestCase):
         self.assertFalse(feedback['observed_actor_cost_regression'])
         self.assertFalse(feedback['total_cost_qualified'])
 
+    def test_disabled_selection_still_records_the_incomplete_outcome(self):
+        e,calls=self.trajectory(1)
+        c=H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor())
+        with patch.dict(os.environ,{'AGERE_RECURSIVE_IMPROVEMENT':'off'}):
+            H.finish(self.root,{'answer':{'status':'partial'},'workflow':[],
+                'cost_receipt':{'usd':.3,'usd_known':True,'paid_calls':2},
+                'investigation':{'recursive_improvement':{'candidate':c}}})
+        with H.database(self.root)as db:
+            events=[(kind,json.loads(payload))for kind,payload in db.execute('SELECT kind,payload FROM harness_candidate_events WHERE candidate=?',(c['id'],))]
+        outcome=[payload for kind,payload in events if kind=='outcome'][-1]
+        self.assertFalse(outcome['complete_request']);self.assertFalse(outcome['candidate_selection_enabled'])
+        self.assertFalse(outcome['clinical_qualification']);self.assertEqual(outcome['full_request_cost']['api_usd'],.3)
+        self.assertNotIn('selected',[kind for kind,payload in events])
+
+    def test_disabled_selection_retains_failure_without_creating_a_candidate(self):
+        with patch.dict(os.environ,{'AGERE_RECURSIVE_IMPROVEMENT':'off'}):
+            H.failed(self.root,self.q,ValueError('Source changed'))
+        with H.database(self.root)as db:
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM harness_candidates').fetchone()[0],0)
+            row=json.loads(db.execute("SELECT payload FROM harness_candidate_events WHERE kind='failed_request'").fetchone()[0])
+        self.assertFalse(row['candidate_selection_enabled']);self.assertFalse(row['clinical_qualification'])
+        self.assertEqual(row['error_type'],'ValueError')
+
 
 if __name__=='__main__':unittest.main()

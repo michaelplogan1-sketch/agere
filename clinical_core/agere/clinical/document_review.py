@@ -82,6 +82,21 @@ def validate_questions(questions):
     return questions
 
 
+def entity_source_link_issue(question,doc):
+    """A selected label cannot invent an entity absent from its whole source.
+
+    This is a necessary binding check, not proof of a causal relationship.
+    An unlinked source remains unresolved; it does not establish absence.
+    Full context permits anaphora across paragraphs within the same source.
+    """
+    if not isinstance(question,dict):return None
+    entity=question['entity'];text=str(doc.get('text')or'')
+    for alias in [entity['id'],*entity['aliases']]:
+        words=re.findall(r'[^\W_]+',alias,re.UNICODE)
+        if words and re.search(r'(?<!\w)'+r'[\W_]+'.join(re.escape(w)for w in words)+r's?(?!\w)',text,re.I):return None
+    return 'Requested entity is not named by its ID or registered aliases in the complete source. Entity/relation attribution remains unresolved; provide a source-bound entity link or correct the requested aliases.'
+
+
 def relation_finding(pid,field,question,doc,span,axes,provider):
     """Adapt source-bound reader decisions to the existing assertion shape.
 
@@ -91,6 +106,8 @@ def relation_finding(pid,field,question,doc,span,axes,provider):
     """
     if not isinstance(question,dict):raise ValueError('An explicit relation question is required')
     validate_questions({field:question})
+    issue=entity_source_link_issue(question,doc)
+    if issue:raise ValueError(issue)
     if not isinstance(axes,dict) or set(axes)!=set(AXES) or any(not isinstance(axes[k],str) or axes[k] not in AXES[k] for k in AXES):
         raise ValueError('Every relation requires valid assertion axes')
     if axes['subject']!=question['subject']:raise ValueError('Finding subject differs from requested subject')
@@ -520,6 +537,15 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
                     if os.environ.get('AGERE_DOCUMENT_FRONTIER')=='select_spans' or any(isinstance(q,dict) for q in questions.values()):
                         from .span_repair import repair as repair_spans
                         unresolved=typed['unresolved']
+                        nonrepairable={'source_entity_unlinked','source_relation_context_only'}
+                        unlinked=[u for u in unresolved if u.get('native_binding_issue')in nonrepairable]
+                        if unlinked:
+                            # No model can repair a missing source/entity link by
+                            # rereading the same unchanged source. Keep the gap
+                            # addressable for new evidence or corrected aliases.
+                            deferred_fields[pid].extend({k:u.get(k)for k in ('field','record_id','reason','document_text_digest','span_start','span_end','native_binding_issue')}for u in unlinked)
+                            failures.append('Source relation not established; no repeated frontier reading: '+json.dumps([{'field':u['field'],'record_id':u['record_id']}for u in unlinked]))
+                            unresolved=[u for u in unresolved if u.get('native_binding_issue')not in nonrepairable]
                         if focused:
                             # A suspected positive needs disambiguation. An
                             # uncertain relevance vote does not justify a blind
@@ -637,7 +663,7 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
              'reviewed' if m['received_documents'] else 'no_documents',
              'documents_reviewed':m['unique_whole_documents']if focused else m['received_documents'],'review_json':json.dumps(found),'review_limitations':json.dumps(failures)}
         if focused:row['evidence_scope_json']=json.dumps(retrievals[pid])
-        if focused:row['review_unresolved_json']=json.dumps(deferred_fields[pid])
+        if focused or deferred_fields[pid]:row['review_unresolved_json']=json.dumps(deferred_fields[pid])
         if field_patient_queries:row['field_patient_scope_json']=json.dumps({field:{'applicable':pid in applicable[field],'patient_query_sql':query}for field,query in field_patient_queries.items()})
         if candidate_receipt:row['candidate_review_scope']=json.dumps(candidate_row_scope(candidate_receipt,m))
         rows.append(row)

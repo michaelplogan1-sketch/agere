@@ -13,7 +13,7 @@ import sqlite3
 from ...contracts import digest
 from ..request_lineage import component
 
-VERSION='typed-whole-document-review/2'
+VERSION='typed-whole-document-review/3'
 _RANK_LOCK=threading.Lock()
 _READER_LOCK=threading.Lock()
 OBSERVATION_VERSION='source-field-observation/3'
@@ -263,11 +263,16 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
             'native_readings':'Full probabilities retained in provider ledger under step request hashes'})
         for i,(field,instruction,span,doc)in enumerate(batch):
             reading=result['judgments'].get('f'+str(i),{})
+            from .document_review import entity_source_link_issue
+            link_issue=entity_source_link_issue(instruction,doc)if reading.get('label')!='irrelevant'else None
+            support=(axis_receipt or{}).get('relation_support',{}).get(str(i),{})
+            context_only=support.get('decided_by')and support.get('label')=='context_only'
             if not reading.get('decided_by') or reading.get('label') not in ('finding','irrelevant') or (
-                reading.get('label')=='finding' and isinstance(instruction,dict) and i not in axes):
+                reading.get('label')=='finding' and isinstance(instruction,dict) and (link_issue or i not in axes)):
                 unresolved.append({'field':field,'record_id':doc['record_id'],'quote':span['text'],
-                    'reason':'Entity/relation assertion axes unresolved' if reading.get('label')=='finding' else 'Typed source decision unresolved','reading':reading,
+                    'reason':link_issue or('Source block supplies background, not the requested relationship'if context_only else'Entity/relation support or assertion axes unresolved' if reading.get('label')=='finding' else 'Typed source decision unresolved'),'reading':reading,
                     **({'relation_binding':instruction} if isinstance(instruction,dict) else {}),
+                    **({'native_binding_issue':'source_entity_unlinked'}if link_issue else{'native_binding_issue':'source_relation_context_only'}if context_only else{}),
                     'document_text_digest':digest(doc['text']),'span_start':span['start'],'span_end':span['end']})
             elif reading.get('label')=='finding':
                 finding=relation_finding(pid,field,instruction,doc,span,axes[i],reading.get('provider')) if isinstance(instruction,dict) else {
@@ -289,12 +294,19 @@ def read_relation_axes(tools,batch,named,evidence,result,ledger,judge):
     No anchor pruning: all source blocks still undergo the applicability check.
     Unknown axes and mismatched experiencers go to the same targeted repair.
     """
-    from .document_review import AXES
+    from .document_review import AXES,entity_source_link_issue
     tasks={};selected={}
     for i,(field,q,span,doc) in enumerate(batch):
         reading=result['judgments'].get('f'+str(i),{})
         if not isinstance(q,dict) or reading.get('label')!='finding' or not reading.get('decided_by'):continue
+        if entity_source_link_issue(q,doc):continue
         selected[i]=q
+        tasks['f'+str(i)+'_relation_support']={'type':'choice','instructions':{
+            **named['f'+str(i)]['instructions'],'axis':'relation_support',
+            'task':'Independently test whether the EXACT TARGET BLOCK documents the REQUESTED RELATION about the named entity and subject. Use whole-source context to resolve references, but do not transfer an answer from another paragraph into a background-only block. A problem list, condition history or general risk factor alone does not document why a treatment or service was withheld or limited. A named person alone does not establish assignment. Supported may include an explicit negated or uncertain account; assertion axes preserve its qualifications.'},
+            'criteria':{'supported':'The target block documents the requested relationship, including any explicit negation or uncertainty, with references resolved from this source.',
+                'context_only':'The target block supplies background or a mention, not a documented answer to this relationship question. An answer elsewhere in the source does not make this block an answer.',
+                'unknown':'The source does not settle the requested relationship or attribution.'}}
         for axis,options in AXES.items():
             tasks['f'+str(i)+'_'+axis]={'type':'choice','instructions':{
                 **named['f'+str(i)]['instructions'],'axis':axis,
@@ -314,10 +326,12 @@ def read_relation_axes(tools,batch,named,evidence,result,ledger,judge):
     axes={}
     for i,q in selected.items():
         values={axis:checked['judgments'].get('f'+str(i)+'_'+axis,{}) for axis in AXES}
-        if all(v.get('decided_by') and v.get('label') in AXES[a] for a,v in values.items()) and values['subject']['label']==q['subject']:
+        support=checked['judgments'].get('f'+str(i)+'_relation_support',{})
+        if support.get('decided_by')and support.get('label')=='supported'and all(v.get('decided_by') and v.get('label') in AXES[a] for a,v in values.items()) and values['subject']['label']==q['subject']:
             axes[i]={a:v['label'] for a,v in values.items()}
     return axes,{'phase':'entity_relation_axes','steps':checked['steps'],'cost_usd':checked['cost_usd'],
         'question_bindings':tasks,'raw_judgments_digest':digest(checked['judgments']),
+        'relation_support':{str(i):checked['judgments'].get('f'+str(i)+'_relation_support',{})for i in selected},
         'selected_passages':len(selected),'resolved_passages':len(axes)}
 
 

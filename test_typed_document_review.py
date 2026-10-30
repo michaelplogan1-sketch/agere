@@ -36,13 +36,13 @@ class TypedDocuments(unittest.TestCase):
   def judge(subject,named,evidence,**kw):
    seen.extend(named.values());self.assertEqual(evidence[0]['text'],text)
    axes={'polarity':'uncertain','temporality':'current','subject':'patient'}
-   return {'judgments':{k:{'label':axes[v['instructions']['axis']]if v['instructions'].get('axis')else'finding','decided_by':'fixture','provider':'fixture'}for k,v in named.items()},'steps':[],'cost_usd':0}
+   return {'judgments':{k:{'label':'supported'if v['instructions'].get('axis')=='relation_support'else axes[v['instructions']['axis']]if v['instructions'].get('axis')else'finding','decided_by':'fixture','provider':'fixture'}for k,v in named.items()},'steps':[],'cost_usd':0}
   tools=SimpleNamespace(as_of='2030-05-27',stack=SimpleNamespace(allow_live=False))
   with patch.dict(os.environ,{'AGERE_DOCUMENT_LOCAL_READERS':''}):out=T.read(tools,'A',[doc],{'reason':q},None,judge=judge,ranking=False,candidates=[c])
   self.assertEqual(out['findings']['reason'][0]['quote'],quote)
   self.assertEqual(out['findings']['reason'][0]['polarity'],'uncertain')
   self.assertFalse(out['all_blocks_processed']);self.assertTrue(out['all_candidates_processed']);self.assertEqual(out['candidate_count'],1)
-  self.assertEqual(len(seen),4);self.assertTrue(all(v['instructions']['target_block']==quote for v in seen))
+  self.assertEqual(len(seen),5);self.assertTrue(all(v['instructions']['target_block']==quote for v in seen))
   for mutation in [{'date':'2029-01-01'},{'span_start':0},{'document_text_digest':'changed'},{'field':'unrequested'}]:
    with self.subTest(mutation=mutation),self.assertRaises(ValueError):T.source_batches([doc],{'reason':q},{},candidates=[{**c,**mutation}])
  def test_candidate_batches_schedule_every_retained_observation_without_new_blocks(self):
@@ -69,6 +69,21 @@ class TypedDocuments(unittest.TestCase):
 
 
 class LocalHandoffs(unittest.TestCase):
+ def test_unlinked_positive_remains_an_addressable_gap_without_frontier_rereading(self):
+  with tempfile.TemporaryDirectory()as temp:
+   p=Path(temp);db=sqlite3.connect(':memory:');self.addCleanup(db.close)
+   db.executescript("create table patient(patient_id);insert into patient values('A')")
+   tools=SimpleNamespace(db=db,as_of='2030-05-27',stack=SimpleNamespace(path=p,ledger_path=p/'ledger.sqlite3',allow_live=False),in_scope=lambda p:None,continuation_identity=lambda:{'source':'fixture'},_texts=lambda p:[('r','clinical_note','notes','office','2030-01-01','Problem history only.','')],document_reviews=[],subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0})
+   q={'question':'Why was the home visit deferred?','entity':{'kind':'service','id':'home_visit','aliases':['home visit']},'relation':'deferred_for_reason','subject':'patient'}
+   payload={'findings':{'reason':[]},'checks':[],'unresolved':[{'field':'reason','record_id':'r','quote':'Problem history only.','reason':'Source/entity link missing','native_binding_issue':'source_entity_unlinked','reading':{'label':'finding'}}],
+    'version':T.VERSION,'coverage':[],'ranking':{},'all_blocks_processed':True}
+   with patch.dict(os.environ,{'AGERE_DOCUMENT_REVIEW':'typed_spans'}),patch.object(T,'read',return_value=payload),patch('clinical_core.agere.clinical.together._ledgered_send')as sender:
+    result=D.review(tools,['A'],{'reason':q})
+   sender.return_value.assert_not_called();row=result['rows'][0]
+   self.assertEqual(row['review_status'],'needs_review');self.assertEqual(json.loads(row['review_json'])['reason'],[])
+   pending=json.loads(row['review_unresolved_json']);self.assertEqual(pending[0]['record_id'],'r')
+   self.assertEqual(pending[0]['native_binding_issue'],'source_entity_unlinked')
+
  def test_system_one_uncertainty_visits_all_local_readers_before_frontier(self):
   from clinical_core.agere.clinical import document_readers as R
   calls=[]

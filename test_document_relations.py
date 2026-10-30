@@ -29,6 +29,45 @@ class Relations(unittest.TestCase):
         for q in [dict(question(),subject='unsure'),dict(question(),entity={'id':'mra'}),dict(question(),relation='')]:
             with self.assertRaises(ValueError):D.validate_questions({'reason':q})
 
+    def test_accepted_history_only_paragraph_cannot_become_a_treatment_reason(self):
+        doc={**self.doc,'text':'Problem history: chronic heart failure, obesity and anemia.'}
+        calls=[]
+        def judge(task,named,evidence,**kw):
+            calls.append(task)
+            return {'judgments':{k:{'label':'finding','decided_by':'fixture','provider':'fixture'}for k in named},'steps':[],'cost_usd':0}
+        out=T.read(self.tools,'A',[doc],{'reason':question()},None,judge=judge,ranking=False)
+        self.assertEqual(out['findings']['reason'],[])
+        self.assertEqual(out['unresolved'][0]['record_id'],'r')
+        self.assertEqual(out['unresolved'][0]['quote'],doc['text'])
+        self.assertIn('complete source',out['unresolved'][0]['reason'])
+        self.assertNotIn('Source-bound entity/relation assertion axes',calls)
+        with self.assertRaisesRegex(ValueError,'Requested entity'):
+            D.relation_finding('A','reason',question(),doc,{'start':0,'end':len(doc['text']),'text':doc['text']},self.axes,'fixture')
+
+    def test_link_guard_uses_whole_source_and_is_not_a_medication_handler(self):
+        q={'question':'Why was this service deferred?','entity':{'kind':'service','id':'service_7','aliases':['home visit']},
+            'relation':'deferred_for_reason','subject':'patient'}
+        doc={**self.doc,'text':'The home visit was discussed.\n\nIt was deferred until transport could be arranged.'}
+        text='It was deferred until transport could be arranged.';start=doc['text'].index(text)
+        f=D.relation_finding('A','reason',q,doc,{'start':start,'end':start+len(text),'text':text},self.axes,'fixture')
+        self.assertEqual(f['quote'],text);self.assertEqual(f['entity']['id'],'service_7')
+        self.assertIsNotNone(D.entity_source_link_issue(question('arb'),{'text':'Carbohydrate counseling was provided.'}))
+
+    def test_correct_axes_cannot_upgrade_background_when_the_entity_is_elsewhere(self):
+        doc={**self.doc,'text':'Problem history: heart failure and anemia.\n\nMRA held for potassium.'}
+        def judge(task,named,evidence,**kw):
+            judgments={}
+            for key,value in named.items():
+                ins=value['instructions'];axis=ins.get('axis')
+                if axis=='relation_support':label='context_only'if ins['target_block'].startswith('Problem history')else'supported'
+                else:label=self.axes[axis]if axis else'finding'
+                judgments[key]={'label':label,'decided_by':'fixture','provider':'fixture'}
+            return {'judgments':judgments,'steps':[],'cost_usd':0}
+        out=T.read(self.tools,'A',[doc],{'reason':question()},None,judge=judge,ranking=False)
+        self.assertEqual([f['quote']for f in out['findings']['reason']],['MRA held for potassium.'])
+        self.assertEqual(len(out['unresolved']),1)
+        self.assertEqual(out['unresolved'][0]['native_binding_issue'],'source_relation_context_only')
+
     def test_assignment_boundary_reaches_typed_and_frontier_source_readers(self):
         q={**question(), 'entity':{'kind':'clinician_role','id':'renal','aliases':['renal clinician']},
            'relation':'clinician_of_record','question':'Who is assigned ongoing renal care?'}
@@ -50,7 +89,7 @@ class Relations(unittest.TestCase):
             for key,value in named.items():
                 self.assertIn('unknown',value['criteria'])
                 ins=value['instructions'];axis=ins.get('axis');bound=ins.get('relation_binding')
-                label=self.axes[axis] if axis else 'finding' if bound['entity']['id']=='mra' else 'irrelevant'
+                label='supported'if axis=='relation_support'else self.axes[axis] if axis else 'finding' if bound['entity']['id']=='mra' else 'irrelevant'
                 judgments[key]={'label':label,'decided_by':'fixture','provider':'fixture'}
             return {'judgments':judgments,'steps':[],'cost_usd':0}
         out=T.read(self.tools,'A',[self.doc],{'mra_reason':question(),'rasi_reason':question('rasi')},None,judge=judge,ranking=False)
@@ -65,7 +104,7 @@ class Relations(unittest.TestCase):
         for subject in ('other','unknown'):
             def judge(task,named,evidence,**kw):
                 return {'judgments':{k:{'label':subject if v['instructions'].get('axis')=='subject' else
-                    self.axes[v['instructions']['axis']] if v['instructions'].get('axis') else 'finding',
+                    'supported'if v['instructions'].get('axis')=='relation_support'else self.axes[v['instructions']['axis']] if v['instructions'].get('axis') else 'finding',
                     'decided_by':'fixture','provider':'fixture'} for k,v in named.items()},'steps':[],'cost_usd':0}
             out=T.read(self.tools,'A',[self.doc],{'reason':question()},None,judge=judge,ranking=False)
             self.assertEqual(out['findings']['reason'],[]);self.assertEqual(len(out['unresolved']),1)
@@ -75,7 +114,7 @@ class Relations(unittest.TestCase):
         docs=[{**self.doc,'text':'\n\n'.join(['MRA held.']*30)}];sizes=[]
         def judge(task,named,evidence,**kw):
             sizes.append(len(named))
-            return {'judgments':{k:{'label':self.axes[v['instructions']['axis']] if v['instructions'].get('axis') else 'finding',
+            return {'judgments':{k:{'label':'supported'if v['instructions'].get('axis')=='relation_support'else self.axes[v['instructions']['axis']] if v['instructions'].get('axis') else 'finding',
                 'decided_by':'fixture','provider':'fixture'}for k,v in named.items()},'steps':[],'cost_usd':0}
         out=T.read(self.tools,'A',docs,{'reason':question()},None,judge=judge,ranking=False)
         self.assertEqual(len(out['findings']['reason']),30);self.assertLessEqual(max(sizes),64)
@@ -161,7 +200,8 @@ class Relations(unittest.TestCase):
     def test_access_and_service_bindings_share_the_same_assertion_and_composition(self):
         q={'question':'Why was the service not attended?', 'entity':{'kind':'service','id':'transport','aliases':['ride']},
             'relation':'access_barrier','subject':'patient'}
-        value=self.finding(q)
+        doc={**self.doc,'text':'The ride was unavailable, so the service visit was missed.'}
+        value=D.relation_finding('A','access',q,doc,{'start':0,'end':len(doc['text']),'text':doc['text']},self.axes,'fixture')
         views={'base':{'rows':[{'patient_id':'A'}]},'review':{'rows':[{'patient_id':'A','review_json':json.dumps({'access':[value]})}]}}
         result=A.compose(views,base='base',keys=['patient_id'],joins=[{'result':'review','as':'evidence','on':{'patient_id':'patient_id'},'mode':'one'}])
         self.assertEqual(json.loads(result['rows'][0]['evidence']['review_json'])['access'][0],value)

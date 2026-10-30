@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T17:19:10.979815+00:00",
+  "updated_at": "2026-10-30T19:11:18.466635+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -375,11 +375,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "integrated_original_workflow_engineering_delivery",
+    "kind": "clinician_review_and_cost_repair_candidate",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Existing Ask source attention reduces unnecessary field work, preserves source-linked typed findings and current clinician distinctions; full57-patient interactive/PDF/CSV/JSON result saves/reopens. Partial answers now create internal source-evidence review work only; clinical programs remain gated.",
-    "measured_failure_reduction": "56063to14469 scheduled source-field tasks with every57patient/106datedrole retained; corrected35to57 unestablished structured cardiology assignments; former packet-envelope blocks removed exactly;57patient proposed-review sections visible; partial-answer source-review deadlock removed with two current tasks and unchanged clinical guards.194.48s noncold revalidation/10validated new requests,0 repeated extraction.225sourcebindings/228policycells/1653CSVcells agree; this is not semantic or clinical qualification.",
+    "user_behavior_delta": "Named patient/clinician profiles and readable HTML/PDF/CSV are offline verified. Browser QA found a background-only source block under a beta-blocker reason. Shared reader now checks whole-source entity linkage and independently classifies target-block relation support before accepting polarity/time/subject axes. Unsupported/background candidates remain explicit gaps and avoid repeated frontier reads. Both Jev and Perplexity rejected the original background block and retained the actual non-use account in the matched two-case probe.",
+    "measured_failure_reduction": "187focused regressions pass. Existing57-patient render retained1653original cells,228pillar fields,225original observations and17dose/state rows; PDF105vs239pages. Native link replay withheld23unlinked machine candidates, retained57patients/106datedroles,zero providers and unchanged source/ledger. The distinct original background example required relation support: bothproviders rejected it and retained the actual non-use account in2.145842seconds,5validatedattempts,$0.000618576APIestimate. Offline transport1376421\u219233601requestbytes,63108compiledmessagebytes with lossless native feedback. These are scoped evidence, not clinical accuracy or full integrated cost savings.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -606,10 +606,19 @@
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/completion-audit.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/pdf-visual-audit.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/ui-and-work-audit.json",
-      "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json",
+      "artifacts/agere-claude-cost-diagnostic-2026-10-30/diagnostic.json",
+      "artifacts/agere-clinician-review-2026-10-30/v2/render-audit.json",
+      "artifacts/agere-clinician-review-2026-10-30/v2/tests.log",
+      "artifacts/agere-claude-cost-diagnostic-2026-10-30/native-recovery-transport-audit.json",
+      "artifacts/agere-source-entity-link-2026-10-30/completed-source-recovery.json",
+      "artifacts/agere-source-entity-link-2026-10-30/source-link-regression.json",
+      "artifacts/agere-source-entity-link-2026-10-30/support-probe/receipt.json",
+      "artifacts/agere-source-entity-link-2026-10-30/support-probe/cost.json",
+      "artifacts/agere-source-entity-link-2026-10-30/final-regressions.log"
     ],
-    "remaining_gap": "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies.",
-    "next_action": "Inspect the two retained inconclusive patient support packets (SYN-96669EC8-4BA and SYN-FB40A1A6-9E5) against exact saved source/entity/time relationships, using their current internal evidence-review tasks. Classify a reproducible field defect versus verifier uncertainty or missing evidence before any new call. Then qualify the specific routing/semantic role that fails against appropriate existing authored/simple baselines; preserve source-family boundaries, unknowns, failed keys and all ten areas. Do not repeat the full document scan or launch untargeted training.",
+    "remaining_gap": "New ordinary-route full question and complete cost/role accounting have not run yet. Rendering still shows retained partial225-observation result; it does not inherit the new source guard. Current semantic/model/clinical qualification and current installed recovery evidence remain open; two prior packet unknowns must be reassessed against new output. Candidate not default activated.",
+    "next_action": "Freeze the verified named-review/source-relation candidate and execute artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run.py through the ordinary compose route on the existing received warehouse. No owned recovery actions, draft, answer or feedback are supplied. Per-source/model caches are warm and must be reported as warm. Full-call/failed/pending/cache accounting, actual component contributions, current source-support unknowns, report fidelity and post-run recursive-candidate outcome must be assessed. No model fitting plan is configured. Preserve all ten areas and known-good recovery; complete current installed verification and private-branch delivery after the run.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -665,7 +674,7 @@
       "active_worker": null,
       "earlier_nine_check_scope": "Six-source-case/program/local-recovery engineering, not complete integrated MVP qualification"
     },
-    "latest_human_steering": "Mike is stepping away and explicitly requests continued autonomous MVP completion. Continue active work directly; do not repeat scope approvals. Attempted heartbeat reactivation was rejected by automatic approval review because the earlier automatic-prompt pause lacked explicit reversal. Heartbeat remains PAUSED; no workaround or retry without new human authorization.",
+    "latest_human_steering": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist.",
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
       "status": "all_three_returned_analytically_partial",
@@ -679,16 +688,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T17:19:10.979815+00:00",
-    "workflow_change": "Current95a681f canonical ANS-c9cb98c5af2f6e4da23a7eae and DLV-869FD1C9513F verified offline and in the live local app.189 durable evidence/code/result files independently hash-verified; all live ledger rows preserved.69 focused work/dependency regressions pass.",
+    "at": "2026-10-30T19:11:18.466635+00:00",
+    "workflow_change": "Named patient/clinician profiles and readable HTML/PDF/CSV are offline verified. Browser QA found a background-only source block under a beta-blocker reason. Shared reader now checks whole-source entity linkage and independently classifies target-block relation support before accepting polarity/time/subject axes. Unsupported/background candidates remain explicit gaps and avoid repeated frontier reads. Both Jev and Perplexity rejected the original background block and retained the actual non-use account in the matched two-case probe.",
     "unsealed_work": {
-      "status": "integrated_workflow_delivered_qualification_open",
-      "path": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network",
-      "remaining_gap": "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies.",
-      "next_action": "Inspect the two retained inconclusive patient support packets (SYN-96669EC8-4BA and SYN-FB40A1A6-9E5) against exact saved source/entity/time relationships, using their current internal evidence-review tasks. Classify a reproducible field defect versus verifier uncertainty or missing evidence before any new call. Then qualify the specific routing/semantic role that fails against appropriate existing authored/simple baselines; preserve source-family boundaries, unknowns, failed keys and all ten areas. Do not repeat the full document scan or launch untargeted training.",
+      "status": "reader_review_candidate_verified_pending_ordinary_run",
+      "path": "artifacts/agere-source-entity-link-2026-10-30",
+      "remaining_gap": "New ordinary-route full question and complete cost/role accounting have not run yet. Rendering still shows retained partial225-observation result; it does not inherit the new source guard. Current semantic/model/clinical qualification and current installed recovery evidence remain open; two prior packet unknowns must be reassessed against new output. Candidate not default activated.",
+      "next_action": "Freeze the verified named-review/source-relation candidate and execute artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run.py through the ordinary compose route on the existing received warehouse. No owned recovery actions, draft, answer or feedback are supplied. Per-source/model caches are warm and must be reported as warm. Full-call/failed/pending/cache accounting, actual component contributions, current source-support unknowns, report fidelity and post-run recursive-candidate outcome must be assessed. No model fitting plan is configured. Preserve all ten areas and known-good recovery; complete current installed verification and private-branch delivery after the run.",
       "source_frozen_for_run": false,
-      "authorization": "Mike2026-10-30: current synthetic warehouse/full MVP approved, Jev restored, private pushes permitted; no repeated approval.",
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json"
+      "active_receipt": "artifacts/agere-source-entity-link-2026-10-30/support-probe/receipt.json",
+      "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -2136,21 +2145,46 @@
         "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/ui-and-work-audit.json"
       ],
       "scope_impact": "All ten areas retained. Existing modular tools/state/work only; no new care authority, model default, main merge, publication, scheduler activation or protected evaluation."
+    },
+    {
+      "at": "2026-10-30T17:57:18.967745+00:00",
+      "gate": "G5",
+      "decision": "Prioritize one connected clinician-readable full-question/cost increment under Mike\u2019s explicit new acceptance request. Diagnose before calls:1.37MB expanded draft entered original request, repeated1.9MB prompts and fourClaude calls8.6791282USD API-equivalent. Native cached source reexecution5.48s and typed final contract compile preserve57rows/facts/unknowns with0providers;32.5KB actor-state candidate remains offline/unpromoted.",
+      "evidence": [
+        "artifacts/agere-claude-cost-diagnostic-2026-10-30/diagnostic.json"
+      ],
+      "scope_impact": "No charter reduction. HF/GDMT remains current acceptance example through shared projection/state/report/learning paths; all ten areas retained. Current sealed95a681f answer and source stay unchanged until verified candidate. No provider/training job or model/default promotion started."
+    },
+    {
+      "at": "2026-10-30T18:35:49.214589+00:00",
+      "decision": "Restore received names in the shared saved context and use existing native-result registration for full recovery metadata. Preserve complete source and unknowns; record outcomes independently from fitting/activation. Project Wollstonecraft is the approved public thought-experiment name, without renaming repository/product code.",
+      "basis": "Offline full57render fidelity passes:57received names,45clinician profiles,1653original CSV cells,228pillar cells,225intact findings,17dose/state rows,lossless PDF attachment,zero providers. 72focused regressions pass. Actual executor transport audit: original recovery request1376421bytes to33601bytes; compiled message63108bytes; full feedback retained and queryable,original feedback/source/ledger unchanged. These are offline representation/render measurements, not live savings or clinical acceptance.",
+      "scope_impact": "No acceptance area removed; clinical/support gates unchanged. New integrated cost evidence remains required."
+    },
+    {
+      "at": "2026-10-30T19:11:18.466635+00:00",
+      "decision": "A full-source entity anchor is necessary but insufficient: the original bad block had its medication elsewhere in the same document. Add independent target-block relation support through existing typed source/axis judgments. Keep machine-proposed background as pending evidence, not a treatment reason, and avoid repeated frontier reading of a known context-only block.",
+      "basis": "Matched two-case live Jev and Perplexity probe; original source/ledger preserved;187regressions.",
+      "scope_impact": "Shared reader only; no disease handler, model retraining, default promotion or removed acceptance area."
     }
   ],
   "unsealed_work": {
-    "status": "integrated_workflow_delivered_qualification_open",
-    "path": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network",
-    "remaining_gap": "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies.",
-    "next_action": "Inspect the two retained inconclusive patient support packets (SYN-96669EC8-4BA and SYN-FB40A1A6-9E5) against exact saved source/entity/time relationships, using their current internal evidence-review tasks. Classify a reproducible field defect versus verifier uncertainty or missing evidence before any new call. Then qualify the specific routing/semantic role that fails against appropriate existing authored/simple baselines; preserve source-family boundaries, unknowns, failed keys and all ten areas. Do not repeat the full document scan or launch untargeted training.",
+    "status": "reader_review_candidate_verified_pending_ordinary_run",
+    "path": "artifacts/agere-source-entity-link-2026-10-30",
+    "remaining_gap": "New ordinary-route full question and complete cost/role accounting have not run yet. Rendering still shows retained partial225-observation result; it does not inherit the new source guard. Current semantic/model/clinical qualification and current installed recovery evidence remain open; two prior packet unknowns must be reassessed against new output. Candidate not default activated.",
+    "next_action": "Freeze the verified named-review/source-relation candidate and execute artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run.py through the ordinary compose route on the existing received warehouse. No owned recovery actions, draft, answer or feedback are supplied. Per-source/model caches are warm and must be reported as warm. Full-call/failed/pending/cache accounting, actual component contributions, current source-support unknowns, report fidelity and post-run recursive-candidate outcome must be assessed. No model fitting plan is configured. Preserve all ten areas and known-good recovery; complete current installed verification and private-branch delivery after the run.",
     "source_frozen_for_run": false,
-    "authorization": "Mike2026-10-30: current synthetic warehouse/full MVP approved, Jev restored, private pushes permitted; no repeated approval.",
-    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json"
+    "active_receipt": "artifacts/agere-source-entity-link-2026-10-30/support-probe/receipt.json",
+    "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
   },
   "current_visual_request": {
-    "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
-    "publication": "Draft assets only; no posting authorized.",
-    "evidence": "Populate execution, cost and contribution claims only from measured candidate run; distinguish attempted, used, skipped and unqualified components."
+    "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
+    "publication": "Local assets and copy only; no publication or contact authorized/performed.",
+    "evidence": [
+      "/Users/mikel/clinical-insights-local/artifacts/project-wollstonecraft-2026-10-30/01-architecture.png",
+      "/Users/mikel/clinical-insights-local/artifacts/project-wollstonecraft-2026-10-30/linkedin-post-v2.txt",
+      "/Users/mikel/clinical-insights-local/artifacts/project-wollstonecraft-2026-10-30/tag-guide.md"
+    ]
   },
   "full_stack_candidate_checkpoint": {
     "at": "2026-10-30T12:35:29.209891+00:00",

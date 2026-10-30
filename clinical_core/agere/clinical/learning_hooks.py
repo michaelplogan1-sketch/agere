@@ -234,13 +234,19 @@ def after_answer(stack, question, result, *, body=None):
         except Exception as exc:  # noqa: BLE001
             receipt['errors'].append(f'{type(exc).__name__}: {exc}'[:300])
         return receipt
+    # Outcome collection is independent of fitting/promotion. Turning model
+    # updates off must not silently discard the evidence for the next cycle.
+    try:
+        from .component_learning import observe
+        receipt['components']['component_learning']=observe(stack,question,result,body)
+    except Exception as exc:
+        receipt['errors'].append('component observation: '+type(exc).__name__+': '+str(exc)[:300])
     if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
         # Explicit component-learning mode never reads the legacy learning,
         # question-plan or answer stores. Observations need direct review before
         # becoming training labels; model-generated learning_requests cannot approve themselves.
         try:
-            from .component_learning import observe,run_plan
-            receipt['components']['component_learning']=observe(stack,question,result,body)
+            from .component_learning import run_plan
             receipt['components']['learning_cycle']=run_plan(stack)
         except Exception as exc:
             receipt['errors'].append('component learning: '+type(exc).__name__+': '+str(exc)[:300])
@@ -284,7 +290,7 @@ def after_answer(stack, question, result, *, body=None):
     except Exception as exc:  # noqa: BLE001 - learning bookkeeping never fails an answer
         receipt['errors'].append(f'{type(exc).__name__}: {exc}'[:300])
     try:
-        receipt['components'] = components(stack, question, result, body)
+        receipt['components'].update(components(stack, question, result, body))
     except Exception as exc:  # noqa: BLE001
         receipt['errors'].append(f'components: {type(exc).__name__}: {exc}'[:300])
     return receipt
@@ -294,9 +300,13 @@ def after_failure(stack, question, exc):
     """A question nobody could answer: record it as a gap for grammar growth and training negatives. Never raises."""
     if _evaluating(): return None
     try:
+        from .component_learning import observe
+        observation=observe(stack,question,{'answer':{'status':'failed'}})
         if os.environ.get('AGERE_COMPONENT_LEARNING','off')=='on':
-            from .component_learning import observe
-            return observe(stack,question,{'answer':{'status':'failed'}})
+            return observation
+    except Exception:  # bookkeeping cannot suppress the original failure/gap
+        pass
+    try:
         usage = getattr(exc, 'planner_receipt', {}) or {}
         return append('gaps', {'question': question, 'status': 'error', 'error': f'{type(exc).__name__}: {exc}'[:500],
                                'proposers': [{k: p.get(k) for k in ('proposer', 'outcome', 'detail')} for p in usage.get('proposers') or []][:24],
