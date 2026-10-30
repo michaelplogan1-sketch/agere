@@ -1,5 +1,5 @@
 """Coverage/support dependency closure from authored evidence; no providers."""
-import copy,json,unittest
+import copy,hashlib,json,unittest
 from clinical_core.agere.clinical import evidence_projection as E,backstop_agent as B
 from clinical_core.agere.deliverables.receipts import uncompact_json
 
@@ -90,6 +90,88 @@ class Projection(unittest.TestCase):
             return {'label':'contradicted'if evidence[0]['id']=='patient_A'else'supported','decided_by':'scripted','steps':[]}
         result=B.check_support_packets(packets,decide,as_of='2030-01-02',ledger=None)
         self.assertEqual(result['label'],'contradicted');self.assertEqual(result['failed_packet_ids'],['patient_A'])
+
+
+class SourceDependencies(unittest.TestCase):
+    def packet(self):
+        from clinical_core.agere.clinical import document_review as D
+        from clinical_core.agere.deliverables.receipts import readable_json
+        question={'question':'Does this source explicitly document why Agent Z stopped?',
+            'entity':{'kind':'medication','id':'agent_z','aliases':['Agent Z']},'relation':'stopped_reason','subject':'patient'}
+        docs=[];findings=[]
+        for i in range(20):
+            quote='Agent Z stopped because the label could not be verified. Dosis desconocida — '+str(i)+'.'
+            filler=''.join(hashlib.sha256(f'{i}:{n}'.encode()).hexdigest()for n in range(256))
+            doc={'patient_id':'A','record_id':'r'+str(i),'date':'2030-01-02','text':quote+'\n'+filler}
+            docs.append(doc)
+            f=D.relation_finding('A','reason',question,doc,{'start':0,'end':len(quote),'text':quote},
+                {'polarity':'affirmed','temporality':'current','subject':'patient'},'authored_test')
+            findings.append(f)
+        row={'patient_id':'A','findings':json.dumps(findings,ensure_ascii=True),'amount':42,
+             'literal':{'required_source_dependency':'literal, not a reference','kind':'contexts'}}
+        state={'id':'patient_A','patient_id':'A','question':'Source review','as_of':'2030-01-02','answer_rows':[row],
+            'source_contexts':docs,'review_scope':[{'questions':{'reason':question}}],
+            'claim_manifest':[{'id':'f','field':'findings','path':['answer_rows',0,'findings']},
+                              {'id':'a','field':'amount','path':['answer_rows',0,'amount']}]}
+        text=json.dumps(readable_json(state),ensure_ascii=False,separators=(',',':'))
+        return {'id':state['id'],'date':state['as_of'],'text':text,'bytes':len(text.encode()),
+                'source_context_complete':True,'claim_manifest':state['claim_manifest']},state
+
+    def test_complete_sources_and_every_observation_are_dispatched_with_exact_native_restoration(self):
+        packet,state=self.packet();original=copy.deepcopy(packet)
+        parts=E.source_dependency_packets(packet)
+        self.assertGreater(len(parts),1);self.assertEqual(packet,original)
+        self.assertTrue(all(p['bytes']<=230000 and p['source_dependency_roundtrip_verified']for p in parts))
+        parent=uncompact_json(json.loads(parts[0]['text']))
+        self.assertEqual(parent['answer_rows'][0]['amount'],42)
+        self.assertEqual(parent['answer_rows'][0]['findings']['source_dependency_json_string']['format'],'native_ascii')
+        leaves=[uncompact_json(json.loads(p['text']))for p in parts[1:]]
+        supplied=[d for leaf in leaves for d in leaf['source_contexts']]
+        observations=[r['observation']for leaf in leaves for r in leaf['answer_rows']]
+        self.assertEqual(supplied,state['source_contexts'])
+        self.assertEqual(observations,json.loads(state['answer_rows'][0]['findings']))
+        self.assertIn('no clinical fact',parent['scope'])
+
+    def test_missing_or_changed_source_and_forged_current_state_fail_closed(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        from clinical_core.contracts import digest
+        for change in ('missing','text','meaning','current'):
+            packet,state=self.packet()
+            if change=='missing':state['source_contexts'].pop()
+            elif change=='text':state['source_contexts'][0]['text']+='changed'
+            else:
+                values=json.loads(state['answer_rows'][0]['findings']);a=values[0]['assertion']
+                if change=='meaning':a['relation']='another_relation'
+                else:a['current_clinical_state_established']=True
+                a['id']=digest(['documentary-relation/1',{k:v for k,v in a.items()if k!='id'}])
+                state['answer_rows'][0]['findings']=json.dumps(values)
+            packet['text']=json.dumps(readable_json(state))
+            with self.subTest(change=change),self.assertRaises(ValueError):E.source_dependency_packets(packet)
+
+    def test_one_failed_or_unknown_source_cannot_be_overridden_by_supported_parent(self):
+        packet,_=self.packet()
+        for label in ('contradicted','unknown'):
+            def decide(question,options,evidence,**kwargs):
+                child='__sources_'in evidence[0]['id']
+                return {'label':label if child else 'supported','decided_by':'scripted'if label!='unknown'or not child else None,'steps':[]}
+            result=B.check_support_packets([packet],decide,as_of=packet['date'],ledger=None)
+            self.assertEqual(result['label'],label)
+            self.assertGreater(result['scheduled_source_packets'],1)
+        def supported(*args,**kwargs):return {'label':'supported','decided_by':'scripted','steps':[]}
+        accepted=B.check_support_packets([packet],supported,as_of=packet['date'],ledger=None)
+        self.assertEqual(accepted['label'],'supported');self.assertTrue(accepted['all_dependencies_checked'])
+
+    def test_missing_child_changed_binding_and_duplicate_schedule_cannot_pass(self):
+        packet,_=self.packet();parts=E.source_dependency_packets(packet)
+        def supported(*args,**kwargs):return {'label':'supported','decided_by':'scripted','steps':[]}
+        for change in ('missing','binding','duplicate','orphan'):
+            changed=copy.deepcopy(parts)
+            if change=='missing':changed.pop()
+            elif change=='binding':changed[-1]['source_dependency_fingerprint']='changed'
+            elif change=='duplicate':changed.append(copy.deepcopy(changed[-1]))
+            else:changed=changed[1:]
+            with self.subTest(change=change),self.assertRaises(ValueError):
+                B.check_support_packets(changed,supported,as_of=packet['date'],ledger=None)
 
 
 if __name__=='__main__':unittest.main()

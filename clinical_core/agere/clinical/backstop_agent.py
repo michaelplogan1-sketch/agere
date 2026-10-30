@@ -1334,6 +1334,18 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
             except (ValueError,KeyError,TypeError,IndexError):
                 pass  # retain the complete unresolved dependency below
         scheduled.append(packet)
+    by_id={p['id']:p for p in scheduled}
+    if len(by_id)!=len(scheduled):raise ValueError('Duplicate source dependency packet identity')
+    for packet in scheduled:
+        required=packet.get('required_source_packet_ids')
+        if required is not None:
+            if not isinstance(required,list)or len(required)!=len(set(required))or any(
+                ident not in by_id or by_id[ident].get('source_dependency_parent_id')!=packet['id']or
+                by_id[ident].get('source_dependency_fingerprint')!=packet.get('source_dependency_fingerprint')for ident in required):
+                raise ValueError('Complete source dependency schedule is missing or changed')
+        parent=packet.get('source_dependency_parent_id')
+        if parent and (parent not in by_id or packet['id']not in by_id[parent].get('required_source_packet_ids',[])):
+            raise ValueError('Source dependency is detached from its required parent')
     # System One opens/closes a connection when given a path. A caller's SQLite
     # handle must never be shared among concurrent verification workers.
     from ..gateway import BudgetLedger
