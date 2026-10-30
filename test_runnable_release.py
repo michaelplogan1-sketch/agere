@@ -172,6 +172,9 @@ class ApplicationInventoryTests(unittest.TestCase):
         for path in ('clinical_core/agere/clinical/care_protocols.json',
                      'clinical_core/agere/clinical/clinical_input_maps.json',
                      'clinical_core/agere/clinical/assets/workspace.css','config/questions.json',
+                     'config/agere/risk_adjustment/manifest.json',
+                     'config/agere/risk_adjustment/v28_relative_factors.csv',
+                     'config/agere/risk_adjustment/eligible_cpt_hcpcs_cy2026.txt',
                      'tools/training/datasets.py','tools/certify_gates.py',
                      'tools/normalization/jev_check.py'):
             self.assertEqual(code[path],L.sha(L.ROOT/path))

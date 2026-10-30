@@ -123,7 +123,9 @@ def code_identity():
     # whose saved decisions and workbench fail on first use.
     files = [p for p in (ROOT / 'clinical_core').rglob('*')
              if p.is_file() and p.suffix in ('.py', '.js', '.json', '.css', '.html') and '__pycache__' not in p.parts]
-    files += list((ROOT / 'config/agere').glob('*.json'))
+    # Versioned rules include nested coefficient tables and source mappings.
+    files += [p for p in (ROOT / 'config/agere').rglob('*')
+              if p.is_file() and p.suffix in ('.json', '.csv', '.txt')]
     files += list((ROOT / 'config').glob('*.json'))
     # The active build pointer is installation configuration, not release code.
     files = [p for p in files if p.name != 'active_warehouse.json']
@@ -258,20 +260,52 @@ def copy_file(source, target):
 
 
 def sqlite_copy(source, target):
+    source, target = Path(source), Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists(): raise ValueError('SQLite destination already exists')
     src = sqlite3.connect(source.resolve().as_uri() + '?mode=ro', uri=True)
-    dst = sqlite3.connect(target)
     try:
-        src.backup(dst, pages=8192)
-        if dst.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
-            raise ValueError('SQLite consistency check failed: ' + str(source))
-        dst.execute('PRAGMA journal_mode=DELETE')
+        # A cold APFS clone avoids rewriting large frozen databases. Hold a read
+        # transaction, refuse journals with frames, and fence concurrent changes.
+        # WAL databases with committed frames still use SQLite's online backup.
+        src.execute('BEGIN')
+        src.execute('SELECT count(*) FROM sqlite_schema').fetchone()
+        def stamp():
+            s = source.stat()
+            return (s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        def hot():
+            return any(p.exists() and p.stat().st_size for p in
+                       (Path(str(source) + '-wal'), Path(str(source) + '-journal')))
+        before = stamp()
+        if sys.platform == 'darwin' and not hot():
+            cp = subprocess.run(['/bin/cp', '-c', str(source), str(target)], capture_output=True)
+            if cp.returncode == 0:
+                if hot() or stamp() != before:
+                    raise ValueError('Source changed during cold SQLite copy: ' + str(source))
+                with sqlite3.connect(target.resolve().as_uri() + '?mode=ro', uri=True) as check:
+                    if check.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
+                        raise ValueError('SQLite consistency check failed: ' + str(source))
+                if hot() or stamp() != before:
+                    raise ValueError('Source changed during cold SQLite copy: ' + str(source))
+                shutil.copystat(source, target)
+                return 'cold_filesystem_clone'
+            if target.exists():
+                raise OSError('Cold SQLite clone failed with partial destination: ' + str(target))
+        dst = sqlite3.connect(target)
+        try:
+            src.backup(dst, pages=8192)
+            if dst.execute('PRAGMA quick_check').fetchall() != [('ok',)]:
+                raise ValueError('SQLite consistency check failed: ' + str(source))
+            dst.execute('PRAGMA journal_mode=DELETE')
+        finally:
+            dst.close()
     finally:
-        dst.close(); src.close()
+        src.close()
     # A consistent backup retains the source observation clock. The enclosing
     # checkpoint fences source changes and seals the backup bytes separately;
     # saved answers must not become stale merely because the file was copied.
     shutil.copystat(source, target)
+    return 'sqlite_online_backup'
 
 
 def sync_publish(stage, target):
@@ -304,13 +338,13 @@ def checkpoint(config_path, output):
         directories = sorted(p.relative_to(build).as_posix() for p in build.rglob('*') if p.is_dir())
         for name in directories: (stage / 'build' / name).mkdir(parents=True, exist_ok=True)
         code = code_identity(); deps = dependencies(build, config)
-        entries = {}; databases = []
+        entries = {}; databases = []; database_copy_methods = {}
         for name in before:
             if name.endswith(('-wal', '-journal')): continue
             source, dest = build / name, stage / 'build' / name
             with source.open('rb') as f: is_db = f.read(16) == b'SQLite format 3\x00'
             if is_db:
-                sqlite_copy(source, dest); databases.append(name)
+                database_copy_methods[name] = sqlite_copy(source, dest); databases.append(name)
             else: copy_file(source, dest)
             entries[name] = file_entry(dest)
         after = inventory(build)
@@ -323,6 +357,7 @@ def checkpoint(config_path, output):
         manifest = {'schema': VERSION, 'created_at': datetime.now(timezone.utc).isoformat(),
                     'original_build': str(build), 'configuration': config, 'files': entries,
                     'directories': directories, 'databases': databases, 'code': code, 'dependencies': deps,
+                    'database_copy_methods': database_copy_methods,
                     'scope': 'Same-machine inspection recovery; external manifest dependencies and current ledger required. Not clinical or production qualification.'}
         write(stage / 'manifest.json', manifest)
         write(stage / 'complete.json', {'manifest_sha256': sha(stage / 'manifest.json')})

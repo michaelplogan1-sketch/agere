@@ -33,6 +33,49 @@ class LedgerDependencies(unittest.TestCase):
 
 
 class SavedAnswerRecovery(unittest.TestCase):
+    def test_cold_copy_is_independent_and_retains_observation_clock(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source.sqlite3', Path(temp)/'copy.sqlite3'
+            with sqlite3.connect(source) as db:
+                db.execute('CREATE TABLE state(value)'); db.execute('INSERT INTO state VALUES(1)')
+            before = source.stat()
+            method = L.sqlite_copy(source, target)
+            self.assertIn(method, ('cold_filesystem_clone', 'sqlite_online_backup'))
+            if sys.platform == 'darwin': self.assertEqual(method, 'cold_filesystem_clone')
+            self.assertEqual(source.stat().st_mtime_ns, before.st_mtime_ns)
+            self.assertEqual(target.stat().st_mtime_ns, before.st_mtime_ns)
+            with sqlite3.connect(target) as db: db.execute('UPDATE state SET value=2')
+            with sqlite3.connect(source) as db: self.assertEqual(db.execute('SELECT value FROM state').fetchone(), (1,))
+
+    def test_live_wal_copy_keeps_committed_rows_and_excludes_uncommitted(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source.sqlite3', Path(temp)/'copy.sqlite3'
+            with sqlite3.connect(source) as db:
+                db.execute('CREATE TABLE state(value)'); db.commit()
+            writer = sqlite3.connect(source)
+            try:
+                writer.execute('PRAGMA journal_mode=WAL')
+                writer.execute('INSERT INTO state VALUES(1)'); writer.commit()
+                writer.execute('INSERT INTO state VALUES(2)')
+                self.assertEqual(L.sqlite_copy(source, target), 'sqlite_online_backup')
+                with sqlite3.connect(target) as db:
+                    self.assertEqual(db.execute('SELECT value FROM state').fetchall(), [(1,)])
+            finally: writer.close()
+
+    @unittest.skipUnless(sys.platform == 'darwin', 'APFS clone fence')
+    def test_cold_copy_rejects_source_change_instead_of_publishing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source.sqlite3', Path(temp)/'copy.sqlite3'
+            with sqlite3.connect(source) as db: db.execute('CREATE TABLE state(value)')
+            run = subprocess.run
+            def change(*args, **kwargs):
+                result = run(*args, **kwargs)
+                s = source.stat(); os.utime(source, ns=(s.st_atime_ns, s.st_mtime_ns+1000000))
+                return result
+            with patch.object(L.subprocess, 'run', side_effect=change):
+                with self.assertRaisesRegex(ValueError, 'Source changed'):
+                    L.sqlite_copy(source, target)
+
     def test_backup_reopens_current_answer_and_later_source_change_still_invalidates(self):
         from test_patient_review_profiles import Profiles
         from clinical_core.agere.deliverables import answer_context as A
