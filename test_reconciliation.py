@@ -111,6 +111,59 @@ class Reconciliation(unittest.TestCase):
                 R.synthesize(self.path, self.parent['id'], self.ledger, allow_live=True)
             send.assert_not_called()
 
+    def reference_count_failure(self):
+        # Add one independently parsed source citation to the fixture so five
+        # distinct, actually supplied units can be referenced without invention.
+        units=R.P.unit_map(self.row['model_context'])
+        cited={c['source_unit_id']for p in self.parent['passes']for f in p['result']['findings']for c in f['citations']}
+        name,item=next((n,v)for n,v in units.items()if v['unit']['kind']=='narrative'and v['unit']['id']not in cited)
+        body={'model':self.job['body']['model']}
+        value={'findings':[{'id':'f1','kind':'documented_account','text':'An additional received request remains unconfirmed.',
+                           'citations':[{'unit':name,'quote':item['text'].split('. ')[0]+'.'}],'unresolved':[]}],
+               'unanswered':[],'review_steps':[]}
+        finding=R.C.parse(self.raw(body,value),body,units,self.row)['findings'][0]
+        packet=next(p for p in self.parent['passes']if any(u['source_unit_id']==item['unit']['id']for u in p['result']['unit_reviews']))
+        finding['id']='additional-source-claim';packet['result']['findings'].append(finding)
+        self.job=R.request(self.parent,self.row,self.refs,self.received)
+        self.assertEqual(len(self.job['units']),5)
+        value=self.result();value['findings'][0]['text']['unit_refs']=list(self.job['units'])
+        historical=copy.deepcopy(self.job['body']);historical['system']=historical['system'].replace(R.REFERENCE_GUIDANCE,R.LEGACY_REFERENCE_BOUND)
+        key=R.G.request_key(historical);out=R.location(self.path,'0'*64).parent/'provider';out.mkdir(parents=True)
+        raw=self.raw(historical,value);raw['usage']={'input_tokens':750,'output_tokens':200}
+        (out/(key+'.json')).write_text(json.dumps({'response':raw}))
+        (out/(key+'-failure.json')).write_text(json.dumps({'request_hash':key,'error':R.REFERENCE_ERROR}))
+        self.ledger.reserve(key,'claude',historical['model']);self.ledger.finish(key,error=R.REFERENCE_ERROR)
+        return historical,key,out,raw
+
+    def test_valid_five_reference_response_revalidates_offline_with_failed_key_retained(self):
+        import os
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
+            historical,key,out,raw=self.reference_count_failure()
+            R.C.token_check(historical,out,allow_live=True)
+            before=(out/(key+'.json')).read_bytes()
+            with patch.object(R.G,'send')as send:
+                answer=R.synthesize(self.path,self.parent['id'],self.ledger,allow_live=False)
+                send.assert_not_called()
+        self.assertEqual(answer['new_paid_api_calls'],0);self.assertEqual(answer['new_token_count_calls'],0)
+        self.assertTrue(answer['cache_hit']);self.assertEqual(R.inspect(self.path,answer['id']),answer)
+        self.assertEqual((out/(key+'.json')).read_bytes(),before)
+        self.assertEqual(self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(key,)).fetchone()[0],'failed')
+        usage=answer['reconciliation']['groups'][0]['usage']
+        self.assertEqual(usage['request_hash'],key);self.assertEqual(usage['excess_reference_list_lengths'],[5])
+        self.assertTrue(usage['prior_failed_reservation_preserved'])
+
+    def test_count_revalidation_still_rejects_unknown_or_duplicate_references(self):
+        import os
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
+            historical,key,out,raw=self.reference_count_failure();R.C.token_check(historical,out,allow_live=True)
+            for names in [['invented']+list(self.job['units']),list(self.job['units'])*2]:
+                value=json.loads(raw['content'][0]['text']);value['findings'][0]['text']['unit_refs']=names
+                (out/(key+'.json')).write_text(json.dumps({'response':self.raw(historical,value)}))
+                with patch.object(R.G,'send')as send:
+                    with self.assertRaisesRegex(ValueError,'Unknown, unsupplied or duplicate'):
+                        R.synthesize(self.path,self.parent['id'],self.ledger,allow_live=True)
+                    send.assert_not_called()
+
     def test_historical_context_route_is_not_replaced(self):
         with patch('clinical_core.agere.clinical.meaning_source_dispatch.pinned', return_value={'pinned'}), \
                 patch.object(R.S, 'stages') as stages:

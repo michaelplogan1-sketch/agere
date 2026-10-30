@@ -24,10 +24,13 @@ reference in original claim prose. Original prose is unchanged; original_pass
 and the reference manifest scope its local aliases, not explicit cross-pass
 mentions. Keep ambiguous source meaning unresolved. Findings still cite exact
 excerpt_ids. Text limits: finding/unresolved/unanswered 1400 characters,
-claim-review reason 200, review question 350; at most four unit_refs per text.
+claim-review reason 200, review question 350; list each relevant supplied unit once in unit_refs.
 All source-pass claims receive one disposition. Uncited text and prior review
 questions stay in the immutable parent; this narrower review cannot upgrade
 source-unit coverage or remove its unresolved dispositions.'''
+REFERENCE_GUIDANCE='list each relevant supplied unit once in unit_refs.'
+LEGACY_REFERENCE_BOUND='at most four unit_refs per text.'
+REFERENCE_ERROR='Unknown, unsupplied or duplicate explicit unit reference'
 
 
 def identity():
@@ -91,7 +94,7 @@ def parse(raw, job, refs):
         if R.BARE.search(text) or R.QUALIFIED.search(text):
             raise ValueError('Unit references must be explicit fields, not generated prose')
         names = item['unit_refs']
-        if (not isinstance(names, list) or len(names) > 4
+        if (not isinstance(names, list)
                 or any(not isinstance(n, str) or n not in job['units'] for n in names)
                 or len(names) != len(set(names))):
             raise ValueError('Unknown, unsupplied or duplicate explicit unit reference')
@@ -154,28 +157,77 @@ def inspect(path, key):
     return saved
 
 
+def revalidate_reference_count(job, refs, ledger, out):
+    """Recover only a saved response rejected for >4 valid supplied references.
+
+    Reconstruct the exact historical body; current source/claim inputs and every
+    other parser check must agree. The failed ledger entry and raw bytes remain.
+    """
+    body=deepcopy(job['body'])
+    if body['system'].count(REFERENCE_GUIDANCE)!=1:return None
+    body['system']=body['system'].replace(REFERENCE_GUIDANCE,LEGACY_REFERENCE_BOUND)
+    key=G.request_key(body)
+    old=ledger.db.execute('SELECT status FROM calls WHERE id=?',(key,)).fetchone()
+    if old is None:return None
+    if old[0]=='pending':raise ValueError('Historical reconciliation pending; no parallel replacement')
+    if old[0]!='failed':return None
+    failure=out/(key+'-failure.json');received=out/(key+'.json')
+    if not failure.exists()or not received.exists():
+        raise ValueError('Historical reconciliation failure lacks exact retained receipts')
+    failed=json.loads(failure.read_text())
+    if failed.get('request_hash')!=key or failed.get('error')!=REFERENCE_ERROR:
+        raise ValueError('Historical reconciliation failed outside the reference-count repair')
+    raw=json.loads(received.read_text())['response']
+    value=json.loads(''.join(c['text']for c in raw['content']if c.get('type')=='text'))
+    overflow=[]
+    def visit(item):
+        if isinstance(item,dict):
+            names=item.get('unit_refs')
+            if isinstance(names,list)and len(names)>4:overflow.append(names)
+            for child in item.values():visit(child)
+        elif isinstance(item,list):
+            for child in item:visit(child)
+    visit(value)
+    if not overflow:raise ValueError('No excessive supplied-reference list justifies revalidation')
+    # This still rejects unknown/unsupplied/duplicate names, citations, incomplete
+    # output, missing claim dispositions and all other original typed contracts.
+    from .context_student import _revalidate_saved
+    result,usage=_revalidate_saved(key,body['model'],body['model'],out,
+        lambda returned:parse(returned,job,refs),'exact_supplied_reference_count/1')
+    tokens=C.token_check(body,out,allow_live=False)
+    return result,{**usage,'current_request_hash':G.request_key(job['body']),
+                   'actual_request_bytes':P.request_bytes(body),'excess_reference_list_lengths':[len(v)for v in overflow]},tokens
+
+
 def synthesize(path, parent_id, ledger, *, allow_live=False):
     parent, row, refs, job, key = prepare(path, parent_id)
     target = location(path, key)
     if target.exists(): return {**inspect(path, key), 'cache_hit': True, 'new_paid_api_calls': 0, 'new_token_count_calls': 0}
-    if not allow_live: raise ValueError('Live synthesis route disabled; typed reconciliation pending')
     old = ledger.db.execute('SELECT status FROM calls WHERE id=?', (G.request_key(job['body']),)).fetchone()
     if old and old[0] != 'validated': raise ValueError('Prior reconciliation pending/failed; no silent retry')
-    out = target.parent / 'provider'; out.mkdir(parents=True, exist_ok=True)
-    progress = {'schema': VERSION, 'id': key, 'parent_answer_id': parent_id, 'status': 'pending'}
-    progress_path = target.with_name(key + '-progress.json')
-
+    out = target.parent / 'provider'
     def fresh():
         if digest(S.inspect(path, parent_id)) != digest(parent) or digest(S.context(path, parent['context_id'])) != digest(row):
             raise ValueError('Reconciliation source changed during inference')
 
+    fresh();revalidated=revalidate_reference_count(job,refs,ledger,out);fresh()
+    if revalidated is None and not allow_live:
+        raise ValueError('Live synthesis route disabled; typed reconciliation pending')
+    out.mkdir(parents=True, exist_ok=True)
+    progress = {'schema': VERSION, 'id': key, 'parent_answer_id': parent_id, 'status': 'pending'}
+    progress_path = target.with_name(key + '-progress.json')
     try:
-        fresh(); tokens = C.token_check(job['body'], out, allow_live=allow_live); fresh()
-        result, usage = G.send(job['body'], ledger, out, parse=lambda raw: parse(raw, job, refs)); fresh()
+        fresh()
+        if revalidated is not None:result,usage,tokens=revalidated
+        else:
+            if not allow_live:raise ValueError('Live synthesis route disabled; typed reconciliation pending')
+            tokens = C.token_check(job['body'], out, allow_live=allow_live); fresh()
+            result, usage = G.send(job['body'], ledger, out, parse=lambda raw: parse(raw, job, refs))
+        fresh()
         final = P._rename(result, 'r1_')
         for review in final['claim_reviews']: review['finding_ids'] = ['r1_' + k for k in review['finding_ids']]
         group = {'result': final, 'source_records': job['source_records'], 'input_finding_ids': job['finding_ids'],
-            'usage': usage, 'token_check': tokens, 'request_bytes': P.request_bytes(job['body'])}
+            'usage': usage, 'token_check': tokens, 'request_bytes': usage.get('actual_request_bytes',P.request_bytes(job['body']))}
         saved = {k: v for k, v in parent.items() if k not in ('result_digest', 'source_stage_digest')}
         saved.update(schema=VERSION, id=key, parent_answer_id=parent_id, parent_answer_hash=digest(parent),
             context_digest=digest(row), code_identity=identity(), status='complete',
@@ -192,7 +244,7 @@ def synthesize(path, parent_id, ledger, *, allow_live=False):
             usage=[p['usage'] for p in parent['passes']] + [usage],
             token_check={'input_tokens': input_token_total([p['token_check'] for p in parent['passes']] + [tokens])},
             new_paid_api_calls=int(not usage.get('cache_hit', False)), new_token_count_calls=token_count_calls(tokens),
-            cache_hit=False, clinical_execution_authorized=False,
+            cache_hit=bool(usage.get('cache_hit')), clinical_execution_authorized=False,
             limits=parent['limits'] + ['Explicit references verify supplied source identities, not clinical meaning. Claim/excerpt review does not reassess full units or resolve original unassessed source content.'])
         saved['result_digest'] = digest(saved)
         fresh(); P.atomic_write(target, saved)
