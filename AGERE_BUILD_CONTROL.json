@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "two_complete_cases_preserved_current_v11_running",
+    "kind": "four_complete_cases_preserved_v12_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "All valid supplied excerpt references survive the current reader; complete paid source and buyer workflows retain exact identities across admission-only repair after full native output equality. Two complete cases remain passed; cardio group4 is now canonically attached with all19 citations.",
-    "measured_failure_reduction": "Removed actual four-citation metadata rejection of lists8and6; current full native parser validates all11 claims and4findings with citation counts2/8/3/6. No provider call, source reread, failed-status rewrite or accepted-work repetition. Previously completed medication/respiratory answers, decisions, tasks and followups revalidate exactly.",
+    "user_behavior_delta": "Current typed claim explanations use the same admission as the existing claim contract; a complete saved appointment response passes unchanged. Prior four workflows remain preserved and undergo exact native revalidation.",
+    "measured_failure_reduction": "Removed one inconsistent200-character typed restriction rejecting207characters allowed by the existing300-character contract. Full response(all11claim dispositions/citations/refs/model/source checks) reparsed unchanged with0provider calls, four source passes reused, failed row/raw accounting preserved.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -545,10 +545,16 @@
       "artifacts/agere-current-mvp-2026-10-30/supplied-excerpt-verification-v4.log",
       "artifacts/agere-current-mvp-2026-10-30/physical-resource-verification-main.log",
       "artifacts/agere-current-mvp-2026-10-30/individual-v11/medication/current-accepted-case-revalidation.json",
-      "artifacts/agere-current-mvp-2026-10-30/individual-v11/respiratory/current-accepted-case-revalidation.json"
+      "artifacts/agere-current-mvp-2026-10-30/individual-v11/respiratory/current-accepted-case-revalidation.json",
+      "artifacts/agere-current-mvp-2026-10-30/appointment-reason-native-revalidation.json",
+      "artifacts/agere-current-mvp-2026-10-30/reason-admission-verification-v1.log",
+      "artifacts/agere-current-mvp-2026-10-30/individual-v12/medication/current-accepted-case-revalidation.json",
+      "artifacts/agere-current-mvp-2026-10-30/individual-v12/respiratory/current-accepted-case-revalidation.json",
+      "artifacts/agere-current-mvp-2026-10-30/individual-v12/cardiometabolic/current-accepted-case-revalidation.json",
+      "artifacts/agere-current-mvp-2026-10-30/individual-v12/functional/current-accepted-case-revalidation.json"
     ],
-    "remaining_gap": "Cardiometabolic groups5-6 and full work/followup, then functional/appointment/payer remain; routing/accounting, installed recovery and final current evidence bundle are pending. Independent model/clinical qualification, source capture/sufficiency, TypeSafe credits, unpriced actual subscription/local/review costs and production authority remain explicit.",
-    "next_action": "Continue already-running six-workflow continuation v11 PID96145/session3995 on frozen820f061, owned candidate8888 PID96127/session64784. Do not duplicate or mutate product source until terminal. Medication and respiratory complete cases have canonically revalidated exactly under current code with0provider calls and0work reexecution. Cardio groups1-4 attach; group5 runs. Group4 failed only an arbitrary four-excerpt count: all19 supplied citations and11claims now pass complete current native validation in original order with0newcalls; original failed7c786b...row/raw unchanged.70 source/history/evidence tests pass; original source codecs untouched. Whole typed/cross-group/composed answers retain old IDs only after exact full current parser/composition revalidation, preserving prior buyer work. Physical-resource.patch is NOW APPLIED/COMMITTED(69a9187): physical model mounts survive checkout aliases; installed local mode permits immutable canonical-answer reads;47 current packaging checks pass. Current eight capability receipt paths are predeclared in config before final operations pin; missing receipts are not accepted. Once allsix pass, run prepared verify_routing_v1.py against serverv14 for equivalent baselines, exact caches, failed-key refusal and all-status accounting. Then stop only owned v14, run preserve_current_ledger_v1.py to move the exact quiescent ledger to durable primary artifacts while retaining the old alias; no accounting reset or restore. Restart using a NEW versioned runner/receipt with --ledger resolved to durable location. Update verify_operations_v1.py acceptedserver and ownership suffix to that new runner(defaultindividual-v11 already set). Verify eight decisions/six canonical answers plus archived-runtime startup, CAS/idempotency/restart/WAL crash rollback/fresh restore, source/work/current-ledger preservation. Then build_acceptance_v1.py and seal_evidence_copy_v1.py; expose current report locally via guarded current path, verify actual UI, update truthful private draft and durable delivery. Retain fullten-area scope; independent model/clinical and external production dependencies remain. No default activation, main merge, publication, newservices, realcare or scheduler restart.",
+    "remaining_gap": "Appointment and payer plus final routing/accounting, installed recovery and current acceptance/durable package remain. Four complete cases are accepted; new appointment group1 passed complete current parser offline. Independent qualification, source capture/sufficiency, TypeSafe credits, actual total costs and production connections remain dependencies.",
+    "next_action": "Continue already-running remaining-workflows v12 PID98734/session23841 on frozen5f095dc; owned server8888 PID98692/session58834. Do not duplicate or edit product source until terminal. Four full cases passed in v11(medication,respiratory,cardiometabolic,functional); v12 reopens them against current native guards and reuses exact answers/decisions/work/followups with0inference and0work reexecution. Appointment group1 now has a complete offline revalidated answer8ef4c6...(four source passes,11claims); its207-character reason passes the existing300-character claim contract. Original failed9b4613...row and raw bytes remain unchanged;0newprovider calls.71 relevant checks pass. Continue appointment secondgroup, completework/followup, thenpayer. After allsix pass run prepared verify_routing_v1.py(same v15 server, acceptedindividual-v12) for equivalent baselines/cache/failure/all-attempt accounting. Then stop only v15, run preserve_current_ledger_v1.py, restart NEW versioned server/receipt resolving --ledger to durable primary path, and update operations acceptedserver/ownership suffix. Physical model/immutable-answer package changes and eight current receipt paths already committed; do not reapply. Run verify_operations_v1.py for eight decisions/sixanswers and actual runtime/CAS/idempotency/restart/WAL rollback/fresh restore, retaining source/work/current accounting. Then build_acceptance_v1.py and seal_evidence_copy_v1.py; activate only local current report, verify UI and seal truthful private delivery/PR. Allten areas and model/clinical/production dependencies retained; no mainmerge/globalactivation/publication/newservices/realcare/scheduler restart.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -557,7 +563,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Only nativeworkflowjob PID85043/session70400. Server8888PID84880/session91532ready; staticpreview8896/session5587. No provider/trainingjob.",
+    "coordination": "Soleowner01a187c0-23ba-7d02-9368-5ff567327554. Candidate8888PID98692/session58834; only fullworkflowv12PID98734/session23841 active, frozen5f095dc. Four complete cases exactly revalidated; appointmentgroup2 running. Schedulerpaused; primary8885/design5178 untouched.",
     "remaining_blockers": [
       {
         "id": "B1",
@@ -589,16 +595,22 @@
       }
     ],
     "latest_progress": {
-      "status": "current_population_v2_running",
-      "code_commit": "ab73a77",
-      "owned_pid": 85043,
-      "owned_session": 70400,
-      "active_provider_job": false,
-      "active_training_job": false,
-      "finance_audit": "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/payer_finance/source-audit.json",
-      "utilization_audit": "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/hospital_utilization/source-audit.json",
-      "access_audit": "artifacts/agere-meaning-integration-2026-10-29/access-recovery-v1/appointment_access/source-audit.json",
-      "active_native_workflow_job": true
+      "status": "four_complete_cases_revalidated_appointment_group2_running",
+      "at": "2026-10-30T10:25:38.926100+00:00",
+      "run_receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v12/run-receipt.json",
+      "accepted_cases": [
+        "medication",
+        "respiratory",
+        "cardiometabolic",
+        "functional"
+      ],
+      "source_passes_repeated_for_accepted_cases": 0,
+      "accepted_work_reexecuted": false,
+      "remaining_cases": [
+        "appointment",
+        "payer"
+      ],
+      "operations_not_yet_accepted": true
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
