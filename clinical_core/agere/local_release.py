@@ -39,7 +39,7 @@ LOCAL_POSTS = frozenset('/api/stack/' + name for name in (
     'decision/population-discovery-options', 'decision/population-discovery',
     'decision/economics'))
 LOCAL_GETS = frozenset('/api/stack/' + name for name in (
-    'context', 'decision/source', 'decision/population-config', 'outcome-contracts',
+    'context', 'case-synthesis', 'decision/source', 'decision/population-config', 'outcome-contracts',
     'source-atlas', 'source-records', 'capabilities', 'capabilities/catalog',
     'capabilities/availability', 'capabilities/tasks', 'capabilities/plan',
     'capabilities/assessment', 'learning-cohorts'))
@@ -193,11 +193,15 @@ def dependencies(build, config):
     result = []
     for d in sorted(dirs):
         if not d.is_dir(): raise ValueError('External dependency missing: ' + str(d))
+        physical = d.resolve()
         # Existing result/model manifests define identity. This does not claim that
         # every external byte is archived or that mutable research stores are frozen.
         manifests = {str(p.relative_to(d)): file_entry(p) for p in sorted(d.glob('*.json')) if p.is_file()}
         if not manifests: raise ValueError('External dependency has no identity manifest: ' + str(d))
-        result.append({'path': str(d), 'verification': 'top_level_json_manifests', 'files': manifests})
+        item = {'path': str(physical), 'verification': 'top_level_json_manifests', 'files': manifests}
+        if d.is_relative_to(ROOT / 'models'):
+            item['application_mount'] = str(d.relative_to(ROOT))
+        result.append(item)
     from .gateway import default_ledger_path
     ledger = default_ledger_path().resolve()
     if not ledger.is_file(): raise ValueError('Current shared provider ledger required')

@@ -101,6 +101,24 @@ def qualification_status(contract, key=None):
             'local_operations_require_fitted_cohort': False}
 
 
+def resource_mounts(dependencies):
+    """Bind application model names to physical resources, not checkout aliases."""
+    mounts = {}
+    for item in dependencies:
+        target = Path(item['path'])
+        name = item.get('application_mount')
+        if name is None and target.is_relative_to(L.ROOT / 'models'):
+            name = str(target.relative_to(L.ROOT))
+        if name is not None:
+            relative = L.safe_relative(name)
+            if len(relative.parts) < 2 or relative.parts[0] != 'models':
+                raise ValueError('External application mount must name a model resource')
+            if name in mounts and mounts[name] != str(target.resolve()):
+                raise ValueError('Conflicting application model mount')
+            mounts[name] = str(target.resolve())
+    return mounts
+
+
 def make(checkpoint, output):
     cp = Path(checkpoint).resolve(); data = L.verify_checkpoint(cp)
     out = L.fresh_destination(output, cp, data['original_build'])
@@ -119,8 +137,7 @@ def make(checkpoint, output):
     dependencies = data['dependencies']
     # Model paths are explicit read dependencies. The shared ledger directory is
     # mounted, never copied: all modules keep their existing failed-key accounting.
-    mounts = {str(Path(d['path']).relative_to(L.ROOT)): d['path'] for d in dependencies
-              if Path(d['path']).is_relative_to(L.ROOT / 'models')}
+    mounts = resource_mounts(dependencies)
     ledger = next(d['path'] for d in dependencies if d['verification'] == 'current_shared_ledger_never_restored')
     mounts['artifacts/agere-full'] = str(Path(ledger).parent)
     frozen = cohort_contract(cp / 'build')

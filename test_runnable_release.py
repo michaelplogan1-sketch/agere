@@ -113,6 +113,7 @@ class RunnableReleaseTests(unittest.TestCase):
         self.assertIn('/api/stack/decision/scoped-prepare',posts)
         self.assertIn('/api/stack/requirement-contracts',gets)
         self.assertIn('/api/stack/outcome-contracts',gets)
+        self.assertIn('/api/stack/case-synthesis',gets)
         for name in ('context/interpret','learning-cohorts/read','semantic/review','context/output-recover'):
             self.assertNotIn('/api/stack/'+name,posts)
         p=out/'installation.json';v=L.read(p);v['policy_sha256']='another policy';p.write_text(json.dumps(v))
@@ -138,6 +139,25 @@ class RunnableReleaseTests(unittest.TestCase):
 
 
 class ApplicationInventoryTests(unittest.TestCase):
+    def test_model_dependency_survives_removal_of_checkout_alias(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp).resolve();checkout=root/'checkout';model=root/'physical-model';model.mkdir()
+            (model/'config.json').write_text('{"model":"fixture"}')
+            alias=checkout/'models/bge-reranker-v2-m3';alias.parent.mkdir(parents=True);alias.symlink_to(model,target_is_directory=True)
+            build=root/'build';(build/'stack').mkdir(parents=True)
+            (build/'stack/run.json').write_text(json.dumps({'encoder_path':str(model)}))
+            ledger=root/'provider-budget.sqlite3';ledger.write_text('current accounting')
+            with patch.object(L,'ROOT',checkout),patch.dict(L.os.environ,{'AGERE_LEDGER_PATH':str(ledger)}):
+                dependencies=L.dependencies(build,{'source_release':str(model)})
+                mounted=next(d for d in dependencies if d.get('application_mount'))
+                self.assertEqual(mounted['path'],str(model))
+                self.assertEqual(R.resource_mounts(dependencies),{'models/bge-reranker-v2-m3':str(model)})
+                alias.unlink();L.check_dependencies(dependencies)
+                self.assertEqual(R.resource_mounts(dependencies),{'models/bge-reranker-v2-m3':str(model)})
+    def test_declared_model_mount_rejects_escape_and_nonmodel_paths(self):
+        for name in ['../escape','/absolute','models/../../escape','artifacts/agere-full','models']:
+            with self.subTest(name=name),self.assertRaises(ValueError):
+                R.resource_mounts([{'path':'/physical/model','application_mount':name}])
     def test_rule_json_stylesheet_and_question_configuration_are_archived(self):
         code=L.code_identity()
         for path in ('clinical_core/agere/clinical/care_protocols.json',
