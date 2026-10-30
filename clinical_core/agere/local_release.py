@@ -125,7 +125,7 @@ def code_identity():
              if p.is_file() and p.suffix in ('.py', '.js', '.json', '.css', '.html') and '__pycache__' not in p.parts]
     # Versioned rules include nested coefficient tables and source mappings.
     files += [p for p in (ROOT / 'config/agere').rglob('*')
-              if p.is_file() and p.suffix in ('.json', '.csv', '.txt')]
+              if p.is_file() and p.suffix in ('.json', '.jsonl', '.csv', '.txt', '.cql')]
     files += list((ROOT / 'config').glob('*.json'))
     # The active build pointer is installation configuration, not release code.
     files = [p for p in files if p.name != 'active_warehouse.json']

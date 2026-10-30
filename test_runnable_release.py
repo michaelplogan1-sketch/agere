@@ -1,5 +1,6 @@
 """Package identity, isolation and dependency failures with independent fixtures."""
 import json
+import shutil
 from pathlib import Path
 import tempfile
 import unittest
@@ -175,8 +176,24 @@ class ApplicationInventoryTests(unittest.TestCase):
                      'config/agere/risk_adjustment/manifest.json',
                      'config/agere/risk_adjustment/v28_relative_factors.csv',
                      'config/agere/risk_adjustment/eligible_cpt_hcpcs_cy2026.txt',
+                     'config/agere/knowledge/reviewed_healthcare_learning.jsonl',
+                     'config/agere/measures_cql/cbp.cql',
                      'tools/training/datasets.py','tools/certify_gates.py',
                      'tools/normalization/jev_check.py'):
             self.assertEqual(code[path],L.sha(L.ROOT/path))
+
+    def test_packaged_configuration_preserves_actual_planning_policy(self):
+        # Import a separate copy, without checkout fallback, so missing runtime
+        # catalogs cannot silently turn into an empty but runnable knowledge base.
+        import subprocess, sys
+        with tempfile.TemporaryDirectory() as temp:
+            copied=Path(temp)/'app'
+            for name in L.code_identity():
+                target=copied/name;target.parent.mkdir(parents=True,exist_ok=True)
+                shutil.copy2(L.ROOT/name,target)
+            code="import sys;sys.path.insert(0,sys.argv[1]);from clinical_core.agere.clinical.shared_planner import policy_identity;print(policy_identity())"
+            source=subprocess.check_output([sys.executable,'-I','-B','-c',code,str(L.ROOT)],cwd=temp,text=True)
+            packaged=subprocess.check_output([sys.executable,'-I','-B','-c',code,str(copied)],cwd=temp,text=True)
+            self.assertEqual(packaged,source)
 
 if __name__=='__main__':unittest.main()

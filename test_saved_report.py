@@ -95,6 +95,23 @@ class SavedReport(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'bytes differ'):R.read_format(self.path,c['id'],d['id'],'pdf')
         with self.assertRaises(ValueError):R.read_format(self.path,c['id'],d['id'],'../../answer.json')
 
+    def test_structured_headline_is_retained_without_printing_unresolved_template_as_prose(self):
+        from pypdf import PdfReader
+        import gzip,io
+        question,result=self.prepare(partial=True)
+        headline={'template':'There are {unresolved_count} records.',
+                  'bindings':{'unresolved_count':{'result_view':'native_result','row':0,'column':'count'}}}
+        result['answer']['headline']=headline
+        ref=A.capture(self.path,question,result)
+        d=R.create(self.path,{'context_id':ref['id'],'template':'explore','request':'Interactive review and PDF'})
+        payload=json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>',d['html'],re.S).group(1))
+        self.assertEqual(payload['answer']['headline'],headline)
+        raw,_,_=R.read_format(self.path,ref['id'],d['id'],'pdf');pdf=PdfReader(io.BytesIO(raw))
+        text='\n'.join(p.extract_text()for p in pdf.pages)
+        self.assertNotIn('There are {unresolved_count}',text)
+        embedded=json.loads(gzip.decompress(pdf.attachments['Agere-saved-answer.json.gz'][0]))
+        self.assertEqual(embedded['answer']['headline'],headline)
+
     def test_recorded_exports_match_full_report_payload_and_reject_altered_bytes(self):
         import csv,io
         question,result=self.prepare(partial=True);c=A.capture(self.path,question,result)

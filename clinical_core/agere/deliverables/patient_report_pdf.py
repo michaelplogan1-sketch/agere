@@ -160,7 +160,10 @@ def render(context,output,references=None,evidence=None):
  story=[P('AGERE  /  '+('PATIENT REVIEW'if patient_level else'ANALYSIS REVIEW'),small),Spacer(1,12),P('Evidence into\nnext steps',title),P(context.get('question','Saved analysis')),Spacer(1,10)]
  story.append(P('This is the generated PDF companion. Any pending-delivery statements in the original saved analysis describe the earlier analytical stage; the complete original analysis remains embedded unchanged.',small))
  kpis=Table([[P(str(first_metric[0]),head),P(str(len(rows)),head),P(status,head)], [P(first_metric[1],small),P('Complete result rows',small),P('Saved analytical status',small)]],colWidths=[180]*3)
- kpis.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),paper),('LEFTPADDING',(0,0),(-1,-1),12),('BOTTOMPADDING',(0,0),(-1,-1),8),('TOPPADDING',(0,0),(-1,-1),8)]));story+=[kpis,Spacer(1,17),P('Source and scope',head),P('Synthetic warehouse. Source snapshot: '+str(cutoff)+'. Dates follow the simulated source clock. Report rendering adds no clinical interpretation, new care action or acceptance.'),P(answer.get('headline','No headline supplied'))]
+ kpis.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),paper),('LEFTPADDING',(0,0),(-1,-1),12),('BOTTOMPADDING',(0,0),(-1,-1),8),('TOPPADDING',(0,0),(-1,-1),8)]));story+=[kpis,Spacer(1,17),P('Source and scope',head),P('Synthetic warehouse. Source snapshot: '+str(cutoff)+'. Dates follow the simulated source clock. Report rendering adds no clinical interpretation, new care action or acceptance.')]
+ # A typed headline specification is retained in the exact attached context;
+ # it is not a resolved sentence to print as a clinical summary.
+ if isinstance(answer.get('headline'),str):story.append(P(answer['headline']))
  if context.get('retained_inspection'):story.extend([P('Retained analysis for inspection',head),P('Planning code changed after this saved execution. This report preserves the original analysis and source snapshot; rendering adds no new clinical interpretation, acceptance or care authorization.')])
  for index,a in enumerate(allparts):
   facts=a.get('facts')or{}
