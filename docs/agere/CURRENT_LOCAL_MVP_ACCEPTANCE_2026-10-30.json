@@ -1,0 +1,168 @@
+{
+  "schema": "agere-current-local-mvp-delivery/1",
+  "status": "passed",
+  "at": "2026-10-30T12:32:54.584693+00:00",
+  "acceptance_axis": "local_engineering",
+  "engineering_passed": 9,
+  "engineering_total": 9,
+  "scope_areas": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "full_queue_acceptance": false,
+  "implementation_commit": "5f095dc3ab6ddf3dfbe10f49eaa69381b9e4f566",
+  "implementation_manifest_digest": "9840ea38327bf3d32f893344ff8d45f59a6fbad73910bf156f48a6cd84cfb4c9",
+  "snapshot_digest": "064c90b65b59c0a8ba19053f6fde9ef03243902fd53805f0dcfad312c2168525",
+  "individual_workflows": 6,
+  "population_programs": 2,
+  "roster_per_program": 4115,
+  "individual_internal_tasks": 8,
+  "population_internal_tasks": 241,
+  "total_internal_tasks": 249,
+  "provider_requests_retained": 176,
+  "failed_provider_requests_retained": 34,
+  "validated_provider_requests_retained": 142,
+  "new_provider_calls_for_routing_operations_and_finalization": 0,
+  "clinical_qualification": false,
+  "model_qualification": false,
+  "production_authority": false,
+  "actual_total_cost_known": false,
+  "global_model_activation": false,
+  "external_actions": 0,
+  "requirements": [
+    {
+      "id": "individual_question_to_followup",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "complete_population_program",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "evidence_change_reassessment",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "source_and_adapter_conformance",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "longitudinal_prediction_path",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "discovery_explanation_path",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "outcome_and_financial_reconciliation",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "economical_role_routing",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "portable_local_operations",
+      "axis": "engineering",
+      "status": "passed"
+    },
+    {
+      "id": "model_and_method_qualification",
+      "axis": "qualification",
+      "status": "unassessed"
+    },
+    {
+      "id": "independent_clinical_review",
+      "axis": "qualification",
+      "status": "unassessed"
+    },
+    {
+      "id": "authorized_production_connections",
+      "axis": "external_dependency",
+      "status": "unassessed"
+    }
+  ],
+  "archive_id": "1890236eb06fc52bc29ca308ab83551b80e11659035ba4c0d268b5d6eabe6cad",
+  "checkpoint_id": "d5aee1a172beb43b27fbf5cfe6b8a186e60bde9796e67ab4f5bb51b84db197a4",
+  "candidate": {
+    "url": "http://127.0.0.1:8888/ask",
+    "report": "http://127.0.0.1:8888/stack-evaluation",
+    "pid": 7180,
+    "session": 12530,
+    "process_receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-current-mvp-2026-10-30/server-v17-receipt.json"
+  },
+  "remaining_dependencies": [
+    "Independent role-specific model and clinical qualification remain unmet. No global model activation, superiority or clinical accuracy claim.",
+    "Production authentication, tenant controls, governed customer adapters, verified benefits, consent and clinician authority remain external dependencies.",
+    "Prediction estimates are unavailable for the selected single-class eligible targets; source capture and clinical outcomes are not validated.",
+    "Subscription allocation, unreturned usage, local compute and independent reviewer effort leave actual total cost unknown. Every request attempt remains accounted.",
+    "TypeSafe new calls are unavailable after the observed credits exhaustion; no credit purchase or repeated probing.",
+    "The separate full healthcare review retains19 whole-packet judgments as unknown; earlier partial/failed baseline trajectories do not establish an overall winner.",
+    "Native revalidation remains slow; no overall latency gain or model/baseline winner is claimed. Same-platform recovery requires original declared external resources."
+  ],
+  "evidence": {
+    "current_acceptance": {
+      "path": "artifacts/agere-current-mvp-2026-10-30/acceptance-v1/receipt.json",
+      "sha256": "bc11b148234b88440a0f5618893c6b347c2fa96f4af95520be56f2324b9e5b59"
+    },
+    "current_scorecard": {
+      "path": "artifacts/agere-current-mvp-2026-10-30/acceptance-v1/scorecard.json",
+      "sha256": "628a8df5f77cd5dfe67cfd023bb22e456dc33af4cbc15e58874c41f136233208"
+    },
+    "installed_operations": {
+      "path": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json",
+      "sha256": "692ae6a32713437f984712c17431b40813175ec108238e203c0a1bdac6d141d2"
+    },
+    "independent_evidence_copy": {
+      "path": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/acceptance-evidence-v1/evidence-copy-receipt.json",
+      "sha256": "91a42a28a0a5816e5800445f54738f4dcc0ea69bb38981813918d34b71c2ad35"
+    },
+    "ui_verification": {
+      "path": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/current-ui-v1/receipt.json",
+      "sha256": "6cfcb4ef03e694208822342649cb479cb0eba4b099151aaaf7fcaf18778daf65"
+    },
+    "ui_evidence_copy": {
+      "path": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/acceptance-evidence-v1/ui-evidence-copy-receipt.json",
+      "sha256": "7e5801957734c58688a48d602443374e28af35512d3192e3c3bd2dd3ff80c7b2"
+    },
+    "routing_and_all_attempts": {
+      "path": "artifacts/agere-current-mvp-2026-10-30/routing-v1/receipt.json",
+      "sha256": "59d09618881c1dd61220cb298971aab059896196056ff4c5f69254e97715a93f"
+    },
+    "durable_ledger_preservation": {
+      "path": "artifacts/agere-current-mvp-2026-10-30/durable-provider-ledger-receipt.json",
+      "sha256": "79f1695b3cd6077dcf99bd60e806ef0ceff80b031355252853567d5cf9276e84"
+    },
+    "source_conformance": {
+      "path": "artifacts/agere-current-mvp-2026-10-30/source-conformance-v1/run-receipt.json",
+      "sha256": "e4150a29c4394f2361d052ed2bd6b253a2241cae2b6290c9fe3e44f134497355"
+    },
+    "current_browser_panel": {
+      "path": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/current-ui-v1/current-acceptance-ui-panel-v2.png",
+      "sha256": "c452fe4a9de8607fea718bfc607c90f8d7632babf4944e948d3848b6f8ff4059"
+    },
+    "delivery_document": {
+      "path": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
+      "sha256": "cec3ebfdf2c31fa5aa8024195dc22b8464484de06a0ca04a88719f5c7cfff733"
+    }
+  },
+  "delivery_document": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
+  "private_draft_pr": "https://github.com/michaelplogan1-sketch/agere/pull/2"
+}
