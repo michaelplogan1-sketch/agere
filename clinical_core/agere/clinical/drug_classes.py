@@ -221,6 +221,27 @@ def group_query_issues(question, calls, final_view=None):
     from sqlglot import exp
     named={k:set(v) for k,v in GROUPS.items() if re.search(r'(?<!\w)'+re.escape(k).replace('_',r'[ _]+')+r's?(?!\w)',str(question),re.I)}
     if not named:return []
+    # A raw dose collection can be broader than the requested group even when
+    # its query has no drug_class predicate to inspect. Keep that broader work
+    # available as explicitly labelled context; it cannot satisfy group doses.
+    collection_issues=[]
+    if final_view:
+        final=next((c.get('result')for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')==final_view),{})or{}
+        members=set().union(*named.values())
+        def dose_members(value,path):
+            if isinstance(value,str)and value[:1]in('[','{'):
+                try:value=_json.loads(value)
+                except ValueError:return
+            if isinstance(value,list):
+                for i,item in enumerate(value):dose_members(item,path+'['+str(i)+']')
+            elif isinstance(value,dict):
+                if value.get('drug_key')and any(k in value for k in('dose_status','reference_max_status','documented_daily_mg')):
+                    classes=set(classify(str(value['drug_key']).replace('_',' ')))
+                    if classes and not(classes&members):collection_issues.append(path+': '+str(value['drug_key'])+' is outside requested '+', '.join(named)+'. Filter the requested dose evidence by registered group membership; retain other medications only as separately labelled context.')
+                for k,item in value.items():
+                    if 'context'not in str(k).lower():dose_members(item,path+'.'+str(k))
+        cols=final.get('columns')or[]
+        for i,row in enumerate(final.get('rows')or[]):dose_members(dict(zip(cols,row))if isinstance(row,(list,tuple))else row,'table['+str(i)+']')
     filters={};parents={};positions={};queries={};results={}
     def projection(node):
         while node.parent is not None and not isinstance(node.parent,exp.Select):node=node.parent
@@ -265,6 +286,16 @@ def group_query_issues(question, calls, final_view=None):
         for parent in parents.get(view,()):visit(parent)
     if final_view:visit(final_view)
     else:reached.update(parents)
+    # Detect the observed scope loss before a model review: the all-history
+    # membership macro cannot supply current GDMT flags. Only contributing
+    # results matter; an unused historical exploration remains available.
+    temporal_issues=[]
+    if 'gdmt'in named and not re.search(r'\b(?:history|historical|ever|any time)\b',str(question),re.I):
+        for call in calls:
+            out=call.get('result')or{};sql=(call.get('input')or{}).get('sql')
+            if not isinstance(out,dict)or out.get('result_view')not in reached or not isinstance(sql,str):continue
+            if re.search(r'\{\{\s*drug_fill:',sql)and re.search(r'\bAS\s+on_\w+',sql,re.I)and not re.search(r'\bevent_date\b',sql,re.I):
+                temporal_issues.append('Contributing query '+out['result_view']+' computed GDMT fill flags from all-history drug_fill membership without a fill-date predicate. Recompute from picked-up fills in the governed 12 months ending at the snapshot; historical patient membership cannot recover that window after aggregation. Keep historical evidence separately labelled.')
     schema={v:dict.fromkeys(r.get('columns') or [],'UNKNOWN') for v,r in results.items()}
     def consumed_columns(members):
         # Trace native output columns, rather than letting an exact filter on
@@ -388,4 +419,4 @@ def group_query_issues(question, calls, final_view=None):
                 '; contributing query '+view+' widened that set with '+', '.join(sorted(extra))+
                 '. Recompute the requested group using its exact members and bind the final table to that repaired result. '
                 'Broader therapies may be shown separately; do not count them as satisfying the registered group.')
-    return list(dict.fromkeys(issues))
+    return list(dict.fromkeys(issues+collection_issues+temporal_issues))

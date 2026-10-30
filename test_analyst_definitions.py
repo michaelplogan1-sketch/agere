@@ -207,7 +207,10 @@ class Analyze(Base):
 
     def test_competitor_baseline_documentation_is_unchanged_by_this_module(self):
         self.assertNotIn('DEFINITION VIEWS', SA.SEMANTIC_RULES + SA.CONTRACT)
-        self.assertNotIn('living_patient', SA.SEMANTIC_RULES + SA.CONTRACT)
+        # The later shared decision context mentions living_patient in its
+        # event-scope rule. Only this module's detailed TEMP-view documentation
+        # is excluded from definitions=False, not the owner's shared defaults.
+        self.assertNotIn('- living_patient (all patient columns + age):', SA.SEMANTIC_RULES + SA.CONTRACT)
 
 
 class Arithmetic(Base):

@@ -66,6 +66,12 @@ def _schema(path):
     try:
         names = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type IN ('table','view')")]
         schema = {n.lower(): [r[1].lower() for r in db.execute('PRAGMA table_info("'+n.replace('"','""')+'")')] for n in names}
+        # The investigator creates this registered documentation view per
+        # connection. Its absence from persistent storage is not source drift;
+        # exact columns remain a versioned application contract. Arbitrary
+        # temporary/result tables are still rejected below.
+        from .analyst_context import VIEW,COLUMNS
+        schema[VIEW]=list(COLUMNS)
         if 'meta' not in schema: return schema
         day = db.execute("SELECT value FROM meta WHERE key='as_of'").fetchone()
     finally:

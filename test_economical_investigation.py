@@ -102,6 +102,16 @@ class Investigator(unittest.TestCase):
         self.assertEqual(len(self.executed),2);self.assertEqual(r['answer']['count'],7)
         self.assertFalse(r.get('review_stopped'));self.assertEqual(len(self.sent),5)
 
+    def test_new_query_views_with_identical_answer_dependencies_do_not_reset_review(self):
+        sent=[];responses=iter([TOOL_REPLY,reply({'status':'partial','table_from_tool':'agere_result_1'}),TOOL_REPLY,reply({'status':'partial','table_from_tool':'agere_result_2'})])
+        def send(body):sent.append(body);return next(responses),.001,False
+        executed=[]
+        def execute(use):
+            executed.append(use);return {'result_view':'agere_result_'+str(len(executed)),'rows':[{'patient_id':'A'}],'columns':['patient_id'],'accounting':{'cost_usd':len(executed)}}
+        r=S.tool_loop('Inspect this evidence',[],[{'name':'query_sql'}],execute,send=send,model=M.HAIKU,escalation_model=M.SONNET,max_tools=None,review=lambda a,c:{'status':'repair','feedback':'Current treatment unknown'})
+        self.assertEqual(len(sent),4);self.assertEqual(r['review_stopped'],'no_progress')
+        self.assertEqual(r['answer']['status'],'partial');self.assertEqual(len(r['tool_calls']),2)
+
     def test_verifier_outage_with_no_repairable_feedback_does_not_call_sonnet(self):
         r=self.run_loop([reply({'status':'partial','missing':['Support unavailable']})],lambda a,c:{'status':'unavailable','reason':'Verifier offline'})
         self.assertEqual([b['model'] for b in self.sent],[M.HAIKU])

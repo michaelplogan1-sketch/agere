@@ -59,6 +59,21 @@ class Assembly(unittest.TestCase):
   out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'passages','as':'sources','on':{'patient_id':'patient_id'},'mode':'collect'}]);self.assertEqual(out['rows'][0]['sources'][0]['text'],'Documented source.')
 
 class State(unittest.TestCase):
+ def test_review_progress_uses_bound_native_values_not_new_views_or_unused_queries(self):
+  one={'name':'query_sql','input':{'sql':'SELECT patient_id FROM patient'},'result':{'result_view':'agere_result_1',**result([{'patient_id':'A'}]),'accounting':{'cost_usd':1}}}
+  two=copy.deepcopy(one);two['result'].update(result_view='agere_result_2',accounting={'cost_usd':99})
+  self.assertEqual(E.progress_evidence([one],{'table_from_tool':'agere_result_1'}),E.progress_evidence([one,two],{'table_from_tool':'agere_result_2'}))
+  irrelevant={'name':'query_sql','input':{'sql':'SELECT 12 AS unrelated'},'result':{'result_view':'agere_result_3',**result([{'unrelated':12}])}}
+  self.assertEqual(E.progress_evidence([one],{'table_from_tool':'agere_result_1'}),E.progress_evidence([one,irrelevant],{'table_from_tool':'agere_result_1'}))
+  two['result']['rows'][0]['patient_id']='B'
+  self.assertNotEqual(E.progress_evidence([one],{'table_from_tool':'agere_result_1'}),E.progress_evidence([one,two],{'table_from_tool':'agere_result_2'}))
+
+ def test_review_progress_normalizes_dependency_view_names_without_losing_source_scope(self):
+  one={'name':'query_sql','input':{'sql':'SELECT patient_id FROM patient'},'result':{'result_view':'agere_result_1',**result([{'patient_id':'A'}])}}
+  two={'name':'query_sql','input':{'sql':'SELECT * FROM agere_result_1'},'result':{'result_view':'agere_result_2',**result([{'patient_id':'A'}])}}
+  three=copy.deepcopy(one);three['result']['result_view']='agere_result_3'
+  four=copy.deepcopy(two);four['input']['sql']='SELECT * FROM agere_result_3';four['result']['result_view']='agere_result_4'
+  self.assertEqual(E.progress_evidence([one,two],{'table_from_tool':'agere_result_2'}),E.progress_evidence([one,two,three,four],{'table_from_tool':'agere_result_4'}))
  def test_expanded_recovery_draft_stays_native_before_original_request_encoding(self):
   feedback=['Repair the current unresolved source check.',{'unverified_retained_draft':{
    'table':[{'patient_id':'A','quote':'retained source '*20000}],

@@ -36,6 +36,34 @@ class Profiles(unittest.TestCase):
   self.assertEqual(p['identity_status'],'profile_after_snapshot')
   self.assertIsNone(p['display_name']);self.assertIsNone(p['birth_date']);self.assertIsNone(p['age_at_snapshot'])
 
+ def test_current_native_shape_keeps_source_assignment_clock_and_fill_scope(self):
+  row={'patient_id':'A','on_raas_inhibitor':1,'on_beta_blocker':0,'on_mra':0,'on_sglt2i':0,
+   'missing_pillars':'beta blocker','dose_evidence':'[]',
+   'structured_care_team':[{'patient_id':'A','role':'primary_care','clinician_id':'C1','assignment_status':'documented_assignment'}]}
+  native={'patient_id':'A','role':'primary_care','clinician_id':'C1','assigned_at_snapshot':1,
+   'assignment_status':'documented_assignment','effective_start':'2029-01-01'}
+  calls=[{'name':'query_sql','input':{'sql':'SELECT * FROM {{drug_fill:ace_inhibitor}}'},'result':{}},
+   {'name':'query_sql','input':{'sql':'SELECT * FROM {{care_team}}'},'result':{'result_view':'agere_result_2','columns':list(native),'rows':[native],'truncated':False}}]
+  answer={'table':[row]};before=json.dumps(answer,sort_keys=True)
+  profiles=P.capture_profiles(self.path,['A'],answer)
+  profiles['patients']['A']['registered_cohort_evidence']=[{'view':'phenotype_hfref','as_of':'2030-05-27',
+   'fields':{'patient_id':'A','hfref_basis':'coded_hfref','lowest_documented_ef':30}}]
+  c={'answer':answer,'patient_profiles':profiles,'investigation':{'tool_calls':calls},'question':'Review','source':{}}
+  card=P.review_cards(c)['A']
+  self.assertEqual(len(card['therapy']),4)
+  self.assertEqual(card['care_team'][0]['current'][0]['name'],'Dr River Example')
+  self.assertIn('Historical fill',card['therapy'][0]['observed_status'])
+  self.assertIn('no recency window',card['therapy'][0]['fill_scope'])
+  self.assertIn('returned history',card['program_review']['rationale'][1])
+  self.assertTrue(any(v['label']=='Lowest documented EF'for v in card['clinical_context']))
+  self.assertEqual(json.dumps(answer,sort_keys=True),before)
+  row.update(fill_window_start_exclusive='2029-05-27',fill_window_end_inclusive='2030-05-27')
+  card=P.review_cards(c)['A']
+  self.assertEqual(card['therapy'][0]['observed_status'],'Recent fill observed')
+  self.assertIn('after 2029-05-27 through 2030-05-27',card['therapy'][0]['fill_scope'])
+  from clinical_core.agere.deliverables.patient_dashboard import render
+  self.assertIn('esc(t.fill_scope)',render(c))
+
  def test_unknown_identity_does_not_acquire_another_persons_name(self):
   p=P.capture_profiles(self.path,['UNKNOWN'],{'table':[{'patient_id':'UNKNOWN'}]})
   self.assertEqual(p['patients'],{});self.assertEqual(p['clinicians'],{})

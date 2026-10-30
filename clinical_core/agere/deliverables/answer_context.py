@@ -129,7 +129,7 @@ def capture(path, question, result, *, original_question=None):
             'input_patient_ids': input_ids,
             'synthetic': True, 'clinical_eligibility_established': False}
     from .patient_evidence import capture_profiles
-    data['patient_profiles']=capture_profiles(path,data['patient_ids'],answer)
+    data['patient_profiles']=capture_profiles(path,data['patient_ids'],answer,graph=data.get('graph'))
     from ..clinical import answer_dependencies
     data['dependencies'] = answer_dependencies.seal(path, data)
     # Identity describes the executed answer, not punctuation, elapsed time,
@@ -175,7 +175,7 @@ def load(path, key, *, current=False, follow_up=False):
     stale = data['source'] != source_identity(path)
     if data.get('patient_profiles') is not None:
         from .patient_evidence import capture_profiles
-        stale = stale or data['patient_profiles']!=capture_profiles(path,data['patient_ids'],data['answer'])
+        stale = stale or data['patient_profiles']!=capture_profiles(path,data['patient_ids'],data['answer'],graph=data.get('graph'))
     invalidated = ((data.get('planner_receipt') or {}).get('version') == 'patient-therapy-review/1')
     from ..clinical.cohort_families import scope_rejection
     receipt = data.get('planner_receipt') or {}

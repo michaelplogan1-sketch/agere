@@ -6,7 +6,7 @@ Keep the answer intact; the complete native context remains the download.
 import json,re
 
 
-def capture_profiles(path, patient_ids, answer=None):
+def capture_profiles(path, patient_ids, answer=None,graph=None):
     """Snapshot received identities and clinical observations for patient review.
 
     Names come from the same received/staged source as the semantic layer. This
@@ -67,11 +67,27 @@ def capture_profiles(path, patient_ids, answer=None):
     # objects remain the evidence for role and current responsibility.
     for row in (answer or{}).get('table')or[]:
         if not isinstance(row,dict):continue
-        raw=row.get('care_assignments')
-        try:assignments=json.loads(raw)if isinstance(raw,str)else raw
-        except ValueError:assignments=None
-        for item in assignments or[]:
-            if isinstance(item,dict)and item.get('clinician_id'):clinician_ids.add(item['clinician_id'])
+        for raw in row.values():
+            try:assignments=json.loads(raw)if isinstance(raw,str)and raw[:1]in('[','{')else raw
+            except ValueError:continue
+            for item in assignments if isinstance(assignments,list)else[]:
+                if isinstance(item,dict)and item.get('clinician_id'):clinician_ids.add(item['clinician_id'])
+    if graph and semantic.is_file():
+        from ..clinical.plan_fence import premises
+        wanted={v for v in premises(graph)['tables']if v.startswith('phenotype_')}
+        if wanted:
+            from ..clinical.semantic_analyst import SemanticWarehouse
+            wh=SemanticWarehouse(semantic)
+            try:
+                registered=set(wh.define(cutoff))
+                for view in sorted(wanted&registered):
+                    for chunk in chunks(ids):
+                        query='SELECT * FROM "'+view+'" WHERE patient_id IN('+','.join('?'for _ in chunk)+')'
+                        cursor=wh.db.execute(query,chunk);cols=[c[0]for c in cursor.description]
+                        for values in cursor:
+                            item=dict(zip(cols,values));p=people.get(item.get('patient_id'))
+                            if p is not None:p.setdefault('registered_cohort_evidence',[]).append({'view':view,'as_of':cutoff,'fields':item})
+            finally:wh.close()
     clinicians={};entities=path.parent/'warehouse.sqlite3';release=(run.get('snapshot')or{}).get('release')
     if entities.is_file()and release and clinician_ids:
         with connect(entities)as db:
@@ -126,10 +142,29 @@ def review_cards(context, evidence=None):
     for answer in parts(context.get('answer')or{}):
         for row in answer.get('table')or[]:
             if not isinstance(row,dict)or not row.get('patient_id'):continue
-            pid=row['patient_id'];profile=people.get(pid)or{};assignments=items(row.get('care_assignments'))
+            original_row=row;row=dict(row)
+            aliases={'on_rasi_pillar':'on_raas_inhibitor','on_beta_blocker_pillar':'on_beta_blocker',
+                'on_mra_pillar':'on_mra','on_sglt2i_pillar':'on_sglt2i','pillars_missing':'missing_pillars',
+                'gdmt_dose_rows':'dose_evidence','care_assignments':'structured_care_team'}
+            for field,alias in aliases.items():
+                if field not in row and alias in row:row[field]=row[alias]
+            pid=row['patient_id'];profile=people.get(pid)or{}
+            for cohort in profile.get('registered_cohort_evidence')or[]:
+                for field,value in cohort.get('fields',{}).items():
+                    if field not in row:row[field]=value
+            assignments=list(items(row.get('care_assignments')))
+            for table in evidence.get('supporting_tables')or[]:
+                if {'role','clinician_id','assigned_at_snapshot'}<=set(table['columns'])and not table.get('truncated'):
+                    assignments.extend(r for r in table['rows']if r.get('patient_id')==pid)
+            unique={}
+            for a in assignments:
+                if not isinstance(a,dict):continue
+                key=tuple(str(a.get(k))for k in ('clinician_id','role','effective_start','source_date','source_record_ids'))
+                if key not in unique or len(a)>len(unique[key]):unique[key]=a
+            assignments=list(unique.values())
             def care(role):
                 found=[a for a in assignments if isinstance(a,dict)and(
-                    a.get('role')=='primary_care'if role=='Primary care'else'cardiol'in str(a.get('specialty')or'').lower())]
+                    a.get('role')=='primary_care'if role=='Primary care'else'cardiol'in str(a.get('specialty')or(clinicians.get(a.get('clinician_id'))or{}).get('specialty')or'').lower()or a.get('is_cardiology')==1)]
                 current=[a for a in found if a.get('assigned_at_snapshot')==1]
                 return {'role':role,'current':[{'name':person_name(a.get('clinician_id')),**a}for a in current],
                     'other_records':[{'name':person_name(a.get('clinician_id')),**a}for a in found if a not in current],
@@ -153,6 +188,10 @@ def review_cards(context, evidence=None):
                     'same_day_min':m.get('same_day_min')})
             findings=items(row.get('documentary_findings'));fills=items(row.get('recent_gdmt_fill_observations'));doses=items(row.get('gdmt_dose_rows'))
             therapy=[]
+            window_start=row.get('fill_window_start_exclusive');window_end=row.get('fill_window_end_inclusive')
+            historical_fill=not(window_start and window_end)and any(re.search(r'\{\{\s*drug_fill:',str(t.get('input',{}).get('sql')or''))for t in(context.get('investigation')or{}).get('tool_calls')or[])
+            fill_scope=('Picked-up fill after '+str(window_start)+' through '+str(window_end)if window_start and window_end else
+                'Received fill history through the snapshot; no recency window is established by these membership flags'if historical_fill else'Recent-fill observation window defined by the saved analysis')
             # These labels describe the source-defined fields returned by the
             # analysis, not a fresh treatment rule or an individual dose target.
             pillars=[('rasi','RAAS inhibitor / ARNI','on_rasi_pillar','raas_inhibitor',{'ace_inhibitor','arb','arni'}),
@@ -167,13 +206,14 @@ def review_cards(context, evidence=None):
                 # Drug classification supplies presentation grouping only. Any
                 # unmapped dose observation is retained separately below.
                 therapy.append({'group':group,'label':label,'observed_status':
-                    'Recent fill observed'if row[field]==1 else'No recent fill observed'if row[field]==0 else'Fill status unresolved',
+                    ('Historical fill observed'if historical_fill else'Recent fill observed')if row[field]==1 else('No fill observed in the returned history'if historical_fill else'No recent fill observed')if row[field]==0 else'Fill status unresolved',
+                    'fill_scope':fill_scope,
                     'current_use':'Confirm current regimen','fills':observed,'dose_observations':ds,
                     'documented_reasons':reasons(findings,entity)})
             rationale=[]
             if row.get('hfref_basis'):rationale.append('Source-defined HFrEF cohort: '+str(row['hfref_basis']).replace('_',' '))
             missing=row.get('pillars_missing')
-            if missing:rationale.append('Reconcile pillars without a recent-fill observation: '+str(missing).replace('_',' '))
+            if missing:rationale.append(('Reconcile pillars without a fill in the returned history: 'if historical_fill else'Reconcile pillars without a recent-fill observation: ')+str(missing).replace('_',' '))
             if doses:rationale.append('Review dated dose/state observations and their reference-dose comparisons')
             if row.get('max_dose_reason_findings'):rationale.append('Review the documented dose-limiting statements below with the responsible clinician')
             program={'title':'Theoretical GDMT titration program'if therapy else'Clinical review',
@@ -188,7 +228,7 @@ def review_cards(context, evidence=None):
                 'dated_correspondence_roles':narrative_roles,'therapy':therapy,'all_dose_observations':doses,
                 'dose_limiting_statements':reasons(findings,'gdmt_dose'),'program_review':program,
                 'individual_max_tolerated_dose':'Not established by the reviewed evidence',
-                'source_reviews':evidence.get('notes',{}).get(pid,[]),'original_result_row':row}
+                'source_reviews':evidence.get('notes',{}).get(pid,[]),'original_result_row':original_row}
     return cards
 
 

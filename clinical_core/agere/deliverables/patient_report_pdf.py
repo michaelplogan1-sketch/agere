@@ -109,7 +109,7 @@ def render(context,output,references=None,evidence=None):
   for team in c['care_team']:
    out.append(P(team['role']+': '+team['status'],labelstyle))
    for a in team['current']:
-    out.append(P(a['name']+' / '+str(a.get('specialty'))+' / effective '+str(a.get('effective_start'))+' / source '+str(a.get('source_date'))))
+    out.append(P(a['name']+' / '+str(a.get('specialty')or a.get('role')or'Role not supplied')+' / effective '+str(a.get('effective_start'))+' / source '+str(a.get('source_date'))))
    for a in team['other_records']:
     out.append(P('Other record: '+a['name']+' / '+str(a.get('assignment_status'))+' / source '+str(a.get('source_date')),small))
   program=c['program_review']
@@ -129,7 +129,7 @@ def render(context,output,references=None,evidence=None):
    out.extend([P('Dated cardiology follow-up accounts',head),*grouped_reasons(c['cardiology_statements'])])
   matrix=[[P(v,labelstyle)for v in('Pillar','Observed therapy','Dose / reference evidence','Documented reasons')]]
   for t in c['therapy']:
-   fill=t['observed_status']+'\n'+'\n'.join(str(f.get('drug_name'))+'; latest '+str(f.get('latest_fill_date_in_window'))for f in t['fills'])
+   fill=t['observed_status']+'\n'+t['fill_scope']+'\n'+'\n'.join(str(f.get('drug_name'))+'; latest '+str(f.get('latest_fill_date_in_window'))for f in t['fills'])
    doses=[]
    for d in t['dose_observations']:
     dose='not established'if d.get('documented_daily_mg')is None else str(d['documented_daily_mg'])+' mg/day'

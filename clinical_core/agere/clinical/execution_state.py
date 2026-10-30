@@ -9,6 +9,45 @@ from ...contracts import digest
 VERSION = 'execution-state/3'
 
 
+def progress_evidence(calls,candidate=None):
+    """Native dependency identity, independent of temporary names and retries.
+
+    Final tables and bound prose name their actual dependency views. Unused
+    follow-up queries are retained in receipts but cannot reset a failed review.
+    Unbound scalar callers retain the complete native evidence set.
+    """
+    from .harness_improvement import semantic_result
+    import re
+    pattern=re.compile(r'\bagere_result_\d+\b')
+    def refs(value):
+        if isinstance(value,str):return set(pattern.findall(value))
+        if isinstance(value,dict):return set().union(*(refs(v)for v in value.values()))if value else set()
+        if isinstance(value,list):return set().union(*(refs(v)for v in value))if value else set()
+        return set()
+    by_view={(c.get('result')or{}).get('result_view'):c for c in calls if isinstance(c.get('result'),dict)}
+    wanted=refs({k:(candidate or{}).get(k)for k in('table_from_tool','computed_prose')})if isinstance(candidate,dict)else set()
+    selected=set();todo=list(wanted)
+    while todo:
+        name=todo.pop()
+        if name in selected:continue
+        selected.add(name);call=by_view.get(name)
+        if call:todo.extend(refs(call.get('input'))-selected)
+    names={};observed=[]
+    def stable(value,key=None):
+        if isinstance(value,dict):return{k:stable(v,k)for k,v in value.items()if k not in('result_view','actor_callback_id','owned_run_recovery','request_hash','attempt_id')}
+        if isinstance(value,list):return[stable(v)for v in value]
+        if isinstance(value,str)and key in('sql','query','executed_query','base','result','candidate_result_view','table_from_tool'):
+            return pattern.sub(lambda m:names.get(m.group(),m.group()),value)
+        return value
+    for call in calls:
+        value=stable(semantic_result({k:call.get(k)for k in('name','input','result')}))
+        ident=digest(value);out=call.get('result')or{}
+        name=out.get('result_view')if isinstance(out,dict)else None
+        if name:names[name]='native_'+ident
+        if not wanted or name in selected:observed.append(ident)
+    return sorted(set(observed))
+
+
 def draft_state(candidate):
     """Reference an unverified draft without copying its native patient table."""
     state={'last_draft':{k:v for k,v in candidate.items()if k not in (

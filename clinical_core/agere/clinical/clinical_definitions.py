@@ -7,6 +7,7 @@ answer using it. Definitions select evidence; they do not establish clinical app
 DECIDED_BY = 'Mike (clinical owner), 2026-10-21'
 
 
+
 def _hfref_sql(tables):
     """Coded HFrEF (EHR or counted claim), or HF (EHR or claim) with a documented EF of 40% or less in notes."""
     from .concepts import condition_evidence_sql
@@ -66,7 +67,9 @@ def describe():
                            for k, v in PHENOTYPES.items()},
             'current_gdmt': {'version': CURRENT_GDMT['version'], 'definition': CURRENT_GDMT['disclosure'],
                              'decision': CURRENT_GDMT['decision'],
-                             'evidence': 'fill / {{drug_fill:...}} picked-up fills by the catalog GDMT pillar fill classes'},
+                             'evidence': ('Picked-up medication fills by the catalog GDMT pillar classes, with event_date > '
+                                          "date({{as_of}}, '-12 months') AND event_date <= {{as_of}}. "
+                                          '{{drug_fill:...}} alone is all-history membership and does not apply this window.')},
             'precedence': ('For the terms these definitions cover, they override general observation-vs-state caution: '
                            'apply them, report definite values (0/1, at/below target, maximum tolerated) and disclose them.'),
             'maximum_tolerated_dose': {'version': TOLERANCE['version'], 'definition': TOLERANCE['disclosure'],

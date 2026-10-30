@@ -15,12 +15,12 @@ class Proposal(unittest.TestCase):
   bad={'kind':'simulation','title':'Run','program':'custom','quote':'create an agent','unresolved':[],'purpose':'proposal'}
   with self.assertRaises(ValueError):C.validate([bad],'Show facts; create an agent')
  def test_complete_table_survives_unresolved_downstream_definition(self):
-  a={'answer_type':'table','table_from_tool':'agere_result_1','workflow':[{**self.step(),'unresolved':['Define the audience']} ]}
+  a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_1','workflow':[{**self.step(),'unresolved':['Define the audience']} ]}
   calls=[{'result':{'result_view':'agere_result_1','columns':['patient_id','value'],'rows':[{'patient_id':'A','value':None}],'truncated':False}}]
   out=B.review_final(None,'Show facts; create a navigation brief',a,calls,None,ledger=None,as_of='2030-05-27')
   self.assertEqual(out['status'],'repair');self.assertEqual(a['table'],[{'patient_id':'A','value':None}]);self.assertTrue(a['table_binding']['copied_from_executed_result'])
  def test_truncated_table_is_still_rejected(self):
-  a={'table_from_tool':'agere_result_1','workflow':[self.step()]}
+  a={'status':'partial','table_from_tool':'agere_result_1','workflow':[self.step()]}
   out=B.review_final(None,'Show facts; create a navigation brief',a,[{'result':{'result_view':'agere_result_1','truncated':True}}],None,ledger=None,as_of='2030-05-27')
   self.assertEqual(out['status'],'repair');self.assertNotIn('table',a)
  def test_partial_proposal_builds_while_final_and_patient_work_remain_blocked(self):

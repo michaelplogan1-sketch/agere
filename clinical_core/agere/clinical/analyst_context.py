@@ -10,6 +10,7 @@ import re
 
 VERSION = 'analyst-documentation/1'
 VIEW = 'agere_data_model_context'
+COLUMNS = ('section_id','title','sha256','documentation_text')
 START = '# Semantic model documentation'
 HEADINGS = re.compile(r'(?m)^(?:#{1,3} [^\n]+|REGISTERED MEDICATION GROUP CONTRACTS[^\n]*|GOVERNED SQL MACROS[^\n]*|CLINICAL OWNER DEFINITIONS[^\n]*)$')
 
@@ -45,7 +46,7 @@ def install(semantic, documentation):
     finally:
         db.execute('PRAGMA query_only=ON')
         db.set_authorizer(semantic._authorize)
-    columns = ['section_id', 'title', 'sha256', 'documentation_text']
+    columns = list(COLUMNS)
     define_result(semantic, VIEW, columns, [[r[c] for c in columns] for r in rows])
     semantic._local.documentation_identity = identity
     # Column signatures remain in full native text. The index names the table;

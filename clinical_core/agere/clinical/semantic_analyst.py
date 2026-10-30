@@ -644,7 +644,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     feedback = assessment.get('feedback')
                     if feedback:
                         # Counts do not establish progress: querying the same rows again must not reset this protection.
-                        evidence = sorted({json.dumps(c, sort_keys=True, default=str) for c in result['tool_calls']})
+                        from .execution_state import progress_evidence
+                        evidence = progress_evidence(result['tool_calls'],candidate)
                         # Rephrasing alone does not repair the same failed check.
                         # The reviewer runs first, so a genuinely corrected answer
                         # can pass using existing evidence. Otherwise, only a new
