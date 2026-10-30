@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T02:26:03.968289+00:00",
+  "updated_at": "2026-10-30T02:57:48.066049+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_native_followups_running_source_model_citation_repair_pending",
+    "kind": "current_native_followups_passed_individual_and_dependency_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Source preflights now dispatch without phantom token generation or recorder drift; durable full-roster decisions reopen against exact native revalidation.",
-    "measured_failure_reduction": "Two individual preflight defects removed across all six original cases; zero source/assessment/task drift. One newly observed model-policy mismatch and two strict quote errors preserved for targeted repair.",
+    "user_behavior_delta": "Both full-roster programs now have source-audited financial/outcome, availability-safe prediction nonestimability and source-linked discovery results with unchanged internal work. Current individual source recovery reuses validated progress and preserves failed requests.",
+    "measured_failure_reduction": "Two original source preflights removed; exact 8,230-member native revalidation; six finance/timing/discovery audits pass. Model-policy parser mismatch removed. Targeted exact feedback validated four medication source passes; one later self-reported coverage inconsistency retained for current correction.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -516,10 +516,15 @@
       "artifacts/agere-current-mvp-2026-10-30/individual-preflight-v2/run-receipt.json",
       "artifacts/agere-current-mvp-2026-10-30/population-reopen-v3/receipt.json",
       "artifacts/agere-current-mvp-2026-10-30/current-assessment-repair-receipt.json",
-      "artifacts/agere-current-mvp-2026-10-30/model-alias-diagnostic.json"
+      "artifacts/agere-current-mvp-2026-10-30/model-alias-diagnostic.json",
+      "artifacts/agere-current-mvp-2026-10-30/source-contract-repair-v9-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/targeted-source-correction-v1/strict-citation-diagnostic.json",
+      "artifacts/agere-current-mvp-2026-10-30/followups-v1-reconciliation/receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/source-contract-repair-v10-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/targeted-source-correction-v2/run-receipt.json"
     ],
-    "remaining_gap": "Six current individual workflows remain blocked on canonical model request wiring and strict citation correction; native followups running; changed-evidence and installed operations/current acceptance package pending. Clinical/model qualification and external production authority remain distinct unmet dependencies.",
-    "next_action": "Current native finance/outcome, prediction and discovery worker PID87278/session70866 is running on frozen 4c4a8c5; do not duplicate or modify product source until its terminal receipt. Respiratory checks passed; behavioral work follows. Both population programs already passed full 4,115-member accounting and all 241 internal handoffs; all 8,230 assessments revalidated exactly across engine update, no task rerun. Exhaustive source conformance covers 2,396,490 received records/237 streams; independent adapter variant passes. Retrieval/source-scope and subscription preflights repaired and verified (269 offline checks plus six complete original source scopes). The first individual medication pass is terminal: one complete subscription Sonnet response rejected because the source constructor declared Opus while send resolved Sonnet on a copy. Exact actual-wire offline replay also reproduces one absent and one ambiguous quote. Preserve failed key/raw usage; after frozen native worker returns, canonicalize configured model before request identity/preflight/parser and use existing source citation recovery for a targeted exact-quotation correction. Then resume six complete individual workflows, changed/conflicting/late dependency checks, installed restart/restore and final current acceptance package. Native worker final global-ledger assertion may observe the separately attributed single failed source attempt: reconcile complete saved native outputs and exact request attribution without repeating successful calls. All ten areas, original source, independent qualifications and external prerequisites remain. No default model promotion, main merge, publication, real care or new services. Heartbeat stays paused; continue directly under latest overnight completion instruction.",
+    "remaining_gap": "Six original current individual workflows and dependency verification are running. Installed restart/backup/restore/transaction recovery and final current-snapshot acceptance package remain. Model/clinical qualification, source completeness, TypeSafe new credits and external production authority remain explicit dependencies.",
+    "next_action": "Current native followups now have a passed reconciliation receipt: all six independent finance/timing/discovery audits for both full 4,115-member programs passed, replay/open retained all 241 internal tasks, source/code unchanged. Original harness final global-ledger assertion failed only because seven separately attributable source-reader attempts overlapped; all are retained and no native API was repeated. Verified source-contract repair2a59c19 is committed: 145 offline checks, canonical configured model in current meaning/reconciliation/planning constructors, strict absent/ambiguous citation and discussed-without-citation feedback through existing recovery; historical source codecs unchanged, no local meaning rewrite. Candidate8888ready PID88615/session25313. Six complete original workflows v2 RUNNING PID88637/session65504 on frozen2a59c19; medication group1 reuses four validated source passes and targets the later coverage inconsistency through the native recovery API. Do not duplicate or mutate integration product source during that run. Changed/conflicting/late source dependency verification PID88617/session5063 RUNNING on its own consistent disposable received-data copy using frozen isolated /private/tmp/agere-source-contract-repair-20261030; do not mutate that isolated code either. Inspect terminal receipts, retain every failed/source/recovery attempt and follow exact saved source progress. Complete original individual work/reopen/follow-up, dependency/acquisition rechecks, reproducible installed restart/backup/restore and transaction recovery, then current nine-requirement engineering package with all ten acceptance areas and distinct qualification/external gaps. No global model promotion, main merge, publication, real care, new service or scheduler reactivation.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -624,13 +629,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T02:26:03.968289+00:00",
+    "at": "2026-10-30T02:57:48.066049+00:00",
     "workflow_change": "Fixed candidate retrieval comparison and subscription-only preflight now preserve full source scope and unknown token counts. All current population assessments revalidate exactly after code change; source and work preserved.",
     "unsealed_work": {
-      "status": "native_followups_running_individual_model_citation_blocker",
+      "status": "current_native_followups_passed_individual_and_dependency_running",
       "path": "artifacts/agere-current-mvp-2026-10-30",
-      "remaining_gap": "Six current individual workflows remain blocked on canonical model request wiring and strict citation correction; native followups running; changed-evidence and installed operations/current acceptance package pending. Clinical/model qualification and external production authority remain distinct unmet dependencies.",
-      "next_action": "Current native finance/outcome, prediction and discovery worker PID87278/session70866 is running on frozen 4c4a8c5; do not duplicate or modify product source until its terminal receipt. Respiratory checks passed; behavioral work follows. Both population programs already passed full 4,115-member accounting and all 241 internal handoffs; all 8,230 assessments revalidated exactly across engine update, no task rerun. Exhaustive source conformance covers 2,396,490 received records/237 streams; independent adapter variant passes. Retrieval/source-scope and subscription preflights repaired and verified (269 offline checks plus six complete original source scopes). The first individual medication pass is terminal: one complete subscription Sonnet response rejected because the source constructor declared Opus while send resolved Sonnet on a copy. Exact actual-wire offline replay also reproduces one absent and one ambiguous quote. Preserve failed key/raw usage; after frozen native worker returns, canonicalize configured model before request identity/preflight/parser and use existing source citation recovery for a targeted exact-quotation correction. Then resume six complete individual workflows, changed/conflicting/late dependency checks, installed restart/restore and final current acceptance package. Native worker final global-ledger assertion may observe the separately attributed single failed source attempt: reconcile complete saved native outputs and exact request attribution without repeating successful calls. All ten areas, original source, independent qualifications and external prerequisites remain. No default model promotion, main merge, publication, real care or new services. Heartbeat stays paused; continue directly under latest overnight completion instruction.",
+      "remaining_gap": "Six original current individual workflows and dependency verification are running. Installed restart/backup/restore/transaction recovery and final current-snapshot acceptance package remain. Model/clinical qualification, source completeness, TypeSafe new credits and external production authority remain explicit dependencies.",
+      "next_action": "Current native followups now have a passed reconciliation receipt: all six independent finance/timing/discovery audits for both full 4,115-member programs passed, replay/open retained all 241 internal tasks, source/code unchanged. Original harness final global-ledger assertion failed only because seven separately attributable source-reader attempts overlapped; all are retained and no native API was repeated. Verified source-contract repair2a59c19 is committed: 145 offline checks, canonical configured model in current meaning/reconciliation/planning constructors, strict absent/ambiguous citation and discussed-without-citation feedback through existing recovery; historical source codecs unchanged, no local meaning rewrite. Candidate8888ready PID88615/session25313. Six complete original workflows v2 RUNNING PID88637/session65504 on frozen2a59c19; medication group1 reuses four validated source passes and targets the later coverage inconsistency through the native recovery API. Do not duplicate or mutate integration product source during that run. Changed/conflicting/late source dependency verification PID88617/session5063 RUNNING on its own consistent disposable received-data copy using frozen isolated /private/tmp/agere-source-contract-repair-20261030; do not mutate that isolated code either. Inspect terminal receipts, retain every failed/source/recovery attempt and follow exact saved source progress. Complete original individual work/reopen/follow-up, dependency/acquisition rechecks, reproducible installed restart/backup/restore and transaction recovery, then current nine-requirement engineering package with all ten acceptance areas and distinct qualification/external gaps. No global model promotion, main merge, publication, real care, new service or scheduler reactivation.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
@@ -678,10 +683,12 @@
       "unaffected_work": "Continue the active authorized build directly in this chat."
     },
     "owned_recovery_run": {
+      "kind": "six_original_individual_workflows",
       "status": "running",
-      "pid": 87278,
-      "session": 70866,
-      "receipt": "artifacts/agere-current-mvp-2026-10-30/followups-v1/run-receipt.json",
+      "pid": 88637,
+      "session": 65504,
+      "receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v2/run-receipt.json",
+      "source_checkout": "/private/tmp/agere-codex-integration-20261026",
       "source_frozen": true
     },
     "provider_dependency": {
@@ -692,7 +699,27 @@
       "fallback": "perplexity served new checks; exact cached Jev readings remain reusable",
       "human_notified": true,
       "new_credit_purchase": false
-    }
+    },
+    "active_jobs": [
+      {
+        "kind": "six_original_individual_workflows",
+        "status": "running",
+        "pid": 88637,
+        "session": 65504,
+        "receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v2/run-receipt.json",
+        "source_checkout": "/private/tmp/agere-codex-integration-20261026",
+        "source_frozen": true
+      },
+      {
+        "kind": "changed_late_conflicting_source_dependencies",
+        "status": "running",
+        "pid": 88617,
+        "session": 5063,
+        "receipt": "artifacts/agere-current-mvp-2026-10-30/dependencies-v1/run-receipt.json",
+        "source_checkout": "/private/tmp/agere-source-contract-repair-20261030",
+        "source_frozen": true
+      }
+    ]
   },
   "decisions": [
     {
@@ -2002,10 +2029,10 @@
     }
   ],
   "unsealed_work": {
-    "status": "native_followups_running_individual_model_citation_blocker",
+    "status": "current_native_followups_passed_individual_and_dependency_running",
     "path": "artifacts/agere-current-mvp-2026-10-30",
-    "remaining_gap": "Six current individual workflows remain blocked on canonical model request wiring and strict citation correction; native followups running; changed-evidence and installed operations/current acceptance package pending. Clinical/model qualification and external production authority remain distinct unmet dependencies.",
-    "next_action": "Current native finance/outcome, prediction and discovery worker PID87278/session70866 is running on frozen 4c4a8c5; do not duplicate or modify product source until its terminal receipt. Respiratory checks passed; behavioral work follows. Both population programs already passed full 4,115-member accounting and all 241 internal handoffs; all 8,230 assessments revalidated exactly across engine update, no task rerun. Exhaustive source conformance covers 2,396,490 received records/237 streams; independent adapter variant passes. Retrieval/source-scope and subscription preflights repaired and verified (269 offline checks plus six complete original source scopes). The first individual medication pass is terminal: one complete subscription Sonnet response rejected because the source constructor declared Opus while send resolved Sonnet on a copy. Exact actual-wire offline replay also reproduces one absent and one ambiguous quote. Preserve failed key/raw usage; after frozen native worker returns, canonicalize configured model before request identity/preflight/parser and use existing source citation recovery for a targeted exact-quotation correction. Then resume six complete individual workflows, changed/conflicting/late dependency checks, installed restart/restore and final current acceptance package. Native worker final global-ledger assertion may observe the separately attributed single failed source attempt: reconcile complete saved native outputs and exact request attribution without repeating successful calls. All ten areas, original source, independent qualifications and external prerequisites remain. No default model promotion, main merge, publication, real care or new services. Heartbeat stays paused; continue directly under latest overnight completion instruction.",
+    "remaining_gap": "Six original current individual workflows and dependency verification are running. Installed restart/backup/restore/transaction recovery and final current-snapshot acceptance package remain. Model/clinical qualification, source completeness, TypeSafe new credits and external production authority remain explicit dependencies.",
+    "next_action": "Current native followups now have a passed reconciliation receipt: all six independent finance/timing/discovery audits for both full 4,115-member programs passed, replay/open retained all 241 internal tasks, source/code unchanged. Original harness final global-ledger assertion failed only because seven separately attributable source-reader attempts overlapped; all are retained and no native API was repeated. Verified source-contract repair2a59c19 is committed: 145 offline checks, canonical configured model in current meaning/reconciliation/planning constructors, strict absent/ambiguous citation and discussed-without-citation feedback through existing recovery; historical source codecs unchanged, no local meaning rewrite. Candidate8888ready PID88615/session25313. Six complete original workflows v2 RUNNING PID88637/session65504 on frozen2a59c19; medication group1 reuses four validated source passes and targets the later coverage inconsistency through the native recovery API. Do not duplicate or mutate integration product source during that run. Changed/conflicting/late source dependency verification PID88617/session5063 RUNNING on its own consistent disposable received-data copy using frozen isolated /private/tmp/agere-source-contract-repair-20261030; do not mutate that isolated code either. Inspect terminal receipts, retain every failed/source/recovery attempt and follow exact saved source progress. Complete original individual work/reopen/follow-up, dependency/acquisition rechecks, reproducible installed restart/backup/restore and transaction recovery, then current nine-requirement engineering package with all ten acceptance areas and distinct qualification/external gaps. No global model promotion, main merge, publication, real care, new service or scheduler reactivation.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
