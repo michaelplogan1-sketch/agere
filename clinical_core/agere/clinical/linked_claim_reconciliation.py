@@ -87,6 +87,17 @@ def preview(path,answer_id):
       'saved_answer_available':exists(path,key),'system_unassessed_units':parent['coverage'].get('system_unassessed_units',0),'new_paid_api_calls':0,
       'scope':'Review all saved claims and cited excerpts together; original full-unit interpretation and question results remain unchanged.'}
 
+def citation_batches(citations,kind):
+    """Use the immutable legacy codec without dropping current supplied evidence."""
+    anchors=[]
+    if kind=='conflicting_accounts':
+        for cite in citations:
+            if cite['unit']not in {c['unit']for c in anchors}:anchors.append(cite)
+            if len(anchors)==2:break
+    remaining=[c for c in citations if c not in anchors];room=4-len(anchors)
+    return [anchors+remaining[i:i+room]for i in range(0,len(remaining),room)]or[anchors]
+
+
 def parse(raw,job,refs):
     value=json.loads(''.join(v['text'] for v in raw.get('content',[]) if v.get('type')=='text'))
     if not isinstance(value,dict) or set(value)!=set(SCHEMA['properties']):raise ValueError('Invalid claim-review fields')
@@ -94,9 +105,27 @@ def parse(raw,job,refs):
     for f in core['findings']:
         if set(f)!={'id','kind','text','excerpt_ids','unresolved'}:raise ValueError('Invalid consolidated finding fields')
         names=f.pop('excerpt_ids')
-        if not isinstance(names,list) or not 1<=len(names)<=4 or len(names)!=len(set(names)) or any(not isinstance(n,str) or n not in job['excerpt_pool'] for n in names):raise ValueError('Unknown or duplicate excerpt')
+        # Evidence validity depends on exact supplied identities, not a four-
+        # citation display preference. Keep every unique supporting excerpt.
+        if not isinstance(names,list) or not names or len(names)!=len(set(names)) or any(not isinstance(n,str) or n not in job['excerpt_pool'] for n in names):raise ValueError('Unknown or duplicate excerpt')
         f['citations']=[{k:job['excerpt_pool'][n][k] for k in ('unit','quote')} for n in names]
-    cooked={**raw,'content':[{'type':'text','text':json.dumps(core)}]};result=R.parse(cooked,job,refs)
+    # The original source codec admits four citations per validation call. Keep
+    # its historical source/request identities unchanged: validate the complete
+    # result plus every extra citation through that SAME native parser, then
+    # restore all verified citations in their original order. Conflict batches
+    # retain two distinct original-unit anchors, so no semantic check is waived.
+    validating=copy.deepcopy(core);complete=[]
+    for i,f in enumerate(core['findings']):
+        groups=citation_batches(f['citations'],f['kind']);validating['findings'][i]['citations']=groups[0]
+        complete.append((f,groups))
+    cooked={**raw,'content':[{'type':'text','text':json.dumps(validating)}]};result=R.parse(cooked,job,refs)
+    for i,(finding,groups)in enumerate(complete):
+        validated={(c['unit'],c['quote']):c for c in result['findings'][i]['citations']}
+        for group in groups[1:]:
+            piece={'findings':[{**finding,'citations':group}],'unanswered':[],'review_steps':[]}
+            checked=R.parse({**raw,'content':[{'type':'text','text':json.dumps(piece)}]},job,refs)
+            validated.update({(c['unit'],c['quote']):c for c in checked['findings'][0]['citations']})
+        result['findings'][i]['citations']=[validated[(c['unit'],c['quote'])]for c in finding['citations']]
     if not isinstance(reviews,list) or len(reviews)!=len(job['finding_ids']):raise ValueError('Every original claim needs a disposition')
     seen=set();output_ids={f['id'] for f in result['findings']}
     for review in reviews:

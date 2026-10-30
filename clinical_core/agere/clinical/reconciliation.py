@@ -266,6 +266,37 @@ def revalidate_reference_count(job, refs, ledger, out):
                    'actual_request_bytes':P.request_bytes(body),'excess_reference_list_lengths':[len(v)for v in overflow]},tokens
 
 
+def revalidate_excerpt_count(job,refs,ledger,out):
+    """Reuse only an exact retained response whose extra excerpts all validate.
+
+    Wire inputs and original output bytes are unchanged. An unknown, duplicate,
+    incomplete or otherwise invalid candidate still needs diagnosed recovery.
+    The original failed call remains failed in the shared accounting ledger.
+    """
+    body=job['body'];key=G.request_key(body)
+    old=ledger.db.execute('SELECT status FROM calls WHERE id=?',(key,)).fetchone()
+    if old is None or old[0]!='failed':return None
+    failed=out/(key+'-failure.json');received=out/(key+'.json')
+    if not failed.exists()or not received.exists():return None
+    failure=json.loads(failed.read_text())
+    if failure.get('request_hash')!=key or failure.get('error')!='Unknown or duplicate excerpt':return None
+    raw=json.loads(received.read_text())['response']
+    value=json.loads(''.join(c['text']for c in raw.get('content',[])if c.get('type')=='text'))
+    if not isinstance(value,dict)or not isinstance(value.get('findings'),list):return None
+    lists=[f.get('excerpt_ids')for f in value['findings']if isinstance(f,dict)]
+    overflow=[names for names in lists if isinstance(names,list)and len(names)>4]
+    if not overflow:return None
+    if any(len(names)!=len(set(names))or any(not isinstance(n,str)or n not in job['excerpt_pool']for n in names)for names in overflow):return None
+    # Reparse the COMPLETE candidate with every current check, not a local
+    # edit to its citation list or a synthetic successful ledger entry.
+    from .context_student import _revalidate_saved
+    result,usage=_revalidate_saved(key,body['model'],body['model'],out,
+        lambda returned:parse(returned,job,refs),'exact_supplied_excerpt_count/1')
+    tokens=C.token_check(body,out,allow_live=False)
+    return result,{**usage,'actual_request_bytes':P.request_bytes(body),
+        'excess_excerpt_list_lengths':[len(v)for v in overflow]},tokens
+
+
 def validate_corrected_body(base,body):
     if (set(body)!=set(base)or any(body[k]!=base[k]for k in base if k!='system')
             or not body['system'].startswith(base['system']+RECOVERY_HEADER)):
@@ -363,14 +394,15 @@ def synthesize(path, parent_id, ledger, *, allow_live=False):
     target = location(path, key)
     prior=saved_for_parent(path,parent_id)
     if prior is not None:return {**prior,'cache_hit':True,'new_paid_api_calls':0,'new_token_count_calls':0}
+    out=target.parent/'provider'
+    excerpt_revalidated=revalidate_excerpt_count(job,refs,ledger,out)
     old = ledger.db.execute('SELECT status FROM calls WHERE id=?', (G.request_key(job['body']),)).fetchone()
-    if old and old[0] != 'validated': raise ValueError('Prior reconciliation pending/failed; no silent retry')
-    out = target.parent / 'provider'
+    if old and old[0] != 'validated'and excerpt_revalidated is None: raise ValueError('Prior reconciliation pending/failed; no silent retry')
     def fresh():
         if digest(S.inspect(path, parent_id)) != digest(parent) or digest(S.context(path, parent['context_id'])) != digest(row):
             raise ValueError('Reconciliation source changed during inference')
 
-    fresh();revalidated=revalidate_reference_count(job,refs,ledger,out);fresh()
+    fresh();revalidated=excerpt_revalidated or revalidate_reference_count(job,refs,ledger,out);fresh()
     if revalidated is None and not allow_live:
         raise ValueError('Live synthesis route disabled; typed reconciliation pending')
     out.mkdir(parents=True, exist_ok=True)

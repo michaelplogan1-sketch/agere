@@ -154,6 +154,49 @@ class Reconciliation(unittest.TestCase):
         self.assertEqual(usage['request_hash'],key);self.assertEqual(usage['excess_reference_list_lengths'],[5])
         self.assertTrue(usage['prior_failed_reservation_preserved'])
 
+    def excerpt_count_failure(self):
+        self.reference_count_failure()
+        value=self.result();value['findings'][0]['excerpt_ids']=list(self.job['excerpt_pool'])
+        self.assertGreater(len(value['findings'][0]['excerpt_ids']),4)
+        body=self.job['body'];key=R.G.request_key(body);out=R.location(self.path,'0'*64).parent/'provider'
+        raw=self.raw(body,value);raw['usage']={'input_tokens':750,'output_tokens':200}
+        (out/(key+'.json')).write_text(json.dumps({'response':raw}))
+        (out/(key+'-failure.json')).write_text(json.dumps({'request_hash':key,'error':'Unknown or duplicate excerpt'}))
+        self.ledger.reserve(key,'claude',body['model']);self.ledger.finish(key,error='Unknown or duplicate excerpt')
+        return key,out,raw,value
+
+    def test_all_extra_excerpts_validate_in_original_order_without_legacy_codec_changes(self):
+        key,out,raw,value=self.excerpt_count_failure();names=value['findings'][0]['excerpt_ids']
+        parsed=self.parsed(value)
+        self.assertEqual([c['quote']for c in parsed['findings'][0]['citations']],[self.job['excerpt_pool'][n]['quote']for n in names])
+        value['findings'][0]['kind']='conflicting_accounts'
+        self.assertEqual(len(self.parsed(value)['findings'][0]['citations']),len(names))
+        for bad in [names+['invented'],names+[names[0]],[]]:
+            value['findings'][0]['excerpt_ids']=bad
+            with self.assertRaisesRegex(ValueError,'Unknown or duplicate excerpt'):self.parsed(value)
+
+    def test_extra_citation_quote_and_conflict_checks_are_not_waived(self):
+        key,out,raw,value=self.excerpt_count_failure()
+        extra=value['findings'][0]['excerpt_ids'][-1]
+        self.job['excerpt_pool'][extra]['quote']='Absent exact quote'
+        with self.assertRaisesRegex(ValueError,'absent or ambiguous'):self.parsed(value)
+        source={'unit':'one','quote':'same'}
+        self.assertEqual(R.L.citation_batches([source],'conflicting_accounts'),[[source]])
+
+    def test_valid_extra_excerpt_response_revalidates_offline_and_retains_failed_attempt(self):
+        import os
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
+            key,out,raw,value=self.excerpt_count_failure();before=(out/(key+'.json')).read_bytes()
+            R.C.token_check(self.job['body'],out,allow_live=True)
+            with patch.object(R.G,'send')as send:
+                answer=R.synthesize(self.path,self.parent['id'],self.ledger,allow_live=False);send.assert_not_called()
+        self.assertEqual(answer['new_paid_api_calls'],0)
+        self.assertEqual(len(answer['findings'][0]['citations']),len(value['findings'][0]['excerpt_ids']))
+        self.assertEqual(R.inspect(self.path,answer['id']),answer)
+        self.assertEqual((out/(key+'.json')).read_bytes(),before)
+        self.assertEqual(self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(key,)).fetchone()[0],'failed')
+        self.assertEqual(answer['reconciliation']['groups'][0]['usage']['offline_revalidation'],'exact_supplied_excerpt_count/1')
+
     def test_count_revalidation_still_rejects_unknown_or_duplicate_references(self):
         import os
         with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
