@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T16:04:29.631825+00:00",
+  "updated_at": "2026-10-30T16:29:44.547717+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -599,10 +599,12 @@
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/completed-source-recovery.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/native-correction-audit.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/regression-receipt.json",
-      "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/run-protocol.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/run-protocol.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/run-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/completion-audit.json"
     ],
-    "remaining_gap": "Correct downstream current-assignment count/review actions and scope of maximum-dose absence, reduce avoidable verification latency, then complete original saved outputs. Independent clinical/model qualification remains separate.",
-    "next_action": "Execute targeted final composition from focused/final/run-protocol.json using completed source caches and corrected17-action native prefix; no provider source rescanning. Product/source freeze applies until this owned attempt is terminal. Verify exact57patients/228fill-policy cells/225findings/106dated roles, actual fill names, current-assignment57vsreferral22, GDMT-domain source-state rows, scope-qualified unknowns, interactive answer/PDF and canonical reopen. Independent model/clinical qualification remains open; scheduler PAUSED.",
+    "remaining_gap": "Current old answer is retained for inspection because planning code changed. New current canonical revalidation, targeted remaining support checks, readable PDF/interactive acceptance and all-attempt accounting remain. Independent semantic/source-family/clinical qualification remains distinct.",
+    "next_action": "Execute finishing/run-protocol.json through existing compose using retained19 native actions and source cache. Freeze product/source until owned revalidation terminal; no full provider source reread. Verify two former packet-envelope dependencies now fit with exact decoded values, preserve any semantic unknown, show proposed_review_steps for all57, then audit current canonical reopen/exports/PDF and actual interactive controls.262 pre-final regression checks passed; recommendation-field regression subsequently passes; clinical/model qualification remains unassessed. Scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -699,16 +701,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T16:04:29.631825+00:00",
-    "workflow_change": "Shared source verifier returns a diagnosed dependency fault before unrelated votes, preserves unchecked states and accounts in-flight concurrent independent checks through separate ordinary ledger connections; custom/read-only ledgers retain serial authority. Interactive/PDF projection exposes selected-source counts and scope. Corrected native patient composition retains complete current source observations and actual recent-fill drug names.",
+    "at": "2026-10-30T16:29:44.547717+00:00",
+    "workflow_change": "Existing lossless codec can expand canonically serialized JSON cells solely in the wire view and restore exact original strings; candidate packet sizes108069/127473/120809bytes with every state value/source identical. Print projection indexes duplicated native/audit metadata and retains complete attachment,330to238pages. Visual QA caught proposed_review_steps misclassification; shared recommendation pattern corrected, all57 actual rows recognized. No new clinical inference or model-default activation.",
     "unsealed_work": {
-      "status": "targeted_final_prepared",
+      "status": "finishing_revalidation_prepared",
       "path": "artifacts/agere-full-stack-rerun-2026-10-30",
       "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
-      "next_action": "Execute targeted final composition from focused/final/run-protocol.json using completed source caches and corrected17-action native prefix; no provider source rescanning. Product/source freeze applies until this owned attempt is terminal. Verify exact57patients/228fill-policy cells/225findings/106dated roles, actual fill names, current-assignment57vsreferral22, GDMT-domain source-state rows, scope-qualified unknowns, interactive answer/PDF and canonical reopen. Independent model/clinical qualification remains open; scheduler PAUSED.",
+      "next_action": "Execute finishing/run-protocol.json through existing compose using retained19 native actions and source cache. Freeze product/source until owned revalidation terminal; no full provider source reread. Verify two former packet-envelope dependencies now fit with exact decoded values, preserve any semantic unknown, show proposed_review_steps for all57, then audit current canonical reopen/exports/PDF and actual interactive controls.262 pre-final regression checks passed; recommendation-field regression subsequently passes; clinical/model qualification remains unassessed. Scheduler PAUSED.",
       "source_frozen_for_run": true,
       "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/run-protocol.json"
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/finishing/run-protocol.json"
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -2148,13 +2150,13 @@
     }
   ],
   "unsealed_work": {
-    "status": "targeted_final_prepared",
+    "status": "finishing_revalidation_prepared",
     "path": "artifacts/agere-full-stack-rerun-2026-10-30",
     "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
-    "next_action": "Execute targeted final composition from focused/final/run-protocol.json using completed source caches and corrected17-action native prefix; no provider source rescanning. Product/source freeze applies until this owned attempt is terminal. Verify exact57patients/228fill-policy cells/225findings/106dated roles, actual fill names, current-assignment57vsreferral22, GDMT-domain source-state rows, scope-qualified unknowns, interactive answer/PDF and canonical reopen. Independent model/clinical qualification remains open; scheduler PAUSED.",
+    "next_action": "Execute finishing/run-protocol.json through existing compose using retained19 native actions and source cache. Freeze product/source until owned revalidation terminal; no full provider source reread. Verify two former packet-envelope dependencies now fit with exact decoded values, preserve any semantic unknown, show proposed_review_steps for all57, then audit current canonical reopen/exports/PDF and actual interactive controls.262 pre-final regression checks passed; recommendation-field regression subsequently passes; clinical/model qualification remains unassessed. Scheduler PAUSED.",
     "source_frozen_for_run": true,
     "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
-    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/run-protocol.json"
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/finishing/run-protocol.json"
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",

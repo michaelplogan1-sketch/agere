@@ -465,14 +465,31 @@ def undictionary_json(encoded):
     return restored
 
 
-def compact_json(value):
+_JSON_STRING_FORMATS={
+    'compact_utf8':{'ensure_ascii':False,'separators':(',',':')},
+    'native_utf8':{'ensure_ascii':False},
+    'compact_ascii':{'ensure_ascii':True,'separators':(',',':')},
+    'native_ascii':{'ensure_ascii':True},
+}
+
+
+def compact_json(value,*,expand_json_strings=False):
     """Lossless model view: share record layouts and repeated complete values.
 
     Table layouts apply only at listed paths, so source arrays and marker-like
     objects remain literal. Native receipts/bindings keep their original shape.
     """
-    tables=[]
+    tables=[];json_strings=[]
     def walk(v,path):
+        if expand_json_strings and isinstance(v,str)and v[:1]in ('[','{'):
+            try:
+                parsed=json.loads(v)
+                if isinstance(parsed,(dict,list)):
+                    for name,options in _JSON_STRING_FORMATS.items():
+                        if json.dumps(parsed,allow_nan=False,**options)==v:
+                            json_strings.append({'at':list(path),'format':name})
+                            return walk(parsed,path)
+            except (ValueError,TypeError):pass
         if isinstance(v,list):
             if len(v)>1 and isinstance(v[0],dict) and all(isinstance(r,dict) and list(r)==list(v[0]) for r in v):
                 keys=list(v[0]);tables.append({'at':list(path),'columns':keys})
@@ -482,13 +499,14 @@ def compact_json(value):
         return v
     packed=walk(value,())
     body={'payload':packed,'tables':tables}
+    if json_strings:body['json_strings']=json_strings
     shared=share_json(body);dictionary=dictionary_json(body)
     # Small packets keep their simpler representation. This changes only the
     # reversible wire view, never evidence selection or the native receipts.
     if dictionary['dictionary'] and len(json.dumps(dictionary,ensure_ascii=False))<len(json.dumps(shared,ensure_ascii=False)):
         shared=dictionary
     return {'encoding':'agere-lossless-compact-json/1',
-            'instructions':'This is the complete evidence, with no omitted rows or text. First resolve the shared JSON references. In the resulting payload, each tables.at path is a list of records stored as arrays: pair every row value with tables.columns in order. Other arrays and objects are literal. Native sources and bindings are unchanged. Judge values and their column meaning, never reference markers.',
+            'instructions':'This is the complete evidence, with no omitted rows or text. First resolve the shared JSON references. In the resulting payload, each tables.at path is a list of records stored as arrays: pair every row value with tables.columns in order. Other arrays and objects are literal. Native sources and bindings are unchanged. Judge values and their column meaning, never reference markers.'+(' Entries in json_strings record original JSON-string cells represented here as their complete parsed values; original string formatting is restored by code before native binding checks.'if json_strings else''),
             'shared':shared,
             'original_fingerprint':fingerprint(value)}
 
@@ -510,17 +528,25 @@ def uncompact_json(encoded):
     if encoded.get('encoding')!='agere-lossless-compact-json/1':raise ValueError('Unknown compact JSON encoding')
     body=unshare_json(encoded['shared']);tables={tuple(t['at']):t['columns'] for t in body['tables']}
     if len(tables)!=len(body['tables']):raise ValueError('Duplicate table layout')
-    used=set()
+    formats={tuple(item['at']):item['format']for item in body.get('json_strings',[])}
+    if len(formats)!=len(body.get('json_strings',[]))or any(f not in _JSON_STRING_FORMATS for f in formats.values()):
+        raise ValueError('Invalid JSON-string layout')
+    used=set();restored_strings=set()
     def walk(v,path):
         if path in tables:
             keys=tables[path];used.add(path)
             if not isinstance(v,list) or len(keys)!=len(set(keys)) or any(not isinstance(k,str) for k in keys):
                 raise ValueError('Invalid table layout')
             if any(not isinstance(row,list) or len(row)!=len(keys) for row in v):raise ValueError('Invalid compact row')
-            return [{k:walk(row[j],path+(i,j)) for j,k in enumerate(keys)} for i,row in enumerate(v)]
-        if isinstance(v,list):return [walk(x,path+(i,)) for i,x in enumerate(v)]
-        if isinstance(v,dict):return {k:walk(x,path+(k,)) for k,x in v.items()}
+            v=[{k:walk(row[j],path+(i,j)) for j,k in enumerate(keys)} for i,row in enumerate(v)]
+        elif isinstance(v,list):v=[walk(x,path+(i,)) for i,x in enumerate(v)]
+        elif isinstance(v,dict):v={k:walk(x,path+(k,)) for k,x in v.items()}
+        if path in formats:
+            if not isinstance(v,(dict,list)):raise ValueError('JSON-string cell lost its complete object/array')
+            restored_strings.add(path)
+            return json.dumps(v,allow_nan=False,**_JSON_STRING_FORMATS[formats[path]])
         return v
     value=walk(body['payload'],())
+    if restored_strings!=set(formats):raise ValueError('JSON-string layout path unavailable')
     if used!=set(tables) or fingerprint(value)!=encoded.get('original_fingerprint'):raise ValueError('Compact JSON fingerprint/layout differs')
     return value

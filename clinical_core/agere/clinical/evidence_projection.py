@@ -129,6 +129,9 @@ def partition_support_packet(packet, *, max_bytes=230000):
         assert all(at(part,c['path'])==originals[c['id']] for c in selected)
         readable=json.dumps(readable_json(part),ensure_ascii=False,separators=(',',':'))
         text=readable if len(readable.encode())<=max_bytes else json.dumps(compact_json(part),ensure_ascii=False,separators=(',',':'))
+        if len(text.encode())>max_bytes:
+            alternate=json.dumps(compact_json(part,expand_json_strings=True),ensure_ascii=False,separators=(',',':'))
+            if len(alternate.encode())<len(text.encode()):text=alternate
         if uncompact_json(json.loads(text))!=part:raise ValueError('Claim partition did not round-trip')
         return {**packet,'text':text,'bytes':len(text.encode()),'claim_manifest':selected,
             'parent_packet_id':packet['id'],'representation':'complete_source_claim_partition'}

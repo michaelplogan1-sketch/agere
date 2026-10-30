@@ -5,7 +5,7 @@ Keep the answer intact; the complete native context remains the download.
 """
 import json,re
 
-RECOMMENDATION_FIELD_PATTERN=r'^(?!.*(?:_status|_count|_type|_number|_n)$).*(?:recommend|next_(?:step|action)|action_plan|proposed_(?:[a-z]+_)*action)'
+RECOMMENDATION_FIELD_PATTERN=r'^(?!.*(?:_status|_count|_type|_number|_n)$).*(?:recommend|next_(?:step|action)|action_plan|proposed_(?:[a-z]+_)*(?:action|step)|review_(?:step|plan))'
 
 def recommendation_field(name):
     return bool(re.search(RECOMMENDATION_FIELD_PATTERN,name,re.I))

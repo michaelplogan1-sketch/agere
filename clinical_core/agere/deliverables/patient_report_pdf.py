@@ -68,6 +68,13 @@ def render(context,output,references=None,evidence=None):
    scalar=[];nested=[]
    for k,item in v.items():
     if same_quote and k=='value':continue
+    if k=='review_unresolved_json'and isinstance(decoded(item),list):
+     gaps=decoded(item)
+     from collections import Counter
+     counts=Counter(g.get('field','unspecified')for g in gaps if isinstance(g,dict))
+     out.extend([P('Unresolved source-field checks',labelstyle),
+       P(str(len(gaps))+' addressable checks remain unresolved: '+('; '.join(label(field)+': '+str(n)for field,n in counts.items())or'none')+'. Complete source IDs, spans and fingerprints remain in the embedded evidence and interactive review; these are not negative clinical findings.',small)])
+     continue
     if k in ('value','quote')and isinstance(item,str):
      out.extend([P('Recorded value and source quote'if same_quote else label(k),labelstyle),P(item,small)])
     elif isinstance(decoded(item),(dict,list)):nested.append((k,item))
@@ -86,6 +93,7 @@ def render(context,output,references=None,evidence=None):
  patient_level=bool(ids)
  first_metric=(len(ids),'Distinct patient IDs')if patient_level else(len({k for row in rows for k in row}),'Returned fields')
  story=[P('AGERE  /  '+('PATIENT REVIEW'if patient_level else'ANALYSIS REVIEW'),small),Spacer(1,12),P('Evidence into\nnext steps',title),P(context.get('question','Saved analysis')),Spacer(1,10)]
+ story.append(P('This is the generated PDF companion. Any pending-delivery statements in the original saved analysis describe the earlier analytical stage; the complete original analysis remains embedded unchanged.',small))
  kpis=Table([[P(str(first_metric[0]),head),P(str(len(rows)),head),P(status,head)], [P(first_metric[1],small),P('Complete result rows',small),P('Saved analytical status',small)]],colWidths=[180]*3)
  kpis.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),paper),('LEFTPADDING',(0,0),(-1,-1),12),('BOTTOMPADDING',(0,0),(-1,-1),8),('TOPPADDING',(0,0),(-1,-1),8)]));story+=[kpis,Spacer(1,17),P('Source and scope',head),P('Synthetic warehouse. Source snapshot: '+str(cutoff)+'. Dates follow the simulated source clock. Report rendering adds no clinical interpretation, new care action or acceptance.'),P(answer.get('headline','No headline supplied'))]
  if context.get('retained_inspection'):story.extend([P('Retained analysis for inspection',head),P('Planning code changed after this saved execution. This report preserves the original analysis and source snapshot; rendering adds no new clinical interpretation, acceptance or care authorization.')])
@@ -137,10 +145,13 @@ def render(context,output,references=None,evidence=None):
   for table in evidence.get('supporting_tables')or[]:
    observations=[r for r in table['rows']if r.get('patient_id')==pid]
    if not observations:continue
-   story.extend([P('Supporting observations / '+str(table.get('result_view')),head),P(evidence['basis'],small)])
-   for observation in observations:
-    story.append(P(observation.get('drug_name')or observation.get('drug_key')or observation.get('role')or'Source observation',labelstyle))
-    story.extend(content({k:v for k,v in observation.items()if k!='patient_id'}))
+   story.extend([P('Native supporting-evidence index / '+str(table.get('result_view')),head),P(evidence['basis'],small),
+    P('Every supporting observation is indexed below. Complete original fields, calculations, source links and qualification metadata remain in the embedded evidence and interactive companion. These may include a wider medication domain than the final answer.',small)])
+   for item_index,observation in enumerate(observations):
+    name=observation.get('drug_name')or observation.get('drug_key')or observation.get('role')or'Source observation'
+    details=[label(key)+': '+value(observation[key])for key in
+       ('dose_status','reference_max_status','assignment_status','assigned_at_snapshot','dose_date','source_date','latest_note_date')if key in observation]
+    story.append(P(str(item_index+1)+'. '+str(name)+(' / '+'; '.join(details)if details else''),small))
   reviews=evidence.get('notes',{}).get(pid,[])
   roles={json.dumps(r,sort_keys=True):r for review in reviews for r in review.get('source_clinicians')or[]}
   if roles:

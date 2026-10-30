@@ -205,5 +205,12 @@ class StableObservations(unittest.TestCase):
         self.assertNotIn('sources',row['evidence_scope'])
         self.assertEqual(context['investigation']['document_reviews'][0]['rows'][0]['evidence_scope_json'],json.dumps(scope))
 
+    def test_native_proposed_review_steps_are_recommendations_but_counts_are_not(self):
+        from clinical_core.agere.deliverables.patient_evidence import recommendation_field
+        for field in ('proposed_review_steps','proposed_followup_actions','review_plan','next_steps'):
+            with self.subTest(field=field):self.assertTrue(recommendation_field(field))
+        for field in ('review_status','review_step_count','proposed_action_type','source_findings'):
+            with self.subTest(field=field):self.assertFalse(recommendation_field(field))
+
 
 if __name__=='__main__':unittest.main()

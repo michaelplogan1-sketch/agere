@@ -55,4 +55,21 @@ class ClaimPartitions(unittest.TestCase):
         packet=self.packet()
         with self.assertRaisesRegex(ValueError,'single-claim'):partition_support_packet(packet,max_bytes=1000)
 
+    def test_serialized_native_cells_can_share_complete_source_values_without_omission(self):
+        from clinical_core.agere.deliverables.receipts import compact_json
+        source={'record_id':'source','quote':'Complete literal source. '*200,'uncertain':True}
+        variants=[json.dumps([source],ensure_ascii=False),json.dumps([source],separators=(',',':'))]
+        state={'answer_rows':[{'patient_id':'A','finding':[source]}],
+            'evidence':[{'record_json':variants[i%2],'source':source,'index':i}for i in range(60)],
+            'source_contexts':[source],'claim_manifest':[{'id':'c','field':'finding','path':['answer_rows',0,'finding']}]}
+        old=json.dumps(compact_json(state),separators=(',',':'))
+        packet={'id':'patient_A','date':'2030-05-27','text':old,'bytes':len(old.encode()),
+            'source_context_complete':True,'claim_manifest':state['claim_manifest']}
+        parts=partition_support_packet(packet,max_bytes=12000)
+        self.assertEqual(len(parts),1);self.assertLessEqual(parts[0]['bytes'],12000)
+        restored=uncompact_json(json.loads(parts[0]['text']))
+        self.assertEqual(restored['evidence'],state['evidence'])
+        self.assertEqual(restored['source_contexts'],state['source_contexts'])
+        self.assertEqual(restored['answer_rows'],state['answer_rows'])
+
 if __name__=='__main__':unittest.main()

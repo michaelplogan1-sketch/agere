@@ -1301,6 +1301,9 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         packet['claim_manifest']=claims
         readable=json.dumps(readable_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
         text=readable if len(readable.encode())<=230000 else json.dumps(compact_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
+        if len(text.encode())>230000:
+            alternate=json.dumps(compact_json(packet,expand_json_strings=True),ensure_ascii=False,separators=(',',':'),default=str)
+            if len(alternate.encode())<len(text.encode()):text=alternate
         result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':True,
             'source_context_complete':not bool(packet.get('source_context_gaps')),
             'claim_manifest':claims,'result_view':final_view,
