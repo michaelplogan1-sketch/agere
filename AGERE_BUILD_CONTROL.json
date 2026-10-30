@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T11:15:29.880342+00:00",
+  "updated_at": "2026-10-30T11:58:05.155600+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -557,7 +557,7 @@
       "artifacts/agere-current-mvp-2026-10-30/durable-provider-ledger-receipt.json"
     ],
     "remaining_gap": "Actual installation, restart, transaction rollback and restore are running but not yet accepted; final current acceptance, durable evidence, UI and delivery remain. Six individual workflows, both full-roster programs, native audits, evidence changes and routing/accounting passed. Independent model/clinical qualification, source capture/sufficiency, TypeSafe new credits, actual total cost and production authority remain dependencies.",
-    "next_action": "Continue existing actual installed-operations worker PID545/session25889 on frozen product5f095dc. Its durable run receipt is /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json. It owns candidate-v16 PID533/session96617 on8888, captures all8 decisions and6 canonical answers, stops only that verified process, then checkpoints/archives/installs and checks CAS/idempotency, exact reopen, restart, actual uncommitted-task WAL rollback and fresh restore. Do not duplicate the job, mutate product code or restore shared accounting. Routing-v1 passed all6 with0new provider calls and all176 request rows retained. Provider ledger is now durable at /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/provider-budget.sqlite3; old alias preserved exactly. After operations passes, restart the original candidate using a new versioned process receipt, build current nine-requirement acceptance, seal independent durable evidence, verify actual current UI and update private draft/delivery. Allten areas and separate model/clinical/production dependencies remain; no main merge, global activation, publication, new services, real care or scheduler restart.",
+    "next_action": "Continue only existing installed-operations worker PID545/session25889 on frozen product5f095dc; inspect /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json first. It has sealed the71GB/34database checkpoint and executable archive, started the archived runtime, reopened all8 decisions and6 answers exactly, refused hosted inference, and passed hold/idempotent replay/stale CAS/internal handoff with original work and176-row shared ledger unchanged. It now owns restarted installation PID5300 onlocalhost:55434; do not manually stop its children or duplicate work. Original candidate-v16 PID533 is stopped and8888offline during this test. Remaining: restarted state reopen, actual uncommitted-task WAL crash recovery and fresh restore. If passed, restart original candidate with new versioned v17 receipt and the durable current ledger; then build current nine-requirement acceptance, independently verify durable evidence, inspect actual current UI and seal delivery/private draft. Allten charter areas and model/clinical/production dependencies remain explicit. No source edits during run, main merge, global model activation, publication, new services, real care or scheduler restart.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -566,7 +566,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Only operations worker PID545/session25889 running; candidate-v16 PID533/session96617 owned by that test. Product frozen5f095dc; scheduler PAUSED.",
+    "coordination": "Only operations PID545/session25889; it owns restarted archived installation PID5300 on55434. Original8888 stopped. Product frozen5f095dc, scheduler PAUSED.",
     "remaining_blockers": [
       {
         "id": "B1",
@@ -599,7 +599,7 @@
     ],
     "latest_progress": {
       "status": "routing_passed_actual_installed_operations_running",
-      "at": "2026-10-30T11:15:29.880342+00:00",
+      "at": "2026-10-30T11:58:05.155600+00:00",
       "run_receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v13/run-receipt.json",
       "accepted_cases": [
         "medication",
@@ -619,7 +619,14 @@
       "failed_rows": 34,
       "validated_rows": 142,
       "operations_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json",
-      "operations_status": "running"
+      "operations_status": "running",
+      "operations_phase": "restart_installed_work",
+      "archive_started": true,
+      "installed_canonical_reopen_passed": true,
+      "idempotency_and_stale_CAS_passed": true,
+      "installed_internal_handoff_passed": true,
+      "original_work_unchanged": true,
+      "provider_ledger_unchanged": true
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -674,13 +681,13 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T11:15:29.880342+00:00",
+    "at": "2026-10-30T11:58:05.155600+00:00",
     "workflow_change": "Six original individual workflows pass; full-roster respiratory and behavioral programs preserve 241 internal handoffs. Combined 249 internal software-review tasks; no external action or clinical qualification.",
     "unsealed_work": {
       "status": "routing_passed_actual_installed_operations_running",
       "path": "artifacts/agere-current-mvp-2026-10-30",
       "remaining_gap": "Actual installation, restart, transaction rollback and restore are running but not yet accepted; final current acceptance, durable evidence, UI and delivery remain. Six individual workflows, both full-roster programs, native audits, evidence changes and routing/accounting passed. Independent model/clinical qualification, source capture/sufficiency, TypeSafe new credits, actual total cost and production authority remain dependencies.",
-      "next_action": "Continue existing actual installed-operations worker PID545/session25889 on frozen product5f095dc. Its durable run receipt is /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json. It owns candidate-v16 PID533/session96617 on8888, captures all8 decisions and6 canonical answers, stops only that verified process, then checkpoints/archives/installs and checks CAS/idempotency, exact reopen, restart, actual uncommitted-task WAL rollback and fresh restore. Do not duplicate the job, mutate product code or restore shared accounting. Routing-v1 passed all6 with0new provider calls and all176 request rows retained. Provider ledger is now durable at /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/provider-budget.sqlite3; old alias preserved exactly. After operations passes, restart the original candidate using a new versioned process receipt, build current nine-requirement acceptance, seal independent durable evidence, verify actual current UI and update private draft/delivery. Allten areas and separate model/clinical/production dependencies remain; no main merge, global activation, publication, new services, real care or scheduler restart.",
+      "next_action": "Continue only existing installed-operations worker PID545/session25889 on frozen product5f095dc; inspect /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json first. It has sealed the71GB/34database checkpoint and executable archive, started the archived runtime, reopened all8 decisions and6 answers exactly, refused hosted inference, and passed hold/idempotent replay/stale CAS/internal handoff with original work and176-row shared ledger unchanged. It now owns restarted installation PID5300 onlocalhost:55434; do not manually stop its children or duplicate work. Original candidate-v16 PID533 is stopped and8888offline during this test. Remaining: restarted state reopen, actual uncommitted-task WAL crash recovery and fresh restore. If passed, restart original candidate with new versioned v17 receipt and the durable current ledger; then build current nine-requirement acceptance, independently verify durable evidence, inspect actual current UI and seal delivery/private draft. Allten charter areas and model/clinical/production dependencies remain explicit. No source edits during run, main merge, global model activation, publication, new services, real care or scheduler restart.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "source_frozen_for_run": true,
       "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
@@ -733,7 +740,8 @@
       "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json",
       "source_checkout": "/private/tmp/agere-codex-integration-20261026",
       "source_commit": "5f095dc",
-      "source_frozen": true
+      "source_frozen": true,
+      "phase": "restart_installed_work"
     },
     "provider_dependency": {
       "provider": "jev",
@@ -753,7 +761,8 @@
         "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json",
         "source_checkout": "/private/tmp/agere-codex-integration-20261026",
         "source_commit": "5f095dc",
-        "source_frozen": true
+        "source_frozen": true,
+        "phase": "restart_installed_work"
       }
     ]
   },
@@ -2082,7 +2091,7 @@
     "status": "routing_passed_actual_installed_operations_running",
     "path": "artifacts/agere-current-mvp-2026-10-30",
     "remaining_gap": "Actual installation, restart, transaction rollback and restore are running but not yet accepted; final current acceptance, durable evidence, UI and delivery remain. Six individual workflows, both full-roster programs, native audits, evidence changes and routing/accounting passed. Independent model/clinical qualification, source capture/sufficiency, TypeSafe new credits, actual total cost and production authority remain dependencies.",
-    "next_action": "Continue existing actual installed-operations worker PID545/session25889 on frozen product5f095dc. Its durable run receipt is /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json. It owns candidate-v16 PID533/session96617 on8888, captures all8 decisions and6 canonical answers, stops only that verified process, then checkpoints/archives/installs and checks CAS/idempotency, exact reopen, restart, actual uncommitted-task WAL rollback and fresh restore. Do not duplicate the job, mutate product code or restore shared accounting. Routing-v1 passed all6 with0new provider calls and all176 request rows retained. Provider ledger is now durable at /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/provider-budget.sqlite3; old alias preserved exactly. After operations passes, restart the original candidate using a new versioned process receipt, build current nine-requirement acceptance, seal independent durable evidence, verify actual current UI and update private draft/delivery. Allten areas and separate model/clinical/production dependencies remain; no main merge, global activation, publication, new services, real care or scheduler restart.",
+    "next_action": "Continue only existing installed-operations worker PID545/session25889 on frozen product5f095dc; inspect /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json first. It has sealed the71GB/34database checkpoint and executable archive, started the archived runtime, reopened all8 decisions and6 answers exactly, refused hosted inference, and passed hold/idempotent replay/stale CAS/internal handoff with original work and176-row shared ledger unchanged. It now owns restarted installation PID5300 onlocalhost:55434; do not manually stop its children or duplicate work. Original candidate-v16 PID533 is stopped and8888offline during this test. Remaining: restarted state reopen, actual uncommitted-task WAL crash recovery and fresh restore. If passed, restart original candidate with new versioned v17 receipt and the durable current ledger; then build current nine-requirement acceptance, independently verify durable evidence, inspect actual current UI and seal delivery/private draft. Allten charter areas and model/clinical/production dependencies remain explicit. No source edits during run, main merge, global model activation, publication, new services, real care or scheduler restart.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "source_frozen_for_run": true,
     "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
