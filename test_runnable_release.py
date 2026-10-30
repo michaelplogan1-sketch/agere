@@ -108,12 +108,21 @@ class RunnableReleaseTests(unittest.TestCase):
         for mode in ('inspection_only','owned_work_only'):
             gets,posts=L.recovery_routes(mode)
             self.assertNotIn('/api/stack/portable-intake/save',posts)
+            self.assertNotIn('/api/stack/action-work/create',posts)
+            self.assertNotIn('/api/stack/action-work/update',posts)
+            for path in ('/action-center','/api/stack/action-contexts',
+                         '/api/stack/action-context','/api/stack/action-deliverables',
+                         '/api/stack/action-deliverable'):
+                self.assertIn(path,gets)
         gets,posts=L.recovery_routes('local_operations')
         self.assertIn('/api/stack/portable-intake/save',posts)
         self.assertIn('/api/stack/decision/scoped-prepare',posts)
         self.assertIn('/api/stack/requirement-contracts',gets)
         self.assertIn('/api/stack/outcome-contracts',gets)
         self.assertIn('/api/stack/case-synthesis',gets)
+        self.assertIn('/api/stack/action-work/create',posts)
+        self.assertIn('/api/stack/action-work/update',posts)
+        self.assertNotIn('/api/stack/action-deliverable',posts)
         for name in ('context/interpret','learning-cohorts/read','semantic/review','context/output-recover'):
             self.assertNotIn('/api/stack/'+name,posts)
         p=out/'installation.json';v=L.read(p);v['policy_sha256']='another policy';p.write_text(json.dumps(v))
@@ -162,7 +171,9 @@ class ApplicationInventoryTests(unittest.TestCase):
         code=L.code_identity()
         for path in ('clinical_core/agere/clinical/care_protocols.json',
                      'clinical_core/agere/clinical/clinical_input_maps.json',
-                     'clinical_core/agere/clinical/assets/workspace.css','config/questions.json'):
+                     'clinical_core/agere/clinical/assets/workspace.css','config/questions.json',
+                     'tools/training/datasets.py','tools/certify_gates.py',
+                     'tools/normalization/jev_check.py'):
             self.assertEqual(code[path],L.sha(L.ROOT/path))
 
 if __name__=='__main__':unittest.main()

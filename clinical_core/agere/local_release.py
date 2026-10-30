@@ -23,7 +23,9 @@ READ_POSTS = frozenset('/api/stack/' + name for name in (
     'decision/economics-open', 'reader-comparison/inspect', 'portable-intake/inspect'))
 READ_GETS = frozenset(('/health', '/stack', '/api/stack/meta', '/api/stack/decision',
     '/api/stack/work', '/api/stack/evidence-thread', '/api/stack/semantic',
-    '/api/stack/requirement-contracts'))
+    '/api/stack/requirement-contracts', '/action-center',
+    '/api/stack/action-contexts', '/api/stack/action-context',
+    '/api/stack/action-deliverables', '/api/stack/action-deliverable'))
 LOCAL_POSTS = frozenset('/api/stack/' + name for name in (
     'search', 'cohort', 'operator', 'execute-plan', 'compose',
     'context/prepare', 'context/from-question',
@@ -37,7 +39,7 @@ LOCAL_POSTS = frozenset('/api/stack/' + name for name in (
     'decision/population-execute', 'decision/population-accountability',
     'decision/population-prediction-options', 'decision/population-prediction',
     'decision/population-discovery-options', 'decision/population-discovery',
-    'decision/economics'))
+    'decision/economics', 'action-work/create', 'action-work/update'))
 LOCAL_GETS = frozenset('/api/stack/' + name for name in (
     'context', 'case-synthesis', 'decision/source', 'decision/population-config', 'outcome-contracts',
     'source-atlas', 'source-records', 'capabilities', 'capabilities/catalog',
@@ -126,6 +128,10 @@ def code_identity():
     # The active build pointer is installation configuration, not release code.
     files = [p for p in files if p.name != 'active_warehouse.json']
     files += [ROOT / 'serve_current_warehouse.py', ROOT / 'agere_checkpoint.py']
+    # These modules provide runtime prompts/validation, even when fitting and
+    # hosted inference are disabled. Archive code only, never training data.
+    files += [ROOT / name for name in ('tools/training/datasets.py',
+              'tools/certify_gates.py', 'tools/normalization/jev_check.py')]
     files += list(ROOT.glob('requirements*.txt'))
     return {str(p.relative_to(ROOT)): sha(p) for p in sorted(files)}
 
@@ -262,6 +268,10 @@ def sqlite_copy(source, target):
         dst.execute('PRAGMA journal_mode=DELETE')
     finally:
         dst.close(); src.close()
+    # A consistent backup retains the source observation clock. The enclosing
+    # checkpoint fences source changes and seals the backup bytes separately;
+    # saved answers must not become stale merely because the file was copied.
+    shutil.copystat(source, target)
 
 
 def sync_publish(stage, target):

@@ -32,6 +32,28 @@ class LedgerDependencies(unittest.TestCase):
             self.assertEqual(legacy.read_text(),'unused accounting')
 
 
+class SavedAnswerRecovery(unittest.TestCase):
+    def test_backup_reopens_current_answer_and_later_source_change_still_invalidates(self):
+        from test_patient_review_profiles import Profiles
+        from clinical_core.agere.deliverables import answer_context as A
+        case = Profiles(); case.setUp(); self.addCleanup(case.doCleanups)
+        ref = A.capture(case.path, 'Inspect the selected patients', {'answer': case.answer})
+        before = A.load(case.path, ref['id'], current=True)
+        source = case.path / 'semantic.sqlite3'
+        backup = case.path / 'backup.sqlite3'
+        L.sqlite_copy(source, backup)
+        source.rename(case.path / 'original.sqlite3')
+        L.copy_file(backup, source)
+        restored = A.load(case.path, ref['id'], current=True)
+        self.assertEqual(restored['source'], before['source'])
+        self.assertFalse(restored['stale'])
+        self.assertEqual(restored['answer'], before['answer'])
+        with sqlite3.connect(source) as db:
+            db.execute('UPDATE measurement_latest SET value_canonical=5.1')
+        with self.assertRaisesRegex(ValueError, 'data changed'):
+            A.load(case.path, ref['id'], current=True)
+
+
 class RecoveryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
