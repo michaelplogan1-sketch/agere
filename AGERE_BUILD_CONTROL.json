@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T16:29:44.547717+00:00",
+  "updated_at": "2026-10-30T17:19:10.979815+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -375,11 +375,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "candidate_evidence_routing_repair",
+    "kind": "integrated_original_workflow_engineering_delivery",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Existing Ask investigator now defaults to requirement-bound focused whole-source review and native per-field patient applicability; retains all patients/source inventory, explicit unknowns and targeted expansion. Exact machine source-field cache survives rebatching, source/task/policy changes miss. Native schema discovery is default; implicit unqualified d1/Kev fallback is opt-in.",
-    "measured_failure_reduction": "Offline native correction replaces mislabeled35 with57 lacking established structured cardiology assignment and updates all57 patient review steps;22 referral-only cases remain distinct.225findings/106roles/228policycells exact,64 recent-fill medication groups/34patients and17 scoped dose/state rows/13patients preserved.251 current offline checks pass;0 providers in native recovery. Full live output/latency remains unsealed.",
+    "user_behavior_delta": "Existing Ask source attention reduces unnecessary field work, preserves source-linked typed findings and current clinician distinctions; full57-patient interactive/PDF/CSV/JSON result saves/reopens. Partial answers now create internal source-evidence review work only; clinical programs remain gated.",
+    "measured_failure_reduction": "56063to14469 scheduled source-field tasks with every57patient/106datedrole retained; corrected35to57 unestablished structured cardiology assignments; former packet-envelope blocks removed exactly;57patient proposed-review sections visible; partial-answer source-review deadlock removed with two current tasks and unchanged clinical guards.194.48s noncold revalidation/10validated new requests,0 repeated extraction.225sourcebindings/228policycells/1653CSVcells agree; this is not semantic or clinical qualification.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -601,10 +601,15 @@
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/regression-receipt.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/run-protocol.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/run-receipt.json",
-      "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/completion-audit.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/final/completion-audit.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/run-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/completion-audit.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/pdf-visual-audit.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/ui-and-work-audit.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json"
     ],
-    "remaining_gap": "Current old answer is retained for inspection because planning code changed. New current canonical revalidation, targeted remaining support checks, readable PDF/interactive acceptance and all-attempt accounting remain. Independent semantic/source-family/clinical qualification remains distinct.",
-    "next_action": "Execute finishing/run-protocol.json through existing compose using retained19 native actions and source cache. Freeze product/source until owned revalidation terminal; no full provider source reread. Verify two former packet-envelope dependencies now fit with exact decoded values, preserve any semantic unknown, show proposed_review_steps for all57, then audit current canonical reopen/exports/PDF and actual interactive controls.262 pre-final regression checks passed; recommendation-field regression subsequently passes; clinical/model qualification remains unassessed. Scheduler PAUSED.",
+    "remaining_gap": "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies.",
+    "next_action": "Inspect the two retained inconclusive patient support packets (SYN-96669EC8-4BA and SYN-FB40A1A6-9E5) against exact saved source/entity/time relationships, using their current internal evidence-review tasks. Classify a reproducible field defect versus verifier uncertainty or missing evidence before any new call. Then qualify the specific routing/semantic role that fails against appropriate existing authored/simple baselines; preserve source-family boundaries, unknowns, failed keys and all ten areas. Do not repeat the full document scan or launch untargeted training.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -615,41 +620,14 @@
     },
     "coordination": "No provider/training/build worker currently active; existing candidate7180 on8888 is the last known-good scoped engineering build. New role rerun work is isolated and accounted.",
     "remaining_blockers": [
-      {
-        "id": "B1",
-        "area": "Clinical compound and current state",
-        "status": "engineering_accepted_clinical_unqualified",
-        "gap": "Current six individual and two population workflows pass; original full HFrEF recheck remains partial with19unknown whole-packet judgments. Clinical treatment suitability and accuracy remain unqualified.",
-        "completion": "Independent qualified clinical/outcome validation; preserve all supported unknowns."
-      },
-      {
-        "id": "B2",
-        "area": "Unfamiliar and multi-domain composition",
-        "status": "engineering_accepted_model_unqualified",
-        "gap": "Fresh finance32, utilization237 and appointment196 groups reconcile; current six cases and two programs plus paired routing pass. Independent model-role generalization, relevance/recall and an overall baseline winner remain unqualified.",
-        "completion": "Appropriate source-family-disjoint role evaluation, meaningful error/coverage comparisons and declared qualification boundaries."
-      },
-      {
-        "id": "B3",
-        "area": "Faithful deliverables and local operations",
-        "status": "engineering_accepted_performance_limit_retained",
-        "gap": "Grouped report repair, current UI/API, durable evidence, actual archive/startup/reopen/CAS/idempotency/restart/WAL rollback/restore passed. Native revalidation remains slow and original external resources remain required.",
-        "completion": "No missing current local engineering check; retain measured latency and same-platform dependency limits."
-      },
-      {
-        "id": "B4",
-        "area": "Independent qualification and production prerequisites",
-        "status": "unassessed_external_dependencies",
-        "gap": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-        "completion": "Independent model/method and clinical evidence, viable data/labels, authentic economics and separately authorized governed customer/clinical production connections."
-      }
+      "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies."
     ],
     "latest_progress": {
-      "at": "2026-10-30T13:01:07.959782+00:00",
-      "status": "full_stack_execution_scope_reopened",
-      "jev_live_probe": "passed",
-      "old_engineering_receipt_preserved": true,
-      "entire_stack_complete": false
+      "at": "2026-10-30T17:19:10.979815+00:00",
+      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json",
+      "code_commit": "95a681f",
+      "context_id": "ANS-c9cb98c5af2f6e4da23a7eae",
+      "all_ten_areas_retained": true
     },
     "results_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
     "native_shape_followup": {
@@ -680,12 +658,12 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "kind": "finite_current_local_engineering_acceptance",
-      "status": "passed",
-      "receipt": "artifacts/agere-current-mvp-2026-10-30/delivery-receipt.json",
-      "engineering": "9/9",
+      "kind": "scoped_integrated_original_workflow_delivery",
+      "status": "passed_with_explicit_quality_gaps",
+      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json",
       "full_charter_qualified": false,
-      "active_worker": null
+      "active_worker": null,
+      "earlier_nine_check_scope": "Six-source-case/program/local-recovery engineering, not complete integrated MVP qualification"
     },
     "latest_human_steering": "Mike is stepping away and explicitly requests continued autonomous MVP completion. Continue active work directly; do not repeat scope approvals. Attempted heartbeat reactivation was rejected by automatic approval review because the earlier automatic-prompt pause lacked explicit reversal. Heartbeat remains PAUSED; no workaround or retry without new human authorization.",
     "comparison_status": {
@@ -701,16 +679,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T16:29:44.547717+00:00",
-    "workflow_change": "Existing lossless codec can expand canonically serialized JSON cells solely in the wire view and restore exact original strings; candidate packet sizes108069/127473/120809bytes with every state value/source identical. Print projection indexes duplicated native/audit metadata and retains complete attachment,330to238pages. Visual QA caught proposed_review_steps misclassification; shared recommendation pattern corrected, all57 actual rows recognized. No new clinical inference or model-default activation.",
+    "at": "2026-10-30T17:19:10.979815+00:00",
+    "workflow_change": "Current95a681f canonical ANS-c9cb98c5af2f6e4da23a7eae and DLV-869FD1C9513F verified offline and in the live local app.189 durable evidence/code/result files independently hash-verified; all live ledger rows preserved.69 focused work/dependency regressions pass.",
     "unsealed_work": {
-      "status": "finishing_revalidation_prepared",
-      "path": "artifacts/agere-full-stack-rerun-2026-10-30",
-      "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
-      "next_action": "Execute finishing/run-protocol.json through existing compose using retained19 native actions and source cache. Freeze product/source until owned revalidation terminal; no full provider source reread. Verify two former packet-envelope dependencies now fit with exact decoded values, preserve any semantic unknown, show proposed_review_steps for all57, then audit current canonical reopen/exports/PDF and actual interactive controls.262 pre-final regression checks passed; recommendation-field regression subsequently passes; clinical/model qualification remains unassessed. Scheduler PAUSED.",
-      "source_frozen_for_run": true,
-      "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/finishing/run-protocol.json"
+      "status": "integrated_workflow_delivered_qualification_open",
+      "path": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network",
+      "remaining_gap": "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies.",
+      "next_action": "Inspect the two retained inconclusive patient support packets (SYN-96669EC8-4BA and SYN-FB40A1A6-9E5) against exact saved source/entity/time relationships, using their current internal evidence-review tasks. Classify a reproducible field defect versus verifier uncertainty or missing evidence before any new call. Then qualify the specific routing/semantic role that fails against appropriate existing authored/simple baselines; preserve source-family boundaries, unknowns, failed keys and all ten areas. Do not repeat the full document scan or launch untargeted training.",
+      "source_frozen_for_run": false,
+      "authorization": "Mike2026-10-30: current synthetic warehouse/full MVP approved, Jev restored, private pushes permitted; no repeated approval.",
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json"
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -2147,16 +2125,27 @@
         "artifacts/agere-full-stack-rerun-2026-10-30/focused/completed-source-recovery.json"
       ],
       "scope_impact": "No charter reduction. Existing typed assertions/state/native composition only; no full provider source rerun, model/default activation or new architecture."
+    },
+    {
+      "at": "2026-10-30T17:19:10.979815+00:00",
+      "gate": "G5",
+      "decision": "Seal the connected focused workflow and partial-evidence review increment with exact source/export/work/durable evidence. Keep G5 active for qualified semantic/role/cold-economics evidence; retain uncertainty rather than treating partial support as a failed delivery or a clinical pass. Restricted launch interrupted after observed DNS failure; pending usage retained.",
+      "evidence": [
+        "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json",
+        "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/completion-audit.json",
+        "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/ui-and-work-audit.json"
+      ],
+      "scope_impact": "All ten areas retained. Existing modular tools/state/work only; no new care authority, model default, main merge, publication, scheduler activation or protected evaluation."
     }
   ],
   "unsealed_work": {
-    "status": "finishing_revalidation_prepared",
-    "path": "artifacts/agere-full-stack-rerun-2026-10-30",
-    "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
-    "next_action": "Execute finishing/run-protocol.json through existing compose using retained19 native actions and source cache. Freeze product/source until owned revalidation terminal; no full provider source reread. Verify two former packet-envelope dependencies now fit with exact decoded values, preserve any semantic unknown, show proposed_review_steps for all57, then audit current canonical reopen/exports/PDF and actual interactive controls.262 pre-final regression checks passed; recommendation-field regression subsequently passes; clinical/model qualification remains unassessed. Scheduler PAUSED.",
-    "source_frozen_for_run": true,
-    "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
-    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/finishing/run-protocol.json"
+    "status": "integrated_workflow_delivered_qualification_open",
+    "path": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network",
+    "remaining_gap": "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies.",
+    "next_action": "Inspect the two retained inconclusive patient support packets (SYN-96669EC8-4BA and SYN-FB40A1A6-9E5) against exact saved source/entity/time relationships, using their current internal evidence-review tasks. Classify a reproducible field defect versus verifier uncertainty or missing evidence before any new call. Then qualify the specific routing/semantic role that fails against appropriate existing authored/simple baselines; preserve source-family boundaries, unknowns, failed keys and all ten areas. Do not repeat the full document scan or launch untargeted training.",
+    "source_frozen_for_run": false,
+    "authorization": "Mike2026-10-30: current synthetic warehouse/full MVP approved, Jev restored, private pushes permitted; no repeated approval.",
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json"
   },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
