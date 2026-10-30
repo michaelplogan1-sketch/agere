@@ -1,10 +1,10 @@
-# Current Agere checkpoint — 2026-10-30T21:53:29.026866+00:00
+# Current Agere checkpoint — 2026-10-30T23:06:12.065979+00:00
 
-Build ACTIVE,G5; sole owner; schedulerPAUSED. Two missing source fields running on frozen387df4f.
+Build ACTIVE,G5; sole owner; schedulerPAUSED. Current actual recovery test on frozen9222b9d.
 
-Current57patient named-medication report passes all58typed source packets, with no missing source contexts (57.17s,$0.196639814APIestimate,0Claude). All1197native cells matchCSV;112-pagePDF embeds exactcurrent context and namesall64medicationgroups. Coverage remains partial: original narrative questions did not query actual regimen/dose or individual tolerated maximum. The sole targeted follow-up now queries those two literal source fields for all57through existing focused review; original reasons and planning are not repeated. Current installed report recovery remains open.
+Source transport now fits every previously oversized dependency with exact reconstruction, no sampling or lost sources;161relevant regressions and linked/background live controls pass. The new source-level review exposed a timing disagreement in one continuation/plan note and left other candidate source readings uncertain/unchecked. It is not expert-adjudicated ground truth. Final report remains explicitly partial/unverified:57patients,1254exactCSVcells,112-pagePDF with full current context,64namedmedicationgroups,26currentPCPs,noestablishedcurrentcardiologist. Current physical installation/restart/restore is running. No trained-model gain or newweightactivation has been demonstrated.
 
-Next action: Inspect sole targeted-regimen source job PID32945/session77643 at artifacts/agere-full-stack-rerun-2026-10-30/targeted-regimen-completion/run-receipt.json until terminal. Product/source frozen on387df4f; do not duplicate provider or native work. Preserve precise source results, measure unknowns/cost, then complete current export/source checks and installed restart/restore acceptance. Fix only observed recovery/read-route defects after run terminal. Retain all ten areas and independent clinical/model/external gaps.
+Next action: Inspect sole actual installed-recovery job PID36665/session21637 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery/run-receipt.json until terminal. Product/source frozen on9222b9d; do not duplicate archive/checkpoint or provider work. Current partial report ANS-268f5cd8a87b74dca8659e38 /DLV-1AA3FF5EA616 has passed exact export/current reopen. Verify installed report/work, restart, WAL rollback, real changed-source refusal and fresh restore with current shared accounting unchanged. Then durable evidence/UI/cost/private-push closeout. Keep source model disagreement provisional and all ten areas/qualification/external dependencies explicit; no new weights/default/clinical promotion.
 
 ## Earlier checkpoint (superseded)
 
