@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-29T23:02:51.115425+00:00",
+  "updated_at": "2026-10-30T00:23:18.994541+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "billing_circuit_verified_broad_transfer_next",
+    "kind": "current_population_v2_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Retained-source continuation now computes exact registered-GDMT source cells, keeps broader beta-blocker context separate, compiles numeric prose and proposes conditional per-patient review steps. The remaining blocker is localized to JSON argument dependency resolution.",
-    "measured_failure_reduction": "Registered source-policy disagreements8to0 across228cells; numeric prose repaired after first feedback. Whole source readings reused; no new document-reader provider calls. Final verification remains blocked, not accepted.",
+    "user_behavior_delta": "Shared source-to-result composition now preserves requested medication class/dose domains, dated literal roles, numeric bindings and complete source-verification envelopes. Actual finance question produced an answered32group report; a failed provider account falls back after one retained billing attempt per process.",
+    "measured_failure_reduction": "Original HFrEF8of228source-policycells repaired to0;3unsupported assigned-clinician observations removed by source-specific rechecks; corrected15group-dose objects separated from74other/9unclassified; latest fieldfeedback empty. Finance32groups and256source-or-derivedcells match withheld baseline; all352CSVcells and native JSON rows exact. No broad clinical or whole-packet qualification inferred.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -486,11 +486,28 @@
       "artifacts/agere-meaning-integration-2026-10-29/ef-source-supplement-v1/source-audit.json",
       "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/preflight-v1/receipt.json",
       "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/receipt.json",
-      "artifacts/agere-meaning-integration-2026-10-29/provider-credit-protection-v1/receipt.json"
+      "artifacts/agere-meaning-integration-2026-10-29/provider-credit-protection-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/payer_finance/run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/payer_finance/source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/hospital_utilization/run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/hospital_utilization/source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/appointment_access/run-receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/appointment_access/source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/scoped-repairs-verification.json",
+      "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/appointment_access/native-scope-repair.json",
+      "artifacts/agere-meaning-integration-2026-10-29/report-scope-repair-v1/receipt.json",
+      "artifacts/agere-meaning-integration-2026-10-29/role-feedback-v1/after.json",
+      "artifacts/agere-meaning-integration-2026-10-29/access-recovery-v1/appointment_access/source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/parameterized-reuse-v2/source-audit.json",
+      "artifacts/agere-meaning-integration-2026-10-29/parameterized-reuse-v2/guard-audit-interruption.json",
+      "artifacts/agere-meaning-integration-2026-10-29/finite-current-receipt-audit.json",
+      "artifacts/agere-current-mvp-2026-10-30/population/run-receipt.json",
+      "artifacts/agere-current-mvp-2026-10-30/population-v2/respiratory/source-audit.json",
+      "artifacts/agere-current-mvp-2026-10-30/preparation.json",
+      "artifacts/agere-current-mvp-2026-10-30/health.json"
     ],
-    "remaining_gap": "Eight registered-policy cell failures are removed and quantitative prose bindings now compile in the returned candidate. Analysis remains partial/unverified because JSON_EACH(current_dose) is not recognized as a value dependency by SQLGlot lineage and the guard falls back to every parent column, flagging an unrelated historical class CASE. Dose-domain completeness, source-supported proposals and normal final source/coverage acceptance still need verification. Broader transfer and model/clinical qualification remain open.",
-    "next_action": "The provider billing circuit is verified: 108 offline tests passed, two optional live tests skipped. The first HTTP402 stays metered; subsequent new requests for that provider/credential in the same process are skipped before reservation, while exact successful cache reads and configured fallback still work. Another credential or a new process can probe restored service. No provider configuration, spending cap or model activation changed; no credits purchased. Next pin the three prepared finance/utilization/access protocols to this code and run them sequentially through the actual shared question-to-report path, with independent source baselines kept out of execution. Retain all failed attempts, cache/contribution/accounting, exact source/code pins and partial outputs; stop provider work on an actual Claude subscription limit. Do not repeat the unchanged HFrEF source review; its reports, field-level support and remaining broad-verifier uncertainty stay explicit. Then exercise parameterized reuse and scoped learning with regression/rollback evidence. All ten acceptance areas remain; scheduler paused; no active owned job.",
-    "next": "The owned recovery PID78956/session42023 has RETURNED; no provider/training/preview job. Audit its retained result, then repair the measured JSON table-function value-lineage gap in the existing medication group checker: dose_summary/proposed_dose_action incorrectly fall back to all parent columns and propagate an unrelated old beta-blocker CASE. Preserve strict actual class/predicate/count scope and use named generic regressions; no threshold waiver. The recovered57patient/228policy cells now exactly match source (8old discrepancies removed), numeric headline/facts have compiled bindings and proposals use per-patient native context, but the class guard still blocks final verification. Preserve all attempts and reuse complete source readings/native calculation state for the next normal verification or continuation; no full warehouse rescan. Then complete varied healthcare/financial transfer, parameterized bottling and role-attributed learning with regressions/rollback and all ten areas. Scheduler remains PAUSED after automatic review rejected reactivation; keep working directly in this active chat.",
+    "remaining_gap": "Dedicated current-snapshot connected-workflow and installed-operation evidence must be refreshed. Existing broad numeric/source/reuse results pass. Independent model/clinical qualification, unpriced local/reviewer economics, TypeSafe credits and external real-care connections remain explicit.",
+    "next_action": "Current full-population acceptance v2 RUNNING PID85043/session70400, receiptartifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json; freeze product sourceab73a77 and do not duplicate. Candidate8888readyPID84880/session91532 on isolated current-source runtime; source containsall4115rosterpatients. Respiratory112nominations match independent received-recordSQL exactly; all112member routes/internal review handoffs are being executed. V1stopped on an obsolete harness equality check: per-request request_execution_id differs, while saved decision/content was unchanged. V2 preserves both responses and compares all immutable data, excluding only the new per-request ID. No patient/service/work cap; clinicalservicecapacityunknown. Await actual terminal v2 receipt and then continue current-source finance/outcomes, prediction/discovery, changed-evidence, six original retained individual workflows and portable startup/recovery through existing modules. No old snapshot green status copiedforward; oldscorecardreceiptsremainhistorical. Broadsource32/237/196groups and typedreuse240cells/zero-provider changedyear resultsalready pass. Independentclinical/modelqualification and HFrEF19broadunknowns remain explicit. Alltenareasretained; no globalmodelpromotion, realcare, publication or newexternalservices. Schedulerpaused after rejectedreactivation; latesthuman directs overnightcompletion, so keepworkingdirectlywith no repeatedapprovals.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -499,7 +516,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Sole owner. No active provider/training job. Owned localhost inspection app on 8896, PID from rechecked-app-inspection-v5 receipt, session 52291; allow_live_stack false. Primary/design/older candidates untouched. Automatic heartbeat PAUSED via app tool at Mike direct request; manual active build.",
+    "coordination": "Only nativeworkflowjob PID85043/session70400. Server8888PID84880/session91532ready; staticpreview8896/session5587. No provider/trainingjob.",
     "remaining_blockers": [
       {
         "id": "B1",
@@ -512,14 +529,14 @@
         "id": "B2",
         "area": "Unfamiliar and multi-domain composition",
         "status": "open",
-        "gap": "General multi-step investigation now composes executed results, retains context and repairs incomplete answers. One ordinary payer/year comparison verified through API and UI; broad unfamiliar clinical and multi-domain correctness remains unqualified.",
+        "gap": "Fresh finance and utilization question-to-report transfers match withheld source baselines across32and237groups, with no inherited answers. Appointment access is running. Broader model/clinical correctness remains unqualified.",
         "completion": "Existing declared workflows and ordinary varied development questions preserve date, exclusion, threshold and saved-scope semantics across clinical, utilization, access/social, provider and financial/ACO domains; independently compare execution to source queries. Label authored contracts separately from interpretation."
       },
       {
         "id": "B3",
         "area": "Generated views and response time",
         "status": "open",
-        "gap": "Code-bound final tables render through the existing UI. Final workflow took 40.62 seconds with possible cached requests; this is not a cold-speed benchmark. Broad generated-output meaning and latency remain unqualified; earlier presentation limitations retained.",
+        "gap": "Native rows/JSON/CSV agree, but grouped PDF rows falsely use patient terminology and medication-recommendation missingness. Repair shared rendering after the frozen transfer terminates; preserve original reports and measured timings.",
         "completion": "Rendered outputs match saved evidence, preserve scope, and report measured timing; remove reproduced failures without new paid calls."
       },
       {
@@ -531,47 +548,16 @@
       }
     ],
     "latest_progress": {
-      "status": "returned_partial",
-      "receipt": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/run-receipt.json",
+      "status": "current_population_v2_running",
+      "code_commit": "ab73a77",
+      "owned_pid": 85043,
+      "owned_session": 70400,
       "active_provider_job": false,
       "active_training_job": false,
-      "phase": "json_value_lineage_repair",
-      "code_commit": "fee45fd54801b512c2195cc7a2e9d2b5802ad2a3",
-      "controller_receipt": "artifacts/agere-meaning-integration-2026-10-29/matched-current-comparison/owned-run.json",
-      "application_context_id": "ANS-41e9ba8445d3da4b371f2c02",
-      "readonly_preview": {
-        "status": "stopped",
-        "previous_pid": 76480,
-        "previous_session": 87697,
-        "port": 8896,
-        "receipt": "artifacts/agere-meaning-integration-2026-10-29/matched-app-inspection-v2/receipt.json"
-      },
-      "prior_offline_probes": {
-        "correction_attribution": [
-          "artifacts/agere-meaning-integration-2026-10-29/correction-attribution-probe/result.json",
-          "artifacts/agere-meaning-integration-2026-10-29/correction-attribution-probe/reuse-guard-result.json"
-        ],
-        "source_basis": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/source-basis.json",
-        "provider_calls": 0,
-        "training_jobs": 0,
-        "product_code_changed": false,
-        "document_inventory": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/document-inventory.json",
-        "broad_financial_source_basis": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/broad-structured-source-basis.json",
-        "provisional_accounting": "artifacts/agere-meaning-integration-2026-10-29/matched-source-audit/accounting-in-progress.json",
-        "qualification": "Source baselines and diagnostic behavior only; no question-path, clinical or superiority acceptance."
-      },
-      "verification": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/verification.json",
-      "owned_pid": 78956,
-      "owned_process_group": 78956,
-      "owned_session": 42023,
-      "protocol": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/run-protocol.json",
-      "preflight": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/preflight-v3/receipt.json",
-      "answer_status": "partial",
-      "context_id": "ANS-b9f9ea65206a1dd0f54ad62b",
-      "seconds": 360.37131487502484,
-      "known_api_equivalent_usd": 1.59345035,
-      "unpriced_request_rows": 0,
-      "source_audit": "artifacts/agere-meaning-integration-2026-10-29/shared-boundary-repair-v1/recovery/corrected-source-audit.json"
+      "finance_audit": "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/payer_finance/source-audit.json",
+      "utilization_audit": "artifacts/agere-meaning-integration-2026-10-29/broad-transfer-v1/hospital_utilization/source-audit.json",
+      "access_audit": "artifacts/agere-meaning-integration-2026-10-29/access-recovery-v1/appointment_access/source-audit.json",
+      "active_native_workflow_job": true
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
     "native_shape_followup": {
@@ -626,17 +612,17 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-29T23:02:51.115425+00:00",
-    "workflow_change": "Actual TypeSafe credit failure now opens a process/credential-scoped billing circuit. New requests use the configured fallback without repeatedly hitting an account with no credits. Existing successful exact provider receipts remain reusable; the first failed attempt and later skip receipts stay distinct.",
+    "at": "2026-10-30T00:23:18.994541+00:00",
+    "workflow_change": "Shared source-to-result composition now preserves requested medication class/dose domains, dated literal roles, numeric bindings and complete source-verification envelopes. Actual finance question produced an answered32group report; a failed provider account falls back after one retained billing attempt per process.",
     "unsealed_work": {
-      "status": "billing_circuit_verified_broad_transfer_next",
+      "status": "current_population_v2_running",
       "path": "artifacts/agere-meaning-integration-2026-10-29",
-      "remaining_gap": "The named source-class, role, dose-domain, EF-source and packet-envelope defects are repaired and source/claim closures pass. Broad source-verifier confidence and full clinical qualification remain unresolved, with no named field fault in latest checks; candidate reports remain partial. Jev has no available TypeSafe API credits. Broader transfer, parameterized reuse and scoped learning remain engineering work.",
-      "next_action": "The provider billing circuit is verified: 108 offline tests passed, two optional live tests skipped. The first HTTP402 stays metered; subsequent new requests for that provider/credential in the same process are skipped before reservation, while exact successful cache reads and configured fallback still work. Another credential or a new process can probe restored service. No provider configuration, spending cap or model activation changed; no credits purchased. Next pin the three prepared finance/utilization/access protocols to this code and run them sequentially through the actual shared question-to-report path, with independent source baselines kept out of execution. Retain all failed attempts, cache/contribution/accounting, exact source/code pins and partial outputs; stop provider work on an actual Claude subscription limit. Do not repeat the unchanged HFrEF source review; its reports, field-level support and remaining broad-verifier uncertainty stay explicit. Then exercise parameterized reuse and scoped learning with regression/rollback evidence. All ten acceptance areas remain; scheduler paused; no active owned job.",
+      "remaining_gap": "Dedicated current-snapshot connected-workflow and installed-operation evidence must be refreshed. Existing broad numeric/source/reuse results pass. Independent model/clinical qualification, unpriced local/reviewer economics, TypeSafe credits and external real-care connections remain explicit.",
+      "next_action": "Current full-population acceptance v2 RUNNING PID85043/session70400, receiptartifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json; freeze product sourceab73a77 and do not duplicate. Candidate8888readyPID84880/session91532 on isolated current-source runtime; source containsall4115rosterpatients. Respiratory112nominations match independent received-recordSQL exactly; all112member routes/internal review handoffs are being executed. V1stopped on an obsolete harness equality check: per-request request_execution_id differs, while saved decision/content was unchanged. V2 preserves both responses and compares all immutable data, excluding only the new per-request ID. No patient/service/work cap; clinicalservicecapacityunknown. Await actual terminal v2 receipt and then continue current-source finance/outcomes, prediction/discovery, changed-evidence, six original retained individual workflows and portable startup/recovery through existing modules. No old snapshot green status copiedforward; oldscorecardreceiptsremainhistorical. Broadsource32/237/196groups and typedreuse240cells/zero-provider changedyear resultsalready pass. Independentclinical/modelqualification and HFrEF19broadunknowns remain explicit. Alltenareasretained; no globalmodelpromotion, realcare, publication or newexternalservices. Schedulerpaused after rejectedreactivation; latesthuman directs overnightcompletion, so keepworkingdirectlywith no repeatedapprovals.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
       "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
       "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
-      "source_frozen_for_run": false,
+      "source_frozen_for_run": true,
       "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
     },
     "bottling_assessment": {
@@ -680,11 +666,11 @@
       "unaffected_work": "Continue the active authorized build directly in this chat."
     },
     "owned_recovery_run": {
-      "status": "returned",
-      "pid": 81718,
-      "session": 88379,
-      "receipt": "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/receipt.json",
-      "source_frozen": false
+      "status": "running",
+      "pid": 85043,
+      "session": 70400,
+      "receipt": "artifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json",
+      "source_frozen": true
     },
     "provider_dependency": {
       "provider": "jev",
@@ -1987,17 +1973,24 @@
       "basis": "Exact source/class/dose/role/envelope repairs and53-action replay pass; latest normal check reports no named field faults but uncertain broad judgments. Repeating unchanged evidence will not establish qualification. TypeSafe returned16HTTP402credit failures while Perplexity served fallback.",
       "scope_impact": "No threshold waiver, clinical/readiness claim or scope reduction. Fix billing retry behavior, then exercise the same shared product outside HF. All ten areas remain.",
       "evidence": "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/receipt.json"
+    },
+    {
+      "at": "2026-10-30T00:09:38.835384+00:00",
+      "decision": "Refresh current-snapshot acceptance before declaring MVP engineering completion.",
+      "basis": "All three source-only varied transfers and typed-parameter reuse pass, but unchanged historical dedicated capability receipts do not match the current source snapshot; historical individual medication trace was incomplete.",
+      "scope_impact": "Retain all ten areas and all old evidence. Execute existing connected workflows against current approved source; do not relabel old results as current, write a replacement architecture, or infer clinical/model qualification from local engineering.",
+      "evidence": "artifacts/agere-meaning-integration-2026-10-29/finite-current-receipt-audit.json"
     }
   ],
   "unsealed_work": {
-    "status": "billing_circuit_verified_broad_transfer_next",
+    "status": "current_population_v2_running",
     "path": "artifacts/agere-meaning-integration-2026-10-29",
-    "remaining_gap": "The named source-class, role, dose-domain, EF-source and packet-envelope defects are repaired and source/claim closures pass. Broad source-verifier confidence and full clinical qualification remain unresolved, with no named field fault in latest checks; candidate reports remain partial. Jev has no available TypeSafe API credits. Broader transfer, parameterized reuse and scoped learning remain engineering work.",
-    "next_action": "The provider billing circuit is verified: 108 offline tests passed, two optional live tests skipped. The first HTTP402 stays metered; subsequent new requests for that provider/credential in the same process are skipped before reservation, while exact successful cache reads and configured fallback still work. Another credential or a new process can probe restored service. No provider configuration, spending cap or model activation changed; no credits purchased. Next pin the three prepared finance/utilization/access protocols to this code and run them sequentially through the actual shared question-to-report path, with independent source baselines kept out of execution. Retain all failed attempts, cache/contribution/accounting, exact source/code pins and partial outputs; stop provider work on an actual Claude subscription limit. Do not repeat the unchanged HFrEF source review; its reports, field-level support and remaining broad-verifier uncertainty stay explicit. Then exercise parameterized reuse and scoped learning with regression/rollback evidence. All ten acceptance areas remain; scheduler paused; no active owned job.",
+    "remaining_gap": "Dedicated current-snapshot connected-workflow and installed-operation evidence must be refreshed. Existing broad numeric/source/reuse results pass. Independent model/clinical qualification, unpriced local/reviewer economics, TypeSafe credits and external real-care connections remain explicit.",
+    "next_action": "Current full-population acceptance v2 RUNNING PID85043/session70400, receiptartifacts/agere-current-mvp-2026-10-30/population-v2/run-receipt.json; freeze product sourceab73a77 and do not duplicate. Candidate8888readyPID84880/session91532 on isolated current-source runtime; source containsall4115rosterpatients. Respiratory112nominations match independent received-recordSQL exactly; all112member routes/internal review handoffs are being executed. V1stopped on an obsolete harness equality check: per-request request_execution_id differs, while saved decision/content was unchanged. V2 preserves both responses and compares all immutable data, excluding only the new per-request ID. No patient/service/work cap; clinicalservicecapacityunknown. Await actual terminal v2 receipt and then continue current-source finance/outcomes, prediction/discovery, changed-evidence, six original retained individual workflows and portable startup/recovery through existing modules. No old snapshot green status copiedforward; oldscorecardreceiptsremainhistorical. Broadsource32/237/196groups and typedreuse240cells/zero-provider changedyear resultsalready pass. Independentclinical/modelqualification and HFrEF19broadunknowns remain explicit. Alltenareasretained; no globalmodelpromotion, realcare, publication or newexternalservices. Schedulerpaused after rejectedreactivation; latesthuman directs overnightcompletion, so keepworkingdirectlywith no repeatedapprovals.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
     "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
     "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
-    "source_frozen_for_run": false,
+    "source_frozen_for_run": true,
     "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
   },
   "current_visual_request": {
