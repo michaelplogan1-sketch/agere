@@ -186,4 +186,67 @@ class LocalReview(unittest.TestCase):
                     self.assertEqual(out['status'],'unavailable');self.assertIsNone(out['feedback'])
 
 
+class SupportScheduling(unittest.TestCase):
+    def packet(self,name):
+        return {'id':name,'date':'2030-05-27','text':name,'bytes':len(name)}
+
+    def test_summary_fault_defers_other_patients_without_accepting_them(self):
+        seen=[]
+        def decide(question,options,evidence,**kw):
+            seen.append(evidence[0]['id'])
+            return {'label':'contradicted','decided_by':'fixture','steps':[]}
+        out=B.check_support_packets([self.packet(k)for k in ('summary','patient_A','patient_B')],decide,
+                                    as_of='2030-05-27',ledger=None)
+        self.assertEqual(seen,['summary'])
+        self.assertEqual(out['failed_packet_ids'],['summary'])
+        self.assertEqual(out['unchecked_packet_ids'],['patient_A','patient_B'])
+        self.assertFalse(out['all_dependencies_checked'])
+        self.assertTrue(all(p['label']=='unknown'and p['decided_by']is None for p in out['packets'][1:]))
+
+    def test_independent_patients_overlap_without_sharing_the_sqlite_handle(self):
+        import threading
+        from types import SimpleNamespace
+        barrier=threading.Barrier(2);seen=[]
+        def decide(question,options,evidence,**kw):
+            self.assertEqual(kw['ledger'],'one-ledger.sqlite3')
+            ident=evidence[0]['id'];seen.append(ident)
+            if ident!='summary':barrier.wait(timeout=2)
+            return {'label':'supported','decided_by':'fixture','steps':[{'provider':'fixture','cost_usd':0}]}
+        with patch.dict('os.environ',{'AGERE_SYSTEM_ONE_WORKERS':'2'}):
+            out=B.check_support_packets([self.packet(k)for k in ('summary','patient_A','patient_B')],decide,
+                as_of='2030-05-27',ledger=SimpleNamespace(path='one-ledger.sqlite3'))
+        self.assertEqual(set(seen),{'summary','patient_A','patient_B'})
+        self.assertEqual([p['id']for p in out['packets']],['summary','patient_A','patient_B'])
+        self.assertEqual(out['label'],'supported');self.assertTrue(out['all_dependencies_checked'])
+        self.assertEqual(len(out['steps']),3)
+
+    def test_custom_read_only_ledger_is_preserved_on_its_calling_thread(self):
+        import threading
+        ledger=SimpleNamespace(path='must-not-reopen.sqlite3',db=object())
+        owner=threading.get_ident()
+        def decide(question,options,evidence,**kw):
+            self.assertIs(kw['ledger'],ledger);self.assertEqual(threading.get_ident(),owner)
+            return {'label':'supported','decided_by':'fixture','steps':[]}
+        out=B.check_support_packets([self.packet(k)for k in ('summary','patient_A')],decide,
+                                    as_of='2030-05-27',ledger=ledger)
+        self.assertEqual(out['label'],'supported')
+
+    def test_inflight_receipts_survive_a_fault_and_unsent_patients_remain_unchecked(self):
+        import threading
+        found=threading.Event();seen=[]
+        def decide(question,options,evidence,**kw):
+            ident=evidence[0]['id'];seen.append(ident)
+            if ident=='patient_A':found.set()
+            if ident=='patient_B':self.assertTrue(found.wait(timeout=2))
+            return {'label':'contradicted'if ident=='patient_A'else'supported','decided_by':'fixture',
+                    'steps':[{'provider':'fixture','request_hash':ident,'cost_usd':.01}]}
+        with patch.dict('os.environ',{'AGERE_SYSTEM_ONE_WORKERS':'2'}):
+            out=B.check_support_packets([self.packet(k)for k in ('summary','patient_A','patient_B','patient_C')],decide,
+                                        as_of='2030-05-27',ledger=None)
+        self.assertEqual(set(seen),{'summary','patient_A','patient_B'})
+        self.assertEqual(out['unchecked_packet_ids'],['patient_C'])
+        self.assertEqual({s['request_hash']for s in out['steps']},set(seen))
+        self.assertNotEqual(out['label'],'supported')
+
+
 if __name__=='__main__':unittest.main()

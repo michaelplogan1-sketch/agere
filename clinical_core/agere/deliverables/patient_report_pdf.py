@@ -152,12 +152,16 @@ def render(context,output,references=None,evidence=None):
   if reviews:
    inventory={}
    for review in reviews:
+    scope=review.get('evidence_scope')
+    if review.get('source_scope')=='focused'and isinstance(scope,dict):
+     story.append(P('Focused source selection: '+str(scope.get('selected_documents'))+' of '+str(scope.get('inventory_documents'))+' source documents selected. Unmatched source/field combinations were not interpreted. Selected sources may still contain unresolved fields. This does not establish chart-wide absence.',small))
     for field,findings in (review.get('findings')or{}).items():
      q=(review.get('questions')or{}).get(field)
      name=('Prior machine observations for audit / '+label(field)if field in review.get('audit_only_fields',[])else
            'Source-bound candidate relation / '+label(q['relation'])+' / '+q['entity']['id']if isinstance(q,dict)else label(field))
      inventory.setdefault(name,set()).update(json.dumps(f,sort_keys=True)for f in findings or[])
-   story.extend([P('Complete narrative evidence inventory',head),P('; '.join(label(k)+': '+str(len(v))+' dated source findings'for k,v in inventory.items()),small),P('The full findings, their interpretations, exact quotations, source IDs, dates, coverage and limitations remain in the embedded compressed JSON and interactive companion. The final row above retains the analysis-selected examples and proposed actions.',small)])
+   heading='Narrative evidence within selected scope'if any(r.get('source_scope')=='focused'for r in reviews)else'Complete narrative evidence inventory'
+   story.extend([P(heading,head),P('; '.join(label(k)+': '+str(len(v))+' dated source findings'for k,v in inventory.items()),small),P('The full findings, their interpretations, exact quotations, source IDs, dates, coverage and limitations remain in the embedded compressed JSON and interactive companion. The final row above retains the analysis-selected examples and proposed actions.',small)])
 
  if references:
   story.extend([PageBreak(),P('Reference framework',title),P('These are source references for the report, not evidence that an individual meets a treatment indication or can tolerate a particular dose.')])

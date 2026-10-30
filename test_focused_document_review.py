@@ -191,5 +191,19 @@ class StableObservations(unittest.TestCase):
         self.assertTrue(limits);self.assertIn('empty finding',limits[0])
         self.assertEqual(D.source_scope_limits([{'source_scope':'all'}]),[])
 
+    def test_saved_report_carries_selected_scope_without_promoting_unknown_fields(self):
+        from clinical_core.agere.deliverables.patient_evidence import projection
+        scope={'inventory_documents':10,'selected_documents':2,'field_documents':{'reason':2},
+               'field_applicability':{'reason':True},'complete_chart_review':False,'absence_established':False,
+               'sources':[{'record_id':'unselected'}]}
+        context={'investigation':{'document_reviews':[{'source_scope':'focused','questions':{'reason':question('MRI')},
+            'rows':[{'patient_id':'A','review_json':'{}','source_clinicians_json':'[]',
+                     'evidence_scope_json':json.dumps(scope),'review_unresolved_json':'[{"field":"reason"}]'}]}]}}
+        row=projection(context)['notes']['A'][0]
+        self.assertEqual(row['source_scope'],'focused');self.assertEqual(row['evidence_scope']['selected_documents'],2)
+        self.assertFalse(row['evidence_scope']['absence_established']);self.assertEqual(row['unresolved_source_fields'],1)
+        self.assertNotIn('sources',row['evidence_scope'])
+        self.assertEqual(context['investigation']['document_reviews'][0]['rows'][0]['evidence_scope_json'],json.dumps(scope))
+
 
 if __name__=='__main__':unittest.main()

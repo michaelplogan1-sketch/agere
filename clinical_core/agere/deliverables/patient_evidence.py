@@ -35,8 +35,19 @@ def projection(context):
             raw_roles=row.get('source_clinicians_json')or'[]'
             try:roles=json.loads(raw_roles)if isinstance(raw_roles,str)else raw_roles
             except (TypeError,ValueError):roles=None
+            try:
+                scope=row.get('evidence_scope_json')
+                scope=json.loads(scope)if isinstance(scope,str)else scope
+                scope={k:scope[k]for k in ('inventory_documents','selected_documents','field_documents','field_applicability',
+                    'complete_chart_review','absence_established','expansion')if k in scope}if isinstance(scope,dict)else None
+                pending=row.get('review_unresolved_json')
+                pending=json.loads(pending)if isinstance(pending,str)else pending
+                unresolved=len(pending)if isinstance(pending,list)else None
+            except (TypeError,ValueError):scope=None;unresolved=None
             notes.setdefault(pid, []).append({
                 'source_clinicians':roles,
+                'source_scope':review.get('source_scope'),
+                'evidence_scope':scope,'unresolved_source_fields':unresolved,
                 'questions': questions, 'findings': found,
                 'audit_only_fields':audit_fields,
                 'candidate_review_scope':review.get('candidate_observation_review'),

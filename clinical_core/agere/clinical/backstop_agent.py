@@ -1080,7 +1080,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             operational_receipts='Retained by native digest; excluded from clinical model context')
         support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,field_decider=getattr(gate.s1(),'judge_fields',None))
         n, usd = gate.cost(support)
-        assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback')},
+        assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback',
+                          'checked_source_packets','unchecked_packet_ids','all_dependencies_checked')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
         if coverage['label'] in ('answers_partially', 'answers_a_different_question'):
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
@@ -1308,6 +1309,13 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
 
 
 def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
+    """Repair a diagnosed dependency before buying unrelated source checks.
+
+    The first packet normally owns the global summary. Once it clears that
+    stage, independent packets may run concurrently using separate ledger
+    connections. Unscheduled dependencies stay explicitly unchecked; no early
+    return can confirm the answer. In-flight responses always finish/account.
+    """
     logical_count=len(packets);scheduled=[]
     for packet in packets:
         if packet['bytes']>240000 and packet.get('source_context_complete') is not False:
@@ -1317,18 +1325,25 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
             except (ValueError,KeyError,TypeError,IndexError):
                 pass  # retain the complete unresolved dependency below
         scheduled.append(packet)
-    results=[];steps=[]
-    for packet in scheduled:
+    # System One opens/closes a connection when given a path. A caller's SQLite
+    # handle must never be shared among concurrent verification workers.
+    from ..gateway import BudgetLedger
+    parallel_safe=not hasattr(ledger,'db')or type(ledger)is BudgetLedger
+    # Preserve custom/read-only ledger behavior rather than opening its file
+    # through the ordinary writable constructor. Ordinary connections reopen
+    # the same persisted authorization and failed-key protections.
+    worker_ledger=getattr(ledger,'path',ledger)if parallel_safe else ledger
+    def check(packet):
+        steps=[]
         if packet.get('source_context_complete')is False:
-            results.append({'id':packet['id'],'label':'unknown','decided_by':None,
-                'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'})
-            continue
+            return {'id':packet['id'],'label':'unknown','decided_by':None,
+                'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'},steps
         if packet['bytes']>240000:
-            results.append({'id':packet['id'],'label':'unknown','decided_by':None,
-                'reason':'Complete dependency exceeds conservative provider context envelope; retain it for explicit partition/repair, never truncate.'});continue
+            return {'id':packet['id'],'label':'unknown','decided_by':None,
+                'reason':'Complete dependency exceeds conservative provider context envelope; retain it for explicit partition/repair, never truncate.'},steps
         result=decider('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
-            task_key='agere_investigation_support_dependency',ledger=ledger,allow_live=True,select_source=False,
+            task_key='agere_investigation_support_dependency',ledger=worker_ledger,allow_live=True,select_source=False,
             long_context=packet['bytes']>32768)
         checked={'id':packet['id'],**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
         if packet.get('parent_packet_id'):checked['parent_packet_id']=packet['parent_packet_id']
@@ -1338,7 +1353,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
             needs_diagnosis=responded and field_decider and packet.get('claim_manifest')
         else:needs_diagnosis=False
         if needs_diagnosis:
-            localized=localize_support_failure(packet,field_decider,as_of=as_of,ledger=ledger)
+            localized=localize_support_failure(packet,field_decider,as_of=as_of,ledger=worker_ledger)
             checked['claim_feedback']=localized['feedback'];steps.extend(localized['steps'])
             faults=[f for f in localized['feedback']if f.get('decided_by') and f['label']!='unknown']
             if faults:
@@ -1348,13 +1363,48 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
                 checked.update(label='unknown',decided_by=None,reason='Local checks did not identify a fault, but the complete source check remains unresolved; no support is inferred.')
             elif not localized['feedback']:
                 checked.update(label='unknown',decided_by=None,reason='Packet and claim checks disagree; retain unresolved support and inspect this dependency.')
-        results.append(checked)
         steps.extend(result.get('steps')or[])
+        return checked,steps
+    def fault(result):
+        return result.get('label')in ('contradicted','not_established')and bool(result.get('decided_by'))
+    observed={}
+    if scheduled:observed[0]=check(scheduled[0])
+    if len(scheduled)>1 and not fault(observed[0][0])and not parallel_safe:
+        for index in range(1,len(scheduled)):
+            observed[index]=check(scheduled[index])
+            if fault(observed[index][0]):break
+    elif len(scheduled)>1 and not fault(observed[0][0]):
+        from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
+        workers=min(len(scheduled)-1,max(1,int(os.environ.get('AGERE_SYSTEM_ONE_WORKERS','8'))))
+        with ThreadPoolExecutor(max_workers=workers,thread_name_prefix='agere-source-check')as pool:
+            pending={};remaining=iter(range(1,len(scheduled)));stopped=False
+            def fill():
+                while not stopped and len(pending)<workers:
+                    index=next(remaining,None)
+                    if index is None:break
+                    pending[pool.submit(check,scheduled[index])]=index
+            fill()
+            while pending:
+                completed,_=wait(pending,return_when=FIRST_COMPLETED)
+                for future in completed:
+                    index=pending.pop(future);observed[index]=future.result()
+                    stopped=stopped or fault(observed[index][0])
+                fill()
+    results=[];steps=[];unchecked=[]
+    for index,packet in enumerate(scheduled):
+        if index in observed:
+            checked,receipts=observed[index];results.append(checked);steps.extend(receipts)
+        else:
+            unchecked.append(packet['id'])
+            results.append({'id':packet['id'],'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
+                'reason':'Not sent: repair the diagnosed dependency first. This packet has not been accepted or rejected.'})
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
     return {'label':'supported'if settled else failed[0]['label']if failed else 'unknown',
         'decided_by':'all_dependency_checks'if settled or failed else None,'steps':steps,'packets':results,
-        'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),'failed_packet_ids':[r['id']for r in failed],
+        'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),
+        'checked_source_packets':len(observed),'unchecked_packet_ids':unchecked,
+        'all_dependencies_checked':not unchecked,'failed_packet_ids':[r['id']for r in failed],
         'claim_feedback':[f for r in results for f in r.get('claim_feedback',[])]}
 
 
@@ -1542,8 +1592,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
             # the quotes travel in the visible text too ("RECORD_ID date: "quote""), so a reader sees the evidence with the answer
             if kept and a.get('headline'):
                 a['evidence_text'] = ' | '.join(f'{s["record_id"]} {s.get("date") or ""}: "{s["quote"]}"' for s in kept[:4])
-            a['limitations'] = list(dict.fromkeys(notes + ['Answered by the final backstop analyst (Claude) with read-only SQL and document tools after every earlier '
-                                        'layer declined; its queries and quotes are shown and were checked, not certified.']))
+            a['limitations'] = list(dict.fromkeys(notes + ['Answered by the final backstop analyst (Claude), using native calculations and source observations. '
+                                        'The execution and source checks do not establish independent clinical certification.']))
             out['answer'] = a
         return out
     finally:
