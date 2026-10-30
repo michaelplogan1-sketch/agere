@@ -1,12 +1,14 @@
-# Current Agere checkpoint — 2026-10-30T19:18:23.046552+00:00
+# Current Agere checkpoint — 2026-10-30T20:25:25.984370+00:00
 
-Build ACTIVE,G5; sole owner; scheduler PAUSED. Candidate556a5a4pushedprivate. Source-block relation probe passed both Jev/Perplexity,187regressions and prior full57render evidence retained.
+Build ACTIVE,G5; sole owner; schedulerPAUSED; no active provider/training/build job. Candidate52284fe committed for private branch. Primary/default unchanged; no current8890server. Report-only preview8891/v3 is available.
 
-Ordinary attempt1 exposed and was stopped for a confirmed configuration bug: no typed adapter plus fallback-off still entered the base-model long-prompt path. It is terminal,source/code/prior ledger unchanged and zero new API attempts. Fix passes13native-worker tests and93targeted routing/source/learning tests. Full integrated result/cost and current acceptance/recovery remain pending.
+52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues→0in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open.
 
-Next action: Commit the verified local typed-fallback fix, then pin and launch a new ordinary-route attempt in artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair. Retain the failed first attempt and195.874832seconds/zero new provider calls. Missing qualified adapter plus explicit fallback-off must decline before spawning/generation. Keep source/model caches explicitly warm; supply no recovery actions or prior answer. Freeze product during the new job, then audit full cost/roles, source relations, current unknowns, report fidelity and post-run candidates before delivery. All ten areas and qualification/recovery requirements remain.
+Evidence: artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/receipt.json. CanonicalANS-2cfa9fbc612c74e12be1d189; current artifactDLV-63FE052930DB. Ordinary attempt2 retained19m44s/$3.183520416API-equivalent across1434pricedattempts; no matched cold cost advantage claimed. All4829ledgerrows preserved. The suspected26-PCP omission was disproved and no omission guard shipped; current reading separates roles using source snapshot state.
 
-No owned provider/model/build worker active; source unfrozen after terminal receipt. New small fallback fix is uncommitted. No default activation, clinical/model superiority, external publication, merge or narrowed acceptance.
+Next action: Continue the ordinary controller on the original full question using retained current native evidence and precise scope feedback, without repeating source discovery. Demonstrate autonomous correction/canonical named HTML/PDF/CSV delivery with all-attempt cost, then qualify checked reuse/role-specific learning and verify the current installed runtime/recovery. No inherited clinical/support acceptance; retain all ten areas and scheduler PAUSED.
+
+No default/model promotion, clinical readiness, full-MVP claim, main merge, publication or narrowing of the charter. Last sealed owner receipt unchanged.
 
 ## Earlier checkpoint (superseded)
 

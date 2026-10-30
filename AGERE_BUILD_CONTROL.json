@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T19:18:23.046552+00:00",
+  "updated_at": "2026-10-30T20:25:25.984370+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -375,11 +375,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "clinician_review_and_cost_repair_candidate",
+    "kind": "native_handoff_scope_repair_verified_candidate",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Named patient/clinician profiles and readable HTML/PDF/CSV are offline verified. Browser QA found a background-only source block under a beta-blocker reason. Shared reader now checks whole-source entity linkage and independently classifies target-block relation support before accepting polarity/time/subject axes. Unsupported/background candidates remain explicit gaps and avoid repeated frontier reads. Both Jev and Perplexity rejected the original background block and retained the actual non-use account in the matched two-case probe.",
-    "measured_failure_reduction": "187focused regressions pass. Existing57-patient render retained1653original cells,228pillar fields,225original observations and17dose/state rows; PDF105vs239pages. Native link replay withheld23unlinked machine candidates, retained57patients/106datedroles,zero providers and unchanged source/ledger. The distinct original background example required relation support: bothproviders rejected it and retained the actual non-use account in2.145842seconds,5validatedattempts,$0.000618576APIestimate. Offline transport1376421\u219233601requestbytes,63108compiledmessagebytes with lossless native feedback. These are scoped evidence, not clinical accuracy or full integrated cost savings. Ordinary route exposed ignored fallback-off for missing typed adapter; controlled interruption preserved all accounting. Parent and worker now enforce configured decline;13native-worker and93targeted regressions pass.",
+    "user_behavior_delta": "Named report carries source-defined clinical context, explicit fill window, current care assignment clocks and exact source accounts across HTML/PDF/CSV. Shared controller now ignores temporary-view churn in evidence progress and recognizes its registered documentation premise. Requested dose domain and observed missing fill-window errors receive deterministic feedback.",
+    "measured_failure_reduction": "Actual7retained final drafts collapse to1bound native evidence state. Authored9native-action correction preserves57patients, removes70detected scope issues, retains all89dose/state objects (17GDMT+72other context),152findings and106datedroles. All1425corrected result CSVcells exact; full context embedded in109-pagePDF. Canonical current source/derivation/premise reopen passes.157targeted regressions plus9profile/domain reruns pass. Zero newprovider calls; all4829ledger rows unchanged. No ordinary autonomous pass or clinical/model claim.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -619,10 +619,17 @@
       "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/run-receipt.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/interruption-diagnosis.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/local-worker-native-tests.log",
-      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/routing-fix-tests.log"
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/routing-fix-tests.log",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair/run-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair/handoff-scope-tests.log",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair/progress-evidence-audit.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair/final-scope-tests-v3.log",
+      "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair/final-profile-tests.log",
+      "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/deliverable.json"
     ],
-    "remaining_gap": "Ordinary attempt1 exposed and was stopped for a confirmed configuration bug: no typed adapter plus fallback-off still entered the base-model long-prompt path. It is terminal,source/code/prior ledger unchanged and zero new API attempts. Fix passes13native-worker tests and93targeted routing/source/learning tests. Full integrated result/cost and current acceptance/recovery remain pending.",
-    "next_action": "Commit the verified local typed-fallback fix, then pin and launch a new ordinary-route attempt in artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair. Retain the failed first attempt and195.874832seconds/zero new provider calls. Missing qualified adapter plus explicit fallback-off must decline before spawning/generation. Keep source/model caches explicitly warm; supply no recovery actions or prior answer. Freeze product during the new job, then audit full cost/roles, source relations, current unknowns, report fidelity and post-run candidates before delivery. All ten areas and qualification/recovery requirements remain.",
+    "remaining_gap": "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open.",
+    "next_action": "Continue the ordinary controller on the original full question using retained current native evidence and precise scope feedback, without repeating source discovery. Demonstrate autonomous correction/canonical named HTML/PDF/CSV delivery with all-attempt cost, then qualify checked reuse/role-specific learning and verify the current installed runtime/recovery. No inherited clinical/support acceptance; retain all ten areas and scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -631,9 +638,9 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "No provider/training/build worker currently active; existing candidate7180 on8888 is the last known-good scoped engineering build. New role rerun work is isolated and accounted.",
+    "coordination": "No provider/training/native job active. Ordinary attempt2 returned;8890stopped,8891retained-report preview only. Primary/default and earlier known-good recovery unchanged. Scheduler PAUSED.",
     "remaining_blockers": [
-      "Current integrated57-patient source-to-answer/export/internal-review workflow is delivered, with two machine source-support checks inconclusive and exact reviewed-source limits visible. Source-selection recall, independent semantic/clinical quality, task-specific model/learning qualification, cold performance and complete compute/reviewer economics remain unqualified. Actual current full-runtime restore is not retested; prior tested5f095dc release remains recovery point. Production authority and viable outcome labels remain separate dependencies."
+      "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open."
     ],
     "latest_progress": {
       "at": "2026-10-30T17:19:10.979815+00:00",
@@ -678,7 +685,7 @@
       "active_worker": null,
       "earlier_nine_check_scope": "Six-source-case/program/local-recovery engineering, not complete integrated MVP qualification"
     },
-    "latest_human_steering": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist.",
+    "latest_human_steering": "Mike posted the Wollstonecraft visual himself and asks current MVP status. Prior autonomous synthetic/provider/private-push authorizations persist; no automated prompts requested.",
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
       "status": "all_three_returned_analytically_partial",
@@ -692,15 +699,15 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T19:18:23.046552+00:00",
+    "at": "2026-10-30T20:25:25.984370+00:00",
     "workflow_change": "Named patient/clinician profiles and readable HTML/PDF/CSV are offline verified. Browser QA found a background-only source block under a beta-blocker reason. Shared reader now checks whole-source entity linkage and independently classifies target-block relation support before accepting polarity/time/subject axes. Unsupported/background candidates remain explicit gaps and avoid repeated frontier reads. Both Jev and Perplexity rejected the original background block and retained the actual non-use account in the matched two-case probe.",
     "unsealed_work": {
-      "status": "typed_fallback_repair_verified_pending_next_ordinary_attempt",
-      "path": "artifacts/agere-source-entity-link-2026-10-30",
-      "remaining_gap": "Ordinary attempt1 exposed and was stopped for a confirmed configuration bug: no typed adapter plus fallback-off still entered the base-model long-prompt path. It is terminal,source/code/prior ledger unchanged and zero new API attempts. Fix passes13native-worker tests and93targeted routing/source/learning tests. Full integrated result/cost and current acceptance/recovery remain pending.",
-      "next_action": "Commit the verified local typed-fallback fix, then pin and launch a new ordinary-route attempt in artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair. Retain the failed first attempt and195.874832seconds/zero new provider calls. Missing qualified adapter plus explicit fallback-off must decline before spawning/generation. Keep source/model caches explicitly warm; supply no recovery actions or prior answer. Freeze product during the new job, then audit full cost/roles, source relations, current unknowns, report fidelity and post-run candidates before delivery. All ten areas and qualification/recovery requirements remain.",
+      "status": "native_scope_correction_verified_candidate",
+      "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction",
+      "remaining_gap": "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open.",
+      "next_action": "Continue the ordinary controller on the original full question using retained current native evidence and precise scope feedback, without repeating source discovery. Demonstrate autonomous correction/canonical named HTML/PDF/CSV delivery with all-attempt cost, then qualify checked reuse/role-specific learning and verify the current installed runtime/recovery. No inherited clinical/support acceptance; retain all ten areas and scheduler PAUSED.",
       "source_frozen_for_run": false,
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/interruption-diagnosis.json",
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/receipt.json",
       "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
     },
     "bottling_assessment": {
@@ -740,7 +747,8 @@
     },
     "candidate_commits": [
       "ce8d759",
-      "f68bd71"
+      "f68bd71",
+      "52284fe"
     ],
     "continuation_scheduler": {
       "status": "PAUSED",
@@ -2176,15 +2184,26 @@
       "decision": "Stop the faulty ordinary attempt and honor the existing explicit no-base-fallback configuration at both parent and worker boundaries. This is a qualified-role/configuration guard, not a new time/spend ceiling or model disablement.",
       "basis": "Frozen ordinary trace and no-adapter preflight;195.874832seconds,0new provider attempts;caller/workerterminated;13native-worker+93targeted regressions.",
       "scope_impact": "Ordinary complete run deferred until this repair; all attempts and ten-area scope retained."
+    },
+    {
+      "at": "2026-10-30T20:12:29.678520+00:00",
+      "decision": "Reuse actual terminal native evidence to correct controller and source-scope failures before any further full run. Warm-source ordinary attempt2 is partial and cannot establish matched cost savings or clinical quality. No gate/acceptance area removed.",
+      "basis": "Terminal ordinary attempt2 receipt, retained actor actions/final drafts and current source scope audit."
+    },
+    {
+      "at": "2026-10-30T20:25:25.984370+00:00",
+      "decision": "Verify observed composition/controller failures with retained source first; commit52284fe and preserve authored correction as partial. Do not infer ordinary completion, learned improvement or clinical qualification from rendering. Actual audit disproves the suspected26-PCP omission: all26had raw records; current versus other roles were mixed. The unsupported omission guard was removed; named reading projection uses source snapshot state.",
+      "evidence": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/receipt.json",
+      "scope_impact": "G5/alltenareas unchanged. No new source/provider scan, training, default activation or scheduler."
     }
   ],
   "unsealed_work": {
-    "status": "typed_fallback_repair_verified_pending_next_ordinary_attempt",
-    "path": "artifacts/agere-source-entity-link-2026-10-30",
-    "remaining_gap": "Ordinary attempt1 exposed and was stopped for a confirmed configuration bug: no typed adapter plus fallback-off still entered the base-model long-prompt path. It is terminal,source/code/prior ledger unchanged and zero new API attempts. Fix passes13native-worker tests and93targeted routing/source/learning tests. Full integrated result/cost and current acceptance/recovery remain pending.",
-    "next_action": "Commit the verified local typed-fallback fix, then pin and launch a new ordinary-route attempt in artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-fallback-repair. Retain the failed first attempt and195.874832seconds/zero new provider calls. Missing qualified adapter plus explicit fallback-off must decline before spawning/generation. Keep source/model caches explicitly warm; supply no recovery actions or prior answer. Freeze product during the new job, then audit full cost/roles, source relations, current unknowns, report fidelity and post-run candidates before delivery. All ten areas and qualification/recovery requirements remain.",
+    "status": "native_scope_correction_verified_candidate",
+    "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction",
+    "remaining_gap": "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open.",
+    "next_action": "Continue the ordinary controller on the original full question using retained current native evidence and precise scope feedback, without repeating source discovery. Demonstrate autonomous correction/canonical named HTML/PDF/CSV delivery with all-attempt cost, then qualify checked reuse/role-specific learning and verify the current installed runtime/recovery. No inherited clinical/support acceptance; retain all ten areas and scheduler PAUSED.",
     "source_frozen_for_run": false,
-    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/ordinary-after-reader-repair/interruption-diagnosis.json",
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/receipt.json",
     "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
   },
   "current_visual_request": {
