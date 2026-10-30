@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T04:58:04.230432+00:00",
+  "updated_at": "2026-10-30T11:01:38.158790+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -359,11 +359,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "four_complete_cases_preserved_v12_running",
+    "kind": "six_individual_workflows_passed_routing_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current typed claim explanations use the same admission as the existing claim contract; a complete saved appointment response passes unchanged. Prior four workflows remain preserved and undergo exact native revalidation.",
-    "measured_failure_reduction": "Removed one inconsistent200-character typed restriction rejecting207characters allowed by the existing300-character contract. Full response(all11claim dispositions/citations/refs/model/source checks) reparsed unchanged with0provider calls, four source passes reused, failed row/raw accounting preserved.",
+    "user_behavior_delta": "All six original full-scope individual questions now preserve their canonical source-linked answers, buyer options, owned work and follow-up; eight internal tasks reopen exactly.",
+    "measured_failure_reduction": "Appointment successive source and typed-output formatting failures recovered through existing exact-stage recovery; all six original workflows now pass instead of four. Prior accepted inference and work were reused, every failed attempt retained.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -551,10 +551,11 @@
       "artifacts/agere-current-mvp-2026-10-30/individual-v12/medication/current-accepted-case-revalidation.json",
       "artifacts/agere-current-mvp-2026-10-30/individual-v12/respiratory/current-accepted-case-revalidation.json",
       "artifacts/agere-current-mvp-2026-10-30/individual-v12/cardiometabolic/current-accepted-case-revalidation.json",
-      "artifacts/agere-current-mvp-2026-10-30/individual-v12/functional/current-accepted-case-revalidation.json"
+      "artifacts/agere-current-mvp-2026-10-30/individual-v12/functional/current-accepted-case-revalidation.json",
+      "artifacts/agere-current-mvp-2026-10-30/individual-v13/run-receipt.json"
     ],
-    "remaining_gap": "Appointment and payer plus final routing/accounting, installed recovery and current acceptance/durable package remain. Four complete cases are accepted; new appointment group1 passed complete current parser offline. Independent qualification, source capture/sufficiency, TypeSafe credits, actual total costs and production connections remain dependencies.",
-    "next_action": "Continue already-running remaining-workflows v12 PID98734/session23841 on frozen5f095dc; owned server8888 PID98692/session58834. Do not duplicate or edit product source until terminal. Four full cases passed in v11(medication,respiratory,cardiometabolic,functional); v12 reopens them against current native guards and reuses exact answers/decisions/work/followups with0inference and0work reexecution. Appointment group1 now has a complete offline revalidated answer8ef4c6...(four source passes,11claims); its207-character reason passes the existing300-character claim contract. Original failed9b4613...row and raw bytes remain unchanged;0newprovider calls.71 relevant checks pass. Continue appointment secondgroup, completework/followup, thenpayer. After allsix pass run prepared verify_routing_v1.py(same v15 server, acceptedindividual-v12) for equivalent baselines/cache/failure/all-attempt accounting. Then stop only v15, run preserve_current_ledger_v1.py, restart NEW versioned server/receipt resolving --ledger to durable primary path, and update operations acceptedserver/ownership suffix. Physical model/immutable-answer package changes and eight current receipt paths already committed; do not reapply. Run verify_operations_v1.py for eight decisions/sixanswers and actual runtime/CAS/idempotency/restart/WAL rollback/fresh restore, retaining source/work/current accounting. Then build_acceptance_v1.py and seal_evidence_copy_v1.py; activate only local current report, verify UI and seal truthful private delivery/PR. Allten areas and model/clinical/production dependencies retained; no mainmerge/globalactivation/publication/newservices/realcare/scheduler restart.",
+    "remaining_gap": "Routing/all-attempt accounting is running. Actual installed startup/restart/rollback/restore and current final evidence/package remain unaccepted. All six individual workflows, two full-roster programs and current native audits passed. Independent qualification, source capture/sufficiency, TypeSafe credits, actual total cost and production connections remain explicit dependencies.",
+    "next_action": "Continue existing routing-v1 PID99596/session75089 against owned server-v15 PID98692/session58834 on unchanged product5f095dc. All six original individual workflows passed in v13; preserve their eight internal tasks and all source/recovery attempts without rerunning inference. After routing/accounting passes, stop only verified owned v15, atomically preserve current ledger durably with its original alias, start new versioned candidate with resolved durable ledger, then run actual archived-runtime installation, canonical reopen, CAS/idempotency, restart, uncommitted-task WAL rollback and fresh restore. Finish current hashed nine-requirement engineering acceptance, independent durable evidence, actual UI proof and private draft/delivery. Retain all ten acceptance areas and separate model/clinical/production dependencies. No main merge, global model activation, publication, new services, real care or scheduler restart.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -563,53 +564,53 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Soleowner01a187c0-23ba-7d02-9368-5ff567327554. Candidate8888PID98692/session58834; only fullworkflowv12PID98734/session23841 active, frozen5f095dc. Four complete cases exactly revalidated; appointmentgroup2 running. Schedulerpaused; primary8885/design5178 untouched.",
+    "coordination": "Only routing-v1 PID99596/session75089 running; owned candidate8888 PID98692/session58834. Product frozen5f095dc; scheduler PAUSED.",
     "remaining_blockers": [
       {
         "id": "B1",
         "area": "Clinical compound and current state",
-        "status": "open",
-        "gap": "Regimen-note reconciliation, dated care-team relationships and mapped measurement evidence are integrated. Complete original compound semantics, treatment suitability/maximum tolerated dose, exact conditional work and faithful HTML/monitor acceptance remain unverified; source-supported unknowns are not clinical approval.",
-        "completion": "Every requested element has executed received-source evidence or a specific supported unknown; downstream work keeps the exact applicable population."
+        "status": "engineering_verified_qualification_open",
+        "gap": "Six complete individual cases and two full-roster programs pass current received-source execution. Separate original full HFrEF review retains 19 whole-packet unknowns. Treatment suitability and clinical accuracy remain unqualified.",
+        "completion": "Preserve all requested source-backed results and specific supported unknowns; independent clinical qualification remains separate."
       },
       {
         "id": "B2",
         "area": "Unfamiliar and multi-domain composition",
-        "status": "open",
-        "gap": "Fresh finance and utilization question-to-report transfers match withheld source baselines across32and237groups, with no inherited answers. Appointment access is running. Broader model/clinical correctness remains unqualified.",
-        "completion": "Existing declared workflows and ordinary varied development questions preserve date, exclusion, threshold and saved-scope semantics across clinical, utilization, access/social, provider and financial/ACO domains; independently compare execution to source queries. Label authored contracts separately from interpretation."
+        "status": "engineering_verified_routing_in_progress",
+        "gap": "Fresh finance32, utilization237 and appointment196 groups reconcile; all six original individual questions pass; both population programs pass. Routing/accounting proof running; broader semantic/model correctness unqualified.",
+        "completion": "Finish exact route/cache/failed-key/all-attempt accounting evidence; retain authored versus received-source distinctions."
       },
       {
         "id": "B3",
-        "area": "Generated views and response time",
-        "status": "open",
-        "gap": "Native rows/JSON/CSV agree, but grouped PDF rows falsely use patient terminology and medication-recommendation missingness. Repair shared rendering after the frozen transfer terminates; preserve original reports and measured timings.",
-        "completion": "Rendered outputs match saved evidence, preserve scope, and report measured timing; remove reproduced failures without new paid calls."
+        "area": "Faithful deliverables and local operations",
+        "status": "operations_pending",
+        "gap": "Grouped report repair verified 32 record headings and zero false medication missingness warnings; current final scorecard/UI and actual installed startup/restart/WAL rollback/restore not yet accepted. Native revalidation remains slow; no speed claim.",
+        "completion": "Archive and execute exact runtime; reopen all canonical answers/work, verify recovery/accounting preservation, display current hashed scorecard."
       },
       {
         "id": "B4",
-        "area": "Independent model and clinical qualification",
+        "area": "Independent model/clinical qualification and external prerequisites",
         "status": "unverified",
-        "gap": "Local tests do not qualify model interpretation, clinical correctness or real-world use.",
-        "completion": "Independent appropriate qualification remains separate from deterministic engineering acceptance; do not use protected evaluations or credits as a prerequisite for local build work."
+        "gap": "Role-specific model/clinical qualification, source sufficiency, verified total cost and production authority remain unestablished; TypeSafe new calls unavailable.",
+        "completion": "Retain separate qualification/deployment axes; do not claim readiness from local engineering checks."
       }
     ],
     "latest_progress": {
-      "status": "four_complete_cases_revalidated_appointment_group2_running",
-      "at": "2026-10-30T10:25:38.926100+00:00",
-      "run_receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v12/run-receipt.json",
+      "status": "six_individual_workflows_passed_routing_running",
+      "at": "2026-10-30T11:01:38.158790+00:00",
+      "run_receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v13/run-receipt.json",
       "accepted_cases": [
         "medication",
         "respiratory",
         "cardiometabolic",
-        "functional"
-      ],
-      "source_passes_repeated_for_accepted_cases": 0,
-      "accepted_work_reexecuted": false,
-      "remaining_cases": [
+        "functional",
         "appointment",
         "payer"
       ],
+      "remaining_cases": [],
+      "individual_internal_tasks": 8,
+      "population_internal_tasks": 241,
+      "accepted_work_reexecuted": false,
       "operations_not_yet_accepted": true
     },
     "results_report": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-offline-finish-2026-10-27/final-before-after.md",
@@ -665,16 +666,14 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T04:23:01.137367+00:00",
-    "workflow_change": "Fixed candidate retrieval comparison and subscription-only preflight now preserve full source scope and unknown token counts. All current population assessments revalidate exactly after code change; source and work preserved.",
+    "at": "2026-10-30T11:01:38.158790+00:00",
+    "workflow_change": "Six original individual workflows pass; full-roster respiratory and behavioral programs preserve 241 internal handoffs. Combined 249 internal software-review tasks; no external action or clinical qualification.",
     "unsealed_work": {
-      "status": "current_native_and_dependencies_passed_individual_v8_running",
+      "status": "six_individual_workflows_passed_routing_running",
       "path": "artifacts/agere-current-mvp-2026-10-30",
-      "remaining_gap": "Individual v8 is still running in medication group6; remaining medication groups and five original questions, installed startup/restart/backup/restore/transaction recovery and the final current acceptance package remain. Model/clinical qualification, TypeSafe new credits, unpriced review/local costs, source completeness and external production authority remain explicit.",
-      "next_action": "Current full six-question workflow continuation v8 RUNNING PID91569/session1032 on frozen92b42cf. Candidate8888ready PID91542/session51654. Do not duplicate provider work or mutate integration product source until this worker is terminal. Five of nine medication source groups now canonically reopen and attach to the complete original plan; all five saved answers were independently revalidated exactly with zero provider calls. Group6 complete source correction has returned successfully and its typed reconciliation is running. Latest repair targets a reproduced source-pass citation-format error through the original strict parser; full source evidence is retained. Current subscription source-correction feedback no longer fails an API-only20KB input limit; exact historical source stages preserve their original IDs only after full current parser and assembled-field revalidation, protecting completed paid progress. Native two-program population work, finance/outcome/timing/discovery and all three changed/late/conflicting source dependency scenarios passed;241 internal tasks and4,114 unaffected members per mutation preserved. When the six workflows finish, run prepared verify_operations_v1.py against the exact passed individual/server receipts: create durable checkpoint, executable/runtime archive and local operations installations, verify all saved work, idempotency/CAS, restart/reopen, uncommitted actual-task WAL rollback and fresh restore without rolling back the current shared provider ledger. Operations outputs target /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1; not started before full individual acceptance. Then bind dedicated current-snapshot capability receipts, current computed scorecard and truthful private draft/package; preserve all ten areas, independent model/clinical qualifications and production dependencies. No default model promotion, main merge, publication, real care, new services or scheduler restart.",
+      "remaining_gap": "Routing/all-attempt accounting is running. Actual installed startup/restart/rollback/restore and current final evidence/package remain unaccepted. All six individual workflows, two full-roster programs and current native audits passed. Independent qualification, source capture/sufficiency, TypeSafe credits, actual total cost and production connections remain explicit dependencies.",
+      "next_action": "Continue existing routing-v1 PID99596/session75089 against owned server-v15 PID98692/session58834 on unchanged product5f095dc. All six original individual workflows passed in v13; preserve their eight internal tasks and all source/recovery attempts without rerunning inference. After routing/accounting passes, stop only verified owned v15, atomically preserve current ledger durably with its original alias, start new versioned candidate with resolved durable ledger, then run actual archived-runtime installation, canonical reopen, CAS/idempotency, restart, uncommitted-task WAL rollback and fresh restore. Finish current hashed nine-requirement engineering acceptance, independent durable evidence, actual UI proof and private draft/delivery. Retain all ten acceptance areas and separate model/clinical/production dependencies. No main merge, global model activation, publication, new services, real care or scheduler restart.",
       "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
-      "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
-      "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
       "source_frozen_for_run": true,
       "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
     },
@@ -720,13 +719,9 @@
     },
     "owned_recovery_run": {
       "kind": "six_original_individual_workflows",
-      "status": "running",
-      "pid": 91569,
-      "session": 1032,
-      "receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v8/run-receipt.json",
-      "source_checkout": "/private/tmp/agere-codex-integration-20261026",
-      "source_commit": "92b42cf",
-      "source_frozen": true
+      "status": "passed",
+      "receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v13/run-receipt.json",
+      "source_frozen": false
     },
     "provider_dependency": {
       "provider": "jev",
@@ -739,13 +734,13 @@
     },
     "active_jobs": [
       {
-        "kind": "six_original_individual_workflows",
+        "kind": "current_routing_and_all_attempt_accounting",
         "status": "running",
-        "pid": 91569,
-        "session": 1032,
-        "receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v8/run-receipt.json",
+        "pid": 99596,
+        "session": 75089,
+        "receipt": "artifacts/agere-current-mvp-2026-10-30/routing-v1/receipt.json",
         "source_checkout": "/private/tmp/agere-codex-integration-20261026",
-        "source_commit": "92b42cf",
+        "source_commit": "5f095dc",
         "source_frozen": true
       }
     ]
@@ -2072,13 +2067,11 @@
     }
   ],
   "unsealed_work": {
-    "status": "current_native_and_dependencies_passed_individual_v8_running",
+    "status": "six_individual_workflows_passed_routing_running",
     "path": "artifacts/agere-current-mvp-2026-10-30",
-    "remaining_gap": "Individual v8 is still running in medication group6; remaining medication groups and five original questions, installed startup/restart/backup/restore/transaction recovery and the final current acceptance package remain. Model/clinical qualification, TypeSafe new credits, unpriced review/local costs, source completeness and external production authority remain explicit.",
-    "next_action": "Current full six-question workflow continuation v8 RUNNING PID91569/session1032 on frozen92b42cf. Candidate8888ready PID91542/session51654. Do not duplicate provider work or mutate integration product source until this worker is terminal. Five of nine medication source groups now canonically reopen and attach to the complete original plan; all five saved answers were independently revalidated exactly with zero provider calls. Group6 complete source correction has returned successfully and its typed reconciliation is running. Latest repair targets a reproduced source-pass citation-format error through the original strict parser; full source evidence is retained. Current subscription source-correction feedback no longer fails an API-only20KB input limit; exact historical source stages preserve their original IDs only after full current parser and assembled-field revalidation, protecting completed paid progress. Native two-program population work, finance/outcome/timing/discovery and all three changed/late/conflicting source dependency scenarios passed;241 internal tasks and4,114 unaffected members per mutation preserved. When the six workflows finish, run prepared verify_operations_v1.py against the exact passed individual/server receipts: create durable checkpoint, executable/runtime archive and local operations installations, verify all saved work, idempotency/CAS, restart/reopen, uncommitted actual-task WAL rollback and fresh restore without rolling back the current shared provider ledger. Operations outputs target /Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1; not started before full individual acceptance. Then bind dedicated current-snapshot capability receipts, current computed scorecard and truthful private draft/package; preserve all ten areas, independent model/clinical qualifications and production dependencies. No default model promotion, main merge, publication, real care, new services or scheduler restart.",
+    "remaining_gap": "Routing/all-attempt accounting is running. Actual installed startup/restart/rollback/restore and current final evidence/package remain unaccepted. All six individual workflows, two full-roster programs and current native audits passed. Independent qualification, source capture/sufficiency, TypeSafe credits, actual total cost and production connections remain explicit dependencies.",
+    "next_action": "Continue existing routing-v1 PID99596/session75089 against owned server-v15 PID98692/session58834 on unchanged product5f095dc. All six original individual workflows passed in v13; preserve their eight internal tasks and all source/recovery attempts without rerunning inference. After routing/accounting passes, stop only verified owned v15, atomically preserve current ledger durably with its original alias, start new versioned candidate with resolved durable ledger, then run actual archived-runtime installation, canonical reopen, CAS/idempotency, restart, uncommitted-task WAL rollback and fresh restore. Finish current hashed nine-requirement engineering acceptance, independent durable evidence, actual UI proof and private draft/delivery. Retain all ten acceptance areas and separate model/clinical/production dependencies. No main merge, global model activation, publication, new services, real care or scheduler restart.",
     "external_verification": "current_synthetic_warehouse_approved_for_full_mvp",
-    "block_receipt": "artifacts/agere-meaning-integration-2026-10-29/readable-qualification-block.json",
-    "prepared_workflow_receipt": "artifacts/agere-meaning-integration-2026-10-29/targeted-workflow-preparation.json",
     "source_frozen_for_run": true,
     "authorization_receipt": "artifacts/agere-meaning-integration-2026-10-29/current-provider-authorization.json"
   },
