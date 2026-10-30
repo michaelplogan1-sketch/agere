@@ -79,7 +79,7 @@ def preview(path,answer_id):
     parent,row,refs,job,key=prepare(path,answer_id)
     return {'schema':VERSION,'parent_answer_id':answer_id,'answer_id':key,'patient_id':row['patient_id'],'context_id':parent['context_id'],
       'source_claims':len(job['finding_ids']),'source_records':len(job['source_records']),'verified_excerpts':len(job['excerpt_pool']),
-      'request_bytes':P.request_bytes(job['body']),'maximum_request_bytes':G.MAX_BYTES,'maximum_input_tokens':16000,'maximum_inference_calls':1,
+      'request_bytes':P.request_bytes(job['body']),'maximum_request_bytes':G.maximum_request_bytes(),'maximum_input_tokens':None if G.maximum_request_bytes() is None else 16000,'maximum_inference_calls':1,
       'saved_answer_available':exists(path,key),'system_unassessed_units':parent['coverage'].get('system_unassessed_units',0),'new_paid_api_calls':0,
       'scope':'Review all saved claims and cited excerpts together; original full-unit interpretation and question results remain unchanged.'}
 

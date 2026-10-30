@@ -137,7 +137,7 @@ def preview(path, parent_id):
         'context_id': parent['context_id'], 'patient_id': row['patient_id'],
         'source_units': len(refs), 'input_claims': len(job['finding_ids']),
         'cited_excerpts': len(job['excerpt_pool']), 'request_bytes': P.request_bytes(job['body']),
-        'maximum_request_bytes': G.MAX_BYTES, 'maximum_inference_calls': 1,
+        'maximum_request_bytes': G.maximum_request_bytes(), 'maximum_inference_calls': 1,
         'saved_answer_available': exists(path, key), 'new_paid_api_calls': 0,
         'scope': 'All saved source claims and their exact cited excerpts; original full units and review questions remain in the parent. No source coverage upgrade.',
         'clinical_validated': False}

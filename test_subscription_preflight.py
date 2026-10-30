@@ -51,6 +51,23 @@ class SubscriptionPreflight(unittest.TestCase):
   self.assertEqual(first,again);self.assertEqual(wire.call_count,1)
   self.assertEqual(receipt['usage'],raw['usage']);self.assertTrue(cached['cache_hit'])
   self.assertEqual(ledger.db.execute('SELECT count(*) FROM calls').fetchone()[0],1)
+ def test_complete_large_claim_request_uses_subscription_context_without_trimming(self):
+  self.body['system']+=' Literal synthetic content.'*2000
+  self.assertGreater(len(json.dumps(self.body).encode()),G.MAX_BYTES)
+  before=copy.deepcopy(self.body);self.assertIsNone(G.maximum_request_bytes());G.validate(self.body)
+  receipt=C.token_check(self.body,self.path,allow_live=True)
+  self.assertIsNone(receipt['input_tokens']);self.assertTrue(C.valid_token_preflight(self.body,receipt))
+  raw={'model':self.body['model'],'content':[{'type':'text','text':'complete synthetic response'}],
+       'stop_reason':'end_turn','usage':{'input_tokens':11000,'output_tokens':11}}
+  ledger=BudgetLedger(self.path/'large-ledger.sqlite3');self.addCleanup(ledger.close)
+  with patch.object(G.urllib.request,'urlopen',return_value=io.BytesIO(json.dumps(raw).encode()))as send:
+   result,_=G.send(self.body,ledger,self.path,parse=lambda r:r['content'][0]['text'])
+   self.assertEqual(result,'complete synthetic response');self.assertEqual(send.call_count,1)
+  self.assertEqual(self.body,before)
+  with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':''}),patch.object(G.urllib.request,'urlopen')as send:
+   self.assertEqual(G.maximum_request_bytes(),G.MAX_BYTES)
+   with self.assertRaisesRegex(ValueError,'32768'):G.validate(self.body)
+   send.assert_not_called()
  def test_count_endpoint_is_never_translated_to_generation_or_api_fallback(self):
   real=urllib.request.urlopen;prior=T._original.copy();T._original.clear()
   try:
