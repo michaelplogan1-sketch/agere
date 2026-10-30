@@ -264,7 +264,7 @@ class Upgrade(Fixture):
             db.close()
 
     def test_layer_docs_describe_the_new_tables(self):
-        self.assertEqual(SL.VERSION, 'semantic-layer/19')
+        self.assertEqual(SL.VERSION, 'semantic-layer/20')
         for t in ('cancer_screening', 'claim_adjudication', 'pharmacy_claim_event', 'returned_fill', 'procedure_line', 'death',
                   'encounter_diagnosis'):
             self.assertIn(t, SL.SCHEMA_DOC)

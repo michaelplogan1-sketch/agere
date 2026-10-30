@@ -57,6 +57,52 @@ class PopulationDecision(unittest.TestCase):
         d=self.prepare();self.f.save_record({**self.f.record,'reliever_directions_confirmed':True})
         self.assertFalse(q.reopen(self.retriever,d['id'])['dependencies_current'])
         with self.assertRaises(ValueError):q.match_population_member(self.retriever,{'decision_id':d['id'],'patient_id':'p0'})
+
+    def test_unrelated_engine_identity_revalidates_exact_assessments_without_replacing_work(self):
+        self.stub_member_wrappers();d=self.prepare()
+        m=q.match_population_member(self.retriever,{'decision_id':d['id'],'patient_id':'p0'})
+        q.queue_population_member(self.retriever,{'decision_id':d['id'],'match_id':m['result_id'],
+            'option_id':m['matching']['options'][0]['id'],'actor':'fixture'})
+        before=q.reopen(self.retriever,d['id'])
+        from clinical_core.agere.clinical.registered_program_work import AdapterEngine
+        with patch.object(AdapterEngine,'code_identity',return_value='transport-accounting-only-version'):
+            after=q.reopen(self.retriever,d['id'])
+            self.assertTrue(after['dependencies_current'])
+            self.assertEqual(after['decision'],before['decision']);self.assertEqual(after['tasks'],before['tasks'])
+            self.assertEqual(after['dependency_recheck']['members'],len(d['members']))
+            self.assertTrue(after['dependency_recheck']['all_other_assessment_fields_equal'])
+            self.assertFalse(after['dependency_recheck']['work_reexecuted'])
+            self.assertEqual(self.prepare()['id'],d['id'])
+
+    def test_engine_drift_never_masks_changed_source_or_nomination(self):
+        d=self.prepare()
+        from clinical_core.agere.clinical.registered_program_work import AdapterEngine
+        original=q.population_basis
+        def changed(*args):
+            selection,proposal,assessments=original(*args);assessments=copy.deepcopy(assessments)
+            assessments[0]['review_candidate']=not assessments[0]['review_candidate']
+            return selection,proposal,assessments
+        with patch.object(AdapterEngine,'code_identity',return_value='changed-version'),patch.object(q,'population_basis',side_effect=changed):
+            self.assertFalse(q.reopen(self.retriever,d['id'])['dependencies_current'])
+        self.f.save_record({**self.f.record,'reliever_directions_confirmed':True})
+        with patch.object(AdapterEngine,'code_identity',return_value='changed-version'):
+            self.assertFalse(q.reopen(self.retriever,d['id'])['dependencies_current'])
+
+    def test_reassessment_cannot_drop_or_duplicate_a_member(self):
+        d=self.prepare();original=q.population_basis
+        from clinical_core.agere.clinical.registered_program_work import AdapterEngine
+        for duplicate in (False,True):
+            def changed(*args):
+                selection,proposal,assessments=original(*args)
+                return selection,proposal,assessments[:-1]+([assessments[0]] if duplicate else [])
+            with patch.object(AdapterEngine,'code_identity',return_value='changed-version'),patch.object(q,'population_basis',side_effect=changed):
+                self.assertFalse(q.reopen(self.retriever,d['id'])['dependencies_current'])
+
+    def test_reassessment_detects_dependency_race(self):
+        d=self.prepare()
+        with patch.object(q.care.work,'preparation_identity',side_effect=['new-version','raced-version']):
+            view=q.reopen(self.retriever,d['id'])
+        self.assertFalse(view['dependencies_current']);self.assertIn('during reassessment',view['stale_reason'])
     def test_buyer_revision_invalidates_saved_scope(self):
         d=self.prepare();self.cap['capacity_slots']=0
         q.care.save_portfolio(self.path,{'buyer_id':'buyer','expected_revision':1,'actor':'fixture','capabilities':[self.cap]})
