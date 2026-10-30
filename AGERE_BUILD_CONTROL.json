@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T12:35:29.209891+00:00",
+  "updated_at": "2026-10-30T13:01:07.959782+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -333,7 +333,7 @@
         8,
         9
       ],
-      "status": "blocked",
+      "status": "active",
       "outcome": "Compare role-appropriate baselines and existing candidates on equivalent visible evidence and protected splits; decompose retrieval, ranking, reading, planning and service errors with coverage, abstention, manual burden and total cost. Integrate further models/math only for measured product needs; retain justified failures and unqualified roles.",
       "acceptance_evidence": [],
       "progress_evidence": [
@@ -370,15 +370,16 @@
           "sha256": "fe1d4cc6cb6e597f2d8b74d8a1a1f8702bc9cc6cf0c547587dcf94cc4c2fc8f8"
         }
       ],
-      "blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim."
+      "blocker": null,
+      "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim."
     }
   ],
   "checkpoint": {
-    "kind": "sealed_current_local_engineering_qualification_open",
+    "kind": "full_stack_execution_scope_reopened",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Six original full-source individual questions and two full4,115-member programs preserve source-linked answers, applicable buyer options,249internal review tasks and follow-up. The exact archived application starts, reopens and recovers the same work; current UI/API displays9engineering passes and3unassessed qualification/external requirements.",
-    "measured_failure_reduction": "Closed the remaining current acceptance gaps: all6individual workflows pass; all176provider attempts and failed-key controls retained; actual archived startup, canonical reopen, idempotency/CAS, restart, uncommitted-task WAL rollback and fresh restore pass. Independent durable evidence revalidation and actual UI/API agree9/9. No new provider calls for routing/operations/finalization.",
+    "user_behavior_delta": "Ordinary full-question app rerun now uses the intended integrated route; successful Jev/Perplexity decisions and native57-patient SQL are traced. Source-reader/full-result acceptance remains pending. Normal Ask already used this endpoint; earlier verification and completion framing were incorrect.",
+    "measured_failure_reduction": "Jev credit unavailability disproved live. Scoped9/9 full-stack overclaim corrected in delivery report and draft PR. Paired16-case controls expose one Jev false support and unresolved role/domain checks; no qualification inferred.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -575,10 +576,16 @@
       "artifacts/agere-current-mvp-2026-10-30/acceptance-v1/operations-proof/run-receipt.json",
       "artifacts/agere-current-mvp-2026-10-30/acceptance-v1/durable-evidence-copy-receipt.json",
       "artifacts/agere-current-mvp-2026-10-30/current-ui-v1/receipt.json",
-      "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md"
+      "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
+      "artifacts/agere-full-stack-rerun-2026-10-30/credit-probe-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/source-controls/receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated/protocol.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/protocol.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/integrated/run-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/all-attempt-accounting.json"
     ],
-    "remaining_gap": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim.",
-    "next_action": "Use the sealed current delivery and archive as the known-good local engineering recovery point. G3 is accepted; next gateG5 remains blocked on the explicitly recorded independent model/clinical qualification and data/economics gaps. Preserve protected evaluations, frozen studies and source-family boundaries; do not manufacture labels, read protected answers, contact reviewers or connect production without the required distinct authority/data. No automatic model/default promotion, new training campaign, repeated frozen full run or indefinite accounting increment. The current local candidate8888 is readyPID7180/session12530 on unchanged product5f095dc; no provider/training/build worker remains active. Model qualification and customer/clinical production prerequisites remain explicit rather than claimed complete. Scheduled prompts remain PAUSED; no main merge, publication, new services or real-care execution.",
+    "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
+    "next_action": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -587,7 +594,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "No active provider/training/build worker. Candidate-v17 PID7180/session12530 ready on8888; durable ledger retains176rows. Scheduler PAUSED.",
+    "coordination": "No provider/training/build worker currently active; existing candidate7180 on8888 is the last known-good scoped engineering build. New role rerun work is isolated and accounted.",
     "remaining_blockers": [
       {
         "id": "B1",
@@ -619,26 +626,11 @@
       }
     ],
     "latest_progress": {
-      "status": "local_engineering_accepted_qualification_open",
-      "at": "2026-10-30T12:35:29.209891+00:00",
-      "delivery_receipt": "artifacts/agere-current-mvp-2026-10-30/delivery-receipt.json",
-      "engineering_passed": 9,
-      "engineering_total": 9,
-      "individual_workflows": 6,
-      "population_programs": 2,
-      "roster_per_program": 4115,
-      "individual_internal_tasks": 8,
-      "population_internal_tasks": 241,
-      "total_internal_tasks": 249,
-      "provider_request_rows": 176,
-      "failed_rows": 34,
-      "validated_rows": 142,
-      "operations_status": "passed",
-      "ui_status": "passed",
-      "durable_evidence_status": "passed",
-      "clinical_qualification": false,
-      "model_qualification": false,
-      "production_authority": false
+      "at": "2026-10-30T13:01:07.959782+00:00",
+      "status": "full_stack_execution_scope_reopened",
+      "jev_live_probe": "passed",
+      "old_engineering_receipt_preserved": true,
+      "entire_stack_complete": false
     },
     "results_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
     "native_shape_followup": {
@@ -690,9 +682,17 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T12:35:29.209891+00:00",
-    "workflow_change": "Connected current source/question/answer/decision/work paths and local recovery are demonstrated; all ten charter areas retained. Independent qualification and production authority remain unassessed.",
-    "unsealed_work": null,
+    "at": "2026-10-30T13:12:25.828032+00:00",
+    "workflow_change": "Ordinary full-question app rerun now uses the intended integrated route; successful Jev/Perplexity decisions and native57-patient SQL are traced. Source-reader/full-result acceptance remains pending. Normal Ask already used this endpoint; earlier verification and completion framing were incorrect.",
+    "unsealed_work": {
+      "status": "integrated_normal_route_running",
+      "path": "artifacts/agere-full-stack-rerun-2026-10-30",
+      "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
+      "next_action": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
+      "source_frozen_for_run": true,
+      "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json"
+    },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
       "brief_section": "docs/agere/ARCHITECTURE_ORDER_FOR_REVIEW_2026-10-29.md#bottling-retained-partially-implemented-not-yet-an-earned-saving",
@@ -749,14 +749,22 @@
     },
     "provider_dependency": {
       "provider": "jev",
-      "status": "billing_unavailable",
-      "observed_error": "HTTP402: TypeSafe organization has no available API credits",
-      "observed_in": "artifacts/agere-meaning-integration-2026-10-29/source-boundary-recheck-v1/recovery/validation-v1/provider-budget.sqlite3",
-      "fallback": "perplexity served new checks; exact cached Jev readings remain reusable",
-      "human_notified": true,
-      "new_credit_purchase": false
+      "status": "restored_live_probe_passed",
+      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/credit-probe-receipt.json",
+      "observed_model": "jev-1.13.0",
+      "automatic_purchase": false
     },
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "integrated_normal_route",
+        "status": "running",
+        "pid": 10857,
+        "session": 24153,
+        "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json",
+        "protocol": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/protocol.json",
+        "source_frozen": true
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2101,9 +2109,29 @@
       ],
       "reason": "All9declared engineering requirements now pass actual connected workflow, source, accounting, archive/recovery and current UI evidence; independent durable-copy verification passes. A supported unknown is distinguished from missing implementation. Remaining model/clinical, viable-label, economic and production prerequisites are explicit and cannot be fabricated.",
       "scope_impact": "All10charter areas retained; no clinical/model superiority, full qualification, main merge, default promotion, external dispatch or production authority claimed."
+    },
+    {
+      "at": "2026-10-30T13:01:07.959782+00:00",
+      "gate": "G5",
+      "decision": "Reopen intended full-stack delivery after explicit human correction; do not treat scoped Sonnet workflow engineering as whole-stack completion.",
+      "reason": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
+      "evidence": [
+        "artifacts/agere-full-stack-rerun-2026-10-30/credit-probe-receipt.json",
+        "clinical_core/agere/clinical/meaning_source_stage.py",
+        "clinical_core/agere/clinical/decision_planner.py"
+      ],
+      "scope_impact": "Full existing ten-area charter and agreed modular architecture retained; role execution/routing is required evidence, not a component catalog or forced all-model cascade."
     }
   ],
-  "unsealed_work": null,
+  "unsealed_work": {
+    "status": "integrated_normal_route_running",
+    "path": "artifacts/agere-full-stack-rerun-2026-10-30",
+    "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
+    "next_action": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
+    "source_frozen_for_run": true,
+    "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json"
+  },
   "current_visual_request": {
     "user_request": "After the workflow, create a stunning engineering/product/Google/TypeSafe-inspired question-to-deliverable flow, executive summary and LinkedIn-ready stack build presentation.",
     "publication": "Draft assets only; no posting authorized.",
@@ -2125,5 +2153,16 @@
       "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-full-stack-2026-10-29",
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
-  }
+  },
+  "active_jobs": [
+    {
+      "kind": "integrated_normal_route",
+      "status": "running",
+      "pid": 10857,
+      "session": 24153,
+      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json",
+      "protocol": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/protocol.json",
+      "source_frozen": true
+    }
+  ]
 }

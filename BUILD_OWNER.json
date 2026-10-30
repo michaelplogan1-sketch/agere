@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Use the sealed current delivery and archive as the known-good local engineering recovery point. G3 is accepted; next gateG5 remains blocked on the explicitly recorded independent model/clinical qualification and data/economics gaps. Preserve protected evaluations, frozen studies and source-family boundaries; do not manufacture labels, read protected answers, contact reviewers or connect production without the required distinct authority/data. No automatic model/default promotion, new training campaign, repeated frozen full run or indefinite accounting increment. The current local candidate8888 is readyPID7180/session12530 on unchanged product5f095dc; no provider/training/build worker remains active. Model qualification and customer/clinical production prerequisites remain explicit rather than claimed complete. Scheduled prompts remain PAUSED; no main merge, publication, new services or real-care execution.",
+  "active_work": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
   "latest_delivery": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_receipt": "artifacts/agere-current-mvp-2026-10-30/delivery-receipt.json",
   "owned_server_pid": 7180,
@@ -22,14 +22,22 @@
   "resumed_at": "2026-10-29T11:55:57.347665+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-30T12:35:29.209891+00:00",
+  "latest_checkpoint": "2026-10-30T13:12:25.828032+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "Candidate-v17 readyPID7180/session12530 on8888; source5f095dc, current engineering9/9. Operationsworker545 completed and all its installed children stopped. No active provider/training/build job; scheduler PAUSED.",
-  "unsealed_work": null,
+  "server_status": "Candidate8888 remains ready on sealed5f095dc engineering build. Integrated normal-route worker10857/session24153 is running with network access on isolated received-source clone; product source frozen. Restricted launch is terminal and retained. Scheduler PAUSED.",
+  "unsealed_work": {
+    "status": "integrated_normal_route_running",
+    "path": "artifacts/agere-full-stack-rerun-2026-10-30",
+    "remaining_gap": "The latest six-case source/typed reconciliation/buyer path hard-codes Claude and does not exercise the intended System One/local-model division. The earlier9/9 receipt proves scoped local engineering/recovery, not the agreed entire stack or model qualification. Jev credit availability is restored and verified; remaining routing/integration/role evidence must be delivered. Independent clinical/model qualification and external deployment remain distinct.",
+    "next_action": "Mike explicitly rejects the Sonnet-led six-case route as completion of the agreed full stack and requests rerun with restored Jev credits. G5 ACTIVE: demonstrate the existing integrated whole-question route with task-appropriate code/math/retrieval, System One source reading/judgment, qualified local/SLM attempts, Claude only where unresolved, shared verification/recovery, checked reuse and owned follow-through. First inspect exact native source-reading versus full-question entry points and retained role traces; rerun the retained semantic controls and original full-source workflow through intended components, preserving identical question/source/date scope and Sonnet results as control. Jev restored-credit probe passed live in0.190s, modeljev-1.13.0; use existing gateway/accounting, no historical ledger edits or new credits purchase. Do not force every model to answer the whole question, silently skip appropriate roles, call isolated probes full-stack completion, or launch a broad training campaign. Preserve the sealed5f095dc engineering archive as recovery point. No protected corpora/answer keys, generator/Documents changes, agents/new chats, main merge, publication, contacts, new services or real care; Claude subscription only. Scheduler remains PAUSED.",
+    "source_frozen_for_run": true,
+    "authorization": "Mike2026-10-30: Jev credits are back; rerun and follow agreed entire-stack engineering plans. Existing synthetic approvals persist.",
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json"
+  },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
@@ -75,7 +83,7 @@
     "activation": "isolated_current_candidate; primary/default product untouched",
     "last_known_pid": 533,
     "last_known_session": 96617,
-    "acceptance": "local_engineering9of9; qualification and production unassessed",
+    "acceptance": "Last sealed scoped engineering build only; intended full-stack execution reopened and unqualified.",
     "process_receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-current-mvp-2026-10-30/server-v17-receipt.json"
   },
   "current_spending_constraint": "Uncapped with accounting; Claude subscription only, no external Anthropic API key. Synthetic received-source execution only.",
@@ -147,10 +155,9 @@
     "candidate_receipt": "/Users/mikel/agere-domain-learning/artifacts/agere-domain-learning-v1/implementation-receipt.json"
   },
   "provider_credit_status": {
-    "observed_at": "2026-10-20T23:38:07.538163+00:00",
-    "status": "insufficient_credit_last_attempt",
-    "error": "Historical insufficient-credit attempt; no paid retry or credit restoration is required for this build.",
-    "build_dependency": false
+    "status": "restored_live_probe_passed",
+    "observed_at": "2026-10-30T13:01:07.959782+00:00",
+    "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/credit-probe-receipt.json"
   },
   "connected_website": {
     "url": "http://127.0.0.1:8885/site/",
@@ -280,13 +287,12 @@
   },
   "active_jobs": [
     {
-      "kind": "six_original_individual_workflows",
+      "kind": "integrated_normal_route",
       "status": "running",
-      "pid": 91569,
-      "session": 1032,
-      "receipt": "artifacts/agere-current-mvp-2026-10-30/individual-v8/run-receipt.json",
-      "source_checkout": "/private/tmp/agere-codex-integration-20261026",
-      "source_commit": "92b42cf",
+      "pid": 10857,
+      "session": 24153,
+      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/run-receipt.json",
+      "protocol": "artifacts/agere-full-stack-rerun-2026-10-30/integrated-network/protocol.json",
       "source_frozen": true
     }
   ],
