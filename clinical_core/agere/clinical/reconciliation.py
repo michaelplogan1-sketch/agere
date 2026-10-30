@@ -228,7 +228,10 @@ def preview_context(path, context_id):
     route = context_route(path, context_id)
     if route is None: return S.preview(path, context_id)
     stage, row, bundle, links, packets, parent_id = route
-    saved_parent = stage.exists(path, parent_id)
+    completed=S.saved_source_stage(path,context_id) if stage.VERSION=='meaning-source-stage/1' else None
+    parent=completed['answer'] if completed else None
+    if parent is not None:parent_id=parent['id']
+    saved_parent = parent is not None or stage.exists(path, parent_id)
     review = preview(path, parent_id) if saved_parent and len(packets) > 1 else None
     count = (0 if saved_parent else len(packets)) + int(len(packets) > 1 and not (review or {}).get('saved_answer_available'))
     return {'schema': VERSION, 'context_id': context_id, 'patient_id': row['patient_id'],
@@ -246,7 +249,10 @@ def synthesize_context(path, context_id, ledger, *, allow_live=False):
     route = context_route(path, context_id)
     if route is None: return S.synthesize(path, context_id, ledger, allow_live=allow_live)
     stage = route[0]
-    parent = stage.synthesize(path, context_id, ledger, allow_live=allow_live)
+    completed=S.saved_source_stage(path,context_id) if stage.VERSION=='meaning-source-stage/1' else None
+    parent=({**completed['answer'],'new_paid_api_calls':0,'new_token_count_calls':0,'cache_hit':True}
+            if completed and completed['answer'] is not None else
+            stage.synthesize(path, context_id, ledger, allow_live=allow_live))
     if len(parent['passes']) == 1: return parent
     result = synthesize(path, parent['id'], ledger, allow_live=allow_live)
     return {**result, 'new_paid_api_calls': parent['new_paid_api_calls'] + result['new_paid_api_calls'],
@@ -257,7 +263,8 @@ def synthesize_context(path, context_id, ledger, *, allow_live=False):
 def progress_context(path, context_id):
     route = context_route(path, context_id)
     if route is None: return S.progress(path, context_id)
-    stage = route[0].progress(path, context_id)
+    completed=S.saved_source_stage(path,context_id) if route[0].VERSION=='meaning-source-stage/1' else None
+    stage=completed['answer'] if completed and completed['answer'] is not None else route[0].progress(path, context_id)
     if stage['status'] != 'complete' or len(stage['passes']) == 1: return stage
     planned = preview(path, stage['id'])
     target = location(path, planned['answer_id']).with_name(planned['answer_id'] + '-progress.json')

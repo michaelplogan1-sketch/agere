@@ -163,6 +163,27 @@ class CitationRecovery(unittest.TestCase):
                 S.synthesize(self.path,self.row['id'],self.ledger,allow_live=True)
         source.assert_not_called()
 
+    def test_current_api_entrypoint_preview_run_and_progress_reuse_correction(self):
+        from clinical_core.agere.clinical import reconciliation as api
+        saved=self.execute();route=R.O.M.prepare(self.path,self.row['id'])
+        route=(R.O.M,*route)
+        review={'answer_id':'a'*64,'saved_answer_available':False}
+        with patch.object(S,'context',return_value=self.row),patch.object(api,'context_route',return_value=route), \
+                patch.object(api,'preview',return_value=review)as preview, \
+                patch.object(api,'synthesize',return_value={'id':'reconciled','new_paid_api_calls':1,'new_token_count_calls':0,'cache_hit':False})as finish, \
+                patch.object(R.O.M,'synthesize')as source:
+            plan=api.preview_context(self.path,self.row['id'])
+            self.assertEqual(plan['reused_source_passes'],len(saved['passes']))
+            self.assertEqual(plan['maximum_inference_calls'],1)
+            result=api.synthesize_context(self.path,self.row['id'],self.ledger,allow_live=True)
+            finish.assert_called_once_with(self.path,saved['id'],self.ledger,allow_live=True)
+            self.assertEqual(result['new_paid_api_calls'],1)
+            progress=api.progress_context(self.path,self.row['id'])
+            self.assertEqual(progress['source_stage'],saved)
+            self.assertEqual(progress['status'],'source_passes_complete_reconciliation_pending')
+            source.assert_not_called()
+            self.assertTrue(all(call.args==(self.path,saved['id'])for call in preview.call_args_list))
+
     def test_new_original_pass_failure_resumes_without_repeating_completed_correction(self):
         self.assertGreater(len(self.packets),2)
         body,units=self.packets[2];failed=R.O.request_key(body)
