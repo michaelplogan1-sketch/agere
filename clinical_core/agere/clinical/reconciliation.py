@@ -117,7 +117,9 @@ def parse(raw, job, refs):
         if not isinstance(finding['unresolved'], list): raise ValueError('Unresolved list required')
         finding['unresolved'] = [render(v, f'/findings/{i}/unresolved/{j}', 1400) for j, v in enumerate(finding['unresolved'])]
     for i, review in enumerate(core['claim_reviews']):
-        review['reason'] = render(review['reason'], f'/claim_reviews/{i}/reason', 200)
+        # Match the existing linked-claim reason contract. The former narrower
+        # admission rejected valid complete explanations without source faults.
+        review['reason'] = render(review['reason'], f'/claim_reviews/{i}/reason', 300)
     core['unanswered'] = [render(v, f'/unanswered/{i}', 1400) for i, v in enumerate(core['unanswered'])]
     for i, step in enumerate(core['review_steps']):
         step['question'] = render(step['question'], f'/review_steps/{i}/question', 350)
@@ -297,6 +299,30 @@ def revalidate_excerpt_count(job,refs,ledger,out):
         'excess_excerpt_list_lengths':[len(v)for v in overflow]},tokens
 
 
+def revalidate_reason_admission(job,refs,ledger,out):
+    """Recover exact retained text admitted by the existing 300-char contract."""
+    body=job['body'];key=G.request_key(body)
+    old=ledger.db.execute('SELECT status FROM calls WHERE id=?',(key,)).fetchone()
+    if old is None or old[0]!='failed':return None
+    failed=out/(key+'-failure.json');received=out/(key+'.json')
+    if not failed.exists()or not received.exists():return None
+    failure=json.loads(failed.read_text())
+    if failure.get('request_hash')!=key or failure.get('error')!='Invalid bounded synthesis text':return None
+    raw=json.loads(received.read_text())['response']
+    value=json.loads(''.join(c['text']for c in raw.get('content',[])if c.get('type')=='text'))
+    if not isinstance(value,dict)or not isinstance(value.get('claim_reviews'),list):return None
+    lengths=[len(v['reason']['text'])for v in value['claim_reviews']if isinstance(v,dict)
+        and isinstance(v.get('reason'),dict)and isinstance(v['reason'].get('text'),str)
+        and 200<len(v['reason']['text'])<=300]
+    if not lengths:return None
+    from .context_student import _revalidate_saved
+    result,usage=_revalidate_saved(key,body['model'],body['model'],out,
+        lambda returned:parse(returned,job,refs),'existing_claim_reason_contract/1')
+    tokens=C.token_check(body,out,allow_live=False)
+    return result,{**usage,'actual_request_bytes':P.request_bytes(body),
+        'excess_legacy_reason_lengths':lengths},tokens
+
+
 def validate_corrected_body(base,body):
     if (set(body)!=set(base)or any(body[k]!=base[k]for k in base if k!='system')
             or not body['system'].startswith(base['system']+RECOVERY_HEADER)):
@@ -395,7 +421,7 @@ def synthesize(path, parent_id, ledger, *, allow_live=False):
     prior=saved_for_parent(path,parent_id)
     if prior is not None:return {**prior,'cache_hit':True,'new_paid_api_calls':0,'new_token_count_calls':0}
     out=target.parent/'provider'
-    excerpt_revalidated=revalidate_excerpt_count(job,refs,ledger,out)
+    excerpt_revalidated=revalidate_excerpt_count(job,refs,ledger,out)or revalidate_reason_admission(job,refs,ledger,out)
     old = ledger.db.execute('SELECT status FROM calls WHERE id=?', (G.request_key(job['body']),)).fetchone()
     if old and old[0] != 'validated'and excerpt_revalidated is None: raise ValueError('Prior reconciliation pending/failed; no silent retry')
     def fresh():

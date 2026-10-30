@@ -197,6 +197,26 @@ class Reconciliation(unittest.TestCase):
         self.assertEqual(self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(key,)).fetchone()[0],'failed')
         self.assertEqual(answer['reconciliation']['groups'][0]['usage']['offline_revalidation'],'exact_supplied_excerpt_count/1')
 
+    def test_existing_claim_reason_admission_preserves_complete_text_and_failed_accounting(self):
+        import os
+        value=self.result();value['claim_reviews'][0]['reason']=self.text('x'*207)
+        self.assertEqual(self.parsed(value)['claim_reviews'][0]['reason'],'x'*207)
+        invalid=copy.deepcopy(value);invalid['claim_reviews'][0]['reason']=self.text('x'*301)
+        with self.assertRaisesRegex(ValueError,'Invalid bounded'):self.parsed(invalid)
+        body=self.job['body'];key=R.G.request_key(body);out=R.location(self.path,'0'*64).parent/'provider';out.mkdir(parents=True)
+        raw=self.raw(body,value);(out/(key+'.json')).write_text(json.dumps({'response':raw}))
+        (out/(key+'-failure.json')).write_text(json.dumps({'request_hash':key,'error':'Invalid bounded synthesis text'}))
+        self.ledger.reserve(key,'claude',body['model']);self.ledger.finish(key,error='Invalid bounded synthesis text')
+        original=(out/(key+'.json')).read_bytes()
+        with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
+            R.C.token_check(body,out,allow_live=True)
+            with patch.object(R.G,'send')as send:
+                answer=R.synthesize(self.path,self.parent['id'],self.ledger,allow_live=False);send.assert_not_called()
+        self.assertEqual(answer['claim_reviews'][0]['reason'],'x'*207)
+        self.assertEqual(answer['new_paid_api_calls'],0)
+        self.assertEqual((out/(key+'.json')).read_bytes(),original)
+        self.assertEqual(self.ledger.db.execute('SELECT status FROM calls WHERE id=?',(key,)).fetchone()[0],'failed')
+
     def test_count_revalidation_still_rejects_unknown_or_duplicate_references(self):
         import os
         with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}):
