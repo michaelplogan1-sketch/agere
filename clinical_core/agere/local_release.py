@@ -198,7 +198,8 @@ def dependencies(build, config):
         manifests = {str(p.relative_to(d)): file_entry(p) for p in sorted(d.glob('*.json')) if p.is_file()}
         if not manifests: raise ValueError('External dependency has no identity manifest: ' + str(d))
         result.append({'path': str(d), 'verification': 'top_level_json_manifests', 'files': manifests})
-    ledger = ROOT / 'artifacts/agere-full/provider-budget.sqlite3'
+    from .gateway import default_ledger_path
+    ledger = default_ledger_path().resolve()
     if not ledger.is_file(): raise ValueError('Current shared provider ledger required')
     result.append({'path': str(ledger), 'verification': 'current_shared_ledger_never_restored'})
     return result

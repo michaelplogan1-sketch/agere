@@ -11,6 +11,27 @@ from unittest.mock import patch
 from clinical_core.agere import local_release as L
 
 
+class LedgerDependencies(unittest.TestCase):
+    def test_checkpoint_tracks_configured_accounting_instead_of_unused_default(self):
+        with tempfile.TemporaryDirectory()as temp:
+            root=Path(temp).resolve();build=root/'build';(build/'stack').mkdir(parents=True)
+            encoder=root/'encoder';source=root/'source';reranker=root/'models/bge-reranker-v2-m3'
+            for path in (encoder,source,reranker):
+                path.mkdir(parents=True);(path/'run.json').write_text('{"synthetic":true}')
+            (build/'stack/run.json').write_text(json.dumps({'encoder_path':str(encoder)}))
+            legacy=root/'artifacts/agere-full/provider-budget.sqlite3';legacy.parent.mkdir(parents=True);legacy.write_text('unused accounting')
+            current=root/'current/provider-budget.sqlite3';current.parent.mkdir();current.write_text('current accounting')
+            with patch.object(L,'ROOT',root),patch.dict(os.environ,{'AGERE_LEDGER_PATH':str(current)}):
+                deps=L.dependencies(build,{'source_release':str(source)})
+                ledger=[d for d in deps if d['verification']=='current_shared_ledger_never_restored']
+                self.assertEqual(ledger,[{'path':str(current),'verification':'current_shared_ledger_never_restored'}])
+                L.check_dependencies(deps)
+                current.unlink()
+                with self.assertRaisesRegex(ValueError,'Current shared provider ledger required'):
+                    L.dependencies(build,{'source_release':str(source)})
+            self.assertEqual(legacy.read_text(),'unused accounting')
+
+
 class RecoveryTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
