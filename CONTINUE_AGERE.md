@@ -1,14 +1,10 @@
-# Current Agere checkpoint — 2026-10-30T20:25:25.984370+00:00
+# Current Agere checkpoint — 2026-10-30T21:53:29.026866+00:00
 
-Build ACTIVE,G5; sole owner; schedulerPAUSED; no active provider/training/build job. Candidate52284fe committed for private branch. Primary/default unchanged; no current8890server. Report-only preview8891/v3 is available.
+Build ACTIVE,G5; sole owner; schedulerPAUSED. Two missing source fields running on frozen387df4f.
 
-52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues→0in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open.
+Current57patient named-medication report passes all58typed source packets, with no missing source contexts (57.17s,$0.196639814APIestimate,0Claude). All1197native cells matchCSV;112-pagePDF embeds exactcurrent context and namesall64medicationgroups. Coverage remains partial: original narrative questions did not query actual regimen/dose or individual tolerated maximum. The sole targeted follow-up now queries those two literal source fields for all57through existing focused review; original reasons and planning are not repeated. Current installed report recovery remains open.
 
-Evidence: artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/receipt.json. CanonicalANS-2cfa9fbc612c74e12be1d189; current artifactDLV-63FE052930DB. Ordinary attempt2 retained19m44s/$3.183520416API-equivalent across1434pricedattempts; no matched cold cost advantage claimed. All4829ledgerrows preserved. The suspected26-PCP omission was disproved and no omission guard shipped; current reading separates roles using source snapshot state.
-
-Next action: Continue the ordinary controller on the original full question using retained current native evidence and precise scope feedback, without repeating source discovery. Demonstrate autonomous correction/canonical named HTML/PDF/CSV delivery with all-attempt cost, then qualify checked reuse/role-specific learning and verify the current installed runtime/recovery. No inherited clinical/support acceptance; retain all ten areas and scheduler PAUSED.
-
-No default/model promotion, clinical readiness, full-MVP claim, main merge, publication or narrowing of the charter. Last sealed owner receipt unchanged.
+Next action: Inspect sole targeted-regimen source job PID32945/session77643 at artifacts/agere-full-stack-rerun-2026-10-30/targeted-regimen-completion/run-receipt.json until terminal. Product/source frozen on387df4f; do not duplicate provider or native work. Preserve precise source results, measure unknowns/cost, then complete current export/source checks and installed restart/restore acceptance. Fix only observed recovery/read-route defects after run terminal. Retain all ten areas and independent clinical/model/external gaps.
 
 ## Earlier checkpoint (superseded)
 

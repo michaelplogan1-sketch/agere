@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Continue the ordinary controller on the original full question using retained current native evidence and precise scope feedback, without repeating source discovery. Demonstrate autonomous correction/canonical named HTML/PDF/CSV delivery with all-attempt cost, then qualify checked reuse/role-specific learning and verify the current installed runtime/recovery. No inherited clinical/support acceptance; retain all ten areas and scheduler PAUSED.",
+  "active_work": "Inspect sole targeted-regimen source job PID32945/session77643 at artifacts/agere-full-stack-rerun-2026-10-30/targeted-regimen-completion/run-receipt.json until terminal. Product/source frozen on387df4f; do not duplicate provider or native work. Preserve precise source results, measure unknowns/cost, then complete current export/source checks and installed restart/restore acceptance. Fix only observed recovery/read-route defects after run terminal. Retain all ten areas and independent clinical/model/external gaps.",
   "latest_delivery": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json",
   "owned_server_pid": null,
@@ -22,20 +22,20 @@
   "resumed_at": "2026-10-29T11:55:57.347665+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-30T20:25:25.984370+00:00",
+  "latest_checkpoint": "2026-10-30T21:53:29.026866+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "8890stopped;8891current partial-report preview available. No activeprovider/build job; schedulerPAUSED. Primary/default and known-good recovery unchanged.",
+  "server_status": "8890stopped;8891older partial-report preview. Current typed sourcecheck only; primary/default/recovery unchanged; schedulerPAUSED.",
   "unsealed_work": {
-    "status": "native_scope_correction_verified_candidate",
-    "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction",
-    "remaining_gap": "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open.",
-    "next_action": "Continue the ordinary controller on the original full question using retained current native evidence and precise scope feedback, without repeating source discovery. Demonstrate autonomous correction/canonical named HTML/PDF/CSV delivery with all-attempt cost, then qualify checked reuse/role-specific learning and verify the current installed runtime/recovery. No inherited clinical/support acceptance; retain all ten areas and scheduler PAUSED.",
-    "source_frozen_for_run": false,
-    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction/receipt.json",
+    "status": "targeted_missing_regimen_fields_running",
+    "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-fill-evidence-completion",
+    "remaining_gap": "Current57patient named-medication report passes all58typed source packets, with no missing source contexts (57.17s,$0.196639814APIestimate,0Claude). All1197native cells matchCSV;112-pagePDF embeds exactcurrent context and namesall64medicationgroups. Coverage remains partial: original narrative questions did not query actual regimen/dose or individual tolerated maximum. The sole targeted follow-up now queries those two literal source fields for all57through existing focused review; original reasons and planning are not repeated. Current installed report recovery remains open.",
+    "next_action": "Inspect sole targeted-regimen source job PID32945/session77643 at artifacts/agere-full-stack-rerun-2026-10-30/targeted-regimen-completion/run-receipt.json until terminal. Product/source frozen on387df4f; do not duplicate provider or native work. Preserve precise source results, measure unknowns/cost, then complete current export/source checks and installed restart/restore acceptance. Fix only observed recovery/read-route defects after run terminal. Retain all ten areas and independent clinical/model/external gaps.",
+    "source_frozen_for_run": true,
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/targeted-regimen-completion/run-receipt.json",
     "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
@@ -285,7 +285,18 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [],
+  "active_jobs": [
+    {
+      "kind": "native_fill_evidence_completion",
+      "status": "returned",
+      "source_frozen": true,
+      "commit": "387df4f",
+      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/native-fill-evidence-completion/run-receipt.json",
+      "scope": "Preserve original ordinary57-patient cells, append received drug identities/dates/source-fill rows through existing SQL/compose tools, independently verify228pillar cells, rebuild current partial reports and recheck only three previously diagnosed dependencies. No Claude callback or model promotion.",
+      "pid": 32556,
+      "session": 41147
+    }
+  ],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
