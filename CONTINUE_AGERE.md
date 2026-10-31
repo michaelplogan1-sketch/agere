@@ -1,3 +1,45 @@
+# Current Agere checkpoint - 2026-10-31T14:35:16.276642+00:00
+
+Build ACTIVE,G3; no active provider/training job; scheduler PAUSED. Product candidates11ef209(scope guard)/1eb76c7(documentation retention). Alltenareas retained.
+
+Actual offline workflow proof:4stale conditional source scopes blocked before dispatch, corrected12month scopes and pure membership pass.69actual compiled prompt states retain exact12documentation sections(50561bytes),12of18fetches already satisfied.120focused checks pass,0providers. No new end-to-end completion/speed or clinical qualification claim.
+
+Exact next: G3: inspect and consume existing documentary assertion reconciliation in the shared patient/report projection. Preserve exact question/entity/source contracts and quarantined prior readings; expose opposing or unresolved accounts without promoting them to clinical values. Do not add a relation catalog without a measured need. Verify native source preservation and readable rendering offline, then one confirmatory ordinary question after combined checks. Preserve alltenareas and source caches; scheduler PAUSED.
+
+Last sealed owner receipt remains report-download performance; curated73page PDF retained. Review decision docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T14:25:16.312943+00:00
+
+Build ACTIVE,G3reopened; both independent Claude reviews returned with frozen product5488550 unchanged. Latest Mike instruction authorizes necessary autonomous follow-through; scheduler PAUSED. No active provider/training job. Alltenareas retained.
+
+Exact next: G3: implement pre-dispatch native medication-window lineage checks and pin exact owner definitions, then offline retained-trace proof with providers prohibited. Query warnings remain advisory; block only conditional source-review scopes consuming stale current flags. Preserve all-history queries, pure membership lookups, source caches and all ten acceptance areas. Then exact documentation retention and typed-state consumption before one confirmatory connected run. Scheduler stays PAUSED; autonomous follow-through authorized by Mike.
+
+Decision: docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md. Last sealed receipt remains report-download performance; original ordinary46minute run remains partial. No clinical/MVP readiness claim.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T13:44:30.534739+00:00
+
+Independent Claude BLUEPRINT REVIEW RUNNING PID88984/session85796; product5488550/review input frozen. No active stack/training run. Implementation held during review; Mike’s newest instruction explicitly authorizes autonomous follow-through and necessary MVP work after review without approval. Scheduler remains PAUSED. Alltenareas retained.
+
+Exact next: Observe the one independent Claude subscription blueprint review (session85796) to terminal; current product5488550 and supplied review input are frozen. Review-only work while it runs; do not duplicate it or start another stack/provider/training job. Mike’s latest instruction authorizes autonomous follow-through after review without approvals. Critically verify Claude findings against the source/receipts, distinguish observed defects from hypotheses, reconcile a minimal finite correction with the existing blueprint/alltenareas, then resume necessary MVP implementation under that authorization. No wholesale rewrite, model catalog, held-out keys, broad training/reruns, main merge, publication, real care or new services. Keep scheduler PAUSED.
+
+Review request/materials/manifest: artifacts/agere-blueprint-review-2026-10-31. Previous ordinary46minute run remains partial; bad continuation1296attempts/$0.574041198known+1unpriced retained; last corrected continuation17Haikuattempts/$0.1804089known+1unpriced cancelled for this review with earlierledger/source/code intact. Actual61action0provider replay46.756s and exact35quarantine audit retained. Curated73page PDF available; MVP/clinical readiness not claimed.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T13:33:33.973687+00:00
+
+BUILD PAUSED for Mike’s requested blueprint review and independent Claude second opinion. Provider run88251/session36289 stopped(exit143); all attempts/source/cache work retained. No product/training/run job active. Scheduler remains PAUSED. Sole owner retains controls.
+
+Exact next: Implementation PAUSED for Mike’s requested blueprint alignment and independent Claude architecture review. No provider/training/build job is active. Review the intended blueprint, current implementation, all ten acceptance areas, measured failures, operational reuse/feedback and proposed next steps; obtain Claude feedback through the existing subscription only. Preserve current code/source/receipts and all failed/partial attempts. Do not resume product implementation or start another MVP run until Mike explicitly resumes after review; do not reactivate scheduled prompts.
+
+Last run: artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v2/run-receipt.json. Current product5488550 and private branch29eace6; primary unchanged, isolated8890stopped. Curated73page user PDF retained. No MVP/clinical readiness claim; alltenareas retained.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T13:25:48.010455+00:00
 
 Build ACTIVE,G5;sole owner;scheduler PAUSED. Corrected continuation PID88251/session36289 RUNNING; product5488550/source frozen. No duplicate job or product edits. Last sealed report/download delivery and curated73page user PDF retained.

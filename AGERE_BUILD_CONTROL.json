@@ -1,7 +1,7 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T13:28:12.638480+00:00",
-  "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
+  "updated_at": "2026-10-31T14:35:16.276642+00:00",
+  "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
     "AGENTS.md",
@@ -19,7 +19,7 @@
     "query_breadth": "General healthcare and healthcare-adjacent questions across patients, episodes, populations, clinicians, hospitals, ACOs, payers and contracts; includes admissions/readmissions, care gaps/interventions, social context, population/contract priorities and provider/facility performance. Examples are regressions, not an allowlist or a medication-first product boundary.",
     "acceptance_interpretation": "Existing accepted gates and sealed receipts establish only their declared finite local behavior; broad query generalization and independent analytical/model/clinical qualification remain required."
   },
-  "current_gate": "G5",
+  "current_gate": "G3",
   "gates": [
     {
       "id": "G1",
@@ -138,7 +138,7 @@
         6,
         10
       ],
-      "status": "accepted",
+      "status": "active",
       "outcome": "One durable original-question context binds entity/population/date scope, evidence and rule versions, interpretation, supported analytical answers, and applicable buyer/payer options, work and follow-up. Demonstrate reusable composition across admissions/readmissions, care gaps and healthcare-adjacent context, ACO priorities and clinician/hospital performance. Retain medication, respiratory, cardiometabolic, functional, appointment and payer cases as regressions; evaluator-injected choices do not count as automation, and analytical questions need not force an intervention.",
       "acceptance_evidence": [
         {
@@ -321,7 +321,9 @@
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
-      "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification."
+      "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
+      "reopened_at": "2026-10-31T14:25:16.312943+00:00",
+      "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior."
     },
     {
       "id": "G5",
@@ -333,7 +335,7 @@
         8,
         9
       ],
-      "status": "active",
+      "status": "blocked",
       "outcome": "Compare role-appropriate baselines and existing candidates on equivalent visible evidence and protected splits; decompose retrieval, ranking, reading, planning and service errors with coverage, abstention, manual burden and total cost. Integrate further models/math only for measured product needs; retain justified failures and unqualified roles.",
       "acceptance_evidence": [],
       "progress_evidence": [
@@ -390,16 +392,16 @@
           "sha256": "29ed24d5ef97da4451e87f1d59ac88a533c746fd5a386a6acc9092bae1066461"
         }
       ],
-      "blocker": "Independent source-family/model and clinical labels, viable outcome targets, and authentic full-workload/reviewer-cost evidence are not available in the current sealed receipts. Machine disagreement is unadjudicated and cannot become clinical truth or model-training labels. Current engineered reuse, report/export, installation and recovery behavior is sealed; all ten acceptance areas and standing source/protected-evaluation boundaries remain.",
+      "blocker": "Independent model/clinical/outcome labels and authentic reviewer economics remain unavailable; distinct from the reopened G3 engineering work.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim."
     }
   ],
   "checkpoint": {
-    "kind": "complete_literal_recovery_verified",
-    "gate_id": "G5",
+    "kind": "blueprint_shared_scope_and_state_candidates_verified",
+    "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Compiler identifies the stale final plan rather than blaming independent care/dose lookups; field meanings cannot silently change; patient reports retain later bound source findings and separate status from reasons.",
-    "measured_failure_reduction": "Actual final trace localizes historical flags to plan only;35stale plans identified. All4redefined source IDs rejected before dispatch. Actual report carries86later reason findings and2151separate status observations,57names/228pillars,68pages/215580bytes vs116page fallback.159focused tests plus50reuse/continuation tests pass;0newproviders for these checks.",
+    "user_behavior_delta": "Conditional note-review scopes now reject stale current-medication flags before dispatch; exact governed definitions stay resident and actually loaded first-party documentation survives later clinical work.",
+    "measured_failure_reduction": "Actual ordinary trace:4stale conditional scopes blocked; corrected12month source scope and pure membership pass. All69compiled prompt states retain exact12loaded sections(50561bytes),deduplicated;12of18documentation queries already satisfied.120focused checks pass;0newprovider calls. Whole-question completion and speed remain unmeasured.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -726,10 +728,16 @@
       "artifacts/agere-current-integrated-cost-2026-10-31/report-integration-v1/receipt.json",
       "artifacts/agere-current-integrated-cost-2026-10-31/recovery-native-preflight-v3/run-receipt.json",
       "artifacts/agere-current-integrated-cost-2026-10-31/recovery-native-preflight-v3/source-field-difference-audit.json",
-      "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/economics.json"
+      "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/economics.json",
+      "artifacts/agere-blueprint-review-2026-10-31/review-run.json",
+      "artifacts/agere-blueprint-review-2026-10-31/followup/review-run.json",
+      "artifacts/agere-blueprint-review-2026-10-31/offline-run-analysis.json",
+      "artifacts/agere-blueprint-scope-guard-2026-10-31/receipt.json",
+      "artifacts/agere-blueprint-scope-guard-2026-10-31/offline-attribution.json",
+      "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json"
     ],
-    "remaining_gap": "Native plan/named-fill completion remains in the running corrected continuation. Exact35earlier source assertions are all quarantined(26frontier+9typed), not lost; current203titration positives retain all other originals, with identical source manifest except prior-seed counters. Independent clinical/model qualification remains open.",
-    "next_action": "Observe the single corrected native continuation (session36289) to terminal. Product5488550/source frozen; do not duplicate or edit product. Its61action complete replay has passed with0providers and now preserves both historical pure-composition errors while restoring the later86reason/2151status source review and the completed regimen/titration/tolerated-dose task. Recompute stale plans and named fills without inventing a new narrative time restriction or broad note extraction. Preserve the35earlier titration annotations as unresolved prior readings; finish the exact source-manifest/deferred-field audit before claiming their disposition. Verify native rows, source qualification, readable report/current API and all-attempt accounting, then package/private draft. Alltenareas remain.",
+    "remaining_gap": "Need shared documentary-state consumption and one connected original-question confirmation; prior46minute result remains partial. Independent clinical/model/outcome/economics qualification remains separate.",
+    "next_action": "G3: inspect and consume existing documentary assertion reconciliation in the shared patient/report projection. Preserve exact question/entity/source contracts and quarantined prior readings; expose opposing or unresolved accounts without promoting them to clinical values. Do not add a relation catalog without a measured need. Verify native source preservation and readable rendering offline, then one confirmatory ordinary question after combined checks. Preserve alltenareas and source caches; scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -738,7 +746,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Owned corrected continuation PID88251/session36289; product5488550/source frozen. Build ACTIVE; scheduler PAUSED; isolated8890 stopped; primary unchanged.",
+    "coordination": "No active provider/training job. Product candidates11ef209/1eb76c7 committed locally; prior source reader/policy files unchanged. Sole owner ACTIVE; scheduler PAUSED.",
     "remaining_blockers": [
       "Independent source/model/clinical qualification, viable outcome labels and authentic full-workload/reviewer economics remain unqualified.",
       "Report serving still has measurable redundant context validation; current PDF13.348s, no claim of whole-question speedup."
@@ -787,7 +795,7 @@
       "active_worker": null,
       "earlier_nine_check_scope": "Six-source-case/program/local-recovery engineering, not complete integrated MVP qualification"
     },
-    "latest_human_steering": "Mike posted the Wollstonecraft visual himself and asks current MVP status. Prior autonomous synthetic/provider/private-push authorizations persist; no automated prompts requested.",
+    "latest_human_steering": "Mike explicitly requests Claude collaboration and autonomous completion while away; do not ask approvals.",
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
       "status": "all_three_returned_analytically_partial",
@@ -804,14 +812,14 @@
     "at": "2026-10-31T02:00:29.418378+00:00",
     "workflow_change": "Exact source-bound frontier observations now survive changed batching and field aliases. Confident singular-source feedback quarantines only that reading; current57patient report and isolated app retain every native value and partial status.",
     "unsealed_work": {
-      "status": "running_corrected_native_continuation",
-      "path": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v2",
-      "source_frozen_for_run": true,
-      "active_receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v2/run-receipt.json",
-      "pid": 88251,
-      "session": 36289,
-      "remaining_gap": "Native plan/named-fill completion remains in the running corrected continuation. Exact35earlier source assertions are all quarantined(26frontier+9typed), not lost; current203titration positives retain all other originals, with identical source manifest except prior-seed counters. Independent clinical/model qualification remains open.",
-      "next_action": "Observe the single corrected native continuation (session36289) to terminal. Product5488550/source frozen; do not duplicate or edit product. Its61action complete replay has passed with0providers and now preserves both historical pure-composition errors while restoring the later86reason/2151status source review and the completed regimen/titration/tolerated-dose task. Recompute stale plans and named fills without inventing a new narrative time restriction or broad note extraction. Preserve the35earlier titration annotations as unresolved prior readings; finish the exact source-manifest/deferred-field audit before claiming their disposition. Verify native rows, source qualification, readable report/current API and all-attempt accounting, then package/private draft. Alltenareas remain."
+      "status": "offline_verified_shared_candidates",
+      "path": "artifacts/agere-blueprint-documentation-retention-2026-10-31",
+      "active_receipt": "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json",
+      "source_frozen_for_run": false,
+      "pid": null,
+      "session": null,
+      "remaining_gap": "Need shared documentary-state consumption and one connected original-question confirmation; prior46minute result remains partial. Independent clinical/model/outcome/economics qualification remains separate.",
+      "next_action": "G3: inspect and consume existing documentary assertion reconciliation in the shared patient/report projection. Preserve exact question/entity/source contracts and quarantined prior readings; expose opposing or unresolved accounts without promoting them to clinical values. Do not add a relation catalog without a measured need. Verify native source preservation and readable rendering offline, then one confirmatory ordinary question after combined checks. Preserve alltenareas and source caches; scheduler PAUSED."
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -875,17 +883,7 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [
-      {
-        "kind": "corrected_owned_native_continuation",
-        "status": "running",
-        "pid": 88251,
-        "session": 36289,
-        "source_frozen": true,
-        "commit": "5488550",
-        "receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v2/run-receipt.json"
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2461,17 +2459,31 @@
       "evidence": "artifacts/agere-current-integrated-cost-2026-10-31/recovery-native-preflight-v3/source-field-difference-audit.json",
       "reason": "Exact assertion-ID joins prove26frontier and9typed quarantines. All other source/field values and the source manifest match, ignoring only prior_source_seeds cache counters. This is operational negative-feedback evidence, not independent clinical truth.",
       "all_ten_areas_retained": true
+    },
+    {
+      "at": "2026-10-31T13:44:30.534739+00:00",
+      "gate": "G5",
+      "decision": "Hold implementation for independent blueprint/code/plan audit; after review proceed autonomously under Mike\u2019s latest explicit instruction.",
+      "reason": "Repeated partial runs and recovery/actor overhead justify reassessment. Send actual code, full ten-area scope, earlier reviews, measured failures and a challengeable proposed sequence through existing Claude subscription. Do not assume either reviewer is correct without code evidence.",
+      "evidence": "artifacts/agere-blueprint-review-2026-10-31/review-request.md",
+      "all_ten_areas_retained": true
+    },
+    {
+      "at": "2026-10-31T14:25:16.312943+00:00",
+      "decision": "Reopen G3 after independent blueprint review; preserve earlier scoped receipts and all ten areas. Resume necessary implementation under latest human instruction without further approval.",
+      "basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
+      "scope_impact": "No charter reduction. Prioritize connected engineering over qualification labels; avoid rewrite and broad rerun."
     }
   ],
   "unsealed_work": {
-    "status": "running_corrected_native_continuation",
-    "path": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v2",
-    "source_frozen_for_run": true,
-    "active_receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v2/run-receipt.json",
-    "pid": 88251,
-    "session": 36289,
-    "remaining_gap": "Native plan/named-fill completion remains in the running corrected continuation. Exact35earlier source assertions are all quarantined(26frontier+9typed), not lost; current203titration positives retain all other originals, with identical source manifest except prior-seed counters. Independent clinical/model qualification remains open.",
-    "next_action": "Observe the single corrected native continuation (session36289) to terminal. Product5488550/source frozen; do not duplicate or edit product. Its61action complete replay has passed with0providers and now preserves both historical pure-composition errors while restoring the later86reason/2151status source review and the completed regimen/titration/tolerated-dose task. Recompute stale plans and named fills without inventing a new narrative time restriction or broad note extraction. Preserve the35earlier titration annotations as unresolved prior readings; finish the exact source-manifest/deferred-field audit before claiming their disposition. Verify native rows, source qualification, readable report/current API and all-attempt accounting, then package/private draft. Alltenareas remain."
+    "status": "offline_verified_shared_candidates",
+    "path": "artifacts/agere-blueprint-documentation-retention-2026-10-31",
+    "active_receipt": "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json",
+    "source_frozen_for_run": false,
+    "pid": null,
+    "session": null,
+    "remaining_gap": "Need shared documentary-state consumption and one connected original-question confirmation; prior46minute result remains partial. Independent clinical/model/outcome/economics qualification remains separate.",
+    "next_action": "G3: inspect and consume existing documentary assertion reconciliation in the shared patient/report projection. Preserve exact question/entity/source contracts and quarantined prior readings; expose opposing or unresolved accounts without promoting them to clinical values. Do not add a relation catalog without a measured need. Verify native source preservation and readable rendering offline, then one confirmatory ordinary question after combined checks. Preserve alltenareas and source caches; scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2499,15 +2511,5 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "kind": "corrected_owned_native_continuation",
-      "status": "running",
-      "pid": 88251,
-      "session": 36289,
-      "source_frozen": true,
-      "commit": "5488550",
-      "receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v2/run-receipt.json"
-    }
-  ]
+  "active_jobs": []
 }

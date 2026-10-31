@@ -1,3 +1,13 @@
+# Current update — 2026-10-31T14:35:16.276642+00:00
+
+G3reopened after two independent Claude subscription reviews. Both returned with frozen code unchanged; latest human instruction authorizes autonomous follow-through. The17Haiku corrected continuation was cancelled for this review; no stack job currently runs. Keep prior run accounting and scoped delivery history below.
+
+Candidates11ef209/1eb76c7 address the measured shared failures: stale conditional note-review scope rejected before dispatch; exact loaded documentation retained across later clinical work. Actual retained trace:4bad scopes blocked,corrected source scope passes;69compiled states preserve12sections,12of18fetches already satisfied.120focused checks pass,0providers. This is offline engineering evidence; the original46minute result remains partial. Next is typed-state consumption and one connected confirmation. Clinical/model/outcome qualification remains open. Alltenareas retained; scheduler PAUSED.
+
+Decision: [blueprint reconciliation](MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md). The curated73page patient PDF remains the retained user artifact; no separate technical companion is required.
+
+## Prior delivery history
+
 # Agere current local MVP delivery - updated October31,2026
 
 Last sealed product code: `2a608b4` on `codex/integration-20261026`. Current candidate: `5488550`, with shared repairs verified offline and a single targeted continuation running. G5 remains active; the full ordinary answer and independent clinical/model qualification remain incomplete. All ten acceptance areas remain.
