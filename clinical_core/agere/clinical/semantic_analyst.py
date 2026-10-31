@@ -666,11 +666,12 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         key = json.dumps([assessment.get('status'), assessment.get('progress_state',feedback), evidence], sort_keys=True, default=str)
                         result['answer'] = {**candidate, 'status': 'partial', 'verification': 'unverified',
                                             'limitations': [*(candidate.get('limitations') or []), str(feedback)]} if isinstance(candidate, dict) else None
+                        indeterminate=assessment.get('repair_kind')=='unresolved_verification'
                         if key in reviewed:
-                            if not escalate('Answer review repeated with unchanged evidence'):
+                            if indeterminate or not escalate('Answer review repeated with unchanged evidence'):
                                 result['review_stopped'] = 'no_progress'
                                 return result
-                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')!='deterministic_compiler':
+                        elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','unresolved_verification'):
                             escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
                         # Exact compiler feedback can be repaired on the cheap
                         # rung. A repeated failure/evidence state still takes

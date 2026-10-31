@@ -1185,11 +1185,26 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         if numeric_unknown:assessment['reason']='One or more quantitative field-meaning checks remain uncertain or unavailable'
         confirmed = coverage['label'] == 'answers_fully' and support.get('label') == 'supported' and bool(support.get('decided_by')) and not feedback and not numeric_unknown
         assessment['status'] = 'confirmed' if confirmed else 'repair' if feedback else 'unavailable'
+        indeterminate=verification_repair_state(coverage,support)
+        if assessment['status']=='repair'and indeterminate is not None and not numeric_unknown:
+            assessment.update(repair_kind='unresolved_verification',progress_state=indeterminate)
     except Exception as exc:  # a reviewer outage does not fabricate a successful check or erase the observed evidence
         if getattr(exc,'kind',None)=='rate_limit':raise
         assessment['reason'] = f'{type(exc).__name__}: {exc}'[:300]
     assessment['feedback'] = ' '.join(feedback) or None
     return assessment
+
+
+def verification_repair_state(coverage,support):
+    """Uncertain checks without a located fault justify investigation, not a stronger actor by default."""
+    packets=support.get('packets')or[]
+    pending=[p for p in packets if p.get('label')!='supported'or not p.get('decided_by')]
+    if(coverage.get('label')not in ('answers_fully','answers_partially')or support.get('label')!='unknown'
+       or support.get('claim_feedback')or support.get('failed_packet_ids')or not pending
+       or any(not isinstance(p.get('id'),str)or p.get('label')not in ('supported','unknown')or p.get('claim_feedback')for p in packets)):
+        return None
+    return {'coverage':coverage['label'],'unresolved_verification':sorted(
+        [{'id':p['id'],'label':p.get('label')}for p in pending],key=lambda p:p['id'])}
 
 
 

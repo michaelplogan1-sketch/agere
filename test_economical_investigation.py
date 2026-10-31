@@ -117,6 +117,33 @@ class Investigator(unittest.TestCase):
         self.assertEqual([b['model'] for b in self.sent],[M.HAIKU])
         self.assertFalse(r.get('model_escalations'));self.assertEqual(r['answer']['status'],'partial')
 
+    def test_uncertain_source_check_without_a_fault_does_not_promote_actor_or_pass_answer(self):
+        support={'label':'unknown','failed_packet_ids':[],'claim_feedback':[],
+                 'packets':[{'id':'patient_A','label':'unknown','decided_by':None}]}
+        state=B.verification_repair_state({'label':'answers_partially'},support)
+        r=self.run_loop([TOOL_REPLY,reply({'status':'answered','count':7}),reply({'status':'answered','count':7})],
+            lambda a,c:{'status':'repair','repair_kind':'unresolved_verification','feedback':'Source check remains unresolved',
+                        'progress_state':state})
+        self.assertEqual([b['model']for b in self.sent],[M.HAIKU]*3)
+        self.assertFalse(r.get('model_escalations'));self.assertEqual(len(self.executed),1)
+        self.assertEqual(r['review_stopped'],'no_progress');self.assertEqual(r['answer']['verification'],'unverified')
+
+    def test_resolved_source_check_can_pass_on_the_original_actor(self):
+        reviews=iter([{'status':'repair','repair_kind':'unresolved_verification','feedback':'Inspect the pending source'},
+                      {'status':'confirmed'}])
+        r=self.run_loop([reply({'status':'partial'}),reply({'status':'answered'})],lambda a,c:next(reviews))
+        self.assertEqual([b['model']for b in self.sent],[M.HAIKU]*2)
+        self.assertEqual(r['answer']['status'],'answered');self.assertFalse(r.get('model_escalations'))
+
+    def test_located_fault_or_different_question_is_not_an_indeterminate_check(self):
+        clean={'label':'unknown','packets':[{'id':'patient_A','label':'unknown','decided_by':None}]}
+        self.assertIsNotNone(B.verification_repair_state({'label':'answers_partially'},clean))
+        for bad in [{**clean,'claim_feedback':[{'field':'dose','label':'contradicted'}]},
+                    {**clean,'failed_packet_ids':['patient_A']},
+                    {**clean,'packets':[{'id':'patient_A','label':'contradicted','decided_by':'jev'}]}]:
+            self.assertIsNone(B.verification_repair_state({'label':'answers_partially'},bad))
+        self.assertIsNone(B.verification_repair_state({'label':'answers_a_different_question'},clean))
+
     def test_provider_outage_is_not_a_reason_for_paid_model_retry(self):
         r=self.run_loop([TimeoutError('Provider usage unavailable')])
         self.assertEqual(len(self.sent),1);self.assertFalse(r.get('model_escalations'))
