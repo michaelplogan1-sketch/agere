@@ -1,3 +1,15 @@
+# Current Agere checkpoint — 2026-10-31T06:30:28.170162+00:00
+
+Build ACTIVE,G5;soleowner;schedulerPAUSED. Current typed-feedback engineering delivery is SEALED: artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json. Sourceef9fa7c; currentcontextANS-4370962206a7c613180e34ea;deliverableDLV-1122CA7886DF. Allownedjobs terminal; no sourcefreeze. Currentisolated8890candidate beingresumed;primary8885/older8888 unchanged. Alltenareas retained; fullqueue/clinical/modelqualificationfalse.
+
+Finite source-aware/typed-feedback engineering delivery is sealed and allauthorized changes in this increment verified. Current57patient report has228pillar cells/17doseobjects/1083nativeCSVcells/150pages and allfour exactAPIexports.83focusedchecks plusactual cache and archived restart tests pass;9disputedassertions suspend45typeddecisions with0oldfindingreuse/0providers,control/payloads/source/ledger exact. G5 independent source-family/model/clinical qualification, viable outcome labels, authentic full-workload/reviewer economics and production authority remain unmet; no fullqueue/clinical-readiness/superiority claim.
+
+Exactnext: Continue G5 qualification with independently supported source/role labels and viable outcome targets. The concrete unresolved set is the retained12model-objection parts,48uncertain parts and9unchecked dependency parts; those nine unchecked parts are distinct from the nine typed assertions now suspended. Do not resample identical disputed inputs, relax verifier thresholds or train from machine votes. Qualify useful local readers/rankers/SLMs against the named failure and appropriate simple baselines; no catalog, broad training, protected/dev3 keys or generator truth. Model promotion and clinical/production readiness require their own evidence. Preserve the sealed current patient report, known-goodv6/v7 recovery, all ten areas and source/all-attempt accounting; no routine repeat approvals.
+
+Actualsourcecache feedback is active and append-only. Alloriginalsource/observationpayloads andproviderledgers retained; frontier source-observation keypolicy unchanged. Currentv7archive verifiedall57currentpatients/allfourformats and nine-blocksource suspension/control/cache bytes before/afterrestart. V6fullwork/idempotency/CAS/WAL/sourcechange/freshrestore evidence remains; no repeatedunchangedG6test score. Durablemanifest: /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/typed-feedback-delivery-v7/manifest.json.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-31T06:05:12.404858+00:00
 
 Build ACTIVE,G5;soleowner;schedulerPAUSED. Sourceef9fa7cFROZEN forownedcurrent-installed-typed-feedback-v7. Inspectactualprocess/run receipt beforeanyproductedit. Receipt: /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-typed-feedback-v7/run-receipt.json. No new paidcalls/training.
