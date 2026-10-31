@@ -1,3 +1,11 @@
+# Current Agere checkpoint - 2026-10-31T11:09:10.498254+00:00
+
+Build ACTIVE,G5;soleowner;schedulerPAUSED. Curated report delivery sealed at artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json. Current product7e004ca;57patients,73pages,228937bytes,45tests,allfourAPIformats exact,0providers. No separate technical companion or execution archive in PDF. Original source/answer retained; priorv7 recovery intact. Current isolated8890 ready; no sourcefreeze.
+
+Exact next: Measure and remove the observed duplicate saved-context load/validation in the normal report-download HTTP route, while retaining saved_report.read_format source/bundle/hash checks and unchanged bytes. Use current73page PDF and allfourformats plus stale/missing/tampered-context controls; no new source/provider rerun. Then return to G5 independent source/model/outcome qualification, the retained12objection/48uncertain/9unchecked parts and matched full-workload cost/latency evidence. Do not bypass dependency closure or train on model disagreement. Alltenareas retained.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-31T06:30:28.170162+00:00
 
 Build ACTIVE,G5;soleowner;schedulerPAUSED. Current typed-feedback engineering delivery is SEALED: artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json. Sourceef9fa7c; currentcontextANS-4370962206a7c613180e34ea;deliverableDLV-1122CA7886DF. Allownedjobs terminal; no sourcefreeze. Current isolated8890 candidate ready (PID75324/session98234); primary8885/older8888 unchanged. Alltenareas retained; fullqueue/clinical/modelqualificationfalse.
