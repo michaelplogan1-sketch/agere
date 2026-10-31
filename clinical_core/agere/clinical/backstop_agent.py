@@ -76,6 +76,7 @@ TOOLS = [
      'Unmatched sources and empty findings do not establish chart-wide absence. Expand a missing field with additional aliases or exact record_ids. '
      'source_scope=all explicitly requests exhaustive source coverage when needed. '
      'Use field_patient_queries to apply conditional fields to native patient subsets while retaining the full output population. '
+     'Field IDs keep their exact question/entity/relation/subject contract throughout this request. Reuse that contract for expanded patient or source scope; a changed question, entity, relation or alias set requires a new versioned field ID. '
      'Returns coverage and a SQL result_view containing patient_id, review_status, documents_reviewed and review_json. '
      'Each review_json field is a list of {value,record_id,date,quote}; empty means no documented finding, not absent disease. '
      'For a relation about a specific entity use {question,entity:{kind,id,aliases},relation,subject} instead of a question string. '
@@ -272,6 +273,7 @@ class Tools:
         self.result_sources = {}
         self.executed_results = {}
         self.document_reviews = []
+        self.document_field_contracts = {}
         self.subtool_accounting = {'new_paid_api_calls':0,'estimated_cost_usd':0.0}
         self.cohort = list(dict.fromkeys(cohort)) if cohort is not None else None
         # the request's patient scope, enforced here at the tool boundary (Codex review 2026-10-26), not left to the model: the named or
@@ -360,9 +362,28 @@ class Tools:
                 out = {**out, 'executed_query': expanded}
             return out
         if name == 'review_documents':
-            from .document_review import review
+            from .document_review import review, validate_questions
             if args.get('source_scope')=='all' and not str(args.get('exhaustive_reason')or'').strip():
                 raise ValueError('Exhaustive review requires exhaustive_reason naming the unresolved requirement and why focused or source-specific expansion is insufficient. Empty retrieval alone is not a reason to reread every field across the population.')
+            questions=validate_questions(args.get('questions'))
+            declared=getattr(self,'document_field_contracts',{})
+            # Retained native reviews can be restored without a live dispatch.
+            # Their meanings remain authoritative for these request-local IDs.
+            prior={}
+            for retained in getattr(self,'document_reviews',[]):
+                for field,contract in (retained.get('questions')or{}).items():
+                    prior.setdefault(field,[]).append(contract)
+            conflicts={field:declared[field]for field,contract in questions.items()
+                       if field in declared and declared[field]!=contract}
+            for field,contract in questions.items():
+                if any(old!=contract for old in prior.get(field,[])):
+                    conflicts[field]=prior[field]
+            if conflicts:
+                raise ValueError('Source field contract changed for '+', '.join(conflicts)+
+                    '. No source review was dispatched. Reuse the original contract/results for unchanged meaning and expanded scope; '
+                    'declare a new versioned field ID for a genuinely different question, entity, relation or alias set. '
+                    'Original contracts: '+json.dumps(conflicts,sort_keys=True))
+            self.document_field_contracts={**declared,**json.loads(json.dumps(questions))}
             return review(self, **{'source_scope':'focused',**args})
         if name == 'ask_agere': return self.ask_agere(**args)
         if name == 'list_metrics': return self.list_metrics()
