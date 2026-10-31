@@ -1,3 +1,15 @@
+# Current local engineering delivery — October 31 update
+
+Current source-review/report/recovery candidate: `10a415d` on the private integration branch and draft PR2. The original full question remains partial; this is a scoped engineering delivery, not clinical/model qualification or full MVP acceptance.
+
+All57patients and57pending evidence-review items save/reopen and survive an isolated installation plus fresh-process restart. Program preparation rejects the incomplete answer; idempotence and stale-edit protections pass. The current70pagecuratedPDF includes names, clinical context, dated clinicians, four medication pillars, doses and qualified source passages. It has no technical companion/archive. Lossless transport reduces complete-evidence interactive HTML from124MBto10.8MB; a37.4MBworkspace response opens while native history remains server-owned.65focused checks pass. These work/report/recovery operations used0newproviders.
+
+Source verification remains154of162packets checked,8pending within3families,9machine flags and161uncertain feedback entries;17patients have unresolved source checks. All9flaggedassertions have suspended observations bound to them(7reader/10typed), preserving originals. No new weights, default model, whole-question bottle, main merge or primary-server promotion.
+
+Sealed current receipt: `/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json`. The original failed installation probe is retained: its fixture used the wrong qualification-status result shape. Corrected installed/restart probes pass in90.357s without another package copy. The scheduler remainsPAUSED and alltenacceptance areas remain in scope. `AGERE_BUILD_CONTROL.json` owns the next action.
+
+## Earlier scoped delivery (retained history)
+
 # Current update — 2026-10-31T14:35:16.276642+00:00
 
 G3reopened after two independent Claude subscription reviews. Both returned with frozen code unchanged; latest human instruction authorizes autonomous follow-through. The17Haiku corrected continuation was cancelled for this review; no stack job currently runs. Keep prior run accounting and scoped delivery history below.

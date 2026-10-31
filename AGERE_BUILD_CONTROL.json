@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T20:21:23.176269+00:00",
+  "updated_at": "2026-10-31T20:45:45.272792+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_source_review_app_verified_package_pending",
+    "kind": "current_partial_source_review_report_recovery_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The exact current partial result supports durable source-evidence review, a readable70pagePDF and a complete compressed dashboard. Current workspace opens while full native history remains server-owned.",
-    "measured_failure_reduction": "57patient work/save/reopen/idempotence/stale-edit checks pass; clinical program preparation rejects partial result. Browser could not parse old response; current37.4MBresponse opens. Full-evidence HTML shrinks124MBto10.8MB with exact roundtrip;65focused checks pass;0newproviders.",
+    "user_behavior_delta": "Current partial evidence-review work and complete patient report survive a sealed isolated installation and fresh-process restart. Source judgements and scope remain explicit; incomplete program preparation is blocked.",
+    "measured_failure_reduction": "Browser response now opens; full report transport roundtrip exact.57patient/57review items and PDF/HTML bytes match after installation/restart.65focused report/workflow checks pass.9sourceflags are linked to7suspended reader observations and10typed judgments.0newproviders for work/report/recovery.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -759,10 +759,13 @@
       "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/fresh-process-reopen.json",
       "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/http-verification.json",
       "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json",
-      "artifacts/agere-local-source-repair-2026-10-31/report-current-partial/layout-qa.json"
+      "artifacts/agere-local-source-repair-2026-10-31/report-current-partial/layout-qa.json",
+      "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json",
+      "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/corrected-probe-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/learning-state-audit.json"
     ],
-    "remaining_gap": "Current isolated packaging/restart and qualified reuse. Partial source meaning remains unresolved; no accepted whole-question trace or new model weights.",
-    "next_action": "G3: current partial native context ANS-088ea55cf0b2f51425f417da and report DLV-0C033A4485CB now save/reopen with57pending evidence-review items; program preparation blocked, revisions/idempotence/HTTP/PDF exact.65report/workflow checks pass. Browser now opens after a native-history response projection(37.4MB versus550MBsavedcontext); compressed full-evidence dashboard10.8MB versus124MB,70pagecuratedPDF. Retain154of162sourcechecks/8localblocked/9machineflags/161unknowns and17unresolvedpatients. Package current candidate through existing checkpoint/archive/install mechanisms; verify currentcontext/work/report/feedback after isolated restart, then qualified parameterized reuse/bottling. Do not rerun completed source checks or blindly reissue old planner acceptance. Full ordinary answer and independent clinical/model qualification remain open. Alltenareas retained; scheduler PAUSED.",
+    "remaining_gap": "Original-question source meaning/coverage and qualified full-question reuse remain partial; G5independent labels/economics unavailable.",
+    "next_action": "G3: current partial source-review/report/local-recovery delivery sealed at /Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json.57patient/57pendingreview work,70pagePDF, compressed full-evidence dashboard and archived fresh-process/restart pass;0newproviders. Original fixture error retained, corrected probes90.357s. All9flaggedassertions bind suspended observations(7reader/10typed). Next inspect and execute one exact9-assertion default-cache disposition check through existing candidate review/state paths with providers prohibited, retaining every prior reading and unaffected finding. Distinguish explicit unresolved results from cache/input misses and prior-history fidelity; do not rerun broad source/actor checks or promote partial traces. Then qualified parameterized reuse/bottling and remaining original-question coverage/source meaning. G3active/G5blocked, alltenareas retained; scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2569,17 +2572,25 @@
       "reason": "A550MBnative context response failed to open in the browser. A current reading projection preserves every patient row/grade/work item and retains full native history. Compression changes transport only. An initial list-loading hypothesis was incorrect: direct links skip listing.",
       "evidence": "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json",
       "scope_impact": "No acceptance threshold, clinical claim, source selection, patient cap, model activation, new service or primary-runtime change. Alltenareas retained."
+    },
+    {
+      "at": "2026-10-31T20:40:37.320939+00:00",
+      "gate": "G3",
+      "decision": "Correct only the isolated verification fixture and reuse the completed checkpoint/archive/installation.",
+      "reason": "qualification_status returns a dictionary containing cohorts. Installed state/report checks and release verification passed before the probe iterated that dictionary as if it were the cohort list. Preserve failed receipts; no product or policy restamp.",
+      "evidence": "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/corrected-probe-receipt.json",
+      "scope_impact": "No repeated frozen build, providers, product changes, model/clinical acceptance or narrowed charter."
     }
   ],
   "unsealed_work": {
-    "status": "current_source_review_app_verified_package_pending",
+    "status": "named_default_cache_disposition_pending",
     "path": "artifacts/agere-local-source-repair-2026-10-31",
-    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json",
+    "active_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "remaining_gap": "Current isolated packaging/restart and qualified reuse. Partial source meaning remains unresolved; no accepted whole-question trace or new model weights.",
-    "next_action": "G3: current partial native context ANS-088ea55cf0b2f51425f417da and report DLV-0C033A4485CB now save/reopen with57pending evidence-review items; program preparation blocked, revisions/idempotence/HTTP/PDF exact.65report/workflow checks pass. Browser now opens after a native-history response projection(37.4MB versus550MBsavedcontext); compressed full-evidence dashboard10.8MB versus124MB,70pagecuratedPDF. Retain154of162sourcechecks/8localblocked/9machineflags/161unknowns and17unresolvedpatients. Package current candidate through existing checkpoint/archive/install mechanisms; verify currentcontext/work/report/feedback after isolated restart, then qualified parameterized reuse/bottling. Do not rerun completed source checks or blindly reissue old planner acceptance. Full ordinary answer and independent clinical/model qualification remain open. Alltenareas retained; scheduler PAUSED."
+    "remaining_gap": "Original-question source meaning/coverage and qualified full-question reuse remain partial; G5independent labels/economics unavailable.",
+    "next_action": "G3: current partial source-review/report/local-recovery delivery sealed at /Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json.57patient/57pendingreview work,70pagePDF, compressed full-evidence dashboard and archived fresh-process/restart pass;0newproviders. Original fixture error retained, corrected probes90.357s. All9flaggedassertions bind suspended observations(7reader/10typed). Next inspect and execute one exact9-assertion default-cache disposition check through existing candidate review/state paths with providers prohibited, retaining every prior reading and unaffected finding. Distinguish explicit unresolved results from cache/input misses and prior-history fidelity; do not rerun broad source/actor checks or promote partial traces. Then qualified parameterized reuse/bottling and remaining original-question coverage/source meaning. G3active/G5blocked, alltenareas retained; scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
