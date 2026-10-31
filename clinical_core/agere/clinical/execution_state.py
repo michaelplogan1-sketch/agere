@@ -121,7 +121,7 @@ def catalog(calls):
                 # patient/free-text tables stay native and queryable by view.
                 if not any(isinstance(r,dict)and'patient_id'in r for r in rows) and len(json.dumps(rows,default=str))<2500:
                     entry['computed_rows']=rows
-                for key in ('coverage','method','record_ids_filter','accounting','assembly','source_scope','field_patient_queries','exhaustive_reason'):
+                for key in ('coverage','method','record_ids_filter','accounting','assembly','source_scope','field_patient_queries','exhaustive_reason','scope_warnings'):
                     if key in out:
                         if key=='coverage'and isinstance(out[key],list):
                             entry['coverage']={'patients':len(out[key]),'received_documents':sum(r.get('received_documents',0)for r in out[key]),

@@ -54,7 +54,11 @@ def install(semantic, documentation):
     index = [{'section_id': r['section_id'],
               'title': re.sub(r'^(### [a-zA-Z_][\w]*)\(.*$', r'\1', r['title'])}
              for r in rows]
-    return prefix + '\nCOMPLETE DATA MODEL DOCUMENTATION INDEX (' + VERSION + '):\n' + json.dumps(index) + '\n' + (
+    # These exact versioned defaults govern every subsequent interpretation.
+    # Keep them resident instead of making each actor rediscover their meaning.
+    pinned = [r for r in rows if r['title'].startswith(('GOVERNED SQL MACROS', 'CLINICAL OWNER DEFINITIONS'))]
+    resident = ''.join('\nPINNED DOCUMENTATION '+r['section_id']+' sha256='+r['sha256']+'\n'+r['documentation_text'] for r in pinned)
+    return prefix + resident + '\nCOMPLETE DATA MODEL DOCUMENTATION INDEX (' + VERSION + '):\n' + json.dumps(index) + '\n' + (
         f'All sections above are available in full through query_sql: '
         f'SELECT section_id, title, documentation_text FROM {VIEW} WHERE section_id=\'doc_0\'. '
         'Use the applicable section IDs from the index before using their columns, units or definitions. '

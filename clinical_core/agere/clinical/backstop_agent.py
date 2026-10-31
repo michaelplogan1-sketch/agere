@@ -26,6 +26,7 @@ import json
 import hashlib
 import os
 import re
+import sqlite3
 import time
 from pathlib import Path
 from .document_review import QUESTION_SCHEMA
@@ -265,7 +266,7 @@ def conversation_turns(stack, limit=4):
 class Tools:
     """The tool executor: SQL over the semantic warehouse (definition views), documents over the same database (read-only)."""
 
-    def __init__(self, stack, semantic, as_of, *, cohort=None, ledger=None, patients=None):
+    def __init__(self, stack, semantic, as_of, *, cohort=None, ledger=None, patients=None, question=None):
         from . import note_evidence
         self.semantic, self.as_of, self.NE = semantic, str(as_of)[:10], note_evidence
         self.db, self.stack, self.governed, self.seen = note_evidence.connect(stack), stack, [], []
@@ -274,6 +275,10 @@ class Tools:
         self.executed_results = {}
         self.document_reviews = []
         self.document_field_contracts = {}
+        from .decision_context import current
+        context = current()
+        self.question = question if question is not None else getattr(context, 'question', '')
+        self.native_calls = []
         self.subtool_accounting = {'new_paid_api_calls':0,'estimated_cost_usd':0.0}
         self.cohort = list(dict.fromkeys(cohort)) if cohort is not None else None
         # the request's patient scope, enforced here at the tool boundary (Codex review 2026-10-26), not left to the model: the named or
@@ -287,7 +292,18 @@ class Tools:
 
     def __call__(self, use):
         try:
-            return self.retain_result(self._call(use))
+            out = self.retain_result(self._call(use))
+            calls = getattr(self, 'native_calls', [])
+            call = {'name': use.get('name'), 'input': json.loads(json.dumps(use.get('input') or {})), 'result': out}
+            calls.append(call)
+            self.native_calls = calls
+            if use.get('name') == 'query_sql' and isinstance(out, dict) and out.get('result_view'):
+                from .drug_classes import group_query_issues
+                warnings = [issue for issue in group_query_issues(getattr(self, 'question', ''), calls, out['result_view'])
+                            if 'all-history drug_fill membership' in issue]
+                if warnings:
+                    out['scope_warnings'] = warnings
+            return out
         except TypeError as exc:  # a malformed call (unknown argument): a tool error the model can correct, not the end of the loop
             raise ValueError(f'bad arguments for {use.get("name")}: {exc}') from exc
 
@@ -363,6 +379,13 @@ class Tools:
             return out
         if name == 'review_documents':
             from .document_review import review, validate_questions
+            from .drug_classes import patient_scope_issues
+            queries = {'population': args['patient_query_sql']} if args.get('patient_query_sql') else {}
+            queries.update(args.get('field_patient_queries') or {})
+            issues = patient_scope_issues(getattr(self, 'question', ''), getattr(self, 'native_calls', []), queries)
+            if issues:
+                raise ValueError('No source review was dispatched. Conditional patient scope uses stale current-medication flags: '
+                                 + '; '.join(issues))
             if args.get('source_scope')=='all' and not str(args.get('exhaustive_reason')or'').strip():
                 raise ValueError('Exhaustive review requires exhaustive_reason naming the unresolved requirement and why focused or source-specific expansion is insufficient. Empty retrieval alone is not a reason to reread every field across the population.')
             questions=validate_questions(args.get('questions'))
@@ -1588,7 +1611,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     user = json.dumps(payload, default=str)
     from .requirement_ledger import PATIENT_ID
     patients = [m.group() for m in PATIENT_ID.finditer(question or '')] or ([prior['patient_id']] if prior.get('patient_id') else [])
-    tools = Tools(stack, wh, as_of, cohort=cohort, ledger=ledger, patients=patients)
+    tools = Tools(stack, wh, as_of, cohort=cohort, ledger=ledger, patients=patients, question=question)
     if tools.cohort is not None: payload['cohort_size'] = len(tools.cohort)
     payload['patient_scope'] = sorted(tools.scope) if tools.scope is not None else None
     user = json.dumps(payload, default=str)
@@ -1629,7 +1652,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
                 if discover_context: install_context(fresh, full_docs)
-                return Tools(stack,fresh,as_of,cohort=tools.cohort,ledger=ledger)
+                return Tools(stack,fresh,as_of,cohort=tools.cohort,ledger=ledger,question=question)
             candidate=harness.attempt_propose(tools,question,payload,model,run.get('tool_calls') or [],fresh_executor,final_answer=run.get('answer'),baseline_metrics=actor_metrics)
         reviews = run.get('answer_reviews') or []
         review_cost = sum(r.get('cost_usd') or 0.0 for r in reviews)

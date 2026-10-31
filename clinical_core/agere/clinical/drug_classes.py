@@ -396,6 +396,28 @@ def group_query_issues(question, calls, final_view=None):
                             for argument in table.this.expressions:
                                 for col in argument.find_all(exp.Column):resolve(scope,col)
                             resolved_inputs=True
+                    # A patient_id projection also consumes predicates that
+                    # decide which rows exist. SQLGlot's value lineage omits
+                    # these when no aggregate/output references their flags.
+                    visited_scopes=set()
+                    def conditions(scope):
+                        if id(scope) in visited_scopes:return
+                        visited_scopes.add(id(scope))
+                        selected=[source for _,source in scope.selected_sources.values()]
+                        for clause in ('where','joins','group','having','qualify'):
+                            values=scope.expression.args.get(clause)or[]
+                            for value in values if isinstance(values,list)else[values]:
+                                for col in value.find_all(exp.Column):
+                                    if col.find_ancestor(exp.Select)is not scope.expression:continue
+                                    if any(isinstance(t,exp.Table)and row_filtered(scope.expression,t)and
+                                           (col.table==t.alias_or_name or not col.table and len(selected)==1)for t in selected):continue
+                                    resolve(scope,col)
+                                for nested in value.find_all(exp.Select):
+                                    child=next((s for s in scopes if s.expression is nested),None)
+                                    if child is not None:conditions(child)
+                        for source in selected:
+                            if isinstance(source,Scope):conditions(source)
+                    if scopes:conditions(scopes[-1])
                 def resolve(scope,col):
                     if scope is None:raise ValueError('JSON input column is unresolved')
                     active={k.lower():source for k,(_,source) in scope.selected_sources.items()}
@@ -490,3 +512,21 @@ def group_query_issues(question, calls, final_view=None):
                 '. Recompute the requested group using its exact members and bind the final table to that repaired result. '
                 'Broader therapies may be shown separately; do not count them as satisfying the registered group.')
     return list(dict.fromkeys(issues+collection_issues+temporal_issues))
+
+
+def patient_scope_issues(question, calls, queries):
+    """Check the actual columns consumed by each conditional patient query.
+
+    Reuse final-result lineage rather than guessing from view names or patient
+    overlap. An all-history result may still supply unfiltered membership keys.
+    These synthetic empty projections are audit inputs, never executed evidence.
+    """
+    issues = []
+    for index, (field, sql) in enumerate(queries.items()):
+        view = 'agere_scope_patient_' + str(index)
+        projected = {'name': 'query_sql', 'input': {'sql': sql},
+                     'result': {'result_view': view, 'columns': ['patient_id'], 'rows': []}}
+        for issue in group_query_issues(question, [*calls, projected], view):
+            if 'all-history drug_fill membership' in issue:
+                issues.append(str(field) + ': ' + issue)
+    return issues

@@ -56,6 +56,15 @@ class NativeDocumentation(unittest.TestCase):
         self.assertIn("O'Brien", rows[0]['documentation_text'])
         self.assertIn('naïve', rows[0]['documentation_text'])
 
+    def test_governed_owner_definitions_stay_resident_with_exact_versioned_bytes(self):
+        docs = DOCS + 'CLINICAL OWNER DEFINITIONS:\nCurrent means the decided window, not all-history.\n'
+        resident = C.install(self.wh, docs)
+        _, sections = C.partition(docs)
+        for section in sections:
+            if section['title'].startswith(('GOVERNED SQL MACROS', 'CLINICAL OWNER DEFINITIONS')):
+                self.assertIn(section['documentation_text'], resident)
+                self.assertIn(section['sha256'], resident)
+
     def test_native_lookup_has_no_document_or_patient_limit(self):
         docs = '# Semantic model documentation\n' + ''.join(
             f'### table_{i}(patient_id, value)\n' + 'complete native documentation. ' * 1000 + '\n'
