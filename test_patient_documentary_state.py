@@ -73,5 +73,64 @@ class DocumentaryCards(unittest.TestCase):
         self.assertNotIn(assertion_id, text)
 
 
+class OpenQuestionPresentation(unittest.TestCase):
+    def context(self, two_questions=False):
+        from test_patient_review_profiles import CurrentNativeCardContracts
+        c=CurrentNativeCardContracts().context()
+        c.update(question='Review dated medication findings',source={'as_of':'2030-05-27'})
+        q={'question':'What reason was recorded for leaving the MRA dose unchanged at that visit?',
+           'entity':{'kind':'medication_class','id':'mra','aliases':['MRA']},
+           'relation':'authored_dose_limit','subject':'patient'}
+        questions={'limit':q}
+        if two_questions:questions['historical']={**q,'question':'What reason was recorded before the most recent visit?'}
+        doc={'record_id':'CUSTOM','date':'2029-01-01','text':'MRA dose unchanged because the patient could not afford the refill.'}
+        found={field:[D.relation_finding('A',field,question,doc,
+            {'start':0,'end':len(doc['text']),'text':doc['text']},
+            {'polarity':'affirmed','temporality':'historical','subject':'patient'},'fixture')]
+            for field,question in questions.items()}
+        row=D.with_correspondence([{'patient_id':'A','review_json':json.dumps(found)}],
+            {'A':[[doc]]},questions,'2030-05-27')[0]
+        c['answer']['table'][0]['documentary_findings']=row['source_findings_json']
+        c['investigation']={'document_reviews':[{'questions':questions,'rows':[row]}]}
+        return c
+
+    def test_new_relation_and_different_question_qualifiers_remain_visible_without_aliasing(self):
+        c=self.context(two_questions=True);before=copy.deepcopy(c)
+        card=P.review_cards(c)['A'];groups=card['additional_documentary_accounts']
+        self.assertEqual(len(groups),2)
+        self.assertEqual({g['relation']for g in groups},{'authored_dose_limit'})
+        self.assertEqual(len({g['source_questions'][0]['question']for g in groups}),2)
+        self.assertFalse(card['dose_limiting_statements'])
+        self.assertFalse(any(t['documented_reasons']for t in card['therapy']))
+        self.assertEqual(c,before)
+        from pypdf import PdfReader
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        with tempfile.TemporaryDirectory()as tmp:
+            target=Path(tmp)/'review.pdf';render(c,target)
+            text=' '.join(' '.join(p.extract_text()or''for p in PdfReader(target).pages).split())
+        self.assertIn('MRA dose unchanged because the patient could not afford the refill.',text)
+        self.assertIn('before the most recent visit?',text)
+        self.assertIn('at that visit?',text)
+        self.assertNotIn('No explicit non-use or titration explanation was returned',text)
+
+    def test_replaced_audit_reading_is_not_reintroduced_as_an_additional_account(self):
+        from clinical_core.contracts import digest
+        c=self.context();old=c['investigation']['document_reviews'][0]
+        c['investigation']['document_reviews'].append({'questions':{},'rows':[],
+            'candidate_observation_review':{'source_rows_digest':digest(old['rows']),'checked_fields':['limit']}})
+        self.assertFalse(P.review_cards(c)['A']['additional_documentary_accounts'])
+
+    def test_latest_patient_support_verdict_is_local_and_does_not_certify_clinical_state(self):
+        c=self.context();c['investigation']['answer_reviews']=[{'support':{'packets':[
+            {'id':'patient_A','label':'unknown','decided_by':None},
+            {'id':'patient_B','label':'supported','decided_by':'jev'}]}}]
+        card=P.review_cards(c)['A'];self.assertEqual(card['source_verification']['label'],'unknown')
+        self.assertFalse(card['documentary_reconciliation']['current_clinical_state_established'])
+        c['investigation']['answer_reviews'].append({'support':{'packets':[
+            {'id':'patient_A','label':'supported','decided_by':'perplexity'}]}})
+        self.assertEqual(P.review_cards(c)['A']['source_verification']['label'],'supported')
+        self.assertFalse(P.review_cards(c)['A']['documentary_reconciliation']['current_clinical_state_established'])
+
+
 if __name__ == '__main__':
     unittest.main()

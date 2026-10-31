@@ -145,7 +145,12 @@ def review_cards(context, evidence=None):
     reviews=[*((context.get('investigation')or{}).get('answer_reviews')or[])]
     saved_review=(context.get('answer')or{}).get('investigation_review')
     if isinstance(saved_review,dict)and saved_review not in reviews:reviews.append(saved_review)
+    patient_verification={}
     for review in reviews:
+        for packet in (review.get('support')or{}).get('packets')or[]:
+            ident=packet.get('id')
+            if isinstance(ident,str)and ident.startswith('patient_'):
+                patient_verification[ident[len('patient_'):]]={k:packet.get(k)for k in ('id','label','decided_by','reason')}
         for feedback in (review.get('support')or{}).get('claim_feedback')or[]:
             ident=feedback.get('source_assertion_id')
             if ident and feedback.get('label')not in (None,'supported'):
@@ -334,6 +339,29 @@ def review_cards(context, evidence=None):
             regimen_statements=bound_reasons(findings,'gdmt',{'documented_medication_regimen'})
             dose_limiting=bound_reasons(findings,'gdmt',{'dose_titration_reason'})+bound_reasons(findings,'gdmt_dose')
             tolerance_statements=bound_reasons(findings,'gdmt',{'individual_maximum_tolerated_dose'})
+            cardiology_statements=bound_reasons(findings,'cardiology')
+            # Presentation categories are not an exhaustive relation registry.
+            # Keep a new typed question visible without relabelling its meaning
+            # as one of the older clinical reason/status contracts.
+            displayed=[*regimen_statements,*dose_limiting,*tolerance_statements,*cardiology_statements]
+            for t in therapy:displayed.extend(t['documented_reasons']);displayed.extend(t['documented_status_accounts'])
+            represented={finding_identity(f)for g in displayed for f in g['findings']}
+            audit_ids=set();questions={}
+            from ...contracts import digest
+            for review in evidence.get('notes',{}).get(pid,[]):
+                for field,q in (review.get('questions')or{}).items():
+                    if isinstance(q,dict):questions[digest(q)]=q
+                    if field in review.get('audit_only_fields',[]):
+                        audit_ids.update((v.get('assertion')or{}).get('id')for v in (review.get('findings')or{}).get(field,[])if isinstance(v,dict)and(v.get('assertion')or{}).get('id'))
+            remaining=[f for f in findings if isinstance(f,dict)and(f.get('entity')or{}).get('id')and finding_identity(f)not in represented and
+                (f.get('assertion')or{}).get('id')not in audit_ids]
+            additional=[]
+            for entity,relation in dict.fromkeys(((f.get('entity')or{}).get('id'),f.get('relation'))for f in remaining):
+                for group in bound_reasons(remaining,entity,{relation}):
+                    group['entity']=next(f['entity']for f in group['findings']if f.get('entity'))
+                    group['source_questions']=list({digest(q):q for f in group['findings']
+                        if(q:=questions.get((f.get('assertion')or{}).get('question_digest')))is not None}.values())
+                    additional.append(group)
             if row.get('max_dose_reason_findings')or dose_limiting:rationale.append('Review the documented dose-limiting statements below with the responsible clinician')
             program={'title':'Theoretical GDMT titration program'if therapy else'Clinical review',
                 'status':'Potential review opportunity; eligibility requires clinical assessment',
@@ -343,10 +371,12 @@ def review_cards(context, evidence=None):
                     'Responsible clinician and patient preferences','Program availability and coverage']}if therapy else None
             cards[pid]={'patient_id':pid,'patient_name':profile.get('display_name')or'Name unavailable in received profile',
                 'profile':profile,'clinical_context':clinical,'care_team':[care('Primary care'),care('Cardiology')],
-                'cardiology_statements':bound_reasons(findings,'cardiology'),
+                'cardiology_statements':cardiology_statements,
                 'dated_correspondence_roles':narrative_roles,'therapy':therapy,'all_dose_observations':doses,
                 'regimen_statements':regimen_statements,'dose_limiting_statements':dose_limiting,
                 'individual_tolerance_statements':tolerance_statements,'program_review':program,
+                'additional_documentary_accounts':additional,
+                'source_verification':patient_verification.get(pid),
                 'documentary_reconciliation':{'groups':state_groups,'current_clinical_state_established':False,
                     'summary':reconciliation_summary,
                     'basis':'Existing source assertion reconciliation; different accounts are retained without voting or inferring clinical change.'},

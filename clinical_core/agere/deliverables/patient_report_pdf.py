@@ -130,6 +130,9 @@ def _render_clinical(context,output,cards,references):
   story.extend([P('Why review this patient','head'),P('HFrEF evidence in the saved cohort; '+str(n)+' of 4 pillars have a fill observation in the saved analysis. '+('Reconcile the remaining pillar observations and assess program suitability.'if n<4 else'Confirm current doses and whether further optimization is appropriate.'))])
   reconciliation=(c.get('documentary_reconciliation')or{}).get('summary')
   if reconciliation:story.append(P(reconciliation,'notice'))
+  verification=c.get('source_verification')
+  if verification and(verification.get('label')!='supported'or not verification.get('decided_by')):
+   story.append(P('The saved source-support check is unresolved for this patient. Confirm the recorded findings against the source records before using the interpretation.','notice'))
   observations=[]
   clinical={f['label']:f for f in c['clinical_context']}
   for key in ['Lowest documented EF','Latest qualifying low-EF observation','creatinine','egfr','potassium','systolic bp','diastolic bp','heart rate']:
@@ -164,7 +167,8 @@ def _render_clinical(context,output,cards,references):
   # One dated clinical account can support several fields. Print it once with
   # all its uses, rather than repeating the same whole note under each pillar.
   accounts={}
-  for label,groups in [(t['label'],t['documented_reasons'])for t in c['therapy']]+[('Titration',c['dose_limiting_statements']),('Individual tolerated maximum',c['individual_tolerance_statements'])]:
+  additional=[(human(g['entity']['id'])+' / dated chart account',[g])for g in c.get('additional_documentary_accounts')or[]]
+  for label,groups in [(t['label'],t['documented_reasons'])for t in c['therapy']]+[('Titration',c['dose_limiting_statements']),('Individual tolerated maximum',c['individual_tolerance_statements'])]+additional:
    for g in groups:
     entity=next((f.get('entity')for f in g.get('findings',[])if f.get('entity')),None)
     excerpt=_note_excerpt(g.get('quote'),entity);key=excerpt
@@ -175,12 +179,16 @@ def _render_clinical(context,output,cards,references):
   if not accounts:story.append(P('No explicit non-use or titration explanation was returned in the reviewed source scope. Clarify the reason with the patient and responsible clinician.'))
   else:
    missing=[t['label']for t in c['therapy']if not t['documented_reasons']]
-   if missing:
+   if additional:
+    story.append(P('Review the dated accounts below alongside the medication table. These accounts have not been assigned as explanations for a specific current treatment gap.','small'))
+   elif missing:
     note=P('No separate non-use reason returned for: '+', '.join(missing)+'.','small');note.keepWithNext=True;story.append(note)
   for a in accounts.values():
    dates=sorted({str(s['date']) for g in a['groups']for s in g.get('sources',[])if s.get('date')})
    dated=D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0])if dates else'Date not recorded'
    account=[P(' / '.join(a['labels'])+'  |  '+dated,'label')]
+   questions={q['question']for g in a['groups']for q in g.get('source_questions')or[]if q.get('question')}
+   for question in sorted(questions):account.append(P('Source review question: '+question,'small'))
    if any(g.get('review_status')for g in a['groups']):account.append(P('Unresolved chart interpretation - confirm before using this account.','notice'))
    qualifications=sorted({human(g.get('polarity')) for g in a['groups']if g.get('polarity')not in [None,'affirmed']})
    if qualifications:account.append(P('The source account is '+', '.join(qualifications)+'.','small'))
