@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T17:05:52.700427+00:00",
+  "updated_at": "2026-10-31T18:07:52.229327+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_language_transfer_and_full_source_ready",
+    "kind": "source_fidelity_and_patient_verification_projection",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Explicit medication periods reuse existing calendar arithmetic through the shared language compiler instead of falling through to a model. Source coverage and report display retain prior work; uncertain verification no longer automatically promotes the actor.",
-    "measured_failure_reduction": "6month language request previously declined with no qualified model; now3current requests match independent native counts, reopen current and retain original question/window.0providers;13.055s total includingstartup;1.2-1.8s individual requests.58window/context/planner and64routing/source checks pass. Prior source52-action recovery exact47.542s/0providers and66pageinspection/all36distinctexcerpts/bounds/samples44/45 retained.",
+    "user_behavior_delta": "Every source partition retains its declared patient parent. Current PDF/dashboard distinguish supported, unresolved and deferred source checks. A mechanical binding cannot certify unchecked clinical children.",
+    "measured_failure_reduction": "Parent-key fidelity/2 removes measured serialization false failures; actual retained draft reaches static validity atcallback22instead of34. Current160packet manifest now maps to all57patients:11supported,3unresolved,43awaitingdependencyrepair; pending children cannot inherit mechanical parent support.158focused checks;0newproviders. No live savings or clinical acceptance inferred.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -745,10 +745,14 @@
       "artifacts/agere-source-coverage-reconciliation-2026-10-31/attempt-v2/run-receipt.json",
       "artifacts/agere-indeterminate-routing-2026-10-31/receipt.json",
       "artifacts/agere-non-hf-current-controller-2026-10-31/window-replay-v3/run-receipt.json",
-      "artifacts/agere-source-coverage-reconciliation-2026-10-31/attempt-v2/report-inspection/receipt.json"
+      "artifacts/agere-source-coverage-reconciliation-2026-10-31/attempt-v2/report-inspection/receipt.json",
+      "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json",
+      "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/offline-static-audit/projection-differences.json",
+      "artifacts/agere-parent-key-fidelity-2026-10-31/receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json"
     ],
-    "remaining_gap": "Current final coverage/source support remains partial. Both retained source reviews are now integrated natively; final current continuation and app/replay/transfer evidence plus independent qualification remain.",
-    "next_action": "Observe the single current full-coverage continuation(session35319) to terminal. Productf428623/source frozen; no product edit, duplicate provider/training job or broad note rerun.53native actions restore all current and broader source observations; no draft/answer injection. Then audit actual final support, source/oldledger preservation, named-patient report/current app and all-attempt cost; checked replay/bottling/package and explicit independent qualification remain. Alltenareas retained; scheduler PAUSED.",
+    "remaining_gap": "Exact-source recheck of6machine missing-evidence assertions and18unknown fields; remaining source packets have not been accepted or rejected. Current full report and app acceptance remain.",
+    "next_action": "G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2507,17 +2511,25 @@
       "reason": "Ordinary12month path used compositional grammar with0providers, but6month wording declined into an unavailable unqualified interpreter. Native arithmetic already supported the period. Shared period parsing and compiler numeric provenance now handle positive whole month/year parameters without a disease handler or new model.",
       "evidence": "artifacts/agere-non-hf-current-controller-2026-10-31/window-replay-v3/run-receipt.json",
       "scope_impact": "Alltenareas and independent qualification retained; no caps or source changes."
+    },
+    {
+      "at": "2026-10-31T18:07:52.229327+00:00",
+      "gate": "G3",
+      "decision": "Repair measured source-preservation and per-patient pending-check projection before further inference.",
+      "reason": "Claude narrow review supports exact retained-parent join normalization; offline replay distinguishes actual omission from redundant-key serialization.160packet manifest had124deferredchildren whose parent association was absent on early returns; renderer could show parent mechanical support.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
+      "scope_impact": "No threshold changes, new model/default activation, narrowed population, accepted clinical claims or removed scope."
     }
   ],
   "unsealed_work": {
-    "status": "current_full_coverage_continuation_running",
-    "path": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4",
-    "active_receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json",
-    "source_frozen_for_run": true,
-    "pid": 16113,
-    "session": 35319,
-    "remaining_gap": "Current final coverage/source support remains partial. Both retained source reviews are now integrated natively; final current continuation and app/replay/transfer evidence plus independent qualification remain.",
-    "next_action": "Observe the single current full-coverage continuation(session35319) to terminal. Productf428623/source frozen; no product edit, duplicate provider/training job or broad note rerun.53native actions restore all current and broader source observations; no draft/answer injection. Then audit actual final support, source/oldledger preservation, named-patient report/current app and all-attempt cost; checked replay/bottling/package and explicit independent qualification remain. Alltenareas retained; scheduler PAUSED."
+    "status": "local_source_diagnosis",
+    "path": "artifacts/agere-local-source-repair-2026-10-31",
+    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
+    "source_frozen_for_run": false,
+    "pid": null,
+    "session": null,
+    "remaining_gap": "Exact-source recheck of6machine missing-evidence assertions and18unknown fields; remaining source packets have not been accepted or rejected. Current full report and app acceptance remain.",
+    "next_action": "G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2545,15 +2557,5 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "kind": "targeted_current_full_source_coverage_continuation",
-      "status": "running",
-      "pid": 16113,
-      "session": 35319,
-      "source_frozen": true,
-      "commit": "f428623",
-      "receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json"
-    }
-  ]
+  "active_jobs": []
 }

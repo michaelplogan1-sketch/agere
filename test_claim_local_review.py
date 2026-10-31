@@ -232,6 +232,20 @@ class SupportScheduling(unittest.TestCase):
         self.assertFalse(out['all_dependencies_checked'])
         self.assertTrue(all(p['label']=='unknown'and p['decided_by']is None for p in out['packets'][1:]))
 
+    def test_deferred_source_children_keep_their_patient_parent_and_complete_manifest(self):
+        child={**self.packet('patient_A__sources_0'),'parent_packet_id':'patient_A'}
+        out=B.check_support_packets([self.packet('summary'),child],
+            lambda *a,**kw:{'label':'contradicted','decided_by':'fixture','steps':[]},as_of='2030-05-27',ledger=None)
+        self.assertTrue(out['packet_manifest_complete']);self.assertFalse(out['all_dependencies_checked'])
+        self.assertEqual(out['packets'][1]['parent_packet_id'],'patient_A')
+        self.assertEqual(out['packets'][1]['status'],'awaiting_dependency_repair')
+
+    def test_missing_source_context_keeps_its_patient_parent_without_model_work(self):
+        child={**self.packet('patient_A__sources_0'),'parent_packet_id':'patient_A','source_context_complete':False}
+        out=B.check_support_packets([child],lambda *a,**kw:self.fail('Missing context must not dispatch a model'),as_of='2030-05-27',ledger=None)
+        self.assertEqual(out['packets'][0]['parent_packet_id'],'patient_A')
+        self.assertEqual(out['packets'][0]['label'],'unknown')
+
     def test_independent_patients_overlap_without_sharing_the_sqlite_handle(self):
         import threading
         from types import SimpleNamespace

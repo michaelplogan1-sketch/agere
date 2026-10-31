@@ -132,7 +132,7 @@ def _render_clinical(context,output,cards,references):
   if reconciliation:story.append(P(reconciliation,'notice'))
   verification=c.get('source_verification')
   if verification and(verification.get('label')!='supported'or not verification.get('decided_by')):
-   story.append(P('The saved source-support check is unresolved for this patient. Confirm the recorded findings against the source records before using the interpretation.','notice'))
+   story.append(P(verification.get('notice')or'The saved source-support check is unresolved for this patient. Confirm the recorded findings against the source records before using the interpretation.','notice'))
   observations=[]
   clinical={f['label']:f for f in c['clinical_context']}
   for key in ['Lowest documented EF','Latest qualifying low-EF observation','creatinine','egfr','potassium','systolic bp','diastolic bp','heart rate']:

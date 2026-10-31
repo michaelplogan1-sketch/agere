@@ -145,16 +145,48 @@ def review_cards(context, evidence=None):
     reviews=[*((context.get('investigation')or{}).get('answer_reviews')or[])]
     saved_review=(context.get('answer')or{}).get('investigation_review')
     if isinstance(saved_review,dict)and saved_review not in reviews:reviews.append(saved_review)
-    patient_verification={}
+    patient_verification={};packet_families={}
+    known_parents={'patient_'+str(pid)for pid in [*people,*(context.get('patient_ids')or[]),
+        *[r['patient_id']for r in(context.get('answer')or{}).get('table')or[]if isinstance(r,dict)and r.get('patient_id')]]}
     for review in reviews:
-        for packet in (review.get('support')or{}).get('packets')or[]:
-            ident=packet.get('id')
+        support=review.get('support')or{};groups={}
+        packets=support.get('packets')or[];unchecked=support.get('unchecked_packet_ids');checked=support.get('checked_source_packets')
+        # Older complete manifests omitted parent IDs on deferred results.
+        # Recover only the producer's exact source-partition ID format and
+        # validate it against received patient identities; no clinical aliasing.
+        manifest=support.get('packet_manifest_complete')is True or(type(checked)is int and isinstance(unchecked,list)
+            and len(packets)==checked+len(unchecked)and len({p.get('id')for p in packets})==len(packets)
+            and set(unchecked)<={p.get('id')for p in packets})
+        for packet in packets:
+            ident=packet.get('parent_packet_id')or packet.get('id')
+            if not packet.get('parent_packet_id')and isinstance(ident,str):
+                parent=re.sub(r'__sources_\d+$','',ident)
+                candidates={p for p in (ident,parent)if p in known_parents}
+                ident=next(iter(candidates))if len(candidates)==1 else None
             if isinstance(ident,str)and ident.startswith('patient_'):
-                patient_verification[ident[len('patient_'):]]={k:packet.get(k)for k in ('id','label','decided_by','reason')}
+                groups.setdefault(ident,[]).append({k:packet.get(k)for k in ('id','label','decided_by','reason','status')})
+        for parent,packets in groups.items():
+            complete=manifest or support.get('all_dependencies_checked')is True or(len(packets)==1 and packets[0]['id']==parent
+                and packets[0].get('decided_by')!='native_source_dependency_closure'
+                and set(packet_families.get(parent,({},False))[0])<={parent})
+            current={}if complete else dict(packet_families.get(parent,({},False))[0])
+            current.update({p['id']:p for p in packets});packet_families[parent]=(current,complete)
         for feedback in (review.get('support')or{}).get('claim_feedback')or[]:
             ident=feedback.get('source_assertion_id')
             if ident and feedback.get('label')not in (None,'supported'):
                 source_feedback.setdefault(ident,[]).append(feedback)
+    for parent,(packets,complete)in packet_families.items():
+        packets=list(packets.values());pending=[p for p in packets if p.get('label')!='supported'or not p.get('decided_by')]
+        label=next((s for s in ('contradicted','not_established')if any(p.get('label')==s for p in pending)),
+                   'unknown'if pending or not complete else'supported')
+        awaiting=bool(pending)and all(p.get('status')=='awaiting_dependency_repair'for p in pending)
+        patient_verification[parent[len('patient_'):]]={'id':parent,'label':label,
+            'decided_by':'all_required_packets'if label=='supported'else None,
+            'reason':next((p['reason']for p in pending if p.get('reason')),None),
+            'packet_manifest_complete':complete,'packets':packets,
+            'status':'awaiting_dependency_repair'if awaiting else'supported'if label=='supported'else'unresolved_verification',
+            'notice':('Source checks for this patient are pending while a source dependency is repaired. The saved observations remain available for review.'if awaiting else
+                'The saved source-support check is unresolved for this patient. Confirm the recorded findings against the source records before using the interpretation.')if label!='supported'else None}
     def decoded(value):
         if isinstance(value,str)and value[:1]in('[','{'):
             try:return json.loads(value)

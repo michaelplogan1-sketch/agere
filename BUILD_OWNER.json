@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: ordinary confirmation returned partial in2183.807s with57patients and622newattempts; source/code/oldledger exact,no subscription limit. Freeze released. Diagnose the actual retained collection-retention/domain conflict and quantitative prose-contract retries from these15deterministic reviews, repair shared contracts/progress detection, and prove both with retained native outputs before any targeted continuation. Do not repeat note review; preserve all source observations,allattempts,alltenareas and scheduler PAUSED.",
+  "active_work": "G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED.",
   "latest_delivery": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_receipt": "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json",
   "owned_server_pid": null,
@@ -15,14 +15,14 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "Observe the single current full-coverage continuation(session35319) to terminal. Productf428623/source frozen; no product edit, duplicate provider/training job or broad note rerun.53native actions restore all current and broader source observations; no draft/answer injection. Then audit actual final support, source/oldledger preservation, named-patient report/current app and all-attempt cost; checked replay/bottling/package and explicit independent qualification remain. Alltenareas retained; scheduler PAUSED.",
+  "resume_priority": "G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "PAUSED",
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-31T16:41:09.009337+00:00",
+  "latest_checkpoint": "2026-10-31T18:07:52.229327+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
@@ -30,14 +30,14 @@
   "last_observed_server_session": 2376,
   "server_status": "Owned isolated8890 stopped during candidate integration; primary8885/older8888 untouched; scheduler PAUSED.",
   "unsealed_work": {
-    "status": "current_full_coverage_continuation_running",
-    "path": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4",
-    "active_receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json",
-    "source_frozen_for_run": true,
-    "pid": 16113,
-    "session": 35319,
-    "remaining_gap": "Current final coverage/source support remains partial. Both retained source reviews are now integrated natively; final current continuation and app/replay/transfer evidence plus independent qualification remain.",
-    "next_action": "Observe the single current full-coverage continuation(session35319) to terminal. Productf428623/source frozen; no product edit, duplicate provider/training job or broad note rerun.53native actions restore all current and broader source observations; no draft/answer injection. Then audit actual final support, source/oldledger preservation, named-patient report/current app and all-attempt cost; checked replay/bottling/package and explicit independent qualification remain. Alltenareas retained; scheduler PAUSED."
+    "status": "local_source_diagnosis",
+    "path": "artifacts/agere-local-source-repair-2026-10-31",
+    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
+    "source_frozen_for_run": false,
+    "pid": null,
+    "session": null,
+    "remaining_gap": "Exact-source recheck of6machine missing-evidence assertions and18unknown fields; remaining source packets have not been accepted or rejected. Current full report and app acceptance remain.",
+    "next_action": "G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
@@ -286,17 +286,7 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [
-    {
-      "kind": "targeted_current_full_source_coverage_continuation",
-      "status": "running",
-      "pid": 16113,
-      "session": 35319,
-      "source_frozen": true,
-      "commit": "f428623",
-      "receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json"
-    }
-  ],
+  "active_jobs": [],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,

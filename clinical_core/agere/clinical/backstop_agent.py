@@ -1168,7 +1168,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                                       source_observation_path=getattr(stack,'path',None))
         n, usd = gate.cost(support)
         assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback',
-                          'checked_source_packets','unchecked_packet_ids','all_dependencies_checked')},
+                          'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
         if coverage['label'] in ('answers_partially', 'answers_a_different_question'):
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
@@ -1452,22 +1452,22 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
     worker_ledger=getattr(ledger,'path',ledger)if parallel_safe else ledger
     def check(packet):
         steps=[]
+        identity={k:packet[k]for k in ('id','parent_packet_id')if k in packet}
         if (packet.get('source_dependency_mechanical_only')is True and not packet.get('claim_manifest')and
                 packet.get('source_dependency_roundtrip_verified')is True and packet.get('required_source_packet_ids')):
-            return {'id':packet['id'],'label':'supported','decided_by':'native_source_dependency_closure',
+            return {**identity,'label':'supported','decided_by':'native_source_dependency_closure',
                 'reason':'Only exact native binding remains in this parent. Every source-local claim is required in separately checked complete-source children; this establishes no clinical acceptance.'},steps
         if packet.get('source_context_complete')is False:
-            return {'id':packet['id'],'label':'unknown','decided_by':None,
+            return {**identity,'label':'unknown','decided_by':None,
                 'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'},steps
         if packet['bytes']>240000:
-            return {'id':packet['id'],'label':'unknown','decided_by':None,
+            return {**identity,'label':'unknown','decided_by':None,
                 'reason':'Complete dependency exceeds conservative provider context envelope; retain it for explicit partition/repair, never truncate.'},steps
         result=decider('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
             task_key='agere_investigation_support_dependency',ledger=worker_ledger,allow_live=True,select_source=False,
             long_context=packet['bytes']>32768)
-        checked={'id':packet['id'],**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
-        if packet.get('parent_packet_id'):checked['parent_packet_id']=packet['parent_packet_id']
+        checked={**identity,**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
         if result.get('label')!='supported':checked['reason']='Source support '+str(result.get('label'))+' for this exact dependency; no successful check is inferred.'
         responded=bool(result.get('decided_by') or result.get('probabilities') or any(s.get('status')in ('answered','partial') for s in result.get('steps',[])))
         if result.get('label')!='supported' or not result.get('decided_by'):
@@ -1534,7 +1534,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             checked,receipts=observed[index];results.append(checked);steps.extend(receipts)
         else:
             unchecked.append(packet['id'])
-            results.append({'id':packet['id'],'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
+            results.append({**{k:packet[k]for k in ('id','parent_packet_id')if k in packet},'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
                 'reason':'Not sent: repair the diagnosed dependency first. This packet has not been accepted or rejected.'})
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
@@ -1542,7 +1542,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         'decided_by':'all_dependency_checks'if settled or failed else None,'steps':steps,'packets':results,
         'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),
         'checked_source_packets':len(observed),'unchecked_packet_ids':unchecked,
-        'all_dependencies_checked':not unchecked,'failed_packet_ids':[r['id']for r in failed],
+        'packet_manifest_complete':True,'all_dependencies_checked':not unchecked,'failed_packet_ids':[r['id']for r in failed],
         'claim_feedback':[f for r in results for f in r.get('claim_feedback',[])]}
 
 

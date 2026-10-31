@@ -131,6 +131,34 @@ class OpenQuestionPresentation(unittest.TestCase):
         self.assertEqual(P.review_cards(c)['A']['source_verification']['label'],'supported')
         self.assertFalse(P.review_cards(c)['A']['documentary_reconciliation']['current_clinical_state_established'])
 
+    def test_partitioned_source_verdicts_aggregate_by_their_declared_patient_parent(self):
+        c=self.context();c['investigation']['answer_reviews']=[{'support':{'all_dependencies_checked':True,'packets':[
+            {'id':'patient_A__sources_0','parent_packet_id':'patient_A','label':'unknown','decided_by':None},
+            {'id':'patient_A__sources_1','parent_packet_id':'patient_A','label':'supported','decided_by':'jev'},
+            {'id':'patient_B__sources_0','parent_packet_id':'patient_B','label':'not_established','decided_by':'jev'}]}}]
+        card=P.review_cards(c)['A'];self.assertEqual(card['source_verification']['label'],'unknown')
+        self.assertEqual(len(card['source_verification']['packets']),2)
+        c['investigation']['answer_reviews'].append({'support':{'all_dependencies_checked':False,'packets':[
+            {'id':'patient_A__sources_1','parent_packet_id':'patient_A','label':'supported','decided_by':'jev'}]}})
+        self.assertEqual(P.review_cards(c)['A']['source_verification']['label'],'unknown')
+        c['investigation']['answer_reviews'].append({'support':{'all_dependencies_checked':True,'packets':[
+            {'id':'patient_A__sources_0','parent_packet_id':'patient_A','label':'supported','decided_by':'jev'},
+            {'id':'patient_A__sources_1','parent_packet_id':'patient_A','label':'supported','decided_by':'jev'}]}})
+        self.assertEqual(P.review_cards(c)['A']['source_verification']['label'],'supported')
+
+    def test_historical_deferred_child_is_not_mistaken_for_supported_parent(self):
+        c=self.context();c['investigation']['answer_reviews']=[{'support':{
+            'checked_source_packets':1,'unchecked_packet_ids':['patient_A__sources_0'],'all_dependencies_checked':False,
+            'packets':[{'id':'patient_A','label':'supported','decided_by':'native_source_dependency_closure'},
+                       {'id':'patient_A__sources_0','label':'unknown','decided_by':None,'status':'awaiting_dependency_repair'}]}}]
+        verification=P.review_cards(c)['A']['source_verification']
+        self.assertEqual(verification['label'],'unknown');self.assertIsNone(verification['decided_by'])
+        self.assertEqual(verification['status'],'awaiting_dependency_repair');self.assertEqual(len(verification['packets']),2)
+        self.assertIn('pending',verification['notice'])
+        c['investigation']['answer_reviews'].append({'support':{'packets':[
+            {'id':'patient_A','label':'supported','decided_by':'native_source_dependency_closure'}]}})
+        self.assertEqual(P.review_cards(c)['A']['source_verification']['label'],'unknown')
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,3 +1,23 @@
+# Current Agere checkpoint - 2026-10-31T18:07:52.229327+00:00
+
+Build ACTIVE,G3; no active provider/training job. Latest product69096da plus verified source-partition display correction. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED.
+
+Proof: artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json. Last sealed delivery unchanged; no clinical/MVP qualification.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T17:37:24.938994+00:00
+
+Build ACTIVE,G3. Full-coverage continuation returned normally1583.260s/177attempts/$5.289273API-equivalent,57patients,ANS-42ec99b988f79c3f885104f7. Source/product/oldledger exact,no subscriptionlimit. No activejob; freeze released for this completed run. Scheduler PAUSED/alltenareas retained.
+
+Exact next: G3: full-coverage continuation returned partial normally1583.260s/177pricedattempts/$5.289273API-equivalent; source/code/oldledger unchanged,no limit. Freeze released for completed run. Read-only replay shows real early collection omission, then false failures solely from89added/17elided redundant parent patient IDs; no original dose value changed. Obtain narrow Claude review of parent-key normalization before shared fidelity repair; preserve real omissions, all typed assertion meanings and multiplicities. Final source checks also name6missing-evidence titration assertions forSYN-340EFC7B-89F and unknowns forP-1007; keep them distinct and repair only those exact source dependencies after fidelity fix. No broad source rerun, alltenareas retained; scheduler PAUSED.
+
+Actual diagnostic: agere_result71keepsall89doseobjects/values andonlyaddsparentpatient_id;agere_result80keepsall17projectionobjects/values andonlyelidesduplicatedpatient_id. Latestdraft82passesstatic. Final sourcefeedback includesreal missing-evidence labels andunknowns, not merely a single indeterminate packet. Lastsealedownerreceiptunchanged. Narrowreviewpreparedatartifacts/agere-blueprint-review-2026-10-31/collection-fidelity.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T17:05:52.700427+00:00
 
 Build ACTIVE,G3; current full-coverage continuation RUNNING PID16113/session35319. Productf428623/source FROZEN. No duplicate run/product edit. Scheduler PAUSED; alltenareas retained.
