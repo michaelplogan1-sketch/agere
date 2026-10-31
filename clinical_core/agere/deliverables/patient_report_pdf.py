@@ -122,6 +122,8 @@ def render(context,output,references=None,evidence=None):
    text=[]
    if not groups:return[P('No explicit reason returned in the reviewed scope. Confirm with the patient and responsible clinician.',small)]
    for g in groups:
+    if g.get('review_status'):
+     text.extend([P(g['review_status'],labelstyle),P(g['review_qualification'],small)])
     text.extend([P('Documented account / '+str(g.get('polarity'))+' / '+str(g.get('temporality'))+' / '+str(g.get('subject')),labelstyle),P(g.get('quote'),small)])
     text.append(P('Dated sources: '+'; '.join(str(s.get('date'))+' / '+str(s.get('record_id'))for s in g['sources']),small))
    return text

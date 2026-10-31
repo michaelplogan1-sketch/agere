@@ -117,6 +117,15 @@ def review_cards(context, evidence=None):
     """
     profiles=context.get('patient_profiles')or{};people=profiles.get('patients')or{};clinicians=profiles.get('clinicians')or{}
     evidence=evidence if evidence is not None else projection(context)
+    source_feedback={}
+    reviews=[*((context.get('investigation')or{}).get('answer_reviews')or[])]
+    saved_review=(context.get('answer')or{}).get('investigation_review')
+    if isinstance(saved_review,dict)and saved_review not in reviews:reviews.append(saved_review)
+    for review in reviews:
+        for feedback in (review.get('support')or{}).get('claim_feedback')or[]:
+            ident=feedback.get('source_assertion_id')
+            if ident and feedback.get('label')not in (None,'supported'):
+                source_feedback.setdefault(ident,[]).append(feedback)
     def decoded(value):
         if isinstance(value,str)and value[:1]in('[','{'):
             try:return json.loads(value)
@@ -136,6 +145,11 @@ def review_cards(context, evidence=None):
             source={'record_id':f.get('record_id'),'date':f.get('date')}
             if source not in group['sources']:group['sources'].append(source)
             group['findings'].append(f)
+            feedback=source_feedback.get((f.get('assertion')or{}).get('id'))
+            if feedback:
+                group['review_status']='Unresolved source interpretation'
+                group.setdefault('review_feedback',[]).extend(feedback)
+                group['review_qualification']='Machine readers disagree or remain uncertain about this relation. The passage is retained for review; it is not an accepted treatment reason or evidence of individual tolerability.'
         return list(groups.values())
     def parts(answer):
         yield answer

@@ -173,4 +173,22 @@ class CurrentNativeCardContracts(unittest.TestCase):
   self.assertEqual(len(groups),1);self.assertEqual(len(groups[0]['findings']),2)
   self.assertEqual(groups[0]['sources'],[{'record_id':'H1','date':'2028-01-01'}])
 
+ def test_source_disagreement_is_visible_without_altering_native_findings(self):
+  c=self.context();c.update(question='Review saved evidence',source={});row=c['answer']['table'][0];found=json.loads(row['documentary_findings'])
+  found[0]['assertion']={'id':'disputed-source'};row['documentary_findings']=json.dumps(found)
+  c['investigation']['answer_reviews']=[{'support':{'claim_feedback':[
+   {'source_assertion_id':'disputed-source','label':'missing_evidence','decided_by':'jev'},
+   {'source_assertion_id':None,'label':'missing_evidence','decided_by':'jev'}]}}]
+  before=copy.deepcopy(c);card=P.review_cards(c)['A']
+  group=card['therapy'][1]['documented_reasons'][0]
+  self.assertEqual(group['review_status'],'Unresolved source interpretation')
+  self.assertIn('not an accepted treatment reason',group['review_qualification'])
+  self.assertNotIn('review_status',card['regimen_statements'][0])
+  self.assertEqual(c,before)
+  from clinical_core.agere.deliverables.patient_dashboard import payload,render
+  self.assertEqual(payload(c)['patient_reviews']['A']['therapy'][1]['documented_reasons'][0]['review_status'],group['review_status'])
+  self.assertIn('esc(g.review_qualification)',render(c))
+  c['answer']['investigation_review']=c['investigation'].pop('answer_reviews')[0]
+  self.assertEqual(P.review_cards(c)['A']['therapy'][1]['documented_reasons'][0]['review_status'],group['review_status'])
+
 if __name__=='__main__':unittest.main()
