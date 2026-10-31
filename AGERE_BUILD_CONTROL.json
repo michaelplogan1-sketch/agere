@@ -662,8 +662,8 @@
       "artifacts/agere-g5-source-clock-2026-10-30/current-source-workflow/run-receipt.json",
       "artifacts/agere-g5-source-clock-2026-10-30/batch-transfer-comparison/run-receipt.json",
       "artifacts/agere-g5-source-clock-2026-10-30/all-attempt-accounting.json",
-      "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-source-bottling-v5/run-receipt.json",
-      "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/source-bottling-delivery/manifest.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/source-bottling-current-release/installed-recovery-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/source-bottling-current-release/durable-manifest.json"
     ],
     "remaining_gap": "Full matched workload/reviewer economics and independent source-family/clinical qualification remain open. No new weights or clinical labels. Check possible legacy-wire cache migration loss offline before any further inference.",
     "next_action": "Measure offline whether previously validated complete-source frontier readings become cache misses solely after removal of the old ignored max_tokens wire option. Use existing original source/question scopes and read-only ledgers, preserve raw request lineage and failed keys, and do not dispatch or change code before a real gap is reproduced. If exact semantic/transport compatibility is demonstrated, bottle compatible readings through the existing source store; then measure the ordinary original-question flow and full attempt accounting. Keep independent role/clinical/outcome/deployment qualifications explicit and all ten areas.",
@@ -736,7 +736,7 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-31T01:32:06.817839+00:00",
+    "at": "2026-10-31T01:36:44.244291+00:00",
     "workflow_change": "Exact source-bound frontier observations now survive changed batching and field aliases. Confident singular-source feedback quarantines only that reading; current57patient report and isolated app retain every native value and partial status.",
     "unsealed_work": {
       "status": "legacy_wire_cache_measurement_pending",
