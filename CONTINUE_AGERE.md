@@ -1,3 +1,23 @@
+# Current Agere checkpoint - 2026-10-31T18:38:36.985628+00:00
+
+Build ACTIVE,G3; no active provider/training job. Exact source revision verified; full context pending. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3:15source candidates independently supported in23.377s/6attempts/$0.150533384API-equivalent;8regimen annotations revised and15prior readings retained. Native binding0providers preserves1436regimen/203titration observations and unrelated patients; source/typed replay0providers in0.674s.181focused checks and44clock/scope followup pass. Current71pagePDF retains57names/228pillars/17doses/64fills. Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted. Alltenareas retained; scheduler PAUSED.
+
+Proof: artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json. Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T18:21:20.328645+00:00
+
+Build ACTIVE,G3; named-source alternate-reader job RUNNING PID21707/session96443. Product7c581de/source FROZEN. Scheduler PAUSED; alltenareas retained.
+
+Exact next: Observe the single exact-source alternate-reader job(session96443) to terminal. Product7c581de/source frozen; no duplicate provider/training job or product edit. Existing Sonnet span repair rechecks only15named assertions in complete source context with unchanged question/registry contracts. Keep original readings/quarantines and allunaffectedwork. Then independently check changed source candidates and bind any supported local revision through existing assertion/state/composition; no broad source rerun, default training or qualification claim. Current report71pages/57names/228pillars/17doses/64fills has honest unresolved/pending checks. Retain alltenareas, scheduler PAUSED.
+
+Last sealed owner receipt unchanged. Latest report is a candidate, not clinical/MVP qualification.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T18:07:52.229327+00:00
 
 Build ACTIVE,G3; no active provider/training job. Latest product69096da plus verified source-partition display correction. Scheduler PAUSED; alltenareas retained.

@@ -246,6 +246,7 @@ def review_cards(context, evidence=None):
                 steps=[row[k]for k in ('registered_pillar_gap_step','registered_dose_step','cardiology_pcp_step')if row.get(k)is not None]
                 if steps:row['proposed_review_steps']=steps
             pid=row['patient_id'];profile=people.get(pid)or{}
+            retired={i for review in evidence.get('notes',{}).get(pid,[])for i in review.get('audit_only_assertion_ids',[])}
             # Consume the existing typed reconciliation, preserving each review's
             # scope. Do not vote across reviews or collapse different questions.
             state_index={};state_groups=[];seen_groups=set()
@@ -310,6 +311,7 @@ def review_cards(context, evidence=None):
                     'value_censor':m.get('value_censor'),'same_day_values':m.get('same_day_values'),
                     'same_day_min':m.get('same_day_min')})
             findings=list(items(row.get('documentary_findings')))
+            findings=[f for f in findings if not isinstance(f,dict)or(f.get('assertion')or{}).get('id')not in retired]
             # A later source review can contribute the answer's counts while
             # its patient table still references an earlier assembly. The
             # reading view must retain those actual bound observations too.
@@ -422,12 +424,15 @@ def projection(context):
     from ...contracts import digest
     investigation = context.get('investigation') or {}
     notes = {}
-    replacements={}
-    for review in investigation.get('document_reviews')or[]:
+    replacements={};local_replacements={};reviews=investigation.get('document_reviews')or[]
+    for index,review in enumerate(reviews):
         recheck=review.get('candidate_observation_review')or{}
-        if recheck.get('source_rows_digest'):
+        if recheck.get('source_rows_digest')and'checked_assertions'not in recheck:
             replacements.setdefault(recheck['source_rows_digest'],set()).update(recheck.get('checked_fields')or[])
-    for review in investigation.get('document_reviews') or []:
+        for prior in range(index):
+            local_replacements.setdefault(prior,set()).update((c['patient_id'],c['field'],c['assertion_id'])
+                for c in recheck.get('checked_assertions',[]))
+    for index,review in enumerate(reviews):
         questions = review.get('questions') or {}
         audit_fields=sorted(replacements.get(digest(review.get('rows')or[]),set()))
         for row in review.get('rows') or []:
@@ -439,9 +444,26 @@ def projection(context):
                 found = json.loads(raw) if isinstance(raw, str) else raw
             except (TypeError, ValueError):
                 found = None
+            prior_findings={};retired=[]
+            if isinstance(found,dict):
+                active={}
+                for field,values in found.items():
+                    if not isinstance(values,list):active[field]=values;continue
+                    active[field]=[]
+                    for value in values:
+                        ident=(value.get('assertion')or{}).get('id')if isinstance(value,dict)else None
+                        if ident and(pid,field,ident)in local_replacements.get(index,set()):
+                            prior_findings.setdefault(field,[]).append(value);retired.append(ident)
+                        else:active[field].append(value)
+                found=active
             raw_state=row.get('documentary_state_json')
             try:documentary_state=json.loads(raw_state)if isinstance(raw_state,str)else raw_state
             except (TypeError,ValueError):documentary_state=None
+            if retired and documentary_state:
+                from ..clinical.assertion_reconciliation import reconcile
+                assertions=[a for a in documentary_state.get('assertions',[])if a.get('id')not in retired]
+                documentary_state={**documentary_state,'assertions':assertions,
+                    'groups':reconcile(pid,assertions,(context.get('source')or{}).get('as_of'))}
             raw_roles=row.get('source_clinicians_json')or'[]'
             try:roles=json.loads(raw_roles)if isinstance(raw_roles,str)else raw_roles
             except (TypeError,ValueError):roles=None
@@ -460,6 +482,7 @@ def projection(context):
                 'source_scope':review.get('source_scope'),
                 'evidence_scope':scope,'unresolved_source_fields':unresolved,
                 'questions': questions, 'findings': found,
+                'prior_findings':prior_findings,'audit_only_assertion_ids':retired,
                 'audit_only_fields':audit_fields,
                 'candidate_review_scope':review.get('candidate_observation_review'),
                 'review_status': row.get('review_status'),

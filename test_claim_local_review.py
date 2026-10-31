@@ -188,6 +188,19 @@ class LocalReview(unittest.TestCase):
 
 
 class ObservationFeedback(unittest.TestCase):
+    def test_inventory_cached_source_keeps_its_native_arrival_clock_on_recheck(self):
+        import sqlite3
+        tools=B.Tools.__new__(B.Tools);tools.db=sqlite3.connect(':memory:');tools.as_of='2030-05-27'
+        tools.db.execute('CREATE TABLE record(record_id,patient_id,available_date)')
+        tools.db.execute("INSERT INTO record VALUES ('n1','A','2030-01-08')")
+        tools.read={'n1':{'patient_id':'A','date':'2030-01-01','text':'Exact original note.'}}
+        try:
+            doc=tools._doc('n1');self.assertEqual(doc['available'],'2030-01-08')
+            self.assertEqual(doc['date'],'2030-01-01');self.assertEqual(doc['text'],'Exact original note.')
+            doc['available']='2030-06-01'
+            with self.assertRaisesRegex(ValueError,'not visible'):tools._doc('n1')
+        finally:tools.db.close()
+
     def test_only_confident_singular_source_fault_suspends_its_machine_observation(self):
         from clinical_core.agere.clinical import span_repair as S
         with tempfile.TemporaryDirectory()as folder:

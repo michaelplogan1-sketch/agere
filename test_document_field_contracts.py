@@ -9,6 +9,7 @@ class SourceFieldContracts(unittest.TestCase):
  def setUp(self):
   self.tools=B.Tools.__new__(B.Tools)
   self.tools.document_reviews=[]
+  self.tools.as_of='2030-05-27'
   self.tools.document_field_contracts={}
   self.question={'question':'What reason is documented for deferring imaging?',
    'entity':{'kind':'service','id':'mri','aliases':['MRI','magnetic resonance imaging']},
@@ -66,6 +67,26 @@ class SourceFieldContracts(unittest.TestCase):
    with self.assertRaisesRegex(ValueError,'Source field contract changed'):self.call()
    self.call({'imaging_status_v2':changed})
   self.assertEqual(dispatch.call_count,2)
+
+ def test_candidate_recheck_records_exact_prior_assertions_for_local_projection(self):
+  import json
+  from clinical_core.agere.clinical import document_review as D
+  doc={'record_id':'record-A','date':'2030-01-01','text':'MRI deferred for transport.'}
+  value=D.relation_finding('A','imaging_reason',self.question,doc,
+      {'start':0,'end':len(doc['text']),'text':doc['text']},
+      {'polarity':'affirmed','temporality':'historical','subject':'patient'},'fixture')
+  self.tools.read={'record-A':{**doc,'available':None}}
+  self.tools.executed_results={'candidate':{'columns':['patient_id','review_json'],
+      'rows':[{'patient_id':'A','review_json':json.dumps({'imaging_reason':[value]})}]}}
+  receipt={'source_rows_digest':'subset','checked_fields':['imaging_reason']}
+  def reviewed(*args,**kwargs):
+   self.tools.document_reviews.append({'candidate_observation_review':receipt})
+   return {'rows':[{'patient_id':'A'}],'candidate_observation_review':receipt}
+  with patch('clinical_core.agere.clinical.document_review.review',side_effect=reviewed):
+   out=self.call(candidate_result_view='candidate')
+  self.assertEqual(out['candidate_observation_review']['checked_assertions'],
+      [{'patient_id':'A','field':'imaging_reason','assertion_id':value['assertion']['id']}])
+  self.assertEqual(self.tools.document_reviews[-1]['candidate_observation_review'],out['candidate_observation_review'])
 
 
 if __name__=='__main__':unittest.main()

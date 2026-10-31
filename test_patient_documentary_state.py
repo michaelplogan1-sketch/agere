@@ -120,6 +120,30 @@ class OpenQuestionPresentation(unittest.TestCase):
             'candidate_observation_review':{'source_rows_digest':digest(old['rows']),'checked_fields':['limit']}})
         self.assertFalse(P.review_cards(c)['A']['additional_documentary_accounts'])
 
+    def test_local_recheck_retires_only_named_assertion_without_losing_other_fields_or_patients(self):
+        c=self.context(two_questions=True);old=c['investigation']['document_reviews'][0]
+        q=old['questions']['limit'];original=json.loads(old['rows'][0]['review_json'])['limit'][0]
+        doc={'record_id':'NEIGHBOR','date':'2029-02-01','text':'MRA dose unchanged because the patient could not afford the refill.'}
+        neighbor=D.relation_finding('A','limit',q,doc,{'start':0,'end':len(doc['text']),'text':doc['text']},
+            {'polarity':'affirmed','temporality':'historical','subject':'patient'},'fixture')
+        found=json.loads(old['rows'][0]['review_json']);found['limit'].append(neighbor)
+        old['rows'][0]['review_json']=json.dumps(found)
+        other=copy.deepcopy(old['rows'][0]);other['patient_id']='B';old['rows'].append(other)
+        revised=copy.deepcopy(original);revised['assertion']['id']='new-machine-reading'
+        newrow={'patient_id':'A','review_json':json.dumps({'limit':[revised]})}
+        c['investigation']['document_reviews'].append({'questions':{'limit':q},'rows':[newrow],
+            'candidate_observation_review':{'source_rows_digest':'local-subset','checked_fields':['limit'],
+                'checked_assertions':[{'patient_id':'A','field':'limit','assertion_id':original['assertion']['id']}]}})
+        before=copy.deepcopy(c);p=P.projection(c)
+        self.assertEqual(p['notes']['A'][0]['findings']['limit'],[neighbor])
+        self.assertEqual(p['notes']['A'][0]['prior_findings']['limit'],[original])
+        self.assertEqual(len(p['notes']['A'][0]['findings']['historical']),1)
+        self.assertEqual(len(p['notes']['B'][0]['findings']['limit']),2)
+        card=P.review_cards(c,p)
+        ids={(f.get('assertion')or{}).get('id')for g in card['A']['additional_documentary_accounts']for f in g['findings']}
+        self.assertNotIn(original['assertion']['id'],ids);self.assertIn('new-machine-reading',ids)
+        self.assertEqual(c,before)
+
     def test_latest_patient_support_verdict_is_local_and_does_not_certify_clinical_state(self):
         c=self.context();c['investigation']['answer_reviews']=[{'support':{'packets':[
             {'id':'patient_A','label':'unknown','decided_by':None},

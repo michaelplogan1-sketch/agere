@@ -426,7 +426,24 @@ class Tools:
                     'declare a new versioned field ID for a genuinely different question, entity, relation or alias set. '
                     'Original contracts: '+json.dumps(conflicts,sort_keys=True))
             self.document_field_contracts={**declared,**json.loads(json.dumps(questions))}
-            return review(self, **{'source_scope':'focused',**args})
+            out=review(self, **{'source_scope':'focused',**args})
+            if args.get('candidate_result_view')and out.get('candidate_observation_review'):
+                from .document_review import retained_candidates,validate_relation_finding
+                selected,_=retained_candidates(self,args['candidate_result_view'],[r['patient_id']for r in out['rows']],questions)
+                # Bind a local revision to its exact prior assertions, rather
+                # than retiring an entire field across unrelated patients.
+                checked=[]
+                for pid,values in selected.items():
+                    for value in values:
+                        a=value.get('assertion')or{}
+                        if a.get('binding_version')=='documentary-relation/1'and isinstance(a.get('id'),str):
+                            doc=self._doc(value['record_id'])
+                            validate_relation_finding(value,value['field'],questions[value['field']],
+                                [{'record_id':value['record_id'],'date':str(doc.get('date')or'')[:10],
+                                  'text':doc['text'],'available_date':doc.get('available')}],pid=pid)
+                            checked.append({'patient_id':pid,'field':value['field'],'assertion_id':a['id']})
+                out['candidate_observation_review']['checked_assertions']=checked
+            return out
         if name == 'ask_agere': return self.ask_agere(**args)
         if name == 'list_metrics': return self.list_metrics()
         if name == 'execute_metric': return self.execute_metric(**args)
@@ -570,6 +587,19 @@ class Tools:
         if doc is None:
             self.read_document(record_id)
             doc = self.read.get(record_id) or {}
+        if doc and 'available'not in doc:
+            # The text inventory's cache predates arrival-clock capture. Read
+            # the native clock rather than making an old assertion lose it
+            # during a source-specific recheck.
+            available=None
+            for table in ('record','scanned_document'):
+                try:row=self.db.execute('SELECT available_date FROM '+table+' WHERE record_id=? AND patient_id=?',
+                                        (record_id,doc.get('patient_id'))).fetchone()
+                except sqlite3.Error:continue
+                if row:available=row[0]
+            doc['available']=available
+        if any(str(doc.get(k)or'')[:10]>self.as_of for k in ('date','available')):
+            raise ValueError(f'document {record_id} is not visible at the as-of date {self.as_of}')
         return doc
 
     def read_document(self, record_id, offset=0):

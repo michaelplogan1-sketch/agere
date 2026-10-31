@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T18:07:52.229327+00:00",
+  "updated_at": "2026-10-31T18:38:36.985628+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_fidelity_and_patient_verification_projection",
+    "kind": "named_source_revision_native_binding",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Every source partition retains its declared patient parent. Current PDF/dashboard distinguish supported, unresolved and deferred source checks. A mechanical binding cannot certify unchecked clinical children.",
-    "measured_failure_reduction": "Parent-key fidelity/2 removes measured serialization false failures; actual retained draft reaches static validity atcallback22instead of34. Current160packet manifest now maps to all57patients:11supported,3unresolved,43awaitingdependencyrepair; pending children cannot inherit mechanical parent support.158focused checks;0newproviders. No live savings or clinical acceptance inferred.",
+    "user_behavior_delta": "A source-local recheck replaces only its exact prior assertions in patient reading views. Earlier readings and unaffected fields/patients remain. Rechecks recover native arrival clocks missing from the text inventory cache.",
+    "measured_failure_reduction": "15named candidates independently supported;8regimen annotation axes revised.2.183s native binding/0providers preserves1436regimen/203titration observations and15prior readings. Exact source/typed replay0providers/0.674s; whole-context acceptance is not inherited.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -749,10 +749,11 @@
       "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json",
       "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/offline-static-audit/projection-differences.json",
       "artifacts/agere-parent-key-fidelity-2026-10-31/receipt.json",
-      "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json"
+      "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json"
     ],
-    "remaining_gap": "Exact-source recheck of6machine missing-evidence assertions and18unknown fields; remaining source packets have not been accepted or rejected. Current full report and app acceptance remain.",
-    "next_action": "G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED.",
+    "remaining_gap": "Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted.",
+    "next_action": "G3:15source candidates independently supported in23.377s/6attempts/$0.150533384API-equivalent;8regimen annotations revised and15prior readings retained. Native binding0providers preserves1436regimen/203titration observations and unrelated patients; source/typed replay0providers in0.674s.181focused checks and44clock/scope followup pass. Current71pagePDF retains57names/228pillars/17doses/64fills. Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted. Alltenareas retained; scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2519,17 +2520,25 @@
       "reason": "Claude narrow review supports exact retained-parent join normalization; offline replay distinguishes actual omission from redundant-key serialization.160packet manifest had124deferredchildren whose parent association was absent on early returns; renderer could show parent mechanical support.",
       "evidence": "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
       "scope_impact": "No threshold changes, new model/default activation, narrowed population, accepted clinical claims or removed scope."
+    },
+    {
+      "at": "2026-10-31T18:38:36.985628+00:00",
+      "gate": "G3",
+      "decision": "Use the existing alternate reader and independent typed checks only for15named dependencies; bind exact prior assertions through the existing candidate receipt.",
+      "reason": "A whole-field replacement could lose unrelated observations. Native proof preserves1436regimen/203titration findings while retaining15prior readings. Inventory cache lacked arrival clocks; governed source lookup restores them. Allthree cache-binding reader files remain unchanged.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json",
+      "scope_impact": "Alltenareas retained; no quarantine deletion, threshold change, broad source reread, disease handler, clinical claim or new default model."
     }
   ],
   "unsealed_work": {
-    "status": "local_source_diagnosis",
+    "status": "named_source_revision_verified_whole_context_pending",
     "path": "artifacts/agere-local-source-repair-2026-10-31",
-    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
+    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "remaining_gap": "Exact-source recheck of6machine missing-evidence assertions and18unknown fields; remaining source packets have not been accepted or rejected. Current full report and app acceptance remain.",
-    "next_action": "G3: parent-key fidelity repair69096da and patient source-partition projection are verified offline. Request narrow Claude subscription review of exact6flagged titration assertions and18unknown fields with complete named source context; distinguish ambiguous attribution, model uncertainty and code faults. Preserve all observations, quarantines and unrelated native work; do not repeat broad note review. Then apply only supported local correction/recheck, current patient report/app/replay and bottling qualification; retain alltenareas and scheduler PAUSED."
+    "remaining_gap": "Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted.",
+    "next_action": "G3:15source candidates independently supported in23.377s/6attempts/$0.150533384API-equivalent;8regimen annotations revised and15prior readings retained. Native binding0providers preserves1436regimen/203titration observations and unrelated patients; source/typed replay0providers in0.674s.181focused checks and44clock/scope followup pass. Current71pagePDF retains57names/228pillars/17doses/64fills. Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted. Alltenareas retained; scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
