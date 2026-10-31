@@ -1,8 +1,8 @@
-# Current Agere checkpoint - 2026-10-31T11:09:10.498254+00:00
+# Current Agere checkpoint - 2026-10-31T11:19:39.754751+00:00
 
-Build ACTIVE,G5;soleowner;schedulerPAUSED. Curated report delivery sealed at artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json. Current product7e004ca;57patients,73pages,228937bytes,45tests,allfourAPIformats exact,0providers. No separate technical companion or execution archive in PDF. Original source/answer retained; priorv7 recovery intact. Current isolated8890 ready; no sourcefreeze.
+Build ACTIVE,G5;soleowner;schedulerPAUSED. Current2a608b4 performance increment sealed;73page curated patient PDF unchanged and ready. Source/model qualification incomplete. No active owned provider/training job before starting the new receipt; do not duplicate any running run.
 
-Exact next: Measure and remove the observed duplicate saved-context load/validation in the normal report-download HTTP route, while retaining saved_report.read_format source/bundle/hash checks and unchanged bytes. Use current73page PDF and allfourformats plus stale/missing/tampered-context controls; no new source/provider rerun. Then return to G5 independent source/model/outcome qualification, the retained12objection/48uncertain/9unchecked parts and matched full-workload cost/latency evidence. Do not bypass dependency closure or train on model disagreement. Alltenareas retained.
+Exact next: Run the exact original full question once through the ordinary compose path on current2a608b4, existing caches allowed, to measure the combined post-7949 native-group/registered-entity/source-reuse/typed-feedback and deliverable changes end to end. No prior draft or recovery prefix injected. Preserve every attempt/source/partial result and original57patient scope; no clinical acceptance or cold-cost claim. Keep product/source frozen during the owned run; inspect receipts first and do not duplicate it. Then audit actual source scope, all component contributions, latency/cost, bottling eligibility and current report parity before deciding the next measured repair. Independent source/model/clinical qualification remains separate and alltenareas retained.
 
 ## Earlier checkpoint (superseded)
 

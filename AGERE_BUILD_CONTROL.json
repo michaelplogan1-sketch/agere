@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T11:09:10.498254+00:00",
+  "updated_at": "2026-10-31T11:19:39.754751+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -384,6 +384,10 @@
         {
           "path": "artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json",
           "sha256": "e3410497ea98f36f83a4ee7a4327d13a6c99a6d052904cc976326e98ab9b5c0a"
+        },
+        {
+          "path": "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json",
+          "sha256": "29ed24d5ef97da4451e87f1d59ac88a533c746fd5a386a6acc9092bae1066461"
         }
       ],
       "blocker": "Independent source-family/model and clinical labels, viable outcome targets, and authentic full-workload/reviewer-cost evidence are not available in the current sealed receipts. Machine disagreement is unadjudicated and cannot become clinical truth or model-training labels. Current engineered reuse, report/export, installation and recovery behavior is sealed; all ten acceptance areas and standing source/protected-evaluation boundaries remain.",
@@ -391,11 +395,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "curated_clinical_report_delivery",
+    "kind": "guarded_download_performance_delivered",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "End-user PDF now leads with clinical cohort/patient decisions and dated explanations; technical prose and embedded execution archive removed.",
-    "measured_failure_reduction": "Curated report delivered:73pages/228937bytes,57patients/228pillars/17doseobjects/64namedfillgroups/1083nativeCSVcells exact;45tests and current four-format API pass,0providers. G5 source/model/clinical qualification and whole-workload performance remain open. Current PDF download still13.348s; route code contains a redundant outer context load before read_format loads/validates it again.",
+    "user_behavior_delta": "All four source-checked downloads avoid one redundant full context load.",
+    "measured_failure_reduction": "PDF13.348\u219210.594s; HTML9.236\u21926.545s; JSON9.448\u21926.544s; CSV9.053\u21926.406s. Byte-identical,20tests,three400negativecontrols,0providerattempts.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -714,10 +718,11 @@
       "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/presentation-verification.json",
       "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/current-candidate-acceptance.json",
       "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json",
-      "artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json"
+      "artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json",
+      "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json"
     ],
-    "remaining_gap": "Curated report delivered:73pages/228937bytes,57patients/228pillars/17doseobjects/64namedfillgroups/1083nativeCSVcells exact;45tests and current four-format API pass,0providers. G5 source/model/clinical qualification and whole-workload performance remain open. Current PDF download still13.348s; route code contains a redundant outer context load before read_format loads/validates it again.",
-    "next_action": "Measure and remove the observed duplicate saved-context load/validation in the normal report-download HTTP route, while retaining saved_report.read_format source/bundle/hash checks and unchanged bytes. Use current73page PDF and allfourformats plus stale/missing/tampered-context controls; no new source/provider rerun. Then return to G5 independent source/model/outcome qualification, the retained12objection/48uncertain/9unchecked parts and matched full-workload cost/latency evidence. Do not bypass dependency closure or train on model disagreement. Alltenareas retained.",
+    "remaining_gap": "Whole ordinary question performance and source/model qualification remain unmeasured on the combined current fixes; original38m38s run preceded the native-group/routing/source-feedback changes.",
+    "next_action": "Run the exact original full question once through the ordinary compose path on current2a608b4, existing caches allowed, to measure the combined post-7949 native-group/registered-entity/source-reuse/typed-feedback and deliverable changes end to end. No prior draft or recovery prefix injected. Preserve every attempt/source/partial result and original57patient scope; no clinical acceptance or cold-cost claim. Keep product/source frozen during the owned run; inspect receipts first and do not duplicate it. Then audit actual source scope, all component contributions, latency/cost, bottling eligibility and current report parity before deciding the next measured repair. Independent source/model/clinical qualification remains separate and alltenareas retained.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -732,9 +737,9 @@
       "Report serving still has measurable redundant context validation; current PDF13.348s, no claim of whole-question speedup."
     ],
     "latest_progress": {
-      "at": "2026-10-31T11:09:10.498254+00:00",
-      "receipt": "artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json",
-      "code_commit": "7e004ca",
+      "at": "2026-10-31T11:19:39.754751+00:00",
+      "receipt": "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json",
+      "code_commit": "2a608b4",
       "context_id": "ANS-4370962206a7c613180e34ea",
       "deliverable_id": "DLV-DD2368CBC06B",
       "all_ten_areas_retained": true
@@ -2396,15 +2401,25 @@
         "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
       ],
       "scope_impact": "All ten areas, full57patient cohort, source/model uncertainty and sealedv7 recovery retained. A single curated report is requested; no separate technical companion."
+    },
+    {
+      "at": "2026-10-31T11:19:39.754751+00:00",
+      "gate": "G5",
+      "decision": "Measure one current ordinary full-question run because the earlier38m38s/7949 run preceded the shared native-group, entity admission/routing, source completion, typed-feedback and report fixes. Component replays do not establish integrated controller performance. This is a current-candidate measurement with warm caches, not another unchanged frozen experiment or a clinical-label campaign.",
+      "evidence": [
+        "artifacts/agere-g5-source-clock-2026-10-30/ordinary-question-current-v1/run-receipt.json",
+        "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json"
+      ],
+      "scope_impact": "Original57patients and alltenareas retained; no protected keys/generator truth, new model/default promotion, token/spend caps or outside actions."
     }
   ],
   "unsealed_work": {
-    "status": "report_delivery_sealed_performance_followup",
+    "status": "current_whole_question_measurement_preparing",
     "path": "artifacts/agere-clinical-review-curation-2026-10-31",
     "source_frozen_for_run": false,
     "active_receipt": "artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json",
-    "remaining_gap": "Curated report delivered:73pages/228937bytes,57patients/228pillars/17doseobjects/64namedfillgroups/1083nativeCSVcells exact;45tests and current four-format API pass,0providers. G5 source/model/clinical qualification and whole-workload performance remain open. Current PDF download still13.348s; route code contains a redundant outer context load before read_format loads/validates it again.",
-    "next_action": "Measure and remove the observed duplicate saved-context load/validation in the normal report-download HTTP route, while retaining saved_report.read_format source/bundle/hash checks and unchanged bytes. Use current73page PDF and allfourformats plus stale/missing/tampered-context controls; no new source/provider rerun. Then return to G5 independent source/model/outcome qualification, the retained12objection/48uncertain/9unchecked parts and matched full-workload cost/latency evidence. Do not bypass dependency closure or train on model disagreement. Alltenareas retained."
+    "remaining_gap": "Whole ordinary question performance and source/model qualification remain unmeasured on the combined current fixes; original38m38s run preceded the native-group/routing/source-feedback changes.",
+    "next_action": "Run the exact original full question once through the ordinary compose path on current2a608b4, existing caches allowed, to measure the combined post-7949 native-group/registered-entity/source-reuse/typed-feedback and deliverable changes end to end. No prior draft or recovery prefix injected. Preserve every attempt/source/partial result and original57patient scope; no clinical acceptance or cold-cost claim. Keep product/source frozen during the owned run; inspect receipts first and do not duplicate it. Then audit actual source scope, all component contributions, latency/cost, bottling eligibility and current report parity before deciding the next measured repair. Independent source/model/clinical qualification remains separate and alltenareas retained."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
