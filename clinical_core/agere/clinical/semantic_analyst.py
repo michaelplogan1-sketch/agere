@@ -733,6 +733,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             state = json.dumps([[u.get('name'), u.get('input')] for u in uses] +
                                [[a['content'], a['is_error']] for a in answers], sort_keys=True, default=str)
             if max_tools is None and state == last_tools:
+                if isinstance(state_feedback,dict)and state_feedback.get('repair_kind')=='unresolved_verification':
+                    result['review_stopped']='no_progress'
+                    return result
                 if not escalate('Repeated tools returned unchanged evidence'):
                     raise ValueError('Investigation made no progress: the same tools returned the same evidence again.')
             last_tools = state

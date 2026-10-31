@@ -531,10 +531,15 @@ class Parser(AnalystForms, SdohComposition, ComparisonForms, ClaimFrames, RateFo
         return value, tail
 
     def concept_period(self, value, tail):
-        rolling = re.match(r'^\s*(?:in|during|over|within)\s+the\s+(?:last|past)\s+(?:year|12\s+months|twelve\s+months)\b', tail, re.I)
+        rolling = re.match(r'^\s*(?:in|during|over|within)\s+the\s+(?:last|past)\s+(?:(\d+|'+'|'.join(NUMBER_WORDS)+r')\s+(years?|months?)|(year|month))\b', tail, re.I)
         if rolling and value.get('kind') == 'drug_fill' and self.base == 'patient' and self.catalog.identity.get('as_of'):
-            from . import decision_context  # the one 12-month rule: the day after date(as_of, '-12 months') through as_of
-            start, end = decision_context.rolling_year(self.catalog.identity['as_of'])
+            from . import decision_context
+            from datetime import timedelta
+            n=1 if rolling[1]is None else int(rolling[1])if rolling[1].isdigit()else int(NUMBER_WORDS[rolling[1].lower()])
+            months=n*(12 if(rolling[2]or rolling[3]).lower().startswith('year')else 1)
+            if months<=0:raise PlanError('A rolling medication-fill period needs a positive number of months')
+            end=str(self.catalog.identity['as_of'])[:10]
+            start=(decision_context.add_months(end,-months)+timedelta(days=1)).isoformat()
             value['period'] = {'start': start, 'end': end}
             value['quote'] = [value['quote'], rolling.group().strip()] if isinstance(value['quote'], str) else [*value['quote'], rolling.group().strip()]
             return value, tail[rolling.end():]

@@ -230,10 +230,20 @@ def concept_sql(expr, compiler, scope):
         if 'event_date' not in compiler.catalog.tables[table]: raise PlanError('Concept date unavailable')
         where += f' AND {alias}.event_date BETWEEN {literal(start)} AND {literal(end)}'
         from . import decision_context
-        if (start, end) == tuple(decision_context.rolling_year(compiler.catalog.identity['as_of'])):
+        current_year=(start,end)==tuple(decision_context.rolling_year(compiler.catalog.identity['as_of']))
+        if current_year:
             compiler.window_numbers.add('12')  # "in the last 12 months": the rolling-year period encodes the 12
+        # The fully reparsed leaf has already bound its original wording. A
+        # numeric window may be encoded as calendar endpoints in the SQL;
+        # credit that numeral only when its actual dates agree exactly.
+        from datetime import timedelta
+        for match in re.finditer(r'\b(?:last|past)\s+(\d+)\s+(years?|months?)\b',quoted,re.I):
+            count=int(match[1]);months=count*(12 if match[2].lower().startswith('year')else 1)
+            expected=(decision_context.add_months(compiler.catalog.identity['as_of'],-months)+timedelta(days=1)).isoformat()
+            if start==expected and end==compiler.catalog.identity['as_of']:
+                compiler.window_numbers.add(str(count))
         compiler.notes.append(f'Medication use means at least one picked-up fill dated {start} through {end}'
-                              + (' (the 12 months ending at the as-of date: current use).' if end == compiler.catalog.identity['as_of'] else '.'))
+                              + (' (the 12 months ending at the as-of date: current use).' if current_year else '.'))
     return f'EXISTS (SELECT 1 FROM {table} {alias} WHERE {alias}.patient_id = {outer} AND {where})'
 
 

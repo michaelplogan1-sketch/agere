@@ -135,6 +135,12 @@ class Investigator(unittest.TestCase):
         self.assertEqual([b['model']for b in self.sent],[M.HAIKU]*2)
         self.assertEqual(r['answer']['status'],'answered');self.assertFalse(r.get('model_escalations'))
 
+    def test_repeating_a_tool_after_unlocated_verifier_uncertainty_keeps_the_partial_result(self):
+        r=self.run_loop([TOOL_REPLY,reply({'status':'answered','count':7}),TOOL_REPLY],
+            lambda a,c:{'status':'repair','repair_kind':'unresolved_verification','feedback':'Source check unresolved'})
+        self.assertFalse(r.get('model_escalations'));self.assertEqual(r['review_stopped'],'no_progress')
+        self.assertEqual(r['answer']['verification'],'unverified');self.assertEqual(len(r['tool_calls']),2)
+
     def test_located_fault_or_different_question_is_not_an_indeterminate_check(self):
         clean={'label':'unknown','packets':[{'id':'patient_A','label':'unknown','decided_by':None}]}
         self.assertIsNotNone(B.verification_repair_state({'label':'answers_partially'},clean))
