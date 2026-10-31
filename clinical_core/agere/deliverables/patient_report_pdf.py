@@ -8,12 +8,214 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader,PdfWriter
 
+def _note_excerpt(quote,entity=None):
+ """Copy relevant sentences plus adjacent qualifications, never paraphrase them.
+
+ Entity aliases come from the existing assertion contract. This only chooses
+ what to quote; it does not create a source finding or endorse its interpretation.
+ """
+ text=str(quote or '').strip()
+ lines=[line.strip() for line in text.splitlines() if line.strip()]
+ decision=[line for line in lines if re.match(r'^(?:\d+\.\s*)?(?:decision(?: and plan)?|patient report and decision|medication discussion)\s*:',line,re.I)]
+ if decision:
+  # Keep explicit qualifications even when supplied in a separate paragraph.
+  qualifications=[line for line in lines if line not in decision and re.search(r'\b(?:reason|rationale|uncertain|undocumented|unknown|not established|not confirmed|pending clarification)\b',line,re.I)]
+  text='\n'.join(decision+qualifications)
+ else:
+  reasons=[line for line in lines if re.search(r'\bbecause\b|\bnot (?:being )?used\b|\breason\b|\bwithheld\b|\bheld for\b',line,re.I)]
+  text='\n'.join(reasons) if reasons else text
+ sentences=[s.strip()for s in re.split(r'(?<=[.!?])\s+(?=[A-Z0-9])|\n+',text)if s.strip()]
+ aliases=(entity or{}).get('aliases')or[]
+ matches=lambda s:any(re.search(r'(?<!\w)'+re.escape(a)+r'(?!\w)',s,re.I)for a in aliases)
+ chosen={i for i,s in enumerate(sentences)if matches(s)}if aliases else set()
+ if not chosen:
+  chosen={i for i,s in enumerate(sentences)if re.search(r'\bbecause\b|\b(?:did not|not) (?:increase|escalate)\b|\bheld for\b|\b(?:reason|rationale)\b',s,re.I)}
+ if not chosen:return text
+ from ..clinical.drug_classes import classify
+ # Pronouns, denial of supply, missing rationale and pending clarification
+ # remain beside their named medicine. Stop at another named medication.
+ for i in sorted(chosen):
+  j=i+1
+  while j<len(sentences)and not classify(sentences[j]):chosen.add(j);j+=1
+ # An omission marker makes noncontiguous selections explicit to the reader.
+ ordered=sorted(chosen);out=[];prior=None
+ for i in ordered:
+  if prior is not None:out.append(' 'if i==prior+1 else'\n[...]\n')
+  out.append(sentences[i]);prior=i
+ return ''.join(out)
+
+
+def _render_clinical(context,output,cards,references):
+ """Curated patient-facing reading path over the unchanged saved evidence."""
+ from collections import Counter
+ from datetime import date
+ for name,filename in [('AgereSans','Arial.ttf'),('AgereBold','Arial Bold.ttf')]:
+  font=Path('/System/Library/Fonts/Supplemental')/filename
+  if not font.is_file():
+   import reportlab
+   font=Path(reportlab.__file__).parent/'fonts'/('Vera.ttf'if name=='AgereSans'else'VeraBd.ttf')
+  pdfmetrics.registerFont(TTFont(name,str(font)))
+ navy=HexColor('#173442');teal=HexColor('#177D79');muted=HexColor('#52636E');rule=HexColor('#DCE5E8');pale=HexColor('#F1F6F7');amber=HexColor('#8A5917')
+ styles={
+  'body':ParagraphStyle('ClinicalBody',fontName='AgereSans',fontSize=10.2,leading=14.2,textColor=navy,spaceAfter=6),
+  'small':ParagraphStyle('ClinicalSmall',fontName='AgereSans',fontSize=8.7,leading=11.8,textColor=muted,spaceAfter=4),
+  'title':ParagraphStyle('ClinicalTitle',fontName='AgereBold',fontSize=30,leading=34,textColor=navy,spaceAfter=14),
+  'name':ParagraphStyle('ClinicalName',fontName='AgereBold',fontSize=23,leading=27,textColor=navy,spaceAfter=6),
+  'head':ParagraphStyle('ClinicalHeading',fontName='AgereBold',fontSize=12,leading=16,textColor=teal,spaceBefore=10,spaceAfter=5,keepWithNext=True),
+  'label':ParagraphStyle('ClinicalLabel',fontName='AgereBold',fontSize=9.2,leading=12.5,textColor=navy,spaceAfter=4,keepWithNext=True),
+  'quote':ParagraphStyle('ClinicalQuote',fontName='AgereSans',fontSize=9.5,leading=13.2,textColor=navy,spaceAfter=9,leftIndent=9),
+  'notice':ParagraphStyle('ClinicalNotice',fontName='AgereBold',fontSize=9.2,leading=12.5,textColor=amber,spaceAfter=4),
+ }
+ def P(text,style='body'):
+  return Paragraph(html.escape(str(text)).replace('\n','<br/>'),styles[style])
+ def human(value):return str(value or '').replace('_',' ')
+ def D(value):
+  try:return date.fromisoformat(str(value)[:10]).strftime('%d %b %Y').lstrip('0')
+  except ValueError:return str(value or 'Date not recorded')
+ def N(value):
+  if isinstance(value,(int,float)):return f'{value:g}'
+  return str(value)
+ def group_dates(group):
+  dates=sorted({str(s['date']) for s in group.get('sources',[]) if s.get('date')})
+  return (D(dates[0])+' to '+D(dates[-1]) if len(dates)>1 else D(dates[0])) if dates else 'Date not recorded'
+ def box(rows,widths):
+  t=Table(rows,colWidths=widths,hAlign='LEFT')
+  t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,-1),pale),('LEFTPADDING',(0,0),(-1,-1),11),('RIGHTPADDING',(0,0),(-1,-1),11),('TOPPADDING',(0,0),(-1,-1),10),('BOTTOMPADDING',(0,0),(-1,-1),7)]))
+  return t
+ def team_text(c,role):
+  team=next((t for t in c['care_team'] if t['role']==role),{})
+  if team.get('current'):
+   return '\n'.join(a['name']+'\nAssignment recorded '+D(a.get('source_date')) for a in team['current'])
+  others=team.get('other_records')or[]
+  text='Current assignment not established'
+  if others:
+   seen=set()
+   for a in sorted(others,key=lambda a:str(a.get('source_date')or''),reverse=True):
+    key=(a.get('name'),a.get('assignment_status'))
+    if key in seen:continue
+    seen.add(key);text+='\n'+str(a.get('name')or'Name not recorded')+' - '+human(a.get('assignment_status'))+' ('+D(a.get('source_date'))+')'
+  dated={}
+  wanted={'cardiology','cardiologist'}if role=='Cardiology'else{'primary care','primary care physician','pcp'}
+  for a in c.get('dated_correspondence_roles',[]):
+   if human(a.get('documented_role')).casefold()in wanted:
+    dated.setdefault(str(a.get('name')or'Name not recorded'),set()).add(str(a.get('date')or''))
+  for name,dates in dated.items():text+='\n'+name+' - signed '+role.lower()+' correspondence ('+D(max(dates))+'); assignment unconfirmed'
+  return text
+ def observed_pillars(c):return sum(t['observed_status']=='Recent fill observed' for t in c['therapy'])
+ ordered=list(cards.values());cutoff=(context.get('source')or{}).get('as_of');answer=context['answer']
+ count=len(ordered);distribution=Counter(observed_pillars(c)for c in ordered)
+ dose_patients=sum(bool(c.get('all_dose_observations'))for c in ordered)
+ pcp=sum(any(t['role']=='Primary care'and t['current']for t in c['care_team'])for c in ordered)
+ cardio=sum(any(t['role']=='Cardiology'and t['current']for t in c['care_team'])for c in ordered)
+ story=[P('CLINICAL REVIEW  /  SYNTHETIC HEALTHCARE WAREHOUSE','label'),Spacer(1,16),P('Medication optimization\nPatient review','title'),P('A clinical discussion brief for the theoretical GDMT titration program.'),P('Source snapshot: '+D(cutoff)+'  |  '+str(count)+' patients','small'),Spacer(1,14)]
+ story.append(box([[ [P(str(count),'name'),P('Patients for review','small')], [P(str(dose_patients),'name'),P('Patients with a dated dose/state record','small')], [P(str(pcp),'name'),P('Patients with a recorded current PCP assignment','small')] ]],[180]*3))
+ story.extend([P('The opportunity to review','head'),P('The saved cohort identifies patients with HFrEF evidence and incomplete four-pillar fill observations. These findings support medication reconciliation and a discussion of program suitability; they do not establish that a patient is untreated or eligible for titration.')])
+ fill_rows=[[P('Pillars with a picked-up fill','label'),P('Patients','label'),P('Review focus','label')]]
+ for k in range(5):
+  fill_rows.append([P(str(k)+' of 4'),P(distribution[k]),P('Reconcile medicines and the documented reasons for gaps' if k<4 else 'Confirm the current regimen and individual tolerated doses','small')])
+ t=Table(fill_rows,colWidths=[170,70,300],repeatRows=1)
+ t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),pale),('LINEBELOW',(0,0),(-1,-1),.4,rule),('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)]));story.append(t)
+ scopes={t['fill_scope']for c in ordered for t in c['therapy']}
+ story.append(P('Fill window: '+('; '.join(sorted(scopes)))+'.','small'))
+ story.extend([P('Decisions to resolve with the clinical team','head'),P('1. Confirm each patient\'s current medicines, doses and access barriers.\n2. Review dated non-use or titration accounts against present clinical findings.\n3. Confirm the responsible PCP/cardiologist and individual tolerated dose before discussing enrollment.'),P('Care-team coverage: '+str(pcp)+' current PCP assignments and '+str(cardio)+' current cardiology assignments documented. A dated mention or referral is shown separately from current responsibility.','small'),P('Reading the patient reviews','head'),P('Each review brings together clinical observations, care-team information, medication fills and relevant dated chart excerpts. A missing fill is not proof of non-use. A reference maximum is not an individual tolerated maximum. Unsettled chart interpretations are marked for review.','small')])
+ for c in ordered:
+  story.append(PageBreak());profile=c['profile'];pid=c['patient_id']
+  story.append(P('PATIENT REVIEW','label'));heading=P(c['patient_name'],'name');heading.agere_record={'patient_id':str(pid),'record_index':len([x for x in story if hasattr(x,'agere_record')])};story.append(heading)
+  identity=[]
+  if profile.get('age_at_snapshot')is not None:identity.append(str(profile['age_at_snapshot'])+' years at snapshot')
+  if profile.get('sex_reported'):identity.append({'F':'Female','M':'Male'}.get(profile['sex_reported'],profile['sex_reported']))
+  identity.append(str(pid));story.append(P('  |  '.join(identity),'small'))
+  if profile.get('interpreter_needed'):story.append(P('Interpreter needed'+(' - '+str(profile['preferred_language'])if profile.get('preferred_language')else''),'label'))
+  n=observed_pillars(c)
+  story.extend([P('Why review this patient','head'),P('HFrEF evidence in the saved cohort; '+str(n)+' of 4 pillars have a picked-up fill in the review window. '+('Reconcile the remaining pillar observations and assess program suitability.'if n<4 else'Confirm current doses and whether further optimization is appropriate.'))])
+  observations=[]
+  clinical={f['label']:f for f in c['clinical_context']}
+  for key in ['Lowest documented EF','Latest qualifying low-EF observation','creatinine','egfr','potassium','systolic bp','diastolic bp','heart rate']:
+   f=clinical.get(key)
+   if not f:continue
+   names={'Lowest documented EF':'Lowest recorded EF (historical)','Latest qualifying low-EF observation':'Latest qualifying low-EF note','egfr':'eGFR','creatinine':'Creatinine','potassium':'Potassium','systolic bp':'Systolic BP','diastolic bp':'Diastolic BP','heart rate':'Heart rate'}
+   v=D(f['value'])if key=='Latest qualifying low-EF observation'else str(f.get('value_censor')or'')+N(f.get('value'))+(' '+str(f['unit'])if f.get('unit')else'')
+   detail=D(f.get('date'))if f.get('date')else('Current EF needs confirmation'if key=='Lowest documented EF'else'')
+   if(f.get('same_day_values')or 0)>1:detail+='; '+str(f['same_day_values'])+' values recorded that day; minimum '+N(f.get('same_day_min'))
+   observations.append([P(names[key]+': '+v,'label'),P(detail,'small')] if detail else [P(names[key]+': '+v,'label')])
+  if observations:
+   grid=[observations[i:i+3]for i in range(0,len(observations),3)]
+   while len(grid[-1])<3:grid[-1].append('')
+   t=Table(grid,colWidths=[180]*3);t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,-1),pale),('LEFTPADDING',(0,0),(-1,-1),9),('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),2)]));story.append(t)
+  story.extend([P('Care team','head'),box([[[P('PRIMARY CARE','label'),P(team_text(c,'Primary care'))],[P('CARDIOLOGY','label'),P(team_text(c,'Cardiology'))]]],[270,270])])
+  matrix=[[P('Medication pillar','label'),P('Fill observation and named medicines','label'),P('Dose information','label')]]
+  for therapy in c['therapy']:
+   fills=therapy['fills'];fill_text=('Picked-up fill observed; medicine name not supplied'if therapy['observed_status']=='Recent fill observed'else'No picked-up fill in the review window')if not fills else'\n'.join(str(f['drug_name'])+'\nLatest fill '+D(f.get('latest_fill_date_in_window'))for f in fills)
+   doses=[]
+   for d in therapy['dose_observations']:
+    v=d.get('documented_daily_mg');text=human(d.get('drug_key'))+': '+(N(v)+' mg/day recorded'if v is not None else'daily dose not established')
+    if d.get('dose_date'):text+=' ('+D(d['dose_date'])+')'
+    if d.get('statement_state')or d.get('documented_statement_state'):text+='; '+human(d.get('statement_state')or d.get('documented_statement_state'))
+    if d.get('target_max_daily_mg')is not None:text+='; reference maximum '+N(d['target_max_daily_mg'])+' mg/day'
+    if not d.get('current_use_established'):text+='; confirm current use'
+    doses.append(text)
+   matrix.append([P(therapy['label'],'label'),P(fill_text,'small'),P('\n'.join(doses)or'Current dose unconfirmed','small')])
+  story.append(P('Medication review','head'));t=Table(matrix,colWidths=[135,205,200],repeatRows=1)
+  t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),pale),('LINEBELOW',(0,0),(-1,-1),.4,rule),('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)]));story.append(t)
+  # One dated clinical account can support several fields. Print it once with
+  # all its uses, rather than repeating the same whole note under each pillar.
+  accounts={}
+  for label,groups in [(t['label'],t['documented_reasons'])for t in c['therapy']]+[('Titration',c['dose_limiting_statements']),('Individual tolerated maximum',c['individual_tolerance_statements'])]:
+   for g in groups:
+    entity=next((f.get('entity')for f in g.get('findings',[])if f.get('entity')),None)
+    excerpt=_note_excerpt(g.get('quote'),entity);key=excerpt
+    a=accounts.setdefault(key,{'text':excerpt,'labels':[],'groups':[]})
+    if label not in a['labels']:a['labels'].append(label)
+    a['groups'].append(g)
+  story.append(P('Documented explanations to discuss','head'))
+  if not accounts:story.append(P('No explicit non-use or titration explanation was returned in the reviewed source scope. Clarify the reason with the patient and responsible clinician.'))
+  else:
+   missing=[t['label']for t in c['therapy']if not t['documented_reasons']]
+   if missing:story.append(P('No separate non-use reason returned for: '+', '.join(missing)+'.','small'))
+  for a in accounts.values():
+   dates=sorted({str(s['date']) for g in a['groups']for s in g.get('sources',[])if s.get('date')})
+   dated=D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0])if dates else'Date not recorded'
+   story.append(P(' / '.join(a['labels'])+'  |  '+dated,'label'))
+   if any(g.get('review_status')for g in a['groups']):story.append(P('Unresolved chart interpretation - confirm before using this account.','notice'))
+   qualifications=sorted({human(g.get('polarity')) for g in a['groups']if g.get('polarity')not in [None,'affirmed']})
+   if qualifications:story.append(P('The source account is '+', '.join(qualifications)+'.','small'))
+   story.append(P(a['text'],'quote'))
+  tolerance='Dated tolerance account above; the current individual maximum needs confirmation'if c['individual_tolerance_statements']else c['individual_max_tolerated_dose']
+  story.append(P('Individual maximum tolerated dose: '+str(tolerance)+'.','small'))
+ if references:
+  story.extend([PageBreak(),P('Clinical reference sources','title')])
+  for ref in references:story.extend([P(ref['title']),P(ref['url'],'small')])
+ buf=io.BytesIO();record_pages=[]
+ def page(canvas,doc):
+  canvas.saveState();canvas.setStrokeColor(rule);canvas.line(36,36,576,36);canvas.setFillColor(muted);canvas.setFont('AgereSans',8)
+  active=record_pages[-1]if record_pages else None
+  canvas.drawString(36,23,(cards[active['patient_id']]['patient_name']+'  |  'if active else'')+'SYNTHETIC REVIEW  |  '+D(cutoff));canvas.drawRightString(576,23,str(doc.page))
+  if active and doc.page>active['page']:
+   canvas.setFont('AgereBold',9);canvas.drawString(36,773,cards[active['patient_id']]['patient_name']+' / continued')
+  canvas.restoreState()
+ doc=SimpleDocTemplate(buf,pagesize=(612,792),leftMargin=36,rightMargin=36,topMargin=36,bottomMargin=48,title='Medication optimization - patient review',author='Clinical review')
+ def after(flowable):
+  if hasattr(flowable,'agere_record'):record_pages.append({**flowable.agere_record,'page':doc.page})
+ doc.afterFlowable=after
+ doc.afterPage=lambda:page(doc.canv,doc)
+ from reportlab.pdfgen.canvas import Canvas
+ def deterministic_canvas(*args,**kwargs):kwargs['invariant']=1;return Canvas(*args,**kwargs)
+ doc.build(story,canvasmaker=deterministic_canvas)
+ reader=PdfReader(io.BytesIO(buf.getvalue()));writer=PdfWriter();writer.append(reader);writer.add_outline_item('Cohort brief',0)
+ parent=writer.add_outline_item('Patient reviews',record_pages[0]['page']-1)
+ for entry in record_pages:writer.add_outline_item(cards[entry['patient_id']]['patient_name'],entry['page']-1,parent=parent)
+ with Path(output).open('wb')as f:writer.write(f)
+ return {'output':str(output),'pages':len(reader.pages),'rows':len(ordered),'distinct_patient_ids':count,'new_model_calls':0,'analytical_status':answer.get('status'),'source_as_of':cutoff,'patient_bookmarks':record_pages,'narrative_display':'Curated clinical cohort brief and named patient reviews. No technical companion or execution archive in the PDF. Original evidence remains in the saved application records.','presentation_version':'curated-clinical-review/1'}
+
 def render(context,output,references=None,evidence=None):
  from .patient_evidence import RECOMMENDATION_FIELD_PATTERN,review_cards
  output=Path(output);output.parent.mkdir(parents=True,exist_ok=True)
  if evidence is None:
   from .patient_evidence import projection
   evidence=projection(context)
+ cards=review_cards(context,evidence)
+ if cards and all(len(c.get('therapy',[]))==4 and any(f['label']=='Heart failure evidence'and f.get('value')for f in c['clinical_context'])and all(t['observed_status']in('Recent fill observed','No recent fill observed')for t in c['therapy'])for c in cards.values()):
+  return _render_clinical(context,output,cards,references)
  for name,filename in [('AgereSans','Arial.ttf'),('AgereBold','Arial Bold.ttf')]:
   font=Path('/System/Library/Fonts/Supplemental')/filename
   if not font.is_file():
