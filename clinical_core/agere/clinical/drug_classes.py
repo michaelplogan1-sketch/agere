@@ -291,7 +291,17 @@ def group_query_issues(question, calls, final_view=None):
     if final_view:visit(final_view)
     else:reached.update(parents)
     schema={v:dict.fromkeys(r.get('columns') or [],'UNKNOWN') for v,r in results.items()}
-    def consumed_columns(members):
+    def membership_only(table):
+        select=table.find_ancestor(exp.Select)
+        if select is None or len(select.expressions)!=1:return False
+        value=select.expressions[0]
+        if not isinstance(value,exp.Column)or value.name!='patient_id':return False
+        if any(select.args.get(k)for k in('joins','where','group','having','qualify','limit','offset')):return False
+        holder=select.parent
+        if not isinstance(holder,exp.Subquery)or not isinstance(holder.parent,exp.In)or holder.parent.args.get('query')is not holder:return False
+        return list(select.find_all(exp.Table))==[table]
+
+    def consumed_columns(members, output_columns=None):
         # Trace native output columns, rather than letting an exact filter on
         # an unrelated joined result certify every contributing value.
         from sqlglot.lineage import lineage
@@ -341,10 +351,35 @@ def group_query_issues(question, calls, final_view=None):
                 def collect(native):
                     nonlocal resolved_inputs
                     scopes=list(traverse_scope(native.source))
+                    counted=set()
                     def branches(node,owner=None):
                         yield node,owner
                         for child in node.downstream:yield from branches(child,node)
                     for node,owner in branches(native):
+                        for count in node.expression.find_all(exp.Count):
+                            if not isinstance(count.this,exp.Star)or id(count)in counted:continue
+                            counted.add(id(count))
+                            scope=next((s for s in scopes if s.expression is count.find_ancestor(exp.Select)),None)
+                            if scope is None:continue
+                            tables=[source for _,source in scope.selected_sources.values()]
+                            if not tables or not all(isinstance(t,exp.Table)for t in tables):continue
+                            # COUNT(*) consumes its own rows, not unrelated
+                            # output columns of the correlated outer table.
+                            for table in tables:
+                                if table.name in results and not row_filtered(scope.expression,table):sources.append((table.name,'*'))
+                            active=scope
+                            while active is not None:
+                                for clause in ('where','joins','group','having','qualify'):
+                                    values=active.expression.args.get(clause)or[]
+                                    for value in values if isinstance(values,list)else[values]:
+                                        for col in value.find_all(exp.Column):
+                                            if col.find_ancestor(exp.Select)is not active.expression:continue
+                                            selected=[t for _,t in active.selected_sources.values()]
+                                            if any(isinstance(t,exp.Table)and row_filtered(active.expression,t)and
+                                                   (col.table==t.alias_or_name or not col.table and len(selected)==1)for t in selected):continue
+                                            resolve(active,col)
+                                active=active.parent
+                            resolved_inputs=True
                         table=node.expression
                         if not isinstance(table,exp.Table):continue
                         if table.name in results:
@@ -390,23 +425,21 @@ def group_query_issues(question, calls, final_view=None):
                     for parent in parents[view]:
                         references=[t for t in tree.find_all(exp.Table)if t.name==parent]
                         if references and all(row_filtered(t.find_ancestor(exp.Select),t)for t in references):continue
-                        def membership_only(table):
-                            select=table.find_ancestor(exp.Select)
-                            if select is None or len(select.expressions)!=1:return False
-                            value=select.expressions[0]
-                            if not isinstance(value,exp.Column)or value.name!='patient_id':return False
-                            if any(select.args.get(k)for k in('joins','where','group','having','qualify','limit','offset')):return False
-                            holder=select.parent
-                            if not isinstance(holder,exp.Subquery)or not isinstance(holder.parent,exp.In)or holder.parent.args.get('query')is not holder:return False
-                            return list(select.find_all(exp.Table))==[table]
                         # IN(SELECT patient_id FROM native_view) uses membership,
                         # not every historical medication flag in that view.
                         key_only=bool(references)and all(membership_only(t)for t in references)
                         trace(parent,'patient_id'if key_only else'*',True)
             except (sqlglot.errors.SqlglotError,ValueError,RecursionError):
-                for parent in parents[view]:trace(parent,'*',True)
+                for parent in parents[view]:
+                    # An opaque macro's SELECT * has no external column schema.
+                    # Its explicit unfiltered native membership subquery still
+                    # consumes only patient IDs. Keep every other unresolved
+                    # native dependency conservative, including filtered IDs.
+                    references=[t for t in tree.find_all(exp.Table)if t.name==parent]if tree is not None else []
+                    key_only=bool(references)and all(membership_only(t)for t in references)
+                    trace(parent,'patient_id'if key_only else'*',True)
         for view in ([final_view]if final_view else reached):
-            trace(view,'*')
+            for column in (output_columns or ['*']):trace(view,column)
         return used
     used_cache={}
     # Check the medication columns actually consumed by the final result.
@@ -422,7 +455,14 @@ def group_query_issues(question, calls, final_view=None):
             flags=set(re.findall(r'\bAS\s+(on_\w+)',sql,re.I))
             consumed={name.lower()for name,_ in used.get(out['result_view'],set())}
             if flags and (flags&consumed or '*'in consumed):
-                temporal_issues.append('Contributing query '+out['result_view']+' computed GDMT fill flags from all-history drug_fill membership without a fill-date predicate. Recompute from picked-up fills in the governed 12 months ending at the snapshot; historical patient membership cannot recover that window after aggregation. Keep historical evidence separately labelled.')
+                affected=[]
+                if final_view:
+                    for column in results.get(final_view,{}).get('columns')or[]:
+                        inputs=consumed_columns(named['gdmt'],[column])
+                        names={name.lower()for name,_ in inputs.get(out['result_view'],set())}
+                        if flags&names or '*'in names:affected.append(final_view+'.'+column)
+                detail=(' Affected final fields: '+', '.join(affected)+'. Recompute those dependent fields from the corrected window; replacing only the displayed coverage flags leaves their earlier plan or interpretation stale.')if affected else ''
+                temporal_issues.append('Contributing query '+out['result_view']+' computed GDMT fill flags from all-history drug_fill membership without a fill-date predicate.'+detail+' Recompute from picked-up fills in the governed 12 months ending at the snapshot; historical patient membership cannot recover that window after aggregation. Keep historical evidence separately labelled.')
     issues=[]
     for group,members in named.items():
         bad=[]
