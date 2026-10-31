@@ -67,7 +67,9 @@ class AutomaticWorkflow(unittest.TestCase):
         self.actor_bodies.append(copy.deepcopy(body));turn=len(self.actor_bodies)
         if turn==1:
             out={'type':'tool_use','id':'review','name':'review_documents','input':{
-                'patient_query_sql':self.cohort_sql,'questions':{'barriers':'What treatment barriers and subsequent resolutions are documented?'}}}
+                'patient_query_sql':self.cohort_sql,'source_scope':'all',
+                'exhaustive_reason':'The request asks for every note and subsequent barrier resolutions in the SQL-bound cohort. A focused hit cannot establish coverage of later resolution statements or their full historical context.',
+                'questions':{'barriers':'What treatment barriers and subsequent resolutions are documented?'}}}
         elif turn==2:
             out={'type':'tool_use','id':'dose','name':'query_sql','input':{'complete':True,'sql':
                 "SELECT r.patient_id,r.review_status,r.documents_reviewed,r.review_json,d.daily_mg,d.dose_status "

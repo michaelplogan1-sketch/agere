@@ -1,10 +1,10 @@
-# Current Agere checkpoint - 2026-10-31T21:50:41.005038+00:00
+# Current Agere checkpoint - 2026-10-31T23:10:15.303804+00:00
 
-Build ACTIVE, G3. Source-disposition guard verified candidate; no active provider/training/build job. Prior scoped installation remains sealed; primary runtime unchanged. Scheduler PAUSED; all ten acceptance areas retained.
+G3 ACTIVE; ordinary source-fulfillment candidate verified. No active provider/training/build job; owned8890stopped. Scheduler PAUSED; all ten areas retained.
 
-Exact next: G3: source-disposition guard verified as a candidate:107checks and actual57patient read-only verification. Re-establish the original native partial-review flow under current code using unchanged source and zero provider dispatch; prove producer/request compatibility, preserve12suspended assertions/161uncertain feedback/8pending dependencies and old receipts, then current source-review app/report/save/reopen. Do not restamp ordinary acceptance or bottle a partial trace. Bind actual deliverable fulfillment before another narrowly justified coverage check. Full original-question acceptance and qualified whole-question reuse remain open; all ten areas retained; scheduler PAUSED.
+Exact next: G3: ordinary source-review fulfillment candidate passes145checks and actual57patient controller/fulfillment check in70.008s/0providers; analysis was injected only for the consumer check, not ordinary acceptance. All15082shared attempts/source/raw patient table unchanged;12source suspensions explicit;70pagePDF ready. Commit/push coherent candidate, then one unassisted original-question warm confirmation using actual configured stack/routes/shared ledger, no owned_recovery or injected analysis, no custom caps. Freeze product/source for the run, retain all attempts/partials and stop providers on a real subscription limit. Then audit coverage/source/role costs, readable delivery and justified reuse; no partial-trace promotion. All ten areas retained; scheduler PAUSED.
 
-Candidate evidence: artifacts/agere-local-source-repair-2026-10-31/source-state-native-check-v2/integration-receipt.json
+Evidence: artifacts/agere-local-source-repair-2026-10-31/ordinary-source-fulfillment/integration-receipt.json
 
 ## Earlier checkpoint (superseded)
 

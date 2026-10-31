@@ -16,13 +16,21 @@ def payload(context,*,title='Evidence into next steps',labels=None,evidence=None
  worklist=[]
  for row in rows:
   c=cards.get(row.get('patient_id'))
-  if not c:worklist.append(row);continue
+  if not c:
+   worklist.append({**row,'captured_answer_status':a.get('status'),
+    'answer_source_reading_status':(context.get('source_disposition')or{}).get('status','not_assessed'),
+    'source_interpretation_notice':source_reading_notice(context)})
+   continue
   p=c['profile'];care={t['role']:t for t in c['care_team']}
   def team(role):return '; '.join(a['name'] for a in care[role]['current'])or care[role]['status']
   worklist.append({'patient_name':c['patient_name'],'age_at_snapshot':p.get('age_at_snapshot'),
    'sex_reported':p.get('sex_reported'),'current_pcp':team('Primary care'),'current_cardiologist':team('Cardiology'),
    'program_review_rationale':(c['program_review']or{}).get('rationale'),
-   'program_review_status':(c['program_review']or{}).get('status'),**row})
+   'program_review_status':(c['program_review']or{}).get('status'),**row,
+   'captured_answer_status':a.get('status'),
+   'answer_source_reading_status':(context.get('source_disposition')or{}).get('status','not_assessed'),
+   'patient_source_check_status':(c.get('source_verification')or{}).get('status','not_assessed'),
+   'source_interpretation_notice':c.get('empty_source_reason')or(source_reading_notice(context)if(context.get('source_disposition')or{}).get('status')=='unavailable'else None)})
  field_labels={'on_rasi_pillar':'Recent RAAS inhibitor / ARNI fill','on_beta_blocker_pillar':'Recent evidence-based beta-blocker fill',
   'on_mra_pillar':'Recent MRA fill','on_sglt2i_pillar':'Recent SGLT2 inhibitor fill',
   'has_structured_current_cardiology_assignment':'Structured current cardiology assignment documented',

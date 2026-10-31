@@ -1,3 +1,11 @@
+# Current local engineering candidate — ordinary source-review flow
+
+145checks and the actual57patient controller/fulfillment check pass. The ordinary consumer retains its saved-answer link, returns partial/unverified source status, and produces the local70pagepatient report while blocking program/monitor work. Source/data races, earlier unknown pricing and producing-context links remain explicit. All15082shared attempts, source and raw patient rows stay unchanged;0product provider calls. The consumer check deliberately reused compatible native analysis and does not establish unassisted ordinary-answer acceptance.
+
+Evidence: `artifacts/agere-local-source-repair-2026-10-31/ordinary-source-fulfillment/integration-receipt.json`. Next is one unassisted original-question confirmation and measured reuse. Prior sealed installation remains the recovery point; no new installation, primary promotion, clinical qualification or whole-question bottle is claimed. All ten areas remain in scope. `AGERE_BUILD_CONTROL.json` owns the sequence.
+
+## Prior candidate and delivery history
+
 # Current local engineering delivery — October 31 source-state update
 
 The latest verified candidate connects suspended source readings to saved work, monitors, generation and procedural reuse.107regressions pass. Real saved-context inspection finds12dependent suspended assertions in3of57patients; all1682active assertions have bound observations. The original answer, source, journal and all15082shared attempts remain unchanged. Known suspensions permit source-evidence review; program work is blocked. The old answer remains available for inspection and is not restamped after code changes.

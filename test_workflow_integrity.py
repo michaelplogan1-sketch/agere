@@ -144,7 +144,7 @@ class CompleteReview(unittest.TestCase):
             self.assertIn('P56',serialized);self.assertIn('unknown',serialized);self.assertIn('INTERMEDIATE_EXCEPTION',serialized)
             return {'label':'contradicted','decided_by':'scripted','steps':[]}
         with patch.object(S,'ready',return_value=True),patch.object(S,'check',return_value={'label':'answers_fully','calls':0,'cost_usd':0}),patch.object(S,'s1',return_value=SimpleNamespace(decide=decide)):
-            out=B.review_final(SimpleNamespace(),'All eligible?',{'answer_type':'table','headline':'Every patient is eligible','table_from_tool':'agere_result_2'},calls,
+            out=B.review_final(SimpleNamespace(),'All eligible?',{'status':'answered','answer_type':'table','headline':'Every patient is eligible','table_from_tool':'agere_result_2'},calls,
                                SimpleNamespace(read={},document_reviews=[]),ledger=None,as_of='2030-05-27')
         self.assertEqual(out['status'],'repair')
         self.assertEqual(out['evidence_coverage']['final_table_rows'],57)

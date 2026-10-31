@@ -227,14 +227,15 @@ function render() {
   if (c.source_review_required) warnings.push('This saved answer relies on a suspended source reading. Its original findings remain inspectable; open source-evidence review or ask again before preparing program work. The answer has not been recalculated.');
   if (c.source_disposition?.status === 'unavailable') warnings.push('Source-reading status is unavailable. Restore source verification before changing work. The saved evidence remains inspectable.');
   if (c.answer.status !== 'answered' || c.answer.missing?.length) warnings.push('This answer has unresolved evidence. You can prepare source-evidence review; clinical program work requires a complete answer.');
-  if (c.answer.missing?.length) warnings.push('Not covered: '+c.answer.missing.join('; '));
+  const gaps = c.answer.missing || [];
+  const gapDetails = gaps.length ? '<details><summary>Original analytical gaps and limitations ('+gaps.length+')</summary><ul>'+gaps.map(gap=>'<li>'+esc(gap)+'</li>').join('')+'</ul></details>' : '';
   if (c.supports_patient_work === false) warnings.push('This is an analytical summary. Build a view or monitor it; ask for a specific patient cohort before preparing follow-up work.');
   const accepted = data.independent_review?.accepted === true && !c.source_review_required && c.source_disposition?.status !== 'unavailable';
   if (accepted) {
     $('scope-warning').innerHTML = '<strong>Independent review accepted by '+esc(data.independent_review.reviewer)+'.</strong> No additional clinician review of these accepted findings is requested.'+
-      (warnings.length?'<details><summary>Saved machine assessment, recorded before independent review</summary><p>'+esc(warnings.join(' '))+'</p></details>':'');
-  } else $('scope-warning').textContent = warnings.join(' ');
-  $('scope-warning').hidden = !accepted && !warnings.length;
+      (warnings.length?'<details><summary>Saved machine assessment, recorded before independent review</summary><p>'+esc(warnings.join(' '))+'</p></details>':'')+gapDetails;
+  } else $('scope-warning').innerHTML = esc(warnings.join(' '))+gapDetails;
+  $('scope-warning').hidden = !accepted && !warnings.length && !gaps.length;
   $('studio-review-note').textContent = accepted ? 'Independent review of this saved analysis is recorded. Source gaps and action prerequisites remain explicit.' : 'Both remain synthetic and require interpretation review.';
   $('cohort-description').textContent = num(c.patient_rows.length)+' patients from the saved answer. Select who to work with, then choose their next step.';
   if (!$('program').options.length) {
