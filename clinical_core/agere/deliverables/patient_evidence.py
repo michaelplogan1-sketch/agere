@@ -134,17 +134,29 @@ def review_cards(context, evidence=None):
     def items(value):
         value=decoded(value);return value if isinstance(value,list)else[]
     def person_name(cid):return(clinicians.get(cid)or{}).get('display_name')or cid or'Name unavailable'
-    def reasons(findings,entity,relations=None):
+    def reasons(findings,entity,relations=None,states=None):
         groups={}
         for f in findings:
             if not isinstance(f,dict)or(f.get('entity')or{}).get('id')!=entity:continue
             if relations is not None and f.get('relation')not in relations:continue
-            key=tuple(str(f.get(k)or'')for k in ('quote','relation','polarity','temporality','subject'))
+            assertion=f.get('assertion')or{}
+            key=tuple(str(f.get(k)or'')for k in ('quote','relation','polarity','temporality','subject'))+(assertion.get('question_digest'),)
             group=groups.setdefault(key,{'quote':f.get('quote'),'relation':f.get('relation'),'polarity':f.get('polarity'),
                 'temporality':f.get('temporality'),'subject':f.get('subject'),'sources':[],'findings':[]})
             source={'record_id':f.get('record_id'),'date':f.get('date')}
             if source not in group['sources']:group['sources'].append(source)
             group['findings'].append(f)
+            binding=(states or{}).get(assertion.get('id'))
+            if binding and binding['assertion']!=assertion:
+                raise ValueError('Finding differs from its reconciled source assertion')
+            accounts=binding['groups']if binding else[]
+            if accounts:
+                group.setdefault('documentary_accounts',[])
+                for account in accounts:
+                    if account not in group['documentary_accounts']:group['documentary_accounts'].append(account)
+                if any(a['status']in ('same_date_conflict','opposing_reports_over_time_or_unresolved_clock')for a in accounts):
+                    group['review_status']='Different source accounts require reconciliation'
+                    group['review_qualification']='The source records contain different accounts for this topic. They may describe different dates or circumstances; confirm which account applies now.'
             feedback=source_feedback.get((f.get('assertion')or{}).get('id'))
             if feedback:
                 group['review_status']='Unresolved source interpretation'
@@ -173,6 +185,32 @@ def review_cards(context, evidence=None):
                 steps=[row[k]for k in ('registered_pillar_gap_step','registered_dose_step','cardiology_pcp_step')if row.get(k)is not None]
                 if steps:row['proposed_review_steps']=steps
             pid=row['patient_id'];profile=people.get(pid)or{}
+            # Consume the existing typed reconciliation, preserving each review's
+            # scope. Do not vote across reviews or collapse different questions.
+            state_index={};state_groups=[];seen_groups=set()
+            for review in evidence.get('notes',{}).get(pid,[]):
+                state=review.get('documentary_state')or{}
+                active_ids={(f.get('assertion')or{}).get('id')for field,values in (review.get('findings')or{}).items()
+                    if field not in review.get('audit_only_fields',[])for f in values if isinstance(f,dict)}
+                assertions={a['id']:a for a in state.get('assertions',[])if a.get('id')in active_ids and a.get('patient_id')==pid and (a.get('source')or{}).get('patient_id')==pid}
+                for group in state.get('groups',[]):
+                    ids={ident for a in group.get('dated_accounts',[])for ident in a.get('assertion_ids',[])}
+                    ids.update(a['assertion_id']for a in group.get('excluded_from_dated_accounts',[]))
+                    if not ids or not ids<=set(assertions):continue
+                    identity=json.dumps(group,sort_keys=True)
+                    if identity not in seen_groups:state_groups.append(group);seen_groups.add(identity)
+                    for ident in ids:
+                        binding=state_index.setdefault(ident,{'assertion':assertions[ident],'groups':[]})
+                        if binding['assertion']!=assertions[ident]:raise ValueError('Reconciled assertion identity changed between source reviews')
+                        if group not in binding['groups']:binding['groups'].append(group)
+            opposed=sum(g['status']in ('same_date_conflict','opposing_reports_over_time_or_unresolved_clock')for g in state_groups)
+            unresolved=sum(g['status']=='unresolved_documentary_accounts'for g in state_groups)
+            reconciliation_parts=[]
+            if opposed:reconciliation_parts.append(str(opposed)+' '+('set of chart statements differs'if opposed==1 else'sets of chart statements differ'))
+            if unresolved:reconciliation_parts.append(str(unresolved)+' '+('set has'if unresolved==1 else'sets have')+' unclear timing or context')
+            reconciliation_summary=('; '.join(reconciliation_parts)+
+                '. Review the dated passages before using them as current clinical facts.')if reconciliation_parts else None
+            def bound_reasons(findings,entity,relations=None):return reasons(findings,entity,relations,state_index)
             for cohort in profile.get('registered_cohort_evidence')or[]:
                 for field,value in cohort.get('fields',{}).items():
                     if field not in row:row[field]=value
@@ -261,17 +299,17 @@ def review_cards(context, evidence=None):
                     'fill_scope_display':fill_scope_display,
                     'fill_observed':True if row[field]==1 else False if row[field]==0 else None,
                     'current_use':'Confirm current regimen','fills':observed,'dose_observations':ds,
-                    'documented_reasons':reasons(findings,entity,{'treatment_reason','reason_not_on_therapy','not_prescribed_reason','documented_reason_not_on_therapy'}),
-                    'documented_status_accounts':reasons(findings,entity,{'documented_status'})})
+                    'documented_reasons':bound_reasons(findings,entity,{'treatment_reason','reason_not_on_therapy','not_prescribed_reason','documented_reason_not_on_therapy'}),
+                    'documented_status_accounts':bound_reasons(findings,entity,{'documented_status'})})
             rationale=[]
             if row.get('hfref_basis'):rationale.append('Source-defined HFrEF cohort: '+str(row['hfref_basis']).replace('_',' '))
             missing=row.get('pillars_missing')
             if 'pillars_missing'not in row:missing=', '.join(label for group,label,field,entity,classes in pillars if row.get(field)==0)
             if missing:rationale.append(('Reconcile pillars without a fill in the returned history: 'if historical_fill else'Reconcile pillars without a recent-fill observation: ')+str(missing).replace('_',' '))
             if doses:rationale.append('Review dated dose/state observations and their reference-dose comparisons')
-            regimen_statements=reasons(findings,'gdmt',{'documented_medication_regimen'})
-            dose_limiting=reasons(findings,'gdmt',{'dose_titration_reason'})+reasons(findings,'gdmt_dose')
-            tolerance_statements=reasons(findings,'gdmt',{'individual_maximum_tolerated_dose'})
+            regimen_statements=bound_reasons(findings,'gdmt',{'documented_medication_regimen'})
+            dose_limiting=bound_reasons(findings,'gdmt',{'dose_titration_reason'})+bound_reasons(findings,'gdmt_dose')
+            tolerance_statements=bound_reasons(findings,'gdmt',{'individual_maximum_tolerated_dose'})
             if row.get('max_dose_reason_findings')or dose_limiting:rationale.append('Review the documented dose-limiting statements below with the responsible clinician')
             program={'title':'Theoretical GDMT titration program'if therapy else'Clinical review',
                 'status':'Potential review opportunity; eligibility requires clinical assessment',
@@ -281,10 +319,13 @@ def review_cards(context, evidence=None):
                     'Responsible clinician and patient preferences','Program availability and coverage']}if therapy else None
             cards[pid]={'patient_id':pid,'patient_name':profile.get('display_name')or'Name unavailable in received profile',
                 'profile':profile,'clinical_context':clinical,'care_team':[care('Primary care'),care('Cardiology')],
-                'cardiology_statements':reasons(findings,'cardiology'),
+                'cardiology_statements':bound_reasons(findings,'cardiology'),
                 'dated_correspondence_roles':narrative_roles,'therapy':therapy,'all_dose_observations':doses,
                 'regimen_statements':regimen_statements,'dose_limiting_statements':dose_limiting,
                 'individual_tolerance_statements':tolerance_statements,'program_review':program,
+                'documentary_reconciliation':{'groups':state_groups,'current_clinical_state_established':False,
+                    'summary':reconciliation_summary,
+                    'basis':'Existing source assertion reconciliation; different accounts are retained without voting or inferring clinical change.'},
                 'individual_max_tolerated_dose':('Dated source statements are retained below; the current individual maximum requires verification'
                     if tolerance_statements else'Not established by the reviewed evidence'),
                 'source_reviews':evidence.get('notes',{}).get(pid,[]),'original_result_row':original_row}
@@ -312,6 +353,9 @@ def projection(context):
                 found = json.loads(raw) if isinstance(raw, str) else raw
             except (TypeError, ValueError):
                 found = None
+            raw_state=row.get('documentary_state_json')
+            try:documentary_state=json.loads(raw_state)if isinstance(raw_state,str)else raw_state
+            except (TypeError,ValueError):documentary_state=None
             raw_roles=row.get('source_clinicians_json')or'[]'
             try:roles=json.loads(raw_roles)if isinstance(raw_roles,str)else raw_roles
             except (TypeError,ValueError):roles=None
@@ -326,6 +370,7 @@ def projection(context):
             except (TypeError,ValueError):scope=None;unresolved=None
             notes.setdefault(pid, []).append({
                 'source_clinicians':roles,
+                'documentary_state':documentary_state,
                 'source_scope':review.get('source_scope'),
                 'evidence_scope':scope,'unresolved_source_fields':unresolved,
                 'questions': questions, 'findings': found,

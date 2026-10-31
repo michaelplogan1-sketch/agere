@@ -128,6 +128,8 @@ def _render_clinical(context,output,cards,references):
   if profile.get('interpreter_needed'):story.append(P('Interpreter needed'+(' - '+str(profile['preferred_language'])if profile.get('preferred_language')else''),'label'))
   n=observed_pillars(c)
   story.extend([P('Why review this patient','head'),P('HFrEF evidence in the saved cohort; '+str(n)+' of 4 pillars have a fill observation in the saved analysis. '+('Reconcile the remaining pillar observations and assess program suitability.'if n<4 else'Confirm current doses and whether further optimization is appropriate.'))])
+  reconciliation=(c.get('documentary_reconciliation')or{}).get('summary')
+  if reconciliation:story.append(P(reconciliation,'notice'))
   observations=[]
   clinical={f['label']:f for f in c['clinical_context']}
   for key in ['Lowest documented EF','Latest qualifying low-EF observation','creatinine','egfr','potassium','systolic bp','diastolic bp','heart rate']:
@@ -296,6 +298,8 @@ def render(context,output,references=None,evidence=None):
   out=[];profile=c['profile']
   age=str(profile['age_at_snapshot'])+' years'if profile.get('age_at_snapshot')is not None else'Age not established'
   out.append(P(age+' / '+str(profile.get('sex_reported')or'Sex not recorded')+' / '+c['patient_id'],small))
+  reconciliation=(c.get('documentary_reconciliation')or{}).get('summary')
+  if reconciliation:out.extend([P('Source accounts to reconcile',head),P(reconciliation,small)])
   out.append(P('Clinical context',head))
   observations=[]
   for f in c['clinical_context']:
