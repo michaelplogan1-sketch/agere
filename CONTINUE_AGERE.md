@@ -1,3 +1,27 @@
+# Current Agere checkpoint — 2026-10-31T06:05:12.404858+00:00
+
+Build ACTIVE,G5;soleowner;schedulerPAUSED. Sourceef9fa7cFROZEN forownedcurrent-installed-typed-feedback-v7. Inspectactualprocess/run receipt beforeanyproductedit. Receipt: /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-typed-feedback-v7/run-receipt.json. No new paidcalls/training.
+
+Actualtypedfeedbackrepair83focusedchecks passes. Actualcache:50bindings/45suspendeddecisions/9explicitunknowns/zeroold disputed finding reuse,control exact,source/observations/ledgerunchanged,0providers. NewcurrentcontextANS-4370962206a7c613180e34ea andDLV-1122CA7886DF:57patients,228pillars,17doseobjects,1083nativeCSVcells,150pagePDF,fullcontext exact; currentAPIallfourformats pass. Currentarchive/source-cache restartpersistence remains toseal; prior6032v6sealedrecovery remains intact. Clinical/source qualification stillpartial95supported/48uncertain/12model-objections/9uncheckedparts.
+
+Exactnext: Observe current-installed-typed-feedback-v7 to terminal; do not duplicate or change frozen productef9fa7c/source. It snapshots allcurrent source, packages current code/report, checks all57currentpatients/allfourformats and exact9typedcache suspensions plusunaffectedcontrol before/afterrestart; no provider calls. FullunchangedG6work mutation/rollback testsalready passedv6andare not repeated. On success seal durablev7evidence, update owner/docs/privatePRand resume the isolated candidate. No new source interpretation/training campaign; retain all source/model/clinical/outcome qualification limits and alltenareas.
+
+Latestsealedv6source6032e55 current-readable-report-v2/delivery-receipt.json remainsknown-good. Currenttyped-source feedbackchanges are alreadyactiveinoperationalcache viaappend-only events; originalpayloads/providerledgers preserved. No modelpromotions orclinicaltruthlabels. Alltenareas retained.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint — 2026-10-31T05:55:32.000543+00:00
+
+Build ACTIVE,G5;soleowner;schedulerPAUSED. Last sealed source-awarev6delivery6032e55 remainsknown-good: current-readable-report-v2/delivery-receipt.json. New typed-feedback engineering increment is verified/applied; productreport refresh notyetsealed.
+
+Typed feedback wiring now proven on actual operational cache:10source findings recompiled exactly;50assertion-to-cache bindings;45typed decisions suspended for9disputed assertions;9explicitunknown blocks/zero disputed finding reuse; unaffected control exact; all original observation payloads/source andproviderledgerunchanged;0newproviders. Context-isolation/local-reader retries cannot bypass quarantine.83focusedchecks pass, including concurrent readings and missing cached payload. No clinical labels or model changes; currentreport/policy/package refresh remains.
+
+Exactnext: Refresh the current source-bound57patient report under the verified typed-feedback policy without new source inference or dropped prior observations. Retain all source/model disagreements, original math and all four formats; mark the nine old typed readings as suspended/unresolved, not corrected clinical facts. Verify current reopening/API and a targeted archived/restart source-cache replay using the sealedv6source as recovery; do not repeat unchanged full57-work-item/G6operations unnecessarily. Preserve full ten-area scope and all independent role/clinical/outcome qualification dependencies.
+
+Receipt: artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json. No active provider/training/job; no new model labels/thresholds/source inference. Keepspan_repair.py anddocument_review.py unchanged to preserve allfrontier source-observation keys. Allsource/cachepayloads andattemptspreserved.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-31T05:42:49.676576+00:00
 
 Build ACTIVE,G5;soleowner;schedulerPAUSED. Latest scoped engineering delivery is SEALED: artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/delivery-receipt.json. Product6032e55,current57-patient contextANS-84178dc9a52c7ea082758021,150pagePDF,allfour exactAPIexports and installedv6recovery passed in1143.994s. Alltestserversstopped; primaryunchanged. Priorfd576b1archive retained; fullqueue/clinical/modelqualificationfalse.
