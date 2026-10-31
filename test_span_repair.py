@@ -1,4 +1,5 @@
-import copy,json,sqlite3,tempfile,threading,unittest
+import copy,io,json,os,sqlite3,tempfile,threading,unittest
+from contextlib import nullcontext
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -169,5 +170,94 @@ class SourceObservations(unittest.TestCase):
   self.assertEqual(saved['answer'],{'label':'unknown'});self.assertEqual(saved['source_request_hashes'],['first'])
   db=S.observation_store(self.path);event=json.loads(db.execute('SELECT payload FROM span_observation_events').fetchone()[0]);db.close()
   self.assertEqual(event['source_request_hashes'],['second']);self.assertEqual(event['answer'],{'label':'irrelevant'})
+
+class LegacySubscriptionCache(unittest.TestCase):
+ doc=SourceObservations.doc
+ pending=SourceObservations.pending
+ def setUp(self):
+  from test_document_relations import question
+  from clinical_core.agere.gateway import BudgetLedger
+  self.tmp=tempfile.TemporaryDirectory();self.addCleanup(self.tmp.cleanup);self.path=Path(self.tmp.name)
+  self.env=patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription','ANTHROPIC_API_KEY':'unit-transport-only','AGERE_EXECUTION_TRACE':''});self.env.start();self.addCleanup(self.env.stop)
+  self.ledger=BudgetLedger(self.path/'provider-budget.sqlite3');self.addCleanup(self.ledger.close)
+  self.docs=[self.doc('a')];self.items=self.pending(self.docs);self.q={'reason':question()};self.receipts=[];bodies=[]
+  self.tools=SimpleNamespace(as_of='2030-05-27',stack=SimpleNamespace(path=self.path,ledger_path=self.ledger.path))
+  def capture(body):
+   bodies.append(body);self.raw={'model':body['model'],'transport':'claude-code-subscription','stop_reason':'end_turn',
+    'transport_details':{'caller_max_tokens':8192,'caller_max_tokens_enforced':False},'usage':{'input_tokens':1,'output_tokens':1},
+    'content':[{'type':'text','text':json.dumps({'answers':{k:{'label':'finding','polarity':'affirmed','temporality':'historical','subject':'patient'}for k in json.loads(body['messages'][0]['content'])['decisions']}})}]}
+   return self.raw,0.,False
+  original=S.repair(SimpleNamespace(as_of=self.tools.as_of),'A',self.items,self.docs,self.q,capture,threading.Event(),[],models=(S.model_policy.HAIKU,))
+  self.body=bodies[0];self.expected=original['findings']
+ def seed(self):
+  from clinical_core.agere.clinical.context_student import send
+  _,receipt=send({**self.body,'max_tokens':8192},'claude',self.ledger,self.path/'receipts',parse=lambda raw:raw,
+      transport=lambda *a,**k:nullcontext(io.BytesIO(json.dumps(self.raw).encode())))
+  self.old_key=receipt['request_hash'];return self.old_key
+ def replace_old(self,raw=None,status='validated'):
+  with self.ledger.db:self.ledger.db.execute('UPDATE calls SET response=?,status=? WHERE id=?',
+      (json.dumps(self.raw if raw is None else raw),status,self.old_key))
+ def read(self,sender):
+  return S.repair(self.tools,'A',self.items,self.docs,self.q,sender,threading.Event(),self.receipts,models=(S.model_policy.HAIKU,))
+ def test_completed_unbounded_subscription_reading_is_revalidated_and_bottled_without_dispatch(self):
+  from unittest.mock import Mock
+  self.seed();before=(self.path/'provider-budget.sqlite3').read_bytes();sender=Mock(side_effect=AssertionError('No provider may be called'))
+  out=self.read(sender);self.assertEqual(out['findings'],self.expected);self.assertEqual(out['failures'],[]);sender.assert_not_called()
+  self.assertEqual(self.receipts[0]['request_hash'],self.old_key);self.assertEqual(self.receipts[0]['new_paid_api_calls'],0)
+  self.assertFalse(self.receipts[0]['clinical_acceptance_inherited'])
+  self.assertFalse(out['findings']['reason'][0]['assertion']['current_clinical_state_established'])
+  with patch.object(S,'legacy_subscription_response',side_effect=AssertionError('Source observation should now be available')):
+   again=self.read(sender)
+  self.assertEqual(again['findings'],out['findings']);self.assertEqual(again['receipt']['source_observation_cache_hits'],1)
+  self.assertEqual((self.path/'provider-budget.sqlite3').read_bytes(),before)
+ def test_current_validated_failed_pending_or_abandoned_key_keeps_normal_sender_handling(self):
+  self.seed();key=digest({'contract':'context-student/1','provider':'claude','body':self.body})
+  for status in ['validated','failed','pending','abandoned']:
+   with self.subTest(status=status):
+    with self.ledger.db:self.ledger.db.execute('INSERT OR REPLACE INTO calls VALUES (?,?,?,?,?,?,?,?)',
+       (key,'claude',self.body['model'],.5,status,json.dumps(self.raw),'fixture',0.))
+    before=self.ledger.db.execute('SELECT * FROM calls ORDER BY id').fetchall()
+    self.assertIsNone(S.legacy_subscription_response(self.tools,self.body))
+    self.assertEqual(self.ledger.db.execute('SELECT * FROM calls ORDER BY id').fetchall(),before)
+ def test_failed_or_unfinished_legacy_key_is_never_revalidated_or_retried(self):
+  self.seed()
+  for status in ['failed','pending','abandoned']:
+   with self.subTest(status=status):
+    self.replace_old(status=status);before=self.ledger.db.execute('SELECT * FROM calls').fetchall()
+    self.assertIsNone(S.legacy_subscription_response(self.tools,self.body));self.assertEqual(self.ledger.db.execute('SELECT * FROM calls').fetchall(),before)
+ def test_complete_model_transport_boundary_and_non_enforcement_must_all_match(self):
+  self.seed();cases=[]
+  for field,value in [('model',S.model_policy.SONNET),('transport','api'),('stop_reason','max_tokens')]:
+   raw=copy.deepcopy(self.raw);raw[field]=value;cases.append(raw)
+  for field,value in [('caller_max_tokens_enforced',True),('caller_max_tokens_enforced',None),('caller_max_tokens',4096)]:
+   raw=copy.deepcopy(self.raw);raw['transport_details'][field]=value;cases.append(raw)
+  raw=copy.deepcopy(self.raw);raw.pop('transport_details');cases.append(raw)
+  for answers in [{},{'foreign':'finding'},{'s0':{'label':'finding','polarity':'affirmed','temporality':'imagined','subject':'patient'}},{'s0':{'label':'finding','polarity':'affirmed','temporality':'historical','subject':'source_entity'}}]:
+   raw=copy.deepcopy(self.raw);raw['content'][0]['text']=json.dumps({'answers':answers});cases.append(raw)
+  for i,raw in enumerate(cases):
+   with self.subTest(case=i):self.replace_old(raw);self.assertIsNone(S.legacy_subscription_response(self.tools,self.body))
+ def test_any_source_question_snapshot_model_or_policy_change_misses_the_exact_legacy_request(self):
+  self.seed();changes=[]
+  for field,value in [('as_of','2030-05-28'),('patient_id','B')]:
+   body=copy.deepcopy(self.body);state=json.loads(body['messages'][0]['content']);state[field]=value;body['messages'][0]['content']=json.dumps(state);changes.append(body)
+  for field,value in [('model',S.model_policy.SONNET),('system',self.body['system']+' Revised source policy.')]:
+   body=copy.deepcopy(self.body);body[field]=value;changes.append(body)
+  for field,value in [('date','2030-02-01'),('available_date','2030-02-02'),('text',self.docs[0]['text']+' More complete context.')]:
+   body=copy.deepcopy(self.body);state=json.loads(body['messages'][0]['content']);next(iter(state['whole_source_contexts'].values()))[field]=value;body['messages'][0]['content']=json.dumps(state);changes.append(body)
+  body=copy.deepcopy(self.body);state=json.loads(body['messages'][0]['content']);state['decisions']['s0']['question']['question']+=' Include review schedule.';body['messages'][0]['content']=json.dumps(state);changes.append(body)
+  for i,body in enumerate(changes):
+   with self.subTest(case=i):self.assertIsNone(S.legacy_subscription_response(self.tools,body))
+ def test_unknown_legacy_reading_remains_unknown_after_reuse(self):
+  from unittest.mock import Mock
+  self.seed();raw=copy.deepcopy(self.raw);raw['content'][0]['text']='{"answers":{"s0":"unknown"}}';self.replace_old(raw)
+  sender=Mock(side_effect=AssertionError('No provider may be called'))
+  for _ in range(2):
+   out=self.read(sender);self.assertEqual(out['findings']['reason'],[]);self.assertEqual(len(out['failures']),1)
+  sender.assert_not_called()
+ def test_lookup_is_disabled_without_subscription_or_an_explicit_ledger(self):
+  self.seed()
+  with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'off'}):self.assertIsNone(S.legacy_subscription_response(self.tools,self.body))
+  self.assertIsNone(S.legacy_subscription_response(SimpleNamespace(),self.body))
+  self.assertIsNone(S.legacy_subscription_response(self.tools,{**self.body,'max_tokens':8192}))
 
 if __name__=='__main__':unittest.main()

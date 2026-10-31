@@ -132,6 +132,51 @@ def quarantine_assertions(path,assertion_ids,reason):
     return count
 
 
+def legacy_subscription_response(tools,body):
+    """Read a completed identical request whose old output option was ignored.
+
+    This only reads the configured ledger. An existing current key, including a
+    failed or pending key, retains the normal sender's handling. The old option
+    is used to find history and is never sent to a provider.
+    """
+    from ..subscription_transport import enabled
+    from .document_review import parsed,AXES
+    ledger=getattr(getattr(tools,'stack',None),'ledger_path',None)
+    if not enabled()or not ledger or 'max_tokens'in body:return None
+    path=Path(ledger)
+    if not path.is_file():return None
+    canonical={**body,'model':model_policy.claude_model(body['model'])}
+    current_key=digest({'contract':'context-student/1','provider':'claude','body':canonical})
+    old_key=digest({'contract':'context-student/1','provider':'claude','body':{**canonical,'max_tokens':8192}})
+    db=sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=30)
+    try:
+        if db.execute('SELECT 1 FROM calls WHERE id=?',(current_key,)).fetchone():return None
+        row=db.execute('SELECT status,response FROM calls WHERE id=?',(old_key,)).fetchone()
+    finally:db.close()
+    if not row or row[0]!='validated':return None
+    raw=json.loads(row[1])
+    if not isinstance(raw,dict):return None
+    details=raw.get('transport_details')or{}
+    if not isinstance(details,dict)or not(
+            raw.get('transport')=='claude-code-subscription'and raw.get('model')==canonical['model']and
+            raw.get('stop_reason')=='end_turn'and details.get('caller_max_tokens')==8192 and
+            details.get('caller_max_tokens_enforced')is False):return None
+    state=json.loads(canonical['messages'][0]['content']);decisions=state['decisions']
+    try:data=parsed(raw)
+    except (ValueError,TypeError,KeyError):return None
+    answers=data.get('answers')if isinstance(data,dict)else None
+    if not isinstance(answers,dict)or set(answers)!=set(decisions):return None
+    for ident,decision in decisions.items():
+        answer=answers[ident];label=answer.get('label')if isinstance(answer,dict)else answer
+        if not isinstance(label,str)or label not in ('finding','irrelevant','unknown'):return None
+        if label=='finding'and isinstance(decision['question'],dict):
+            if not isinstance(answer,dict)or any(not isinstance(answer.get(k),str)or answer[k]not in AXES[k]for k in AXES):return None
+            if answer['subject']!=decision['question']['subject']:return None
+    return raw,{'cache_hit':True,'request_hash':old_key,'compatible_current_request_hash':current_key,
+        'compatibility_policy':'completed-subscription-reading-without-output-ceiling/1',
+        'legacy_wire_option_ignored':{'max_tokens':8192},'new_paid_api_calls':0,'clinical_acceptance_inherited':False}
+
+
 def batches(unresolved,documents,questions):
     docs={digest([d['record_id'],d['date'],d['text']]):d for d in documents};jobs=[]
     for item in unresolved:
@@ -195,7 +240,13 @@ def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=
                 if fresh:
                     receipt_start=len(receipts)
                     with component('document_span_repair',patient_id=pid,fields=len(fresh),documents=len(contexts),model=model):
-                        with model_policy.question_path(),(model_policy.escalation()if model==model_policy.SONNET else model_policy.first_rung()):raw,_,_=send(body)
+                        with model_policy.question_path(),(model_policy.escalation()if model==model_policy.SONNET else model_policy.first_rung()):
+                            try:compatible=legacy_subscription_response(tools,body)
+                            except (OSError,sqlite3.Error,ValueError,TypeError)as exc:
+                                compatible=None;cache_errors.append(type(exc).__name__+': '+str(exc))
+                            if compatible:
+                                raw,receipt=compatible;receipts.append(receipt)
+                            else:raw,_,_=send(body)
                         received=True
                         if raw.get('stop_reason')=='max_tokens':raise ValueError('Source-span selection response truncated')
                         data=parsed(raw);answers=data.get('answers')if isinstance(data,dict)else None
