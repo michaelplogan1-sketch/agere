@@ -351,10 +351,14 @@ def source_dependency_packets(packet, *, max_bytes=230000):
     output=[{**packet,'text':parent_text,'bytes':len(parent_text.encode()),'representation':'source_dependency_parent',
              'claim_manifest':parent['claim_manifest'],
              'source_dependency_roundtrip_verified':True,'required_source_packet_ids':required_ids,
+             'source_dependency_patient_id':pid,
              'source_dependency_fingerprint':digest(state),
              'source_dependency_mechanical_only':bool(original_claims)and len(deferred)==len(original_claims)}]
     output.extend({**packet,'id':value['id'],'text':text,'bytes':len(text.encode()),'claim_manifest':value['claim_manifest'],
                    'parent_packet_id':packet['id'],'representation':'complete_source_dependency',
                    'source_dependency_roundtrip_verified':True,'source_dependency_parent_id':packet['id'],
+                   'source_dependency_patient_id':pid,
+                   'source_claim_assertions':{claim['id']:(row['observation'].get('assertion')or row['observation'])
+                       for claim,row in zip(value['claim_manifest'],value['answer_rows'])},
                    'source_dependency_fingerprint':digest(state)}for value,text in children)
     return output

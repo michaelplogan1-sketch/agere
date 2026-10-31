@@ -1198,7 +1198,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                                       source_observation_path=getattr(stack,'path',None))
         n, usd = gate.cost(support)
         assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback',
-                          'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked')},
+                          'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked',
+                          'blocked_family_ids','global_stop')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
         if coverage['label'] in ('answers_partially', 'answers_a_different_question'):
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
@@ -1437,14 +1438,55 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             alternate=json.dumps(compact_json(packet,expand_json_strings=True),ensure_ascii=False,separators=(',',':'),default=str)
             if len(alternate.encode())<len(text.encode()):text=alternate
         result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':True,
+            **({'source_dependency_patient_id':packet['patient_id'],'patient_dependency_bound':True}
+               if packet.get('patient_id')and packet.get('answer_rows')and
+                  all(r.get('patient_id')==packet['patient_id']for r in packet['answer_rows'])else{}),
             'source_context_complete':not bool(packet.get('source_context_gaps')),
             'claim_manifest':claims,'result_view':final_view,
             'representation':'readable_native_json' if text==readable else 'lossless_compact_fallback'})
     return result
 
 
+def source_packet_family(packet,by_id):
+    """Producer-proven patient family, never a guess from an encoded ID."""
+    parent=packet.get('source_dependency_parent_id')or packet.get('id')
+    root=by_id.get(parent)or{};pid=packet.get('source_dependency_patient_id')
+    if (not isinstance(pid,str)or not pid or root.get('source_dependency_patient_id')!=pid
+        or root.get('source_dependency_parent_id')or root.get('source_context_complete')is not True):return None
+    if not root.get('required_source_packet_ids'):
+        return parent if packet is root and root.get('patient_dependency_bound')is True and root.get('dependency_complete')is True else None
+    if root.get('source_dependency_roundtrip_verified')is not True:return None
+    if packet.get('source_dependency_parent_id')and(packet.get('parent_packet_id')!=parent
+        or packet['id']not in root['required_source_packet_ids']
+        or packet.get('source_dependency_fingerprint')!=root.get('source_dependency_fingerprint')
+        or packet.get('source_dependency_roundtrip_verified')is not True):return None
+    return parent
+
+
+def source_fault_family(packet,result,by_id):
+    """Scope only located, intact patient assertions; ambiguous faults stay global."""
+    from ...contracts import digest
+    parent=source_packet_family(packet,by_id)
+    if not parent or not packet.get('source_dependency_parent_id')or result.get('decided_by')!='typed_claim_checks':return None
+    faults=[f for f in result.get('claim_feedback',[])if f.get('decided_by')and f.get('label')!='unknown']
+    if not faults:return None
+    claims={c['id']:(i,c)for i,c in enumerate(packet.get('claim_manifest')or[])}
+    for fault in faults:
+        if fault.get('label')not in ('wrong_entity','wrong_domain','wrong_subject','wrong_time','wrong_role','missing_evidence'):return None
+        bound=claims.get(fault.get('claim_id'));a=(packet.get('source_claim_assertions')or{}).get(fault.get('claim_id'))
+        if not bound or not isinstance(a,dict):return None
+        index,claim=bound;pid=packet['source_dependency_patient_id']
+        if (fault.get('packet_id')!=packet['id']or claim['id']!='source_'+str(index)
+            or claim.get('path')!=['answer_rows',index,'observation']or fault.get('path')!=claim['path']
+            or fault.get('field')!=claim.get('field')or fault.get('source_assertion_id')!=a.get('id')
+            or a.get('binding_version')!='documentary-relation/1'or a.get('patient_id')!=pid
+            or(a.get('source')or{}).get('patient_id')!=pid or a.get('subject')!='patient'
+            or a.get('id')!=digest(['documentary-relation/1',{k:v for k,v in a.items()if k!='id'}])):return None
+    return parent
+
+
 def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None):
-    """Repair a diagnosed dependency before buying unrelated source checks.
+    """Repair a local source family while continuing proven independent families.
 
     The first packet normally owns the global summary. Once it clears that
     stage, independent packets may run concurrently using separate ledger
@@ -1535,28 +1577,38 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         return checked,steps
     def fault(result):
         return result.get('label')in ('contradicted','not_established')and bool(result.get('decided_by'))
-    observed={}
-    if scheduled:observed[0]=check(scheduled[0])
-    if len(scheduled)>1 and not fault(observed[0][0])and not parallel_safe:
+    observed={};blocked=set();stopped=False
+    def accept(index,result):
+        nonlocal stopped
+        observed[index]=result
+        if fault(result[0]):
+            family=source_fault_family(scheduled[index],result[0],by_id)if index else None
+            if family:blocked.add(family);result[0]['blocked_family_id']=family
+            else:stopped=True
+    def eligible(index):
+        family=source_packet_family(scheduled[index],by_id)
+        return not stopped and family not in blocked and(not blocked or family is not None)
+    if scheduled:accept(0,check(scheduled[0]))
+    if len(scheduled)>1 and not stopped and not parallel_safe:
         for index in range(1,len(scheduled)):
-            observed[index]=check(scheduled[index])
-            if fault(observed[index][0]):break
-    elif len(scheduled)>1 and not fault(observed[0][0]):
+            if eligible(index):accept(index,check(scheduled[index]))
+            if stopped:break
+    elif len(scheduled)>1 and not stopped:
         from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
         workers=min(len(scheduled)-1,max(1,int(os.environ.get('AGERE_SYSTEM_ONE_WORKERS','8'))))
         with ThreadPoolExecutor(max_workers=workers,thread_name_prefix='agere-source-check')as pool:
-            pending={};remaining=iter(range(1,len(scheduled)));stopped=False
+            pending={};remaining=iter(range(1,len(scheduled)))
             def fill():
                 while not stopped and len(pending)<workers:
                     index=next(remaining,None)
                     if index is None:break
+                    if not eligible(index):continue
                     pending[pool.submit(check,scheduled[index])]=index
             fill()
             while pending:
                 completed,_=wait(pending,return_when=FIRST_COMPLETED)
                 for future in completed:
-                    index=pending.pop(future);observed[index]=future.result()
-                    stopped=stopped or fault(observed[index][0])
+                    index=pending.pop(future);accept(index,future.result())
                 fill()
     results=[];steps=[];unchecked=[]
     for index,packet in enumerate(scheduled):
@@ -1565,6 +1617,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         else:
             unchecked.append(packet['id'])
             results.append({**{k:packet[k]for k in ('id','parent_packet_id')if k in packet},'label':'unknown','decided_by':None,'status':'awaiting_dependency_repair',
+                **({'blocked_family_id':source_packet_family(packet,by_id)}if source_packet_family(packet,by_id)in blocked else {}),
                 'reason':'Not sent: repair the diagnosed dependency first. This packet has not been accepted or rejected.'})
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
@@ -1572,7 +1625,8 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         'decided_by':'all_dependency_checks'if settled or failed else None,'steps':steps,'packets':results,
         'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),
         'checked_source_packets':len(observed),'unchecked_packet_ids':unchecked,
-        'packet_manifest_complete':True,'all_dependencies_checked':not unchecked,'failed_packet_ids':[r['id']for r in failed],
+        'packet_manifest_complete':True,'blocked_family_ids':sorted(blocked),'global_stop':stopped,
+        'all_dependencies_checked':not unchecked,'failed_packet_ids':[r['id']for r in failed],
         'claim_feedback':[f for r in results for f in r.get('claim_feedback',[])]}
 
 

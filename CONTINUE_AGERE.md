@@ -1,3 +1,43 @@
+# Current Agere checkpoint - 2026-10-31T19:08:19.129143+00:00
+
+Build ACTIVE,G3; no active provider/training job. Patient-local source routing verified offline, live resume pending. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3: dependency-local verifier candidate passes186focused checks and retained162-packet replay. All122previously deferred packets are reached;151checked/reached with unseen responses explicitunknown,11locallydeferred, overallnot_established. All162provider texts byte-identical to2851195. Run current-code native preflight then one live typed-only source-check resume using existing caches, no actor, reader or training; preserveglobal/opaque/shared barriers and same-patient failure. Auditactualgrade/source/oldledger/usage beforecurrent app/report/save/reopen/package and full-question bottling. Alltenareas retained; scheduler PAUSED.
+
+Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T18:52:01.641138+00:00
+
+Build ACTIVE,G3; verification-protocol review RUNNING PID23563/session67571. Product2851195/source FROZEN. Scheduler PAUSED; alltenareas retained.
+
+Exact next: Observe the single narrow Claude verification-protocol review(session67571). Product2851195/source frozen, no product edits or duplicate provider/training job. Actual full-context source check returned repair148.307s/117typedattempts/$0.30232275:40checked,122deferred,2locatedsourcefaults in one patient plus46unknown feedback entries. Review whether the global halt over-propagates a proven patient-source-local fault, retaining summary/shared/opaque faults as global. Compare narrow vswhole source judgments without clinical truth votes. Then exact scoped scheduler/state/composition correction and native replay/current app/package; alltenareas retained and scheduler PAUSED.
+
+Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T18:48:05.497213+00:00
+
+Build ACTIVE,G3; whole-context source check returned partial normally. No active job; freeze released. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3: whole-context typed check returned partial/repair in148.307s/117attempts/$0.30232275API-equivalent, no Claude calls; source/code/oldledger unchanged.40packets checked,122deferred;48feedback entries include2missing-evidence assertions and46unknowns. Narrow15source recheck passed but did not remove final-context disagreement. Freeze released. Reconstruct exact current failed packets with no providers, distinguish final active claims from prior machine-reading fidelity and lost consumer meanings, and obtain a narrow Claude engineering review of that protocol before another model read/check. No repeated broad source run, threshold relaxation, clinical truth vote or model training. Then shared assertion/state/composition correction, current app/replay/package; alltenareas retained, scheduler PAUSED.
+
+Last sealed delivery unchanged; no clinical/MVP-readiness claim.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T18:43:08.857258+00:00
+
+Build ACTIVE,G3; whole-context typed source check RUNNING PID23209/session88929. Product2851195/source FROZEN. Scheduler PAUSED; alltenareas retained.
+
+Exact next: Observe the single whole-context source/coverage check(session88929) to terminal. Product2851195/source frozen; no product edit, duplicate provider/training job or broad source reread. Native table86 preserves57patients,1639active observations and all1639prior observations; only15revised,1624unaffected preserved.6.526s native preflight/0providers passed. This stage uses existing typed coverage/source checks only, with no Claude actor loop. Audit actual verdict, named faults/unknowns, source/oldledger preservation and allattempt economics; then current app/save/reopen/report/package and qualified bottling, alltenareas retained and scheduler PAUSED.
+
+Last sealed owner receipt unchanged. No clinical/MVP-readiness claim.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T18:38:36.985628+00:00
 
 Build ACTIVE,G3; no active provider/training job. Exact source revision verified; full context pending. Scheduler PAUSED; alltenareas retained.

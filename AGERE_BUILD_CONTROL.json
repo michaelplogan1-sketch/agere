@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T18:38:36.985628+00:00",
+  "updated_at": "2026-10-31T19:08:19.129143+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "named_source_revision_native_binding",
+    "kind": "patient_local_source_fault_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "A source-local recheck replaces only its exact prior assertions in patient reading views. Earlier readings and unaffected fields/patients remain. Rechecks recover native arrival clocks missing from the text inventory cache.",
-    "measured_failure_reduction": "15named candidates independently supported;8regimen annotation axes revised.2.183s native binding/0providers preserves1436regimen/203titration observations and15prior readings. Exact source/typed replay0providers/0.674s; whole-context acceptance is not inherited.",
+    "user_behavior_delta": "A proven source-local fault blocks only its own patient family; independently bound patient checks continue. Global, opaque and shared faults remain barriers and no overall acceptance is inferred.",
+    "measured_failure_reduction": "Read-only replay reaches all122previously deferred packets. All162provider bodies byte-identical;151checked/reached,11locallydeferred, overallnot_established.186focused checks pass. Unseen replay grades are explicitunknown, not accepted results.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -750,10 +750,11 @@
       "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/offline-static-audit/projection-differences.json",
       "artifacts/agere-parent-key-fidelity-2026-10-31/receipt.json",
       "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
-      "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json"
+      "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json"
     ],
-    "remaining_gap": "Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted.",
-    "next_action": "G3:15source candidates independently supported in23.377s/6attempts/$0.150533384API-equivalent;8regimen annotations revised and15prior readings retained. Native binding0providers preserves1436regimen/203titration observations and unrelated patients; source/typed replay0providers in0.674s.181focused checks and44clock/scope followup pass. Current71pagePDF retains57names/228pillars/17doses/64fills. Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted. Alltenareas retained; scheduler PAUSED.",
+    "remaining_gap": "The narrow source recheck and full-context verifier disagree. Current source grading still mixes prior and revised interpretations;122packets remain deferred. Coverage partial and current-app/package/qualification still pending.",
+    "next_action": "G3: dependency-local verifier candidate passes186focused checks and retained162-packet replay. All122previously deferred packets are reached;151checked/reached with unseen responses explicitunknown,11locallydeferred, overallnot_established. All162provider texts byte-identical to2851195. Run current-code native preflight then one live typed-only source-check resume using existing caches, no actor, reader or training; preserveglobal/opaque/shared barriers and same-patient failure. Auditactualgrade/source/oldledger/usage beforecurrent app/report/save/reopen/package and full-question bottling. Alltenareas retained; scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2528,17 +2529,33 @@
       "reason": "A whole-field replacement could lose unrelated observations. Native proof preserves1436regimen/203titration findings while retaining15prior readings. Inventory cache lacked arrival clocks; governed source lookup restores them. Allthree cache-binding reader files remain unchanged.",
       "evidence": "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json",
       "scope_impact": "Alltenareas retained; no quarantine deletion, threshold change, broad source reread, disease handler, clinical claim or new default model."
+    },
+    {
+      "at": "2026-10-31T18:48:05.497213+00:00",
+      "gate": "G3",
+      "decision": "Reassess the source-verification protocol before further source/model work.",
+      "reason": "Exact15source recheck and native revision binding pass, but full context still rejects2revised narrow reasons and retains46unknown feedback entries across old/new variants. This did not remove the final G3 barrier; another reader rerun would not diagnose mixed claim scopes.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/full-context-source-check/run-receipt.json",
+      "scope_impact": "No removed area, weakened threshold, clinical acceptance or dropped source/attempt. Compare exact typed judgments as machine evidence, not truth."
+    },
+    {
+      "at": "2026-10-31T19:08:19.129143+00:00",
+      "gate": "G3",
+      "decision": "Keep typed source faults local only with producer-bound canonical patient assertions; continue independent patient verification.",
+      "reason": "All122deferred source packets belonged outside the fault family. Global halt obscured43otherpatients. Claude review supports conservative scope guards; offline replay proves allprovidertextunchanged and preservesoverallfailure.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json",
+      "scope_impact": "Alltenareas, source/attempts/quarantines and global barriers retained; no threshold change, clinical truth vote or new default model."
     }
   ],
   "unsealed_work": {
-    "status": "named_source_revision_verified_whole_context_pending",
-    "path": "artifacts/agere-local-source-repair-2026-10-31",
-    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json",
+    "status": "local_source_fault_routing_verified_live_pending",
+    "path": "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay",
+    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
     "remaining_gap": "Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted.",
-    "next_action": "G3:15source candidates independently supported in23.377s/6attempts/$0.150533384API-equivalent;8regimen annotations revised and15prior readings retained. Native binding0providers preserves1436regimen/203titration observations and unrelated patients; source/typed replay0providers in0.674s.181focused checks and44clock/scope followup pass. Current71pagePDF retains57names/228pillars/17doses/64fills. Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted. Alltenareas retained; scheduler PAUSED."
+    "next_action": "G3: dependency-local verifier candidate passes186focused checks and retained162-packet replay. All122previously deferred packets are reached;151checked/reached with unseen responses explicitunknown,11locallydeferred, overallnot_established. All162provider texts byte-identical to2851195. Run current-code native preflight then one live typed-only source-check resume using existing caches, no actor, reader or training; preserveglobal/opaque/shared barriers and same-patient failure. Auditactualgrade/source/oldledger/usage beforecurrent app/report/save/reopen/package and full-question bottling. Alltenareas retained; scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",

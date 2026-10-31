@@ -122,6 +122,12 @@ class SourceDependencies(unittest.TestCase):
         parts=E.source_dependency_packets(packet)
         self.assertGreater(len(parts),1);self.assertEqual(packet,original)
         self.assertTrue(all(p['bytes']<=230000 and p['source_dependency_roundtrip_verified']for p in parts))
+        self.assertTrue(all(p['source_dependency_patient_id']=='A'for p in parts))
+        for part in parts[1:]:
+            body=uncompact_json(json.loads(part['text']))
+            self.assertNotIn('source_claim_assertions',body)
+            self.assertEqual(part['source_claim_assertions'],{claim['id']:(row['observation'].get('assertion')or row['observation'])
+                for claim,row in zip(body['claim_manifest'],body['answer_rows'])})
         parent=uncompact_json(json.loads(parts[0]['text']))
         self.assertEqual(parent['answer_rows'][0]['amount'],42)
         self.assertEqual(parent['answer_rows'][0]['findings']['source_dependency_json_string']['format'],'native_ascii')
