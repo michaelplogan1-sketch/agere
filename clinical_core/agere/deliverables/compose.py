@@ -201,7 +201,9 @@ def _bound_user_review(ws, bundle):
 
 def context_review(path, context):
     """Read-only display of exact independent acceptance; no work authority."""
-    if context.get('stale') or context.get('invalidated') or not re.fullmatch(r'ANS-[a-f0-9]{24}',str(context.get('id') or '')):
+    if (context.get('stale') or context.get('invalidated') or context.get('source_review_required')
+            or (context.get('source_disposition') or {}).get('status') == 'unavailable'
+            or not re.fullmatch(r'ANS-[a-f0-9]{24}',str(context.get('id') or ''))):
         return None
     from . import answer_context
     bundle=Bundle()

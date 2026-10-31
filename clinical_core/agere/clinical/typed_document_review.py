@@ -85,6 +85,93 @@ def _disputed_reading(ident):
     return {'label':'unknown','decided_by':None,'probabilities':{},'source_observation_id':ident,
             'source_observation_quarantined':True,
             'reason':'Unadjudicated source feedback suspended this exact typed reading. Unchanged inputs remain unresolved; no corrected clinical label or new dispatch is inferred.'}
+
+
+def assertion_disposition(path, assertion_ids):
+    """Read operational source suspensions without creating or changing a store.
+
+    Absence of a matching observation is unchecked coverage, not source support.
+    A store/integrity failure is unavailable and cannot authorize new work.
+    """
+    ids = sorted(set(assertion_ids))
+    result = {'status': 'current', 'source_readings_current': True,
+              'suspended_assertions': [], 'checked_assertion_ids': [],
+              'unchecked_assertion_ids': ids, 'feedback_is_clinical_truth': False}
+    if not ids:
+        return result
+    db = None
+    try:
+        db = sqlite3.connect(observation_path(path).resolve().as_uri() + '?mode=ro', uri=True, timeout=30)
+        db.execute('PRAGMA query_only=ON')
+        db.execute('BEGIN')
+        tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        typed = {'observations', 'typed_observation_bindings', 'typed_observation_events'}
+        span = {'span_observations', 'span_observation_events'}
+        for family in (typed, span):
+            if tables & family and not family <= tables:
+                raise ValueError('Incomplete source observation schema')
+        if not (typed <= tables or span <= tables):
+            raise ValueError('Source observation schema unavailable')
+        checked, suspended = set(), {}
+        for offset in range(0, len(ids), 900):
+            chunk = ids[offset:offset + 900]
+            marks = ','.join('?' for _ in chunk)
+            rows = []
+            if typed <= tables:
+                rows.extend(('typed', *row) for row in db.execute(
+                    'SELECT b.assertion_id,b.observation_id,o.payload FROM typed_observation_bindings b '
+                    'LEFT JOIN observations o ON o.id=b.observation_id '
+                    'WHERE b.assertion_id IN (' + marks + ')', chunk))
+            if span <= tables:
+                rows.extend(('span', *row) for row in db.execute(
+                    "SELECT json_extract(payload,'$.assertion_id'),id,payload FROM span_observations "
+                    "WHERE json_extract(payload,'$.assertion_id') IN (" + marks + ')', chunk))
+            for family, assertion, ident, raw in rows:
+                saved = json.loads(raw)
+                if not isinstance(saved, dict) or saved.get('id') != ident:
+                    raise ValueError('Source observation identity changed')
+                if family == 'typed':
+                    if (saved.get('schema') != OBSERVATION_VERSION or
+                            digest(saved.get('reading')) != saved.get('reading_digest')):
+                        raise ValueError('Typed source observation integrity changed')
+                    events = db.execute("SELECT payload FROM typed_observation_events "
+                                        "WHERE observation_id=? AND kind='quarantined'", (ident,))
+                else:
+                    from .span_repair import CACHE_VERSION
+                    if (saved.get('schema') != CACHE_VERSION or saved.get('assertion_id') != assertion or
+                            not isinstance(saved.get('answer'), dict) or
+                            saved['answer'].get('label') not in ('finding', 'irrelevant', 'unknown') or
+                            digest(saved.get('answer')) != saved.get('answer_digest') or
+                            digest({k: v for k, v in saved.items() if k != 'payload_digest'}) != saved.get('payload_digest')):
+                        raise ValueError('Span source observation integrity changed')
+                    events = db.execute("SELECT payload FROM span_observation_events "
+                                        "WHERE observation=? AND kind='quarantined'", (ident,))
+                requests = saved.get('source_request_hashes')
+                if not isinstance(requests, list) or not requests or any(not isinstance(h, str) or not h for h in requests):
+                    raise ValueError('Source observation request lineage unavailable')
+                checked.add(assertion)
+                for (payload,) in events:
+                    if not isinstance(json.loads(payload), dict):
+                        raise ValueError('Source observation event integrity changed')
+                    entry = suspended.setdefault(assertion, {'assertion_id': assertion, 'observations': []})
+                    observation = {'id': ident, 'kind': family}
+                    if observation not in entry['observations']:
+                        entry['observations'].append(observation)
+        for entry in suspended.values():
+            entry['observations'].sort(key=lambda item: (item['kind'], item['id']))
+        return {**result, 'status': 'suspended' if suspended else 'current',
+                'source_readings_current': not suspended,
+                'suspended_assertions': [suspended[key] for key in sorted(suspended)],
+                'checked_assertion_ids': sorted(checked), 'unchecked_assertion_ids': sorted(set(ids) - checked)}
+    except (sqlite3.Error, OSError, ValueError, TypeError, KeyError) as exc:
+        return {**result, 'status': 'unavailable', 'source_readings_current': False,
+                'error': type(exc).__name__,
+                'notice': 'Source-reading status is unavailable. Inspect the saved evidence; restore source verification before changing work.'}
+    finally:
+        if db is not None:
+            db.close()
+
+
 OPTIONS={'finding':'This exact source block contains a documented finding answering the question. Read the whole document for whose care, clinical role, dates, negation and qualifications. Copying the block would give useful evidence for this requested field.',
          'irrelevant':'This block does not answer the question. A drug/person name alone, unrelated specialty, hypothetical reason or administrative text is insufficient.',
          'unknown':'The context does not settle whether this block answers the question.'}

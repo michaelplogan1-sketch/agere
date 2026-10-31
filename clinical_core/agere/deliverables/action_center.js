@@ -55,10 +55,15 @@ async function run(fn) {
 }
 function canCreate(program = intent || $('program').value) {
   if (!data || data.context.supports_patient_work === false || data.context.stale || data.context.invalidated) return false;
+  if (!canChangeWork(program)) return false;
   const answer = data.context.answer;
   return program === 'evidence_review'
     ? ['answered','partial','low_confidence'].includes(answer.status)
     : answer.status === 'answered' && !answer.missing?.length;
+}
+function canChangeWork(program) {
+  return !data.context.stale && !data.context.invalidated && data.context.source_disposition?.status !== 'unavailable'
+    && (!data.context.source_review_required || program === 'evidence_review');
 }
 function generationLabel(d) {
   if (d.generation === 'saved_report') return 'Saved evidence report';
@@ -75,7 +80,7 @@ function costLabel(d) {
 function updateGeneration() {
   const frontier = $('generation').value === 'frontier';
   $('generation').querySelector('[value="frontier"]').disabled = !data.allow_frontier;
-  $('compose').disabled = data.context.stale || data.context.invalidated || (frontier && !data.allow_frontier);
+  $('compose').disabled = !canChangeWork('custom') || (frontier && !data.allow_frontier);
   $('compose').innerHTML = icon('spark')+(frontier ? 'Generate custom view' : 'Build local template');
   $('generation-note').textContent = frontier
     ? (data.allow_frontier ? 'A frontier model designs this view from your saved answer and work. Usage and verification results are recorded.' : 'Frontier generation is disabled on this server. You can choose a local template.')
@@ -219,10 +224,12 @@ function render() {
   const warnings = [];
   if (c.invalidated) warnings.push('This answer uses an older or invalidated planning definition. Its history is preserved; refresh the answer before new work or demo actions.');
   if (c.stale) warnings.push('Source data has changed. This saved answer is still visible; ask again before changing work.');
+  if (c.source_review_required) warnings.push('This saved answer relies on a suspended source reading. Its original findings remain inspectable; open source-evidence review or ask again before preparing program work. The answer has not been recalculated.');
+  if (c.source_disposition?.status === 'unavailable') warnings.push('Source-reading status is unavailable. Restore source verification before changing work. The saved evidence remains inspectable.');
   if (c.answer.status !== 'answered' || c.answer.missing?.length) warnings.push('This answer has unresolved evidence. You can prepare source-evidence review; clinical program work requires a complete answer.');
   if (c.answer.missing?.length) warnings.push('Not covered: '+c.answer.missing.join('; '));
   if (c.supports_patient_work === false) warnings.push('This is an analytical summary. Build a view or monitor it; ask for a specific patient cohort before preparing follow-up work.');
-  const accepted = data.independent_review?.accepted === true;
+  const accepted = data.independent_review?.accepted === true && !c.source_review_required && c.source_disposition?.status !== 'unavailable';
   if (accepted) {
     $('scope-warning').innerHTML = '<strong>Independent review accepted by '+esc(data.independent_review.reviewer)+'.</strong> No additional clinician review of these accepted findings is requested.'+
       (warnings.length?'<details><summary>Saved machine assessment, recorded before independent review</summary><p>'+esc(warnings.join(' '))+'</p></details>':'');
@@ -233,7 +240,7 @@ function render() {
   if (!$('program').options.length) {
     const options = Object.entries(data.programs).map(([id,p])=>'<option value="'+esc(id)+'">'+esc(p.label)+'</option>').join('');
     $('program').innerHTML = options;
-    $('program').value = (c.answer.status !== 'answered' || c.answer.missing?.length) && data.programs.evidence_review ? 'evidence_review' : 'custom';
+    $('program').value = (c.source_review_required || c.answer.status !== 'answered' || c.answer.missing?.length) && data.programs.evidence_review ? 'evidence_review' : 'custom';
     $('work-program').insertAdjacentHTML('beforeend',options);
     $('work-filter').insertAdjacentHTML('beforeend',Object.keys(stateHints).map(s=>'<option value="'+s+'">'+states[s]+' only</option>').join(''));
   }
@@ -275,21 +282,21 @@ function editWork(id) {
   if (!item) return;
   $('detail-kicker').textContent = 'REVIEW WORK / '+(programNames[item.program] || item.program).toUpperCase();
   $('detail-title').textContent = item.patient_id;
-  $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Staff review status</label><select id="task-state" '+((data.context.stale || data.context.invalidated)?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Updates the staff review status. Simulated agent outcomes remain in the journey history. No outreach, enrollment, or care delivery occurs.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+((data.context.stale || data.context.invalidated)?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
+  $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Staff review status</label><select id="task-state" '+(!canChangeWork(item.program)?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Updates the staff review status. Simulated agent outcomes remain in the journey history. No outreach, enrollment, or care delivery occurs.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+(!canChangeWork(item.program)?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
   const sim = item.simulation;
   const demo = document.createElement('section');
   demo.className = 'requirements-box';
   demo.innerHTML = '<h3>Try the demo agent</h3><p class="muted">Scripted synthetic journey. No contact, enrollment or care occurs.</p>'+
     (sim ? '<span class="badge">Simulated · '+esc(pretty(sim.status))+'</span><ol>'+sim.receipts.map(r=>'<li><strong>'+esc(pretty(r.step))+' → '+esc(pretty(r.outcome))+'</strong><p>'+esc(r.reason)+'</p></li>').join('')+'</ol>'+(sim.follow_up?'<p class="warning">'+esc(sim.follow_up)+'</p>':'') :
       '<label for="demo-scenario">Demo scenario</label><select id="demo-scenario"><option value="happy_path">Successful journey</option><option value="records_needed">Missing records</option><option value="patient_declines">Patient declines</option></select>')+
-    (!sim || sim.status==='running' ? '<button type="button" id="demo-advance" class="button primary" '+(data.context.stale||data.context.invalidated||!['needs_review','in_review'].includes(item.state)?'disabled':'')+'>'+(sim?'Simulate '+esc(pretty(sim.next_step)):'Start demo agent')+' →</button>' : '<p>Demo finished. Its history stays attached to this review.</p>');
+    (!sim || sim.status==='running' ? '<button type="button" id="demo-advance" class="button primary" '+(!canChangeWork('custom')||!['needs_review','in_review'].includes(item.state)?'disabled':'')+'>'+(sim?'Simulate '+esc(pretty(sim.next_step)):'Start demo agent')+' →</button>' : '<p>Demo finished. Its history stays attached to this review.</p>');
   if (item.program !== 'evidence_review') $('detail-content').append(demo);
   if ($('demo-advance')) $('demo-advance').onclick = () => run(async () => {
     $('demo-advance').disabled = true;
     try {
       await api('/api/stack/action-simulate',{context_id:key,item_id:id,revision:item.revision,scenario:sim?.scenario||$('demo-scenario').value});
       await refresh(); editWork(id); notify('Simulated step saved. No external action occurred.');
-    } finally { if ($('demo-advance')) $('demo-advance').disabled = data.context.stale || data.context.invalidated || !['needs_review','in_review'].includes(item.state); }
+    } finally { if ($('demo-advance')) $('demo-advance').disabled = !canChangeWork('custom') || !['needs_review','in_review'].includes(item.state); }
   });
   $('edit-work-form').onsubmit = event => {
     event.preventDefault();
@@ -301,7 +308,7 @@ function editWork(id) {
         closeDialog('detail-dialog');
         notify('Progress saved. Your work board is up to date.');
       } catch (error) { $('work-error').textContent = error.message; }
-      finally { if ($('save-work')) $('save-work').disabled = data.context.stale; }
+      finally { if ($('save-work')) $('save-work').disabled = !canChangeWork(item.program); }
     });
   };
   if (!$('detail-dialog').open) openDialog('detail-dialog');

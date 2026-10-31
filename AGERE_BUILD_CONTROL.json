@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T20:45:45.272792+00:00",
+  "updated_at": "2026-10-31T21:50:41.005038+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_partial_source_review_report_recovery_delivered",
+    "kind": "source_disposition_guard_verified_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current partial evidence-review work and complete patient report survive a sealed isolated installation and fresh-process restart. Source judgements and scope remain explicit; incomplete program preparation is blocked.",
-    "measured_failure_reduction": "Browser response now opens; full report transport roundtrip exact.57patient/57review items and PDF/HTML bytes match after installation/restart.65focused report/workflow checks pass.9sourceflags are linked to7suspended reader observations and10typed judgments.0newproviders for work/report/recovery.",
+    "user_behavior_delta": "Operational source suspensions now reach saved-answer work, monitors, generation and dependent lesson reuse. Known suspension permits source-evidence review. Immutable answers/work fingerprints remain unchanged; live reading projections mark affected findings unresolved.",
+    "measured_failure_reduction": "Pre-change source suspension still allowed program creation; red case now passes.107regressions, real1682assertion read-only lookup/0unchecked,12suspended across3of57patients; all15082shared attempt rows/source/journal/answer unchanged.70pagePDF retains57names/228pillars/17doses/64fills,16494words within page bounds; affected patient empty fields are unresolved.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -760,12 +760,15 @@
       "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/http-verification.json",
       "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json",
       "artifacts/agere-local-source-repair-2026-10-31/report-current-partial/layout-qa.json",
-      "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json",
-      "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/corrected-probe-receipt.json",
-      "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/learning-state-audit.json"
+      "artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json",
+      "artifacts/agere-current-source-review-installation-2026-10-31/corrected-probe-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/learning-state-audit.json",
+      "artifacts/agere-local-source-repair-2026-10-31/source-state-native-check-v2/integration-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/source-state-native-check-v2/receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/report-source-state-final/layout-qa.json"
     ],
-    "remaining_gap": "Original-question source meaning/coverage and qualified full-question reuse remain partial; G5independent labels/economics unavailable.",
-    "next_action": "G3: current partial source-review/report/local-recovery delivery sealed at /Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json.57patient/57pendingreview work,70pagePDF, compressed full-evidence dashboard and archived fresh-process/restart pass;0newproviders. Original fixture error retained, corrected probes90.357s. All9flaggedassertions bind suspended observations(7reader/10typed). Next inspect and execute one exact9-assertion default-cache disposition check through existing candidate review/state paths with providers prohibited, retaining every prior reading and unaffected finding. Distinguish explicit unresolved results from cache/input misses and prior-history fidelity; do not rerun broad source/actor checks or promote partial traces. Then qualified parameterized reuse/bottling and remaining original-question coverage/source meaning. G3active/G5blocked, alltenareas retained; scheduler PAUSED.",
+    "remaining_gap": "Current-policy native partial review state and original-question source/coverage remain incomplete; full-question bottling and G5 independent labels/economics remain unqualified.",
+    "next_action": "G3: source-disposition guard verified as a candidate:107checks and actual57patient read-only verification. Re-establish the original native partial-review flow under current code using unchanged source and zero provider dispatch; prove producer/request compatibility, preserve12suspended assertions/161uncertain feedback/8pending dependencies and old receipts, then current source-review app/report/save/reopen. Do not restamp ordinary acceptance or bottle a partial trace. Bind actual deliverable fulfillment before another narrowly justified coverage check. Full original-question acceptance and qualified whole-question reuse remain open; all ten areas retained; scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2580,17 +2583,33 @@
       "reason": "qualification_status returns a dictionary containing cohorts. Installed state/report checks and release verification passed before the probe iterated that dictionary as if it were the cohort list. Preserve failed receipts; no product or policy restamp.",
       "evidence": "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/corrected-probe-receipt.json",
       "scope_impact": "No repeated frozen build, providers, product changes, model/clinical acceptance or narrowed charter."
+    },
+    {
+      "at": "2026-10-31T21:17:53.530518+00:00",
+      "gate": "G3",
+      "decision": "Reassess source-suspension dependency consumption before another source reading or feature increment.",
+      "reason": "The narrow default-reader fixture was incomplete; generic unknowns followed local sender errors and cannot be counted as suspension or learning success. Existing journals do prove9assertions bound to suspended observations. Audit how operational review state invalidates dependent saved answers and distinguishes passive machine history from active source claims.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/source-state-review/review-run.json",
+      "scope_impact": "No clinical truth labels, further broad reads, source loss, new model activation or changed charter. Current sealed package retained as rollback."
+    },
+    {
+      "at": "2026-10-31T21:50:41.005038+00:00",
+      "gate": "G3",
+      "decision": "Wire operational suspensions through the existing answer dependency, work, projection and lesson interfaces; retain separate historical inspection and current rendering checks.",
+      "reason": "Empirical real-store fixture allowed unsupported program work after suspension. Independent subscription review found a lesson-ancestor gap and work-fingerprint regression; both corrected and tested. Active answer claims cannot be discharged by a review-only retirement. Failed network review and fixture attempts are preserved.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/source-state-native-check-v2/integration-receipt.json",
+      "scope_impact": "Scoped candidate only, no primary activation or installation; all ten acceptance areas retained. Full question remains partial; no source truth, superiority, new weight/default, bottling or clinical qualification claim."
     }
   ],
   "unsealed_work": {
-    "status": "named_default_cache_disposition_pending",
+    "status": "source_disposition_guard_verified_candidate",
     "path": "artifacts/agere-local-source-repair-2026-10-31",
-    "active_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json",
+    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/source-state-native-check-v2/integration-receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "remaining_gap": "Original-question source meaning/coverage and qualified full-question reuse remain partial; G5independent labels/economics unavailable.",
-    "next_action": "G3: current partial source-review/report/local-recovery delivery sealed at /Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json.57patient/57pendingreview work,70pagePDF, compressed full-evidence dashboard and archived fresh-process/restart pass;0newproviders. Original fixture error retained, corrected probes90.357s. All9flaggedassertions bind suspended observations(7reader/10typed). Next inspect and execute one exact9-assertion default-cache disposition check through existing candidate review/state paths with providers prohibited, retaining every prior reading and unaffected finding. Distinguish explicit unresolved results from cache/input misses and prior-history fidelity; do not rerun broad source/actor checks or promote partial traces. Then qualified parameterized reuse/bottling and remaining original-question coverage/source meaning. G3active/G5blocked, alltenareas retained; scheduler PAUSED."
+    "remaining_gap": "Current-policy native partial review state and original-question source/coverage remain incomplete; full-question bottling and G5 independent labels/economics remain unqualified.",
+    "next_action": "G3: source-disposition guard verified as a candidate:107checks and actual57patient read-only verification. Re-establish the original native partial-review flow under current code using unchanged source and zero provider dispatch; prove producer/request compatibility, preserve12suspended assertions/161uncertain feedback/8pending dependencies and old receipts, then current source-review app/report/save/reopen. Do not restamp ordinary acceptance or bottle a partial trace. Bind actual deliverable fulfillment before another narrowly justified coverage check. Full original-question acceptance and qualified whole-question reuse remain open; all ten areas retained; scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",

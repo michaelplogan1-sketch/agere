@@ -119,7 +119,9 @@ def read_format(path, context_id, deliverable_id, format_name):
     spec, bundle, _, _ = load(ws, deliverable_id)
     if spec.get('status') != 'delivered' or spec.get('generation') != 'saved_report':
         raise ValueError('No saved report format is available')
-    A.bundle_validator(path, bundle)()
+    # Verify recorded historical bytes without rewriting their original source
+    # projection. Creation still rechecks the live projection after rendering.
+    A.bundle_validator(path, bundle, source_projection=False)()
     if format_name not in ('html', 'pdf', 'json', 'csv'):
         raise ValueError('Choose a recorded HTML, PDF, JSON or CSV format')
     item = (spec.get('formats') or {}).get(format_name)

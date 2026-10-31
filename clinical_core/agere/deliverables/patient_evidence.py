@@ -187,6 +187,14 @@ def review_cards(context, evidence=None):
             'status':'awaiting_dependency_repair'if awaiting else'supported'if label=='supported'else'unresolved_verification',
             'notice':('Source checks for this patient are pending while a source dependency is repaired. The saved observations remain available for review.'if awaiting else
                 'The saved source-support check is unresolved for this patient. Confirm the recorded findings against the source records before using the interpretation.')if label!='supported'else None}
+    suspended_ids = {item['assertion_id'] for item in (context.get('source_disposition') or {}).get('suspended_assertions', [])}
+    for pid, notes in evidence.get('notes', {}).items():
+        affected = sorted(suspended_ids & {ident for note in notes for ident in note.get('audit_only_assertion_ids', [])})
+        if affected:
+            patient_verification[pid] = {'label': 'unknown', 'decided_by': None,
+                'status': 'suspended_source_reading', 'suspended_assertion_ids': affected,
+                'notice': 'A source interpretation for this patient is suspended pending review. Prior readings remain available for inspection; their removal from active findings does not establish that a reason is absent. The saved answer has not been recalculated.',
+                'saved_verification': patient_verification.get(pid)}
     def decoded(value):
         if isinstance(value,str)and value[:1]in('[','{'):
             try:return json.loads(value)
@@ -411,6 +419,7 @@ def review_cards(context, evidence=None):
                 'individual_tolerance_statements':tolerance_statements,'program_review':program,
                 'additional_documentary_accounts':additional,
                 'source_verification':patient_verification.get(pid),
+                'empty_source_reason': 'Source interpretation unresolved: a reading is suspended pending source review. An empty active finding does not establish that a reason is absent.' if (patient_verification.get(pid) or {}).get('status') == 'suspended_source_reading' else None,
                 'documentary_reconciliation':{'groups':state_groups,'current_clinical_state_established':False,
                     'summary':reconciliation_summary,
                     'basis':'Existing source assertion reconciliation; different accounts are retained without voting or inferring clinical change.'},
@@ -420,11 +429,68 @@ def review_cards(context, evidence=None):
     return cards
 
 
-def projection(context):
+def source_reading_notice(context):
+    status = (context.get('source_disposition') or {}).get('status')
+    if status == 'suspended':
+        return 'This saved answer relies on a suspended source reading. Review the source evidence or ask again before preparing program work. The original answer has not been recalculated.'
+    if status == 'unavailable':
+        return 'Source-reading status is unavailable. The saved evidence remains inspectable; restore source verification before changing work.'
+    return None
+
+
+def active_assertion_ids(context):
+    """Use the same recorded retirement semantics as the patient projection.
+
+    Prior readings and native execution history are inspectable provenance, not
+    fresh dependencies. Live suspensions must not erase their own dependency.
+    """
+    evidence = projection(context, apply_source_disposition=False)
+    active = set()
+
+    def collect(value):
+        if isinstance(value, str) and value[:1] in ('[', '{'):
+            try:
+                value = json.loads(value)
+            except ValueError:
+                return set()
+        found = set()
+        if isinstance(value, dict):
+            assertion = value.get('assertion')
+            if isinstance(assertion, dict) and isinstance(assertion.get('id'), str):
+                found.add(assertion['id'])
+            for key, item in value.items():
+                if key.startswith(('prior_', 'legacy_', 'initial_source_')) or key in ('audit_only_assertion_ids', 'prior_findings'):
+                    continue
+                if key == 'assertions' and isinstance(item, list):
+                    found.update(a['id'] for a in item if isinstance(a, dict) and isinstance(a.get('id'), str))
+                else:
+                    found.update(collect(item))
+        elif isinstance(value, list):
+            for item in value:
+                found.update(collect(item))
+        return found
+
+    for notes in evidence['notes'].values():
+        for note in notes:
+            audit_ids = set()
+            for field, values in (note.get('findings') or {}).items():
+                if field not in note.get('audit_only_fields', []):
+                    active.update(collect(values))
+                else:
+                    audit_ids.update(collect(values))
+            active.update(collect(note.get('documentary_state')) - audit_ids)
+    answer_ids = collect(context.get('answer')) | collect(context.get('patient_rows'))
+    # Retirement in a source-review view cannot discharge a claim still carried
+    # in an active answer field. Only explicit prior/audit fields are passive.
+    return sorted(active | answer_ids)
+
+
+def projection(context, *, apply_source_disposition=True):
     from ...contracts import digest
     investigation = context.get('investigation') or {}
     notes = {}
     replacements={};local_replacements={};reviews=investigation.get('document_reviews')or[]
+    suspended = {item['assertion_id'] for item in (context.get('source_disposition') or {}).get('suspended_assertions', [])} if apply_source_disposition else set()
     for index,review in enumerate(reviews):
         recheck=review.get('candidate_observation_review')or{}
         if recheck.get('source_rows_digest')and'checked_assertions'not in recheck:
@@ -452,18 +518,21 @@ def projection(context):
                     active[field]=[]
                     for value in values:
                         ident=(value.get('assertion')or{}).get('id')if isinstance(value,dict)else None
-                        if ident and(pid,field,ident)in local_replacements.get(index,set()):
+                        if ident and (ident in suspended or (pid,field,ident)in local_replacements.get(index,set())):
                             prior_findings.setdefault(field,[]).append(value);retired.append(ident)
                         else:active[field].append(value)
                 found=active
             raw_state=row.get('documentary_state_json')
             try:documentary_state=json.loads(raw_state)if isinstance(raw_state,str)else raw_state
             except (TypeError,ValueError):documentary_state=None
-            if retired and documentary_state:
+            if documentary_state:
                 from ..clinical.assertion_reconciliation import reconcile
+                retired.extend(a['id'] for a in documentary_state.get('assertions', [])
+                               if a.get('id') in suspended and a['id'] not in retired)
                 assertions=[a for a in documentary_state.get('assertions',[])if a.get('id')not in retired]
-                documentary_state={**documentary_state,'assertions':assertions,
-                    'groups':reconcile(pid,assertions,(context.get('source')or{}).get('as_of'))}
+                if retired:
+                    documentary_state={**documentary_state,'assertions':assertions,
+                        'groups':reconcile(pid,assertions,(context.get('source')or{}).get('as_of'))}
             raw_roles=row.get('source_clinicians_json')or'[]'
             try:roles=json.loads(raw_roles)if isinstance(raw_roles,str)else raw_roles
             except (TypeError,ValueError):roles=None
@@ -485,7 +554,8 @@ def projection(context):
                 'prior_findings':prior_findings,'audit_only_assertion_ids':retired,
                 'audit_only_fields':audit_fields,
                 'candidate_review_scope':review.get('candidate_observation_review'),
-                'review_status': row.get('review_status'),
+                'source_reading_suspended': bool(set(retired) & suspended),
+                'review_status': 'Suspended source reading; review required' if set(retired) & suspended else row.get('review_status'),
                 'documents_reviewed': row.get('documents_reviewed'),
                 'limitations': row.get('review_limitations')})
     # Last executed table with the same schema is the most recent observation

@@ -1,8 +1,10 @@
-# Current Agere checkpoint - 2026-10-31T20:45:45.272792+00:00
+# Current Agere checkpoint - 2026-10-31T21:50:41.005038+00:00
 
-Build ACTIVE,G3; current scoped delivery sealed. No active provider/training/build job; source/code freeze released. Owned8890stopped; primaryunchanged. Scheduler PAUSED; alltenareas retained.
+Build ACTIVE, G3. Source-disposition guard verified candidate; no active provider/training/build job. Prior scoped installation remains sealed; primary runtime unchanged. Scheduler PAUSED; all ten acceptance areas retained.
 
-Exact next: G3: current partial source-review/report/local-recovery delivery sealed at /Users/mikel/clinical-insights-local/artifacts/agere-current-source-review-installation-2026-10-31/delivery-receipt.json.57patient/57pendingreview work,70pagePDF, compressed full-evidence dashboard and archived fresh-process/restart pass;0newproviders. Original fixture error retained, corrected probes90.357s. All9flaggedassertions bind suspended observations(7reader/10typed). Next inspect and execute one exact9-assertion default-cache disposition check through existing candidate review/state paths with providers prohibited, retaining every prior reading and unaffected finding. Distinguish explicit unresolved results from cache/input misses and prior-history fidelity; do not rerun broad source/actor checks or promote partial traces. Then qualified parameterized reuse/bottling and remaining original-question coverage/source meaning. G3active/G5blocked, alltenareas retained; scheduler PAUSED.
+Exact next: G3: source-disposition guard verified as a candidate:107checks and actual57patient read-only verification. Re-establish the original native partial-review flow under current code using unchanged source and zero provider dispatch; prove producer/request compatibility, preserve12suspended assertions/161uncertain feedback/8pending dependencies and old receipts, then current source-review app/report/save/reopen. Do not restamp ordinary acceptance or bottle a partial trace. Bind actual deliverable fulfillment before another narrowly justified coverage check. Full original-question acceptance and qualified whole-question reuse remain open; all ten areas retained; scheduler PAUSED.
+
+Candidate evidence: artifacts/agere-local-source-repair-2026-10-31/source-state-native-check-v2/integration-receipt.json
 
 ## Earlier checkpoint (superseded)
 

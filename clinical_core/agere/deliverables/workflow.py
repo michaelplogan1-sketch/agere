@@ -392,6 +392,8 @@ def refresh(stack, request):
         c = A.load(stack.path, key)
         if c.get('invalidated'):
             raise ValueError('This answer was invalidated. Re-run the original question before checking a monitor.')
+        if not c['source_disposition']['source_readings_current']:
+            raise ValueError('Resolve suspended or unavailable source readings before checking this saved monitor.')
         record = read(stack.path, key)
         if record.get('program_links'):
             raise ValueError('Open the producing output workspace to check its monitor')

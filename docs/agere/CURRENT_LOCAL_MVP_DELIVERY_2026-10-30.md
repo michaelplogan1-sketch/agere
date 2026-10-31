@@ -1,3 +1,13 @@
+# Current local engineering delivery — October 31 source-state update
+
+The latest verified candidate connects suspended source readings to saved work, monitors, generation and procedural reuse.107regressions pass. Real saved-context inspection finds12dependent suspended assertions in3of57patients; all1682active assertions have bound observations. The original answer, source, journal and all15082shared attempts remain unchanged. Known suspensions permit source-evidence review; program work is blocked. The old answer remains available for inspection and is not restamped after code changes.
+
+The updated70pagecandidatePDF retains57names, clinical context and dated clinicians,228pillar cells,17dose objects and64fill groups. The3affected patient reviews use unresolved source language. All16494words fit their pages. No technical evidence companion/archive. Evidence: `artifacts/agere-local-source-repair-2026-10-31/source-state-native-check-v2/integration-receipt.json`.
+
+This candidate has not been installed or promoted to the primary runtime. The prior sealed delivery and recovery point below remain valid within their scope. G3 stays active; current-policy native review/application state, full original-question acceptance and qualified whole-question reuse remain open. G5independent clinical/model/outcome labels and reviewer economics remain unavailable. All ten areas remain in scope; the scheduler stays PAUSED. `AGERE_BUILD_CONTROL.json` owns the next action.
+
+## Prior sealed engineering delivery
+
 # Current local engineering delivery — October 31 update
 
 Current source-review/report/recovery candidate: `10a415d` on the private integration branch and draft PR2. The original full question remains partial; this is a scoped engineering delivery, not clinical/model qualification or full MVP acceptance.

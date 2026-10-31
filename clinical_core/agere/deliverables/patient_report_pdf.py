@@ -108,6 +108,9 @@ def _render_clinical(context,output,cards,references):
  pcp=sum(any(t['role']=='Primary care'and t['current']for t in c['care_team'])for c in ordered)
  cardio=sum(any(t['role']=='Cardiology'and t['current']for t in c['care_team'])for c in ordered)
  story=[P('CLINICAL REVIEW  /  SYNTHETIC HEALTHCARE WAREHOUSE','label'),Spacer(1,16),P('Medication optimization\nPatient review','title'),P('A clinical discussion brief for the theoretical GDMT titration program.'),P('Source snapshot: '+D(cutoff)+'  |  '+str(count)+' patients','small'),Spacer(1,14)]
+ from .patient_evidence import source_reading_notice
+ notice=source_reading_notice(context)
+ if notice:story.append(P(notice,'notice'))
  story.append(box([[ [P(str(count),'name'),P('Patients for review','small')], [P(str(dose_patients),'name'),P('Patients with a dated dose/state record','small')], [P(str(pcp),'name'),P('Patients with a recorded current PCP assignment','small')] ]],[180]*3))
  story.extend([P('The opportunity to review','head'),P('The saved cohort identifies patients with HFrEF evidence and incomplete four-pillar fill observations. These findings support medication reconciliation and a discussion of program suitability; they do not establish that a patient is untreated or eligible for titration.')])
  fill_rows=[[P('Pillars with a fill observation','label'),P('Patients','label'),P('Review focus','label')]]
@@ -176,13 +179,13 @@ def _render_clinical(context,output,cards,references):
     if label not in a['labels']:a['labels'].append(label)
     a['groups'].append(g)
   story.append(P('Documented explanations to discuss','head'))
-  if not accounts:story.append(P('No explicit non-use or titration explanation was returned in the reviewed source scope. Clarify the reason with the patient and responsible clinician.'))
+  if not accounts:story.append(P(c.get('empty_source_reason') or 'No explicit non-use or titration explanation was returned in the reviewed source scope. Clarify the reason with the patient and responsible clinician.'))
   else:
    missing=[t['label']for t in c['therapy']if not t['documented_reasons']]
    if additional:
     story.append(P('Review the dated accounts below alongside the medication table. These accounts have not been assigned as explanations for a specific current treatment gap.','small'))
    elif missing:
-    note=P('No separate non-use reason returned for: '+', '.join(missing)+'.','small');note.keepWithNext=True;story.append(note)
+    note=P((c.get('empty_source_reason') + ' Review: ' if c.get('empty_source_reason') else 'No separate non-use reason returned for: ')+', '.join(missing)+'.','small');note.keepWithNext=True;story.append(note)
   for a in accounts.values():
    dates=sorted({str(s['date']) for g in a['groups']for s in g.get('sources',[])if s.get('date')})
    dated=D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0])if dates else'Date not recorded'
@@ -335,7 +338,7 @@ def render(context,output,references=None,evidence=None):
   out.extend([P('Four-pillar medication and dose review',head),P('Fills describe the analysis window and require current-regimen confirmation. A reference maximum does not establish this patient’s maximum tolerated dose.',small)])
   def grouped_reasons(groups):
    text=[]
-   if not groups:return[P('No explicit reason returned in the reviewed scope. Confirm with the patient and responsible clinician.',small)]
+   if not groups:return[P(c.get('empty_source_reason') or 'No explicit reason returned in the reviewed scope. Confirm with the patient and responsible clinician.',small)]
    for g in groups:
     if g.get('review_status'):
      text.extend([P(g['review_status'],labelstyle),P(g['review_qualification'],small)])
@@ -352,7 +355,7 @@ def render(context,output,references=None,evidence=None):
     dose='not established'if d.get('documented_daily_mg')is None else str(d['documented_daily_mg'])+' mg/day'
     reference='not supplied'if d.get('target_max_daily_mg')is None else str(d['target_max_daily_mg'])+' mg/day'
     doses.append(label(d.get('drug_key'))+'; recorded '+dose+'; '+label(d.get('statement_state')or d.get('dose_status'))+'; reference comparison '+label(d.get('documented_reference_max_status')or d.get('reference_max_status'))+'; reference max '+reference+'; dose date '+str(d.get('dose_date')or'unknown')+'; latest note '+str(d.get('latest_note_date')or'unknown'))
-   reasons=str(len(t['documented_reasons']))+' distinct source account(s); see quotations below'if t['documented_reasons']else'No explicit reason returned in reviewed scope'
+   reasons=str(len(t['documented_reasons']))+' distinct source account(s); see quotations below'if t['documented_reasons']else c.get('empty_source_reason') or 'No explicit reason returned in reviewed scope'
    matrix.append([P(t['label'],labelstyle),P(fill,small),P('\n'.join(doses)or'No dose/state observation supplied; confirm current regimen',small),P(reasons,small)])
   table=Table(matrix,colWidths=[100,120,180,140],repeatRows=1)
   table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),paper),('LINEBELOW',(0,0),(-1,-1),.25,line),('BOTTOMPADDING',(0,0),(-1,-1),7),('TOPPADDING',(0,0),(-1,-1),7)]));out.append(table)
@@ -382,6 +385,9 @@ def render(context,output,references=None,evidence=None):
  patient_level=bool(ids)
  first_metric=(len(ids),'Distinct patient IDs')if patient_level else(len({k for row in rows for k in row}),'Returned fields')
  story=[P('AGERE  /  '+('PATIENT REVIEW'if patient_level else'ANALYSIS REVIEW'),small),Spacer(1,12),P('Evidence into\nnext steps',title),P(context.get('question','Saved analysis')),Spacer(1,10)]
+ from .patient_evidence import source_reading_notice
+ notice=source_reading_notice(context)
+ if notice:story.extend([P('Source interpretation requires review',head),P(notice)])
  story.append(P('This is the generated PDF companion. Any pending-delivery statements in the original saved analysis describe the earlier analytical stage; the complete original analysis remains embedded unchanged.',small))
  kpis=Table([[P(str(first_metric[0]),head),P(str(len(rows)),head),P(status,head)], [P(first_metric[1],small),P('Complete result rows',small),P('Saved analytical status',small)]],colWidths=[180]*3)
  kpis.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,-1),paper),('LEFTPADDING',(0,0),(-1,-1),12),('BOTTOMPADDING',(0,0),(-1,-1),8),('TOPPADDING',(0,0),(-1,-1),8)]));story+=[kpis,Spacer(1,17),P('Source and scope',head),P('Synthetic warehouse. Source snapshot: '+str(cutoff)+'. Dates follow the simulated source clock. Report rendering adds no clinical interpretation, new care action or acceptance.')]

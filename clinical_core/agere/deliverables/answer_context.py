@@ -161,7 +161,7 @@ def capture(path, question, result, *, original_question=None):
     return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key, **scope_options(data)}
 
 
-def load(path, key, *, current=False, follow_up=False):
+def load(path, key, *, current=False, follow_up=False, source_review=False):
     """follow_up=True: the caller only narrows, lists or groups the exact saved membership (no new work is created). A system
     quarantine ('quarantine: QC-...' written by learning.quarantine when an answer tripped a quality control) records that the
     plan must not be reused or learned from; it is not a user correction of the cohort the user saw, so it does not invalidate the
@@ -221,11 +221,32 @@ def load(path, key, *, current=False, follow_up=False):
         ancestor = json.loads(parent_file.read_text())
     else:
         invalidated = True
+    dispositions = [check['source_disposition'] for check in dependency_checks]
+    suspended = {}
+    for disposition in dispositions:
+        for item in disposition['suspended_assertions']:
+            saved = suspended.setdefault(item['assertion_id'], {'assertion_id': item['assertion_id'], 'observations': []})
+            for observation in item['observations']:
+                if observation not in saved['observations']:
+                    saved['observations'].append(observation)
+    unavailable = any(item['status'] == 'unavailable' for item in dispositions)
+    checked = {ident for item in dispositions for ident in item['checked_assertion_ids']}
+    unchecked = {ident for item in dispositions for ident in item['unchecked_assertion_ids']} - checked
+    disposition = {'status': 'unavailable' if unavailable else 'suspended' if suspended else 'current',
+                   'source_readings_current': not unavailable and not suspended,
+                   'suspended_assertions': [suspended[ident] for ident in sorted(suspended)],
+                   'checked_assertion_ids': sorted(checked), 'unchecked_assertion_ids': sorted(unchecked),
+                   'feedback_is_clinical_truth': False}
     if current and invalidated:
         raise ValueError('This saved answer is invalidated under the current planning definitions. It remains available for inspection; ask again before creating new work.')
     if current and stale:
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
+    if current and unavailable:
+        raise ValueError('Source-reading status is unavailable. Inspect the saved evidence; restore source verification before changing work.')
+    if current and suspended and not source_review:
+        raise ValueError('This answer relies on a suspended source reading. Ask again or open source-evidence review before preparing program work.')
     return {**data, 'stale': stale, 'invalidated': invalidated,
+            'source_disposition': disposition, 'source_review_required': bool(suspended),
             'dependency_validation': dependency_checks,
             **scope_options(data),
             'supports_patient_work': supports_patient_work(data)}
@@ -258,7 +279,8 @@ def work(path, context):
 
 def inspect(path, key):
     context = load(path, key)
-    items = work(path, context)
+    items = [{**item, 'source_review_required': context.get('source_review_required', False),
+              'source_disposition_status': context['source_disposition']['status']} for item in work(path, context)]
     from .workflow import read
     return {'context': context, 'workflow': read(path, key), 'items': items, 'counts': dict(Counter(i['state'] for i in items)),
             'programs': PROGRAMS, 'states': STATES, 'external_dispatch_performed': False}
@@ -325,10 +347,10 @@ def reference_scope(context, scope='result'):
 def create_work(path, request):
     if set(request) != {'context_id', 'program', 'patient_ids', 'owner', 'note'}:
         raise ValueError('Exact answer, program, selected patients, owner and note are required')
-    c = load(path, request['context_id'], current=True)
     program = request['program']
     if program not in PROGRAMS:
         raise ValueError('Unknown review program')
+    c = load(path, request['context_id'], current=True, source_review=program == 'evidence_review')
     if (c['answer'].get('status') not in ('answered', 'partial', 'low_confidence') or
             (program != 'evidence_review' and
              (c['answer'].get('status') != 'answered' or c['answer'].get('missing')))):
@@ -371,6 +393,8 @@ def create_work(path, request):
                         'unresolved_requirements': c['answer'].get('missing') or [],
                         'limitations': c.get('limitations') or c['answer'].get('limitations') or [],
                         'clinical_execution_authorized': False,
+                        'suspended_source_readings': c['source_disposition']['suspended_assertions'],
+                        'source_disposition': c['source_disposition']['status'],
                     }
                 aid = fingerprint(assessment)
                 db.execute('INSERT OR IGNORE INTO work_assessments VALUES (?,?,?,?)', (aid, pid, lane, json.dumps(assessment)))
@@ -388,7 +412,9 @@ def create_work(path, request):
                 db.execute('INSERT INTO work_items VALUES (?,?,?,?,?)', (key, pid, lane, 1, json.dumps(item)))
                 db.execute('INSERT INTO question_decision_tasks VALUES (?,?,?)', (decision_id, key, json.dumps({'patient_id': pid})))
                 db.execute('INSERT INTO work_events VALUES (?,?,?)', (key, 1, json.dumps({'action': 'review_created', 'item': item})))
-            load(path, c['id'], current=True)  # changed inputs roll back the work transaction
+            fresh = load(path, c['id'], current=True, source_review=program == 'evidence_review')
+            if source_disposition_identity(fresh) != source_disposition_identity(c):
+                raise ValueError('Source-reading status changed while preparing work. Reload before saving.')
     finally:
         db.close()
     return inspect(path, c['id'])
@@ -397,7 +423,7 @@ def create_work(path, request):
 def update_work(path, request):
     if set(request) != {'context_id', 'item_id', 'revision', 'state', 'owner', 'note'}:
         raise ValueError('Exact work item, revision, state, owner and note are required')
-    c = load(path, request['context_id'], current=True)
+    c = load(path, request['context_id'], current=True, source_review=True)
     if request['state'] not in STATES:
         raise ValueError('Only internal review states are supported; no enrollment or care execution')
     owner, note = str(request['owner']).strip(), str(request['note']).strip()
@@ -413,12 +439,16 @@ def update_work(path, request):
             if row[0] != request['revision']:
                 raise ValueError('Work changed in another window. Reload before saving.')
             item = json.loads(row[1])
+            if item['program'] != 'evidence_review' and c['source_review_required']:
+                raise ValueError('This answer relies on a suspended source reading. Open source-evidence review before changing program work.')
             if request['state'] not in TRANSITIONS[item['state']]:
                 raise ValueError(f"Review cannot move from {item['state']} to {request['state']}; start or reopen the review first.")
             item.update(state=request['state'], owner=owner, note=note, revision=row[0] + 1, updated_at=now())
             db.execute('UPDATE work_items SET revision=?,payload=? WHERE id=?', (item['revision'], json.dumps(item), item['id']))
             db.execute('INSERT INTO work_events VALUES (?,?,?)', (item['id'], item['revision'], json.dumps({'action': 'review_updated', 'item': item})))
-            load(path, c['id'], current=True)
+            fresh = load(path, c['id'], current=True, source_review=item['program'] == 'evidence_review')
+            if source_disposition_identity(fresh) != source_disposition_identity(c):
+                raise ValueError('Source-reading status changed while updating work. Reload before saving.')
     finally:
         db.close()
     return inspect(path, c['id'])
@@ -511,7 +541,12 @@ def evidence_bundle(path, key, *, retained_inspection=False):
     return c, b
 
 
-def bundle_validator(path, bundle):
+def source_disposition_identity(context):
+    disposition = context.get('source_disposition') or {}
+    return fingerprint([disposition.get('status'), disposition.get('suspended_assertions')])
+
+
+def bundle_validator(path, bundle, *, source_projection=True):
     """Validate against the evidence actually sent, including its work snapshot."""
     def validate_dependencies():
         contexts, checks = {}, []
@@ -521,6 +556,9 @@ def bundle_validator(path, bundle):
             fresh = load(path, key, current=not bool(bundle.meta.get('retained_inspection')))
             if bundle.results[rid].get('dependencies') != fresh.get('dependencies'):
                 raise ValueError('Saved answer bundle differs from its current sealed derivation.')
+            if (source_projection and 'source_disposition' in bundle.results[rid]
+                    and source_disposition_identity(bundle.results[rid]) != source_disposition_identity(fresh)):
+                raise ValueError('Source-reading status changed during rendering. Regenerate the report from the current review state.')
             contexts[key] = fresh
             checks += fresh['dependency_validation']
         for receipt in bundle.receipts.values():
