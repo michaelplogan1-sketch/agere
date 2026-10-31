@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T06:31:43.622495+00:00",
+  "updated_at": "2026-10-31T06:36:48.405270+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -382,7 +382,7 @@
           "sha256": "84ff79c3fbfc1bdbf6622e8800a5b4505bed553f72bacb1960d23d7f6391e0c5"
         }
       ],
-      "blocker": null,
+      "blocker": "Independent source-family/model and clinical labels, viable outcome targets, and authentic full-workload/reviewer-cost evidence are not available in the current sealed receipts. Machine disagreement is unadjudicated and cannot become clinical truth or model-training labels. Current engineered reuse, report/export, installation and recovery behavior is sealed; all ten acceptance areas and standing source/protected-evaluation boundaries remain.",
       "previous_blocker": "G3 local engineering is accepted9/9. G5 remains unqualified: independent source-family role evaluations/calibration, qualified clinical review, viable outcome labels and authentic total-cost/reviewer evidence are missing. Selected prediction targets are single-class; earlier supervision gaps remain unqualified. TypeSafe credits are unavailable. The original full HFrEF review retains19 whole-packet unknowns. Production authentication/tenancy, governed customer connections, benefits/consent and clinician authority remain external. Native revalidation is slow; no overall speed, cost or model-superiority claim."
     }
   ],
