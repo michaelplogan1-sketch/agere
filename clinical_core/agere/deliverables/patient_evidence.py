@@ -125,10 +125,11 @@ def review_cards(context, evidence=None):
     def items(value):
         value=decoded(value);return value if isinstance(value,list)else[]
     def person_name(cid):return(clinicians.get(cid)or{}).get('display_name')or cid or'Name unavailable'
-    def reasons(findings,entity):
+    def reasons(findings,entity,relations=None):
         groups={}
         for f in findings:
             if not isinstance(f,dict)or(f.get('entity')or{}).get('id')!=entity:continue
+            if relations is not None and f.get('relation')not in relations:continue
             key=tuple(str(f.get(k)or'')for k in ('quote','relation','polarity','temporality','subject'))
             group=groups.setdefault(key,{'quote':f.get('quote'),'relation':f.get('relation'),'polarity':f.get('polarity'),
                 'temporality':f.get('temporality'),'subject':f.get('subject'),'sources':[],'findings':[]})
@@ -143,11 +144,18 @@ def review_cards(context, evidence=None):
         for row in answer.get('table')or[]:
             if not isinstance(row,dict)or not row.get('patient_id'):continue
             original_row=row;row=dict(row)
-            aliases={'on_rasi_pillar':'on_raas_inhibitor','on_beta_blocker_pillar':'on_beta_blocker',
-                'on_mra_pillar':'on_mra','on_sglt2i_pillar':'on_sglt2i','pillars_missing':'missing_pillars',
-                'gdmt_dose_rows':'dose_evidence','care_assignments':'structured_care_team'}
-            for field,alias in aliases.items():
-                if field not in row and alias in row:row[field]=row[alias]
+            aliases={'on_rasi_pillar':('on_raas_inhibitor','raas_pillar'),
+                'on_beta_blocker_pillar':('on_beta_blocker','beta_blocker_pillar'),
+                'on_mra_pillar':('on_mra','mra_pillar'),'on_sglt2i_pillar':('on_sglt2i','sglt2_pillar'),
+                'pillars_missing':('missing_pillars',),'gdmt_dose_rows':('dose_evidence','gdmt_dose_evidence'),
+                'care_assignments':('structured_care_team','care_team_assignments')}
+            for field,names in aliases.items():
+                if field not in row:
+                    for alias in names:
+                        if alias in row:row[field]=row[alias];break
+            if 'proposed_review_steps'not in row:
+                steps=[row[k]for k in ('registered_pillar_gap_step','registered_dose_step','cardiology_pcp_step')if row.get(k)is not None]
+                if steps:row['proposed_review_steps']=steps
             pid=row['patient_id'];profile=people.get(pid)or{}
             for cohort in profile.get('registered_cohort_evidence')or[]:
                 for field,value in cohort.get('fields',{}).items():
@@ -200,7 +208,7 @@ def review_cards(context, evidence=None):
             # These labels describe the source-defined fields returned by the
             # analysis, not a fresh treatment rule or an individual dose target.
             pillars=[('rasi','RAAS inhibitor / ARNI','on_rasi_pillar','raas_inhibitor',{'ace_inhibitor','arb','arni'}),
-                ('beta_blocker','Evidence-based beta-blocker','on_beta_blocker_pillar','beta_blocker',{'hf_evidence_based_beta_blocker'}),
+                ('beta_blocker','Evidence-based beta-blocker','on_beta_blocker_pillar','hf_evidence_based_beta_blocker',{'hf_evidence_based_beta_blocker'}),
                 ('mra','Mineralocorticoid receptor antagonist','on_mra_pillar','mra',{'mra'}),
                 ('sglt2i','SGLT2 inhibitor','on_sglt2i_pillar','sglt2_inhibitor',{'sglt2_inhibitor'})]
             from ..clinical import drug_classes
@@ -218,9 +226,13 @@ def review_cards(context, evidence=None):
             rationale=[]
             if row.get('hfref_basis'):rationale.append('Source-defined HFrEF cohort: '+str(row['hfref_basis']).replace('_',' '))
             missing=row.get('pillars_missing')
+            if 'pillars_missing'not in row:missing=', '.join(label for group,label,field,entity,classes in pillars if row.get(field)==0)
             if missing:rationale.append(('Reconcile pillars without a fill in the returned history: 'if historical_fill else'Reconcile pillars without a recent-fill observation: ')+str(missing).replace('_',' '))
             if doses:rationale.append('Review dated dose/state observations and their reference-dose comparisons')
-            if row.get('max_dose_reason_findings'):rationale.append('Review the documented dose-limiting statements below with the responsible clinician')
+            regimen_statements=reasons(findings,'gdmt',{'documented_medication_regimen'})
+            dose_limiting=reasons(findings,'gdmt',{'dose_titration_reason'})+reasons(findings,'gdmt_dose')
+            tolerance_statements=reasons(findings,'gdmt',{'individual_maximum_tolerated_dose'})
+            if row.get('max_dose_reason_findings')or dose_limiting:rationale.append('Review the documented dose-limiting statements below with the responsible clinician')
             program={'title':'Theoretical GDMT titration program'if therapy else'Clinical review',
                 'status':'Potential review opportunity; eligibility requires clinical assessment',
                 'rationale':rationale,'proposed_steps':row.get('proposed_review_steps'),
@@ -231,8 +243,10 @@ def review_cards(context, evidence=None):
                 'profile':profile,'clinical_context':clinical,'care_team':[care('Primary care'),care('Cardiology')],
                 'cardiology_statements':reasons(findings,'cardiology'),
                 'dated_correspondence_roles':narrative_roles,'therapy':therapy,'all_dose_observations':doses,
-                'dose_limiting_statements':reasons(findings,'gdmt_dose'),'program_review':program,
-                'individual_max_tolerated_dose':'Not established by the reviewed evidence',
+                'regimen_statements':regimen_statements,'dose_limiting_statements':dose_limiting,
+                'individual_tolerance_statements':tolerance_statements,'program_review':program,
+                'individual_max_tolerated_dose':('Dated source statements are retained below; the current individual maximum requires verification'
+                    if tolerance_statements else'Not established by the reviewed evidence'),
                 'source_reviews':evidence.get('notes',{}).get(pid,[]),'original_result_row':original_row}
     return cards
 

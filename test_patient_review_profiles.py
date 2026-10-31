@@ -1,5 +1,5 @@
 """Received names and measurements stay source-bound; they confer no care role."""
-import json,sqlite3,tempfile,unittest
+import copy,json,sqlite3,tempfile,unittest
 from pathlib import Path
 from clinical_core.agere.deliverables import patient_evidence as P,answer_context as A
 
@@ -113,5 +113,57 @@ class Profiles(unittest.TestCase):
   self.assertEqual(exported['patient_name'],'Alex Example');self.assertEqual(exported['patient_id'],'A')
   self.assertEqual(exported['documentary_findings'],row['documentary_findings'])
   text=render(c);self.assertIn('Clinical review',text);self.assertIn('Alex Example',text)
+
+class CurrentNativeCardContracts(unittest.TestCase):
+ def context(self):
+  def finding(entity,relation,quote,record):
+   return {'entity':{'id':entity},'relation':relation,'quote':quote,'record_id':record,'date':'2028-01-01','polarity':'affirmed','temporality':'historical','subject':'patient'}
+  findings=[finding('hf_evidence_based_beta_blocker','reason_not_on_therapy','Carvedilol was held for dizziness.','H1'),
+   finding('beta_blocker','reason_not_on_therapy','Atenolol was previously stopped.','B1'),
+   finding('gdmt','documented_medication_regimen','Carvedilol 12.5 mg twice daily was recorded in 2028.','R1'),
+   finding('gdmt','dose_titration_reason','Further carvedilol titration was held for dizziness in 2028.','T1'),
+   finding('gdmt','individual_maximum_tolerated_dose','That dose was described as the individual maximum tolerated at the 2028 visit.','M1')]
+  dose={'drug_key':'carvedilol','documented_daily_mg':25,'current_use_established':0,'statement_state':'planned','dose_date':'2028-01-01'}
+  row={'patient_id':'A','raas_pillar':1,'beta_blocker_pillar':0,'mra_pillar':0,'sglt2_pillar':1,
+   'gdmt_dose_evidence':json.dumps([dose]),'documentary_findings':json.dumps(findings),
+   'care_team_assignments':json.dumps([{'clinician_id':'C1','role':'primary_care','assigned_at_snapshot':1},
+                                    {'clinician_id':'C2','role':'consulting_specialist','specialty':'Cardiology','assigned_at_snapshot':0}]),
+   'fill_window_start_exclusive':'2029-05-27','fill_window_end_inclusive':'2030-05-27',
+   'registered_pillar_gap_step':'Reconcile the missing fill observations.',
+   'registered_dose_step':'Verify the current medication regimen.',
+   'cardiology_pcp_step':'Verify the responsible clinicians.'}
+  profiles={'patients':{'A':{'display_name':'Alex Example','registered_cohort_evidence':[{'fields':{'on_rasi_pillar':0,'on_beta_blocker_pillar':1,'hfref_basis':'coded_hfref'}}]}},
+   'clinicians':{'C1':{'display_name':'Dr River Example'},'C2':{'display_name':'Dr Lake Example'}}}
+  return {'answer':{'status':'partial','table':[row]},'patient_profiles':profiles,'investigation':{}}
+
+ def test_registered_result_fields_take_precedence_over_cohort_context(self):
+  context=self.context();before=copy.deepcopy(context);card=P.review_cards(context)['A']
+  self.assertEqual(len(card['therapy']),4)
+  self.assertEqual([t['observed_status']for t in card['therapy']],['Recent fill observed','No recent fill observed','No recent fill observed','Recent fill observed'])
+  self.assertEqual(card['all_dose_observations'],json.loads(context['answer']['table'][0]['gdmt_dose_evidence']))
+  self.assertEqual(card['therapy'][1]['dose_observations'],card['all_dose_observations'])
+  self.assertEqual(card['care_team'][0]['current'][0]['name'],'Dr River Example')
+  self.assertEqual(card['care_team'][1]['current'],[])
+  self.assertEqual(context,before)
+
+ def test_subtype_reasons_are_visible_without_promoting_a_parent_class_reason(self):
+  card=P.review_cards(self.context())['A'];accounts=card['therapy'][1]['documented_reasons']
+  self.assertEqual([g['quote']for g in accounts],['Carvedilol was held for dizziness.'])
+  self.assertIn('Atenolol was previously stopped.',card['original_result_row']['documentary_findings'])
+
+ def test_regimen_cause_and_individual_tolerance_remain_independent_dated_accounts(self):
+  context=self.context();card=P.review_cards(context)['A']
+  self.assertEqual([g['relation']for g in card['regimen_statements']],['documented_medication_regimen'])
+  self.assertEqual([g['relation']for g in card['dose_limiting_statements']],['dose_titration_reason'])
+  self.assertEqual([g['relation']for g in card['individual_tolerance_statements']],['individual_maximum_tolerated_dose'])
+  self.assertTrue(all(g['temporality']=='historical'for key in ['regimen_statements','dose_limiting_statements','individual_tolerance_statements']for g in card[key]))
+  self.assertFalse(card['program_review']['eligibility_established'])
+  self.assertIn('current',card['individual_max_tolerated_dose'].lower())
+  self.assertEqual(card['program_review']['proposed_steps'],['Reconcile the missing fill observations.','Verify the current medication regimen.','Verify the responsible clinicians.'])
+
+ def test_absent_tolerance_stays_unknown_without_suppressing_a_regimen(self):
+  c=self.context();row=c['answer']['table'][0];row['documentary_findings']=json.dumps([v for v in json.loads(row['documentary_findings'])if v['relation']=='documented_medication_regimen'])
+  card=P.review_cards(c)['A'];self.assertTrue(card['regimen_statements']);self.assertEqual(card['individual_tolerance_statements'],[])
+  self.assertEqual(card['individual_max_tolerated_dose'],'Not established by the reviewed evidence')
 
 if __name__=='__main__':unittest.main()

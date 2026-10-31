@@ -141,7 +141,10 @@ def render(context,output,references=None,evidence=None):
   table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),paper),('LINEBELOW',(0,0),(-1,-1),.25,line),('BOTTOMPADDING',(0,0),(-1,-1),7),('TOPPADDING',(0,0),(-1,-1),7)]));out.append(table)
   for t in c['therapy']:
    if t['documented_reasons']:out.extend([P(t['label']+' / documented accounts',head),*grouped_reasons(t['documented_reasons'])])
-  out.extend([P('Individual dose tolerance',head),P(c['individual_max_tolerated_dose'],labelstyle),*grouped_reasons(c['dose_limiting_statements'])])
+  if c.get('regimen_statements'):out.extend([P('Dated regimen source accounts',head),*grouped_reasons(c['regimen_statements'])])
+  out.extend([P('Individual tolerated maximum',head),P(c['individual_max_tolerated_dose'],labelstyle)])
+  if c.get('individual_tolerance_statements'):out.extend(grouped_reasons(c['individual_tolerance_statements']))
+  out.extend([P('Dated titration explanations',head),*grouped_reasons(c['dose_limiting_statements'])])
   if c['dated_correspondence_roles']:
    out.extend([P('Dated correspondence / additional clinician names',head),P('These source roles do not establish current assignment. Complete correspondence quotations and bindings remain in the embedded evidence.',small)])
    roles={}
