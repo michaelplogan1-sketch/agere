@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T14:46:03.922010+00:00",
+  "updated_at": "2026-10-31T14:47:08.009701+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,7 +397,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "blueprint_shared_fixes_ready_for_connected_confirmation",
+    "kind": "ordinary_original_question_confirmation_running",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Shared scope guard catches stale conditional populations before paid review; compiled state retains exact loaded documentation; patient reports consume existing source assertion reconciliation.",
@@ -735,10 +735,11 @@
       "artifacts/agere-blueprint-scope-guard-2026-10-31/receipt.json",
       "artifacts/agere-blueprint-scope-guard-2026-10-31/offline-attribution.json",
       "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json",
-      "artifacts/agere-blueprint-patient-state-2026-10-31/receipt.json"
+      "artifacts/agere-blueprint-patient-state-2026-10-31/receipt.json",
+      "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2/run-receipt.json"
     ],
     "remaining_gap": "One fresh ordinary confirmation remains. Prior context/render was inspection only and still has a stale plan; no end-to-end,clinical or MVP acceptance inferred. Then replay,window transfer and non-HF check; broader qualification remains independent.",
-    "next_action": "G3: run one ordinary original-question confirmation on productc4c1367 through the existing compose/report entrypoint, with current caches allowed and no injected recovery,draft or acceptance. Preserve the original57patient scope, every provider/failed attempt and source identity; freeze product/source for this one job. Audit native dependency correctness, final review, named medications/doses/care roles, report readability and component cost. Then checked replay/window-change/non-HF transfer; alltenareas and independent qualification remain. Scheduler PAUSED.",
+    "next_action": "Observe the single ordinary full-stack confirmation (session86019) to terminal. Productc4c1367 and original source are frozen; no duplicate provider/training job or product edits. Current caches allowed; no injected recovery,draft or answer. Audit57patient scope,native dependencies,final review,curated report,component timing and all-attempt cost,then checked replay/window transfer/non-HF composition. On actual subscription limit stop provider work and continue offline; scheduler stays PAUSED. Alltenareas retained.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -747,7 +748,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "No active provider/training job yet; productc4c1367 ready for one confirmation. Source-reader/policy cache-binding files unchanged; scheduler PAUSED.",
+    "coordination": "One owned provider job; product/source frozen. Sole owner ACTIVE; scheduler PAUSED. No product edits or duplicate run while active.",
     "remaining_blockers": [
       "Independent source/model/clinical qualification, viable outcome labels and authentic full-workload/reviewer economics remain unqualified.",
       "Report serving still has measurable redundant context validation; current PDF13.348s, no claim of whole-question speedup."
@@ -813,14 +814,14 @@
     "at": "2026-10-31T02:00:29.418378+00:00",
     "workflow_change": "Exact source-bound frontier observations now survive changed batching and field aliases. Confident singular-source feedback quarantines only that reading; current57patient report and isolated app retain every native value and partial status.",
     "unsealed_work": {
-      "status": "ready_for_single_confirmatory_ordinary_run",
+      "status": "running_single_ordinary_confirmation",
       "path": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2",
-      "active_receipt": "artifacts/agere-blueprint-patient-state-2026-10-31/receipt.json",
-      "source_frozen_for_run": false,
-      "pid": null,
-      "session": null,
+      "active_receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2/run-receipt.json",
+      "source_frozen_for_run": true,
+      "pid": 90927,
+      "session": 86019,
       "remaining_gap": "One fresh ordinary confirmation remains. Prior context/render was inspection only and still has a stale plan; no end-to-end,clinical or MVP acceptance inferred. Then replay,window transfer and non-HF check; broader qualification remains independent.",
-      "next_action": "G3: run one ordinary original-question confirmation on productc4c1367 through the existing compose/report entrypoint, with current caches allowed and no injected recovery,draft or acceptance. Preserve the original57patient scope, every provider/failed attempt and source identity; freeze product/source for this one job. Audit native dependency correctness, final review, named medications/doses/care roles, report readability and component cost. Then checked replay/window-change/non-HF transfer; alltenareas and independent qualification remain. Scheduler PAUSED."
+      "next_action": "Observe the single ordinary full-stack confirmation (session86019) to terminal. Productc4c1367 and original source are frozen; no duplicate provider/training job or product edits. Current caches allowed; no injected recovery,draft or answer. Audit57patient scope,native dependencies,final review,curated report,component timing and all-attempt cost,then checked replay/window transfer/non-HF composition. On actual subscription limit stop provider work and continue offline; scheduler stays PAUSED. Alltenareas retained."
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -884,7 +885,17 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "ordinary_original_question_confirmation",
+        "status": "running",
+        "pid": 90927,
+        "session": 86019,
+        "source_frozen": true,
+        "commit": "c4c1367",
+        "receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2/run-receipt.json"
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2477,14 +2488,14 @@
     }
   ],
   "unsealed_work": {
-    "status": "ready_for_single_confirmatory_ordinary_run",
+    "status": "running_single_ordinary_confirmation",
     "path": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2",
-    "active_receipt": "artifacts/agere-blueprint-patient-state-2026-10-31/receipt.json",
-    "source_frozen_for_run": false,
-    "pid": null,
-    "session": null,
+    "active_receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2/run-receipt.json",
+    "source_frozen_for_run": true,
+    "pid": 90927,
+    "session": 86019,
     "remaining_gap": "One fresh ordinary confirmation remains. Prior context/render was inspection only and still has a stale plan; no end-to-end,clinical or MVP acceptance inferred. Then replay,window transfer and non-HF check; broader qualification remains independent.",
-    "next_action": "G3: run one ordinary original-question confirmation on productc4c1367 through the existing compose/report entrypoint, with current caches allowed and no injected recovery,draft or acceptance. Preserve the original57patient scope, every provider/failed attempt and source identity; freeze product/source for this one job. Audit native dependency correctness, final review, named medications/doses/care roles, report readability and component cost. Then checked replay/window-change/non-HF transfer; alltenareas and independent qualification remain. Scheduler PAUSED."
+    "next_action": "Observe the single ordinary full-stack confirmation (session86019) to terminal. Productc4c1367 and original source are frozen; no duplicate provider/training job or product edits. Current caches allowed; no injected recovery,draft or answer. Audit57patient scope,native dependencies,final review,curated report,component timing and all-attempt cost,then checked replay/window transfer/non-HF composition. On actual subscription limit stop provider work and continue offline; scheduler stays PAUSED. Alltenareas retained."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2512,5 +2523,15 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": []
+  "active_jobs": [
+    {
+      "kind": "ordinary_original_question_confirmation",
+      "status": "running",
+      "pid": 90927,
+      "session": 86019,
+      "source_frozen": true,
+      "commit": "c4c1367",
+      "receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2/run-receipt.json"
+    }
+  ]
 }

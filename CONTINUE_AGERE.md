@@ -1,3 +1,13 @@
+# Current Agere checkpoint - 2026-10-31T14:47:08.009701+00:00
+
+Build ACTIVE,G3; single ordinary original-question confirmation RUNNING PID90927/session86019. Productc4c1367/source FROZEN; no duplicate run or product edit. Scheduler PAUSED. Alltenareas retained.
+
+Exact next: Observe the single ordinary full-stack confirmation (session86019) to terminal. Productc4c1367 and original source are frozen; no duplicate provider/training job or product edits. Current caches allowed; no injected recovery,draft or answer. Audit57patient scope,native dependencies,final review,curated report,component timing and all-attempt cost,then checked replay/window transfer/non-HF composition. On actual subscription limit stop provider work and continue offline; scheduler stays PAUSED. Alltenareas retained.
+
+Protocol and receipts: artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2. Offline shared repairs pass201checks; actual scope/documentation/typed-state proofs retained.75page inspection PDF preserved; no new workflow/clinical acceptance yet. Latest sealed owner receipt remains guarded report download.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T14:46:03.922010+00:00
 
 Build ACTIVE,G3; no active provider/training job; scheduler PAUSED. Candidatec4c1367 committed; alltenareas retained.
