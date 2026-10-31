@@ -63,7 +63,7 @@ def _render_clinical(context,output,cards,references):
   'name':ParagraphStyle('ClinicalName',fontName='AgereBold',fontSize=23,leading=27,textColor=navy,spaceAfter=6),
   'head':ParagraphStyle('ClinicalHeading',fontName='AgereBold',fontSize=12,leading=16,textColor=teal,spaceBefore=10,spaceAfter=5,keepWithNext=True),
   'label':ParagraphStyle('ClinicalLabel',fontName='AgereBold',fontSize=9.2,leading=12.5,textColor=navy,spaceAfter=4,keepWithNext=True),
-  'quote':ParagraphStyle('ClinicalQuote',fontName='AgereSans',fontSize=9.5,leading=13.2,textColor=navy,spaceAfter=9,leftIndent=9),
+  'quote':ParagraphStyle('ClinicalQuote',fontName='AgereSans',fontSize=9.5,leading=13.2,textColor=navy,spaceAfter=9,leftIndent=9,allowWidows=0,allowOrphans=0),
   'notice':ParagraphStyle('ClinicalNotice',fontName='AgereBold',fontSize=9.2,leading=12.5,textColor=amber,spaceAfter=4),
  }
  def P(text,style='body'):
@@ -157,6 +157,8 @@ def _render_clinical(context,output,cards,references):
    matrix.append([P(therapy['label'],'label'),P(fill_text,'small'),P('\n'.join(doses)or'Current dose unconfirmed','small')])
   story.append(P('Medication review','head'));t=Table(matrix,colWidths=[135,205,200],repeatRows=1)
   t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),pale),('LINEBELOW',(0,0),(-1,-1),.4,rule),('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)]));story.append(t)
+  tolerance='Dated tolerance account follows; the current individual maximum needs confirmation'if c['individual_tolerance_statements']else c['individual_max_tolerated_dose']
+  story.append(P('Individual maximum tolerated dose: '+str(tolerance)+'.','small'))
   # One dated clinical account can support several fields. Print it once with
   # all its uses, rather than repeating the same whole note under each pillar.
   accounts={}
@@ -171,17 +173,16 @@ def _render_clinical(context,output,cards,references):
   if not accounts:story.append(P('No explicit non-use or titration explanation was returned in the reviewed source scope. Clarify the reason with the patient and responsible clinician.'))
   else:
    missing=[t['label']for t in c['therapy']if not t['documented_reasons']]
-   if missing:story.append(P('No separate non-use reason returned for: '+', '.join(missing)+'.','small'))
+   if missing:
+    note=P('No separate non-use reason returned for: '+', '.join(missing)+'.','small');note.keepWithNext=True;story.append(note)
   for a in accounts.values():
    dates=sorted({str(s['date']) for g in a['groups']for s in g.get('sources',[])if s.get('date')})
    dated=D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0])if dates else'Date not recorded'
-   story.append(P(' / '.join(a['labels'])+'  |  '+dated,'label'))
-   if any(g.get('review_status')for g in a['groups']):story.append(P('Unresolved chart interpretation - confirm before using this account.','notice'))
+   account=[P(' / '.join(a['labels'])+'  |  '+dated,'label')]
+   if any(g.get('review_status')for g in a['groups']):account.append(P('Unresolved chart interpretation - confirm before using this account.','notice'))
    qualifications=sorted({human(g.get('polarity')) for g in a['groups']if g.get('polarity')not in [None,'affirmed']})
-   if qualifications:story.append(P('The source account is '+', '.join(qualifications)+'.','small'))
-   story.append(P(a['text'],'quote'))
-  tolerance='Dated tolerance account above; the current individual maximum needs confirmation'if c['individual_tolerance_statements']else c['individual_max_tolerated_dose']
-  story.append(P('Individual maximum tolerated dose: '+str(tolerance)+'.','small'))
+   if qualifications:account.append(P('The source account is '+', '.join(qualifications)+'.','small'))
+   account.append(P(a['text'],'quote'));story.append(KeepTogether(account))
  if references:
   story.extend([PageBreak(),P('Clinical reference sources','title')])
   for ref in references:story.extend([P(ref['title']),P(ref['url'],'small')])
