@@ -125,15 +125,28 @@ def recover_actions(tools,question):
     actions=saved['actions']
     guard=digest(tools.continuation_identity())
     out={'used':None,'calls':[],'certificates':[],'final_answer':None,'reason':'Explicit owned-run recovery: every literal tool is re-executed; only exact provider requests may hit cache.'}
-    for action in actions:
-        if action.get('name') not in READ_ONLY or set(action)!={'name','input'}:
+    for index,action in enumerate(actions):
+        if action.get('name') not in READ_ONLY or not {'name','input'}<=set(action)or set(action)-{'name','input','expected_error'}:
             raise ValueError('Owned recovery accepts registered read-only actions only')
+        expected=action.get('expected_error')
+        if 'expected_error'in action and (action['name']!='compose_table'or not isinstance(expected,str)or not expected):
+            raise ValueError('Expected errors require an exact recorded pure compose_table validation error')
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
-        try: value=tools(action)
+        try: value=tools({k:action[k]for k in ('name','input')})
         except (ValueError,sqlite3.Error) as exc:value={'error':str(exc)}
+        reproduced=expected is not None and isinstance(value,dict)and value.get('error')==expected
         out['calls'].append({'name':action['name'],'input':action['input'],'result':value,
-                             'sql':value.get('executed_query') if isinstance(value,dict) else None,'owned_run_recovery':True})
+                             'sql':value.get('executed_query') if isinstance(value,dict) else None,'owned_run_recovery':True,
+                             **({'historical_native_error_reproduced':True}if reproduced else {})})
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
+        if reproduced:
+            out.setdefault('historical_native_errors',[]).append({'action_index':index,'name':action['name'],'error':expected})
+            continue
+        if expected is not None:
+            # A changed failure or newly successful composition can change
+            # native view numbering. Never execute the old suffix against it.
+            out['reason']='Recorded native validation outcome changed; remaining actions require a fresh investigation.'
+            break
         if isinstance(value,dict) and value.get('error'):break
     out['recovered_read_only_actions']=len(out['calls'])
     out['downstream_review_feedback']=saved.get('feedback') or []

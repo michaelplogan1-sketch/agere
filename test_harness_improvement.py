@@ -23,6 +23,52 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def test_owned_recovery_retains_exact_historical_composition_failure_and_later_work(self):
+        e=self.executor()
+        original=e.__class__.__call__
+        message='items_from requires collect and a received collection column, without a columns projection'
+        def execute(use):
+            if use['name']=='compose_table':
+                self.assertNotIn('expected_error',use)
+                raise ValueError(message)
+            return original(e,use)
+        actions=[{'name':'query_sql','input':{'sql':'SELECT 1'}},
+                 {'name':'compose_table','input':{'base':'agere_result_1'},'expected_error':message},
+                 {'name':'query_sql','input':{'sql':'SELECT 2'}}]
+        with H.owned_recovery(actions,self.q):
+            with patch.object(Executor,'__call__',lambda _,use:execute(use)):
+                out=H.recover_actions(e,self.q)
+        self.assertEqual(out['recovered_read_only_actions'],3)
+        self.assertEqual(out['calls'][1]['result'],{'error':message})
+        self.assertTrue(out['calls'][1]['historical_native_error_reproduced'])
+        self.assertEqual(out['calls'][-1]['result']['rows'],[[2]])
+        self.assertIsNone(out['final_answer']);self.assertIsNone(out['used'])
+
+    def test_owned_recovery_stops_on_changed_failure_success_or_undeclared_error(self):
+        for expected,outcome in [('old','changed'),('old',None),(None,'changed')]:
+            with self.subTest(expected=expected,outcome=outcome):
+                e=self.executor();seen=[]
+                def execute(_,use):
+                    seen.append(use)
+                    if outcome:raise ValueError(outcome)
+                    return {'columns':['value'],'rows':[[1]],'result_view':'agere_result_1'}
+                action={'name':'compose_table','input':{}}
+                if expected:action['expected_error']=expected
+                actions=[action,{'name':'query_sql','input':{'sql':'SELECT 2'}}]
+                with H.owned_recovery(actions,self.q),patch.object(Executor,'__call__',execute):out=H.recover_actions(e,self.q)
+                self.assertEqual(len(seen),1);self.assertEqual(out['recovered_read_only_actions'],1)
+                self.assertFalse(out.get('historical_native_errors'))
+
+    def test_historical_error_metadata_cannot_bypass_a_provider_or_source_guard(self):
+        e=self.executor()
+        with H.owned_recovery([{'name':'review_documents','input':{},'expected_error':'provider failed'}],self.q):
+            with self.assertRaisesRegex(ValueError,'pure compose_table'):H.recover_actions(e,self.q)
+        self.assertEqual(e.executed,[])
+        def change(_,use):
+            e.source='changed';raise ValueError('old')
+        with H.owned_recovery([{'name':'compose_table','input':{},'expected_error':'old'}],self.q),patch.object(Executor,'__call__',change):
+            with self.assertRaisesRegex(ValueError,'Source/scope changed'):H.recover_actions(e,self.q)
+
     def test_fresh_composition_preserves_raw_provenance_without_mistaking_elapsed_time_for_changed_evidence(self):
         from clinical_core.agere.clinical.result_assembly import compose
         import copy
