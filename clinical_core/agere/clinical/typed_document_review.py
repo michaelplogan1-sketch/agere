@@ -10,10 +10,11 @@ import threading
 import os
 import time
 import sqlite3
+from contextlib import closing
 from ...contracts import digest
 from ..request_lineage import component
 
-VERSION='typed-whole-document-review/4'
+VERSION='typed-whole-document-review/5'
 _RANK_LOCK=threading.Lock()
 _READER_LOCK=threading.Lock()
 OBSERVATION_VERSION='source-field-observation/3'
@@ -23,6 +24,67 @@ SOURCE_INDEX="CREATE INDEX IF NOT EXISTS observations_source_lookup ON observati
 def observation_path(path):
     from .evaluation import operational_path
     return operational_path(path,'typed-document-observations.sqlite3')
+
+
+def observation_store(path):
+    db=sqlite3.connect(observation_path(path),timeout=30)
+    db.execute('CREATE TABLE IF NOT EXISTS observations(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
+    db.execute(SOURCE_INDEX)
+    db.executescript('''CREATE TABLE IF NOT EXISTS typed_observation_bindings(
+      assertion_id TEXT NOT NULL,observation_id TEXT NOT NULL,PRIMARY KEY(assertion_id,observation_id));
+      CREATE TABLE IF NOT EXISTS typed_observation_events(
+      id TEXT PRIMARY KEY,observation_id TEXT NOT NULL,kind TEXT NOT NULL,payload TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS typed_observation_event_lookup ON typed_observation_events(observation_id,kind);
+      CREATE TRIGGER IF NOT EXISTS typed_binding_immutable BEFORE UPDATE ON typed_observation_bindings BEGIN SELECT RAISE(ABORT,'Immutable typed source binding');END;
+      CREATE TRIGGER IF NOT EXISTS typed_binding_no_delete BEFORE DELETE ON typed_observation_bindings BEGIN SELECT RAISE(ABORT,'Immutable typed source binding');END;
+      CREATE TRIGGER IF NOT EXISTS typed_event_immutable BEFORE UPDATE ON typed_observation_events BEGIN SELECT RAISE(ABORT,'Immutable typed source event');END;
+      CREATE TRIGGER IF NOT EXISTS typed_event_no_delete BEFORE DELETE ON typed_observation_events BEGIN SELECT RAISE(ABORT,'Immutable typed source event');END;''')
+    return db
+
+
+def bind_assertion_observations(path,assertion_id,observation_ids):
+    """Bind compiled source assertions to the actual reusable typed decisions."""
+    ids=sorted(set(i for i in observation_ids if isinstance(i,str)and i))
+    if path is None or not ids:return 0
+    if not isinstance(assertion_id,str)or not assertion_id:raise ValueError('Typed source binding requires an assertion ID')
+    count=0
+    with closing(observation_store(path))as db,db:
+        for ident in ids:
+            row=db.execute('SELECT payload FROM observations WHERE id=?',(ident,)).fetchone()
+            if not row:raise ValueError('Cannot bind an absent typed source observation')
+            saved=json.loads(row[0])
+            if saved.get('id')!=ident or digest(saved.get('reading'))!=saved.get('reading_digest'):
+                raise ValueError('Typed source observation integrity changed before binding')
+            count+=db.execute('INSERT OR IGNORE INTO typed_observation_bindings VALUES (?,?)',(assertion_id,ident)).rowcount
+    return count
+
+
+def _quarantine(db,ident,reason,**details):
+    payload={'reason':reason,'feedback_is_clinical_truth':False,**details}
+    key=digest([ident,'quarantined',payload])
+    return db.execute('INSERT OR IGNORE INTO typed_observation_events VALUES (?,?,?,?)',
+        (key,ident,'quarantined',json.dumps(payload,sort_keys=True))).rowcount
+
+
+def quarantine_assertions(path,assertion_ids,reason):
+    """Suspend exact mapped decisions, preserving observations and objections."""
+    ids=sorted(set(assertion_ids))
+    if path is None or not ids:return 0
+    if not isinstance(reason,str)or not reason.strip():raise ValueError('Source feedback requires a reason')
+    count=0
+    with closing(observation_store(path))as db,db:
+        for offset in range(0,len(ids),900):
+            chunk=ids[offset:offset+900]
+            rows=db.execute('SELECT assertion_id,observation_id FROM typed_observation_bindings WHERE assertion_id IN ('+
+                ','.join('?'for _ in chunk)+')',chunk).fetchall()
+            for assertion,ident in rows:count+=_quarantine(db,ident,reason,assertion_id=assertion)
+    return count
+
+
+def _disputed_reading(ident):
+    return {'label':'unknown','decided_by':None,'probabilities':{},'source_observation_id':ident,
+            'source_observation_quarantined':True,
+            'reason':'Unadjudicated source feedback suspended this exact typed reading. Unchanged inputs remain unresolved; no corrected clinical label or new dispatch is inferred.'}
 OPTIONS={'finding':'This exact source block contains a documented finding answering the question. Read the whole document for whose care, clinical role, dates, negation and qualifications. Copying the block would give useful evidence for this requested field.',
          'irrelevant':'This block does not answer the question. A drug/person name alone, unrelated specialty, hypothetical reason or administrative text is insufficient.',
          'unknown':'The context does not settle whether this block answers the question.'}
@@ -144,7 +206,6 @@ def cached_source_judge(tools, judge, *, patient_id=None):
     """
     path=getattr(getattr(tools,'stack',None),'path',None)
     if path is None:return judge
-    target=observation_path(path)
     from ..gateway import PersistentGateway
     policy={'order':os.environ.get('AGERE_DOCUMENT_TYPED_ORDER','jev,perplexity'),
             'models':{p:PersistentGateway.MODELS[p]for p in ('jev','perplexity')},'acceptance_threshold':0.8}
@@ -156,21 +217,23 @@ def cached_source_judge(tools, judge, *, patient_id=None):
         return digest([OBSERVATION_VERSION,patient_id,subject,as_of,policy,question,matches[0]])
     def checked(subject,named,evidence,**kwargs):
         keys={k:source_key(subject,q,evidence,kwargs.get('as_of'))for k,q in named.items()}
-        with sqlite3.connect(target,timeout=30)as db:
-            db.execute('CREATE TABLE IF NOT EXISTS observations(id TEXT PRIMARY KEY,payload TEXT NOT NULL)')
-            db.execute(SOURCE_INDEX)
-            hits={}
+        with closing(observation_store(path))as db:
+            hits={};blocked={}
             for field,key in keys.items():
+                disputed=db.execute("SELECT 1 FROM typed_observation_events WHERE observation_id=?AND kind='quarantined'",(key,)).fetchone()if key else None
+                if disputed:
+                    blocked[field]=_disputed_reading(key);continue
                 row=db.execute('SELECT payload FROM observations WHERE id=?',(key,)).fetchone()if key else None
                 if row:
                     saved=json.loads(row[0])
                     if saved['id']!=key or digest(saved['reading'])!=saved['reading_digest']:
                         raise ValueError('Source-field observation integrity changed')
                     hits[field]=saved['reading']
-        pending={k:q for k,q in named.items()if k not in hits}
+        recorded={field:keys[field]for field in hits}
+        pending={k:q for k,q in named.items()if k not in hits and k not in blocked}
         result=judge(subject,pending,evidence,**kwargs)if pending else {'judgments':{},'steps':[],'cost_usd':0.0}
         receipts=[s.get('request_hash')for s in result.get('steps',[])if s.get('request_hash')]
-        with sqlite3.connect(target,timeout=30)as db:
+        with closing(observation_store(path))as db,db:
             for field,reading in result['judgments'].items():
                 key=keys.get(field)
                 if not key or not reading.get('probabilities') or not receipts:continue
@@ -183,10 +246,23 @@ def cached_source_judge(tools, judge, *, patient_id=None):
                        'source_request_hashes':receipts,'original_batch_digest':digest(evidence),
                        'authority':'source-bound machine observation; no clinical qualification'}
                 db.execute('INSERT OR IGNORE INTO observations VALUES (?,?)',(key,json.dumps(saved)))
+                stored=json.loads(db.execute('SELECT payload FROM observations WHERE id=?',(key,)).fetchone()[0])
+                if stored.get('id')!=key or digest(stored.get('reading'))!=stored.get('reading_digest'):
+                    raise ValueError('Source-field observation integrity changed')
+                if stored['reading_digest']!=saved['reading_digest']:
+                    _quarantine(db,key,'Concurrent typed source observations disagree; preserve both request lineages for review.',
+                        source_request_hashes=receipts,reading=reading)
+                    blocked[field]=_disputed_reading(key)
+                else:recorded[field]=key
         if hits:
             result.setdefault('steps',[]).append({'provider':'source_field_cache','status':'reused','cache_hit':True,
                 'cost_usd':0.0,'fields':len(hits),'observation_ids':[keys[k]for k in hits]})
-        result['judgments']={**hits,**result['judgments']}
+        if blocked:
+            result.setdefault('steps',[]).append({'provider':'source_field_cache','status':'quarantined','cache_hit':True,
+                'cost_usd':0.0,'fields':len(blocked),'observation_ids':[keys[k]for k in blocked],
+                'feedback_is_clinical_truth':False})
+        result['judgments']={k:{**v,**({'source_observation_id':recorded[k]}if k in recorded else{})}
+            for k,v in {**hits,**result['judgments'],**blocked}.items()}
         return result
     return checked
 
@@ -309,6 +385,9 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
                     'quote':span['text'],'span_start':span['start'],'span_end':span['end'],
                     'interpretation':'source span selected by typed model; not independent clinical acceptance','provider':reading.get('provider')}
                 found[field].append(finding)
+                if isinstance(instruction,dict):
+                    bind_assertion_observations(getattr(tools.stack,'path',None),finding['assertion']['id'],
+                        [reading.get('source_observation_id'),*((axis_receipt or{}).get('source_observation_ids',{}).get(str(i),[]))])
     return {'findings':found,'checks':checks,'unresolved':unresolved,'coverage':coverage,'ranking':ranking_receipt,
         'version':VERSION,'all_blocks_processed':candidates is None and field_documents is None,
         'all_selected_blocks_processed':True,'focused_field_scope':field_documents is not None,
@@ -361,6 +440,8 @@ def read_relation_axes(tools,batch,named,evidence,result,ledger,judge):
     return axes,{'phase':'entity_relation_axes','steps':checked['steps'],'cost_usd':checked['cost_usd'],
         'question_bindings':tasks,'raw_judgments_digest':digest(checked['judgments']),
         'relation_support':{str(i):checked['judgments'].get('f'+str(i)+'_relation_support',{})for i in selected},
+        'source_observation_ids':{str(i):[value['source_observation_id']for suffix in ('relation_support',*AXES)
+            if (value:=checked['judgments'].get('f'+str(i)+'_'+suffix,{})).get('source_observation_id')]for i in axes},
         'selected_passages':len(selected),'resolved_passages':len(axes)}
 
 
@@ -374,7 +455,8 @@ def isolate_unresolved_sources(tools,questions,evidence,result,ledger,judge):
     if len(evidence)<2:return result
     by_id={e['id']:e for e in evidence};groups={}
     for key,q in questions.items():
-        if result['judgments'].get(key,{}).get('decided_by'):continue
+        reading=result['judgments'].get(key,{})
+        if reading.get('decided_by')or reading.get('source_observation_quarantined'):continue
         ins=q.get('instructions')
         cid=ins.get('source_context_id')if isinstance(ins,dict)else None
         if cid in by_id:groups.setdefault(cid,{})[key]=q
@@ -397,7 +479,8 @@ def local_readers_then_recheck(tools,questions,evidence,result,ledger,judge):
     context limits retain a reason and pass to the next eligible component.
     """
     from . import document_readers
-    pending={k:q for k,q in questions.items()if not result['judgments'].get(k,{}).get('decided_by')}
+    pending={k:q for k,q in questions.items()if not result['judgments'].get(k,{}).get('decided_by')and
+             not result['judgments'].get(k,{}).get('source_observation_quarantined')}
     for provider in os.environ.get('AGERE_DOCUMENT_LOCAL_READERS','').split(','):
         if not pending:break
         provider=provider.strip()
@@ -439,7 +522,8 @@ def local_readers_then_recheck(tools,questions,evidence,result,ledger,judge):
             result['steps'].extend(verified['steps']);result['cost_usd']+=verified['cost_usd']
             for key,row in verified['judgments'].items():
                 if row.get('decided_by'):result['judgments'][key]=row
-            pending={k:q for k,q in pending.items()if not result['judgments'].get(k,{}).get('decided_by')}
+            pending={k:q for k,q in pending.items()if not result['judgments'].get(k,{}).get('decided_by')and
+                     not result['judgments'].get(k,{}).get('source_observation_quarantined')}
         except Exception as exc:
             result.setdefault('local_steps',[]).append({'provider':provider,'status':'unavailable_or_declined',
                 'reason':str(exc)[:300],'cost_usd':0.,'seconds':time.perf_counter()-started,'fields':list(pending)})

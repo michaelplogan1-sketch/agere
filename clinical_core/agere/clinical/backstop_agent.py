@@ -1387,6 +1387,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             faults=[f for f in localized['feedback']if f.get('decided_by') and f['label']!='unknown']
             if source_observation_path is not None:
                 from .span_repair import quarantine_assertions
+                from .typed_document_review import quarantine_assertions as quarantine_typed_assertions
                 for fault_row in faults:
                     ident=fault_row.get('source_assertion_id')
                     if ident:
@@ -1394,6 +1395,13 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
                             source_observation_path,[ident],'Unadjudicated typed source feedback: '+fault_row['label']+'. '+fault_row['reason'])
                         except (OSError,sqlite3.Error)as exc:
                             fault_row['source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
+                        try:
+                            typed_count=quarantine_typed_assertions(source_observation_path,[ident],
+                                'Unadjudicated typed source feedback: '+fault_row['label']+'. '+fault_row['reason'])
+                            fault_row['typed_source_observations_quarantined']=typed_count
+                            fault_row['source_observations_quarantined']=fault_row.get('source_observations_quarantined',0)+typed_count
+                        except (OSError,sqlite3.Error)as exc:
+                            fault_row['typed_source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
             if faults:
                 checked.update(label='not_established' if all(f['label']=='missing_evidence'for f in faults) else 'contradicted',
                     decided_by='typed_claim_checks',reason='Specific source/field faults resolved by typed claim checks.')
