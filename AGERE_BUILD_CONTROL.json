@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T19:55:08.550314+00:00",
+  "updated_at": "2026-10-31T20:21:23.176269+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "complete_native_coverage_view_source_review_pending",
+    "kind": "current_source_review_app_verified_package_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Coverage sees the active executed source reviews, compositions, governed SQL and exact scope instead of SQL-only history. Expanded rows/inventories remain natively referenced; source/support verdicts are preserved.",
-    "measured_failure_reduction": "40active native nodes include30SQL/3reviews/7compositions;195checks pass. Coverage-only recheck accepted by Jev in4.349s/$0.009040584 but remainsanswers_partially. Original and failed probes preserved; no repeatedpatient/source/actor calls.",
+    "user_behavior_delta": "The exact current partial result supports durable source-evidence review, a readable70pagePDF and a complete compressed dashboard. Current workspace opens while full native history remains server-owned.",
+    "measured_failure_reduction": "57patient work/save/reopen/idempotence/stale-edit checks pass; clinical program preparation rejects partial result. Browser could not parse old response; current37.4MBresponse opens. Full-evidence HTML shrinks124MBto10.8MB with exact roundtrip;65focused checks pass;0newproviders.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -754,10 +754,15 @@
       "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json",
       "artifacts/agere-local-source-repair-2026-10-31/family-source-check/run-receipt.json",
       "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-input-audit.json",
-      "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-integration-receipt.json"
+      "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-integration-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/fresh-process-reopen.json",
+      "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/http-verification.json",
+      "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/report-current-partial/layout-qa.json"
     ],
-    "remaining_gap": "Current partial native continuation still needs current saved-report/evidence-review work/app/package demonstration.9sourcefield flags and161unknown feedback entries require qualification or explicit unresolved state, not an accepted clinical answer.",
-    "next_action": "G3: complete native coverage view now includes30activeSQL/3documentreviews/7compositions plus computed-prose roots, scoped source-selection counts and exact native provenance references.195checks pass; coverage-only Jev recheck4.349s/$0.009040584 still answers_partially. Preserve last source verdict154of162/8localblocked/9flags/161unknowns; no newpatientcheck/reader/actor replay. First2coverage probes generated3unpriced service-size failures, allretained. Materialize the current partial native continuation through existing saved-report/answer_context/evidence_review paths with exact QA states; verify incomplete answers blockprogrampreparation and source-review work saves/reopens with current scope/policy. Do not blindly restamp an old planner receipt or claim ordinary-controller/full-answer acceptance. Then current app/report/package and qualified prefix/bottling checks; alltenareas retained, scheduler PAUSED. Remaining clinical field-fit qualification is explicit, not forced positive.",
+    "remaining_gap": "Current isolated packaging/restart and qualified reuse. Partial source meaning remains unresolved; no accepted whole-question trace or new model weights.",
+    "next_action": "G3: current partial native context ANS-088ea55cf0b2f51425f417da and report DLV-0C033A4485CB now save/reopen with57pending evidence-review items; program preparation blocked, revisions/idempotence/HTTP/PDF exact.65report/workflow checks pass. Browser now opens after a native-history response projection(37.4MB versus550MBsavedcontext); compressed full-evidence dashboard10.8MB versus124MB,70pagecuratedPDF. Retain154of162sourcechecks/8localblocked/9machineflags/161unknowns and17unresolvedpatients. Package current candidate through existing checkpoint/archive/install mechanisms; verify currentcontext/work/report/feedback after isolated restart, then qualified parameterized reuse/bottling. Do not rerun completed source checks or blindly reissue old planner acceptance. Full ordinary answer and independent clinical/model qualification remain open. Alltenareas retained; scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2556,17 +2561,25 @@
       "reason": "SQL-only graph omitted real review/composition work; audit alias omission separately corrected. Initial expanded-data probes failedserviceenvelopes. Structured scope/provenance projection is accepted but actualcoverage remainspartial, so next use explicit source-review work rather than another blind model run.",
       "evidence": "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-integration-receipt.json",
       "scope_impact": "Alltenareas, source objects, failed attempts, thresholds and qualification boundaries retained."
+    },
+    {
+      "at": "2026-10-31T20:21:23.176269+00:00",
+      "gate": "G3",
+      "decision": "Materialize the measured partial continuation for evidence review; preserve original planner receipt and source support. Repair observed browser response and report transport failures before current packaging.",
+      "reason": "A550MBnative context response failed to open in the browser. A current reading projection preserves every patient row/grade/work item and retains full native history. Compression changes transport only. An initial list-loading hypothesis was incorrect: direct links skip listing.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json",
+      "scope_impact": "No acceptance threshold, clinical claim, source selection, patient cap, model activation, new service or primary-runtime change. Alltenareas retained."
     }
   ],
   "unsealed_work": {
-    "status": "coverage_view_verified_partial_source_review_work_pending",
+    "status": "current_source_review_app_verified_package_pending",
     "path": "artifacts/agere-local-source-repair-2026-10-31",
-    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-integration-receipt.json",
+    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "remaining_gap": "Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted.",
-    "next_action": "G3: complete native coverage view now includes30activeSQL/3documentreviews/7compositions plus computed-prose roots, scoped source-selection counts and exact native provenance references.195checks pass; coverage-only Jev recheck4.349s/$0.009040584 still answers_partially. Preserve last source verdict154of162/8localblocked/9flags/161unknowns; no newpatientcheck/reader/actor replay. First2coverage probes generated3unpriced service-size failures, allretained. Materialize the current partial native continuation through existing saved-report/answer_context/evidence_review paths with exact QA states; verify incomplete answers blockprogrampreparation and source-review work saves/reopens with current scope/policy. Do not blindly restamp an old planner receipt or claim ordinary-controller/full-answer acceptance. Then current app/report/package and qualified prefix/bottling checks; alltenareas retained, scheduler PAUSED. Remaining clinical field-fit qualification is explicit, not forced positive."
+    "remaining_gap": "Current isolated packaging/restart and qualified reuse. Partial source meaning remains unresolved; no accepted whole-question trace or new model weights.",
+    "next_action": "G3: current partial native context ANS-088ea55cf0b2f51425f417da and report DLV-0C033A4485CB now save/reopen with57pending evidence-review items; program preparation blocked, revisions/idempotence/HTTP/PDF exact.65report/workflow checks pass. Browser now opens after a native-history response projection(37.4MB versus550MBsavedcontext); compressed full-evidence dashboard10.8MB versus124MB,70pagecuratedPDF. Retain154of162sourcechecks/8localblocked/9machineflags/161unknowns and17unresolvedpatients. Package current candidate through existing checkpoint/archive/install mechanisms; verify currentcontext/work/report/feedback after isolated restart, then qualified parameterized reuse/bottling. Do not rerun completed source checks or blindly reissue old planner acceptance. Full ordinary answer and independent clinical/model qualification remain open. Alltenareas retained; scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",

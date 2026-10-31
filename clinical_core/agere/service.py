@@ -314,6 +314,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result=answer_context.update_work(connected_stack.path,body)
                     else:
                         result=answer_context.compose_frontier(connected_stack.path,body,allow_live=connected_stack.allow_live)
+                    if path.endswith(('/action-work/create','/action-work/update')):
+                        from .deliverables.action_center import inspection_view
+                        result=inspection_view(result)
                 elif path=='/api/stack/action-workflow/retry':
                     from .deliverables.workflow import retry_deliverable
                     result=retry_deliverable(connected_stack.path,body,allow_live=connected_stack.allow_live)
@@ -896,6 +899,8 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result={**answer_context.inspect(connected_stack.path,key),'allow_frontier':bool(connected_stack.allow_live and not recovery)}
                         from .deliverables.compose import context_review
                         result['independent_review']=context_review(connected_stack.path,result['context'])
+                        from .deliverables.action_center import inspection_view
+                        result=inspection_view(result)
                     else:
                         if parsed.path.endswith('/action-deliverable') and params.get('format'):
                             # read_format loads the context and validates its source,

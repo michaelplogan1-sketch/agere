@@ -1,10 +1,10 @@
-# Current Agere checkpoint - 2026-10-31T19:55:08.550314+00:00
+# Current Agere checkpoint - 2026-10-31T20:21:23.176269+00:00
 
-Build ACTIVE,G3; no active provider/training job. Coverage view verified; current source-review work/app/package pending. Scheduler PAUSED; alltenareas retained.
+Build ACTIVE,G3; current partial source-review work/app verified. Owned preview8890running forverification only, no provider/training job. Scheduler PAUSED; alltenareas retained.
 
-Exact next: G3: complete native coverage view now includes30activeSQL/3documentreviews/7compositions plus computed-prose roots, scoped source-selection counts and exact native provenance references.195checks pass; coverage-only Jev recheck4.349s/$0.009040584 still answers_partially. Preserve last source verdict154of162/8localblocked/9flags/161unknowns; no newpatientcheck/reader/actor replay. First2coverage probes generated3unpriced service-size failures, allretained. Materialize the current partial native continuation through existing saved-report/answer_context/evidence_review paths with exact QA states; verify incomplete answers blockprogrampreparation and source-review work saves/reopens with current scope/policy. Do not blindly restamp an old planner receipt or claim ordinary-controller/full-answer acceptance. Then current app/report/package and qualified prefix/bottling checks; alltenareas retained, scheduler PAUSED. Remaining clinical field-fit qualification is explicit, not forced positive.
+Exact next: G3: current partial native context ANS-088ea55cf0b2f51425f417da and report DLV-0C033A4485CB now save/reopen with57pending evidence-review items; program preparation blocked, revisions/idempotence/HTTP/PDF exact.65report/workflow checks pass. Browser now opens after a native-history response projection(37.4MB versus550MBsavedcontext); compressed full-evidence dashboard10.8MB versus124MB,70pagecuratedPDF. Retain154of162sourcechecks/8localblocked/9machineflags/161unknowns and17unresolvedpatients. Package current candidate through existing checkpoint/archive/install mechanisms; verify currentcontext/work/report/feedback after isolated restart, then qualified parameterized reuse/bottling. Do not rerun completed source checks or blindly reissue old planner acceptance. Full ordinary answer and independent clinical/model qualification remain open. Alltenareas retained; scheduler PAUSED.
 
-Last sealed owner receipt unchanged.
+Proof: artifacts/agere-local-source-repair-2026-10-31/current-partial-materialization/integration-receipt.json. Last sealed owner receipt unchanged.
 
 ## Earlier checkpoint (superseded)
 
