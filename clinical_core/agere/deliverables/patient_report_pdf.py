@@ -101,7 +101,7 @@ def _render_clinical(context,output,cards,references):
     dated.setdefault(str(a.get('name')or'Name not recorded'),set()).add(str(a.get('date')or''))
   for name,dates in dated.items():text+='\n'+name+' - signed '+role.lower()+' correspondence ('+D(max(dates))+'); assignment unconfirmed'
   return text
- def observed_pillars(c):return sum(t['observed_status']=='Recent fill observed' for t in c['therapy'])
+ def observed_pillars(c):return sum(t['fill_observed']is True for t in c['therapy'])
  ordered=list(cards.values());cutoff=(context.get('source')or{}).get('as_of');answer=context['answer']
  count=len(ordered);distribution=Counter(observed_pillars(c)for c in ordered)
  dose_patients=sum(bool(c.get('all_dose_observations'))for c in ordered)
@@ -110,12 +110,12 @@ def _render_clinical(context,output,cards,references):
  story=[P('CLINICAL REVIEW  /  SYNTHETIC HEALTHCARE WAREHOUSE','label'),Spacer(1,16),P('Medication optimization\nPatient review','title'),P('A clinical discussion brief for the theoretical GDMT titration program.'),P('Source snapshot: '+D(cutoff)+'  |  '+str(count)+' patients','small'),Spacer(1,14)]
  story.append(box([[ [P(str(count),'name'),P('Patients for review','small')], [P(str(dose_patients),'name'),P('Patients with a dated dose/state record','small')], [P(str(pcp),'name'),P('Patients with a recorded current PCP assignment','small')] ]],[180]*3))
  story.extend([P('The opportunity to review','head'),P('The saved cohort identifies patients with HFrEF evidence and incomplete four-pillar fill observations. These findings support medication reconciliation and a discussion of program suitability; they do not establish that a patient is untreated or eligible for titration.')])
- fill_rows=[[P('Pillars with a picked-up fill','label'),P('Patients','label'),P('Review focus','label')]]
+ fill_rows=[[P('Pillars with a fill observation','label'),P('Patients','label'),P('Review focus','label')]]
  for k in range(5):
   fill_rows.append([P(str(k)+' of 4'),P(distribution[k]),P('Reconcile medicines and the documented reasons for gaps' if k<4 else 'Confirm the current regimen and individual tolerated doses','small')])
  t=Table(fill_rows,colWidths=[170,70,300],repeatRows=1)
  t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),pale),('LINEBELOW',(0,0),(-1,-1),.4,rule),('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)]));story.append(t)
- scopes={t['fill_scope']for c in ordered for t in c['therapy']}
+ scopes={t.get('fill_scope_display',t['fill_scope'])for c in ordered for t in c['therapy']}
  story.append(P('Fill window: '+('; '.join(sorted(scopes)))+'.','small'))
  story.extend([P('Decisions to resolve with the clinical team','head'),P('1. Confirm each patient\'s current medicines, doses and access barriers.\n2. Review dated non-use or titration accounts against present clinical findings.\n3. Confirm the responsible PCP/cardiologist and individual tolerated dose before discussing enrollment.'),P('Care-team coverage: '+str(pcp)+' current PCP assignments and '+str(cardio)+' current cardiology assignments documented. A dated mention or referral is shown separately from current responsibility.','small'),P('Reading the patient reviews','head'),P('Each review brings together clinical observations, care-team information, medication fills and relevant dated chart excerpts. A missing fill is not proof of non-use. A reference maximum is not an individual tolerated maximum. Unsettled chart interpretations are marked for review.','small')])
  for c in ordered:
@@ -127,7 +127,7 @@ def _render_clinical(context,output,cards,references):
   identity.append(str(pid));story.append(P('  |  '.join(identity),'small'))
   if profile.get('interpreter_needed'):story.append(P('Interpreter needed'+(' - '+str(profile['preferred_language'])if profile.get('preferred_language')else''),'label'))
   n=observed_pillars(c)
-  story.extend([P('Why review this patient','head'),P('HFrEF evidence in the saved cohort; '+str(n)+' of 4 pillars have a picked-up fill in the review window. '+('Reconcile the remaining pillar observations and assess program suitability.'if n<4 else'Confirm current doses and whether further optimization is appropriate.'))])
+  story.extend([P('Why review this patient','head'),P('HFrEF evidence in the saved cohort; '+str(n)+' of 4 pillars have a fill observation in the saved analysis. '+('Reconcile the remaining pillar observations and assess program suitability.'if n<4 else'Confirm current doses and whether further optimization is appropriate.'))])
   observations=[]
   clinical={f['label']:f for f in c['clinical_context']}
   for key in ['Lowest documented EF','Latest qualifying low-EF observation','creatinine','egfr','potassium','systolic bp','diastolic bp','heart rate']:
@@ -145,7 +145,7 @@ def _render_clinical(context,output,cards,references):
   story.extend([P('Care team','head'),box([[[P('PRIMARY CARE','label'),P(team_text(c,'Primary care'))],[P('CARDIOLOGY','label'),P(team_text(c,'Cardiology'))]]],[270,270])])
   matrix=[[P('Medication pillar','label'),P('Fill observation and named medicines','label'),P('Dose information','label')]]
   for therapy in c['therapy']:
-   fills=therapy['fills'];fill_text=('Picked-up fill observed; medicine name not supplied'if therapy['observed_status']=='Recent fill observed'else'No picked-up fill in the review window')if not fills else'\n'.join(str(f['drug_name'])+'\nLatest fill '+D(f.get('latest_fill_date_in_window'))for f in fills)
+   fills=therapy['fills'];fill_text=(therapy['observed_status']+('; medicine name not supplied'if therapy['fill_observed']else''))if not fills else'\n'.join(str(f['drug_name'])+'\nLatest fill '+D(f.get('latest_fill_date_in_window'))for f in fills)
    doses=[]
    for d in therapy['dose_observations']:
     v=d.get('documented_daily_mg');text=human(d.get('drug_key'))+': '+(N(v)+' mg/day recorded'if v is not None else'daily dose not established')
@@ -215,7 +215,7 @@ def render(context,output,references=None,evidence=None):
   from .patient_evidence import projection
   evidence=projection(context)
  cards=review_cards(context,evidence)
- if cards and all(len(c.get('therapy',[]))==4 and any(f['label']=='Heart failure evidence'and f.get('value')for f in c['clinical_context'])and all(t['observed_status']in('Recent fill observed','No recent fill observed')for t in c['therapy'])for c in cards.values()):
+ if cards and all(len(c.get('therapy',[]))==4 and any(f['label']=='Heart failure evidence'and f.get('value')for f in c['clinical_context'])and all(type(t.get('fill_observed'))is bool for t in c['therapy'])for c in cards.values()):
   return _render_clinical(context,output,cards,references)
  for name,filename in [('AgereSans','Arial.ttf'),('AgereBold','Arial Bold.ttf')]:
   font=Path('/System/Library/Fonts/Supplemental')/filename

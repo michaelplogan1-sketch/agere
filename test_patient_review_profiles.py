@@ -66,7 +66,7 @@ class Profiles(unittest.TestCase):
   self.assertEqual(card['therapy'][0]['observed_status'],'Recent fill observed')
   self.assertIn('after 2029-05-27 through 2030-05-27',card['therapy'][0]['fill_scope'])
   from clinical_core.agere.deliverables.patient_dashboard import render
-  self.assertIn('esc(t.fill_scope)',render(c))
+  self.assertIn('esc(t.fill_scope_display||t.fill_scope)',render(c))
 
  def test_unknown_identity_does_not_acquire_another_persons_name(self):
   p=P.capture_profiles(self.path,['UNKNOWN'],{'table':[{'patient_id':'UNKNOWN'}]})
@@ -150,6 +150,32 @@ class CurrentNativeCardContracts(unittest.TestCase):
   card=P.review_cards(self.context())['A'];accounts=card['therapy'][1]['documented_reasons']
   self.assertEqual([g['quote']for g in accounts],['Carvedilol was held for dizziness.'])
   self.assertIn('Atenolol was previously stopped.',card['original_result_row']['documentary_findings'])
+
+ def test_native_raas_alias_precedes_cohort_and_status_is_not_a_causal_reason(self):
+  c=self.context();row=c['answer']['table'][0]
+  row['on_raas']=row.pop('raas_pillar')
+  found=json.loads(row['documentary_findings']);status=copy.deepcopy(found[0]);status.update(relation='documented_status',quote='Carvedilol was listed at this visit.',record_id='S1')
+  unknown=copy.deepcopy(status);unknown.update(relation='unqualified_relation',record_id='U1')
+  row['documentary_findings']=json.dumps([*found,status,unknown]);before=copy.deepcopy(c)
+  card=P.review_cards(c)['A']
+  self.assertIs(card['therapy'][0]['fill_observed'],True)
+  self.assertEqual([g['quote']for g in card['therapy'][1]['documented_reasons']],['Carvedilol was held for dizziness.'])
+  self.assertEqual([g['quote']for g in card['therapy'][1]['documented_status_accounts']],['Carvedilol was listed at this visit.'])
+  self.assertEqual(c,before)
+
+ def test_later_source_review_survives_an_older_table_without_field_name_merging(self):
+  c=self.context();row=c['answer']['table'][0];old=json.loads(row['documentary_findings'])[0]
+  old['field']='reason';row['documentary_findings']=json.dumps([old])
+  reason=copy.deepcopy(old);reason.update(relation='documented_reason_not_on_therapy',quote='Carvedilol was stopped for low pressure.',record_id='R2')
+  status=copy.deepcopy(reason);status.update(relation='documented_status',quote='Carvedilol was listed at a later visit.',record_id='R3')
+  c['investigation']['document_reviews']=[
+   {'questions':{},'rows':[{'patient_id':'A','review_json':json.dumps({'reason':[old]})}]},
+   {'questions':{},'rows':[{'patient_id':'A','review_json':json.dumps({'reason':[reason],'status':[status]})}]}]
+  before=copy.deepcopy(c);card=P.review_cards(c)['A'];therapy=card['therapy'][1]
+  self.assertEqual([g['quote']for g in therapy['documented_reasons']],[old['quote'],reason['quote']])
+  self.assertEqual(len(therapy['documented_reasons'][0]['findings']),1)
+  self.assertEqual([g['quote']for g in therapy['documented_status_accounts']],[status['quote']])
+  self.assertEqual(c,before)
 
  def test_regimen_cause_and_individual_tolerance_remain_independent_dated_accounts(self):
   context=self.context();card=P.review_cards(context)['A']

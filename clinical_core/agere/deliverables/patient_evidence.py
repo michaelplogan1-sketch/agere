@@ -160,7 +160,7 @@ def review_cards(context, evidence=None):
         for row in answer.get('table')or[]:
             if not isinstance(row,dict)or not row.get('patient_id'):continue
             original_row=row;row=dict(row)
-            aliases={'on_rasi_pillar':('on_raas_inhibitor','raas_pillar'),
+            aliases={'on_rasi_pillar':('on_raas_inhibitor','on_raas','raas_pillar'),
                 'on_beta_blocker_pillar':('on_beta_blocker','beta_blocker_pillar'),
                 'on_mra_pillar':('on_mra','mra_pillar'),'on_sglt2i_pillar':('on_sglt2i','sglt2_pillar'),
                 'pillars_missing':('missing_pillars',),'gdmt_dose_rows':('dose_evidence','gdmt_dose_evidence'),
@@ -210,7 +210,23 @@ def review_cards(context, evidence=None):
                     'unit':m.get('unit_canonical'),'date':m.get('event_date'),'record_id':m.get('record_id'),
                     'value_censor':m.get('value_censor'),'same_day_values':m.get('same_day_values'),
                     'same_day_min':m.get('same_day_min')})
-            findings=items(row.get('documentary_findings'));fills=items(row.get('recent_gdmt_fill_observations'));doses=items(row.get('gdmt_dose_rows'))
+            findings=list(items(row.get('documentary_findings')))
+            # A later source review can contribute the answer's counts while
+            # its patient table still references an earlier assembly. The
+            # reading view must retain those actual bound observations too.
+            # Assertion/contract identities stay intact; no field-name merge
+            # or clinical adjudication chooses between different readings.
+            def finding_identity(f):return json.dumps({k:v for k,v in f.items()if k!='field'}if isinstance(f,dict)else f,sort_keys=True)
+            seen_findings={finding_identity(f)for f in findings}
+            for review in evidence.get('notes',{}).get(pid,[]):
+                declared=review.get('findings')
+                for field,values in declared.items()if isinstance(declared,dict)else[]:
+                    if field in review.get('audit_only_fields',[]):continue
+                    for value in values if isinstance(values,list)else[]:
+                        if not isinstance(value,dict)or not isinstance(value.get('entity'),dict):continue
+                        finding={**value,'field':field};identity=finding_identity(finding)
+                        if identity not in seen_findings:findings.append(finding);seen_findings.add(identity)
+            fills=items(row.get('recent_gdmt_fill_observations'));doses=items(row.get('gdmt_dose_rows'))
             therapy=[]
             window_start=row.get('fill_window_start_exclusive');window_end=row.get('fill_window_end_inclusive')
             declared_scopes=[g for g in answer.get('grounding')or[]if isinstance(g,str)and re.search(r'\b(?:fills?|pillars?)\b',g,re.I)and re.search(r'\b(?:months?|years?|window)\b',g,re.I)]
@@ -221,6 +237,11 @@ def review_cards(context, evidence=None):
             fill_scope=('Picked-up fill after '+str(window_start)+' through '+str(window_end)if window_start and window_end else
                 'Saved analysis time basis: '+' '.join(declared_scopes)if declared_scopes else
                 'Received fill history through the snapshot; no recency window is established by these membership flags'if historical_fill else'Recent-fill observation window defined by the saved analysis')
+            fill_scope_display=fill_scope
+            if declared_scopes and not(window_start and window_end):
+                declared_window=re.search(r'\b\d+\s+(?:months?|years?)\s+(?:ending(?: at)?|through)\s+\d{4}-\d{2}-\d{2}\b',' '.join(declared_scopes),re.I)
+                fill_scope_display=('Declared analysis window: '+declared_window.group()if declared_window else
+                    'Observation window declared in the saved analysis; confirm current medication use')
             # These labels describe the source-defined fields returned by the
             # analysis, not a fresh treatment rule or an individual dose target.
             pillars=[('rasi','RAAS inhibitor / ARNI','on_rasi_pillar','raas_inhibitor',{'ace_inhibitor','arb','arni'}),
@@ -237,8 +258,11 @@ def review_cards(context, evidence=None):
                 therapy.append({'group':group,'label':label,'observed_status':
                     ('Historical fill observed'if historical_fill else'Fill observed in the saved analysis'if declared_scopes and not(window_start and window_end)else'Recent fill observed')if row[field]==1 else('No fill observed in the returned history'if historical_fill else'No fill observed in the saved analysis'if declared_scopes and not(window_start and window_end)else'No recent fill observed')if row[field]==0 else'Fill status unresolved',
                     'fill_scope':fill_scope,
+                    'fill_scope_display':fill_scope_display,
+                    'fill_observed':True if row[field]==1 else False if row[field]==0 else None,
                     'current_use':'Confirm current regimen','fills':observed,'dose_observations':ds,
-                    'documented_reasons':reasons(findings,entity)})
+                    'documented_reasons':reasons(findings,entity,{'treatment_reason','reason_not_on_therapy','not_prescribed_reason','documented_reason_not_on_therapy'}),
+                    'documented_status_accounts':reasons(findings,entity,{'documented_status'})})
             rationale=[]
             if row.get('hfref_basis'):rationale.append('Source-defined HFrEF cohort: '+str(row['hfref_basis']).replace('_',' '))
             missing=row.get('pillars_missing')

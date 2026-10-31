@@ -36,6 +36,19 @@ class CuratedClinicalPDF(unittest.TestCase):
   self.assertEqual(c,before);self.assertFalse(attachments);self.assertLess(size,300000)
   self.assertEqual(r['new_model_calls'],0);self.assertEqual(r['distinct_patient_ids'],1)
 
+ def test_native_raas_alias_and_declared_window_keep_the_curated_format(self):
+  c=self.context();row=c['answer']['table'][0];row['on_raas']=row.pop('raas_pillar')
+  row.pop('fill_window_start_exclusive');row.pop('fill_window_end_inclusive')
+  c['answer']['grounding']=['Pillars use picked-up fills in the 12 months ending 2030-05-27 (agere_result_42), which replaces an old query.']
+  text,r,attachments,_=self.pdf(c)
+  self.assertEqual(r['presentation_version'],'curated-clinical-review/1')
+  self.assertIn('2 of 4 pillars have a fill observation',text)
+  self.assertIn('Fill observed in the saved analysis',text)
+  self.assertIn('No fill observed in the saved analysis',text)
+  self.assertIn('Declared analysis window: 12 months ending 2030-05-27',text)
+  self.assertNotIn('agere_result_',text);self.assertNotIn('old query',text)
+  self.assertFalse(attachments)
+
  def test_dated_named_cardiology_author_does_not_become_current_assignment(self):
   c=self.context();roles=[{'name':'Dr Historical Example','documented_role':'Cardiology','relationship':'signed_correspondence_author','date':'2027-04-05','current_assignment':'not_established'}]
   c['investigation']['document_reviews']=[{'questions':{},'rows':[{'patient_id':'A','source_clinicians_json':json.dumps(roles),'review_json':'{}'}]}]
