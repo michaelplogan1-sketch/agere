@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T05:21:24.206050+00:00",
+  "updated_at": "2026-10-31T05:42:49.676576+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -372,6 +372,10 @@
         {
           "path": "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/delivery-receipt.json",
           "sha256": "69ec8d15daedea3e293c4a1f2ee0cbfdbafa93e1ca6f89b1f87285b9f12c9cb8"
+        },
+        {
+          "path": "artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/delivery-receipt.json",
+          "sha256": "c58b3e575fb4c209ec19b67661bf5656328e38483d269c123e5f58844ebb28a5"
         }
       ],
       "blocker": null,
@@ -379,7 +383,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_readable_report_and_parse_reuse_verified",
+    "kind": "sealed_source_aware_v6_then_typed_feedback_wiring",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Named current patient review preserves four pillars, doses, dated care and unresolved source interpretations in allformats. Readableprintsourceindex and faster current reopening.",
@@ -694,10 +698,12 @@
       "artifacts/agere-g5-source-clock-2026-10-30/remaining-source-qualification-v2/postprocess-receipt.json",
       "artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/presentation-verification.json",
       "artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/current-candidate-acceptance.json",
-      "artifacts/agere-g5-source-clock-2026-10-30/report-serving-latency-v1/matched-benchmark.json"
+      "artifacts/agere-g5-source-clock-2026-10-30/report-serving-latency-v1/matched-benchmark.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-coverage-audit/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/delivery-receipt.json"
     ],
-    "remaining_gap": "Currentreport:57namedpatients,228pillars,17doseobjects,64namedfillgroups,allnativeCSVcells and430MB embeddedcontext exact;PDF312\u2192150pages. LiveAPIall4formats exact/0providers. Planparse reuse matchesfullcontext at9.897sbaseline\u21926.315scold/2.688swarm;currentexports8.66\u201315.27s. Source review95supported/48unknown/12model-objections/9unchecked remainsunqualified. Exactd9recoveryaftertemporary-filelossverified;current6032codecommitted. Currentarchive/recovery remains to seal.",
-    "next_action": "Observe the owned current-installed-source-aware-v6 archive/recovery job to terminal; product6032e55 and source frozen. Do not duplicate it or change product source. Current57patient report150pages and allfour exact API exports pass; retain unresolved source qualification and nine unchecked parts. On terminal success seal durable evidence, update private draft/branch and resume the isolated candidate. Then address measured remaining G5 role/clinical/outcome and total-workload qualification dependencies without training on unresolved machine labels.",
+    "remaining_gap": "Source-aware v6 is sealed with actual installed recovery1143.994s; source6032e55/report841 retained. Next measured engineering gap:9typed source findings have no direct assertion-to-observation quarantine mapping. Their exact source readings plus one unaffected control replay in47.7ms/0providers on an isolated clone. Original source/model qualification remains unresolved and all ten areas retained.",
+    "next_action": "After sealing6032v6, connect actual typed applicability/axis observation IDs to compiled assertion IDs in the existing operational store. Extend append-only exact-assertion quarantine to those observations; unchanged disputed inputs must return unresolved with zero dispatch, retaining prior readings. Preserve unaffected source findings and genuine changed-source/policy misses. Use actual cached cases and simple unit fixtures, no new clinical labels, threshold changes, whole-cohort provider rerun or broad training. Keep frontier span_repair.py and document_review.py unchanged: their full-file hashes bind existing span-observation keys. Wire the shared final-review callback in backstop_agent.py to typed_document_review.py instead, preserving all existing source-observation reuse. Offline exact candidate replay must first reproduce current typed findings and register exact cache provenance; applying retained objection then prevents that one old reading from being reused, with unaffected readings exact and zero providers. Current clinical/report/source qualification remains separate.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -706,15 +712,15 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Owned archive/recovery running; source6032e55frozen. All provider jobs terminal; no duplicated source/training jobs. SchedulerPAUSED;primaryuntouched.",
+    "coordination": "All owned provider/report/archive/seal jobs terminal. No candidate server8890 running. Latest sealed6032e55archive preserved; queued typed feedback repair may proceed in place. Primary8885/old8888 untouched; schedulerPAUSED.",
     "remaining_blockers": [
       "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open."
     ],
     "latest_progress": {
-      "at": "2026-10-31T01:32:06.817839+00:00",
-      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/source-bottling-current-release/delivery-receipt.json",
-      "code_commit": "fd576b1",
-      "context_id": "ANS-7c19f2275d2c9ce29b770888",
+      "at": "2026-10-31T05:42:49.676576+00:00",
+      "receipt": "artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/delivery-receipt.json",
+      "code_commit": "6032e55",
+      "context_id": "ANS-84178dc9a52c7ea082758021",
       "all_ten_areas_retained": true
     },
     "results_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
@@ -840,13 +846,7 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [
-      {
-        "kind": "current_archive_recovery",
-        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-source-aware-v6/run-receipt.json",
-        "source_frozen": true
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -857,6 +857,16 @@
       "tests": "Five completion safety/hash checks pass; seven actual-results reporting checks pass.",
       "automatic_provider_calls": false,
       "automatic_retry": false
+    },
+    "queued_source_cache_repair": {
+      "kind": "typed_source_negative_feedback_wiring",
+      "status": "active_after_sealed_source_aware_v6",
+      "measured_failure": "Nine current Perplexity source findings with confident final-review objections have zero frontier assertion-cache mappings. Typed source cache /3 has no immutable assertion-to-observation binding; only frontier span observations currently receive assertion-specific quarantine. This is a reuse-wiring defect, not proof that any clinical label is false.",
+      "evidence": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-coverage-audit/receipt.json",
+      "cases": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-coverage-audit/cases.json",
+      "correction": "After sealing6032v6, connect actual typed applicability/axis observation IDs to compiled assertion IDs in the existing operational store. Extend append-only exact-assertion quarantine to those observations; unchanged disputed inputs must return unresolved with zero dispatch, retaining prior readings. Preserve unaffected source findings and genuine changed-source/policy misses. Use actual cached cases and simple unit fixtures, no new clinical labels, threshold changes, whole-cohort provider rerun or broad training. Keep frontier span_repair.py and document_review.py unchanged: their full-file hashes bind existing span-observation keys. Wire the shared final-review callback in backstop_agent.py to typed_document_review.py instead, preserving all existing source-observation reuse.",
+      "workflow_check": "Offline exact candidate replay must first reproduce current typed findings and register exact cache provenance; applying retained objection then prevents that one old reading from being reused, with unaffected readings exact and zero providers. Current clinical/report/source qualification remains separate.",
+      "all_ten_areas_retained": true
     }
   },
   "decisions": [
@@ -2362,13 +2372,14 @@
     }
   ],
   "unsealed_work": {
-    "status": "current_archive_recovery_running",
+    "status": "typed_source_feedback_wiring_candidate_not_activated",
     "path": "artifacts/agere-g5-source-clock-2026-10-30",
-    "remaining_gap": "Currentreport:57namedpatients,228pillars,17doseobjects,64namedfillgroups,allnativeCSVcells and430MB embeddedcontext exact;PDF312\u2192150pages. LiveAPIall4formats exact/0providers. Planparse reuse matchesfullcontext at9.897sbaseline\u21926.315scold/2.688swarm;currentexports8.66\u201315.27s. Source review95supported/48unknown/12model-objections/9unchecked remainsunqualified. Exactd9recoveryaftertemporary-filelossverified;current6032codecommitted. Currentarchive/recovery remains to seal.",
-    "next_action": "Observe the owned current-installed-source-aware-v6 archive/recovery job to terminal; product6032e55 and source frozen. Do not duplicate it or change product source. Current57patient report150pages and allfour exact API exports pass; retain unresolved source qualification and nine unchecked parts. On terminal success seal durable evidence, update private draft/branch and resume the isolated candidate. Then address measured remaining G5 role/clinical/outcome and total-workload qualification dependencies without training on unresolved machine labels.",
-    "source_frozen_for_run": true,
-    "active_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-source-aware-v6/run-receipt.json",
-    "authorization": "Explicit autonomous MVP/synthetic/provider/private-branch approvals persist; no repeated routine approval. Existing source, external-action and subscription boundaries unchanged."
+    "remaining_gap": "Source-aware v6 is sealed with actual installed recovery1143.994s; source6032e55/report841 retained. Next measured engineering gap:9typed source findings have no direct assertion-to-observation quarantine mapping. Their exact source readings plus one unaffected control replay in47.7ms/0providers on an isolated clone. Original source/model qualification remains unresolved and all ten areas retained.",
+    "next_action": "After sealing6032v6, connect actual typed applicability/axis observation IDs to compiled assertion IDs in the existing operational store. Extend append-only exact-assertion quarantine to those observations; unchanged disputed inputs must return unresolved with zero dispatch, retaining prior readings. Preserve unaffected source findings and genuine changed-source/policy misses. Use actual cached cases and simple unit fixtures, no new clinical labels, threshold changes, whole-cohort provider rerun or broad training. Keep frontier span_repair.py and document_review.py unchanged: their full-file hashes bind existing span-observation keys. Wire the shared final-review callback in backstop_agent.py to typed_document_review.py instead, preserving all existing source-observation reuse. Offline exact candidate replay must first reproduce current typed findings and register exact cache provenance; applying retained objection then prevents that one old reading from being reused, with unaffected readings exact and zero providers. Current clinical/report/source qualification remains separate.",
+    "source_frozen_for_run": false,
+    "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-coverage-audit/receipt.json",
+    "authorization": "Explicit autonomous MVP/synthetic/provider/private-branch approvals persist; no repeated routine approval. Existing source, external-action and subscription boundaries unchanged.",
+    "queued_source_cache_repair": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-coverage-audit/receipt.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2396,11 +2407,5 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "kind": "current_archive_recovery",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-source-aware-v6/run-receipt.json",
-      "source_frozen": true
-    }
-  ]
+  "active_jobs": []
 }

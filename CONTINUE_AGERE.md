@@ -1,3 +1,15 @@
+# Current Agere checkpoint — 2026-10-31T05:42:49.676576+00:00
+
+Build ACTIVE,G5;soleowner;schedulerPAUSED. Latest scoped engineering delivery is SEALED: artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/delivery-receipt.json. Product6032e55,current57-patient contextANS-84178dc9a52c7ea082758021,150pagePDF,allfour exactAPIexports and installedv6recovery passed in1143.994s. Alltestserversstopped; primaryunchanged. Priorfd576b1archive retained; fullqueue/clinical/modelqualificationfalse.
+
+Source-aware v6 is sealed with actual installed recovery1143.994s; source6032e55/report841 retained. Next measured engineering gap:9typed source findings have no direct assertion-to-observation quarantine mapping. Their exact source readings plus one unaffected control replay in47.7ms/0providers on an isolated clone. Original source/model qualification remains unresolved and all ten areas retained.
+
+Exactnext: After sealing6032v6, connect actual typed applicability/axis observation IDs to compiled assertion IDs in the existing operational store. Extend append-only exact-assertion quarantine to those observations; unchanged disputed inputs must return unresolved with zero dispatch, retaining prior readings. Preserve unaffected source findings and genuine changed-source/policy misses. Use actual cached cases and simple unit fixtures, no new clinical labels, threshold changes, whole-cohort provider rerun or broad training. Keep frontier span_repair.py and document_review.py unchanged: their full-file hashes bind existing span-observation keys. Wire the shared final-review callback in backstop_agent.py to typed_document_review.py instead, preserving all existing source-observation reuse. Offline exact candidate replay must first reproduce current typed findings and register exact cache provenance; applying retained objection then prevents that one old reading from being reused, with unaffected readings exact and zero providers. Current clinical/report/source qualification remains separate.
+
+No active owned run/sourcefreeze; product edits may proceed after control intent check. No whole-cohort provider rerun, clinical truth labels, new model weights, broad training or repeated approvals. Actual case inputs: artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-coverage-audit/cases.json. Baseline: artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-replay-v1/baseline-receipt.json.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint — 2026-10-31T05:21:24.206050+00:00
 
 Build ACTIVE,G5;soleowner;schedulerPAUSED. Currentreport:57namedpatients,228pillars,17doseobjects,64namedfillgroups,allnativeCSVcells and430MB embeddedcontext exact;PDF312→150pages. LiveAPIall4formats exact/0providers. Planparse reuse matchesfullcontext at9.897sbaseline→6.315scold/2.688swarm;currentexports8.66–15.27s. Source review95supported/48unknown/12model-objections/9unchecked remainsunqualified. Exactd9recoveryaftertemporary-filelossverified;current6032codecommitted. Currentarchive/recovery remains to seal.
