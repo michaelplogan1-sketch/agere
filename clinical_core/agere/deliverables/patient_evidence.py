@@ -133,7 +133,9 @@ def review_cards(context, evidence=None):
             key=tuple(str(f.get(k)or'')for k in ('quote','relation','polarity','temporality','subject'))
             group=groups.setdefault(key,{'quote':f.get('quote'),'relation':f.get('relation'),'polarity':f.get('polarity'),
                 'temporality':f.get('temporality'),'subject':f.get('subject'),'sources':[],'findings':[]})
-            group['sources'].append({'record_id':f.get('record_id'),'date':f.get('date')});group['findings'].append(f)
+            source={'record_id':f.get('record_id'),'date':f.get('date')}
+            if source not in group['sources']:group['sources'].append(source)
+            group['findings'].append(f)
         return list(groups.values())
     def parts(answer):
         yield answer

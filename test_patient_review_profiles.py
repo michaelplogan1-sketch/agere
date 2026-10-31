@@ -166,4 +166,11 @@ class CurrentNativeCardContracts(unittest.TestCase):
   card=P.review_cards(c)['A'];self.assertTrue(card['regimen_statements']);self.assertEqual(card['individual_tolerance_statements'],[])
   self.assertEqual(card['individual_max_tolerated_dose'],'Not established by the reviewed evidence')
 
+ def test_repeated_machine_bindings_keep_both_findings_but_one_source_reference(self):
+  c=self.context();row=c['answer']['table'][0];found=json.loads(row['documentary_findings'])
+  found.append(copy.deepcopy(found[0]));row['documentary_findings']=json.dumps(found)
+  card=P.review_cards(c)['A'];groups=card['therapy'][1]['documented_reasons']
+  self.assertEqual(len(groups),1);self.assertEqual(len(groups[0]['findings']),2)
+  self.assertEqual(groups[0]['sources'],[{'record_id':'H1','date':'2028-01-01'}])
+
 if __name__=='__main__':unittest.main()
