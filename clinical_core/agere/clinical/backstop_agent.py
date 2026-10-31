@@ -1084,7 +1084,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
             operational_receipts='Retained by native digest; excluded from clinical model context')
-        support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,field_decider=getattr(gate.s1(),'judge_fields',None))
+        support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,field_decider=getattr(gate.s1(),'judge_fields',None),
+                                      source_observation_path=getattr(stack,'path',None))
         n, usd = gate.cost(support)
         assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback',
                           'checked_source_packets','unchecked_packet_ids','all_dependencies_checked')},
@@ -1317,7 +1318,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     return result
 
 
-def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
+def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None):
     """Repair a diagnosed dependency before buying unrelated source checks.
 
     The first packet normally owns the global summary. Once it clears that
@@ -1381,6 +1382,15 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None):
             localized=localize_support_failure(packet,field_decider,as_of=as_of,ledger=worker_ledger)
             checked['claim_feedback']=localized['feedback'];steps.extend(localized['steps'])
             faults=[f for f in localized['feedback']if f.get('decided_by') and f['label']!='unknown']
+            if source_observation_path is not None:
+                from .span_repair import quarantine_assertions
+                for fault_row in faults:
+                    ident=fault_row.get('source_assertion_id')
+                    if ident:
+                        try:fault_row['source_observations_quarantined']=quarantine_assertions(
+                            source_observation_path,[ident],'Unadjudicated typed source feedback: '+fault_row['label']+'. '+fault_row['reason'])
+                        except (OSError,sqlite3.Error)as exc:
+                            fault_row['source_observation_quarantine_error']=type(exc).__name__+': '+str(exc)
             if faults:
                 checked.update(label='not_established' if all(f['label']=='missing_evidence'for f in faults) else 'contradicted',
                     decided_by='typed_claim_checks',reason='Specific source/field faults resolved by typed claim checks.')
@@ -1490,6 +1500,8 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
                 if isinstance(value,str)and s['citation']['record_id']in value}
             feedback.append({'packet_id':packet['id'],'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
                 'label':label,'reason':options.get(label,options['unknown']),'decided_by':reading.get('decided_by'),
+                **({'source_assertion_id':value['assertion']['id']}if isinstance(value,dict)and
+                   isinstance(value.get('assertion'),dict)and isinstance(value['assertion'].get('id'),str)else {}),
                 'source_record_ids':sorted(source_ids(value) or cited_ids or source_ids(state.get('evidence',[]))),'result_view':packet.get('result_view')})
     return {'feedback':feedback,'steps':steps}
 

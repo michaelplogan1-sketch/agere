@@ -1,5 +1,6 @@
 """Local source checks retain dependencies and report actionable field faults."""
-import copy,json,unittest
+import copy,json,tempfile,unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock,patch
 from clinical_core.agere.clinical import backstop_agent as B,execution_state as E,system_one_gate as G
@@ -184,6 +185,34 @@ class LocalReview(unittest.TestCase):
                     self.assertIn('current_assignment',out['feedback']);self.assertIn('population/domain/grain/unit',out['feedback'])
                 else:
                     self.assertEqual(out['status'],'unavailable');self.assertIsNone(out['feedback'])
+
+
+class ObservationFeedback(unittest.TestCase):
+    def test_only_confident_singular_source_fault_suspends_its_machine_observation(self):
+        from clinical_core.agere.clinical import span_repair as S
+        with tempfile.TemporaryDirectory()as folder:
+            path=Path(folder)
+            for ident in ['a','b','c','d']:
+                S.remember_observation(path,ident,{'label':'finding'},['original-'+ident],assertion_id=ident)
+            values={'disputed':{'assertion':{'id':'a'},'record_id':'n1'},
+                    'uncertain':{'assertion':{'id':'b'},'record_id':'n2'},
+                    'aggregate':[{'assertion':{'id':'c'}},{'assertion':{'id':'d'}}]}
+            claims=[{'id':k,'field':k,'path':[k]}for k in values]
+            from clinical_core.agere.deliverables.receipts import compact_json
+            text=json.dumps(compact_json(values));packet={'id':'source','date':'2030-05-27','bytes':len(text),'text':text,'claim_manifest':claims}
+            def fields(task,named,evidence,**kw):
+                return {'steps':[],'judgments':{k:{'label':'unknown'if k=='uncertain'else'wrong_time',
+                                                  'decided_by':None if k=='uncertain'else'fixture'}for k in named}}
+            got=B.check_support_packets([packet],lambda *a,**k:{'label':'unknown','decided_by':None,'probabilities':{'unknown':.9},'steps':[]},
+                as_of='2030-05-27',ledger=None,field_decider=fields,source_observation_path=path)
+            self.assertEqual(got['label'],'contradicted')
+            feedback={f['field']:f for f in got['claim_feedback']}
+            self.assertEqual(feedback['disputed']['source_assertion_id'],'a')
+            self.assertEqual(feedback['disputed']['source_observations_quarantined'],1)
+            self.assertNotIn('source_assertion_id',feedback['aggregate'])
+            self.assertTrue(S.cached_observation(path,'a')['quarantined'])
+            for ident in ['b','c','d']:self.assertFalse(S.cached_observation(path,ident)['quarantined'])
+            db=S.observation_store(path);self.assertEqual(db.execute('SELECT COUNT(*) FROM span_observations').fetchone()[0],4);db.close()
 
 
 class SupportScheduling(unittest.TestCase):
