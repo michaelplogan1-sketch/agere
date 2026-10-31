@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T03:41:53.776061+00:00",
+  "updated_at": "2026-10-31T05:21:24.206050+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -379,11 +379,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "registered_source_contract_verified_missing_dimensions_running",
+    "kind": "current_readable_report_and_parse_reuse_verified",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current source-bound named patient review, faithful four-format exports, packaged planning/knowledge identity and working installed internal-review/recovery path.",
-    "measured_failure_reduction": "Exact ordinary native group objection reproduced and fixed via lexical CTE/subquery lineage; saved57patienttrace now0groupissues in0.444s,0providers. Entity preflight rejects actual gdmt_dose request in2.25ms before source/model access. Two actualpatient typed comparison preserves33findings while scheduled2936fieldblocks become387modeleligible+2549explicitnativeunknowns and47batches become7; cached/offline comparison, not measured live savings. Full ordinary request remains partial/unverified; dose semantic task contract, final source support and current clinician-role wording require repair. All independent qualification/deployment dependencies remain.",
+    "user_behavior_delta": "Named current patient review preserves four pillars, doses, dated care and unresolved source interpretations in allformats. Readableprintsourceindex and faster current reopening.",
+    "measured_failure_reduction": "Currentreport:57namedpatients,228pillars,17doseobjects,64namedfillgroups,allnativeCSVcells and430MB embeddedcontext exact;PDF312\u2192150pages. LiveAPIall4formats exact/0providers. Planparse reuse matchesfullcontext at9.897sbaseline\u21926.315scold/2.688swarm;currentexports8.66\u201315.27s. Source review95supported/48unknown/12model-objections/9unchecked remainsunqualified. Exactd9recoveryaftertemporary-filelossverified;current6032codecommitted. Currentarchive/recovery remains to seal.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -681,10 +681,23 @@
       "artifacts/agere-g5-source-clock-2026-10-30/current-native-recomposition-v3/run-receipt.json",
       "artifacts/agere-g5-source-clock-2026-10-30/current-native-recomposition-v3/fill-source-audit.json",
       "artifacts/agere-g5-source-clock-2026-10-30/registered-class-source-routing-v2/receipt.json",
-      "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/protocol.json"
+      "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/protocol.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/patient-card-schema-audit/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/output-reuse-audit.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/ordinary-role-cost-audit/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/ordinary-role-cost-audit/role-lineage-verification.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/patient-card-schema-audit-v2/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-late-source-composition-v2/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/derivative-preservation/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/complete-source-role-audit/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-final-source-review-v2/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/remaining-source-qualification-v2/postprocess-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/presentation-verification.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-readable-report-v2/current-candidate-acceptance.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/report-serving-latency-v1/matched-benchmark.json"
     ],
-    "remaining_gap": "Committed a2a050d (212checks) connects native class/group/brand knowledge to source candidate retrieval and entity binding, supplies exact registered member classes to independent typed/axis/frontier states, and binds that meaning into source reuse keys. Same57sourceinventory4387docs: minimalGDMT-name retrieval76\u21921408candidates, all1332additionalcandidateshaveactualwhole-text registered links; not clinical recall or positive facts. Three original missing source dimensions now run alone. Prior current-native/source review remains partial with six uncertain packets, all59checked/no sourcegaps/no diagnosedfaults. Latest sealed fd576b1archive/staticv7 inspection retained;8890stopped.",
-    "next_action": "Observe owned source-only completion session23498 to terminal without changing pinned product a2a050d or source. It asks three independent missing regimen/titration/individual-tolerated-maximum questions across all57originalpatients, using registry-bound native candidate retrieval, typed decisions, residual subscription span repair and warm reuse. No original four-field reason review, planner or population math is repeated. Preserve every attempt/fulltext and stop provider work on actual subscription limit; continue offline work if limited. On return source-audit findings and unknowns, merge through existing typed assertion/native composition, recheck only changed dependencies, render readable current four-format report, refresh candidate/package and verified private draft; keep all ten areas and independent qualifications.",
+    "remaining_gap": "Currentreport:57namedpatients,228pillars,17doseobjects,64namedfillgroups,allnativeCSVcells and430MB embeddedcontext exact;PDF312\u2192150pages. LiveAPIall4formats exact/0providers. Planparse reuse matchesfullcontext at9.897sbaseline\u21926.315scold/2.688swarm;currentexports8.66\u201315.27s. Source review95supported/48unknown/12model-objections/9unchecked remainsunqualified. Exactd9recoveryaftertemporary-filelossverified;current6032codecommitted. Currentarchive/recovery remains to seal.",
+    "next_action": "Observe the owned current-installed-source-aware-v6 archive/recovery job to terminal; product6032e55 and source frozen. Do not duplicate it or change product source. Current57patient report150pages and allfour exact API exports pass; retain unresolved source qualification and nine unchecked parts. On terminal success seal durable evidence, update private draft/branch and resume the isolated candidate. Then address measured remaining G5 role/clinical/outcome and total-workload qualification dependencies without training on unresolved machine labels.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -693,7 +706,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Source-only completion active on pinned a2a050d; freeze product/source. All preceding provider/native jobs terminal. Candidate8890stopped; schedulerPAUSED; fd576b1 recovery retained.",
+    "coordination": "Owned archive/recovery running; source6032e55frozen. All provider jobs terminal; no duplicated source/training jobs. SchedulerPAUSED;primaryuntouched.",
     "remaining_blockers": [
       "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open."
     ],
@@ -757,12 +770,12 @@
     "at": "2026-10-31T02:00:29.418378+00:00",
     "workflow_change": "Exact source-bound frontier observations now survive changed batching and field aliases. Confident singular-source feedback quarantines only that reading; current57patient report and isolated app retain every native value and partial status.",
     "unsealed_work": {
-      "status": "complete_missing_regimen_source_dimensions_running",
+      "status": "current_complete_source_final_typed_review_running",
       "path": "artifacts/agere-g5-source-clock-2026-10-30",
-      "remaining_gap": "Committed a2a050d (212checks) connects native class/group/brand knowledge to source candidate retrieval and entity binding, supplies exact registered member classes to independent typed/axis/frontier states, and binds that meaning into source reuse keys. Same57sourceinventory4387docs: minimalGDMT-name retrieval76\u21921408candidates, all1332additionalcandidateshaveactualwhole-text registered links; not clinical recall or positive facts. Three original missing source dimensions now run alone. Prior current-native/source review remains partial with six uncertain packets, all59checked/no sourcegaps/no diagnosedfaults. Latest sealed fd576b1archive/staticv7 inspection retained;8890stopped.",
-      "next_action": "Observe owned source-only completion session23498 to terminal without changing pinned product a2a050d or source. It asks three independent missing regimen/titration/individual-tolerated-maximum questions across all57originalpatients, using registry-bound native candidate retrieval, typed decisions, residual subscription span repair and warm reuse. No original four-field reason review, planner or population math is repeated. Preserve every attempt/fulltext and stop provider work on actual subscription limit; continue offline work if limited. On return source-audit findings and unknowns, merge through existing typed assertion/native composition, recheck only changed dependencies, render readable current four-format report, refresh candidate/package and verified private draft; keep all ten areas and independent qualifications.",
+      "remaining_gap": "Clinical-card gap fixed:85targetedchecks plus15citation/profilechecks(overlap); actual57caseauditnow228pillars/17doseobjects/39HF-subtype reasons exact. Late native composition joins new source observations after math, preserving1026existingcells andall8pilotbindings;1766totalbindings/59completepackets/0sourcegaps,0provider calls. It reduces derived response from1.94GBto423.9MB without dropping source or changing guards. Three giant redundant unsealed diagnostics were losslessly gzip-archived with byte/SHA256 roundtrip proof, releasing4.82GB; originals are recoverable. Current source support review, canonical report/layout/current runtime/package remain to finish.",
+      "next_action": "Observe current-final-source-review-v2 to terminal without changing frozen product53df263 or source; inspect owned process/session receipt first. It checks59complete dependency packets after allthree source fields and corrected clinical cards, with no Claude. Do not repeat source extraction. Then capture current context, render/visually verify readable clinician HTML/PDF/JSON/CSV, fix only measured layout/wiring failures, serve isolated8890candidate and verify exact API exports/current dependencies. Package/recovery/rollback and private draft update follow; all ten areas and independent clinical/model/outcome/deployment qualifications remain. Current source quantities are1758currentbindings+8retainedpilotversions; repeat source citations are deduplicated, not independent events.",
       "source_frozen_for_run": true,
-      "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+      "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/current-final-source-review-v2/run-receipt.json",
       "authorization": "Explicit autonomous MVP/synthetic/provider/private-branch approvals persist; no repeated routine approval. Existing source, external-action and subscription boundaries unchanged."
     },
     "bottling_assessment": {
@@ -829,9 +842,8 @@
     },
     "active_jobs": [
       {
-        "kind": "complete_missing_regimen_source_dimensions",
-        "session": 23498,
-        "receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+        "kind": "current_archive_recovery",
+        "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-source-aware-v6/run-receipt.json",
         "source_frozen": true
       }
     ],
@@ -2350,12 +2362,12 @@
     }
   ],
   "unsealed_work": {
-    "status": "complete_missing_regimen_source_dimensions_running",
+    "status": "current_archive_recovery_running",
     "path": "artifacts/agere-g5-source-clock-2026-10-30",
-    "remaining_gap": "Committed a2a050d (212checks) connects native class/group/brand knowledge to source candidate retrieval and entity binding, supplies exact registered member classes to independent typed/axis/frontier states, and binds that meaning into source reuse keys. Same57sourceinventory4387docs: minimalGDMT-name retrieval76\u21921408candidates, all1332additionalcandidateshaveactualwhole-text registered links; not clinical recall or positive facts. Three original missing source dimensions now run alone. Prior current-native/source review remains partial with six uncertain packets, all59checked/no sourcegaps/no diagnosedfaults. Latest sealed fd576b1archive/staticv7 inspection retained;8890stopped.",
-    "next_action": "Observe owned source-only completion session23498 to terminal without changing pinned product a2a050d or source. It asks three independent missing regimen/titration/individual-tolerated-maximum questions across all57originalpatients, using registry-bound native candidate retrieval, typed decisions, residual subscription span repair and warm reuse. No original four-field reason review, planner or population math is repeated. Preserve every attempt/fulltext and stop provider work on actual subscription limit; continue offline work if limited. On return source-audit findings and unknowns, merge through existing typed assertion/native composition, recheck only changed dependencies, render readable current four-format report, refresh candidate/package and verified private draft; keep all ten areas and independent qualifications.",
+    "remaining_gap": "Currentreport:57namedpatients,228pillars,17doseobjects,64namedfillgroups,allnativeCSVcells and430MB embeddedcontext exact;PDF312\u2192150pages. LiveAPIall4formats exact/0providers. Planparse reuse matchesfullcontext at9.897sbaseline\u21926.315scold/2.688swarm;currentexports8.66\u201315.27s. Source review95supported/48unknown/12model-objections/9unchecked remainsunqualified. Exactd9recoveryaftertemporary-filelossverified;current6032codecommitted. Currentarchive/recovery remains to seal.",
+    "next_action": "Observe the owned current-installed-source-aware-v6 archive/recovery job to terminal; product6032e55 and source frozen. Do not duplicate it or change product source. Current57patient report150pages and allfour exact API exports pass; retain unresolved source qualification and nine unchecked parts. On terminal success seal durable evidence, update private draft/branch and resume the isolated candidate. Then address measured remaining G5 role/clinical/outcome and total-workload qualification dependencies without training on unresolved machine labels.",
     "source_frozen_for_run": true,
-    "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+    "active_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-source-aware-v6/run-receipt.json",
     "authorization": "Explicit autonomous MVP/synthetic/provider/private-branch approvals persist; no repeated routine approval. Existing source, external-action and subscription boundaries unchanged."
   },
   "current_visual_request": {
@@ -2386,9 +2398,8 @@
   },
   "active_jobs": [
     {
-      "kind": "complete_missing_regimen_source_dimensions",
-      "session": 23498,
-      "receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+      "kind": "current_archive_recovery",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-source-aware-v6/run-receipt.json",
       "source_frozen": true
     }
   ]
