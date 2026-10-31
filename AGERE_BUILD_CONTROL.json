@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T19:08:19.129143+00:00",
+  "updated_at": "2026-10-31T19:55:08.550314+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "patient_local_source_fault_candidate",
+    "kind": "complete_native_coverage_view_source_review_pending",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "A proven source-local fault blocks only its own patient family; independently bound patient checks continue. Global, opaque and shared faults remain barriers and no overall acceptance is inferred.",
-    "measured_failure_reduction": "Read-only replay reaches all122previously deferred packets. All162provider bodies byte-identical;151checked/reached,11locallydeferred, overallnot_established.186focused checks pass. Unseen replay grades are explicitunknown, not accepted results.",
+    "user_behavior_delta": "Coverage sees the active executed source reviews, compositions, governed SQL and exact scope instead of SQL-only history. Expanded rows/inventories remain natively referenced; source/support verdicts are preserved.",
+    "measured_failure_reduction": "40active native nodes include30SQL/3reviews/7compositions;195checks pass. Coverage-only recheck accepted by Jev in4.349s/$0.009040584 but remainsanswers_partially. Original and failed probes preserved; no repeatedpatient/source/actor calls.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -751,10 +751,13 @@
       "artifacts/agere-parent-key-fidelity-2026-10-31/receipt.json",
       "artifacts/agere-local-source-repair-2026-10-31/packet-projection-receipt.json",
       "artifacts/agere-local-source-repair-2026-10-31/integration-receipt.json",
-      "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json"
+      "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/family-source-check/run-receipt.json",
+      "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-input-audit.json",
+      "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-integration-receipt.json"
     ],
-    "remaining_gap": "The narrow source recheck and full-context verifier disagree. Current source grading still mixes prior and revised interpretations;122packets remain deferred. Coverage partial and current-app/package/qualification still pending.",
-    "next_action": "G3: dependency-local verifier candidate passes186focused checks and retained162-packet replay. All122previously deferred packets are reached;151checked/reached with unseen responses explicitunknown,11locallydeferred, overallnot_established. All162provider texts byte-identical to2851195. Run current-code native preflight then one live typed-only source-check resume using existing caches, no actor, reader or training; preserveglobal/opaque/shared barriers and same-patient failure. Auditactualgrade/source/oldledger/usage beforecurrent app/report/save/reopen/package and full-question bottling. Alltenareas retained; scheduler PAUSED.",
+    "remaining_gap": "Current partial native continuation still needs current saved-report/evidence-review work/app/package demonstration.9sourcefield flags and161unknown feedback entries require qualification or explicit unresolved state, not an accepted clinical answer.",
+    "next_action": "G3: complete native coverage view now includes30activeSQL/3documentreviews/7compositions plus computed-prose roots, scoped source-selection counts and exact native provenance references.195checks pass; coverage-only Jev recheck4.349s/$0.009040584 still answers_partially. Preserve last source verdict154of162/8localblocked/9flags/161unknowns; no newpatientcheck/reader/actor replay. First2coverage probes generated3unpriced service-size failures, allretained. Materialize the current partial native continuation through existing saved-report/answer_context/evidence_review paths with exact QA states; verify incomplete answers blockprogrampreparation and source-review work saves/reopens with current scope/policy. Do not blindly restamp an old planner receipt or claim ordinary-controller/full-answer acceptance. Then current app/report/package and qualified prefix/bottling checks; alltenareas retained, scheduler PAUSED. Remaining clinical field-fit qualification is explicit, not forced positive.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2545,17 +2548,25 @@
       "reason": "All122deferred source packets belonged outside the fault family. Global halt obscured43otherpatients. Claude review supports conservative scope guards; offline replay proves allprovidertextunchanged and preservesoverallfailure.",
       "evidence": "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json",
       "scope_impact": "Alltenareas, source/attempts/quarantines and global barriers retained; no threshold change, clinical truth vote or new default model."
+    },
+    {
+      "at": "2026-10-31T19:55:08.550314+00:00",
+      "gate": "G3",
+      "decision": "Represent complete native execution and source-selection scope for coverage, while retaining expanded data in native evidence and separate source checks.",
+      "reason": "SQL-only graph omitted real review/composition work; audit alias omission separately corrected. Initial expanded-data probes failedserviceenvelopes. Structured scope/provenance projection is accepted but actualcoverage remainspartial, so next use explicit source-review work rather than another blind model run.",
+      "evidence": "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-integration-receipt.json",
+      "scope_impact": "Alltenareas, source objects, failed attempts, thresholds and qualification boundaries retained."
     }
   ],
   "unsealed_work": {
-    "status": "local_source_fault_routing_verified_live_pending",
-    "path": "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay",
-    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/family-schedule-replay/receipt.json",
+    "status": "coverage_view_verified_partial_source_review_work_pending",
+    "path": "artifacts/agere-local-source-repair-2026-10-31",
+    "active_receipt": "artifacts/agere-local-source-repair-2026-10-31/coverage-graph-integration-receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
     "remaining_gap": "Recompose the full original native context using the local revision, then check remaining whole-context source dependencies without another broad reader or actor reassembly run. Current app/save/reopen/package and independent qualification remain; no full-question bottling or new default model accepted.",
-    "next_action": "G3: dependency-local verifier candidate passes186focused checks and retained162-packet replay. All122previously deferred packets are reached;151checked/reached with unseen responses explicitunknown,11locallydeferred, overallnot_established. All162provider texts byte-identical to2851195. Run current-code native preflight then one live typed-only source-check resume using existing caches, no actor, reader or training; preserveglobal/opaque/shared barriers and same-patient failure. Auditactualgrade/source/oldledger/usage beforecurrent app/report/save/reopen/package and full-question bottling. Alltenareas retained; scheduler PAUSED."
+    "next_action": "G3: complete native coverage view now includes30activeSQL/3documentreviews/7compositions plus computed-prose roots, scoped source-selection counts and exact native provenance references.195checks pass; coverage-only Jev recheck4.349s/$0.009040584 still answers_partially. Preserve last source verdict154of162/8localblocked/9flags/161unknowns; no newpatientcheck/reader/actor replay. First2coverage probes generated3unpriced service-size failures, allretained. Materialize the current partial native continuation through existing saved-report/answer_context/evidence_review paths with exact QA states; verify incomplete answers blockprogrampreparation and source-review work saves/reopens with current scope/policy. Do not blindly restamp an old planner receipt or claim ordinary-controller/full-answer acceptance. Then current app/report/package and qualified prefix/bottling checks; alltenareas retained, scheduler PAUSED. Remaining clinical field-fit qualification is explicit, not forced positive."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",

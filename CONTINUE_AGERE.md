@@ -1,3 +1,33 @@
+# Current Agere checkpoint - 2026-10-31T19:55:08.550314+00:00
+
+Build ACTIVE,G3; no active provider/training job. Coverage view verified; current source-review work/app/package pending. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3: complete native coverage view now includes30activeSQL/3documentreviews/7compositions plus computed-prose roots, scoped source-selection counts and exact native provenance references.195checks pass; coverage-only Jev recheck4.349s/$0.009040584 still answers_partially. Preserve last source verdict154of162/8localblocked/9flags/161unknowns; no newpatientcheck/reader/actor replay. First2coverage probes generated3unpriced service-size failures, allretained. Materialize the current partial native continuation through existing saved-report/answer_context/evidence_review paths with exact QA states; verify incomplete answers blockprogrampreparation and source-review work saves/reopens with current scope/policy. Do not blindly restamp an old planner receipt or claim ordinary-controller/full-answer acceptance. Then current app/report/package and qualified prefix/bottling checks; alltenareas retained, scheduler PAUSED. Remaining clinical field-fit qualification is explicit, not forced positive.
+
+Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T19:17:57.486880+00:00
+
+Build ACTIVE,G3; patient-local typed verification returned repair normally. No active provider/training job; freeze released. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3: patient-local verification returned repair normally331.379s/392newtypedattempts/$0.956528558,154of162packetschecked,8deferredwithin3sourcefamilies,global_stopFalse. Source/code/oldledger exact;88of480stepreceiptscached. No Claude actor/reader. Wholecoverage remainsanswers_partially;9machine missing-evidence flags and161unknownfeedback entries are notclinicaltruth. Freeze released. Audit/fix shared coverage graph omission: actual successful tools66SQL/3documentreviews/16compositions but gradergets42SQLnodesonly. Reuse native dependencies and computed-prose roots, preserveallattemptsforaudit, then recheck onlycoverage; do notrerunreaders or completedpatientchecks. Reconcile remainingfield-fituncertainty asunresolvedsourceinterpretationthrough existingstate/work, then currentapp/report/save-reopen/package and qualifiedbottling. Alltenareas retained; scheduler PAUSED.
+
+Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T19:09:25.627974+00:00
+
+Build ACTIVE,G3; patient-local source-check continuation RUNNING session1539/PID24034. Productbcda831/source FROZEN. Scheduler PAUSED; alltenareas retained.
+
+Exact next: Observe the single current-code native preflight and patient-local typed source-check continuation(session1539). Productbcda831/source frozen; no product edit or duplicate provider/training job.186checks and retained162packettext compatibility/122previouslyblocked dispatch proof passed. Reuse checked identical inputs; no Claude actor, broad reader or training. Preserveoverallsourcefailure and same-patientblockeddependencies whileindependentpatientfamiliescontinue; global/opaque/sharedfaults stillstop. Onterminalauditactualcoverage/grades/cost/source/oldledger and updatepatient report/currentapp/save-reopen/package. Alltenareas retained; scheduler PAUSED.
+
+Last sealed owner delivery unchanged.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T19:08:19.129143+00:00
 
 Build ACTIVE,G3; no active provider/training job. Patient-local source routing verified offline, live resume pending. Scheduler PAUSED; alltenareas retained.

@@ -1046,16 +1046,80 @@ def source_contract_definitions(result):
     return definitions
 
 
-def execution_review_graph(calls):
-    """Coverage gets the same executed SQL and source meanings as source review."""
-    from .semantic_analyst import successful_sql_calls
-    graph={'nodes':[]};definitions={}
-    for i,c in enumerate(successful_sql_calls(calls)):
-        inherited=source_contract_definitions(c.get('result'));definitions.update(inherited)
-        params={'query':(c.get('input')or{}).get('sql')or c['sql']}
+def execution_review_graph(calls,answer=None):
+    """Describe actual native dependencies, rather than SQL alone, for coverage.
+
+    The complete attempt journal remains native. This is a verifier reading
+    view, not a new executable plan or source/clinical acceptance receipt.
+    """
+    roots=[]
+    if answer:
+        root=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
+        if root:roots.append(root)
+        for prose in answer.get('computed_prose')or[]:
+            for source in (prose.get('sources')or{}).values():
+                view=(source.get('binding')or{}).get('result_view')
+                if view:roots.append(view)
+    active=native_result_dependencies(calls,list(dict.fromkeys(roots)))
+    native_views={c['result']['result_view']for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')}
+    graph={'schema':'executed-native-review-graph/2','nodes':[],
+        'final_result_view':roots[0]if roots else None,'dependency_roots':list(dict.fromkeys(roots))};definitions={};omitted=0;failed=0
+    selection_definitions={}
+    def coverage_manifest(manifest):
+        from ...contracts import digest
+        projected=[]
+        for row in manifest:
+            row=dict(row);selection=row.get('source_selection')
+            if isinstance(selection,dict):
+                shared={k:selection[k]for k in ('queries','registered_class_members')if k in selection}
+                key=digest(shared);selection_definitions[key]=shared
+                scope={k:v for k,v in selection.items()if k not in ('sources','queries','registered_class_members')}
+                scope['selection_definition_key']=key
+                if 'sources'in selection:
+                    sources=selection['sources'];scope['native_source_inventory']={
+                        'digest':digest(sources),'records':len(sources)if isinstance(sources,list)else None,
+                        'scope':'Complete source inventory retained in the native review; coverage receives exact scope/counts, not duplicate source records.'}
+                row['source_selection']=scope
+            projected.append(row)
+        return projected
+    for i,c in enumerate(calls):
+        result=c.get('result')
+        if not isinstance(result,dict)or result.get('error'):failed+=1;continue
+        view=result.get('result_view')
+        if active is not None and view and view not in active:omitted+=1;continue
+        name=c.get('name');params=dict(c.get('input')or{})
+        declared=params.get('sql');query=result.get('executed_query')or c.get('sql')or(declared if name=='query_sql'and view else None)
+        if query:
+            bindings=[v for v in native_views if declared and re.search(r'(?<![A-Za-z0-9_])'+re.escape(v)+r'(?![A-Za-z0-9_])',declared)]
+            # Expanded TEMP views inline complete JSON rows. Coverage needs
+            # the declared computation and exact bindings, while full values
+            # remain in native results and the separate source checks.
+            params={'query':declared if bindings else query}
+            if bindings:
+                from ...contracts import digest
+                params['native_result_bindings']=sorted(bindings)
+                params['native_executable_provenance']={'query_digest':digest(query),'characters':len(query),
+                    'scope':'Complete expanded SQL and bound rows retained natively. Declared query and native result bindings shown here; no source acceptance inherited.'}
+            elif declared and declared!=query:params['requested_query']=declared
+            if name and name!='query_sql':params['native_tool']=name
+            operation='sql'
+        elif name in ('compose_table','review_documents','ask_agere','execute_metric','execute_analysis')and view:
+            operation=name
+        else:continue
+        inherited=source_contract_definitions(result);definitions.update(inherited)
         if inherited:params['source_definition_keys']=list(inherited)
-        graph['nodes'].append({'id':f'query_{i}','operation':'sql','parameters':params})
+        output={k:result[k]for k in ('result_view','columns','table_rows','truncated','assembly',
+            'coverage','candidate_observation_review','source_scope','method')if k in result}
+        if operation=='review_documents'and isinstance(output.get('coverage'),list):
+            from ...contracts import digest
+            output['native_coverage_manifest_digest']=digest(output['coverage'])
+            output['coverage']=coverage_manifest(output['coverage'])
+        if isinstance(result.get('rows'),list):output['computed_rows']=len(result['rows'])
+        graph['nodes'].append({'id':f'tool_{i}','operation':operation,'parameters':params,'output':output})
     if definitions:graph['executed_source_definitions']=definitions
+    if selection_definitions:graph['source_selection_definitions']=selection_definitions
+    graph['history']={'failed_attempts_retained_natively':failed,'successful_results_outside_active_dependencies':omitted,
+        'unknown_dependency_scope':active is None,'full_attempt_journal_retained':True}
     return graph
 
 
@@ -1148,7 +1212,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     if contradicted:
         return {**assessment,'status':'repair','feedback':'Quantitative meaning check failed: '+json.dumps(
             {k:numeric['claims'][k] for k in contradicted})+'. Recompute the named quantities from their exact source columns/categories using tools; correct wrong role labels. Do not reword an overlapping group as an exclusive group.'}
-    graph = execution_review_graph(calls)
+    graph = execution_review_graph(calls,answer)
     from .decision_context import prompt_block
     from .clinical_definitions import describe
     from .drug_classes import GROUPS

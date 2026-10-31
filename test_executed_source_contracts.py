@@ -1,5 +1,5 @@
 """Executed source meanings reach verification without changing SQL or authority."""
-import json,sqlite3,tempfile,unittest
+import copy,json,sqlite3,tempfile,unittest
 from pathlib import Path
 from clinical_core.agere.clinical.semantic_analyst import SemanticWarehouse
 from clinical_core.agere.clinical import backstop_agent as B
@@ -75,6 +75,74 @@ class SourceContracts(unittest.TestCase):
             'source_contracts':{**out['source_contracts'],'relations':[{'name':'unrelated_source','meaning':'Unrelated context'}]}}})
         after={p['id']:p['text']for p in B.support_packets('List living people',answer,calls,[],'2030-05-27')}
         self.assertEqual(before['patient_A'],after['patient_A']);self.assertNotEqual(before['summary'],after['summary'])
+
+
+class CompleteNativeCoverageGraph(unittest.TestCase):
+    def calls(self):
+        return [
+            {'name':'query_sql','input':{'sql':'SELECT * FROM patient'},'result':{
+                'result_view':'base','executed_query':'SELECT * FROM living_patient','columns':['patient_id'],'rows':[{'patient_id':'A'}]}},
+            {'name':'review_documents','input':{'patient_query_sql':'SELECT patient_id FROM base',
+                'questions':{'reason':{'question':'Why was this service deferred?'}},'source_scope':'focused'},
+                'result':{'result_view':'notes','columns':['patient_id','review_json'],'rows':[{'patient_id':'A','review_json':'{}'}],
+                    'coverage':[{'patient_id':'A','unique_whole_documents':2,'absence_established':False}]}},
+            {'name':'compose_table','input':{'base':'base','keys':['patient_id'],
+                'joins':[{'result':'notes','as':'source_observations','on':{'patient_id':'patient_id'},'mode':'collect'}]},
+                'result':{'result_view':'final','columns':['patient_id','source_observations'],'rows':[{'patient_id':'A'}],
+                    'assembly':{'base_result_view':'base','keys':['patient_id']}}},
+            {'name':'query_sql','input':{'sql':'SELECT count(*) AS n FROM base'},
+                'result':{'result_view':'metrics','columns':['n'],'rows':[{'n':1}]}},
+            {'name':'query_sql','input':{'sql':'SELECT * FROM unrelated'},'sql':'SELECT * FROM unrelated',
+                'result':{'result_view':'old_attempt','columns':['other'],'rows':[]}},
+            {'name':'query_sql','input':{'sql':'SELECT invented'},'sql':'SELECT invented','result':{'error':'No such column'}}]
+
+    def test_source_reviews_composition_and_prose_roots_are_visible_without_replaying_history(self):
+        calls=self.calls();before=copy.deepcopy(calls)
+        answer={'table_binding':{'result_view':'final'},'computed_prose':[{'sources':{
+            'count':{'binding':{'result_view':'metrics','row':0,'column':'n'}}}}]}
+        graph=B.execution_review_graph(calls,answer);nodes=graph['nodes']
+        self.assertEqual([n['operation']for n in nodes],['sql','review_documents','compose_table','sql'])
+        self.assertEqual(nodes[0]['parameters']['query'],'SELECT * FROM living_patient')
+        self.assertEqual(nodes[0]['parameters']['requested_query'],'SELECT * FROM patient')
+        self.assertEqual(nodes[1]['parameters'],calls[1]['input'])
+        self.assertFalse(nodes[1]['output']['coverage'][0]['absence_established'])
+        self.assertEqual(nodes[2]['output']['assembly'],calls[2]['result']['assembly'])
+        self.assertEqual(set(graph['dependency_roots']),{'final','metrics'})
+        self.assertEqual(graph['history']['failed_attempts_retained_natively'],1)
+        self.assertEqual(graph['history']['successful_results_outside_active_dependencies'],1)
+        self.assertEqual(calls,before)
+
+    def test_unknown_root_keeps_every_successful_native_dependency(self):
+        graph=B.execution_review_graph(self.calls(),{'table_from_tool':'missing'})
+        self.assertTrue(graph['history']['unknown_dependency_scope'])
+        self.assertEqual(len(graph['nodes']),5)
+        self.assertTrue(all('invented'not in n['parameters'].get('query','')for n in graph['nodes']))
+
+    def test_inline_native_rows_keep_exact_provenance_without_duplicate_coverage_payload(self):
+        calls=self.calls();expanded="SELECT * FROM json_each('[{\"source_text\":\"exact native value\"}]')"
+        calls[3]['result']['executed_query']=expanded
+        graph=B.execution_review_graph(calls,{'table_from_tool':'metrics'})
+        node=next(n for n in graph['nodes']if n['output']['result_view']=='metrics')
+        self.assertEqual(node['parameters']['query'],calls[3]['input']['sql'])
+        self.assertEqual(node['parameters']['native_result_bindings'],['base'])
+        self.assertEqual(node['parameters']['native_executable_provenance']['query_digest'],digest(expanded))
+        self.assertEqual(calls[3]['result']['executed_query'],expanded)
+        self.assertNotIn('exact native value',json.dumps(graph))
+
+    def test_full_retrieval_inventory_keeps_scope_counts_and_a_native_reference(self):
+        calls=self.calls();sources=[{'record_id':'source-A','metadata':'inventory bytes'}, {'record_id':'source-B'}]
+        selection={'queries':{'reason':'Exact question'},'registered_class_members':{},'sources':sources,
+            'inventory_documents':12,'selected_documents':2,'field_documents':{'reason':2},
+            'field_applicability':{'reason':True},'complete_chart_review':False,'absence_established':False}
+        calls[1]['result']['coverage'][0]['source_selection']=selection;before=copy.deepcopy(calls)
+        graph=B.execution_review_graph(calls,{'table_from_tool':'final'})
+        node=next(n for n in graph['nodes']if n['operation']=='review_documents')
+        scope=node['output']['coverage'][0]['source_selection']
+        self.assertEqual(scope['field_documents'],{'reason':2});self.assertFalse(scope['absence_established'])
+        self.assertEqual(scope['native_source_inventory']['digest'],digest(sources))
+        self.assertEqual(scope['native_source_inventory']['records'],2)
+        self.assertEqual(graph['source_selection_definitions'][scope['selection_definition_key']]['queries'],selection['queries'])
+        self.assertNotIn('inventory bytes',json.dumps(graph));self.assertEqual(calls,before)
 
 
 if __name__=='__main__':unittest.main()
