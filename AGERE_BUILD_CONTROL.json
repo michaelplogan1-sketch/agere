@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T00:50:08.281161+00:00",
+  "updated_at": "2026-10-31T03:41:53.776061+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -379,11 +379,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_span_bottling_scoped_delivery_sealed",
+    "kind": "registered_source_contract_verified_missing_dimensions_running",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Current source-bound named patient review, faithful four-format exports, packaged planning/knowledge identity and working installed internal-review/recovery path.",
-    "measured_failure_reduction": "Unseen B+C combination: prior whole-request baseline1call/5.201768s/$0.00113052, source bottling0calls/0.001965s with identical findings. Actual ordinary source-tool warm replay0calls/17.812ms.166offlinechecks pass; current archive/recovery1059.259580s passed, including archived zero-provider source replay and57disposable internal review items. No clinical or whole-workload superiority inferred.",
+    "measured_failure_reduction": "Exact ordinary native group objection reproduced and fixed via lexical CTE/subquery lineage; saved57patienttrace now0groupissues in0.444s,0providers. Entity preflight rejects actual gdmt_dose request in2.25ms before source/model access. Two actualpatient typed comparison preserves33findings while scheduled2936fieldblocks become387modeleligible+2549explicitnativeunknowns and47batches become7; cached/offline comparison, not measured live savings. Full ordinary request remains partial/unverified; dose semantic task contract, final source support and current clinician-role wording require repair. All independent qualification/deployment dependencies remain.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -663,10 +663,28 @@
       "artifacts/agere-g5-source-clock-2026-10-30/batch-transfer-comparison/run-receipt.json",
       "artifacts/agere-g5-source-clock-2026-10-30/all-attempt-accounting.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/source-bottling-current-release/installed-recovery-receipt.json",
-      "artifacts/agere-full-stack-rerun-2026-10-30/source-bottling-current-release/durable-manifest.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/source-bottling-current-release/durable-manifest.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/legacy-lineage-audit/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/legacy-target-cases/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/legacy-default-workflow/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/legacy-target-cases/regressions-v1.log",
+      "artifacts/agere-g5-source-clock-2026-10-30/ordinary-question-current-v1/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/ordinary-question-current-v1/audit/summary.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/native-group-lineage-repair/before.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/native-group-lineage-repair/after.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/source-routing-preflight-v3/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/ordinary-accounting/all-attempt-accounting.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/dose-contract-recheck-v1/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/dose-contract-recheck-v1/accounting-correction.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-native-recomposition-v2/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-final-source-review-v1/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-native-recomposition-v3/run-receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/current-native-recomposition-v3/fill-source-audit.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/registered-class-source-routing-v2/receipt.json",
+      "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/protocol.json"
     ],
-    "remaining_gap": "Full matched workload/reviewer economics and independent source-family/clinical qualification remain open. No new weights or clinical labels. Check possible legacy-wire cache migration loss offline before any further inference.",
-    "next_action": "Measure offline whether previously validated complete-source frontier readings become cache misses solely after removal of the old ignored max_tokens wire option. Use existing original source/question scopes and read-only ledgers, preserve raw request lineage and failed keys, and do not dispatch or change code before a real gap is reproduced. If exact semantic/transport compatibility is demonstrated, bottle compatible readings through the existing source store; then measure the ordinary original-question flow and full attempt accounting. Keep independent role/clinical/outcome/deployment qualifications explicit and all ten areas.",
+    "remaining_gap": "Committed a2a050d (212checks) connects native class/group/brand knowledge to source candidate retrieval and entity binding, supplies exact registered member classes to independent typed/axis/frontier states, and binds that meaning into source reuse keys. Same57sourceinventory4387docs: minimalGDMT-name retrieval76\u21921408candidates, all1332additionalcandidateshaveactualwhole-text registered links; not clinical recall or positive facts. Three original missing source dimensions now run alone. Prior current-native/source review remains partial with six uncertain packets, all59checked/no sourcegaps/no diagnosedfaults. Latest sealed fd576b1archive/staticv7 inspection retained;8890stopped.",
+    "next_action": "Observe owned source-only completion session23498 to terminal without changing pinned product a2a050d or source. It asks three independent missing regimen/titration/individual-tolerated-maximum questions across all57originalpatients, using registry-bound native candidate retrieval, typed decisions, residual subscription span repair and warm reuse. No original four-field reason review, planner or population math is repeated. Preserve every attempt/fulltext and stop provider work on actual subscription limit; continue offline work if limited. On return source-audit findings and unknowns, merge through existing typed assertion/native composition, recheck only changed dependencies, render readable current four-format report, refresh candidate/package and verified private draft; keep all ten areas and independent qualifications.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -675,7 +693,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Both owned runs terminal; process inspection confirms no runner. Source unfrozen; scheduler PAUSED.",
+    "coordination": "Source-only completion active on pinned a2a050d; freeze product/source. All preceding provider/native jobs terminal. Candidate8890stopped; schedulerPAUSED; fd576b1 recovery retained.",
     "remaining_blockers": [
       "52284fe repairs are committed candidates. Offline authored native correction saves/reopens57patients and109-pagePDF, with0newprovider calls,70detected original scope issues\u21920in corrected composition,17GDMT+72other dose objects,152machinefindings and106datedroles. This does not demonstrate the ordinary controller completes repair/delivery itself. Four prior machine source-support dependencies, independent source/clinical/model qualification, justified learning promotion and current installed recovery remain open."
     ],
@@ -736,16 +754,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-31T01:36:44.244291+00:00",
+    "at": "2026-10-31T02:00:29.418378+00:00",
     "workflow_change": "Exact source-bound frontier observations now survive changed batching and field aliases. Confident singular-source feedback quarantines only that reading; current57patient report and isolated app retain every native value and partial status.",
     "unsealed_work": {
-      "status": "legacy_wire_cache_measurement_pending",
+      "status": "complete_missing_regimen_source_dimensions_running",
       "path": "artifacts/agere-g5-source-clock-2026-10-30",
-      "remaining_gap": "Full matched workload/reviewer economics and independent source-family/clinical qualification remain open. No new weights or clinical labels. Check possible legacy-wire cache migration loss offline before any further inference.",
-      "next_action": "Measure offline whether previously validated complete-source frontier readings become cache misses solely after removal of the old ignored max_tokens wire option. Use existing original source/question scopes and read-only ledgers, preserve raw request lineage and failed keys, and do not dispatch or change code before a real gap is reproduced. If exact semantic/transport compatibility is demonstrated, bottle compatible readings through the existing source store; then measure the ordinary original-question flow and full attempt accounting. Keep independent role/clinical/outcome/deployment qualifications explicit and all ten areas.",
-      "source_frozen_for_run": false,
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/source-bottling-current-release/delivery-receipt.json",
-      "authorization": "Mike explicitly authorizes autonomous MVP work and private pushes; no repeated routine approvals. Existing source and external-action boundaries remain."
+      "remaining_gap": "Committed a2a050d (212checks) connects native class/group/brand knowledge to source candidate retrieval and entity binding, supplies exact registered member classes to independent typed/axis/frontier states, and binds that meaning into source reuse keys. Same57sourceinventory4387docs: minimalGDMT-name retrieval76\u21921408candidates, all1332additionalcandidateshaveactualwhole-text registered links; not clinical recall or positive facts. Three original missing source dimensions now run alone. Prior current-native/source review remains partial with six uncertain packets, all59checked/no sourcegaps/no diagnosedfaults. Latest sealed fd576b1archive/staticv7 inspection retained;8890stopped.",
+      "next_action": "Observe owned source-only completion session23498 to terminal without changing pinned product a2a050d or source. It asks three independent missing regimen/titration/individual-tolerated-maximum questions across all57originalpatients, using registry-bound native candidate retrieval, typed decisions, residual subscription span repair and warm reuse. No original four-field reason review, planner or population math is repeated. Preserve every attempt/fulltext and stop provider work on actual subscription limit; continue offline work if limited. On return source-audit findings and unknowns, merge through existing typed assertion/native composition, recheck only changed dependencies, render readable current four-format report, refresh candidate/package and verified private draft; keep all ten areas and independent qualifications.",
+      "source_frozen_for_run": true,
+      "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+      "authorization": "Explicit autonomous MVP/synthetic/provider/private-branch approvals persist; no repeated routine approval. Existing source, external-action and subscription boundaries unchanged."
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -809,7 +827,14 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "complete_missing_regimen_source_dimensions",
+        "session": 23498,
+        "receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+        "source_frozen": true
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2310,16 +2335,28 @@
         "artifacts/agere-g5-source-clock-2026-10-30/blind-source-axes/comparison.json"
       ],
       "scope_impact": "Existing modular stack and alltenareas retained. Cache is unverified machine observation, not clinical truth or new trained weights. Previous eb3929a recovery preserved; candidate8890stopped before edits, primary untouched."
+    },
+    {
+      "at": "2026-10-31T03:26:35.198163+00:00",
+      "gate": "G5",
+      "decision": "The ordinary38m38s run exposed a false native CTE membership objection and an invalid gdmt_dose medication entity. Fix existing shared lineage/admission/routing rather than buying another whole-source run. Complete current-source/compiler revalidation recovers all84unchanged legitimate source readings without a paid reread, and the8old coupled dose candidates are rechecked as16independent regimen/reason decisions. No whole-request learned selection or source/clinical acceptance gate was relaxed.",
+      "evidence": [
+        "artifacts/agere-g5-source-clock-2026-10-30/native-group-lineage-repair/after.json",
+        "artifacts/agere-g5-source-clock-2026-10-30/source-routing-preflight-v3/run-receipt.json",
+        "artifacts/agere-g5-source-clock-2026-10-30/dose-contract-recheck-v1/accounting-correction.json",
+        "artifacts/agere-g5-source-clock-2026-10-30/current-native-recomposition-v2/run-receipt.json"
+      ],
+      "scope_impact": "All57originalpatients and alltenacceptanceareas retained. No weights/threshold promotion, new domain handler, whole-source reread, protected labels or external publication. fd576b1rollback retained."
     }
   ],
   "unsealed_work": {
-    "status": "source_span_bottling_in_progress",
+    "status": "complete_missing_regimen_source_dimensions_running",
     "path": "artifacts/agere-g5-source-clock-2026-10-30",
-    "remaining_gap": "Per-source frontier decisions are not reused across changed provider batches; unsupported model-state alternatives showed no justified verification gain. Implement precise operational reuse without changing semantic acceptance.",
-    "next_action": "Implement source/field-bound frontier span-repair observation reuse in existing span_repair module, with exact full-source/question/span/model/policy guards and scoped quarantine from typed feedback. Keep unknowns unknown, ledger provenance and final support checks. Qualify changed-neighbor/added-field/changed-source/correction and cold-vs-warm execution with source-faithful deliverables; then rebuild current candidate and preserve all attempts. Both verifier-contract alternatives remain unpromoted; no new weights or clinical labels. G5/alltenareas retained.",
-    "source_frozen_for_run": false,
-    "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/blind-source-axes/run-receipt.json",
-    "authorization": "Mike explicitly authorizes autonomous MVP work and private pushes; no repeated routine approvals. Existing source and external-action boundaries remain."
+    "remaining_gap": "Committed a2a050d (212checks) connects native class/group/brand knowledge to source candidate retrieval and entity binding, supplies exact registered member classes to independent typed/axis/frontier states, and binds that meaning into source reuse keys. Same57sourceinventory4387docs: minimalGDMT-name retrieval76\u21921408candidates, all1332additionalcandidateshaveactualwhole-text registered links; not clinical recall or positive facts. Three original missing source dimensions now run alone. Prior current-native/source review remains partial with six uncertain packets, all59checked/no sourcegaps/no diagnosedfaults. Latest sealed fd576b1archive/staticv7 inspection retained;8890stopped.",
+    "next_action": "Observe owned source-only completion session23498 to terminal without changing pinned product a2a050d or source. It asks three independent missing regimen/titration/individual-tolerated-maximum questions across all57originalpatients, using registry-bound native candidate retrieval, typed decisions, residual subscription span repair and warm reuse. No original four-field reason review, planner or population math is repeated. Preserve every attempt/fulltext and stop provider work on actual subscription limit; continue offline work if limited. On return source-audit findings and unknowns, merge through existing typed assertion/native composition, recheck only changed dependencies, render readable current four-format report, refresh candidate/package and verified private draft; keep all ten areas and independent qualifications.",
+    "source_frozen_for_run": true,
+    "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+    "authorization": "Explicit autonomous MVP/synthetic/provider/private-branch approvals persist; no repeated routine approval. Existing source, external-action and subscription boundaries unchanged."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2347,5 +2384,12 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": []
+  "active_jobs": [
+    {
+      "kind": "complete_missing_regimen_source_dimensions",
+      "session": 23498,
+      "receipt": "artifacts/agere-g5-source-clock-2026-10-30/complete-regimen-source-v1/run-receipt.json",
+      "source_frozen": true
+    }
+  ]
 }
