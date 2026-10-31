@@ -1,3 +1,11 @@
+# Current Agere checkpoint - 2026-10-31T11:23:00.005908+00:00
+
+Build ACTIVE,G5;soleowner;schedulerPAUSED. OWNED RUN ACTIVE: artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json. PID82315/session7958. SOURCE/PRODUCT2a608b4 FROZEN. Do not duplicate or edit product. Latest sealed delivery is guarded-download performance; curated73page PDF remains ready. Alltenareas retained; no clinical/MVP qualification claim.
+
+Exact next: Observe the owned ordinary full-question run at artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json to terminal. Product2a608b4 and original synthetic source are FROZEN; do not duplicate the job or edit product code. Session7958. Preserve all provider/cache/failed attempts and original57patient scope. On terminal result audit native/source meaning, component contribution, cost/latency, bottling eligibility and all report formats; do not call a partial result clinical/MVP acceptance. Continue offline read-only accounting/qualification inspection only while the run is active.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T11:19:39.754751+00:00
 
 Build ACTIVE,G5;soleowner;schedulerPAUSED. Current2a608b4 performance increment sealed;73page curated patient PDF unchanged and ready. Source/model qualification incomplete. No active owned provider/training job before starting the new receipt; do not duplicate any running run.

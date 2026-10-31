@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Run the exact original full question once through the ordinary compose path on current2a608b4, existing caches allowed, to measure the combined post-7949 native-group/registered-entity/source-reuse/typed-feedback and deliverable changes end to end. No prior draft or recovery prefix injected. Preserve every attempt/source/partial result and original57patient scope; no clinical acceptance or cold-cost claim. Keep product/source frozen during the owned run; inspect receipts first and do not duplicate it. Then audit actual source scope, all component contributions, latency/cost, bottling eligibility and current report parity before deciding the next measured repair. Independent source/model/clinical qualification remains separate and alltenareas retained.",
+  "active_work": "Observe the owned ordinary full-question run at artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json to terminal. Product2a608b4 and original synthetic source are FROZEN; do not duplicate the job or edit product code. Session7958. Preserve all provider/cache/failed attempts and original57patient scope. On terminal result audit native/source meaning, component contribution, cost/latency, bottling eligibility and all report formats; do not call a partial result clinical/MVP acceptance. Continue offline read-only accounting/qualification inspection only while the run is active.",
   "latest_delivery": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_receipt": "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json",
   "owned_server_pid": null,
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-29T11:55:57.347665+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-10-31T11:19:39.754751+00:00",
+  "latest_checkpoint": "2026-10-31T11:23:00.005908+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/reviews/2026-10-26-CTO-final.md",
@@ -30,12 +30,14 @@
   "last_observed_server_session": 2376,
   "server_status": "Current isolated8890 ready on7e004ca with the curated73page report; primary8885/older8888 unchanged; scheduler PAUSED.",
   "unsealed_work": {
-    "status": "current_whole_question_measurement_preparing",
-    "path": "artifacts/agere-clinical-review-curation-2026-10-31",
-    "source_frozen_for_run": false,
-    "active_receipt": "artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json",
-    "remaining_gap": "Whole ordinary question performance and source/model qualification remain unmeasured on the combined current fixes; original38m38s run preceded the native-group/routing/source-feedback changes.",
-    "next_action": "Run the exact original full question once through the ordinary compose path on current2a608b4, existing caches allowed, to measure the combined post-7949 native-group/registered-entity/source-reuse/typed-feedback and deliverable changes end to end. No prior draft or recovery prefix injected. Preserve every attempt/source/partial result and original57patient scope; no clinical acceptance or cold-cost claim. Keep product/source frozen during the owned run; inspect receipts first and do not duplicate it. Then audit actual source scope, all component contributions, latency/cost, bottling eligibility and current report parity before deciding the next measured repair. Independent source/model/clinical qualification remains separate and alltenareas retained."
+    "status": "running_current_ordinary_whole_question",
+    "path": "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1",
+    "source_frozen_for_run": true,
+    "active_receipt": "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json",
+    "pid": 82315,
+    "session": 7958,
+    "remaining_gap": "Current ordinary integrated performance/source result not yet observed; report and download engineering deliveries sealed.",
+    "next_action": "Observe the owned ordinary full-question run at artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json to terminal. Product2a608b4 and original synthetic source are FROZEN; do not duplicate the job or edit product code. Session7958. Preserve all provider/cache/failed attempts and original57patient scope. On terminal result audit native/source meaning, component contribution, cost/latency, bottling eligibility and all report formats; do not call a partial result clinical/MVP acceptance. Continue offline read-only accounting/qualification inspection only while the run is active."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
@@ -286,14 +288,13 @@
   },
   "active_jobs": [
     {
-      "kind": "native_fill_evidence_completion",
-      "status": "returned",
+      "kind": "current_ordinary_whole_question_measurement",
+      "status": "running",
+      "pid": 82315,
+      "session": 7958,
       "source_frozen": true,
-      "commit": "387df4f",
-      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/native-fill-evidence-completion/run-receipt.json",
-      "scope": "Preserve original ordinary57-patient cells, append received drug identities/dates/source-fill rows through existing SQL/compose tools, independently verify228pillar cells, rebuild current partial reports and recheck only three previously diagnosed dependencies. No Claude callback or model promotion.",
-      "pid": 32556,
-      "session": 41147
+      "commit": "2a608b4",
+      "receipt": "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json"
     }
   ],
   "overnight_completed_jobs": {
