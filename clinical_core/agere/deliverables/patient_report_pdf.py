@@ -57,12 +57,12 @@ def _render_clinical(context,output,cards,references):
   pdfmetrics.registerFont(TTFont(name,str(font)))
  navy=HexColor('#173442');teal=HexColor('#177D79');muted=HexColor('#52636E');rule=HexColor('#DCE5E8');pale=HexColor('#F1F6F7');amber=HexColor('#8A5917')
  styles={
-  'body':ParagraphStyle('ClinicalBody',fontName='AgereSans',fontSize=10.2,leading=14.2,textColor=navy,spaceAfter=6),
-  'small':ParagraphStyle('ClinicalSmall',fontName='AgereSans',fontSize=8.7,leading=11.8,textColor=muted,spaceAfter=4),
+  'body':ParagraphStyle('ClinicalBody',fontName='AgereSans',fontSize=10.2,leading=14.2,textColor=navy,spaceAfter=5),
+  'small':ParagraphStyle('ClinicalSmall',fontName='AgereSans',fontSize=8.7,leading=11.8,textColor=muted,spaceAfter=3),
   'title':ParagraphStyle('ClinicalTitle',fontName='AgereBold',fontSize=30,leading=34,textColor=navy,spaceAfter=14),
-  'name':ParagraphStyle('ClinicalName',fontName='AgereBold',fontSize=23,leading=27,textColor=navy,spaceAfter=6),
-  'head':ParagraphStyle('ClinicalHeading',fontName='AgereBold',fontSize=12,leading=16,textColor=teal,spaceBefore=10,spaceAfter=5,keepWithNext=True),
-  'label':ParagraphStyle('ClinicalLabel',fontName='AgereBold',fontSize=9.2,leading=12.5,textColor=navy,spaceAfter=4,keepWithNext=True),
+  'name':ParagraphStyle('ClinicalName',fontName='AgereBold',fontSize=23,leading=27,textColor=navy,spaceAfter=4),
+  'head':ParagraphStyle('ClinicalHeading',fontName='AgereBold',fontSize=12,leading=16,textColor=teal,spaceBefore=8,spaceAfter=4,keepWithNext=True),
+  'label':ParagraphStyle('ClinicalLabel',fontName='AgereBold',fontSize=9.2,leading=12.5,textColor=navy,spaceAfter=3,keepWithNext=True),
   'quote':ParagraphStyle('ClinicalQuote',fontName='AgereSans',fontSize=9.5,leading=13.2,textColor=navy,spaceAfter=9,leftIndent=9,allowWidows=0,allowOrphans=0),
   'notice':ParagraphStyle('ClinicalNotice',fontName='AgereBold',fontSize=9.2,leading=12.5,textColor=amber,spaceAfter=4),
  }
@@ -80,7 +80,7 @@ def _render_clinical(context,output,cards,references):
   return (D(dates[0])+' to '+D(dates[-1]) if len(dates)>1 else D(dates[0])) if dates else 'Date not recorded'
  def box(rows,widths):
   t=Table(rows,colWidths=widths,hAlign='LEFT')
-  t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,-1),pale),('LEFTPADDING',(0,0),(-1,-1),11),('RIGHTPADDING',(0,0),(-1,-1),11),('TOPPADDING',(0,0),(-1,-1),10),('BOTTOMPADDING',(0,0),(-1,-1),7)]))
+  t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,-1),pale),('LEFTPADDING',(0,0),(-1,-1),11),('RIGHTPADDING',(0,0),(-1,-1),11),('TOPPADDING',(0,0),(-1,-1),8),('BOTTOMPADDING',(0,0),(-1,-1),6)]))
   return t
  def team_text(c,role):
   team=next((t for t in c['care_team'] if t['role']==role),{})
@@ -156,7 +156,7 @@ def _render_clinical(context,output,cards,references):
     doses.append(text)
    matrix.append([P(therapy['label'],'label'),P(fill_text,'small'),P('\n'.join(doses)or'Current dose unconfirmed','small')])
   story.append(P('Medication review','head'));t=Table(matrix,colWidths=[135,205,200],repeatRows=1)
-  t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),pale),('LINEBELOW',(0,0),(-1,-1),.4,rule),('TOPPADDING',(0,0),(-1,-1),7),('BOTTOMPADDING',(0,0),(-1,-1),7)]));story.append(t)
+  t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),pale),('LINEBELOW',(0,0),(-1,-1),.4,rule),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]));story.append(t)
   tolerance='Dated tolerance account follows; the current individual maximum needs confirmation'if c['individual_tolerance_statements']else c['individual_max_tolerated_dose']
   story.append(P('Individual maximum tolerated dose: '+str(tolerance)+'.','small'))
   # One dated clinical account can support several fields. Print it once with
