@@ -169,7 +169,6 @@ def _render_clinical(context,output,cards,references):
     a=accounts.setdefault(key,{'text':excerpt,'labels':[],'groups':[]})
     if label not in a['labels']:a['labels'].append(label)
     a['groups'].append(g)
-  explanations_start=len(story)
   story.append(P('Documented explanations to discuss','head'))
   if not accounts:story.append(P('No explicit non-use or titration explanation was returned in the reviewed source scope. Clarify the reason with the patient and responsible clinician.'))
   else:
@@ -184,9 +183,6 @@ def _render_clinical(context,output,cards,references):
    qualifications=sorted({human(g.get('polarity')) for g in a['groups']if g.get('polarity')not in [None,'affirmed']})
    if qualifications:account.append(P('The source account is '+', '.join(qualifications)+'.','small'))
    account.append(P(a['text'],'quote'));story.append(KeepTogether(account))
-  # Keep short explanation sections intact. Longer sections may flow onto
-  # further named patient pages, without stranding one short account at the end.
-  story[explanations_start:]=[KeepTogether(story[explanations_start:])]
  if references:
   story.extend([PageBreak(),P('Clinical reference sources','title')])
   for ref in references:story.extend([P(ref['title']),P(ref['url'],'small')])
