@@ -217,7 +217,7 @@ def prior_source_candidates(path,documents,questions,*,patient_id=None):
 
 def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidates=None,field_documents=None):
     from . import system_one
-    from .document_review import validate_questions,question_text,relation_finding,RELATION_RULES
+    from .document_review import validate_questions,question_text,relation_finding,RELATION_RULES,entity_definition
     validate_questions(questions)
     if judge is None:
         order=[p.strip()for p in os.environ.get('AGERE_DOCUMENT_TYPED_ORDER','jev,perplexity').split(',')if p.strip()]
@@ -261,6 +261,7 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
         for i,(field,instruction,span,doc)in enumerate(batch):
             source_key=digest([doc['record_id'],doc['date'],doc['text']])
             named['f'+str(i)]={'type':'choice','instructions':{'question':question_text(instruction),'target_block':span['text'],
+                **({'native_entity_contract':entity_definition(instruction)}if entity_definition(instruction)is not None else {}),
                 **({'relation_binding':instruction,
                     'binding_rule':'A finding must concern this exact entity AND relation AND subject, including every condition in the question. A reason about a different drug/class, service, person or contract is irrelevant. An explicitly unknown or undocumented reason does not affirm a causal relation; preserve that uncertainty or negation. A deferral pending verification does not establish intolerance, a current dose or a tolerated maximum. The record patient association is provenance, not proof that every statement concerns the patient: general organization/contract terms concern source_entity unless the text applies them to this patient. Entity mentions alone do not establish the requested relationship. Resolve anaphora using the whole source; retain unknown if attribution is ambiguous.'} if isinstance(instruction,dict) else {}),
                 'source_record_id':doc['record_id'],'source_context_id':ids[source_key],

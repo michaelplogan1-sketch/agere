@@ -62,12 +62,12 @@ def observation_store(path):
 
 def observation_key(pid,as_of,question,doc,item,model):
     from . import document_review
-    from .document_review import AXES,RELATION_RULES
+    from .document_review import AXES,RELATION_RULES,entity_definition
     # Batch neighbors, transport decision IDs and field aliases are not source
     # semantics. The complete question, document and exact offsets still bind.
     return digest([CACHE_VERSION,pid,as_of,question,doc,
         {k:item.get(k)for k in ('quote','span_start','span_end')},model,
-        RELATION_RULES,SYSTEM,AXES,digest(Path(model_policy.__file__).read_text()),
+        RELATION_RULES,SYSTEM,AXES,entity_definition(question),digest(Path(model_policy.__file__).read_text()),
         digest(Path(document_review.__file__).read_text()),digest(Path(__file__).read_text())])
 
 
@@ -198,7 +198,7 @@ def batches(unresolved,documents,questions):
 
 
 def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=None):
-    from .document_review import parsed,AXES,relation_finding,RELATION_RULES
+    from .document_review import parsed,AXES,relation_finding,RELATION_RULES,entity_definition
     models=(model_policy.HAIKU,model_policy.SONNET) if models is None else tuple(models)
     if not models or any(model not in (model_policy.HAIKU,model_policy.SONNET)for model in models):
         raise ValueError('Source reader models must use the existing question model families')
@@ -229,6 +229,7 @@ def repair(tools,pid,unresolved,documents,questions,send,stop,receipts,*,models=
             contexts={key:doc for key,doc,item in fresh.values()}
             state={'patient_id':pid,'as_of':tools.as_of,'whole_source_contexts':contexts,
                 'decisions':{ident:{'source_context':key,'question':questions[item['field']],
+                    **({'native_entity_contract':entity_definition(questions[item['field']])}if entity_definition(questions[item['field']])is not None else {}),
                     'target_block':item['quote'],'source_record_id':item['record_id'],
                     'answer_contract':{'label':['finding','irrelevant','unknown'],
                         'required_finding_axes':AXES} if isinstance(questions[item['field']],dict) else 'finding|irrelevant|unknown'}for ident,(key,doc,item)in fresh.items()},

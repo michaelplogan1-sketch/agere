@@ -97,6 +97,19 @@ class SourceObservations(unittest.TestCase):
   self.assertEqual(again['receipt']['source_observation_cache_hits'],2)
   hits=[r for r in self.receipts if r.get('source_observation_id')]
   self.assertTrue(all(r['source_request_hashes']and r['new_paid_api_calls']==0 and not r['clinical_acceptance_inherited']for r in hits))
+ def test_registered_entity_definition_reaches_frontier_and_guards_bottled_readings(self):
+  from clinical_core.agere.clinical import drug_classes as C
+  doc=self.doc('a');q={'question':'What reason concerns this medication class?',
+   'entity':{'kind':'medication_class','id':'mra','aliases':['MRA']},'relation':'reason_for_nonuse','subject':'patient'}
+  self.run_read([doc],questions={'reason':q})
+  value=next(iter(self.sent[0]['decisions'].values()))
+  self.assertEqual(value['native_entity_contract']['member_classes'],['mra'])
+  q={**q,'entity':{**q['entity'],'id':'gdmt'}}
+  self.run_read([doc],questions={'reason':q});count=len(self.sent)
+  with patch.dict(C.GROUPS,{'gdmt':C.GROUPS['gdmt']+['statin']}):
+   self.run_read([doc],questions={'reason':q})
+  self.assertEqual(len(self.sent),count+1)
+  self.assertIn('statin',next(iter(self.sent[-1]['decisions'].values()))['native_entity_contract']['member_classes'])
  def test_new_field_reuses_same_semantics_but_changed_question_is_fresh(self):
   from test_document_relations import question
   d=self.doc('a');first=self.run_read([d]);q=question()

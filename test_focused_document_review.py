@@ -20,6 +20,53 @@ def question(entity):
 
 
 class FocusedAttention(unittest.TestCase):
+    def medication_question(self,identity):
+        return {'question':'What regimen does the source document for this medication class?',
+                'entity':{'kind':'medication_class','id':identity,'aliases':[identity.replace('_',' ')]},
+                'relation':'documented_regimen','subject':'patient'}
+
+    def test_registered_groups_find_ingredients_and_brands_without_actor_alias_lists(self):
+        docs=[{'record_id':str(i),'date':'2030-01-01','text':text}for i,text in enumerate([
+            'Carvedilol 12.5 mg twice daily.','Atenolol 50 mg daily.',
+            'Entresto was discussed.','Furosemide and Jardiance are listed.',
+            'Dietary carbohydrate counseling only.'])]
+        q=self.medication_question('gdmt');selected,receipt=N.focused_documents(docs,{'regimen':q})
+        expected={digest([d['record_id'],d['date'],d['text']])for d in [docs[0],docs[2],docs[3]]}
+        self.assertEqual(selected['regimen'],expected)
+        self.assertEqual(receipt['inventory_documents'],5);self.assertFalse(receipt['absence_established'])
+        self.assertIn('hf_evidence_based_beta_blocker',receipt['registered_class_members']['regimen'])
+        for doc in docs:
+            self.assertEqual(D.entity_source_link_issue(q,doc)is None,doc in [docs[0],docs[2],docs[3]])
+
+    def test_registered_entity_link_keeps_subtype_combo_and_cross_class_boundaries(self):
+        for identity,text,linked in [
+            ('hf_evidence_based_beta_blocker','Metoprolol tartrate 25 mg daily.',False),
+            ('hf_evidence_based_beta_blocker','Metoprolol succinate 25 mg daily.',True),
+            ('arb','Entresto 24/26 mg.',False),('arni','Entresto 24/26 mg.',True),
+            ('sglt2_inhibitor','Furosemide and Jardiance were discussed.',True),
+            ('antihypertensive','Atenolol 50 mg daily.',True),
+            ('dementia_medication','Donepezil was stopped.',True),
+            ('statin','Only losartan is listed.',False)]:
+            with self.subTest(identity=identity,text=text):
+                q=self.medication_question(identity);doc={'record_id':'r','date':'','text':text}
+                self.assertEqual(D.entity_source_link_issue(q,doc)is None,linked)
+                selected,_=N.focused_documents([doc],{'field':q})
+                self.assertEqual(bool(selected['field']),linked)
+
+    def test_native_class_link_does_not_supply_a_relationship_or_current_patient_use(self):
+        q=self.medication_question('gdmt');doc={'record_id':'r','date':'2030-01-01','text':'Her father once took carvedilol. No patient regimen is stated.'}
+        seen=[]
+        def judge(subject,named,evidence,**kw):
+            seen.extend(evidence)
+            from clinical_core.agere.clinical.drug_classes import GROUPS
+            self.assertTrue(all(v['instructions']['native_entity_contract']['member_classes']==sorted(GROUPS['gdmt'])for v in named.values()))
+            return {'judgments':{k:{'label':'unknown','decided_by':None}for k in named},'steps':[],'cost_usd':0}
+        tools=SimpleNamespace(as_of='2030-05-27',stack=SimpleNamespace(allow_live=False))
+        with patch.dict(os.environ,{'AGERE_DOCUMENT_LOCAL_READERS':''}):
+            out=T.read(tools,'A',[doc],{'regimen':q},None,judge=judge,ranking=False)
+        self.assertEqual(out['findings']['regimen'],[])
+        self.assertTrue(out['unresolved']);self.assertEqual(seen[0]['text'],doc['text'])
+
     def test_all_matches_retain_negation_history_and_full_context_without_top_k(self):
         docs=[{'record_id': str(i), 'date': '2029-01-01', 'text': 'Prior dialysis plan.\n\nCorrection: it was declined.'} for i in range(160)]
         docs.append({'record_id':'noise','date':'2030-01-01','text':'A parking receipt.'})

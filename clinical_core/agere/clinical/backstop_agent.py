@@ -126,6 +126,8 @@ has already declined this question, so it is yours to answer completely and corr
   fields for each patient. Read whole matching source contexts; keep searched and unreviewed coverage distinct. An empty retrieval
   is not chart-wide absence: expand the exact field's aliases/source records or explicitly request exhaustive coverage when needed.
   For an entity-specific reason or relationship, bind the question explicitly: {{question,entity:{{kind,id,aliases}},relation,subject}}.
+  Ask independently useful observations and explanations in separate fields. A request for a value/state AND why it occurred needs
+  both an observation question and an explanation question: a source can state either without the other. Keep missing dimensions unknown.
   Use a distinct binding per medication class, service, access barrier, person or contract. Aliases identify the entity, not proof of
   the relation. Keep each finding's entity/relation/polarity/temporality/assertion intact in composition; a related entity's reason
   cannot fill this field. Legacy string questions are suitable for open discovery, without an implied entity assertion.

@@ -50,6 +50,17 @@ def question_text(question):
     return question if isinstance(question,str) else question['question']
 
 
+def entity_definition(question):
+    """Supply code-owned group meaning to independent source judgments."""
+    if not isinstance(question,dict)or question.get('entity',{}).get('kind')!='medication_class':return None
+    from .drug_classes import CLASSES,GROUPS
+    ident=question['entity']['id']
+    members=[ident]if ident in CLASSES else GROUPS.get(ident)
+    if members is None:raise ValueError('Unknown registered medication-class entity: '+ident)
+    return {'schema':'registered-medication-entity/1','id':ident,'member_classes':sorted(members),
+            'membership':'Exact registered classes; a broader parent class cannot satisfy a member subtype.'}
+
+
 def source_scope_limits(reviews):
     """Keep code-owned retrieval limits in the saved answer and its exports."""
     focused=[r for r in reviews if r.get('source_scope')=='focused']
@@ -101,6 +112,13 @@ def entity_source_link_issue(question,doc):
     for alias in [entity['id'],*entity['aliases']]:
         words=re.findall(r'[^\W_]+',alias,re.UNICODE)
         if words and re.search(r'(?<!\w)'+r'[\W_]+'.join(re.escape(w)for w in words)+r's?(?!\w)',text,re.I):return None
+    if entity['kind']=='medication_class':
+        from .drug_classes import CLASSES,GROUPS,classify,brand_classes
+        members={entity['id']}if entity['id']in CLASSES else set(GROUPS.get(entity['id'],[]))
+        # The same registered ingredient/brand knowledge used by native SQL
+        # can establish a necessary entity link. It supplies no relationship,
+        # dose, current-use or tolerance judgment; those still need the reader.
+        if members.intersection(classify(text)+brand_classes(text)):return None
     return 'Requested entity is not named by its ID or registered aliases in the complete source. Entity/relation attribution remains unresolved; provide a source-bound entity link or correct the requested aliases.'
 
 

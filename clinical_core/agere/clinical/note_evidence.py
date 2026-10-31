@@ -157,9 +157,12 @@ def focused_documents(documents, questions, *, prior_sources=None):
         raise ValueError('Focused narrative review needs an explicit entity/relation/subject binding for every field. '
                          'Bind the actual requested concept and its synonyms, or select exact record_ids for source repair. '
                          'Use source_scope=all only when an exhaustive source review is required.')
-    patterns = {}
+    patterns = {};registered={}
+    from . import drug_classes
     for field, q in questions.items():
         entity = q['entity']
+        if entity['kind']=='medication_class':
+            registered[field]=({entity['id']}if entity['id']in drug_classes.CLASSES else set(drug_classes.GROUPS[entity['id']]))
         terms = list(dict.fromkeys([entity['id'].replace('_', ' '), *entity['aliases']]))
         patterns[field] = list(dict.fromkeys(rx for term in terms for rx in concept_patterns({'term': term})))
     compiled = {field: [re.compile(rx, re.I) for rx in values] for field, values in patterns.items()}
@@ -170,13 +173,16 @@ def focused_documents(documents, questions, *, prior_sources=None):
         # Source type/title are retrieval hints only. The reader receives and
         # judges the actual whole text before any finding can be accepted.
         text = ocr_fold(' '.join(str(doc.get(k) or '') for k in ('type', 'title', 'text')))
+        native_classes=set(drug_classes.classify(text)+drug_classes.brand_classes(text))if registered else set()
         fields = [field for field, values in compiled.items() if any(rx.search(text) for rx in values)
+                  or bool(registered.get(field,set())&native_classes)
                   or identity in (prior_sources or {}).get(field,set())]
         for field in fields:
             selected[field].add(identity)
         sources.append({'record_id': doc['record_id'], 'date': doc['date'],
                         'document_text_digest': digest(doc['text']), 'selected_fields': fields})
     return selected, {'schema': 'focused-document-retrieval/1', 'queries': patterns,
+        'registered_class_members':{field:sorted(members)for field,members in registered.items()},
         'inventory_documents': len(documents), 'selected_documents': sum(bool(s['selected_fields']) for s in sources),
         'field_documents': {field: len(ids) for field, ids in selected.items()}, 'sources': sources,
         'prior_source_seeds':{field:len(ids)for field,ids in (prior_sources or {}).items()},
