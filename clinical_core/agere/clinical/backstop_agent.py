@@ -79,6 +79,7 @@ TOOLS = [
      'Returns coverage and a SQL result_view containing patient_id, review_status, documents_reviewed and review_json. '
      'Each review_json field is a list of {value,record_id,date,quote}; empty means no documented finding, not absent disease. '
      'For a relation about a specific entity use {question,entity:{kind,id,aliases},relation,subject} instead of a question string. '
+     'A medication_class entity ID must be a registered medication class/group; keep dose, titration and other tasks in the question/relation. '
      'Bound findings also retain entity,relation,subject,polarity,temporality and a source-bound assertion compatible with documentary state. '
      'Query the result_view to compose the final patient table; use json_extract/json_each for findings. All findings retain exact source quotes. source_clinicians_json retains literal signed correspondence roles. Unchanged fields reuse exact-source observations in explicit continuation; ask only missing/changed fields. Use record_ids for a source-specific repair. Use candidate_result_view to recheck every retained observation in a native review_json result against explicit entity/relation questions and complete original source contexts. This reviews candidate spans only and cannot establish whole-document absence or recall; retain the original result separately for audit.',
      'input_schema': {'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},

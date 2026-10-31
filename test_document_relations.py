@@ -76,11 +76,56 @@ class Relations(unittest.TestCase):
             seen.extend(v['instructions']['task'] for v in named.values())
             return {'judgments':{k:{'label':'irrelevant','decided_by':'fixture'} for k in named},
                     'steps':[],'cost_usd':0}
-        T.read(self.tools,'A',[{**self.doc,'text':'Sincerely, Alice Rivera, MD, Nephrology'}],
+        T.read(self.tools,'A',[{**self.doc,'text':'Renal clinician: Alice Rivera, MD, Nephrology'}],
                {'assigned_role':q},None,judge=judge,ranking=False)
         self.assertTrue(seen)
         self.assertTrue(all(D.RELATION_RULES in instruction for instruction in seen))
         self.assertIn(D.RELATION_RULES,D.SYSTEM)
+
+    def test_medication_class_task_id_rejected_before_reading_but_real_identity_survives(self):
+        q=question();q['entity']={'kind':'medication_class','id':'gdmt_dose','aliases':['target dose','titration']}
+        with self.assertRaisesRegex(ValueError,'not a registered class or group'),patch.object(T,'rank')as rank:
+            T.read(self.tools,'A',[self.doc],{'dose':q},None,judge=lambda *a,**k:self.fail('Provider must not be called'))
+        rank.assert_not_called()
+        from clinical_core.agere.clinical.drug_classes import CLASSES,GROUPS
+        for identity in set(CLASSES)|set(GROUPS):
+            bound={**q,'entity':{**q['entity'],'id':identity}}
+            self.assertEqual(D.validate_questions({'dose':bound}),{'dose':bound})
+        self.assertEqual(q['entity']['id'],'gdmt_dose') # no silent identity repair
+
+    def test_native_unlinked_routing_retains_unknown_and_alias_repair_rereads_full_source(self):
+        from unittest.mock import Mock
+        doc={**self.doc,'text':'A home visit was deferred until transport could be arranged.'}
+        q={'question':'Why was the home service deferred?', 'entity':{'kind':'service','id':'service_7','aliases':['domiciliary consultation']},
+           'relation':'deferred_for_reason','subject':'patient'}
+        judge=Mock(side_effect=AssertionError('No useful model judgment before entity binding'))
+        out=T.read(self.tools,'A',[doc],{'reason':q},None,judge=judge,ranking=False)
+        judge.assert_not_called();self.assertEqual(out['provider_batches'],0)
+        self.assertEqual(out['findings']['reason'],[])
+        self.assertEqual(out['unresolved'][0]['reading']['label'],'unknown')
+        self.assertEqual(out['unresolved'][0]['native_binding_issue'],'source_entity_unlinked')
+        self.assertEqual(out['unresolved'][0]['quote'],doc['text'])
+        self.assertEqual(out['coverage'][0]['native_unlinked_field_decisions'],1)
+        self.assertEqual(out['coverage'][0]['model_field_decisions'],0)
+        def irrelevant(task,named,evidence,**kw):
+            self.assertEqual(evidence[0]['text'],doc['text'])
+            return {'judgments':{k:{'label':'irrelevant','decided_by':'fixture'}for k in named},'steps':[],'cost_usd':0}
+        fixed={**q,'entity':{**q['entity'],'aliases':['home visit']}}
+        repaired=T.read(self.tools,'A',[doc],{'reason':fixed},None,judge=irrelevant,ranking=False)
+        self.assertEqual(repaired['provider_batches'],1);self.assertEqual(repaired['unresolved'],[])
+
+    def test_unlinked_blocks_are_removed_before_provider_batch_packing(self):
+        qs={'f'+str(i):{'question':'What is established about service '+str(i)+'?',
+             'entity':{'kind':'service','id':'service_'+str(i),'aliases':['service '+str(i)]},
+             'relation':'reason_for_deferral','subject':'patient'}for i in range(70)}
+        doc={**self.doc,'text':'service 69 was discussed.'};calls=[]
+        def judge(task,named,evidence,**kw):
+            calls.append(len(named))
+            return {'judgments':{k:{'label':'irrelevant','decided_by':'fixture'}for k in named},'steps':[],'cost_usd':0}
+        out=T.read(self.tools,'A',[doc],qs,None,judge=judge,ranking=False)
+        self.assertEqual(calls,[1]);self.assertEqual(out['provider_batches'],1)
+        self.assertEqual(len(out['unresolved']),69)
+        self.assertEqual(out['coverage'][0]['field_decisions'],70)
 
     def test_class_swap_changes_only_the_bound_finding_and_keeps_exact_source(self):
         seen=[]

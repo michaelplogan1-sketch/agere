@@ -79,6 +79,13 @@ def validate_questions(questions):
             any(not isinstance(a,str) or not a.strip() for a in entity['aliases']) or
             len(set(entity['aliases']))!=len(entity['aliases'])):
             raise ValueError('Invalid entity/relation question binding')
+        if entity['kind']=='medication_class':
+            from .drug_classes import CLASSES,GROUPS
+            if entity['id'] not in CLASSES and entity['id'] not in GROUPS:
+                raise ValueError('Medication-class entity '+repr(entity['id'])+' is not a registered class or group. '
+                    'Bind the actual medication identity; dose, target, titration and reasons belong in the question/relation, '
+                    'not the entity ID. Use a registered class/group ID or bind a specific received medication. Registered IDs: '+
+                    ', '.join(sorted(set(CLASSES)|set(GROUPS))))
     return questions
 
 
@@ -347,13 +354,13 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
            source_scope='all',field_patient_queries=None,exhaustive_reason=None):
     if (patient_ids is None)==(patient_query_sql is None):
         raise ValueError('Choose explicit patient_ids OR a complete patient_query_sql')
+    validate_questions(questions)
     if patient_query_sql is not None:
         from .analysis_tools import population
         patient_ids=population(tools,patient_query_sql=patient_query_sql)
     if not isinstance(patient_ids,list) or any(not isinstance(p,str) or not p for p in patient_ids):
         raise ValueError('Use explicit received patient IDs')
     ids = list(dict.fromkeys(patient_ids))
-    validate_questions(questions)
     if source_scope not in ('focused','all'):raise ValueError('Source scope must be focused or all')
     focused=source_scope=='focused' and record_ids is None and candidate_result_view is None
     if focused and any(not isinstance(q,dict)for q in questions.values()):
@@ -680,6 +687,6 @@ def review(tools, patient_ids=None, questions=None, date_from=None, date_to=None
             'accounting':{'new_paid_api_calls':new_calls,'known_api_estimate_usd':known,'api_cost_known':cost_known},
             'method':('Focused whole-document candidates for each bound field; unmatched sources and unresolved findings require explicit expansion. No chart-wide absence or independent clinical qualification.'if focused else
                       candidate_receipt['scope']+' Not independent clinical qualification.'if candidate_receipt else
-                      'Every scoped whole document/block read with typed source decisions; only unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
+                      'Every scoped whole document/block checked for native entity binding before typed source decisions; missing links remain unresolved. Only eligible unresolved source fields use Claude; exact source spans retained; not independent clinical qualification'
                       if os.environ.get('AGERE_DOCUMENT_REVIEW')=='typed_spans' else
                       'All scoped whole documents supplied; exact quotes checked, typed support reviewed; not independent clinical qualification')}

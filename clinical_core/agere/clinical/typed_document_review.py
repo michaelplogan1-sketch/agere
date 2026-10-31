@@ -1,6 +1,6 @@
 """Source-span decisions for the existing whole-document review tool.
 
-Every scheduled source block is read in context. Explicit field/source scopes
+Every scheduled source block is checked in context. Explicit field/source scopes
 retain their coverage limits; ranking changes order, never scheduled membership.
 Typed models select evidence; code copies it. No disease-specific answer path.
 """
@@ -13,7 +13,7 @@ import sqlite3
 from ...contracts import digest
 from ..request_lineage import component
 
-VERSION='typed-whole-document-review/3'
+VERSION='typed-whole-document-review/4'
 _RANK_LOCK=threading.Lock()
 _READER_LOCK=threading.Lock()
 OBSERVATION_VERSION='source-field-observation/3'
@@ -82,12 +82,14 @@ def _rank(tools,questions,documents):
 
 
 
-def source_batches(documents,questions,priority,*,cross_document=False,candidates=None,field_documents=None):
+def source_batches(documents,questions,priority,*,cross_document=False,candidates=None,field_documents=None,native_gaps=None):
     """Batch independent named decisions with their complete source contexts.
 
     64 is the existing named-field transport schedule; the byte envelope is a
     conservative bound beneath the live provider context. Neither limits source
     membership. Every document/block/field pair is scheduled exactly once.
+    When requested, route missing entity links to explicit native gaps before
+    packing provider requests. This is unresolved attribution, never a negative.
     """
     decisions=[]
     if candidates is not None:
@@ -108,6 +110,16 @@ def source_batches(documents,questions,priority,*,cross_document=False,candidate
             identity=doc.get('source_document_identity')or digest([doc['record_id'],doc['date'],doc['text']])
             decisions.extend((field,instruction,span,doc)for span in spans for field,instruction in questions.items()
                              if field_documents is None or identity in field_documents.get(field,set()))
+    if native_gaps is not None:
+        from .document_review import entity_source_link_issue
+        linked=[];issues={}
+        for item in decisions:
+            field,instruction,span,doc=item
+            key=(field,id(doc))
+            if key not in issues:issues[key]=entity_source_link_issue(instruction,doc)
+            if issues[key]:native_gaps.append((item,issues[key]))
+            else:linked.append(item)
+        decisions=linked
     jobs=[];batch=[];source_keys=set();size=2048;last=None
     for field,instruction,span,doc in decisions:
         source_key=digest([doc['record_id'],doc['date'],doc['text']])
@@ -224,7 +236,23 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
                          'scope':'focused_field_candidates'if field_documents is not None else 'all_source_blocks' if candidates is None else 'retained_candidate_spans_only',
                          'text_digest':digest(doc['text'])})
     cross=os.environ.get('AGERE_DOCUMENT_CROSS_BATCH','off')=='on'
-    batches=source_batches(documents,questions,priority,cross_document=cross,candidates=candidates,field_documents=field_documents)
+    native_gaps=[]
+    batches=source_batches(documents,questions,priority,cross_document=cross,candidates=candidates,field_documents=field_documents,
+                           native_gaps=native_gaps)
+    blocked_counts={};document_keys={id(d):(d['record_id'],digest(d['text']))for d in documents}
+    for (field,instruction,span,doc),issue in native_gaps:
+        key=document_keys[id(doc)];blocked_counts[key]=blocked_counts.get(key,0)+1
+        unresolved.append({'field':field,'record_id':doc['record_id'],'quote':span['text'],'reason':issue,
+            'reading':{'label':'unknown','decided_by':None,'routing':'native_entity_precheck'},
+            'relation_binding':instruction,'native_binding_issue':'source_entity_unlinked',
+            'document_text_digest':digest(doc['text']),'span_start':span['start'],'span_end':span['end']})
+    for entry in coverage:
+        blocked=blocked_counts.get((entry['record_id'],entry['text_digest']),0)
+        entry.update(native_unlinked_field_decisions=blocked,model_field_decisions=entry['field_decisions']-blocked)
+    if native_gaps:
+        checks.append({'phase':'native_entity_precheck','steps':[],'cost_usd':0.0,'fields_judged':0,
+            'unresolved_source_field_blocks':len(native_gaps),'absence_established':False,
+            'reason':'The unchanged complete source cannot establish the requested entity binding. Correct aliases or expand source evidence.'})
     for batch in batches:
         unique={digest([d['record_id'],d['date'],d['text']]):d for field,instruction,span,d in batch}
         counts={d['record_id']:sum(v['record_id']==d['record_id']for v in unique.values())for d in unique.values()}
