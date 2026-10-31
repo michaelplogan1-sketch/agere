@@ -318,30 +318,38 @@ def group_query_issues(question, calls, final_view=None):
                 if tree is None:raise ValueError('Native SQL lineage is unavailable')
                 root=lineage(column,tree,schema=schema,dialect='sqlite',trim_selects=False)
                 aggregate=measured or any(isinstance(n,exp.AggFunc)for n in root.expression.walk())
-                barriers=set()
-                where=tree.args.get('where') if isinstance(tree,exp.Select) else None
-                tables=[t for t in tree.find_all(exp.Table) if t.find_ancestor(exp.Select) is tree]
-                if where is not None:
+                def row_filtered(source,table):
+                    # A CTE/subquery can narrow an earlier native result. The
+                    # predicate belongs to this lexical table reference, not
+                    # every alias of that result or a sibling SQL branch.
+                    if not isinstance(source,exp.Select):return False
+                    where=source.args.get('where')
+                    if where is None:return False
+                    tables=[t for t in source.find_all(exp.Table) if t.find_ancestor(exp.Select) is source]
                     for predicate in where.find_all(exp.In):
+                        if predicate.find_ancestor(exp.Select) is not source:continue
                         col=predicate.this
                         if not isinstance(col,exp.Column) or col.name.lower()!='drug_class':continue
                         if not predicate.expressions or not all(isinstance(v,exp.Literal) and v.is_string for v in predicate.expressions):continue
                         if {v.this for v in predicate.expressions}!=members:continue
-                        parent=predicate.parent;conjunctive=True
-                        while parent is not None and parent is not where:
-                            if isinstance(parent,(exp.Or,exp.Not)):conjunctive=False;break
-                            parent=parent.parent
-                        if not conjunctive:continue
-                        for table in tables:
-                            if table.name in results and (col.table==table.alias_or_name or not col.table and len(tables)==1):barriers.add(table.name)
-                sources=[];resolved_json=False;resolving=set()
+                        parent=predicate.parent
+                        while isinstance(parent,(exp.Paren,exp.And)):parent=parent.parent
+                        if parent is not where:continue
+                        if col.table==table.alias_or_name or not col.table and len(tables)==1:return True
+                    return False
+                sources=[];resolved_inputs=False;resolving=set()
                 def collect(native):
-                    nonlocal resolved_json
+                    nonlocal resolved_inputs
                     scopes=list(traverse_scope(native.source))
-                    for node in native.walk():
+                    def branches(node,owner=None):
+                        yield node,owner
+                        for child in node.downstream:yield from branches(child,node)
+                    for node,owner in branches(native):
                         table=node.expression
                         if not isinstance(table,exp.Table):continue
                         if table.name in results:
+                            resolved_inputs=True
+                            if owner is not None and row_filtered(owner.source,table):continue
                             name=sqlglot.parse_one(node.name,into=exp.Column,read='sqlite').name
                             sources.append((table.name,name))
                         elif isinstance(table.this,exp.Anonymous) and table.this.name.lower() in {'json_each','json_tree'}:
@@ -352,7 +360,7 @@ def group_query_issues(question, calls, final_view=None):
                             if scope is None:raise ValueError('JSON input scope is unavailable')
                             for argument in table.this.expressions:
                                 for col in argument.find_all(exp.Column):resolve(scope,col)
-                            resolved_json=True
+                            resolved_inputs=True
                 def resolve(scope,col):
                     if scope is None:raise ValueError('JSON input column is unresolved')
                     active={k.lower():source for k,(_,source) in scope.selected_sources.items()}
@@ -376,12 +384,12 @@ def group_query_issues(question, calls, final_view=None):
                         resolving.remove(key)
                     else:raise ValueError('JSON input has no native value lineage')
                 collect(root)
-                for parent,name in sources:
-                    if parent not in barriers:trace(parent,name,aggregate)
-                if not sources and not resolved_json:
+                for parent,name in sources:trace(parent,name,aggregate)
+                if not sources and not resolved_inputs:
                     # COUNT(*) and unresolved projections depend on row scope.
                     for parent in parents[view]:
                         references=[t for t in tree.find_all(exp.Table)if t.name==parent]
+                        if references and all(row_filtered(t.find_ancestor(exp.Select),t)for t in references):continue
                         def membership_only(table):
                             select=table.find_ancestor(exp.Select)
                             if select is None or len(select.expressions)!=1:return False

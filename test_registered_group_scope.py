@@ -43,6 +43,37 @@ class Scope(unittest.TestCase):
    c.append({'name':'compose_table','input':{},'result':{'result_view':'agere_result_3','columns':['patient_id','current','reference'],'rows':[],
     'assembly':{'base_result_view':'agere_result_1','column_renames':{'therapy':'current'},'joins':[{'result_view':'agere_result_2','as':'reference','selected_columns':['therapy']}]}}})
    self.assertTrue(D.group_query_issues('Assess prevention medications',c,'agere_result_3'))
+ def test_exact_filter_in_cte_or_subquery_narrows_only_that_branch(self):
+  source=call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")
+  source['result']['columns']=['patient_id','drug_class','therapy']
+  for query in [
+   "WITH f AS (SELECT * FROM agere_result_1 WHERE drug_class IN ('narrow_a','narrow_b')), g AS (SELECT patient_id,MAX(therapy) AS therapy FROM f GROUP BY patient_id) SELECT * FROM g",
+   "SELECT patient_id,MAX(therapy) AS therapy FROM (SELECT * FROM agere_result_1 WHERE drug_class IN ('narrow_a','narrow_b')) f GROUP BY patient_id",
+   "WITH f AS (SELECT COUNT(*) AS therapy FROM agere_result_1 WHERE drug_class IN ('narrow_a','narrow_b')) SELECT therapy FROM f"]:
+   with self.subTest(query=query):
+    c=[source,call('agere_result_2',query)]
+    if 'COUNT(*)'in query:c[-1]['result']['columns']=['therapy']
+    self.assertEqual(D.group_query_issues('Assess prevention medications',c,'agere_result_2'),[])
+ def test_scoped_narrowing_does_not_certify_other_alias_or_union_branch(self):
+  source=call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")
+  source['result']['columns']=['patient_id','drug_class','therapy']
+  for query in [
+   "WITH f AS (SELECT * FROM agere_result_1 WHERE drug_class IN ('narrow_a','narrow_b')) SELECT b.patient_id,b.therapy FROM agere_result_1 b JOIN f USING(patient_id)",
+   "SELECT a.patient_id,b.therapy FROM agere_result_1 a JOIN agere_result_1 b USING(patient_id) WHERE a.drug_class IN ('narrow_a','narrow_b')",
+   "WITH f AS (SELECT * FROM agere_result_1 WHERE drug_class IN ('narrow_a','narrow_b')) SELECT patient_id,therapy FROM f UNION ALL SELECT patient_id,therapy FROM agere_result_1"]:
+   with self.subTest(query=query):
+    self.assertTrue(D.group_query_issues('Assess prevention medications',[source,call('agere_result_2',query)],'agere_result_2'))
+ def test_cte_narrowing_requires_a_positive_row_predicate(self):
+  source=call('agere_result_1',"SELECT * FROM fill WHERE drug_class IN ('narrow_a','narrow_b','broad')")
+  source['result']['columns']=['patient_id','drug_class','therapy']
+  for predicate in [
+   "drug_class IN ('narrow_a','narrow_b') OR therapy='broad'",
+   "NOT drug_class IN ('narrow_a','narrow_b')",
+   "CASE WHEN drug_class IN ('narrow_a','narrow_b') THEN 1 ELSE 1 END",
+   "EXISTS(SELECT 1 FROM fill WHERE drug_class IN ('narrow_a','narrow_b'))"]:
+   with self.subTest(predicate=predicate):
+    query="WITH f AS (SELECT * FROM agere_result_1 WHERE "+predicate+") SELECT patient_id,therapy FROM f"
+    self.assertTrue(D.group_query_issues('Assess prevention medications',[source,call('agere_result_2',query)],'agere_result_2'))
  def test_partial_case_filter_cannot_widen_one_registered_subtype(self):
   with patch.object(D,'SUBCLASS_PARENTS',{'narrow_a':'broad'}):
    c=[call('agere_result_1',"SELECT patient_id,MAX(CASE WHEN drug_class IN ('narrow_a','broad') THEN 1 ELSE 0 END) AS therapy FROM fill GROUP BY patient_id"),call('agere_result_2','SELECT * FROM agere_result_1')]
