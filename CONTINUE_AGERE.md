@@ -1,3 +1,35 @@
+# Current Agere checkpoint - 2026-10-31T16:32:15.175072+00:00
+
+Build ACTIVE,G3; targeted assembly continuation RUNNING PID7585/session22651. Product31bac5f/source FROZEN. No duplicate run/product edit. Scheduler PAUSED; alltenareas retained.
+
+Exact next: Observe the single targeted assembly/source-support continuation(session22651) to terminal. Product31bac5f/source frozen; no duplicate provider or training run, no product edit.42successful native actions restored; no accepted answer/draft. Then exact-source and all-attempt audit, checked replay/window/nonHF/current-app compatibility; alltenareas retained; scheduler PAUSED.
+
+Verified native prefix42actions/57patients/228flags/17richGDMTdose/64namedfillobjects;0provider offline preflight and readable58page inspection PDF. Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T16:31:50.304049+00:00
+
+Build ACTIVE,G3; no active job; scheduler PAUSED. Product31bac5f. Alltenareas retained.
+
+Native42-action recovery passes21.768s/0providers;57patients/228flags/17richGDMTdose/64namedfillobjects, exact original source states and89backgroundobjects.0retention/domainerrors.213checks.58page curated inspection PDF/all57names/bounds pass, pages1/2visuallyreviewed. Last sealed owner receipt unchanged.
+
+Exact next: G3: execute one targeted final assembly/source-support continuation from the verified42-action native prefix on31bac5f; no answer or draft injection and no broad note rerun. Preserve57patients,228pillar cells,17richGDMTdose/64namedfillobjects, all source states and attempts. Then checked replay/window/nonHF/current-app compatibility; alltenareas retained and scheduler PAUSED.
+
+Prepared protocol: artifacts/agere-blueprint-confirmation-2026-10-31/targeted-assembly-v3/protocol.json. Earlier three offline fixture failures retained; corrected using actual schema and original object projections. Candidate has no accepted answer.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T15:34:02.950125+00:00
+
+Build ACTIVE,G3; ordinary confirmation RETURNED PARTIAL normally2183.807s,57patients,622newattempts. Productc4c1367/source/earlier13626ledgerrows unchanged; no blocked reads or subscription limit. Owner stop attempt found the job already terminal; no process interrupted. No active job; freeze released; scheduler PAUSED. Alltenareas retained.
+
+Exact next: G3: ordinary confirmation returned partial in2183.807s with57patients and622newattempts; source/code/oldledger exact,no subscription limit. Freeze released. Diagnose the actual retained collection-retention/domain conflict and quantitative prose-contract retries from these15deterministic reviews, repair shared contracts/progress detection, and prove both with retained native outputs before any targeted continuation. Do not repeat note review; preserve all source observations,allattempts,alltenareas and scheduler PAUSED.
+
+Current contextANS-c48ce946da52e4bfdbcf5260. Fifteen final reviews were deterministic compiler repair; last feedback flags explicitly retained dose_rows plus unbound numeric prose category labels. Paid final support review not reached. Read actual terminal receipts before acting; earlier live diagnosis only checked prose and did not establish sole cause. Existing3source cache-binding files remain unchanged from5488550. Last sealed owner receipt remains guarded report download.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T14:47:08.009701+00:00
 
 Build ACTIVE,G3; single ordinary original-question confirmation RUNNING PID90927/session86019. Productc4c1367/source FROZEN; no duplicate run or product edit. Scheduler PAUSED. Alltenareas retained.
