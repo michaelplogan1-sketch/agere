@@ -177,7 +177,7 @@ def catalog(calls):
     return entries
 
 
-def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None):
+def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False):
     from .semantic_analyst import actor_result
     def recent(call):
         out = call.get('result')
@@ -194,7 +194,11 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             'Avoid repeating successful work; correct unresolved errors and current review feedback. '
             'Return table_from_tool naming the complete composed result; never transcribe patient tables.'}
     loaded = loaded_documentation(calls, documentation_identity)
-    if loaded is not None:state['loaded_documentation'] = loaded
+    if loaded is not None:
+        state['loaded_documentation'] = ({'identity':loaded['identity'],
+            'sections':[{k:r[k]for k in ('section_id','title','sha256')}for r in loaded['sections']],
+            'instruction':'The exact loaded first-party sections appear in the cacheable system documentation block; these are references to that complete text, not patient evidence.'}
+            if documentation_in_system else loaded)
     if feedback is not None:
         # Operational reviewer receipts remain native; preserve the exact current
         # repair instructions without resending all model probabilities/costs.

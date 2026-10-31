@@ -115,6 +115,21 @@ class Profiles(unittest.TestCase):
   text=render(c);self.assertIn('Clinical review',text);self.assertIn('Alex Example',text)
 
 class CurrentNativeCardContracts(unittest.TestCase):
+ def test_explicit_native_rename_binds_the_clinical_contract_without_new_alias_guessing(self):
+  from clinical_core.agere.clinical.result_assembly import compose
+  native={'patient_id':'A','raas_on':1,'beta_blocker_on':0,'mra_on':0,'sglt2_on':0,
+   'proposed_review_step':'Reconcile current medicines and discuss documented barriers.'}
+  c={'answer':{'table':[native]},'investigation':{}}
+  self.assertEqual(P.review_cards(c)['A']['therapy'],[])
+  mapping={'raas_on':'on_rasi_pillar','beta_blocker_on':'on_beta_blocker_pillar','mra_on':'on_mra_pillar',
+   'sglt2_on':'on_sglt2i_pillar','proposed_review_step':'proposed_review_steps'}
+  self.assertTrue(set(mapping.values())<=set(P.CLINICAL_REVIEW_CONTRACT['columns']))
+  bound=compose({'source':{'rows':[native]}},base='source',keys=['patient_id'],rename_columns=mapping)
+  c['answer']['table']=bound['rows'];card=P.review_cards(c)['A']
+  self.assertEqual(len(card['therapy']),4)
+  self.assertEqual([t['fill_observed']for t in card['therapy']],[True,False,False,False])
+  self.assertEqual(card['program_review']['proposed_steps'],native['proposed_review_step'])
+  self.assertEqual(bound['assembly']['column_renames'],mapping)
  def context(self):
   def finding(entity,relation,quote,record):
    return {'entity':{'id':entity},'relation':relation,'quote':quote,'record_id':record,'date':'2028-01-01','polarity':'affirmed','temporality':'historical','subject':'patient'}

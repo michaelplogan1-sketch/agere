@@ -221,8 +221,8 @@ def compose(results,*,base,keys,joins=None,base_columns=None,rename_columns=None
 def collection_retention_issues(results,final_rows,dependencies):
     """Check explicitly promised source collections in descendant final tables."""
     from collections import Counter
-    issues=[]
-    if dependencies is None:return issues
+    issues={}
+    if dependencies is None:return []
     def decoded(value):
         if isinstance(value,str) and value[:1] in ('{','['):
             try:return json.loads(value)
@@ -242,6 +242,13 @@ def collection_retention_issues(results,final_rows,dependencies):
                 names.update(new for old,new in renames.items()if old in names)
             changed=len(names)!=before
         return names
+    def report(kind,alias,view,keys,ident,join,expected,missing=None,records=None):
+        issue=issues.setdefault((kind,alias,view),{'keys':keys,'affected_keys':[],'required_fields':set(),'missing_objects':[]})
+        if ident not in issue['affected_keys']:issue['affected_keys'].append(ident)
+        issue['required_fields'].update(join.get('selected_columns')or[])
+        for item in expected:
+            if isinstance(item,dict):issue['required_fields'].update(item)
+        if missing is not None:issue['missing_objects'].append({'key':json.loads(ident),'objects':missing,'record_ids':records or[]})
     for view in sorted(dependencies):
         result=results[view];assembly=result.get('assembly') or {};keys=assembly.get('keys') or []
         required=[j for j in assembly.get('joins',[]) if j.get('retain_in_final')]
@@ -254,15 +261,33 @@ def collection_retention_issues(results,final_rows,dependencies):
             for join in required:
                 original=join['as'];source_alias=(assembly.get('column_renames')or{}).get(original,original)
                 expected=decoded(row[source_alias]) or []
-                addresses=[source_alias]if source_alias in target else sorted(aliases(source_alias)&set(target))
+                addresses=sorted(aliases(source_alias)&set(target))
+                # An explicitly renamed context can retain the old objects
+                # while a new clinical view legitimately reuses the old name.
+                # Only native rename destinations qualify; exact objects still
+                # have to be present in full at one of those addresses.
+                wanted=Counter(digest(item)for item in expected)
+                choices=[]
+                for address in addresses:
+                    value=decoded(target.get(address))
+                    if value is None or isinstance(value,list):
+                        missing=wanted-Counter(digest(item)for item in value or [])
+                        choices.append((sum(missing.values()),address,missing))
+                if choices and min(c[0]for c in choices)==0:continue
                 alias=addresses[0]if addresses else source_alias
-                value=decoded(target.get(alias))
-                if not addresses or value is not None and not isinstance(value,list):
-                    issues.append('Final field '+alias+' at '+str(ident)+' omits its explicitly retained native collection');continue
-                wanted=Counter(digest(item)for item in expected);observed=Counter(digest(item)for item in value or [])
-                missing=wanted-observed
+                if not choices:
+                    report('omitted',alias,view,keys,ident,join,expected);continue
+                _,alias,missing=min(choices,key=lambda c:(c[0],c[1]))
                 if missing:
                     records=sorted({item['record_id']for item in expected if isinstance(item,dict) and isinstance(item.get('record_id'),str) and digest(item)in missing})
-                    issues.append('Final field '+alias+' at '+str(ident)+' drops or changes '+str(sum(missing.values()))+
-                        ' retained source objects from '+view+'; record_ids='+json.dumps(records))
-    return list(dict.fromkeys(issues))
+                    report('changed',alias,view,keys,ident,join,expected,sum(missing.values()),records)
+    messages=[]
+    for (kind,alias,view),issue in issues.items():
+        text=('Final field '+alias+' omits its explicitly retained native collection'if kind=='omitted'else
+              'Final field '+alias+' drops or changes retained source objects')
+        text+=' from '+view+'; keys='+json.dumps(issue['keys'])+'; affected_keys='+json.dumps([json.loads(k)for k in issue['affected_keys']])
+        text+='; required_object_fields='+json.dumps(sorted(issue['required_fields']))
+        if issue['missing_objects']:text+='; missing_objects='+json.dumps(issue['missing_objects'])
+        text+='. Keep the intact collection. Use an executed compose_table.rename_columns mapping to move broader evidence to a clearly labelled context field; a narrower clinical projection does not remove an earlier retain_in_final promise.'
+        messages.append(text)
+    return messages

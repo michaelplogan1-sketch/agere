@@ -5,6 +5,30 @@ Keep the answer intact; the complete native context remains the download.
 """
 import json,re
 
+# The existing clinical presentation has a declared input interface. Producers
+# bind their own aliases with native composition; the renderer does not invent
+# medication meanings from new column names.
+CLINICAL_REVIEW_CONTRACT={
+    'schema':'clinical-medication-review-view/1',
+    'method':'Use compose_table.rename_columns for explicit source aliases. Values remain native. This presentation contract does not select patients, infer facts or qualify clinical meaning.',
+    'columns':{
+        'patient_id':'Exact received patient identity',
+        'on_rasi_pillar':'RAAS/ARNI picked-up-fill flag in the declared analysis window: 0,1 or null',
+        'on_beta_blocker_pillar':'Evidence-based beta-blocker picked-up-fill flag: 0,1 or null',
+        'on_mra_pillar':'MRA picked-up-fill flag: 0,1 or null',
+        'on_sglt2i_pillar':'SGLT2 inhibitor picked-up-fill flag: 0,1 or null',
+        'pillars_missing':'Native names of pillars without a fill observation',
+        'recent_gdmt_fill_observations':'Intact object list: drug_name,drug_class,latest_fill_date_in_window,observed_fill_count',
+        'fill_window_start_exclusive':'Native lower date bound',
+        'fill_window_end_inclusive':'Native upper date bound',
+        'gdmt_dose_rows':'Intact dose objects restricted by registered GDMT membership; include all received source/date fields',
+        'care_assignments':'Intact dated assignment objects, with clinician_id,role,specialty,assigned_at_snapshot and source clocks',
+        'documentary_findings':'Intact source-bound entity/relation findings',
+        'dated_correspondence_roles':'Intact dated source roles, distinct from assignment',
+        'proposed_review_steps':'Native patient-specific review steps; proposals, not care execution',
+        'all_medication_context':'Optional intact broader medication collection for provenance; not the requested GDMT dose subset'},
+    'unknowns':'Unavailable facts remain null or explicitly unknown with source scope. Missing data and missing column bindings are different. Preserve all retained source objects and all original patients.'}
+
 
 def capture_profiles(path, patient_ids, answer=None,graph=None):
     """Snapshot received identities and clinical observations for patient review.

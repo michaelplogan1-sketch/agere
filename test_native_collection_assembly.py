@@ -77,6 +77,34 @@ class Collections(unittest.TestCase):
             with self.subTest(mapping=mapping),self.assertRaises(ValueError):
                 A.compose(results,base='composed',keys=['patient_id'],rename_columns=mapping)
 
+    def test_renamed_context_retains_original_when_new_projection_reuses_its_old_name(self):
+        items,results,join=self.fixture();join['retain_in_final']=True
+        results['composed']=A.compose(results,base='base',keys=['patient_id'],joins=[join])
+        richer=[{**item,'source_context':'additional native metadata'}for item in items]
+        results['enriched']={'rows':[{'patient_id':'A','collection':richer}]}
+        final=A.compose(results,base='composed',keys=['patient_id'],
+            joins=[{'result':'enriched','as':'new_roles','on':{'patient_id':'patient_id'},'mode':'collect','items_from':'collection'}],
+            rename_columns={'dated_roles':'prior_roles_context','new_roles':'dated_roles'})
+        results['final']=final
+        self.assertEqual(final['rows'][0]['prior_roles_context'],items)
+        self.assertEqual(final['rows'][0]['dated_roles'],richer)
+        self.assertEqual(A.collection_retention_issues(results,final['rows'],{'composed','final'}),[])
+        for mutation in ('omit','change'):
+            bad=copy.deepcopy(final['rows'])
+            if mutation=='omit':bad[0].pop('prior_roles_context')
+            else:bad[0]['prior_roles_context'][0]['date']='invented'
+            with self.subTest(mutation=mutation):self.assertTrue(A.collection_retention_issues(results,bad,{'composed','final'}))
+
+    def test_retention_feedback_groups_keys_without_losing_any_affected_identity(self):
+        _,results,join=self.fixture();join['retain_in_final']=True
+        results['base']['rows']=[{'patient_id':'A'},{'patient_id':'B'}]
+        out=A.compose(results,base='base',keys=['patient_id'],joins=[join]);results['composed']=out
+        bad=[{'patient_id':'A'},{'patient_id':'B'}]
+        issues=A.collection_retention_issues(results,bad,{'composed'})
+        self.assertEqual(len(issues),1)
+        self.assertIn('[["A"], ["B"]]',issues[0]);self.assertIn('compose_table.rename_columns',issues[0])
+        self.assertIn('required_object_fields=',issues[0])
+
     def test_financial_audit_alias_uses_the_same_native_retention(self):
         results={'base':{'rows':[{'contract':'C1'}]},'source':{'rows':[{'contract':'C1','clauses':'[{"record_id":"c","quote":"Payment follows reconciliation."}]'}]}}
         out=A.compose(results,base='base',keys=['contract'],joins=[{'result':'source','as':'terms','on':{'contract':'contract'},'mode':'collect','items_from':'clauses','retain_in_final':True}],rename_columns={'terms':'prior_terms_for_audit'})

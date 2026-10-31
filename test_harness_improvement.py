@@ -23,6 +23,26 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def test_failed_source_meaning_is_restored_without_reexecuting_provider_work(self):
+        from clinical_core.agere.clinical import backstop_agent as B,document_review as D
+        tools=B.Tools.__new__(B.Tools);tools.continuation_identity=lambda:{'source':'v1'}
+        tools.document_field_contracts={};tools.document_reviews=[]
+        with H.owned_recovery([],self.q,field_contracts={'reason':'What original reason was requested?'}):
+            out=H.recover_actions(tools,self.q)
+        self.assertEqual(out['recovered_read_only_actions'],0)
+        self.assertEqual(out['restored_field_contracts'],['reason'])
+        changed={'question':'A different source question','entity':{'kind':'medication_class','id':'mra','aliases':['MRA']},
+                 'relation':'documented_status','subject':'patient'}
+        with patch.object(D,'review',side_effect=AssertionError('No source dispatch')):
+            with self.assertRaisesRegex(ValueError,'Source field contract changed'):
+                tools._call({'name':'review_documents','input':{'patient_ids':['A'],'questions':{'reason':changed}}})
+
+    def test_recovery_cannot_overwrite_a_current_field_guard(self):
+        e=self.executor();e.document_field_contracts={'reason':'Current meaning'}
+        with H.owned_recovery([{'name':'query_sql','input':{'sql':'SELECT 1'}}],self.q,field_contracts={'reason':'Changed meaning'}):
+            with self.assertRaisesRegex(ValueError,'field contract changed'):H.recover_actions(e,self.q)
+        self.assertEqual(e.executed,[])
+
     def test_owned_recovery_retains_exact_historical_composition_failure_and_later_work(self):
         e=self.executor()
         original=e.__class__.__call__

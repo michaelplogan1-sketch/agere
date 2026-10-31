@@ -135,7 +135,12 @@ class NativeDocumentation(unittest.TestCase):
                 return {'content': [{'type': 'tool_use', 'id': str(len(sent)), 'name': 'query_sql', 'input': {'sql': sql}}]}, 0, False
             state = json.loads(body['messages'][0]['content'])
             self.assertEqual(state['loaded_documentation']['identity'], self.wh._local.documentation_identity)
-            self.assertEqual(state['loaded_documentation']['sections'], list(self.wh._local.documentation_sections.values()))
+            block=body['system'][-1]
+            loaded=json.loads(block['text'].split('\n',1)[1])
+            self.assertEqual(loaded['sections'], list(self.wh._local.documentation_sections.values()))
+            self.assertEqual(block['cache_control'],{'type':'ephemeral'})
+            self.assertEqual(block,sent[1]['system'][-1])
+            self.assertTrue(all('documentation_text'not in r for r in state['loaded_documentation']['sections']))
             self.assertEqual(state['latest_results'][0]['result']['rows'], [{'patient_id': 'A', 'birth_date': '1960-01-01'}])
             return {'content': [{'type': 'text', 'text': '{"status":"answered","value":1}'}]}, 0, False
         out = S.tool_loop('q', 'sys', B.TOOLS, tools, send=send, model='scripted', max_tools=None, compact_execution_state=True)

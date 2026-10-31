@@ -507,17 +507,28 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             if continuation_guard is not None:
                 try: guard_identity=digest(continuation_guard())
                 except (ValueError,OSError,sqlite3.Error): pass
+            actor_system=system;loaded_docs=None;documentation_identity=None
+            if compact_execution_state:
+                from .execution_state import loaded_documentation
+                documentation_identity=getattr(getattr(getattr(execute,'semantic',None),'_local',None),'documentation_identity',None)
+                loaded_docs=loaded_documentation(result['tool_calls'],documentation_identity)
+                if loaded_docs:
+                    # Only exact, installed first-party contracts enter this
+                    # stable cacheable block. Clinical/source results remain
+                    # in their existing evidence path and authority.
+                    actor_system=[*(system if isinstance(system,list)else[{'type':'text','text':system}]),
+                        {'type':'text','text':'LOADED FIRST-PARTY DOCUMENTATION:\n'+json.dumps(loaded_docs,default=str,allow_nan=False),
+                         'cache_control':{'type':'ephemeral'}}]
             if pending_output is not None:
                 if continuation_guard is not None and (guard_identity is None or guard_identity!=pending_output['guard_identity']):
                     raise ValueError('Source/scope changed during output continuation; no pending actions executed')
                 actor_messages=pending_output['messages']
             elif compact_execution_state:
                 from .execution_state import messages as state_messages
-                documentation_identity=getattr(getattr(getattr(execute,'semantic',None),'_local',None),'documentation_identity',None)
                 actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate,
-                                              documentation_identity=documentation_identity)
+                                              documentation_identity=documentation_identity,documentation_in_system=bool(loaded_docs))
             else:actor_messages=messages
-            body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': actor_messages, 'tools': tools,
+            body = {'model': model, 'max_tokens': max_tokens, 'system': actor_system, 'messages': actor_messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
             if pending_output is not None:body['tool_choice']=pending_output['tool_choice']
             if deadline is not None and deadline - time.monotonic() <= 0:

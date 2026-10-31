@@ -19,9 +19,12 @@ from contextlib import contextmanager
 _OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
 
 @contextmanager
-def owned_recovery(actions,question=None,feedback=None,document_reviews=None):
+def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None):
     """Explicit unfinished-run recovery; never select a learned configuration or reuse an answer."""
-    token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or []} if actions is not None else None)
+    from .document_review import validate_questions
+    contracts=validate_questions(field_contracts)if field_contracts is not None else{}
+    token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or [],
+        'field_contracts':json.loads(json.dumps(contracts))} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
 
@@ -123,8 +126,17 @@ def recover_actions(tools,question):
     saved=_OWNED_RECOVERY.get()
     if saved is None or saved['question']!=question:return None
     actions=saved['actions']
+    # Failed source calls can establish an immutable field meaning without
+    # producing a result view. Restore that guard, not the failed provider work.
+    # This does not certify any reading or permit a recorded error as success.
+    declared=getattr(tools,'document_field_contracts',{})
+    for field,contract in saved.get('field_contracts',{}).items():
+        if field in declared and declared[field]!=contract:raise ValueError('Owned recovery field contract changed: '+field)
+    if saved.get('field_contracts'):
+        tools.document_field_contracts={**declared,**json.loads(json.dumps(saved['field_contracts']))}
     guard=digest(tools.continuation_identity())
     out={'used':None,'calls':[],'certificates':[],'final_answer':None,'reason':'Explicit owned-run recovery: every literal tool is re-executed; only exact provider requests may hit cache.'}
+    if saved.get('field_contracts'):out['restored_field_contracts']=sorted(saved['field_contracts'])
     for index,action in enumerate(actions):
         if action.get('name') not in READ_ONLY or not {'name','input'}<=set(action)or set(action)-{'name','input','expected_error'}:
             raise ValueError('Owned recovery accepts registered read-only actions only')

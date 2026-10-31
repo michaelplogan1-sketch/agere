@@ -1629,6 +1629,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         docs = install_context(wh, full_docs)
     quota = f'The caller configured a quota of {MAX_TOOLS} tool calls.' if MAX_TOOLS is not None else 'There is no fixed tool-call quota.'
     rules = RULES.format(tool_quota=quota) + '\n' + decision_context.prompt_block()
+    from ..deliverables.patient_evidence import CLINICAL_REVIEW_CONTRACT
+    rules+='\nEXISTING OPTIONAL CLINICAL PRESENTATION INPUT CONTRACT:\n'+json.dumps(CLINICAL_REVIEW_CONTRACT)
     system = [{'type': 'text', 'text': rules}, {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     from . import patient_ids
     prior = patient_ids.current_prior() or {}
