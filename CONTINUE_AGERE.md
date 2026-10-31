@@ -1,3 +1,15 @@
+# Current Agere checkpoint - 2026-10-31T14:46:03.922010+00:00
+
+Build ACTIVE,G3; no active provider/training job; scheduler PAUSED. Candidatec4c1367 committed; alltenareas retained.
+
+Three shared repairs verified offline:4stale conditional scopes blocked;69prompt states retain12exactsections;214source reconciliation groups/3891assertions reach57patient/228pillar report,including46different-account groups and44unresolved groups.201combined checks pass.75page/231650byte inspection PDF visually reviewed; all-page bounds pass.0providers; original context untouched and still partial.
+
+Exact next: G3: run one ordinary original-question confirmation on productc4c1367 through the existing compose/report entrypoint, with current caches allowed and no injected recovery,draft or acceptance. Preserve the original57patient scope, every provider/failed attempt and source identity; freeze product/source for this one job. Audit native dependency correctness, final review, named medications/doses/care roles, report readability and component cost. Then checked replay/window-change/non-HF transfer; alltenareas and independent qualification remain. Scheduler PAUSED.
+
+Last sealed receipt remains report-download performance. Current review decision docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T14:35:16.276642+00:00
 
 Build ACTIVE,G3; no active provider/training job; scheduler PAUSED. Product candidates11ef209(scope guard)/1eb76c7(documentation retention). Alltenareas retained.

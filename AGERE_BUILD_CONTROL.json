@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T14:35:16.276642+00:00",
+  "updated_at": "2026-10-31T14:46:03.922010+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "blueprint_shared_scope_and_state_candidates_verified",
+    "kind": "blueprint_shared_fixes_ready_for_connected_confirmation",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Conditional note-review scopes now reject stale current-medication flags before dispatch; exact governed definitions stay resident and actually loaded first-party documentation survives later clinical work.",
-    "measured_failure_reduction": "Actual ordinary trace:4stale conditional scopes blocked; corrected12month source scope and pure membership pass. All69compiled prompt states retain exact12loaded sections(50561bytes),deduplicated;12of18documentation queries already satisfied.120focused checks pass;0newprovider calls. Whole-question completion and speed remain unmeasured.",
+    "user_behavior_delta": "Shared scope guard catches stale conditional populations before paid review; compiled state retains exact loaded documentation; patient reports consume existing source assertion reconciliation.",
+    "measured_failure_reduction": "4actual stale conditional scopes rejected; corrected scopes pass.69actual prompt states retain12sections and12previously repeated fetches.214reconciliation groups/3891assertions preserved into57patient/228pillar report,including46different-account groups and44unresolved groups.201combined checks pass. Final candidate75pages/231650bytes; samples visually reviewed and all-page bounds pass;0providers for offline verification.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -734,10 +734,11 @@
       "artifacts/agere-blueprint-review-2026-10-31/offline-run-analysis.json",
       "artifacts/agere-blueprint-scope-guard-2026-10-31/receipt.json",
       "artifacts/agere-blueprint-scope-guard-2026-10-31/offline-attribution.json",
-      "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json"
+      "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json",
+      "artifacts/agere-blueprint-patient-state-2026-10-31/receipt.json"
     ],
-    "remaining_gap": "Need shared documentary-state consumption and one connected original-question confirmation; prior46minute result remains partial. Independent clinical/model/outcome/economics qualification remains separate.",
-    "next_action": "G3: inspect and consume existing documentary assertion reconciliation in the shared patient/report projection. Preserve exact question/entity/source contracts and quarantined prior readings; expose opposing or unresolved accounts without promoting them to clinical values. Do not add a relation catalog without a measured need. Verify native source preservation and readable rendering offline, then one confirmatory ordinary question after combined checks. Preserve alltenareas and source caches; scheduler PAUSED.",
+    "remaining_gap": "One fresh ordinary confirmation remains. Prior context/render was inspection only and still has a stale plan; no end-to-end,clinical or MVP acceptance inferred. Then replay,window transfer and non-HF check; broader qualification remains independent.",
+    "next_action": "G3: run one ordinary original-question confirmation on productc4c1367 through the existing compose/report entrypoint, with current caches allowed and no injected recovery,draft or acceptance. Preserve the original57patient scope, every provider/failed attempt and source identity; freeze product/source for this one job. Audit native dependency correctness, final review, named medications/doses/care roles, report readability and component cost. Then checked replay/window-change/non-HF transfer; alltenareas and independent qualification remain. Scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -746,7 +747,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "No active provider/training job. Product candidates11ef209/1eb76c7 committed locally; prior source reader/policy files unchanged. Sole owner ACTIVE; scheduler PAUSED.",
+    "coordination": "No active provider/training job yet; productc4c1367 ready for one confirmation. Source-reader/policy cache-binding files unchanged; scheduler PAUSED.",
     "remaining_blockers": [
       "Independent source/model/clinical qualification, viable outcome labels and authentic full-workload/reviewer economics remain unqualified.",
       "Report serving still has measurable redundant context validation; current PDF13.348s, no claim of whole-question speedup."
@@ -812,14 +813,14 @@
     "at": "2026-10-31T02:00:29.418378+00:00",
     "workflow_change": "Exact source-bound frontier observations now survive changed batching and field aliases. Confident singular-source feedback quarantines only that reading; current57patient report and isolated app retain every native value and partial status.",
     "unsealed_work": {
-      "status": "offline_verified_shared_candidates",
-      "path": "artifacts/agere-blueprint-documentation-retention-2026-10-31",
-      "active_receipt": "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json",
+      "status": "ready_for_single_confirmatory_ordinary_run",
+      "path": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2",
+      "active_receipt": "artifacts/agere-blueprint-patient-state-2026-10-31/receipt.json",
       "source_frozen_for_run": false,
       "pid": null,
       "session": null,
-      "remaining_gap": "Need shared documentary-state consumption and one connected original-question confirmation; prior46minute result remains partial. Independent clinical/model/outcome/economics qualification remains separate.",
-      "next_action": "G3: inspect and consume existing documentary assertion reconciliation in the shared patient/report projection. Preserve exact question/entity/source contracts and quarantined prior readings; expose opposing or unresolved accounts without promoting them to clinical values. Do not add a relation catalog without a measured need. Verify native source preservation and readable rendering offline, then one confirmatory ordinary question after combined checks. Preserve alltenareas and source caches; scheduler PAUSED."
+      "remaining_gap": "One fresh ordinary confirmation remains. Prior context/render was inspection only and still has a stale plan; no end-to-end,clinical or MVP acceptance inferred. Then replay,window transfer and non-HF check; broader qualification remains independent.",
+      "next_action": "G3: run one ordinary original-question confirmation on productc4c1367 through the existing compose/report entrypoint, with current caches allowed and no injected recovery,draft or acceptance. Preserve the original57patient scope, every provider/failed attempt and source identity; freeze product/source for this one job. Audit native dependency correctness, final review, named medications/doses/care roles, report readability and component cost. Then checked replay/window-change/non-HF transfer; alltenareas and independent qualification remain. Scheduler PAUSED."
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -2476,14 +2477,14 @@
     }
   ],
   "unsealed_work": {
-    "status": "offline_verified_shared_candidates",
-    "path": "artifacts/agere-blueprint-documentation-retention-2026-10-31",
-    "active_receipt": "artifacts/agere-blueprint-documentation-retention-2026-10-31/receipt.json",
+    "status": "ready_for_single_confirmatory_ordinary_run",
+    "path": "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2",
+    "active_receipt": "artifacts/agere-blueprint-patient-state-2026-10-31/receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "remaining_gap": "Need shared documentary-state consumption and one connected original-question confirmation; prior46minute result remains partial. Independent clinical/model/outcome/economics qualification remains separate.",
-    "next_action": "G3: inspect and consume existing documentary assertion reconciliation in the shared patient/report projection. Preserve exact question/entity/source contracts and quarantined prior readings; expose opposing or unresolved accounts without promoting them to clinical values. Do not add a relation catalog without a measured need. Verify native source preservation and readable rendering offline, then one confirmatory ordinary question after combined checks. Preserve alltenareas and source caches; scheduler PAUSED."
+    "remaining_gap": "One fresh ordinary confirmation remains. Prior context/render was inspection only and still has a stale plan; no end-to-end,clinical or MVP acceptance inferred. Then replay,window transfer and non-HF check; broader qualification remains independent.",
+    "next_action": "G3: run one ordinary original-question confirmation on productc4c1367 through the existing compose/report entrypoint, with current caches allowed and no injected recovery,draft or acceptance. Preserve the original57patient scope, every provider/failed attempt and source identity; freeze product/source for this one job. Audit native dependency correctness, final review, named medications/doses/care roles, report readability and component cost. Then checked replay/window-change/non-HF transfer; alltenareas and independent qualification remain. Scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
