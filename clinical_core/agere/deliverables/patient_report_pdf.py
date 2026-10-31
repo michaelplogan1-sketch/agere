@@ -143,7 +143,11 @@ def render(context,output,references=None,evidence=None):
   table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),paper),('LINEBELOW',(0,0),(-1,-1),.25,line),('BOTTOMPADDING',(0,0),(-1,-1),7),('TOPPADDING',(0,0),(-1,-1),7)]));out.append(table)
   for t in c['therapy']:
    if t['documented_reasons']:out.extend([P(t['label']+' / documented accounts',head),*grouped_reasons(t['documented_reasons'])])
-  if c.get('regimen_statements'):out.extend([P('Dated regimen source accounts',head),*grouped_reasons(c['regimen_statements'])])
+  if c.get('regimen_statements'):
+   out.extend([P('Dated regimen source index',head),P('The complete quotations are available in the interactive regimen section and embedded evidence. This index retains every source record and its statement timing; it does not establish current medication use.',small)])
+   for g in c['regimen_statements']:
+    if g.get('review_status'):out.extend([P(g['review_status'],labelstyle),P(g['review_qualification'],small)])
+    out.append(P(str(g.get('polarity'))+' / '+str(g.get('temporality'))+' / '+str(g.get('subject'))+' / '+'; '.join(str(s.get('date'))+' / '+str(s.get('record_id'))for s in g['sources']),small))
   out.extend([P('Individual tolerated maximum',head),P(c['individual_max_tolerated_dose'],labelstyle)])
   if c.get('individual_tolerance_statements'):out.extend(grouped_reasons(c['individual_tolerance_statements']))
   out.extend([P('Dated titration explanations',head),*grouped_reasons(c['dose_limiting_statements'])])
