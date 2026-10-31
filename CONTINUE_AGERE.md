@@ -1,3 +1,23 @@
+# Current Agere checkpoint - 2026-10-31T12:48:15.962362+00:00
+
+Build ACTIVE,G5;sole owner;scheduler PAUSED. Targeted continuation RUNNING PID86521/session14207; product6e4aa1f/source frozen. No duplicate run or product edits. Last sealed receipt remains guarded-download performance. Curated73page user PDF remains available. Alltenareas retained.
+
+Shared repairs:88native/guard checks;46source-boundary checks(overlap);159combined targeted checks plus50reuse/continuation checks. Actual later-source patient projection:86later reasons,2151separate status observations,57names/228pillar cells,68page candidate. Native plan still stale for35patients; no full-question or clinical acceptance.
+
+Exact next: Observe the single owned targeted continuation at artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json. Product6e4aa1f/source frozen; do not duplicate the run or edit product. This reexecutes the retained60read-only actions, versions four source field IDs without changing their revised question meanings, and asks the current controller to repair stale plan lineage, retain later source observations and enumerate named fills. No draft or acceptance is injected; no cold/ordinary speed claim. On terminal result audit native dependency correctness, all57patients, all source interpretations and full attempt accounting, then current app/report/recovery and private draft. Preserve alltenareas and explicit independent qualification limits.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T12:25:10.214799+00:00
+
+Build ACTIVE,G5;sole owner;scheduler PAUSED. Ordinary full question RETURNED partial after46min:57patients,1395pricedattempts,$3.219368782API-equivalent. Product/source/previousledger unchanged; no subscriptionlimit. No active provider job; freeze released. Latest sealed delivery remains guarded-download performance; curated73page PDF retained.
+
+Exact next: Diagnose and repair the measured ordinary-run failures using its retained native trace before another paid full run. The 57-row table has corrected 12-month flags but its plan still consumes all-history flags through agere_result_31; retain the guard and expose precise dependent fields. Then verify source-field contract stability and current presentation aliases/causal-relation separation on the same retained evidence. Preserve all attempts, original sources and all ten acceptance areas; no clinical labels, broad training or fresh broad source run.
+
+Receipt: artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json. Independent clinical/model/outcome qualification remains open.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T11:23:00.005908+00:00
 
 Build ACTIVE,G5;soleowner;schedulerPAUSED. OWNED RUN ACTIVE: artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json. PID82315/session7958. SOURCE/PRODUCT2a608b4 FROZEN. Do not duplicate or edit product. Latest sealed delivery is guarded-download performance; curated73page PDF remains ready. Alltenareas retained; no clinical/MVP qualification claim.

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T11:23:00.005908+00:00",
+  "updated_at": "2026-10-31T12:48:38.136495+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -395,11 +395,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "guarded_download_performance_delivered",
+    "kind": "targeted_shared_repairs_verified_offline",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "All four source-checked downloads avoid one redundant full context load.",
-    "measured_failure_reduction": "PDF13.348\u219210.594s; HTML9.236\u21926.545s; JSON9.448\u21926.544s; CSV9.053\u21926.406s. Byte-identical,20tests,three400negativecontrols,0providerattempts.",
+    "user_behavior_delta": "Compiler identifies the stale final plan rather than blaming independent care/dose lookups; field meanings cannot silently change; patient reports retain later bound source findings and separate status from reasons.",
+    "measured_failure_reduction": "Actual final trace localizes historical flags to plan only;35stale plans identified. All4redefined source IDs rejected before dispatch. Actual report carries86later reason findings and2151separate status observations,57names/228pillars,68pages/215580bytes vs116page fallback.159focused tests plus50reuse/continuation tests pass;0newproviders for these checks.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -719,10 +719,14 @@
       "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/current-candidate-acceptance.json",
       "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json",
       "artifacts/agere-clinical-review-curation-2026-10-31/delivery-receipt.json",
-      "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json"
+      "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json",
+      "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json",
+      "artifacts/agere-current-integrated-cost-2026-10-31/native-lineage-repair-v1/diagnostic-receipt.json",
+      "artifacts/agere-current-integrated-cost-2026-10-31/source-field-contract-v1/receipt.json",
+      "artifacts/agere-current-integrated-cost-2026-10-31/report-integration-v1/receipt.json"
     ],
-    "remaining_gap": "Whole ordinary question performance and source/model qualification remain unmeasured on the combined current fixes; original38m38s run preceded the native-group/routing/source-feedback changes.",
-    "next_action": "Observe the owned ordinary full-question run at artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json to terminal. Product2a608b4 and original synthetic source are FROZEN; do not duplicate the job or edit product code. Session7958. Preserve all provider/cache/failed attempts and original57patient scope. On terminal result audit native/source meaning, component contribution, cost/latency, bottling eligibility and all report formats; do not call a partial result clinical/MVP acceptance. Continue offline read-only accounting/qualification inspection only while the run is active.",
+    "remaining_gap": "Ordinary full question is still partial with35stale native gap plans. Shared compiler/source-field/report repairs verified offline; no end-to-end saving or clinical acceptance yet.",
+    "next_action": "Observe the single owned targeted continuation at artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json. Product6e4aa1f/source frozen; do not duplicate the run or edit product. This reexecutes the retained60read-only actions, versions four source field IDs without changing their revised question meanings, and asks the current controller to repair stale plan lineage, retain later source observations and enumerate named fills. No draft or acceptance is injected; no cold/ordinary speed claim. On terminal result audit native dependency correctness, all57patients, all source interpretations and full attempt accounting, then current app/report/recovery and private draft. Preserve alltenareas and explicit independent qualification limits.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -731,7 +735,7 @@
         "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json"
       ]
     },
-    "coordination": "Owned current ordinary full-question run PID82315/session7958; product/source frozen. Current isolated8890 still available, primary/default unchanged; scheduler PAUSED.",
+    "coordination": "Owned targeted continuation PID86521/session14207; product6e4aa1f/source frozen. Isolated8890 stopped; primary untouched; scheduler PAUSED.",
     "remaining_blockers": [
       "Independent source/model/clinical qualification, viable outcome labels and authentic full-workload/reviewer economics remain unqualified.",
       "Report serving still has measurable redundant context validation; current PDF13.348s, no claim of whole-question speedup."
@@ -797,13 +801,14 @@
     "at": "2026-10-31T02:00:29.418378+00:00",
     "workflow_change": "Exact source-bound frontier observations now survive changed batching and field aliases. Confident singular-source feedback quarantines only that reading; current57patient report and isolated app retain every native value and partial status.",
     "unsealed_work": {
-      "status": "current_complete_source_final_typed_review_running",
-      "path": "artifacts/agere-g5-source-clock-2026-10-30",
-      "remaining_gap": "Clinical-card gap fixed:85targetedchecks plus15citation/profilechecks(overlap); actual57caseauditnow228pillars/17doseobjects/39HF-subtype reasons exact. Late native composition joins new source observations after math, preserving1026existingcells andall8pilotbindings;1766totalbindings/59completepackets/0sourcegaps,0provider calls. It reduces derived response from1.94GBto423.9MB without dropping source or changing guards. Three giant redundant unsealed diagnostics were losslessly gzip-archived with byte/SHA256 roundtrip proof, releasing4.82GB; originals are recoverable. Current source support review, canonical report/layout/current runtime/package remain to finish.",
-      "next_action": "Observe current-final-source-review-v2 to terminal without changing frozen product53df263 or source; inspect owned process/session receipt first. It checks59complete dependency packets after allthree source fields and corrected clinical cards, with no Claude. Do not repeat source extraction. Then capture current context, render/visually verify readable clinician HTML/PDF/JSON/CSV, fix only measured layout/wiring failures, serve isolated8890candidate and verify exact API exports/current dependencies. Package/recovery/rollback and private draft update follow; all ten areas and independent clinical/model/outcome/deployment qualifications remain. Current source quantities are1758currentbindings+8retainedpilotversions; repeat source citations are deduplicated, not independent events.",
+      "status": "running_targeted_owned_continuation",
+      "path": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1",
       "source_frozen_for_run": true,
-      "active_receipt": "artifacts/agere-g5-source-clock-2026-10-30/current-final-source-review-v2/run-receipt.json",
-      "authorization": "Explicit autonomous MVP/synthetic/provider/private-branch approvals persist; no repeated routine approval. Existing source, external-action and subscription boundaries unchanged."
+      "active_receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json",
+      "pid": 86521,
+      "session": 14207,
+      "remaining_gap": "Ordinary full question is still partial with35stale native gap plans. Shared compiler/source-field/report repairs verified offline; no end-to-end saving or clinical acceptance yet.",
+      "next_action": "Observe the single owned targeted continuation at artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json. Product6e4aa1f/source frozen; do not duplicate the run or edit product. This reexecutes the retained60read-only actions, versions four source field IDs without changing their revised question meanings, and asks the current controller to repair stale plan lineage, retain later source observations and enumerate named fills. No draft or acceptance is injected; no cold/ordinary speed claim. On terminal result audit native dependency correctness, all57patients, all source interpretations and full attempt accounting, then current app/report/recovery and private draft. Preserve alltenareas and explicit independent qualification limits."
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -867,7 +872,17 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "targeted_owned_native_source_continuation",
+        "status": "running",
+        "pid": 86521,
+        "session": 14207,
+        "source_frozen": true,
+        "commit": "6e4aa1f",
+        "receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json"
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2411,17 +2426,33 @@
         "artifacts/agere-report-download-performance-2026-10-31/delivery-receipt.json"
       ],
       "scope_impact": "Original57patients and alltenareas retained; no protected keys/generator truth, new model/default promotion, token/spend caps or outside actions."
+    },
+    {
+      "at": "2026-10-31T12:25:10.214799+00:00",
+      "gate": "G5",
+      "decision": "Use measured terminal ordinary-run defects for a targeted shared repair; no repeated broad paid run.",
+      "reason": "Coverage flags were corrected but the assembled plan still depends on historical flags; the existing time-window guard correctly refuses the result. New source fields also changed meaning under reused IDs, and current report aliases fail the curated renderer. These are engineering defects, not missing clinical labels.",
+      "all_ten_areas_retained": true,
+      "evidence": "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json"
+    },
+    {
+      "at": "2026-10-31T12:48:15.962362+00:00",
+      "gate": "G5",
+      "decision": "Run an explicit targeted owned continuation with exact revised source questions under distinct field IDs; preserve the original46minute ordinary result as failed/partial evidence.",
+      "reason": "Measured repairs remove false lineage faults and lost presentation bindings;35stale plans remain. Auditing current_dose result22 found7registered GDMT rows, so its difference from17earlier dated observations is not asserted as a proven filter omission. No new model labels, weights, broad training or default activation.",
+      "evidence": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/protocol.json",
+      "all_ten_areas_retained": true
     }
   ],
   "unsealed_work": {
-    "status": "running_current_ordinary_whole_question",
-    "path": "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1",
+    "status": "running_targeted_owned_continuation",
+    "path": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1",
     "source_frozen_for_run": true,
-    "active_receipt": "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json",
-    "pid": 82315,
-    "session": 7958,
-    "remaining_gap": "Current ordinary integrated performance/source result not yet observed; report and download engineering deliveries sealed.",
-    "next_action": "Observe the owned ordinary full-question run at artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json to terminal. Product2a608b4 and original synthetic source are FROZEN; do not duplicate the job or edit product code. Session7958. Preserve all provider/cache/failed attempts and original57patient scope. On terminal result audit native/source meaning, component contribution, cost/latency, bottling eligibility and all report formats; do not call a partial result clinical/MVP acceptance. Continue offline read-only accounting/qualification inspection only while the run is active."
+    "active_receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json",
+    "pid": 86521,
+    "session": 14207,
+    "remaining_gap": "Ordinary full question is still partial with35stale native gap plans. Shared compiler/source-field/report repairs verified offline; no end-to-end saving or clinical acceptance yet.",
+    "next_action": "Observe the single owned targeted continuation at artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json. Product6e4aa1f/source frozen; do not duplicate the run or edit product. This reexecutes the retained60read-only actions, versions four source field IDs without changing their revised question meanings, and asks the current controller to repair stale plan lineage, retain later source observations and enumerate named fills. No draft or acceptance is injected; no cold/ordinary speed claim. On terminal result audit native dependency correctness, all57patients, all source interpretations and full attempt accounting, then current app/report/recovery and private draft. Preserve alltenareas and explicit independent qualification limits."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2451,13 +2482,13 @@
   },
   "active_jobs": [
     {
-      "kind": "current_ordinary_whole_question_measurement",
+      "kind": "targeted_owned_native_source_continuation",
       "status": "running",
-      "pid": 82315,
-      "session": 7958,
+      "pid": 86521,
+      "session": 14207,
       "source_frozen": true,
-      "commit": "2a608b4",
-      "receipt": "artifacts/agere-current-integrated-cost-2026-10-31/ordinary-v1/run-receipt.json"
+      "commit": "6e4aa1f",
+      "receipt": "artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json"
     }
   ]
 }
