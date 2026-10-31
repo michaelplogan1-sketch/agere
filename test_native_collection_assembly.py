@@ -1,6 +1,92 @@
 """Native collections remain intact through the existing table/final compiler."""
 import copy,json,unittest
+from unittest.mock import patch
 from clinical_core.agere.clinical import result_assembly as A,backstop_agent as B
+
+
+class ParentIdentityRetention(unittest.TestCase):
+    def issues(self,expected,actual,*,parent=None,final_parent=None,keys=None,on=None):
+        parent={'patient_id':'A'}if parent is None else parent
+        final_parent=parent if final_parent is None else final_parent
+        keys=['patient_id']if keys is None else keys
+        on={'patient_id':'patient_id'}if on is None else on
+        source={**parent,'items':expected}
+        results={'bound':{'rows':[source],'columns':list(source),'assembly':{'keys':keys,
+            'joins':[{'as':'items','on':on,'mode':'collect','retain_in_final':True}]}}}
+        return A.collection_retention_issues(results,[{**final_parent,'items':actual}],{'bound'})
+
+    def test_redundant_join_identity_can_be_added_or_carried_by_the_parent(self):
+        item={'drug_key':'example','dose':5,'record_id':'r','date':'2029-01-01'}
+        for old,new in [([item],[{**item,'patient_id':'A'}]),([{**item,'patient_id':'A'}],[item]),
+                        ([item,{**item,'patient_id':'A'}],[{**item,'patient_id':'A'},item])]:
+            before=copy.deepcopy((old,new))
+            self.assertFalse(self.issues(old,new));self.assertEqual((old,new),before)
+            self.assertFalse(self.issues(old,json.dumps(new)))
+
+    def test_multiplicity_parent_attribution_and_nested_assertions_stay_strict(self):
+        item={'patient_id':'A','record_id':'r','assertion':{'patient_id':'A','question_digest':'q'}}
+        mutations=[[{'record_id':'r','assertion':item['assertion']}],
+                   [{**item,'patient_id':'B'}],
+                   [{**item,'assertion':{'patient_id':'B','question_digest':'q'}}],
+                   [{**item,'record_id':'different'}],[]]
+        self.assertFalse(self.issues([item],mutations[0]))
+        for actual in mutations[1:]:
+            with self.subTest(actual=actual):self.assertTrue(self.issues([item],actual))
+        self.assertTrue(self.issues([item,item],[item]))
+        self.assertTrue(self.issues([{'patient_id':'B','record_id':'r'}],[{'record_id':'r'}]))
+        source={'rows':[{'patient_id':p,'items':[{'patient_id':p,'record_id':p}]}for p in ['A','B']],
+                'columns':['patient_id','items'],'assembly':{'keys':['patient_id'],'joins':[
+                    {'as':'items','on':{'patient_id':'patient_id'},'mode':'collect','retain_in_final':True}]}}
+        swapped=[{'patient_id':p,'items':[{'patient_id':q,'record_id':q}]}for p,q in [('A','B'),('B','A')]]
+        self.assertTrue(A.collection_retention_issues({'bound':source},swapped,{'bound'}))
+
+    def test_null_type_and_nonkey_changes_do_not_borrow_parent_identity(self):
+        for child in [None,'7',7.0,True]:
+            with self.subTest(child=child):
+                self.assertTrue(self.issues([{'patient_id':child,'dose':1}],[{'dose':1}],parent={'patient_id':7}))
+        self.assertTrue(self.issues([{'patient_id':None,'dose':1}],[{'dose':1}],parent={'patient_id':None}))
+        self.assertFalse(self.issues([{'patient_id':7,'dose':1}],[{'dose':1}],parent={'patient_id':7}))
+        for value in [1.0,True,'1',None]:
+            with self.subTest(value=value):self.assertTrue(self.issues([{'dose':1}],[{'dose':value}]))
+        self.assertTrue(self.issues([{'dose':1}],[{'dose':1,'current_use':True}]))
+
+    def test_only_the_source_side_of_a_retained_identity_join_is_normalized(self):
+        self.assertFalse(self.issues([{'source_patient':'A','dose':1}],[{'dose':1}],on={'patient_id':'source_patient'}))
+        self.assertTrue(self.issues([{'patient_id':'A','dose':1}],[{'dose':1}],on={'patient_id':'source_patient'}))
+        self.assertTrue(self.issues([{'patient_id':'A','dose':1}],[{'dose':1}],parent={'patient_id':'A','cohort':'A'},on={'cohort':'patient_id'}))
+        parent={'patient_id':'A','other_id':'B'}
+        self.assertTrue(self.issues([{'id':'A','dose':1}],[{'dose':1}],parent=parent,
+            keys=['patient_id','other_id'],on={'patient_id':'id','other_id':'id'}))
+
+    def test_composite_identity_does_not_elide_a_mismatching_component(self):
+        parent={'patient_id':'A','episode':'E'};on={'patient_id':'patient_id','episode':'episode'}
+        self.assertFalse(self.issues([{'patient_id':'A','episode':'E','dose':1}],[{'dose':1}],parent=parent,keys=list(parent),on=on))
+        self.assertTrue(self.issues([{'patient_id':'A','episode':'OTHER','dose':1}],[{'dose':1}],parent=parent,keys=list(parent),on=on))
+
+    def test_native_rename_keeps_the_same_parent_binding(self):
+        results={'base':{'rows':[{'patient_id':'A'}]},'source':{'rows':[
+            {'patient_id':'A','record_id':'r','dose':5}]}}
+        results['bound']=A.compose(results,base='base',keys=['patient_id'],joins=[
+            {'result':'source','as':'items','on':{'patient_id':'patient_id'},'mode':'collect','retain_in_final':True}])
+        final=A.compose(results,base='bound',keys=['patient_id'],rename_columns={'items':'source_context'})
+        results['final']=final;rows=copy.deepcopy(final['rows']);rows[0]['source_context'][0].pop('patient_id')
+        self.assertFalse(A.collection_retention_issues(results,rows,{'bound','final'}))
+        rows[0]['source_context'][0]['dose']=6
+        self.assertTrue(A.collection_retention_issues(results,rows,{'bound','final'}))
+
+    def test_heterogeneous_and_scalar_collections_retain_exact_nongrain_fields(self):
+        self.assertTrue(self.issues([{'a':1},{'a':1,'b':2}],[{'a':1,'b':2},{'a':1,'b':2}]))
+        self.assertFalse(self.issues(['x','x',1],['x',1,'x']))
+        self.assertTrue(self.issues(['x','x',1],['x',1]))
+        bad=self.issues([{'patient_id':'A','record_id':'original','dose':1}],[{'dose':2}])
+        self.assertIn('original',str(bad));self.assertIn('record_ids',str(bad))
+
+    def test_large_collection_uses_linear_multiset_comparison(self):
+        count=10000;old=[{'record_id':str(i),'dose':i}for i in range(count)]
+        new=[{**r,'patient_id':'A'}for r in reversed(old)]
+        with patch.object(A,'digest',wraps=A.digest)as digested:
+            self.assertFalse(self.issues(old,new))
+        self.assertLessEqual(digested.call_count,4*count)
 
 
 class Collections(unittest.TestCase):

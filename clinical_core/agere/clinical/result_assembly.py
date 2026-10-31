@@ -9,6 +9,7 @@ import json
 from ...contracts import digest
 
 VERSION='result-assembly/1'
+RETENTION_CONTRACT='collection-retention/2'
 
 
 def source_domain(condition,columns):
@@ -218,6 +219,31 @@ def compose(results,*,base,keys,joins=None,base_columns=None,rename_columns=None
             'method':'Exact left membership; scalar joins prove uniqueness; collection joins retain intact rows. Missing joins are null, not a clinical negative.'}}
 
 
+def _retained_parent_bindings(join,keys,parent):
+    """Only source-side join identities preserved in the enclosing row can be elided."""
+    bindings={};conflicts=set()
+    for left,right in (join.get('on')or{}).items():
+        value=parent.get(left)
+        if left not in keys or value is None or type(value)not in (str,int,float,bool):continue
+        try:encoded=json.dumps(value,sort_keys=True,allow_nan=False)
+        except ValueError:continue
+        if right in bindings and bindings[right]!=encoded:conflicts.add(right)
+        else:bindings[right]=encoded
+    return {name:value for name,value in bindings.items()if name not in conflicts}
+
+
+def _retention_item(item,bindings):
+    """Normalize redundant top-level identity only; nested assertions remain exact."""
+    if not isinstance(item,dict)or not bindings:return item
+    out=dict(item)
+    for name,parent in bindings.items():
+        if name not in item or item[name]is None:continue
+        try:equal=json.dumps(item[name],sort_keys=True,allow_nan=False)==parent
+        except (TypeError,ValueError):equal=False
+        if equal:out.pop(name)
+    return out
+
+
 def collection_retention_issues(results,final_rows,dependencies):
     """Check explicitly promised source collections in descendant final tables."""
     from collections import Counter
@@ -274,12 +300,25 @@ def collection_retention_issues(results,final_rows,dependencies):
                         missing=wanted-Counter(digest(item)for item in value or [])
                         choices.append((sum(missing.values()),address,missing))
                 if choices and min(c[0]for c in choices)==0:continue
+                bindings=_retained_parent_bindings(join,keys,row)
+                normalized=False
+                if choices and bindings:
+                    normalized=True
+                    wanted=Counter(digest(_retention_item(item,bindings))for item in expected)
+                    choices=[]
+                    for address in addresses:
+                        value=decoded(target.get(address))
+                        if value is None or isinstance(value,list):
+                            missing=wanted-Counter(digest(_retention_item(item,bindings))for item in value or[])
+                            choices.append((sum(missing.values()),address,missing))
+                    if choices and min(c[0]for c in choices)==0:continue
                 alias=addresses[0]if addresses else source_alias
                 if not choices:
                     report('omitted',alias,view,keys,ident,join,expected);continue
                 _,alias,missing=min(choices,key=lambda c:(c[0],c[1]))
                 if missing:
-                    records=sorted({item['record_id']for item in expected if isinstance(item,dict) and isinstance(item.get('record_id'),str) and digest(item)in missing})
+                    records=sorted({item['record_id']for item in expected if isinstance(item,dict) and isinstance(item.get('record_id'),str) and
+                        digest(_retention_item(item,bindings)if normalized else item)in missing})
                     report('changed',alias,view,keys,ident,join,expected,sum(missing.values()),records)
     messages=[]
     for (kind,alias,view),issue in issues.items():
@@ -288,6 +327,6 @@ def collection_retention_issues(results,final_rows,dependencies):
         text+=' from '+view+'; keys='+json.dumps(issue['keys'])+'; affected_keys='+json.dumps([json.loads(k)for k in issue['affected_keys']])
         text+='; required_object_fields='+json.dumps(sorted(issue['required_fields']))
         if issue['missing_objects']:text+='; missing_objects='+json.dumps(issue['missing_objects'])
-        text+='. Keep the intact collection. Use an executed compose_table.rename_columns mapping to move broader evidence to a clearly labelled context field; a narrower clinical projection does not remove an earlier retain_in_final promise.'
+        text+='. Keep the intact collection. Redundant source join keys may be carried by the identically bound parent row; other fields remain exact. Use an executed compose_table.rename_columns mapping to move broader evidence to a clearly labelled context field; a narrower clinical projection does not remove an earlier retain_in_final promise.'
         messages.append(text)
     return messages

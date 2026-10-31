@@ -1055,7 +1055,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     if limits:
         answer['limitations']=list(dict.fromkeys([*(answer.get('limitations')or[]),*limits]))
     static_feedback.extend(relation_composition_issues(answer,getattr(tools,'document_reviews',[])))
-    from .result_assembly import collection_retention_issues
+    from .result_assembly import collection_retention_issues,RETENTION_CONTRACT
+    assessment['collection_retention_contract']=RETENTION_CONTRACT
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
     static_feedback.extend(collection_retention_issues(native,answer.get('table')or[],
         native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view')])))

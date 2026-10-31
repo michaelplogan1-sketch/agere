@@ -29,3 +29,11 @@ Reopen G3 for the ordinary original-question engineering failure. Earlier scoped
 After two increments without measured failure reduction or gate progress, reassess and record the correction in the control decision log. Do not substitute repeated planning or passing tests for the connected product result.
 
 Review artifacts and exact accounting: artifacts/agere-blueprint-review-2026-10-31. Latest sealed product receipt remains the report-download performance delivery; this review itself seals no product behavior.
+
+## Source-fidelity correction after current confirmation
+
+The full-coverage continuation retained57patients and returned partial after1583.260seconds/177attempts/$5.289273API-equivalent. A read-only native replay distinguishes real early omissions from later false rejections:89objects gained only a matching parentpatient_id, and17objects elided only that same redundant key. No other dose field/value changed. Claude’s [narrow review](reviews/2026-10-31-claude-collection-fidelity.md) recommends parent-key normalization and rejects broader subset matching.
+
+Candidate collection-retention/2 keeps exact comparison as the fast path, then normalizes only source-side join fields whose parent side belongs to the retained row identity, with non-null JSON-type-exact values. Nested assertions and all other fields remain exact; multiplicities and per-parent addresses stay separate. This is narrower than the review’s left-or-right-field suggestion: a coincidental child field with the parent-side name is not a declared source identity. Nonidentity join attributes cannot be elided because their parent value need not survive the final row.81focused checks pass; replay reaches a static-valid draft at callback22instead of34. This is offline contract evidence, not observed end-to-end savings or clinical acceptance.
+
+The final provider feedback also reports6missing-evidence titration assertions and18unknown source checks. These are machine judgments requiring exact-source diagnosis, not independent clinical truth. Preserve the original observations/attempts, expose unresolved interpretations and repair only the named dependencies. No broad source/training campaign or removed acceptance area.
