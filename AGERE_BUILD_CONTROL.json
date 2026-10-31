@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-30T23:49:55.416070+00:00",
+  "updated_at": "2026-10-31T00:13:12.579866+00:00",
   "decision_basis": "docs/agere/reviews/2026-10-26-CTO-final.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -368,6 +368,10 @@
         {
           "path": "artifacts/agere-review-dispatch-v1/implementation-receipt.json",
           "sha256": "fe1d4cc6cb6e597f2d8b74d8a1a1f8702bc9cc6cf0c547587dcf94cc4c2fc8f8"
+        },
+        {
+          "path": "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/delivery-receipt.json",
+          "sha256": "69ec8d15daedea3e293c4a1f2ee0cbfdbafa93e1ca6f89b1f87285b9f12c9cb8"
         }
       ],
       "blocker": null,
@@ -375,11 +379,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_dependency_transport_and_partial_report_verified",
+    "kind": "current_partial_report_and_installed_recovery_sealed",
     "gate_id": "G5",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Complete source dependencies are checked without truncation; source-model uncertainty remains visible. Named patient report and full raw artifacts reopen under current policy; internal review stays distinct from clinical execution.",
-    "measured_failure_reduction": "15oversized dependencies are now transported within the service envelope with exact native reconstruction.161regressions and2authored live controls pass. Physical finalization preserves all1254native cells and exact embedded context. Source source-level semantic disagreement remains unresolved; no acceptance score is fabricated.",
+    "user_behavior_delta": "Current source-bound named patient review, faithful four-format exports, packaged planning/knowledge identity and working installed internal-review/recovery path.",
+    "measured_failure_reduction": "Both installed dependency omissions are removed; source/package planning identity matches. Named report has no object heading or formula prose. Actual current reopen/download/work/restart/WAL/source-change/freshrestore passes with unchanged source/accounting. No clinical/model score fabricated.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -649,10 +653,11 @@
       "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/policy-differences.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/receipt.json",
       "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/visual-qa.json",
-      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json"
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
+      "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/delivery-receipt.json"
     ],
-    "remaining_gap": "Current installed recovery is running after complete configuration closure and visual QA. Source semantics/model/clinical qualification remain open; known total API-equivalent accounting unchanged.",
-    "next_action": "Inspect sole installed-recovery v4 PID45687/session21252 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json until terminal; product/source frozeneb3929a. Final canonical report ANS-268f5cd8a87b74dca8659e38 /DLV-EACE9CC83FE9 passes57patients/1254cells/64medicationgroups/110PDFpages and actual browser/PDF visual QA. Complete saved report/work/restart/WAL/source-change/freshrestore, retain all failures/accounting and then seal engineering increment, update private draft and next justified G5 qualification. Do not duplicate provider/training/build work or claim clinical/model readiness.",
+    "remaining_gap": "G5 model/clinical qualification remains open. Source-relative timing disagreement and additional regimen candidates are unadjudicated; current patient states are not inferred. Need trustworthy contrary/family labels, viable outcomes and authentic cold/reviewer cost evidence. External production prerequisites remain separate.",
+    "next_action": "Use current8890candidate and sealed eb3929a recovery as the engineering base. Next G5 work is trustworthy source-family qualification of entity/relation/time reading and task routing against equivalent simple baselines. Current128machine-feedback units are124supported/4contradicted, not clinical labels: an always-supported shortcut has96.875%teacher agreement and misses all contrary labels. Do not fit/promote from that metric, reread protected answers, repeat unchanged full runs or manufacture current clinical states. Preserve partial results and all-attempt accounting; qualified independent labels/review, viable outcome classes and cold/reviewer economics remain explicit dependencies.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -722,16 +727,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-10-30T23:49:55.416070+00:00",
-    "workflow_change": "Ordinary compose controller now saves and generates named report/PDF automatically; handoff repaired. New temporal guard has a proven column-lineage false positive.",
+    "at": "2026-10-31T00:13:12.579866+00:00",
+    "workflow_change": "Current source-bound named patient review, faithful four-format exports, packaged planning/knowledge identity and working installed internal-review/recovery path.",
     "unsealed_work": {
-      "status": "current_installed_recovery_v4_running",
-      "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction",
-      "remaining_gap": "Current installed recovery is running after complete configuration closure and visual QA. Source semantics/model/clinical qualification remain open; known total API-equivalent accounting unchanged.",
-      "next_action": "Inspect sole installed-recovery v4 PID45687/session21252 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json until terminal; product/source frozeneb3929a. Final canonical report ANS-268f5cd8a87b74dca8659e38 /DLV-EACE9CC83FE9 passes57patients/1254cells/64medicationgroups/110PDFpages and actual browser/PDF visual QA. Complete saved report/work/restart/WAL/source-change/freshrestore, retain all failures/accounting and then seal engineering increment, update private draft and next justified G5 qualification. Do not duplicate provider/training/build work or claim clinical/model readiness.",
-      "source_frozen_for_run": true,
-      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
-      "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
+      "status": "qualification_dependencies_remaining",
+      "path": "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final",
+      "remaining_gap": "G5 model/clinical qualification remains open. Source-relative timing disagreement and additional regimen candidates are unadjudicated; current patient states are not inferred. Need trustworthy contrary/family labels, viable outcomes and authentic cold/reviewer cost evidence. External production prerequisites remain separate.",
+      "next_action": "Use current8890candidate and sealed eb3929a recovery as the engineering base. Next G5 work is trustworthy source-family qualification of entity/relation/time reading and task routing against equivalent simple baselines. Current128machine-feedback units are124supported/4contradicted, not clinical labels: an always-supported shortcut has96.875%teacher agreement and misses all contrary labels. Do not fit/promote from that metric, reread protected answers, repeat unchanged full runs or manufacture current clinical states. Preserve partial results and all-attempt accounting; qualified independent labels/review, viable outcome classes and cold/reviewer economics remain explicit dependencies.",
+      "source_frozen_for_run": false,
+      "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/delivery-receipt.json",
+      "authorization": "Mike explicitly authorizes autonomous MVP work and private pushes; no repeated routine approvals. Existing source and external-action boundaries remain."
     },
     "bottling_assessment": {
       "source": "/Users/mikel/Desktop/bottling.pdf",
@@ -795,19 +800,7 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [
-      {
-        "kind": "current_installed_recovery_v4",
-        "pid": 45687,
-        "session": 21252,
-        "status": "running",
-        "phase": "consistent_checkpoint",
-        "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
-        "physical_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json",
-        "commit": "eb3929a",
-        "source_frozen": true
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2278,16 +2271,26 @@
         "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-release/qa-cover.png"
       ],
       "scope_impact": "Exact native evidence preserved; no acceptance area removed."
+    },
+    {
+      "at": "2026-10-31T00:13:12.579866+00:00",
+      "gate": "G5",
+      "decision": "Seal current scoped source/report/installed-recovery engineering delivery, keep G5 unqualified. All35cold database copies and complete native/source/accounting evidence retained; no new weight fit or default promotion justified by imbalanced unadjudicated machine support feedback.",
+      "evidence": [
+        "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/delivery-receipt.json",
+        "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/learning-eligibility.json"
+      ],
+      "scope_impact": "All ten areas retained; supported unknowns and model/clinical/external dependencies remain explicit. Primary/default and scheduler untouched."
     }
   ],
   "unsealed_work": {
-    "status": "current_installed_recovery_v4_running",
-    "path": "artifacts/agere-full-stack-rerun-2026-10-30/native-scope-correction",
-    "remaining_gap": "Current installed recovery is running after complete configuration closure and visual QA. Source semantics/model/clinical qualification remain open; known total API-equivalent accounting unchanged.",
-    "next_action": "Inspect sole installed-recovery v4 PID45687/session21252 at /Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json until terminal; product/source frozeneb3929a. Final canonical report ANS-268f5cd8a87b74dca8659e38 /DLV-EACE9CC83FE9 passes57patients/1254cells/64medicationgroups/110PDFpages and actual browser/PDF visual QA. Complete saved report/work/restart/WAL/source-change/freshrestore, retain all failures/accounting and then seal engineering increment, update private draft and next justified G5 qualification. Do not duplicate provider/training/build work or claim clinical/model readiness.",
-    "source_frozen_for_run": true,
-    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
-    "authorization": "Mike explicitly requests clearer physician-review deliverable, whole-product thought-experiment visual, full stack roles/recursive learning/bottling, correction of excessive Claude work and another total-cost run. Existing synthetic/provider/private-push permissions persist."
+    "status": "qualification_dependencies_remaining",
+    "path": "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final",
+    "remaining_gap": "G5 model/clinical qualification remains open. Source-relative timing disagreement and additional regimen candidates are unadjudicated; current patient states are not inferred. Need trustworthy contrary/family labels, viable outcomes and authentic cold/reviewer cost evidence. External production prerequisites remain separate.",
+    "next_action": "Use current8890candidate and sealed eb3929a recovery as the engineering base. Next G5 work is trustworthy source-family qualification of entity/relation/time reading and task routing against equivalent simple baselines. Current128machine-feedback units are124supported/4contradicted, not clinical labels: an always-supported shortcut has96.875%teacher agreement and misses all contrary labels. Do not fit/promote from that metric, reread protected answers, repeat unchanged full runs or manufacture current clinical states. Preserve partial results and all-attempt accounting; qualified independent labels/review, viable outcome classes and cold/reviewer economics remain explicit dependencies.",
+    "source_frozen_for_run": false,
+    "active_receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-finalized-report-final/delivery-receipt.json",
+    "authorization": "Mike explicitly authorizes autonomous MVP work and private pushes; no repeated routine approvals. Existing source and external-action boundaries remain."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2315,17 +2318,5 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "kind": "current_installed_recovery_v4",
-      "pid": 45687,
-      "session": 21252,
-      "status": "running",
-      "phase": "consistent_checkpoint",
-      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/current-recovery/installed-v4-receipt.json",
-      "physical_receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-integrated-delivery-2026-10-30/current-installed-recovery-v4/run-receipt.json",
-      "commit": "eb3929a",
-      "source_frozen": true
-    }
-  ]
+  "active_jobs": []
 }
