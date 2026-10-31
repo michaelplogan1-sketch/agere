@@ -192,9 +192,11 @@ class ObservationFeedback(unittest.TestCase):
         from clinical_core.agere.clinical import span_repair as S
         with tempfile.TemporaryDirectory()as folder:
             path=Path(folder)
-            for ident in ['a','b','c','d']:
+            for ident in ['a','b','c','d','e']:
                 S.remember_observation(path,ident,{'label':'finding'},['original-'+ident],assertion_id=ident)
             values={'disputed':{'assertion':{'id':'a'},'record_id':'n1'},
+                    'bare':{'binding_version':'documentary-relation/1','id':'e','source':{'record_id':'n5'}},
+                    'ordinary_id':{'id':'b','record_id':'n2'},
                     'uncertain':{'assertion':{'id':'b'},'record_id':'n2'},
                     'aggregate':[{'assertion':{'id':'c'}},{'assertion':{'id':'d'}}]}
             claims=[{'id':k,'field':k,'path':[k]}for k in values]
@@ -209,10 +211,14 @@ class ObservationFeedback(unittest.TestCase):
             feedback={f['field']:f for f in got['claim_feedback']}
             self.assertEqual(feedback['disputed']['source_assertion_id'],'a')
             self.assertEqual(feedback['disputed']['source_observations_quarantined'],1)
+            self.assertEqual(feedback['bare']['source_assertion_id'],'e')
+            self.assertEqual(feedback['bare']['source_observations_quarantined'],1)
+            self.assertTrue(S.cached_observation(path,'e')['quarantined'])
+            self.assertNotIn('source_assertion_id',feedback['ordinary_id'])
             self.assertNotIn('source_assertion_id',feedback['aggregate'])
             self.assertTrue(S.cached_observation(path,'a')['quarantined'])
             for ident in ['b','c','d']:self.assertFalse(S.cached_observation(path,ident)['quarantined'])
-            db=S.observation_store(path);self.assertEqual(db.execute('SELECT COUNT(*) FROM span_observations').fetchone()[0],4);db.close()
+            db=S.observation_store(path);self.assertEqual(db.execute('SELECT COUNT(*) FROM span_observations').fetchone()[0],5);db.close()
 
 
 class SupportScheduling(unittest.TestCase):

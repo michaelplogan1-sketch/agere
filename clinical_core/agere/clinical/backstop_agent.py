@@ -1599,12 +1599,13 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
             if reading.get('label')=='supported' and reading.get('decided_by'):continue
             label=reading.get('label') if reading.get('decided_by') else 'unknown'
             value=_claim_value(state,claim['path'])
+            source_assertion=(value.get('assertion')if isinstance(value.get('assertion'),dict)else
+                value if value.get('binding_version')=='documentary-relation/1'else {})if isinstance(value,dict)else{}
             cited_ids={s['citation']['record_id']for s in state.get('cited_source_evidence',[])
                 if isinstance(value,str)and s['citation']['record_id']in value}
             feedback.append({'packet_id':packet['id'],'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
                 'label':label,'reason':options.get(label,options['unknown']),'decided_by':reading.get('decided_by'),
-                **({'source_assertion_id':value['assertion']['id']}if isinstance(value,dict)and
-                   isinstance(value.get('assertion'),dict)and isinstance(value['assertion'].get('id'),str)else {}),
+                **({'source_assertion_id':source_assertion['id']}if isinstance(source_assertion.get('id'),str)else {}),
                 'source_record_ids':sorted(source_ids(value) or cited_ids or source_ids(state.get('evidence',[]))),'result_view':packet.get('result_view')})
     return {'feedback':feedback,'steps':steps}
 
