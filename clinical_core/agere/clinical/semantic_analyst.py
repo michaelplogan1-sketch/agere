@@ -652,7 +652,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         # The reviewer runs first, so a genuinely corrected answer
                         # can pass using existing evidence. Otherwise, only a new
                         # failure/evidence state justifies further investigation.
-                        key = json.dumps([assessment.get('status'), feedback, evidence], sort_keys=True, default=str)
+                        key = json.dumps([assessment.get('status'), assessment.get('progress_state',feedback), evidence], sort_keys=True, default=str)
                         result['answer'] = {**candidate, 'status': 'partial', 'verification': 'unverified',
                                             'limitations': [*(candidate.get('limitations') or []), str(feedback)]} if isinstance(candidate, dict) else None
                         if key in reviewed:
