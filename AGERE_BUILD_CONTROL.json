@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-10-31T16:32:15.175072+00:00",
+  "updated_at": "2026-10-31T17:05:52.700427+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,11 +397,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_assembly_repaired_pending_final_source_support",
+    "kind": "current_language_transfer_and_full_source_ready",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Explicit presentation bindings preserve the complete original source collections while showing the requested GDMT subset; typed compiler progress detects equivalent failures and first-party documentation uses a stable cacheable system block.",
-    "measured_failure_reduction": "Actual42-action offline recovery:37original successful actions, all4sourceJSONcollections exact;57patients/228flags/89backgroundobjects/17richGDMTdoses/64namedfills;0retention/domainerrors;0newledgerrows;21.768s.213focused checks.58page curated candidate, all57names/all-pagebounds pass; pages1/2visuallyreviewed.",
+    "user_behavior_delta": "Explicit medication periods reuse existing calendar arithmetic through the shared language compiler instead of falling through to a model. Source coverage and report display retain prior work; uncertain verification no longer automatically promotes the actor.",
+    "measured_failure_reduction": "6month language request previously declined with no qualified model; now3current requests match independent native counts, reopen current and retain original question/window.0providers;13.055s total includingstartup;1.2-1.8s individual requests.58window/context/planner and64routing/source checks pass. Prior source52-action recovery exact47.542s/0providers and66pageinspection/all36distinctexcerpts/bounds/samples44/45 retained.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -738,10 +738,17 @@
       "artifacts/agere-blueprint-confirmation-2026-10-31/ordinary-v2/run-receipt.json",
       "artifacts/agere-compiler-progress-repair-2026-10-31/receipt.json",
       "artifacts/agere-native-assembly-repair-2026-10-31/attempt-v4/run-receipt.json",
-      "artifacts/agere-native-assembly-repair-2026-10-31/attempt-v4/report-inspection/receipt.json"
+      "artifacts/agere-native-assembly-repair-2026-10-31/attempt-v4/report-inspection/receipt.json",
+      "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-assembly-v3/run-receipt.json",
+      "artifacts/agere-native-assembly-repair-2026-10-31/attempt-v4/report-inspection/documentary-display-defect.json",
+      "artifacts/agere-documentary-presentation-2026-10-31/receipt.json",
+      "artifacts/agere-source-coverage-reconciliation-2026-10-31/attempt-v2/run-receipt.json",
+      "artifacts/agere-indeterminate-routing-2026-10-31/receipt.json",
+      "artifacts/agere-non-hf-current-controller-2026-10-31/window-replay-v3/run-receipt.json",
+      "artifacts/agere-source-coverage-reconciliation-2026-10-31/attempt-v2/report-inspection/receipt.json"
     ],
-    "remaining_gap": "Candidate assembly passes offline; final source-support, parameterized ordinary replay/window transfer/nonHF/current-app compatibility and independent qualification remain.",
-    "next_action": "Observe the single targeted assembly/source-support continuation(session22651) to terminal. Product31bac5f/source frozen; no duplicate provider or training run, no product edit.42successful native actions restored; no accepted answer/draft. Then exact-source and all-attempt audit, checked replay/window/nonHF/current-app compatibility; alltenareas retained; scheduler PAUSED.",
+    "remaining_gap": "Current final coverage/source support remains partial. Both retained source reviews are now integrated natively; final current continuation and app/replay/transfer evidence plus independent qualification remain.",
+    "next_action": "Observe the single current full-coverage continuation(session35319) to terminal. Productf428623/source frozen; no product edit, duplicate provider/training job or broad note rerun.53native actions restore all current and broader source observations; no draft/answer injection. Then audit actual final support, source/oldledger preservation, named-patient report/current app and all-attempt cost; checked replay/bottling/package and explicit independent qualification remain. Alltenareas retained; scheduler PAUSED.",
     "latest_review": {
       "at": "2026-10-29T05:45:10.577661+00:00",
       "kind": "Corrected source audit and final engineering delivery",
@@ -2485,17 +2492,32 @@
       "reason": "Fixtures guessed an unauthorized PRAGMA, a nonexistent drug_key fill column, then added patient_id to source objects whose exact prior projection omitted it. Those fixture failures were not provider/source failures. Verified actual schema and exact projection removed them.",
       "evidence": "artifacts/agere-native-assembly-repair-2026-10-31/attempt-v4/run-receipt.json",
       "scope_impact": "All ten acceptance areas retained; no source-contract weakening."
+    },
+    {
+      "at": "2026-10-31T16:55:42.425206+00:00",
+      "gate": "G3",
+      "decision": "Reuse completed broader source work; retain indeterminate verification as unresolved rather than escalating the entire actor without a located fault.",
+      "reason": "Final source support remained the same one-patient unknown across two reviews, with no field fault located;3Sonnetattempts/$0.891639API-equivalent did not resolve it. Coverage reconciliation uses0newinference. One offline fixture missed the prior internal feedback view; exact literal metadata now restored at its original position and all50prior toolcalls preserved.",
+      "scope_impact": "No positive assertion or workflow accepted from uncertainty; no clinical thresholds changed, new cap, discarded attempt or removed scope area."
+    },
+    {
+      "at": "2026-10-31T17:05:10.500773+00:00",
+      "gate": "G3",
+      "decision": "Generalize existing concept-period calendar binding after actual6month transfer failed; preserve default12month and exact numeric/date guards.",
+      "reason": "Ordinary12month path used compositional grammar with0providers, but6month wording declined into an unavailable unqualified interpreter. Native arithmetic already supported the period. Shared period parsing and compiler numeric provenance now handle positive whole month/year parameters without a disease handler or new model.",
+      "evidence": "artifacts/agere-non-hf-current-controller-2026-10-31/window-replay-v3/run-receipt.json",
+      "scope_impact": "Alltenareas and independent qualification retained; no caps or source changes."
     }
   ],
   "unsealed_work": {
-    "status": "targeted_assembly_source_support_running",
-    "path": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-assembly-v3",
-    "active_receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-assembly-v3/run-receipt.json",
+    "status": "current_full_coverage_continuation_running",
+    "path": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4",
+    "active_receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json",
     "source_frozen_for_run": true,
-    "pid": 7585,
-    "session": 22651,
-    "remaining_gap": "Candidate assembly passes offline; final source-support, parameterized ordinary replay/window transfer/nonHF/current-app compatibility and independent qualification remain.",
-    "next_action": "Observe the single targeted assembly/source-support continuation(session22651) to terminal. Product31bac5f/source frozen; no duplicate provider or training run, no product edit.42successful native actions restored; no accepted answer/draft. Then exact-source and all-attempt audit, checked replay/window/nonHF/current-app compatibility; alltenareas retained; scheduler PAUSED."
+    "pid": 16113,
+    "session": 35319,
+    "remaining_gap": "Current final coverage/source support remains partial. Both retained source reviews are now integrated natively; final current continuation and app/replay/transfer evidence plus independent qualification remain.",
+    "next_action": "Observe the single current full-coverage continuation(session35319) to terminal. Productf428623/source frozen; no product edit, duplicate provider/training job or broad note rerun.53native actions restore all current and broader source observations; no draft/answer injection. Then audit actual final support, source/oldledger preservation, named-patient report/current app and all-attempt cost; checked replay/bottling/package and explicit independent qualification remain. Alltenareas retained; scheduler PAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2525,13 +2547,13 @@
   },
   "active_jobs": [
     {
-      "kind": "targeted_assembly_source_support_continuation",
+      "kind": "targeted_current_full_source_coverage_continuation",
       "status": "running",
-      "pid": 7585,
-      "session": 22651,
+      "pid": 16113,
+      "session": 35319,
       "source_frozen": true,
-      "commit": "31bac5f",
-      "receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-assembly-v3/run-receipt.json"
+      "commit": "f428623",
+      "receipt": "artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/run-receipt.json"
     }
   ]
 }

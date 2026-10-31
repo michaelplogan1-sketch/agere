@@ -1,3 +1,53 @@
+# Current Agere checkpoint - 2026-10-31T17:05:52.700427+00:00
+
+Build ACTIVE,G3; current full-coverage continuation RUNNING PID16113/session35319. Productf428623/source FROZEN. No duplicate run/product edit. Scheduler PAUSED; alltenareas retained.
+
+Exact next: Observe the single current full-coverage continuation(session35319) to terminal. Productf428623/source frozen; no product edit, duplicate provider/training job or broad note rerun.53native actions restore all current and broader source observations; no draft/answer injection. Then audit actual final support, source/oldledger preservation, named-patient report/current app and all-attempt cost; checked replay/bottling/package and explicit independent qualification remain. Alltenareas retained; scheduler PAUSED.
+
+Offline fullsource53-action prefix verified;43current+1436regimen/203titration/0individualmaxobservations. Current3question language/window/reopen transfer passes0providers;66pageinspection/source-richsamples44/45 and all36distinctexcerpts/bounds pass. Latestsealedownerreceiptunchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T17:05:10.500773+00:00
+
+Build ACTIVE,G3; productf428623; no activejob. Scheduler PAUSED; alltenareas retained. Current native language transfer3questions passes0providers/savedcurrentreopen/independentcounts483,422,168;13.055s includingstartup.58window/context/planner and64routing/source checks pass. Source broader exact52-action recovery47.542s/0providers;66pageinspection readable/all36distinctexcerpts/bounds/samples44/45pass.
+
+Exact next: G3: current language/controller transfer passes3questions (statin12m483/statin6m422/metformin12m168), independently reconciles governed living/nonduplicate scope, savedcurrentreopen and original12midentity;0newproviders,13.055s total/1.2-1.8s each afterstartup. Productf428623 passes58window/context/planner and64routing/source checks. Run one targeted full-coverage continuation from verified53-native-action prefix; source extraction already exact, no broad note rerun or draft/answer injection. Audit final support, readable currentapp and all-attempt economics; then checked replay/bottling/package and remaining independent qualification. Alltenareas retained; scheduler PAUSED.
+
+Preparedcurrentcontinuation:artifacts/agere-blueprint-confirmation-2026-10-31/targeted-coverage-v4/protocol.json. Fullsource finalview53; all1436regimen/203titration/43class-specific observations retained,0establishedindividualmax. Latestactualpaidcontinuationpartial498.293s/$1.24641096; one sourcepacketunknown without locatedfault. Lastsealedownerreceiptunchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T16:55:42.425206+00:00
+
+Build ACTIVE,G3; product20bfdaa. Broader source52-action recovery passes47.542s/0providers; all50current toolcalls plus exact prior feedback metadata/3fieldreview restored, finalnativeview53.43current+1436regimen/203titration/0individualmaxobservations retained.63new routing/source checks; uncertainty remains partial, no automaticSonnetpromotion. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3: native current+broader source coverage reconciles exactly in47.542s/0newproviders:43current findings plus1436regimen/203titration/0individualmax observations, all source contracts unchanged. Product20bfdaa adds task-dependent routing: indeterminate verification without located fault remains on same actor and repeated unchanged uncertainty stops partial/unverified;63routing/source checks pass. Observe current offline nonHF controller to terminal, then one targeted full-coverage continuation from verified53-native-action prefix without repeating broad note work; current-app/replay/window/nonHF/bottling and independent qualification remain. Alltenareas retained; scheduler PAUSED.
+
+Coverageproof:artifacts/agere-source-coverage-reconciliation-2026-10-31/attempt-v2/run-receipt.json. New combined66pageinspectionPDF notyetvisuallyqualified. No complete-answer/MVP claim; lastsealedownerreceiptunchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T16:46:01.802010+00:00
+
+Build ACTIVE,G3; productb77fd00; no activejob; scheduler PAUSED. Report43-finding omission removed without relation aliases.73checks;62pagecurrentcandidate/57names/228flags/17doses/64namedfills; all16distinct excerpts printed. Prior1766findings keep original categories. Local unresolved source-support patient clearlymarked. Last sealed owner receipt unchanged; alltenareas retained.
+
+Exact next: G3: report consumption now preserves all43current source findings under exact original question/entity/relation identities, plus local unresolved-patient notice;73checks/readable62pagePDF passed. Reconcile the retained original regimen/titration/tolerated-maximum source review with the current workflow using an offline no-new-inference native replay; preserve quarantined35prior readings. Then diagnose only remaining source-support/coverage dependencies, current replay/window/nonHF/app and bottling; alltenareas retained; scheduler PAUSED.
+
+Proof:artifacts/agere-documentary-presentation-2026-10-31/receipt.json. Latest targeted8m18s/$1.246411partial; no new full-acceptance claim.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T16:41:09.009337+00:00
+
+Build ACTIVE,G3; targeted continuation returned normally498.293s/138attempts/$1.246411API-equivalent,57patients. No activejob; product/source/oldledger unchanged; freeze released. Scheduler PAUSED; alltenareas retained.
+
+Exact next: G3: targeted continuation returned partial normally498.293s/138attempts,$1.246411API-equivalent; current native assembly passes and final SystemOne support reached, but one patient packet and global coverage remain unresolved. Freeze released. Fix measured43-finding omission in shared clinical report using original exact question/entity/relation bindings, no aliasing; then localized unresolved-packet/coverage diagnosis and checked replay/window/nonHF/current-app evidence. No broad note rerun; alltenareas and scheduler PAUSED.
+
+Current contextANS-d976f591e185b99d839524d3. Sixreviews:4compilerrepairs,2paidSystemOne reviews; original native finalagere_result_41 retained. Candidate notMVP/clinicallyqualified. Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T16:32:15.175072+00:00
 
 Build ACTIVE,G3; targeted assembly continuation RUNNING PID7585/session22651. Product31bac5f/source FROZEN. No duplicate run/product edit. Scheduler PAUSED; alltenareas retained.
