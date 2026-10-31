@@ -1,3 +1,31 @@
+# Current Agere checkpoint - 2026-10-31T13:25:48.010455+00:00
+
+Build ACTIVE,G5;sole owner;scheduler PAUSED. Corrected continuation PID88251/session36289 RUNNING; product5488550/source frozen. No duplicate job or product edits. Last sealed report/download delivery and curated73page user PDF retained.
+
+Recoveryfixpasses82checks; actual61action replay46.756s/0providers with original ledger/source exact; both known pure-composition errors retained and later86reason/2151status source work restored.Exact35earlier titration annotations are quarantined(26frontier+9typed), retained as unresolved prior readings; source manifest exact except prior_source_seeds. Audit in recovery-native-preflight-v3/source-field-difference-audit.json. Cancelled first continuation1296attempts/$0.574041198knownAPI-equivalent plus1pending/unpriced remains in accounting; its initial-to-terminal ledger digest proof was not completed.
+
+Exact next: Observe the single corrected native continuation (session36289) to terminal. Product5488550/source frozen; do not duplicate or edit product. Its61action complete replay has passed with0providers and now preserves both historical pure-composition errors while restoring the later86reason/2151status source review and the completed regimen/titration/tolerated-dose task. Recompute stale plans and named fills without inventing a new narrative time restriction or broad note extraction. Preserve the35earlier titration annotations as unresolved prior readings; finish the exact source-manifest/deferred-field audit before claiming their disposition. Verify native rows, source qualification, readable report/current API and all-attempt accounting, then package/private draft. Alltenareas remain.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T13:17:17.836157+00:00
+
+Build ACTIVE,G5;sole owner;scheduler PAUSED. Offline complete recovery preflight PID88148/session58020; product5488550/source frozen while running. Providers prohibited; no duplicate or product edits. Last sealed report/download delivery retained.
+
+Exact next: Observe the offline complete-literal-recovery preflight (session58020) to terminal. Product5488550/source frozen while running; no product edits or duplicate job. It reproduces both exact historical pure-composition errors and restores all later work, including the86reason/2151status review and the already-completed three-field regimen/titration/tolerated-dose review, with providers prohibited. Only after actual61action/source-content proof may the controller continue native plan/named-fill repair. Preserve the cancelled prior1296attempts/$0.574041198knownAPI-equivalent plus one pending/unpriced request; no broad source reread or clinical-label promotion.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-10-31T13:11:57.538006+00:00
+
+Build ACTIVE,G5;sole owner;scheduler PAUSED. No active provider job or product/source freeze. Faulty targeted run was owner-cancelled (exit143):1296newattempts,one pending/unpriced; allpartialcaches/ledgerrows preserved. Source6e4aa1f unchanged. The build is not paused. Latest sealed delivery remains report-download performance; curated73page user PDF is retained.
+
+Exact next: Fix explicit owned-run recovery so exact previously recorded pure compose_table validation errors can be reproduced and retained without abandoning later completed work. Unexpected/different errors or changed successes still stop replay. Regress both guards and reproduce the original two failed compositions plus the later source review; then continue only after all60actions are actually restored. Do not repeat broad note reading. Preserve cancelled1296attempts, one pending/unpriced attempt, prior source caches and original57patient scope; alltenareas remain.
+
+Failure receipt: artifacts/agere-current-integrated-cost-2026-10-31/targeted-continuation-v1/run-receipt.json. Last target did not complete and cannot establish new source or MVP acceptance.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-10-31T12:48:15.962362+00:00
 
 Build ACTIVE,G5;sole owner;scheduler PAUSED. Targeted continuation RUNNING PID86521/session14207; product6e4aa1f/source frozen. No duplicate run or product edits. Last sealed receipt remains guarded-download performance. Curated73page user PDF remains available. Alltenareas retained.
