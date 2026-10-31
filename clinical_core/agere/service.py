@@ -897,19 +897,22 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         from .deliverables.compose import context_review
                         result['independent_review']=context_review(connected_stack.path,result['context'])
                     else:
+                        if parsed.path.endswith('/action-deliverable') and params.get('format'):
+                            # read_format loads the context and validates its source,
+                            # evidence bundle and recorded bytes. Do not load the same
+                            # potentially large context again before that guarded read.
+                            from .deliverables.saved_report import read_format
+                            raw,mime,filename=read_format(connected_stack.path,key,params.get('id',[''])[0],params['format'][0])
+                            self.send_response(200);self.send_header('Content-Type',mime)
+                            self.send_header('Content-Length',str(len(raw)))
+                            self.send_header('Content-Disposition','attachment; filename="'+filename+'"')
+                            self.end_headers();self.wfile.write(raw);return
                         from .deliverables.compose import load,listing
                         context=answer_context.load(connected_stack.path,key)
                         ws=answer_context.workspace(connected_stack.path,context)
                         if parsed.path.endswith('/action-deliverables'):
                             result={'deliverables':listing(ws)}
                         else:
-                            if params.get('format'):
-                                from .deliverables.saved_report import read_format
-                                raw,mime,filename=read_format(connected_stack.path,key,params.get('id',[''])[0],params['format'][0])
-                                self.send_response(200);self.send_header('Content-Type',mime)
-                                self.send_header('Content-Length',str(len(raw)))
-                                self.send_header('Content-Disposition','attachment; filename="'+filename+'"')
-                                self.end_headers();self.wfile.write(raw);return
                             spec,_,_,doc=load(ws,params.get('id',[''])[0])
                             result={**spec,'html':doc if spec.get('status')=='delivered' else None}
                     raw=json.dumps(result,default=str).encode();mime='application/json'
