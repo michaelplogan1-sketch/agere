@@ -18,6 +18,7 @@ import json
 import re
 import sqlite3
 import time
+from functools import lru_cache
 from pathlib import Path
 
 VERSION = 'plan-fence/1'
@@ -36,10 +37,13 @@ def _sqls(graph):
     return out
 
 
-def premises(graph):
-    """-> {'tables': [...], 'columns': [(table, column)], 'text'} the executable plan depends on."""
-    from .literal_check import executable_text
-    sqls = _sqls(graph)
+@lru_cache(maxsize=8)
+def _parsed_dependencies(sqls):
+    """Reuse pure SQL parsing, never current schema, source or acceptance checks.
+
+    Keys are the complete, ordered executable SQL strings. Immutable results
+    prevent a caller from changing another request's dependency set.
+    """
     import sqlglot
     from sqlglot import exp
     from sqlglot.optimizer.scope import traverse_scope
@@ -56,7 +60,15 @@ def premises(graph):
                 source=scope.sources.get(column.table)
                 if isinstance(source,exp.Table) and source.name.lower() in tables:
                     cols.add((source.name.lower(),column.name.lower()))
-    return {'tables': sorted(tables), 'columns': sorted(cols), 'text': executable_text([n.get('parameters') for n in (graph or {}).get('nodes') or []])}
+    return tuple(sorted(tables)),tuple(sorted(cols))
+
+
+def premises(graph):
+    """-> {'tables': [...], 'columns': [(table, column)], 'text'} the executable plan depends on."""
+    from .literal_check import executable_text
+    tables,cols=_parsed_dependencies(tuple(_sqls(graph)))
+    return {'tables':list(tables),'columns':list(cols),
+            'text':executable_text([n.get('parameters')for n in (graph or{}).get('nodes')or[]])}
 
 
 def _schema(path):
