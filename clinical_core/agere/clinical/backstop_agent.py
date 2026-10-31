@@ -376,6 +376,8 @@ class Tools:
                 sql = sql.strip()
                 expanded = re.sub(r'^WITH\s+(RECURSIVE\s+)?', lambda m: 'WITH ' + (m.group(1) or '') + ctes + ', ', sql, count=1, flags=re.I) if re.match(r'^WITH\b', sql, re.I) else 'WITH ' + ctes + ' ' + sql
                 out = {**out, 'executed_query': expanded}
+            from .analyst_context import bind_loaded
+            out = bind_loaded(self.semantic, args['sql'], out)
             return out
         if name == 'review_documents':
             from .document_review import review, validate_questions

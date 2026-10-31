@@ -513,7 +513,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 actor_messages=pending_output['messages']
             elif compact_execution_state:
                 from .execution_state import messages as state_messages
-                actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate)
+                documentation_identity=getattr(getattr(getattr(execute,'semantic',None),'_local',None),'documentation_identity',None)
+                actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate,
+                                              documentation_identity=documentation_identity)
             else:actor_messages=messages
             body = {'model': model, 'max_tokens': max_tokens, 'system': system, 'messages': actor_messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}

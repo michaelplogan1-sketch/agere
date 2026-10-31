@@ -6,7 +6,7 @@ import sqlite3
 import tempfile
 import unittest
 
-from clinical_core.agere.clinical import analyst_context as C, semantic_analyst as S
+from clinical_core.agere.clinical import analyst_context as C, semantic_analyst as S, execution_state as E, backstop_agent as B
 
 
 DOCS = ('OWNER DEFAULTS: all requested patients; unknown is not no.\n'
@@ -64,6 +64,95 @@ class NativeDocumentation(unittest.TestCase):
             if section['title'].startswith(('GOVERNED SQL MACROS', 'CLINICAL OWNER DEFINITIONS')):
                 self.assertIn(section['documentation_text'], resident)
                 self.assertIn(section['sha256'], resident)
+
+    def native_tools(self):
+        tools = B.Tools.__new__(B.Tools)
+        tools.semantic, tools.as_of, tools.cohort = self.wh, '2030-05-27', None
+        tools.seen, tools.rows_by_record, tools.result_sources, tools.executed_results = [], {}, {}, {}
+        tools.native_calls, tools.question = [], ''
+        return tools
+
+    def test_long_loaded_section_survives_later_clinical_work_once_and_exactly(self):
+        text = 'Full contract — O\'Brien units.\n' * 1500
+        C.install(self.wh, DOCS + '### long_table(value)\n' + text)
+        section = next(r for r in self.wh._local.documentation_sections.values() if r['title'].startswith('### long_table'))
+        tools = self.native_tools()
+        lookup = {'name': 'query_sql', 'input': {'sql': f"SELECT section_id,title,documentation_text FROM {C.VIEW} WHERE section_id='{section['section_id']}'", 'complete': True}}
+        loaded = tools(lookup)
+        self.assertEqual(loaded['loaded_documentation']['sections'], [section])
+        self.assertTrue(S.actor_result(loaded).get('preview_only'))
+        tools(lookup)
+        tools({'name': 'query_sql', 'input': {'sql': 'SELECT * FROM patient'}})
+        state = json.loads(E.messages('q', tools.native_calls, recent_results=tools.native_calls[-1:],
+            documentation_identity=self.wh._local.documentation_identity)[0]['content'])
+        self.assertEqual(state['loaded_documentation']['sections'], [section])
+        self.assertNotIn('computed_rows', state['executed_results'][0])
+        self.assertNotIn('patient_id', state['loaded_documentation']['sections'][0])
+        self.assertEqual(self.path.read_bytes(), self.original)
+
+    def test_partial_text_forged_hash_and_clinical_lookalikes_are_not_retained(self):
+        C.install(self.wh, DOCS)
+        for sql in (
+            f'SELECT section_id,substr(documentation_text,1,3) AS documentation_text FROM {C.VIEW}',
+            f"SELECT section_id,documentation_text,'wrong' AS sha256 FROM {C.VIEW}",
+            "SELECT 'doc_0' AS section_id,'# Semantic model documentation' AS documentation_text FROM patient",
+            f'SELECT d.section_id,d.documentation_text,p.patient_id FROM {C.VIEW} d JOIN patient p'):
+            result = self.wh.query(sql, max_rows=None, max_chars=None)
+            self.assertNotIn('loaded_documentation', C.bind_loaded(self.wh, sql, result))
+
+    def test_changed_identity_removes_old_loaded_definitions_from_current_state(self):
+        C.install(self.wh, DOCS)
+        tools = self.native_tools()
+        tools({'name': 'query_sql', 'input': {'sql': f'SELECT * FROM {C.VIEW}'}})
+        old_identity = self.wh._local.documentation_identity
+        C.install(self.wh, DOCS.replace('Amounts are cents', 'Amounts are dollars'))
+        new_identity = self.wh._local.documentation_identity
+        self.assertNotEqual(old_identity, new_identity)
+        state = json.loads(E.messages('q', tools.native_calls, documentation_identity=new_identity)[0]['content'])
+        self.assertNotIn('loaded_documentation', state)
+        tools({'name': 'query_sql', 'input': {'sql': f'SELECT * FROM {C.VIEW}'}})
+        state = json.loads(E.messages('q', tools.native_calls, documentation_identity=new_identity)[0]['content'])
+        self.assertIn('Amounts are dollars', ''.join(r['documentation_text'] for r in state['loaded_documentation']['sections']))
+        self.assertNotIn('Amounts are cents', ''.join(r['documentation_text'] for r in state['loaded_documentation']['sections']))
+
+    def test_only_actually_returned_complete_rows_are_loaded(self):
+        C.install(self.wh, DOCS)
+        sql = f'SELECT * FROM {C.VIEW}'
+        out = self.wh.query(sql, max_rows=1, max_chars=None)
+        self.assertTrue(out['truncated'])
+        bound = C.bind_loaded(self.wh, sql, out)
+        self.assertEqual(len(bound['loaded_documentation']['sections']), 1)
+        self.assertEqual(bound['rows'], out['rows'])
+
+    def test_compiled_actor_continuation_receives_loaded_contract_after_clinical_query(self):
+        C.install(self.wh, DOCS)
+        tools = self.native_tools()
+        sent = []
+        def send(body):
+            sent.append(body)
+            if len(sent) <= 2:
+                sql = f'SELECT * FROM {C.VIEW}' if len(sent) == 1 else 'SELECT * FROM patient'
+                return {'content': [{'type': 'tool_use', 'id': str(len(sent)), 'name': 'query_sql', 'input': {'sql': sql}}]}, 0, False
+            state = json.loads(body['messages'][0]['content'])
+            self.assertEqual(state['loaded_documentation']['identity'], self.wh._local.documentation_identity)
+            self.assertEqual(state['loaded_documentation']['sections'], list(self.wh._local.documentation_sections.values()))
+            self.assertEqual(state['latest_results'][0]['result']['rows'], [{'patient_id': 'A', 'birth_date': '1960-01-01'}])
+            return {'content': [{'type': 'text', 'text': '{"status":"answered","value":1}'}]}, 0, False
+        out = S.tool_loop('q', 'sys', B.TOOLS, tools, send=send, model='scripted', max_tools=None, compact_execution_state=True)
+        self.assertIsNone(out.get('error'))
+        self.assertEqual(out['answer']['value'], 1)
+
+    def test_conflicting_content_cannot_share_an_installed_identity(self):
+        import copy
+        C.install(self.wh, DOCS)
+        tools = self.native_tools()
+        tools({'name': 'query_sql', 'input': {'sql': f'SELECT * FROM {C.VIEW}'}})
+        forged = copy.deepcopy(tools.native_calls[0])
+        section = forged['result']['loaded_documentation']['sections'][0]
+        section['documentation_text'] += 'changed'
+        section['sha256'] = hashlib.sha256(section['documentation_text'].encode()).hexdigest()
+        with self.assertRaisesRegex(ValueError, 'Conflicting documentation'):
+            E.messages('q', [*tools.native_calls, forged], documentation_identity=self.wh._local.documentation_identity)
 
     def test_native_lookup_has_no_document_or_patient_limit(self):
         docs = '# Semantic model documentation\n' + ''.join(

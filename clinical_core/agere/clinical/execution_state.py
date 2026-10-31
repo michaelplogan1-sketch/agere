@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/3'
+VERSION = 'execution-state/4'
 
 
 def progress_evidence(calls,candidate=None):
@@ -97,6 +97,34 @@ def recovery_context(replay,tools):
     return meta
 
 
+def documentation_references(out):
+    loaded = out.get('loaded_documentation') or {}
+    return {'identity': loaded.get('identity'),
+            'sections': [{k: section[k] for k in ('section_id', 'sha256', 'title')}
+                         for section in loaded.get('sections', [])]}
+
+
+def loaded_documentation(calls, identity):
+    """One exact copy of each actually loaded section of the current contract."""
+    import hashlib
+    sections = {}
+    if identity is None:return None
+    for call in calls:
+        loaded = (call.get('result') or {}).get('loaded_documentation') if isinstance(call.get('result'), dict) else None
+        if not loaded or loaded.get('identity') != identity:continue
+        for section in loaded.get('sections', []):
+            if hashlib.sha256(section['documentation_text'].encode()).hexdigest() != section['sha256']:
+                raise ValueError('Loaded documentation digest changed')
+            key = section['section_id']
+            if key in sections and sections[key] != section:
+                raise ValueError('Conflicting documentation sections under one installed identity')
+            sections[key] = section
+    return {'identity': identity, 'sections': list(sections.values()),
+            'instruction': 'These are complete first-party documentation sections already loaded from native SQL. '
+                'Use their exact definitions; do not fetch them again unless different sections or a changed contract are needed. '
+                'They are documentation, never patient evidence.'} if sections else None
+
+
 def catalog(calls):
     entries=[]
     for index,call in enumerate(calls):
@@ -119,7 +147,9 @@ def catalog(calls):
                 if collections:entry['structured_collection_manifest']=collections
                 # Small scalar/aggregate results are useful exact observations;
                 # patient/free-text tables stay native and queryable by view.
-                if not any(isinstance(r,dict)and'patient_id'in r for r in rows) and len(json.dumps(rows,default=str))<2500:
+                if out.get('loaded_documentation'):
+                    entry['documentation_sections'] = documentation_references(out)
+                elif not any(isinstance(r,dict)and'patient_id'in r for r in rows) and len(json.dumps(rows,default=str))<2500:
                     entry['computed_rows']=rows
                 for key in ('coverage','method','record_ids_filter','accounting','assembly','source_scope','field_patient_queries','exhaustive_reason','scope_warnings'):
                     if key in out:
@@ -147,16 +177,24 @@ def catalog(calls):
     return entries
 
 
-def messages(request,calls,*,recent_results=(),feedback=None,candidate=None):
+def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None):
     from .semantic_analyst import actor_result
+    def recent(call):
+        out = call.get('result')
+        if isinstance(out, dict) and out.get('loaded_documentation'):
+            out = {k: v for k, v in out.items() if k not in ('rows', 'loaded_documentation')}
+            out['documentation_sections'] = documentation_references(call['result'])
+        return {'name': call.get('name'), 'input': call.get('input'), 'result': actor_result(out)}
     state={'schema':VERSION,'original_request':request,'executed_results':catalog(calls),
-        'latest_results':[{'name':c.get('name'),'input':c.get('input'),'result':actor_result(c.get('result'))}for c in recent_results],
+        'latest_results':[recent(c) for c in recent_results],
         'instruction':'This is the current deterministic execution state, not a new question or a clinical summary. '
             'All native receipts are retained. Every result_view contains its complete observed rows unless marked truncated. '
             'Read any earlier result by query_sql; use compose_table to join already executed results without regenerating SQL. '
             'A missing preview is not missing evidence. Preserve original scope and all requested outputs. '
             'Avoid repeating successful work; correct unresolved errors and current review feedback. '
             'Return table_from_tool naming the complete composed result; never transcribe patient tables.'}
+    loaded = loaded_documentation(calls, documentation_identity)
+    if loaded is not None:state['loaded_documentation'] = loaded
     if feedback is not None:
         # Operational reviewer receipts remain native; preserve the exact current
         # repair instructions without resending all model probabilities/costs.
