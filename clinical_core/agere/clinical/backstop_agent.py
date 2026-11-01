@@ -1479,7 +1479,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             for p in answer.get('computed_prose',[])]}]
     local_shared=[row for ident,row in shared.items() if local_dependencies is None or
                   None in shared_views[ident] or bool(shared_views[ident]&local_dependencies)]
-    final_patients={r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')}
+    final_patients={r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')and any(k!='patient_id'for k in r)}
     # An observed diagnostic row is context, not an additional final claim.
     # Global bindings/citations are checked in summary; explicit patient sets
     # retain their relevant native observations there, without empty local claims.
@@ -1521,7 +1521,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             if 'headline' in summary:claims.append({'id':'headline','field':'headline','path':['answer','headline']})
             for i,key in enumerate((summary.get('facts')or{})):claims.append({'id':'fact_'+str(i),'field':'facts.'+str(key),'path':['answer','facts',key]})
             for i,row in enumerate(summary_rows):
-                if not isinstance(row,dict) or row.get('patient_id'):continue
+                if not isinstance(row,dict) or row.get('patient_id')in final_patients:continue
                 for key in row:claims.append({'id':'table_'+str(len(claims)),'field':'table.'+str(i)+'.'+str(key),'path':['all_final_rows',i,key]})
         else:
             for i,row in enumerate(packet['answer_rows']):

@@ -29,6 +29,11 @@ class FinalClaimSupport(unittest.TestCase):
         rows=[{'patient_id':'A'},{'patient_id':'B'}];packets=self.packets({'patient_ids':['A','B']},[call('members',rows)])
         self.assertEqual([p['id']for p in packets],['summary'])
         observed=state(packets[0])['global_patient_evidence'];self.assertEqual([r for p in observed for r in p['native_observations']],rows)
+    def test_patient_id_only_table_has_global_membership_claims_not_empty_clinical_packets(self):
+        rows=[{'patient_id':'A'},{'patient_id':'B'}];packets=self.packets({'table':rows,'table_from_tool':'members'},[call('members',rows)])
+        self.assertEqual([p['id']for p in packets],['summary']);summary=state(packets[0])
+        self.assertEqual([c['path']for c in summary['claim_manifest']],[['all_final_rows',0,'patient_id'],['all_final_rows',1,'patient_id']])
+        self.assertEqual([r for p in summary['global_patient_evidence']for r in p['native_observations']],rows)
     def test_global_citation_keeps_actual_context_without_an_empty_local_packet(self):
         doc={'record_id':'N','patient_id':'B','date':'2030-01-01','text':'Actual received statement.'}
         answer={'table':[{'n':1}],'sources':[{'record_id':'N','date':'2030-01-01','quote':'received statement'}]}
