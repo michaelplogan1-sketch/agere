@@ -530,6 +530,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     retries_left = format_retries
     force_text = False
     turns, repairs, reviewed = 0, 0, set()
+    compiler_reviewed = set()
     rejected_protocol = set()
     last_tools = None
     pending_output = None
@@ -714,16 +715,26 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         result['answer'] = {**candidate, 'status': 'partial', 'verification': 'unverified',
                                             'limitations': [*(candidate.get('limitations') or []), str(feedback)]} if isinstance(candidate, dict) else None
                         indeterminate=assessment.get('repair_kind')=='unresolved_verification'
-                        if key in reviewed:
+                        compiler=assessment.get('repair_kind')=='deterministic_compiler'
+                        history=compiler_reviewed if compiler else reviewed
+                        if key in history:
                             if indeterminate or not escalate('Answer review repeated with unchanged evidence'):
                                 result['review_stopped'] = 'no_progress'
                                 return result
                         elif assessment.get('status') == 'repair' and assessment.get('repair_kind')not in ('deterministic_compiler','unresolved_verification'):
                             escalate('Answer failed its existing evidence/coverage checks: '+str(feedback))
+                        if not compiler and key not in reviewed:
+                            # Passing the compiler and reaching a new source
+                            # failure is real phase progress. Its correction
+                            # may introduce a new binding error with the same
+                            # coarse shape as an earlier, already fixed one.
+                            # Keep source-failure history: repeated semantic
+                            # failures cannot reset the loop indefinitely.
+                            compiler_reviewed.clear()
                         # Exact compiler feedback can be repaired on the cheap
                         # rung. A repeated failure/evidence state still takes
                         # the existing checked escalation above; no new quota.
-                        reviewed.add(key)
+                        history.add(key)
                         repairs += 1
                         force_text = False  # the repair may need more evidence, even after a JSON-format repair
                         messages.append({'role': 'assistant', 'content': blocks})
