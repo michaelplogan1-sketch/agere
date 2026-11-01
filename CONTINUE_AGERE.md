@@ -1,10 +1,50 @@
-# Current Agere checkpoint - 2026-11-01T01:50:12.580240+00:00
+# Current Agere checkpoint - 2026-11-01T11:07:00.926272+00:00
 
-G3ACTIVE; native completeness/report/app candidate verified. No provider/training job. Isolated8890offline; schedulerPAUSED/alltenareasretained.
+G3 ACTIVE. Current local engineering delivery SEALED; fullMVPacceptancefalse. No activeprovider/training/build job. Owned8890live; schedulerPAUSED.
 
-Exact next: G3: complete-native SQL/registered-domain and current patient delivery verified;253connected regressions,89dose source rows/17GDMTobjects,57patients/228pillars/64fills,79pagePDF/0attachments/allbounds. HTTP57source-review work items save/reopen exactly; old report work-change guards and regenerated downloads pass with0providers/all17927attempts unchanged. Next execute one targeted native recheck of6named observations plus one new explicit non-escalation question, then independent current typed verification and parameterized replay/changed-window/nonHF transfer/package. Preserve prior partial ordinary receipt and G5qualification/economics dependencies; alltenareas retained, schedulerPAUSED.
+Exact next: G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED.
 
-Last sealed owner receipt unchanged. Evidence: artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/integration-receipt.json
+Last sealed receipt: artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-11-01T10:07:25.385552+00:00
+
+G3 ACTIVE; all owned jobs terminal. Native presentation contract correction verified; scheduler PAUSED.
+
+Exact next: G3: Native presentation binding follows unique explicit retained items_from contracts, checks exact source digests/identity/values, and records a normal compose_table before paid checks.264 connected tests and actual57patient/64fill/118care/17dose zero-provider proof pass. All owned provider jobs terminal; freeze released for this exact correction. Reexecute retained actual21actions, actual recovery feedback view22, and actual continuation23-28; let final review bind canonical collection names with no actor or source reread. Retain original valid export definition and put source uncertainties in missing, not workflow definition. Then current financial exact requalification/replay, current app/PDF/installation/restart/recovery and sealed private delivery. Perplexity0credit/payment incomplete is an external dependency; validated caches remain usable. Alltenareas and G5independentlabels/economics retained; schedulerPAUSED.
+
+Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-11-01T09:34:35.921807+00:00
+
+G3 ACTIVE. One retained binding continuation running; source/product frozen while active. Scheduler PAUSED.
+
+Exact next: G3: 39ba202 enforces the full detailed medication view (named fill/dose/dated care collections) before paid verification and recognizes Perplexity401insufficient_quota in the existing circuit.237 connected tests plus19 targeted positive/fallback checks pass. Actual old ordinary output rejects both missing bindings together; native preflight reexecutes21actualsuccessfulactions, retains3failedactions/all57rows and allsourcecells exactly in20.632s/0providers. ONE retained controller continuation is running (session49405); do not repeat source review, mutate frozen code/source, or start a duplicate job. It receives only the actual old trajectory/draft and deterministic boundary feedback, with no new source answer or plan injected. On terminal audit64namedfills/17doses/datedcare/names/PDF/HTML/unknowns, then current financial exact requalification/replay, app/installation/restart/recovery and private sealed delivery. Perplexity credits0 and payment method incomplete in existing Agere project; no payment submitted. Jev/Claude available; cached Perplexity successes stay usable. Alltenareas/G5independentlabels/economics retained; schedulerPAUSED.
+
+Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-11-01T06:41:04.794730+00:00
+
+G3 ACTIVE; oneunassistedoriginalpatientworkflow RUNNING; source/product frozen; owned8890stopped; schedulerPAUSED.
+
+Exact next: G3: finalclaimmembership67285c8 passes277connectedchecks(1live skip); ID-onlycohort tables nowglobalnativeclaims, noemptyclinicalpackets; no thresholdchange. Prior952package/installation/freshrestartpassed881.139s0providers,57reviewitems,0qualtransfer; currentHTTP/browserverifiedall57names andclinical/clinician/med/dose/reasonsections; source/cacheproducer3files unchanged. Owned8890stoppednormallyforfinalcode. ONE current unassisted ORIGINALpatientquestion RUNNING, source/product frozen; no injectedactions/draft/answer or protectedreads, original57cohort/warmcaches/fullaccounting retained. Observe terminal; do notduplicate or mutate source. Auditcompletepatient/native/name/dose/fill/sourcegrade/PDF/HTML/followup andactualcosts beforegateacceptance. Thenonlynecessary exact financialtrace policy requalification (noactor/newfinancialcoldrun), finalcurrentapp/release/durabledelivery/privatepush. Preserveallunknowns/G5independentlabels/economics; alltenareas;schedulerPAUSED.
+
+Last sealed owner receipt unchanged.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-11-01T04:28:37.092059+00:00
+
+G3 ACTIVE; all owned jobs terminal. Financial source-domain audit FAILED and incorrect reuse candidate quarantined. Freeze released; owned8890 stopped; schedulerPAUSED.
+
+Exact next: G3: ordinaryfinancialretry a87f8b7 returned169.178s/12newattempts,0protectedreads; atomicmisroute removed(7localmethodcalls/12SQLunits vsoriginal398.228sabort). But independent source-domain audit FAILS: payment_year_payer_cash sums payer_adjudication.paid_cents by paid_date, not payer_cash_allocations.allocated_cents; living_patient also narrows historicalfinancialscope withoutrequest. Modelconfirmed isnotacceptance. ExistingH.finish engineeringfailure quarantinedcandidate1c768a... withnoinventedphysicianfeedback; original answeredreceipt/report retainedimmutable. Next inspect existing financial_accounts map, ownerdefinitions andnativeSQLprovenance/quantity checks; wire a small shared monetary-lifecycle source obligation beforepaidfinalreview,notquestionhandler/catalog. Prove wrongadjudicationascash/unusedcashsidequery rejects, realreceivedcashpasses, exactscope/baseline/dates remain. Then targetednative/actor financialrepair usingretainedSQL, not freshallpatientread. Afterfinalcode, prepared healthcare current-policy rebind(0actor/reader) andapp/PDF/recovery/package/privatepush. Alltenareas/G5labels/compute-reviewereconomics retained;schedulerPAUSED.
+
+Last sealed owner receipt unchanged.
 
 ## Earlier checkpoint (superseded)
 

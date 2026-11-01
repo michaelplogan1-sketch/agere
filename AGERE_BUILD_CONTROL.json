@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-01T01:50:12.580240+00:00",
+  "updated_at": "2026-11-01T11:07:00.926272+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -405,11 +405,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_completeness_delivery_verified_candidate",
+    "kind": "sealed_scoped_delivery_performance_next",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The current saved patient review includes complete registered dose observations and qualified dated therapy limitations. Source-review work saves/reopens; program work stays blocked by unresolved evidence.",
-    "measured_failure_reduction": "40->89dose source rows;7->17GDMTobjects;156->79PDFpages/72781->19736words.253connected regressions and actual57patient report/app checks pass without new provider calls.",
+    "user_behavior_delta": "The original57patient source/native work binds complete named fills/doses/dated care into a readable patient brief and current saved interactive workflow; isolated installation/restart and work/report guards pass.",
+    "measured_failure_reduction": "Missing64fill/118care consumer bindings fixed;17doseobjects retained.165pagecandidate curatedto89pages with all57names/allnamedmedicines, first/last-date and polarity qualifications.295connected regressions; finalrelease998.655s/0providers,57idempotent reviewitems, exactfreshrestart/PDF/HTML, clinicalprogramblock and noqualificationtransfer.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -791,17 +791,57 @@
       "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/core-regression-tests-v2.log",
       "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/patient-presentation-tests-v2.log",
       "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/connected-regression-tests.log",
-      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/integration-receipt.json"
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/integration-receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/non-escalation-completion/run-receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-source-completion/preflight-v2/receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-source-completion/connected-release-tests.log",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/transfer-check/receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/trace-attribution.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-source-completion/current-typed-check/run-receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-source-completion/current-delivery/receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-source-completion/current-delivery/delivery-audit.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-source-completion/current-delivery/layout-audit.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/run-receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/captured-context-reference.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/render-and-format-review/observations.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/connected-tests.log",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/native-preflight-v4/receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/native-preflight-v4/attribution-correction.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/checked-continuation/receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/current-delivery-audit/receipt.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/connected-final-tests.log",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/raw-baseline/receipt.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/actual-retained-failure-replay.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/reviewed-connected-tests.log",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/review-response.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/scope-correction.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/final-native-lineage-tests.log",
+      "artifacts/agere-current-financial-transfer-2026-11-01/retained-source-repair/independent-value-and-scope-audit.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/all-actual-shape-precheck.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/quantity-role-tests.log",
+      "artifacts/agere-current-financial-transfer-2026-11-01/final-claim-dependencies/projection-proof.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/final-claim-dependencies/connected-tests.log",
+      "artifacts/agere-current-financial-transfer-2026-11-01/final-claim-dependencies/retained-final-check/receipt.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/final-claim-dependencies/retained-final-check/independent-source-audit.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/qualified-replay/acceptance-audit.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/current-policy-rebind/receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/current-policy-delivery-audit/receipt.json",
+      "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/shared-delivery-repair/current-policy-delivery-audit/layout-audit.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/final-claim-dependencies/membership-connected-tests.log",
+      "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
+      "artifacts/agere-clinical-view-contract-2026-11-01/browser-current-verification.json",
+      "artifacts/agere-clinical-view-contract-2026-11-01/original-latency-attribution.json",
+      "artifacts/agere-clinical-view-contract-2026-11-01/all-attempt-economics.json"
     ],
-    "remaining_gap": "Six named source flags and current whole-question/parameterized transfer qualification remain; G5independent labels/reviewer economics unresolved.",
-    "next_action": "G3: complete-native SQL/registered-domain and current patient delivery verified;253connected regressions,89dose source rows/17GDMTobjects,57patients/228pillars/64fills,79pagePDF/0attachments/allbounds. HTTP57source-review work items save/reopen exactly; old report work-change guards and regenerated downloads pass with0providers/all17927attempts unchanged. Next execute one targeted native recheck of6named observations plus one new explicit non-escalation question, then independent current typed verification and parameterized replay/changed-window/nonHF transfer/package. Preserve prior partial ordinary receipt and G5qualification/economics dependencies; alltenareas retained, schedulerPAUSED.",
-    "latest_review": "docs/agere/reviews/2026-11-01-claude-native-completeness.md",
-    "coordination": "Sole owner; one offline native-delivery continuation, productheld while it runs. No provider/training job; schedulerPAUSED.",
+    "remaining_gap": "Original66minute batch latency; current semantic source/financial uncertainty and absent independent clinical/model/outcome qualification and real total-cost/reviewer economics. FullMVPacceptance remains false.",
+    "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED.",
+    "latest_review": "docs/agere/reviews/2026-11-01-claude-native-binding-and-pdf.md",
+    "coordination": "Soleowner; no provider/training/build job active; owned8890candidate live PID70395/session74704; primary unchanged; schedulerPAUSED.",
     "remaining_blockers": [
       "Independent source/model/clinical qualification, viable outcome labels and authentic full-workload/reviewer economics remain unqualified.",
       "Report serving still has measurable redundant context validation; current PDF13.348s, no claim of whole-question speedup."
     ],
-    "latest_progress": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/received-dose-verification.json",
+    "latest_progress": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
     "results_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -827,16 +867,15 @@
       "source_fingerprint": "fa1cd528164afea8cec1447e2b3340d526ab77c2369a2f6edbe3baa06b531595",
       "scope": "General workflow/evidence/analytics/economics, medication arithmetic, unknown supply and shared cohort semantics.",
       "evidence": "757 checks:755 pass/two live skips, zero provider/protected reads. Received findings1-58 repaired; final-source saved typed outputs have zero new gains/losses. Forecast tail assumptions and clinical limitations retained.",
-      "remaining": "All received review findings1–44 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open.",
+      "remaining": "All received review findings1\u201344 have staged general repairs; no known failing selected regression check. Frozen studies continue unselected, first repaired typed round freshly reproduced185correct/33wrong/86declines of304 vs304untrained declines; no automatic Claude continuation. Full clinical/ten-area/total-cost/company qualification open.",
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "kind": "scoped_integrated_original_workflow_delivery",
-      "status": "passed_with_explicit_quality_gaps",
-      "receipt": "artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/delivery-receipt.json",
-      "full_charter_qualified": false,
-      "active_worker": null,
-      "earlier_nine_check_scope": "Six-source-case/program/local-recovery engineering, not complete integrated MVP qualification"
+      "scoped_local_release": "passed",
+      "full_mvp_acceptance": false,
+      "independent_clinical_model_qualification": false,
+      "latency_gap_seconds": 3993.581436,
+      "evidence": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json"
     },
     "latest_human_steering": "Mike returned and explicitly directs continued autonomous overnight completion, no questions or approval gates, retain all agreed stack components/concepts and north star. No unsupported completion or clinical qualification claim.",
     "comparison_status": {
@@ -852,26 +891,23 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-01T01:25:12.020812+00:00",
-    "workflow_change": "Complete native SQL storage and registry-based dose domain verified; typed status/reason contracts reach qualified presentation without changing clinical meaning.",
+    "at": "2026-11-01T11:07:00.926272+00:00",
+    "workflow_change": "Complete source-bound clinical collections and readable patient delivery survive independent local installation, follow-up work and fresh restart; uncertain source evidence stays review-only.",
     "unsealed_work": {
-      "status": "native_dependency_delivery_v2_passed_current_native_dependency_delivery",
-      "path": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix",
-      "active_receipt": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/native-delivery-v2/receipt.json",
+      "status": "next_performance_increment_not_started",
+      "path": "artifacts/agere-clinical-view-contract-2026-11-01",
+      "active_receipt": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
       "source_frozen_for_run": false,
       "pid": null,
       "session": null,
-      "remaining_gap": "Original-question source/coverage remains partial:6suspended assertions across4patients,40machine-supported patient families and13unresolved. Current PDF has156pages/72781words despite57patients;7doseobjects versus earlier17requires source-contract diagnosis, not presumed data loss. Whole-question qualification/bottling and independent G5labels/economics remain open.",
-      "next_action": "G3: nativeSQLcompleteness/registrydomain candidate passes82corechecks and actualsource89rows/29patients,17GDMTobjects/13patients with0providers/all17927attempts preserved;3sourcecachefiles byte-identical.32patientpresentationchecks pass, broadtherapy_status/regimen andtherapy_reason/non-useORdose remain distinct, filldate aliases retained. Native dose-chain and report continuation v2 RUNNING(session30196), code FROZEN until terminal; no provider/training job. V1fixture incorrectly assumed everypatientdosecollection nonNULL; failedreceipt/run retained, beforecapture/no productfailure inferred. Observe v2, then audit current57patient/17dose/64fill output, PDFpagecount/names/bounds and actualapp/reopen. Keep priorordinaryanalysis/sourcegrades explicit, notrestamped.6sourceflags are machine feedback; exactquotes include one clear non-escalation question mismatch and other unresolved supply/clinical-rationale accounts, notassumed samefault. Then onlyneeded targeted typedrevision, qualified reuse/changed-window/nonHF and package. Alltenareas/G5independentlabels/economics retained; schedulerPAUSED."
+      "remaining_gap": "Original66minute batch latency; current semantic source/financial uncertainty and absent independent clinical/model/outcome qualification and real total-cost/reviewer economics. FullMVPacceptance remains false.",
+      "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED."
     },
     "bottling_assessment": {
-      "source": "/Users/mikel/Desktop/bottling.pdf",
-      "brief_section": "docs/agere/ARCHITECTURE_ORDER_FOR_REVIEW_2026-10-29.md#bottling-retained-partially-implemented-not-yet-an-earned-saving",
-      "latest_cold_rung_seconds": 62.08981475001201,
-      "latest_cold_rung_outcome": "declined",
-      "status": "Parameterized checked-request transfer demonstrated on changed-year scopes; autonomous artifact construction, qualified learned routing and net workload savings remain unproven.",
-      "no_benchmark_or_answer_key_access": true,
-      "transfer_evidence": "artifacts/agere-meaning-integration-2026-10-29/parameterized-reuse-v2/source-audit.json"
+      "current_clinical_full_question_bottle": false,
+      "current_financial_trace_promotion": false,
+      "known_good_financial_replay": "952scopedguardedreplay:23nativeactions/4typed/0Claude/68.231s",
+      "next": "Investigate execution-prefix reuse separately from final-answer qualification; no implicit partial-to-correct conversion."
     },
     "owner_review": {
       "at": "2026-10-29T11:48:18.601324+00:00",
@@ -1476,8 +1512,8 @@
     },
     {
       "at": "2026-10-19T15:56:24.839223+00:00",
-      "basis": "Mike: put Data → Information → Intelligence → Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
-      "change": "Create unbranded nine-panel analytics-only public visual and update the post’s image pointer.",
+      "basis": "Mike: put Data \u2192 Information \u2192 Intelligence \u2192 Wisdom in the LinkedIn visual; remove sections 9 and 11 so it shows the stack and classic computer science.",
+      "change": "Create unbranded nine-panel analytics-only public visual and update the post\u2019s image pointer.",
       "scope_impact": "Presentation scope only. Full product charter and implementation next action preserved; no publishing or runtime changes."
     },
     {
@@ -1549,7 +1585,7 @@
     },
     {
       "at": "2026-10-20T11:41:16.361279+00:00",
-      "basis": "Mike explicitly requests a substantially more impressive TextQL/TypeSafe-inspired interface organized around Data → Information → Intelligence → Wisdom.",
+      "basis": "Mike explicitly requests a substantially more impressive TextQL/TypeSafe-inspired interface organized around Data \u2192 Information \u2192 Intelligence \u2192 Wisdom.",
       "change": "Prioritize and activate this connected interface increment on :8885; correct null-first-group chart rendering discovered in browser validation.",
       "scope_impact": "No charter narrowing or planner-qualification claim. G3 remains active, G5 blocked; all ten areas retained. Shared planning remains the next functional increment.",
       "evidence": "artifacts/agere-wisdom-design-v1/implementation-receipt.json"
@@ -1744,7 +1780,7 @@
     {
       "at": "2026-10-21T01:30:58.960365+00:00",
       "decision": "Activate summary-scope release f16b208 at /ask with rollback8e83d0d; close the explicit original-input preservation defect and resume original compound current-state semantics.",
-      "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292→118events/67patients→292 input-follow-up with independent source match and zero calls.",
+      "basis": "121 primary/frozen tests, five authored received-source fixtures, six actual HTTP checks, candidate browser and live292\u2192118events/67patients\u2192292 input-follow-up with independent source match and zero calls.",
       "scope_impact": "Specific B2 failure reduction; no new clinical authority or interpretation qualification. All ten areas retained, G3 active, G5 blocked/full acceptancefalse. No further helper/UI detour before the recorded clinical semantic requirement.",
       "evidence": "artifacts/agere-summary-scope-v1/implementation-receipt.json"
     },
@@ -1858,7 +1894,7 @@
     {
       "at": "2026-10-26T20:04:27.389968+00:00",
       "decision": "Stop immediately at the Claude subscription weekly limit; preserve source and current-run receipts without an external API fallback.",
-      "basis": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your weekly limit · resets Oct 28 at 6am (America/Chicago)",
+      "basis": "RuntimeError: ProviderUnavailable: Claude subscription limit reached: You've hit your weekly limit \u00b7 resets Oct 28 at 6am (America/Chicago)",
       "scope_impact": "No activation, completed-workflow claim or narrowed charter. G3 stays incomplete. No automatic retry or heartbeat created.",
       "evidence": "artifacts/agere-auto-workflow-2026-10-26/stop-receipt.json"
     },
@@ -1959,14 +1995,14 @@
       "at": "2026-10-27T20:00:45.204194+00:00",
       "gate": "G3",
       "decision": "Stage independently reviewed shared workflow fixes outside the frozen training source",
-      "basis": "Mike authorized parallel review and sent its workflow/component/company qualification approach back to the build owner. First measured increment preserves selected patients, full evidence and report meaning; findings9–21 remain within the connected G3 sequence. No new architecture or protected evaluation.",
+      "basis": "Mike authorized parallel review and sent its workflow/component/company qualification approach back to the build owner. First measured increment preserves selected patients, full evidence and report meaning; findings9\u201321 remain within the connected G3 sequence. No new architecture or protected evaluation.",
       "impact": "Canonical source495525e3 and PID29583 remain unchanged; provider calls0, runtime/default models unpromoted. Staged commit fcbc798 and offline receipts preserve progress."
     },
     {
       "at": "2026-10-27T20:58:17.594226+00:00",
       "gate": "G3",
       "decision": "Keep frozen finite learning jobs unchanged and preserve verified shared workflow fixes3c8780e as a staged candidate",
-      "basis": "Mike requested continued offline work; 388/390 surrounding checks pass with2live skips;63affected checks pass; identical17known-defect fixtures now pass vs16assertions/one provider-limit resend exception before. New normalization/correction/bounded-value findings36–38 remain explicit.",
+      "basis": "Mike requested continued offline work; 388/390 surrounding checks pass with2live skips;63affected checks pass; identical17known-defect fixtures now pass vs16assertions/one provider-limit resend exception before. New normalization/correction/bounded-value findings36\u201338 remain explicit.",
       "scope_impact": "No runtime/model promotion or providers. All ten acceptance areas retained; code/evidence bundle preserved separately from model source495525e3.",
       "evidence": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/3c8780e/workflow-receipt-v3.json"
     },
@@ -1974,7 +2010,7 @@
       "at": "2026-10-27T21:46:37.643706+00:00",
       "gate": "G3",
       "decision": "Extend the same independently reviewed workflow increment through measurement and optimization integrity; stage outside frozen studies",
-      "basis": "Nine authored measurement tests fail before/pass after; 482of484surrounding checks pass with2live skips atfa570b3. Latest42–44 defects remain explicitly queued.",
+      "basis": "Nine authored measurement tests fail before/pass after; 482of484surrounding checks pass with2live skips atfa570b3. Latest42\u201344 defects remain explicitly queued.",
       "scope_impact": "No new layers, providers, runtime/model promotion or narrowed acceptance. Source495525e3 and existing finite studies unchanged.",
       "evidence": "artifacts/agere-schema-repair-2026-10-27/workflow-followup/fa570b3/workflow-receipt-v5.json"
     },
@@ -2327,7 +2363,7 @@
     {
       "at": "2026-10-30T17:57:18.967745+00:00",
       "gate": "G5",
-      "decision": "Prioritize one connected clinician-readable full-question/cost increment under Mike’s explicit new acceptance request. Diagnose before calls:1.37MB expanded draft entered original request, repeated1.9MB prompts and fourClaude calls8.6791282USD API-equivalent. Native cached source reexecution5.48s and typed final contract compile preserve57rows/facts/unknowns with0providers;32.5KB actor-state candidate remains offline/unpromoted.",
+      "decision": "Prioritize one connected clinician-readable full-question/cost increment under Mike\u2019s explicit new acceptance request. Diagnose before calls:1.37MB expanded draft entered original request, repeated1.9MB prompts and fourClaude calls8.6791282USD API-equivalent. Native cached source reexecution5.48s and typed final contract compile preserve57rows/facts/unknowns with0providers;32.5KB actor-state candidate remains offline/unpromoted.",
       "evidence": [
         "artifacts/agere-claude-cost-diagnostic-2026-10-30/diagnostic.json"
       ],
@@ -2506,7 +2542,7 @@
     {
       "at": "2026-10-31T13:44:30.534739+00:00",
       "gate": "G5",
-      "decision": "Hold implementation for independent blueprint/code/plan audit; after review proceed autonomously under Mike’s latest explicit instruction.",
+      "decision": "Hold implementation for independent blueprint/code/plan audit; after review proceed autonomously under Mike\u2019s latest explicit instruction.",
       "reason": "Repeated partial runs and recovery/actor overhead justify reassessment. Send actual code, full ten-area scope, earlier reviews, measured failures and a challengeable proposed sequence through existing Claude subscription. Do not assume either reviewer is correct without code evidence.",
       "evidence": "artifacts/agere-blueprint-review-2026-10-31/review-request.md",
       "all_ten_areas_retained": true
@@ -2647,17 +2683,122 @@
       "reason": "The real dose producer silently clipped40of89rows and lost its truncation flag throughCOUNT. The five-key preview filter additionally omitted4GDMTobjects. Repeated review questions and unconsumed broad relations doubled PDF length. Actual corrected patient/app delivery and253regressions now pass.",
       "evidence": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/integration-receipt.json",
       "scope_impact": "Alltenareas retained. No source cache changes, clinical truth, whole-question bottle or new model/default activation. Two continuation-fixture failures and two API audit expectation errors are retained; current checks require real cohort premises and explicit inspection."
+    },
+    {
+      "at": "2026-11-01T01:57:35.668557+00:00",
+      "gate": "G3",
+      "decision": "Complete the missing explicit non-escalation contract through focused class-bound review before another whole actor run.",
+      "reason": "Exact inspection of the actual unassisted ten contracts shows no dose_titration_reason; stop/hold/reduce cannot establish why a dose was not increased. One named new contract is independently supported; other clinical rationales remain unknown. Repeating old broad fields would not close this coverage gap.",
+      "evidence": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/targeted-source-revision/typed-check-v2/run-receipt.json",
+      "scope_impact": "Complete original57patient membership; no patient/doc cap, clinical truth inference, whole-answer bottle or qualification accepted. This is missing-question completion, not a new catalog or broad training."
+    },
+    {
+      "at": "2026-11-01T02:18:10.836684+00:00",
+      "gate": "G3",
+      "decision": "Rebind current native source observations without another reader run, preserve prior retained collections via the existing explicit rename contract, and verify current typed coverage/source dependencies.",
+      "reason": "Six local revisions and259newnon-escalation candidates were missing from the old final table. Preflight-v1 native merge failed the existing retention check for4prior objects, so v2 uses compose_table.rename_columns to retain prior_documentary_findings while documentary_findings carries current revisions. Qualified CTE read replay had a measured duplicate-name failure and now passes actual portable SQL roundtrips.",
+      "evidence": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-source-completion/preflight-v2/receipt.json",
+      "scope_impact": "No ordinary/clinical acceptance inherited, old source dispositions and allattempts retained, no source cache binding-file edits, alltenareas unchanged. Optional telemetry sink inheritance appended postrun events; original1209-line run prefix preserved and separate attempt boundaries remain authoritative (trace-attribution.json). Future jobs use unique sinks."
+    },
+    {
+      "at": "2026-11-01T02:33:25.543475+00:00",
+      "gate": "G3",
+      "decision": "Run one current-code ordinary confirmation after materially measured native completeness/domain/portability and missing-question fixes.",
+      "reason": "The originalfa28466run is immutable and exposed40of89dose rows,7of17GDMTobjects and missing non-escalation contracts.94ffd2e has254regressions and native scope/window/nonHF transfer evidence. Manual native delivery is not automatic analysis acceptance, so the normal fresh-conversation compose route must select its own work. Keep oldpartialreceipts and current unsupported/unknowns.",
+      "evidence": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/run-protocol.json",
+      "scope_impact": "No repeated unchanged frozen run, new service, training, cohort narrowing, clinical truth inference or default-model promotion. Four historical pre-baseline pending reservations remain untouched and unknown; allcurrentowned providerjobs are terminal."
+    },
+    {
+      "at": "2026-11-01T03:25:15.917695+00:00",
+      "gate": "G3",
+      "decision": "Reassess the repeated final prose-contract failure and source-to-renderer schema gap before another implementation or expensive full run.",
+      "reason": "Twoordinaryrunsrepeatedunbounddefinition prose despite native improvements. Thisrun initially fixedprose but reintroduced it after a clinical-role repair. The finalfillcollectionomitsmedicine namesandthe rendererthrowsKeyError; actualqueryhistory neveraskeddrug_name. Independentreviewmustdistinguish sourcequality fromstructuralinputbinding andcanonicalrepair representation.",
+      "evidence": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/render-and-format-review/observations.json",
+      "scope_impact": "Alltenareas retained. No model/clinical truth inferred, numericthresholdsrelaxed, datasetnarrowed, finalanswerbottled or broadreadrepeated. Allpaidwork retained. Resume existingowned native state onlyafter smallcontract/format fixes andchecks."
+    },
+    {
+      "at": "2026-11-01T03:29:15.240875+00:00",
+      "gate": "G3",
+      "decision": "Use narrow shared interface and retained-work recovery after repeat prose/render failures. Claude confirms missing input field and local exception; its suggestion that source may lack medication names is disproved by read-only fill schema/count:132704/132704 names present. Require explicit name binding (nullable when source unavailable), rather than hide known omitted names. Canonical templates reduce regeneration but cannot excuse rewritten unbound literals. No full cohort reread."
+    },
+    {
+      "at": "2026-11-01T04:04:30.112023+00:00",
+      "gate": "G3",
+      "decision": "Stop ownedmisroutedfinancialrun44951withSIGINT,notentirebuild. Atomicoperator hasonlyclosedchoice labels/count/share outputs and no dollar sums/year grouping. A covers_all machinevote doesnotcreate missing computational capability. Actualreceipt398.228s/5validatedroutingcalls preserved, allpriorrows/source/code exact. Correctsharedapplicability before Qwen/retrieval,notfinancialkeywordhandler,thresholdweakening,patientcap or routingcatalog."
+    },
+    {
+      "at": "2026-11-01T04:28:37.092059+00:00",
+      "gate": "G3",
+      "decision": "Do not accept or bottle modelconfirmedfinancialanswer: actualcashlabelcomesfromadjudicated paid_cents. Existingregisteredfinancialsource map assignsactualcash allocated_cents. Independent engineeringauditquarantinesincorrectcandidate throughH.finish,outcome notphysicianfeedback. Preserve originalallattempts/source/answer andrepair sharedquantity-source interface. Clinical71pageinspectionPDF remainsavailable; noordinaryfinancialorMVPacceptance claimed."
+    },
+    {
+      "at": "2026-11-01T05:16:40.681307+00:00",
+      "gate": "G3",
+      "decision": "Reassess before another feature: retained financial repair exposed own sourceguardfalse rejection and incorrect audit population assumption. Fix measured json_each empty-schema/nativealias defect and preserve registered default; no new route/catalog/training. One unassisted financial confirmation is needed for actualnormal path; baseline values never supplied.",
+      "evidence": "artifacts/agere-current-financial-transfer-2026-11-01/retained-source-repair/receipt.json",
+      "scope_impact": "Alltenareas retained; original source/attempts and bothpopulations preserved. No clinical qualification."
+    },
+    {
+      "at": "2026-11-01T05:24:47.382697+00:00",
+      "gate": "G3",
+      "decision": "Stop new financial feature increments. Actual current full table reveals sourceguardmistook text cash_currency_status for a monetary column. Correct that typed-role boundary and expose existing account currency source; allactual bad/good traces now tested offline plusfullcapturedcompiler. Final normal confirmation beforecurrentpackaging, no new handler/catalog/training.",
+      "evidence": "artifacts/agere-current-financial-transfer-2026-11-01/cash-source-binding/all-actual-shape-precheck.json",
+      "scope_impact": "Registered livingdefault andalltenareas retained; actual costs/unknowns explicit."
+    },
+    {
+      "at": "2026-11-01T05:47:32.687224+00:00",
+      "gate": "G3",
+      "decision": "No further cold financial rerun or feature increment. Actual financial math is correct; verifier manufactures empty patient claim packets from unreferenced diagnostics, and opaque packet labels become guessed identifiers. Repair actual final-claim boundary and structured feedback; prove zero-actor source reuse then finish connected app/package.",
+      "evidence": "artifacts/agere-current-financial-transfer-2026-11-01/ordinary-confirmation/run-receipt.json",
+      "scope_impact": "Fullnativeaudit/source retained; no thresholdrelaxation or claimedclinicaltruth; alltenareas retained."
+    },
+    {
+      "at": "2026-11-01T06:18:26.667486+00:00",
+      "gate": "G3",
+      "decision": "Retain the principal blueprint automatic original-question acceptance before sealing current engineering delivery. Financial reuse now demonstrated; currenthealth native/rendering/source projections are verified but no unassisted run exists after the local-render/prose/final-claim fixes. Complete the package checkpoint then one normal current-code original question, warm state declared and complete accounting.",
+      "evidence": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v2/run-receipt.json",
+      "scope_impact": "Preserves fulloriginalquestion andalltenareas; not a newplan/model study or permission gate."
+    },
+    {
+      "at": "2026-11-01T07:51:47.086348+00:00",
+      "decision": "One changed-code ordinary confirmation is justified by two reproduced product failures, rather than repeating a passing frozen run. Acceptance permits explicit source unknowns but not missing dose/care bindings or an uncompiled narrative. No reader campaign, training, threshold relaxation or removed acceptance area.",
+      "evidence": [
+        "artifacts/agere-explicit-retry-recovery-2026-11-01/clinical-presentation-proof.json",
+        "artifacts/agere-current-original-workflow-2026-11-01/retained-final-repair-v5/receipt.json",
+        "docs/agere/reviews/2026-11-01-claude-explicit-retry.md",
+        "docs/agere/reviews/2026-11-01-claude-compiler-phase.md"
+      ]
+    },
+    {
+      "at": "2026-11-01T09:55:40.417939+00:00",
+      "decision": "Stop further model-driven schema renaming. The retained controller produced all64fillobjects and118datedcareobjects in446.060s/16newHaikucalls/0newtypedcalls, but wrapped canonical source collections under different parent aliases and moved source unknowns into workflow.unresolved. Native items_from receipts already explicitly name both required consumer contracts. Bind only unique identity-preserving retained collection constructors by that formal source field, with exact value/digest checks; no alias spelling/content guess, new source reading or partial-trace promotion. Restore the unchanged original valid export definition and retain every source uncertainty as data/review state.",
+      "scope_impact": "Only presentation binding and the already approved inspection/export stage; alltenareas and G5 qualification remain.",
+      "evidence": [
+        "artifacts/agere-clinical-view-contract-2026-11-01/checked-binding-continuation/receipt.json",
+        "artifacts/agere-clinical-view-contract-2026-11-01/checked-binding-continuation/checked-result.json"
+      ]
+    },
+    {
+      "at": "2026-11-01T11:07:00.926272+00:00",
+      "gate": "G3",
+      "decision": "Seal current local engineering delivery and retain G3 for measured performance/verification work; no fullMVPorclinicalacceptance.",
+      "reason": "Current native/PDF/work/restart failures are removed and evidenced. Original66minute latency and source uncertainty remain substantive; repeating a cold cohort run or classifying unknown machine votes as clinicaltruth is unjustified.",
+      "evidence": [
+        "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
+        "artifacts/agere-clinical-view-contract-2026-11-01/original-latency-attribution.json"
+      ],
+      "scope_impact": "Alltenareas retained; existingG5independent labels/economics and providerfunding dependencies remain. No new trained model/default, fullquestionbottle,mainmerge,publication or primarypromotion."
     }
   ],
   "unsealed_work": {
-    "status": "native_completeness_delivery_verified_candidate",
-    "path": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix",
-    "active_receipt": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/integration-receipt.json",
+    "status": "next_performance_increment_not_started",
+    "path": "artifacts/agere-clinical-view-contract-2026-11-01",
+    "active_receipt": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "remaining_gap": "Current targeted source revision and whole-question/parameterized transfer qualification remain. Independent G5labels/reviewer economics unresolved.",
-    "next_action": "G3: complete-native SQL/registered-domain and current patient delivery verified;253connected regressions,89dose source rows/17GDMTobjects,57patients/228pillars/64fills,79pagePDF/0attachments/allbounds. HTTP57source-review work items save/reopen exactly; old report work-change guards and regenerated downloads pass with0providers/all17927attempts unchanged. Next execute one targeted native recheck of6named observations plus one new explicit non-escalation question, then independent current typed verification and parameterized replay/changed-window/nonHF transfer/package. Preserve prior partial ordinary receipt and G5qualification/economics dependencies; alltenareas retained, schedulerPAUSED."
+    "remaining_gap": "Original66minute batch latency; current semantic source/financial uncertainty and absent independent clinical/model/outcome qualification and real total-cost/reviewer economics. FullMVPacceptance remains false.",
+    "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2685,5 +2826,6 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": []
+  "active_jobs": [],
+  "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED."
 }
