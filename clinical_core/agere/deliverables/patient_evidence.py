@@ -10,7 +10,7 @@ import json,re
 # medication meanings from new column names.
 CLINICAL_REVIEW_CONTRACT={
     'schema':'clinical-medication-review-view/1',
-    'method':'Use compose_table.rename_columns for explicit source aliases. Values remain native. This presentation contract does not select patients, infer facts or qualify clinical meaning.',
+    'method':'Use compose_table.rename_columns for explicit source aliases. Values remain native. Medication-pillar rows returning positive dose_rows or clinician IDs must also bind their inspectable dose or relationship collections; counts and IDs alone do not fulfill this view. This presentation contract does not select patients, infer facts or qualify clinical meaning.',
     'columns':{
         'patient_id':'Exact received patient identity',
         'on_rasi_pillar':'RAAS/ARNI picked-up-fill flag in the declared analysis window: 0,1 or null',
@@ -37,8 +37,25 @@ def clinical_collection_issues(answer):
     source values, never inferred from a drug class; explicit null stays unknown.
     Native JSON aggregates and composition lists have the same shape.
     """
+    def objects(value):
+        try:value=json.loads(value)if isinstance(value,str)else value
+        except ValueError:return None
+        return value if isinstance(value,list)and all(isinstance(x,dict)for x in value)else None
     for row in answer.get('table')or[]:
-        if not isinstance(row,dict)or'recent_gdmt_fill_observations'not in row:continue
+        if not isinstance(row,dict):continue
+        # These fields opt into the existing medication-review presentation.
+        # A positive count/returned identifier is available evidence, not a
+        # supported unknown. Keep the objects needed to inspect that evidence.
+        clinical=any(k in row for k in ('on_rasi_pillar','on_beta_blocker_pillar','on_mra_pillar','on_sglt2i_pillar'))
+        if clinical and type(row.get('dose_rows'))in(int,float)and row['dose_rows']>0:
+            doses=next((row[k]for k in ('gdmt_dose_rows','dose_evidence','gdmt_dose_evidence')if k in row),None)
+            if not objects(doses):
+                return ['The medication-review table reports available dose_rows but omits inspectable dose objects. Bind the actual registered GDMT dose observations through gdmt_dose_rows, preserving medicine, dose, reference, state, date and source fields; a count is not dose evidence.']
+        if clinical and any(row.get(k)for k in ('documented_pcp_ids','cardiology_clinician_ids_any_status')):
+            care=next((row[k]for k in ('care_assignments','structured_care_team','care_team_assignments')if k in row),None)
+            if not objects(care):
+                return ['The medication-review table returns clinician IDs but omits inspectable relationship objects. Bind the dated care_assignments with clinician_id, role and assignment status; an ID alone cannot establish current responsibility.']
+        if'recent_gdmt_fill_observations'not in row:continue
         value=row['recent_gdmt_fill_observations']
         if value is None:continue
         try:value=json.loads(value)if isinstance(value,str)else value

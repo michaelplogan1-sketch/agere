@@ -10,6 +10,28 @@ import test_computed_answer_prose as prose_fixture
 import test_patient_review_profiles as profile_fixture
 
 class ClinicalInputs(unittest.TestCase):
+ def test_available_doses_and_relationships_cannot_be_replaced_by_counts_and_ids(self):
+  row={'patient_id':'A','on_rasi_pillar':0,'dose_rows':1,'documented_pcp_ids':'CLIN-A'}
+  self.assertIn('dose objects',P.clinical_collection_issues({'table':[row]})[0])
+  row['gdmt_dose_rows']=[]
+  self.assertTrue(P.clinical_collection_issues({'table':[row]}))
+  row['gdmt_dose_rows']=json.dumps([{'drug_key':'lisinopril','daily_mg':5,'dose_date':'2030-05-01'}])
+  self.assertIn('relationship objects',P.clinical_collection_issues({'table':[row]})[0])
+  row['care_assignments']=[{'clinician_id':'CLIN-A','assignment_status':'referral_only'}]
+  self.assertEqual(P.clinical_collection_issues({'table':[row]}),[])
+ def test_zero_unknown_and_nonclinical_counts_do_not_invent_missing_objects(self):
+  for row in ({'patient_id':'A','on_rasi_pillar':0,'dose_rows':0,'documented_pcp_ids':None},
+              {'patient_id':'A','on_rasi_pillar':None,'dose_rows':None},
+              {'group':'B','dose_rows':12,'documented_pcp_ids':'historical ID list'}):
+   self.assertEqual(P.clinical_collection_issues({'table':[row]}),[])
+ def test_count_only_clinical_table_is_rejected_before_paid_review(self):
+  row={'patient_id':'A','on_rasi_pillar':0,'dose_rows':1}
+  calls=[{'result':{'result_view':'agere_result_1','columns':list(row),'rows':[row],'truncated':False}}]
+  a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_1','headline':'Source review remains pending.'}
+  with patch.object(G,'check',side_effect=AssertionError('Missing wiring must fail locally')):
+   review=B.review_final(SimpleNamespace(),'Review medication evidence',a,calls,SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+  self.assertEqual(review['status'],'repair');self.assertEqual(review['calls'],0)
+  self.assertIn('gdmt_dose_rows',review['feedback'])
  def test_missing_name_is_unbound_but_received_null_is_a_supported_unknown(self):
   fill={'drug_class':'mra','latest_fill_date_in_window':'2030-05-08','observed_fill_count':10}
   a={'table':[{'patient_id':'A','recent_gdmt_fill_observations':[fill]}]}
