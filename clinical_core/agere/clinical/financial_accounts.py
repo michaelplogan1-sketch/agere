@@ -124,7 +124,8 @@ def cash_source_issues(question,answer,calls):
             graph=lineage(name,sources[root],schema=schema,sources={k:v for k,v in sources.items()if k!=root},dialect='sqlite',trim_selects=False)
             leaves=[n for n in graph.walk()if not n.downstream and isinstance(n.expression,exp.Table)]
             count_alias=any(isinstance(n.expression.this if isinstance(n.expression,exp.Alias)else n.expression,exp.Count)for n in graph.walk())
-            money=bool(monetary.search(name)or(cash_label(name)and not count_alias)or any(monetary.search(n.name.rsplit('.',1)[-1])for n in leaves)or any(
+            numeric_cash_alias=cash_label(name)and not count_alias and any(type(row.get(name))in(int,float)for row in by[root]['result'].get('rows')or[]if isinstance(row,dict))
+            money=bool(monetary.search(name)or numeric_cash_alias or any(monetary.search(n.name.rsplit('.',1)[-1])for n in leaves)or any(
                 monetary.search(str(value.args.get('expression')))for n in graph.walk()for value in n.expression.find_all(exp.JSONExtract,exp.JSONExtractScalar)))
             if not money:continue
             branches=[n for n in graph.walk()if isinstance(n.source,exp.Select)and any(
@@ -146,6 +147,7 @@ def cash_input_contract():
         'native_source':'record/current_record expose stream, patient_id, event_date, available_date and payload. Filter the registered stream before extracting its amount field with json_extract(payload, ...).',
         'clocks':'Use received availability for the cutoff and the cash event date for payment/posting periods. payer_adjudication.paid_cents and paid_date remain adjudication facts, not a cash-receipt ledger.',
         'currency':'Follow the existing account/source currency binding; cents without a known currency cannot establish USD.',
+        'currency_account_source':{k:m[k]for k in('snapshot_stream','account_field','currency_field')},
         'scope':'Preserve the population resolved by the existing decision context and original question, including its registered living-patient default when applicable. This cash source map does not broaden or narrow that population.',
         'coverage':'Counted payer-claim adjudication and received provider-account cash can cover different claims and organizations. Their difference does not establish a receivable, settlement gap or savings.',
         'limits':LIMITS}

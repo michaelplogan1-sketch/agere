@@ -48,6 +48,11 @@ class CashBinding(unittest.TestCase):
   b=call("SELECT SUM(json_extract(payload,'$.allocated_cents'))/100.0 AS net_payer_cash_dollars FROM record WHERE stream='payer_cash_allocations'",'agere_result_2',reads=['record'],columns=['net_payer_cash_dollars'],row={'net_payer_cash_dollars':100})
   c=call('SELECT p.net_payer_paid_dollars,c.net_payer_cash_dollars FROM agere_result_1 p CROSS JOIN agere_result_2 c','agere_result_3',dependencies=['agere_result_1','agere_result_2'],columns=['net_payer_paid_dollars','net_payer_cash_dollars'],row={'net_payer_paid_dollars':200,'net_payer_cash_dollars':100})
   self.assertEqual(self.check([a,b,c]),[])
+ def test_textual_cash_currency_status_is_not_a_claimed_monetary_value(self):
+  sql="SELECT SUM(json_extract(payload,'$.allocated_cents'))/100.0 AS dollars,'payload currency not recorded; USD not established' AS cash_currency_status FROM record WHERE stream='payer_cash_allocations'"
+  c=call(sql,reads=['record'],columns=['dollars','cash_currency_status'],row={'dollars':100,'cash_currency_status':'payload currency not recorded; USD not established'})
+  self.assertEqual(self.check([c]),[])
+  self.assertTrue(self.check([call('SELECT 100 AS payer_cash',columns=['payer_cash'],row={'payer_cash':100})]))
  def test_literals_wrong_stream_paths_and_unrestricted_or_cannot_assert_cash(self):
   for sql,reads in [("SELECT 1 AS dollars,'payer_cash_allocations' AS stream,'$.allocated_cents' AS path",[]),
    ("SELECT SUM(json_extract(payload,'$.paid_cents'))/100.0 AS dollars FROM record WHERE stream='payer_cash_allocations'",['record']),
