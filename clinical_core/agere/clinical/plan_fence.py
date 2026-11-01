@@ -27,6 +27,36 @@ _TABLE = re.compile(r'\b(?:from|join)\s+"?([A-Za-z_][A-Za-z0-9_]*)"?', re.I)
 _QUALIFIED = re.compile(r'\b([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\b')
 _CTE = re.compile(r'(?:\bwith\b|,)\s*([A-Za-z_][A-Za-z0-9_]*)\s+as\s*\(', re.I)
 
+# Lex quoted identifiers/comments before looking inside their contents. Only
+# a literal first argument to SQLite's JSON table functions is replaceable for
+# dependency parsing; quoted table names and all executable SQL stay intact.
+_DEPENDENCY_TOKENS = re.compile(
+    r"(?P<json>\bjson_(?:each|tree)\s*\(\s*)"
+    r"|(?P<string>'[^']*+(?:''[^']*+)*')"
+    r'|(?P<identifier>"[^"]*+(?:""[^"]*+)*"|`[^`]*+(?:``[^`]*+)*`|\[[^\]]*\])'
+    r"|(?P<comment>--[^\n]*|/\*.*?\*/)", re.I | re.S)
+
+
+def _dependency_sql(sql):
+    """Skip evidence JSON contents in a syntax-only dependency probe.
+
+    Literal JSON cannot name a SQL table or column. Its original bytes remain
+    in the executable query, receipt, cache key and definition checks. This
+    avoids tokenizing millions of data characters as Python SQL string tokens.
+    """
+    pieces=[];copied=0;previous=0;first_argument=False
+    for token in _DEPENDENCY_TOKENS.finditer(sql):
+        if first_argument and sql[previous:token.start()].strip():first_argument=False
+        kind=token.lastgroup
+        if kind=='json':first_argument=True
+        elif kind=='string':
+            if first_argument:
+                pieces.extend((sql[copied:token.start()],"''"));copied=token.end()
+            first_argument=False
+        elif kind!='comment':first_argument=False
+        previous=token.end()
+    return ''.join((*pieces,sql[copied:])) if pieces else sql
+
 
 def _sqls(graph):
     out = []
@@ -51,7 +81,7 @@ def _parsed_dependencies(sqls):
     for sql in sqls:
         # A schema-qualified table is not a table named "main"; quoted CTEs,
         # nested aliases and the bound population relation are not missing feeds.
-        tree=sqlglot.parse_one(sql,read='sqlite')
+        tree=sqlglot.parse_one(_dependency_sql(sql),read='sqlite')
         for scope in traverse_scope(tree) or []:
             for _,(_,source) in scope.selected_sources.items():
                 if isinstance(source,exp.Table) and isinstance(source.this,exp.Identifier) and source.name.lower()!='population':
