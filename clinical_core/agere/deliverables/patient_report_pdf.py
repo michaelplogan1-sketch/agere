@@ -223,7 +223,9 @@ def _render_clinical(context,output,cards,references):
   # A new, otherwise-unrecognised relation keeps its exact question meaning,
   # once per patient/contract rather than repeated under every source account.
   questions={q['question']for g in c.get('additional_documentary_accounts')or[]if g.get('relation')!='documented_dose'for q in g.get('source_questions')or[]if q.get('question')}
-  for question in sorted(questions):story.append(P('Additional account scope: '+question,'small'))
+  for question in sorted(questions):
+   scope=question.split('?',1)[0]+'?'if'?'in question else question
+   story.append(P('Review scope: '+scope,'small'))
   for a in accounts.values():
    dates=sorted({str(s['date']) for g in a['groups']for s in g.get('sources',[])if s.get('date')})
    dated=D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0])if dates else'Date not recorded'
