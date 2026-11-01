@@ -1160,6 +1160,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     if limits:
         answer['limitations']=list(dict.fromkeys([*(answer.get('limitations')or[]),*limits]))
     static_feedback.extend(relation_composition_issues(answer,getattr(tools,'document_reviews',[])))
+    from .financial_accounts import cash_source_issues
+    static_feedback.extend(cash_source_issues(question,answer,calls))
     from .result_assembly import collection_retention_issues,RETENTION_CONTRACT
     assessment['collection_retention_contract']=RETENTION_CONTRACT
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
@@ -1807,6 +1809,9 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     rules = RULES.format(tool_quota=quota) + '\n' + decision_context.prompt_block()
     from ..deliverables.patient_evidence import CLINICAL_REVIEW_CONTRACT
     rules+='\nEXISTING OPTIONAL CLINICAL PRESENTATION INPUT CONTRACT:\n'+json.dumps(CLINICAL_REVIEW_CONTRACT)
+    from .financial_accounts import payer_cash_requested,cash_input_contract
+    if payer_cash_requested(question):
+        rules+='\nEXISTING REGISTERED CASH SOURCE CONTRACT:\n'+json.dumps(cash_input_contract())
     system = [{'type': 'text', 'text': rules}, {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
     from . import patient_ids
     prior = patient_ids.current_prior() or {}
