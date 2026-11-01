@@ -52,6 +52,22 @@ class ReservationAuthorization(unittest.TestCase):
   self.assertEqual(b.cap,.25)
   self.assertEqual(b.db.execute('SELECT COUNT(*) FROM calls').fetchone()[0],0)
 
+ def test_explicit_uncapping_after_open_is_observed(self):
+  b=self.ledger(cap_usd=0.0);other=self.ledger()
+  with other.db:other.db.execute('UPDATE authorization SET cap=NULL WHERE id=1')
+  self.assertIsNone(b.reserve('now_authorized','jev','jev-1.13.0'))
+  self.assertIsNone(b.cap)
+  self.assertEqual(b.receipt()['spending_limit'],'uncapped')
+
+ def test_denied_abandoned_replacement_rolls_back_original_attempt(self):
+  b=self.ledger();b.reserve('abandoned','jev','jev-1.13.0')
+  with b.db:
+   b.db.execute("UPDATE calls SET status='abandoned',error='Authored dead-process fixture' WHERE id='abandoned'")
+   b.db.execute('UPDATE authorization SET cap=.25 WHERE id=1')
+  before=b.db.execute("SELECT * FROM calls WHERE id='abandoned'").fetchone()
+  with self.assertRaisesRegex(ValueError,'authorization exhausted'):b.reserve('abandoned','jev','jev-1.13.0')
+  self.assertEqual(b.db.execute("SELECT * FROM calls WHERE id='abandoned'").fetchone(),before)
+
  def test_two_connections_cannot_over_reserve_the_same_remaining_cap(self):
   b=self.ledger(cap_usd=.5);barrier=threading.Barrier(2)
   def reserve(key):
