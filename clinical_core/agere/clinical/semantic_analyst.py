@@ -572,9 +572,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     raise ValueError('Source/scope changed during output continuation; no pending actions executed')
                 actor_messages=pending_output['messages']
             elif compact_execution_state:
-                from .execution_state import messages as state_messages
+                from .execution_state import messages as state_messages,review_reference
                 actor_messages=state_messages(user,result['tool_calls'],recent_results=latest_calls,feedback=state_feedback,candidate=state_candidate,
-                                              documentation_identity=documentation_identity,documentation_in_system=bool(loaded_docs))
+                                              documentation_identity=documentation_identity,documentation_in_system=bool(loaded_docs),
+                                              feedback_native=review_reference(state_feedback,execute))
             else:actor_messages=messages
             body = {'model': model, 'max_tokens': max_tokens, 'system': actor_system, 'messages': actor_messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}

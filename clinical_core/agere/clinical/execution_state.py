@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/4'
+VERSION = 'execution-state/5'
 
 
 def progress_evidence(calls,candidate=None):
@@ -112,6 +112,37 @@ def recovery_context(replay,tools):
     return meta
 
 
+def review_reference(feedback,tools):
+    """Keep complete structured review feedback queryable, never a new fact.
+
+    A source review can repeat record lists in its prose and in every field
+    judgment. Its exact receipt belongs in the existing native result store;
+    copying both representations into an actor prompt can exceed service input
+    context even when the patient evidence already stays native.
+    """
+    if not isinstance(feedback,dict) or not isinstance(feedback.get('support'),dict):return None
+    if not feedback['support'].get('packets'):return None
+    if getattr(tools,'semantic',None) is None or not callable(getattr(tools,'retain_result',None)):return None
+    ident=digest(feedback)
+    row={'feedback_json':json.dumps(feedback,default=str,allow_nan=False),'feedback_digest':ident}
+    existing=next((v for v in tools.executed_results.values()
+        if v.get('kind')=='unverified_review_feedback' and v.get('feedback_digest')==ident),None)
+    if existing is not None:
+        if existing.get('columns')!=list(row) or existing.get('rows')!=[row] or existing.get('truncated'):
+            raise ValueError('Review feedback native view changed')
+    else:
+        existing=tools.retain_result({'columns':list(row),'rows':[row],
+            'truncated':False,'kind':'unverified_review_feedback','feedback_digest':ident})
+    return {'result_view':existing['result_view'],'json_column':'feedback_json','feedback_digest':ident,
+        'guidance_path':'$.feedback','packets_path':'$.support.packets',
+        'instruction':'The complete exact reviewer receipt, repair prose and every claim/source binding are retained here. '
+            'Use query_sql with json_extract/json_each to inspect the relevant packet and claim_feedback entries. '
+            'Packet IDs are opaque labels; use only explicit patient_id bindings. '
+            'This is unverified reviewer feedback, not patient evidence or a clinical truth label. '
+            'Unknown feedback is an unresolved dependency, not a proven source fault. '
+            'Retain unaffected native work and uncertainty; verify any final answer against the current source receipts.'}
+
+
 def documentation_references(out):
     loaded = out.get('loaded_documentation') or {}
     return {'identity': loaded.get('identity'),
@@ -193,7 +224,7 @@ def catalog(calls):
     return entries
 
 
-def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False):
+def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False,feedback_native=None):
     from .semantic_analyst import actor_result
     def recent(call):
         out = call.get('result')
@@ -220,13 +251,23 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
         # Operational reviewer receipts remain native; preserve the exact current
         # repair instructions without resending all model probabilities/costs.
         if isinstance(feedback,dict):
-            state['current_review_feedback']={k:feedback[k]for k in ('status','feedback','reason','repair_kind')if k in feedback}
+            if feedback_native is not None and feedback_native.get('feedback_digest')!=digest(feedback):
+                raise ValueError('Review feedback reference does not match the current receipt')
+            visible=('status','reason','repair_kind') if feedback_native is not None else ('status','feedback','reason','repair_kind')
+            state['current_review_feedback']={k:feedback[k]for k in visible if k in feedback}
             state['current_review_native_digest']=digest(feedback)
+            if feedback_native is not None:state['current_review_feedback']['native_feedback']=feedback_native
             coverage=feedback.get('coverage')or{}
             if coverage:
                 state['current_review_feedback']['coverage']={k:coverage[k]for k in ('label','reasons','reject')if k in coverage}
             support=feedback.get('support')or{}
-            pending=[{k:r[k]for k in ('id','label','reason','claim_feedback')if k in r}for r in support.get('packets',[])if r.get('label')!='supported']
+            fields=('id','patient_id','label','reason') if feedback_native is not None else ('id','patient_id','label','reason','claim_feedback')
+            pending=[]
+            for packet in support.get('packets',[]):
+                if packet.get('label')=='supported':continue
+                item={k:packet[k]for k in fields if k in packet}
+                if feedback_native is not None:item['claim_feedback_entries']=len(packet.get('claim_feedback')or[])
+                pending.append(item)
             if pending:state['current_review_feedback']['unresolved_dependencies']=pending
             if support.get('failed_packet_ids'):
                 state['current_review_feedback']['failed_dependency_ids']=support['failed_packet_ids']
