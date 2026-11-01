@@ -1146,6 +1146,20 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     answer.pop('table_binding', None)  # only materialize_table may establish this proof; it cannot be asserted by the model
     try:
         materialize_table(answer, calls)
+        from ..deliverables.patient_evidence import clinical_collection_fields
+        from .result_assembly import collection_contract_renames
+        required=clinical_collection_fields(answer)
+        native=getattr(tools,'executed_results',None)
+        if required and native:
+            root=(answer.get('table_binding')or{}).get('result_view')
+            renames=collection_contract_renames(native,root,required,keys=['patient_id'])
+            if renames:
+                args={'base':root,'keys':['patient_id'],'rename_columns':renames}
+                bound=tools({'name':'compose_table','input':args})
+                calls.append({'name':'compose_table','input':args,'result':bound,
+                              'native_presentation_binding':'Explicit unique retained items_from contracts; values unchanged'})
+                answer['table_from_tool']=bound['result_view']
+                materialize_table(answer,calls)
     except ValueError as exc:
         return {**assessment, 'status': 'repair', 'feedback': str(exc)}
     if (answer.get('answer_type') == 'table' or answer.get('table')) and not answer.get('table_binding'):

@@ -30,6 +30,19 @@ CLINICAL_REVIEW_CONTRACT={
     'unknowns':'Unavailable facts remain null or explicitly unknown with source scope. Missing data and missing column bindings are different. Preserve all retained source objects and all original patients.'}
 
 
+def clinical_collection_fields(answer):
+    """The existing detailed medication view's explicit consumer addresses."""
+    if not any(isinstance(s,dict)and s.get('kind')=='deliverable'for s in answer.get('workflow')or[]):return ()
+    for row in answer.get('table')or[]:
+        if not isinstance(row,dict):continue
+        if any(k in row for k in ('on_rasi_pillar','on_beta_blocker_pillar','on_mra_pillar','on_sglt2i_pillar'))and any(k in row for k in(
+            'gdmt_dose_rows','dose_evidence','gdmt_dose_evidence','care_assignments','structured_care_team',
+            'care_team_assignments','dose_rows','dose_summary','dose_detail','care_relationships',
+            'fill_drug_names','recent_gdmt_fill_observations')):
+            return ('recent_gdmt_fill_observations','gdmt_dose_rows','care_assignments')
+    return ()
+
+
 def clinical_collection_issues(answer,*,native_calls=()):
     """Validate the existing optional presentation interface before paid review.
 
@@ -51,7 +64,7 @@ def clinical_collection_issues(answer,*,native_calls=()):
         for value in result.get('rows')or[]:
             value=dict(zip(columns,value))if isinstance(value,(list,tuple))else value
             if isinstance(value,dict)and value.get('clinician_id'):available_care.add(value.get('patient_id'))
-    requested=any(isinstance(s,dict)and s.get('kind')=='deliverable'for s in answer.get('workflow')or[])
+    requested=bool(clinical_collection_fields(answer))
     for row in answer.get('table')or[]:
         if not isinstance(row,dict):continue
         # These fields opt into the existing medication-review presentation.
@@ -60,8 +73,7 @@ def clinical_collection_issues(answer,*,native_calls=()):
         clinical=any(k in row for k in ('on_rasi_pillar','on_beta_blocker_pillar','on_mra_pillar','on_sglt2i_pillar'))
         dose_keys=('gdmt_dose_rows','dose_evidence','gdmt_dose_evidence')
         care_keys=('care_assignments','structured_care_team','care_team_assignments')
-        full_review=requested and clinical and any(k in row for k in
-            (*dose_keys,*care_keys,'dose_rows','dose_summary','dose_detail','care_relationships','fill_drug_names','recent_gdmt_fill_observations'))
+        full_review=requested and clinical
         if full_review:
             missing=[]
             for names in (('recent_gdmt_fill_observations',),dose_keys,care_keys):

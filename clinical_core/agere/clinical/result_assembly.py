@@ -270,6 +270,47 @@ def _retention_item(item,bindings):
     return out
 
 
+def collection_contract_renames(results,root,required,*,keys):
+    """Follow a unique native items_from contract to its consumer address.
+
+    Alias spelling and object content never supply a clinical meaning. Existing
+    destinations, ambiguous constructors and non-identity joins stay explicit.
+    """
+    result=results.get(root)or{};assembly=result.get('assembly')or{}
+    if assembly.get('schema')!=VERSION or assembly.get('keys')!=keys or assembly.get('column_renames'):return {}
+    try:columns,rows=_rows(result)
+    except ValueError:return {}
+    if not set(keys)<=set(columns) or any(row.get(k)is None for row in rows for k in keys):return {}
+    output={}
+    for name in required:
+        if name in columns:continue
+        candidates=[]
+        for join in assembly.get('joins',[]):
+            alias=join.get('as');source=results.get(join.get('result_view'))
+            if (join.get('mode')!='collect' or join.get('items_from')!=name or join.get('retain_in_final')is not True
+                or join.get('on')!={k:k for k in keys} or alias not in columns or source is None
+                or join.get('source_result_digest')!=digest(source)):continue
+            try:source_columns,source_rows=_rows(source)
+            except ValueError:continue
+            if name not in source_columns:continue
+            def identity(row):return json.dumps([row.get(k)for k in keys],sort_keys=True,allow_nan=False)
+            grouped={};valid=True
+            for source_row in source_rows:
+                value=source_row.get(name)
+                try:value=json.loads(value)if isinstance(value,str)else value
+                except ValueError:valid=False;break
+                if value is not None and not isinstance(value,list):valid=False;break
+                grouped.setdefault(identity(source_row),[]).extend(value or[])
+            for row in rows:
+                value=row.get(alias)
+                try:value=json.loads(value)if isinstance(value,str)else value
+                except ValueError:valid=False;break
+                if digest(value)!=digest(grouped.get(identity(row))):valid=False;break
+            if valid:candidates.append(alias)
+        if len(candidates)==1:output[candidates[0]]=name
+    return output
+
+
 def collection_retention_issues(results,final_rows,dependencies):
     """Check explicitly promised source collections in descendant final tables."""
     from collections import Counter
