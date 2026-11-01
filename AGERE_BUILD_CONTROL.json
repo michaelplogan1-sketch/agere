@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-01T11:07:00.926272+00:00",
+  "updated_at": "2026-11-01T12:17:31.263500+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -405,11 +405,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "sealed_scoped_delivery_performance_next",
+    "kind": "ordinary_confirmation_complete_feedback_context_failure",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The original57patient source/native work binds complete named fills/doses/dated care into a readable patient brief and current saved interactive workflow; isolated installation/restart and work/report guards pass.",
-    "measured_failure_reduction": "Missing64fill/118care consumer bindings fixed;17doseobjects retained.165pagecandidate curatedto89pages with all57names/allnamedmedicines, first/last-date and polarity qualifications.295connected regressions; finalrelease998.655s/0providers,57idempotent reviewitems, exactfreshrestart/PDF/HTML, clinicalprogramblock and noqualificationtransfer.",
+    "user_behavior_delta": "An ordinary fresh-conversation request now saves the full57patient dashboard/PDF automatically with named fills/doses/care; source status remains partial.",
+    "measured_failure_reduction": "Same25474row isolated ledger reservation0.822636s to0.001358s; all2476offline operations1.233486s;302regressions pass. Actual ordinary runtime1226.386s vs prior3993.581s has cache/provider/trajectory confounds, so no causal whole-workflow saving claimed.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -831,17 +831,27 @@
       "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
       "artifacts/agere-clinical-view-contract-2026-11-01/browser-current-verification.json",
       "artifacts/agere-clinical-view-contract-2026-11-01/original-latency-attribution.json",
-      "artifacts/agere-clinical-view-contract-2026-11-01/all-attempt-economics.json"
+      "artifacts/agere-clinical-view-contract-2026-11-01/all-attempt-economics.json",
+      "artifacts/agere-reservation-performance-2026-11-01/before-receipt.json",
+      "artifacts/agere-execution-prefix-performance-2026-11-01/measured-prefix-value.json",
+      "artifacts/agere-reservation-performance-2026-11-01/comparison-receipt.json",
+      "artifacts/agere-reservation-performance-2026-11-01/workload-receipt.json",
+      "artifacts/agere-reservation-performance-2026-11-01/test-receipt.json",
+      "artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json",
+      "artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/run-receipt.json",
+      "artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/current-http-verification/receipt.json",
+      "artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/actor-context-failure.json"
     ],
-    "remaining_gap": "Original66minute batch latency; current semantic source/financial uncertainty and absent independent clinical/model/outcome qualification and real total-cost/reviewer economics. FullMVPacceptance remains false.",
-    "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED.",
+    "remaining_gap": "Final actor feedback context overflow; current source/financial semantic uncertainty; independent role/clinical/outcome qualification and authentic total economics unavailable.",
+    "next_action": "G3: The b6baccd reservation-performance increment is sealed. The normal original-question run returned partial in1226.386s, retained57patients/64namedfills/87careassignments/17doses, and automatically saved the verified91page PDF and interactive report. Source/code/prior25474attempts unchanged;1616newattempts,$7.765659916knownAPI-equivalent plus3unpriced; no matched cost/speed superiority claim. The final actor repair failed PromptTooLong after2.602MB of source feedback and1466unknown claim entries. Next fix only the existing compiled execution-state representation: retain the complete reviewer JSON in existing native queryable results, expose exact digest/paths and packet bindings, and avoid inline duplicate claim/source lists. Prove lossless querying, no clinical authority or threshold change, no feedback mutation and actual failed-state reduction offline, then narrow review/targeted continuation if justified. No fresh cohort/source campaign. Prior51bab51 isolated installation remains recovery; alltenareas, G5 independent qualification/economics and Perplexity0credit remain. Scheduler PAUSED; owned8890stopped normally; no provider job active.",
     "latest_review": "docs/agere/reviews/2026-11-01-claude-native-binding-and-pdf.md",
-    "coordination": "Soleowner; no provider/training/build job active; owned8890candidate live PID70395/session74704; primary unchanged; schedulerPAUSED.",
+    "coordination": "All owned provider/audit jobs terminal. Owned8890 stopped after currentHTTP/browser proof; primary untouched; schedulerPAUSED.",
     "remaining_blockers": [
-      "Independent source/model/clinical qualification, viable outcome labels and authentic full-workload/reviewer economics remain unqualified.",
-      "Report serving still has measurable redundant context validation; current PDF13.348s, no claim of whole-question speedup."
+      "Final source-review feedback exceeds actor context; retained partial output is not completed repair.",
+      "Independent role/source-family/clinical/outcome labels and authentic full-cost/reviewer economics unavailable.",
+      "Current financial semantic verification/reuse unqualified; Perplexity credits0."
     ],
-    "latest_progress": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
+    "latest_progress": "artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json",
     "results_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -874,8 +884,8 @@
       "scoped_local_release": "passed",
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
-      "latency_gap_seconds": 3993.581436,
-      "evidence": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json"
+      "ordinary_seconds": 1226.385796125047,
+      "evidence": "artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json"
     },
     "latest_human_steering": "Mike returned and explicitly directs continued autonomous overnight completion, no questions or approval gates, retain all agreed stack components/concepts and north star. No unsupported completion or clinical qualification claim.",
     "comparison_status": {
@@ -891,17 +901,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-01T11:07:00.926272+00:00",
-    "workflow_change": "Complete source-bound clinical collections and readable patient delivery survive independent local installation, follow-up work and fresh restart; uncertain source evidence stays review-only.",
+    "at": "2026-11-01T12:17:31.263500+00:00",
+    "workflow_change": "Gateway reservation stops repricing the entire ledger under write lock; actual ordinary report survives allattempt accounting and saves/reopens.",
     "unsealed_work": {
-      "status": "next_performance_increment_not_started",
-      "path": "artifacts/agere-clinical-view-contract-2026-11-01",
-      "active_receipt": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
+      "status": "observed_actor_feedback_context_failure",
+      "path": "artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation",
       "source_frozen_for_run": false,
       "pid": null,
       "session": null,
-      "remaining_gap": "Original66minute batch latency; current semantic source/financial uncertainty and absent independent clinical/model/outcome qualification and real total-cost/reviewer economics. FullMVPacceptance remains false.",
-      "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED."
+      "remaining_gap": "Final source feedback exceeds actor service context; source and financial qualification/economics remain open.",
+      "next_action": "G3: The b6baccd reservation-performance increment is sealed. The normal original-question run returned partial in1226.386s, retained57patients/64namedfills/87careassignments/17doses, and automatically saved the verified91page PDF and interactive report. Source/code/prior25474attempts unchanged;1616newattempts,$7.765659916knownAPI-equivalent plus3unpriced; no matched cost/speed superiority claim. The final actor repair failed PromptTooLong after2.602MB of source feedback and1466unknown claim entries. Next fix only the existing compiled execution-state representation: retain the complete reviewer JSON in existing native queryable results, expose exact digest/paths and packet bindings, and avoid inline duplicate claim/source lists. Prove lossless querying, no clinical authority or threshold change, no feedback mutation and actual failed-state reduction offline, then narrow review/targeted continuation if justified. No fresh cohort/source campaign. Prior51bab51 isolated installation remains recovery; alltenareas, G5 independent qualification/economics and Perplexity0credit remain. Scheduler PAUSED; owned8890stopped normally; no provider job active."
     },
     "bottling_assessment": {
       "current_clinical_full_question_bottle": false,
@@ -2788,17 +2797,49 @@
         "artifacts/agere-clinical-view-contract-2026-11-01/original-latency-attribution.json"
       ],
       "scope_impact": "Alltenareas retained; existingG5independent labels/economics and providerfunding dependencies remain. No new trained model/default, fullquestionbottle,mainmerge,publication or primarypromotion."
+    },
+    {
+      "at": "2026-11-01T11:25:13.830432+00:00",
+      "gate": "G3",
+      "decision": "Reject low-value prefix expansion; target measured accounting serialization instead.",
+      "reason": "Pureprefixonly17.55seconds versus66minutes; wouldnotreduce sourcework. Directprofile shows >99% ofone reservationtime isfullhistoricalpricingreceipt underwrite-lock, despiteuncappedauthorization.",
+      "evidence": [
+        "artifacts/agere-execution-prefix-performance-2026-11-01/measured-prefix-value.json",
+        "artifacts/agere-reservation-performance-2026-11-01/before-profile.txt"
+      ],
+      "scope_impact": "Small existinggatewayauthorization path only; preserveallattempts, capswhenexplicitlyset, sourcecacheidentity, fullreports, independentqualification and alltenareas. No newpartialbottle ormodelpath."
+    },
+    {
+      "at": "2026-11-01T11:37:49.652474+00:00",
+      "gate": "G3",
+      "decision": "One changed-code ordinary original-question confirmation is justified by a directly measured gateway serialization defect; retain warm caches rather than manufacture a cold source campaign.",
+      "reason": "302tests, exact cost/attempt preservation, independentreview and2476operation isolatedreplay prove componentbehavior; they do not establish actualworkflowlatency or normalcurrentdeliverable.",
+      "evidence": [
+        "artifacts/agere-reservation-performance-2026-11-01/comparison-receipt.json",
+        "artifacts/agere-reservation-performance-2026-11-01/workload-receipt.json"
+      ],
+      "scope_impact": "Same originalquestion/57cohort, sourcecacheproducersunchanged, no injectedtrajectory oranswer, model/sourceclinicalgradesnotinherited. Alltenareas andstandingrestrictionsretained."
+    },
+    {
+      "at": "2026-11-01T12:17:31.263500+00:00",
+      "gate": "G3",
+      "decision": "Seal measured reservation improvement and normal deliverable; correct observed feedback-context failure before further source work.",
+      "reason": "The ordinary run automatically saves complete native collections, but final2.602MB repairfeedback exceeds Claude input context. Another whole-cohort read does not address that representation defect.",
+      "evidence": [
+        "artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json",
+        "artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/actor-context-failure.json"
+      ],
+      "scope_impact": "Existing execution state/native feedback only; no new model, source cache change, source restriction or removed acceptance area."
     }
   ],
   "unsealed_work": {
-    "status": "next_performance_increment_not_started",
-    "path": "artifacts/agere-clinical-view-contract-2026-11-01",
-    "active_receipt": "artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json",
+    "status": "observed_actor_feedback_context_failure",
+    "path": "artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "remaining_gap": "Original66minute batch latency; current semantic source/financial uncertainty and absent independent clinical/model/outcome qualification and real total-cost/reviewer economics. FullMVPacceptance remains false.",
-    "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED."
+    "remaining_gap": "Final source feedback exceeds actor service context; source and financial qualification/economics remain open.",
+    "next_action": "G3: The b6baccd reservation-performance increment is sealed. The normal original-question run returned partial in1226.386s, retained57patients/64namedfills/87careassignments/17doses, and automatically saved the verified91page PDF and interactive report. Source/code/prior25474attempts unchanged;1616newattempts,$7.765659916knownAPI-equivalent plus3unpriced; no matched cost/speed superiority claim. The final actor repair failed PromptTooLong after2.602MB of source feedback and1466unknown claim entries. Next fix only the existing compiled execution-state representation: retain the complete reviewer JSON in existing native queryable results, expose exact digest/paths and packet bindings, and avoid inline duplicate claim/source lists. Prove lossless querying, no clinical authority or threshold change, no feedback mutation and actual failed-state reduction offline, then narrow review/targeted continuation if justified. No fresh cohort/source campaign. Prior51bab51 isolated installation remains recovery; alltenareas, G5 independent qualification/economics and Perplexity0credit remain. Scheduler PAUSED; owned8890stopped normally; no provider job active."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2827,5 +2868,5 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED."
+  "next_action": "G3: The b6baccd reservation-performance increment is sealed. The normal original-question run returned partial in1226.386s, retained57patients/64namedfills/87careassignments/17doses, and automatically saved the verified91page PDF and interactive report. Source/code/prior25474attempts unchanged;1616newattempts,$7.765659916knownAPI-equivalent plus3unpriced; no matched cost/speed superiority claim. The final actor repair failed PromptTooLong after2.602MB of source feedback and1466unknown claim entries. Next fix only the existing compiled execution-state representation: retain the complete reviewer JSON in existing native queryable results, expose exact digest/paths and packet bindings, and avoid inline duplicate claim/source lists. Prove lossless querying, no clinical authority or threshold change, no feedback mutation and actual failed-state reduction offline, then narrow review/targeted continuation if justified. No fresh cohort/source campaign. Prior51bab51 isolated installation remains recovery; alltenareas, G5 independent qualification/economics and Perplexity0credit remain. Scheduler PAUSED; owned8890stopped normally; no provider job active."
 }

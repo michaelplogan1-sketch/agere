@@ -1,10 +1,20 @@
-# Current Agere checkpoint - 2026-11-01T11:07:00.926272+00:00
+# Current Agere checkpoint - 2026-11-01T12:17:31.263500+00:00
 
-G3 ACTIVE. Current local engineering delivery SEALED; fullMVPacceptancefalse. No activeprovider/training/build job. Owned8890live; schedulerPAUSED.
+G3 ACTIVE. Ordinary confirmation and read-only delivery audits are terminal; feedback-context failure is the next connected increment. Scheduler PAUSED.
 
-Exact next: G3 performance increment: the current51bab51clinical/native/PDF/installation/restart/HTTP/browser delivery is sealed. Original3993.581sfullworkflow remains slow; current financial/source semantics remain unresolved and no fullMVPacceptance is claimed. Use recorded component interval attribution and actual actor/source receipts to isolate repeat-planning versus source-reading cost. Inspect existing harness_improvement/backstop proposal/selection: only fullyanswered+confirmed requests can currently reuse validated execution prefixes. Assess a narrowly guarded execution-prefix reuse candidate that carries no finalanswer/clinicalacceptance and always runs current actor/source review; first obtain narrow engineering review and prove exact native equivalence, source/meaning invalidation, recovery and no inherited clinical truth on visible tests. Keep current known-good release and source/cache identities, alltenareas and G5labels/economics. No new cold/cohort reader run, training campaign, catalog, providerlimit bypass, mainmerge or publication. Owned8890server PID70395/session74704 serves currentcandidate; stop it before any checkpoint or source-changing run. Perplexity0credit/paymentincomplete remains an external dependency; validatedcachesusable,Jev/Claudeapproved; schedulerPAUSED.
+Exact next: G3: The b6baccd reservation-performance increment is sealed. The normal original-question run returned partial in1226.386s, retained57patients/64namedfills/87careassignments/17doses, and automatically saved the verified91page PDF and interactive report. Source/code/prior25474attempts unchanged;1616newattempts,$7.765659916knownAPI-equivalent plus3unpriced; no matched cost/speed superiority claim. The final actor repair failed PromptTooLong after2.602MB of source feedback and1466unknown claim entries. Next fix only the existing compiled execution-state representation: retain the complete reviewer JSON in existing native queryable results, expose exact digest/paths and packet bindings, and avoid inline duplicate claim/source lists. Prove lossless querying, no clinical authority or threshold change, no feedback mutation and actual failed-state reduction offline, then narrow review/targeted continuation if justified. No fresh cohort/source campaign. Prior51bab51 isolated installation remains recovery; alltenareas, G5 independent qualification/economics and Perplexity0credit remain. Scheduler PAUSED; owned8890stopped normally; no provider job active.
 
-Last sealed receipt: artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json
+Last sealed receipt: artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-11-01T11:37:49.652474+00:00
+
+G3 ACTIVE; one ordinaryoriginalconfirmation running. Productb6baccd/source frozen; owned8890stopped; schedulerPAUSED.
+
+Exact next: G3: b6baccd includes gateway2632d98 fix.302connected tests pass2.538s; independentClaude review foundno introduceddefect, requestedcapremoval/rollback casesadded. Isolated25474rowledgerreservation0.822636s→0.001358smean; explicitfullreportexact. Offline3connection replayall2476originalattempts1.233486s, allresponse/status/errorvalues/cost4.172869196exact,0providers/mainledgerunchanged. ONE ordinaryoriginalquestion confirmation RUNNING PID71746/session90337, source/product frozen. Existingwarmcachesandall57cohortretained; no suppliedactions/plan/draft/answer, protectedreadguards andallattemptaccounting. Do notduplicate/edit/rerun sourcecampaign. Observe terminal, checkelapsedactualcomponents/native57/64fills/17doses/datedcare/compiledprose/sourceuncertainty/workflowPDF/HTML andactualcosts; do notinferwholeworkflowspeedfromreservationmicrobenchmark. Onterminalfixonlyactualobservedfailureorverify/reopencurrentappandsealperformanceincrement. Prior51bab51package/patientPDFremainsrecoverypoint. Prefixexpansionrejected17.55s(<0.44%)gain. Alltenareas/G5clinical/model/outcomelabels/real totalcost andPerplexity0creditremain;schedulerPAUSED; owned8890stoppednormally; primaryunchanged.
+
+Lastsealedreceipt: artifacts/agere-clinical-view-contract-2026-11-01/delivery-receipt.json
 
 ## Earlier checkpoint (superseded)
 

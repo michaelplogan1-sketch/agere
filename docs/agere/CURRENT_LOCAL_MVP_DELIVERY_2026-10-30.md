@@ -1,3 +1,15 @@
+# Current local engineering delivery — November 1 ordinary confirmation
+
+The normal original question, with a fresh conversation and no injected actions, plan or draft, returned in20m26s on b6baccd. It retained all57patients and automatically saved the requested interactive report and91page patient PDF. The current report contains64namedfillgroups,87careassignment objects and17dose observations. Names/medicine names/page bounds pass; representative rendered pages are readable. Current API save/reopen and both downloads match exactly with0newproviders. Durable user files are in `/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-ordinary-patient-review-2026-11-01/`; earlier89page delivery/recovery files remain preserved.
+
+The measured gateway fix removes repeated full-ledger pricing from atomic request reservation. The same25474row offline ledger changed from0.822636s to0.001358s mean reservation; replaying all2476previous accounting operations took1.233486s and preserved every response/status/error and full cost report.302connected regressions and independent engineering review pass. The earlier66m34s ordinary workflow used different cache/provider/actor conditions, so its comparison is not a causal speedup or a cost-saving benchmark.
+
+This is still a partial source answer: all57patient views retain unresolved source verification, even though all66source packets were reached. The final review produced1466unknown field feedback entries and2.602MB of feedback text; the next actor request failed `Prompt is too long`. Existing error handling preserved the answer and report. Correcting this feedback representation is the next engineering action; there is no subscription-limit event. No full-question bottle or newly trained model is promoted.
+
+All1616new attempts are retained:109Claude,1504Jev and3Perplexity quota failures. Known API-equivalent cost is$7.765659916 plus3unpriced failures; actual total remains unknown and this run is not cheaper than the older comparison. Current financial source totals reconcile independently, but current semantic qualification/reuse remains unresolved. G5 still lacks independent role/source-family/clinical/outcome labels and authentic reviewer economics. Perplexity has0credits and incomplete payment setup. Alltenareas remain in scope; full MVP acceptance is false. Sealed scoped receipt: `artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json`. Previous51bab51 isolated installation remains the verified recovery point; b6baccd has not been separately packaged/restarted. Scheduler PAUSED; primary/main untouched.
+
+## Earlier sealed delivery (retained recovery)
+
 # Current scoped local engineering delivery — November 1
 
 Current product: `51bab51` on the existing private integration branch and draft PR2. The reviewed patient deliverable, isolated installation/restart, current HTTP save/reopen and actual browser navigation/search are verified and sealed. No full MVP, clinical/model superiority, independent clinical qualification or primary promotion is claimed.
