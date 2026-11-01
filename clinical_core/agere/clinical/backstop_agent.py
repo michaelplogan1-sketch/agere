@@ -1285,8 +1285,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         elif support.get('label')!='supported' or not support.get('decided_by'):
             responded=any(s.get('status') in ('answered','partial') for s in support.get('steps',[]))
             if responded or support.get('claim_feedback'):
-                unresolved=[p['id'] for p in support.get('packets',[]) if p.get('label')!='supported' or not p.get('decided_by')]
-                feedback.append('Source support remains unresolved for '+json.dumps(unresolved)+'. Recheck these exact dependencies using the retained native evidence. Bind quantitative claims to an explicit population/domain/grain/unit measure and recompute in tools. Resolve unsupported interpretations or report a source-supported unknown; an uncertain verifier is not a supported check.')
+                unresolved=unresolved_support_bindings(support,packets)
+                feedback.append('Source support remains unresolved for '+json.dumps(unresolved)+'. Packet IDs are opaque verifier labels, not patient identifiers. Use only the explicit patient_id binding when present; never add or remove prefixes or query source tables for a packet label. Recheck these exact dependencies using the retained native evidence. Bind quantitative claims to an explicit population/domain/grain/unit measure and recompute in tools. Resolve unsupported interpretations or report a source-supported unknown; an uncertain verifier is not a supported check.')
             else:assessment['reason']='Source verification unavailable; no successful source check inferred and no retry requested for a provider outage.'
         if support.get('claim_feedback'):
             feedback.append('Targeted claim/source repairs: '+json.dumps(support['claim_feedback'])+'. Repair only the named field/source dependencies; retain unaffected native work and supported unknowns. Unknown feedback names an unresolved dependency, not a proven source fault.')
@@ -1302,6 +1302,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         assessment['reason'] = f'{type(exc).__name__}: {exc}'[:300]
     assessment['feedback'] = ' '.join(feedback) or None
     return assessment
+
+
+def unresolved_support_bindings(support,packets):
+    """Keep verifier labels separate from producer-bound patient identity."""
+    producers={p['id']:p for p in packets}
+    return [{'packet_id':p['id'],**({'patient_id':producers[p['id']]['source_dependency_patient_id']}
+             if producers.get(p['id'],{}).get('source_dependency_patient_id')else{})}
+            for p in support.get('packets',[])if p.get('label')!='supported'or not p.get('decided_by')]
 
 
 def verification_repair_state(coverage,support):
@@ -1359,13 +1367,14 @@ def documentary_sources(value):
 
 
 def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None):
-    """All clinical rows, deduplicated and grouped by patient dependency.
+    """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Operational probabilities/timing are retained in the native receipt, bound
     by digest here. They are not clinical evidence. No patient/finding is sampled.
     Global claims see all final rows and shared scalars. Patient claims see every
     observed row for that patient and shared results in the final view's native
     dependency closure; unknown lineage retains all shared results.
+    Diagnostic observations remain native audit history, not extra final claims.
     """
     from ...contracts import digest
     from ..deliverables.receipts import compact_json,readable_json
@@ -1470,7 +1479,18 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             for p in answer.get('computed_prose',[])]}]
     local_shared=[row for ident,row in shared.items() if local_dependencies is None or
                   None in shared_views[ident] or bool(shared_views[ident]&local_dependencies)]
-    for pid in sorted(set(by)|{r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')}):
+    final_patients={r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')}
+    # An observed diagnostic row is context, not an additional final claim.
+    # Global bindings/citations are checked in summary; explicit patient sets
+    # retain their relevant native observations there, without empty local claims.
+    global_patient_evidence=[]
+    for pid,rows in by.items():
+        if pid in final_patients:continue
+        relevant=[row for ident,row in rows.items()if local_dependencies is None or any(
+            o.get('result_view')in local_dependencies for o in origins.get(pid,{}).get(ident,{}).values())]
+        if relevant:global_patient_evidence.append({'patient_id':pid,'native_observations':relevant})
+    if global_patient_evidence:packets[0]['global_patient_evidence']=global_patient_evidence
+    for pid in sorted(final_patients):
         bindings=[{'row_digest':ident,'origins':list(sources.values())}for ident,sources in origins.get(pid,{}).items()]
         views={o.get('result_view')for b in bindings for o in b['origins']if o.get('result_view')}
         view_dependencies=native_result_dependencies(calls,list(views))if views else set()
