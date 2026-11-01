@@ -28,7 +28,11 @@ class BudgetLedger:
         self.db=sqlite3.connect(path,timeout=30,check_same_thread=False)  # one connection per ledger object; never shared concurrently
         self.db.executescript('''CREATE TABLE IF NOT EXISTS authorization (id INTEGER PRIMARY KEY, cap REAL);
         CREATE TABLE IF NOT EXISTS calls (id TEXT PRIMARY KEY,provider TEXT,model TEXT,reserved REAL,status TEXT,response TEXT,error TEXT,seconds REAL);
-        CREATE TABLE IF NOT EXISTS imports (id TEXT PRIMARY KEY,reserved REAL);''')
+        CREATE TABLE IF NOT EXISTS imports (id TEXT PRIMARY KEY,reserved REAL);
+        CREATE TABLE IF NOT EXISTS request_retries (seq INTEGER PRIMARY KEY,request_key TEXT,attempt_key TEXT UNIQUE,payload TEXT);
+        CREATE INDEX IF NOT EXISTS request_retries_request ON request_retries(request_key,seq);
+        CREATE TRIGGER IF NOT EXISTS request_retries_immutable BEFORE UPDATE ON request_retries BEGIN SELECT RAISE(ABORT,'Immutable retry authorization');END;
+        CREATE TRIGGER IF NOT EXISTS request_retries_no_delete BEFORE DELETE ON request_retries BEGIN SELECT RAISE(ABORT,'Immutable retry authorization');END;''')
         with self.db:
             # New ledgers are uncapped unless a caller passes an explicit cap (Mike: no budget caps).
             self.db.execute('INSERT OR IGNORE INTO authorization VALUES (1,?)',(cap_usd,))
@@ -38,6 +42,36 @@ class BudgetLedger:
                 legacy=json.loads(Path(legacy_summary).read_text())
                 self.db.execute('INSERT OR IGNORE INTO imports VALUES (?,?)',(digest(str(Path(legacy_summary).resolve())),float(legacy['reserved_usd'])))
         self.cap=existing
+    def resolve_request_key(self,key):
+        """Follow explicit retry authorizations; never alter the failed attempt."""
+        seen=set()
+        while True:
+            if key in seen:raise ValueError('Cyclic request retry authorization')
+            seen.add(key)
+            row=self.db.execute('SELECT attempt_key FROM request_retries WHERE request_key=? ORDER BY seq DESC LIMIT 1',(key,)).fetchone()
+            if row is None:return key
+            key=row[0]
+    def authorize_retry(self,key,authorization):
+        """Create one auditable new attempt for a terminal failure, explicitly.
+
+        An unused authorization or a pending/validated request cannot spawn a
+        duplicate. Original reservations, responses and errors remain intact.
+        """
+        if not isinstance(authorization,str)or not authorization.strip():raise ValueError('Retry authorization evidence required')
+        from datetime import datetime,timezone
+        from uuid import uuid4
+        self.db.execute('BEGIN IMMEDIATE')
+        try:
+            prior=self.resolve_request_key(key)
+            row=self.db.execute('SELECT * FROM calls WHERE id=?',(prior,)).fetchone()
+            if row is None or row[4]!='failed':raise ValueError('Explicit retry requires a terminal failed attempt; pending, validated and unused authorizations stay protected')
+            payload={'request_key':key,'prior_attempt_key':prior,'prior_attempt_digest':digest(row),
+                     'authorization':authorization,'at':datetime.now(timezone.utc).isoformat(),'nonce':str(uuid4())}
+            attempt=digest(payload)
+            self.db.execute('INSERT INTO request_retries(request_key,attempt_key,payload) VALUES (?,?,?)',(key,attempt,json.dumps(payload)))
+            self.db.commit()
+            return {'logical_request_hash':key,'request_hash':attempt,'prior_attempt_key':prior,'prior_failed_attempt_preserved':True}
+        except Exception:self.db.rollback();raise
     def receipt(self):
         from .economics import usage_cost
         self.cap=self.db.execute('SELECT cap FROM authorization WHERE id=1').fetchone()[0]
@@ -177,7 +211,7 @@ class PersistentGateway:
         identity={'provider':provider,'body':body,'contract':2}
         long_context=provider=='jev' and getattr(task,'long_context',False)
         if long_context:identity['transport']={'TypeSafe-Danger-Zone-Long-Context':'true'}
-        key=digest(identity)
+        key=self.ledger.resolve_request_key(digest(identity))
         old=self.ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
         if old and old[0]=='validated':
             raw=json.loads(old[1]);return {**self._parse(parser,task,raw),'request_hash':key,'cache_hit':True,'new_paid_api_usd':0,'usage':raw.get('usage')}

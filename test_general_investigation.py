@@ -132,7 +132,9 @@ class ScopeAndEvidence(unittest.TestCase):
         from clinical_core.agere.clinical import note_evidence
         class Warehouse:
             _authorize = staticmethod(S.SemanticWarehouse._authorize)
+            register_native_result = S.SemanticWarehouse.register_native_result
             def __init__(self):
+                self._local=SimpleNamespace()
                 self.db=sqlite3.connect(':memory:')
                 self.db.execute('CREATE TABLE patient(patient_id)')
             def query(self, sql, **kw):
@@ -214,7 +216,7 @@ class ScopeAndEvidence(unittest.TestCase):
         from clinical_core.agere.clinical import system_one
         tools = B.Tools.__new__(B.Tools)
         tools.as_of, tools.ledger, tools.stack, tools.judged = '2030-01-01', None, SimpleNamespace(allow_live=False), []
-        tools.read = {str(i): {'text': f'document {i}', 'date': '2029-01-01'} for i in range(13)}
+        tools.read = {str(i): {'text': f'document {i}', 'date': '2029-01-01', 'available':'2029-01-02'} for i in range(13)}
         with patch.object(system_one, 'decide', return_value={'label': 'yes', 'calibrated_probabilities': {'yes': .9}}) as decide:
             result = tools.judge_documents('Relevant?', {'yes': 'relevant'}, list(tools.read))
         self.assertEqual(decide.call_count, 13)

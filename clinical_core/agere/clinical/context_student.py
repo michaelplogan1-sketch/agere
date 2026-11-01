@@ -77,15 +77,17 @@ def send(body,provider,ledger,out,*,parse,allow_failed_response_revalidation=Fal
     if limit is not None and len(payload)>limit:raise RequestSizeLimitError(len(payload), limit)
     # `variant` separates calls whose bodies differ only in JSON key ORDER (digest sorts keys): option-order shuffling
     key=digest({'contract':'context-student/1','provider':provider,'body':body,**({'variant':variant} if variant is not None else {})})
+    key=ledger.resolve_request_key(key)
     old=ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
     if old and old[0]=='validated':return parse(json.loads(old[1])),{'cache_hit':True,'request_hash':key}
     saved=out/(key+'.json')
     if old and old[0]=='failed' and allow_failed_response_revalidation and saved.exists():
         return _revalidate_saved(key, expected, ledger_model, out, parse, revalidation_reason)
-    if old and old[0]=='failed' and not saved.exists():
+    if old and old[0]=='failed' and old[1] is None and not saved.exists():
         # Transport failure (timeout, 5xx) with no response: nothing deterministic was learned,
         # so a new explicit attempt is allowed. Failed parses keep their saved response and stay blocked.
-        with ledger.db:ledger.db.execute("UPDATE calls SET status='abandoned' WHERE id=? AND status='failed'",(key,))
+        key=ledger.authorize_retry(key,'Existing transport-only continuation: no provider response was saved; retain the failed reservation and issue a separate attempt')['request_hash']
+        saved=out/(key+'.json')
     endpoint,var=PersistentGateway.ENDPOINTS[provider]
     if not os.environ.get(var):raise ValueError('Missing '+var)
     # Prove receipt storage is writable before a generation can incur usage.
