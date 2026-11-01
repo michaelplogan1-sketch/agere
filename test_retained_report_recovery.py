@@ -10,6 +10,32 @@ import test_computed_answer_prose as prose_fixture
 import test_patient_review_profiles as profile_fixture
 
 class ClinicalInputs(unittest.TestCase):
+ def test_detailed_medication_deliverable_requires_all_collection_bindings_together(self):
+  row={'patient_id':'A','on_mra_pillar':1,'dose_rows':0,'gdmt_dose_rows':None,
+       'fill_drug_names':'Example medicine','care_relationships':'CLIN-A [referral]'}
+  a={'table':[row],'workflow':[{'kind':'deliverable'}]}
+  issue=P.clinical_collection_issues(a)[0]
+  self.assertIn('recent_gdmt_fill_observations',issue);self.assertIn('care_assignments',issue)
+  row.update(recent_gdmt_fill_observations=[],care_assignments=None)
+  self.assertIn('positive fill flag',P.clinical_collection_issues(a)[0])
+  row['recent_gdmt_fill_observations']=[{'drug_class':'mra','drug_name':'Example medicine','latest_fill_date_in_window':'2030-01-01','observed_fill_count':1}]
+  self.assertEqual(P.clinical_collection_issues(a),[])
+  row['care_assignments']=[{'note':'placeholder'}]
+  self.assertIn('dated relationship objects',P.clinical_collection_issues(a)[0])
+ def test_available_native_care_is_not_replaced_by_null_or_another_patient(self):
+  row={'patient_id':'A','on_mra_pillar':0,'gdmt_dose_rows':None,'care_assignments':None,'recent_gdmt_fill_observations':None}
+  a={'table':[row],'workflow':[{'kind':'deliverable'}]}
+  native=[{'result':{'columns':['patient_id','clinician_id','role','assignment_status','assigned_at_snapshot','effective_start','effective_end','source_date','source_record_ids'],
+                     'rows':[['A','CLIN-A','primary_care','documented_assignment',1,'2030-01-01',None,'2030-01-01','["R1"]']]}}]
+  self.assertIn('native investigation',P.clinical_collection_issues(a,native_calls=native)[0])
+  row['care_assignments']=[dict(zip(native[0]['result']['columns'],native[0]['result']['rows'][0]))]
+  self.assertEqual(P.clinical_collection_issues(a,native_calls=native),[])
+  row['care_assignments']=None
+  native[0]['result']['rows'][0][0]='B'
+  self.assertEqual(P.clinical_collection_issues(a,native_calls=native),[])
+ def test_flag_only_report_does_not_opt_into_unrequested_detailed_collections(self):
+  a={'table':[{'patient_id':'A','on_mra_pillar':0}],'workflow':[{'kind':'deliverable'}]}
+  self.assertEqual(P.clinical_collection_issues(a),[])
  def test_available_doses_and_relationships_cannot_be_replaced_by_counts_and_ids(self):
   row={'patient_id':'A','on_rasi_pillar':0,'dose_rows':1,'documented_pcp_ids':'CLIN-A'}
   self.assertIn('dose objects',P.clinical_collection_issues({'table':[row]})[0])

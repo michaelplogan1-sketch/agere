@@ -10,7 +10,7 @@ import json,re
 # medication meanings from new column names.
 CLINICAL_REVIEW_CONTRACT={
     'schema':'clinical-medication-review-view/1',
-    'method':'Use compose_table.rename_columns for explicit source aliases. Values remain native. Medication-pillar rows returning positive dose_rows or clinician IDs must also bind their inspectable dose or relationship collections; counts and IDs alone do not fulfill this view. This presentation contract does not select patients, infer facts or qualify clinical meaning.',
+    'method':'Use compose_table.rename_columns for explicit source aliases. Values remain native. A detailed medication-review deliverable binds recent_gdmt_fill_observations, gdmt_dose_rows and care_assignments, with explicit null only for source-scoped unavailable evidence. Positive fill flags/dose counts and available native clinician objects require their actual collections. Concatenated names, counts and ID summaries do not fulfill this view. This presentation contract does not select patients, infer facts or qualify clinical meaning.',
     'columns':{
         'patient_id':'Exact received patient identity',
         'on_rasi_pillar':'RAAS/ARNI picked-up-fill flag in the declared analysis window: 0,1 or null',
@@ -30,7 +30,7 @@ CLINICAL_REVIEW_CONTRACT={
     'unknowns':'Unavailable facts remain null or explicitly unknown with source scope. Missing data and missing column bindings are different. Preserve all retained source objects and all original patients.'}
 
 
-def clinical_collection_issues(answer):
+def clinical_collection_issues(answer,*,native_calls=()):
     """Validate the existing optional presentation interface before paid review.
 
     Only a producer using this declared field opts into the contract. Names are
@@ -41,12 +41,44 @@ def clinical_collection_issues(answer):
         try:value=json.loads(value)if isinstance(value,str)else value
         except ValueError:return None
         return value if isinstance(value,list)and all(isinstance(x,dict)for x in value)else None
+    care_fields={'clinician_id','role','assignment_status','assigned_at_snapshot',
+                 'effective_start','effective_end','source_date','source_record_ids'}
+    available_care=set()
+    for call in native_calls:
+        result=call.get('result')or{};columns=result.get('columns')or[]
+        care_shape=care_fields|{'patient_id'}
+        if result.get('error')or not care_shape<=set(columns):continue
+        for value in result.get('rows')or[]:
+            value=dict(zip(columns,value))if isinstance(value,(list,tuple))else value
+            if isinstance(value,dict)and value.get('clinician_id'):available_care.add(value.get('patient_id'))
+    requested=any(isinstance(s,dict)and s.get('kind')=='deliverable'for s in answer.get('workflow')or[])
     for row in answer.get('table')or[]:
         if not isinstance(row,dict):continue
         # These fields opt into the existing medication-review presentation.
         # A positive count/returned identifier is available evidence, not a
         # supported unknown. Keep the objects needed to inspect that evidence.
         clinical=any(k in row for k in ('on_rasi_pillar','on_beta_blocker_pillar','on_mra_pillar','on_sglt2i_pillar'))
+        dose_keys=('gdmt_dose_rows','dose_evidence','gdmt_dose_evidence')
+        care_keys=('care_assignments','structured_care_team','care_team_assignments')
+        full_review=requested and clinical and any(k in row for k in
+            (*dose_keys,*care_keys,'dose_rows','dose_summary','dose_detail','care_relationships','fill_drug_names','recent_gdmt_fill_observations'))
+        if full_review:
+            missing=[]
+            for names in (('recent_gdmt_fill_observations',),dose_keys,care_keys):
+                if not any(k in row for k in names):missing.append(names[0])
+            if missing:
+                return ['Bind the complete medication-review presentation before creating its deliverable: '+', '.join(missing)+'. Use intact native observation/relationship objects via compose_table. Concatenated medicine or clinician summaries are not collection bindings. Use explicit null only for source-scoped unavailable evidence; retain the original summaries for audit.']
+            care=next(row[k]for k in care_keys if k in row)
+            if care is not None and (objects(care)is None or any(not care_fields<=set(x)for x in objects(care))):
+                return ['Bind care_assignments to intact dated relationship objects with clinician_id, role, assignment_status, assigned_at_snapshot, effective_start, effective_end, source_date and source_record_ids. Explicit null values retain genuine source unknowns; missing keys are unbound fields.']
+            if row.get('patient_id')in available_care and not objects(care):
+                return ['The native investigation returned clinician relationship objects for this patient. Bind those available care_assignments; null or an empty collection cannot replace available native evidence. Preserve role, assignment status, dates and sources without inferring current responsibility.']
+            if any(row.get(k)==1 for k in ('on_rasi_pillar','on_beta_blocker_pillar','on_mra_pillar','on_sglt2i_pillar'))and not objects(row['recent_gdmt_fill_observations']):
+                return ['The medication-review table reports a positive fill flag. Bind the available recent_gdmt_fill_observations as intact named source objects; null, empty or concatenated medicine text cannot replace the fill observations.']
+            fills=row['recent_gdmt_fill_observations']
+            fill_fields={'drug_class','drug_name','latest_fill_date_in_window','observed_fill_count'}
+            if fills is not None and(objects(fills)is None or any(not fill_fields<=set(x)for x in objects(fills))):
+                return ['Bind recent_gdmt_fill_observations to intact objects with drug_class, drug_name, latest_fill_date_in_window and observed_fill_count. Preserve actual native dates/counts and use explicit null only where the source is unavailable.']
         if clinical and type(row.get('dose_rows'))in(int,float)and row['dose_rows']>0:
             doses=next((row[k]for k in ('gdmt_dose_rows','dose_evidence','gdmt_dose_evidence')if k in row),None)
             if not objects(doses):

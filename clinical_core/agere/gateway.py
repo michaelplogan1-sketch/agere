@@ -221,7 +221,7 @@ class PersistentGateway:
         credential=digest([provider,endpoint,secret])
         with _BILLING_LOCK:blocked=_BILLING_FAILURES.get(credential)
         if blocked:
-            error=ProviderUnavailable(provider+' billing is unavailable after an HTTP 402 in this process; use the configured fallback. Restored credits can be probed in a new process.',kind='billing')
+            error=ProviderUnavailable(provider+' billing is unavailable after a recorded quota rejection in this process; use the configured fallback. Restored credits can be probed in a new process.',kind='billing')
             error.provider_receipt={'provider':provider,'request_hash':key,'attempted':False,
                 'blocked_by_request_hash':blocked,'reason':'billing_circuit_open',
                 'model':body['model'],'cost_usd':None,'usage':None}
@@ -256,7 +256,12 @@ class PersistentGateway:
                 raw={'provider_error':{'http_status':e.code,'body':detail}}
                 error='HTTP '+str(e.code)+': '+detail
             self.ledger.finish(key,response=raw,error=error,seconds=time.perf_counter()-start)
-            if isinstance(e,urllib.error.HTTPError) and e.code==402:
+            quota=isinstance(e,urllib.error.HTTPError)and e.code==402
+            if isinstance(e,urllib.error.HTTPError)and e.code==401:
+                try:quota=json.loads(detail).get('error',{}).get('type')=='insufficient_quota'
+                except (ValueError,AttributeError):pass
+            if quota:
+                e.billing_quota=True
                 with _BILLING_LOCK:_BILLING_FAILURES[credential]=key
             from .economics import usage_cost
             price=usage_cost(body['model'],raw.get('usage')) if isinstance(raw,dict) and raw.get('model')==body['model'] else None
@@ -353,6 +358,7 @@ def classify_provider_error(exc):
     """'billing' | 'rate_limit' | 'overloaded' | 'server' | 'timeout' when the provider (not the request) failed, else None.
     Request errors (400 schema, parse failures, size bounds) return None and are never retried on another model."""
     if isinstance(exc,ProviderUnavailable):return exc.kind
+    if getattr(exc,'billing_quota',False):return 'billing'
     code=getattr(exc,'code',None)
     if isinstance(exc,urllib.error.HTTPError) and isinstance(code,int):
         if code==402:return 'billing'

@@ -19,14 +19,34 @@ class BillingCircuit(unittest.TestCase):
         for p in [patch.dict(G._BILLING_FAILURES,{},clear=True),patch.dict(os.environ,{'TYPESAFE_API_KEY':'authored-billing-key','PERPLEXITY_API_KEY':'authored-fallback-key'}),
                   patch.object(G.PersistentGateway,'_parse',return_value={'label':'yes','probabilities':{'yes':.95,'unknown':.05},'evidence_ids':['e'],'uncertain':False})]:
             p.start();self.addCleanup(p.stop)
-        self.calls=[];self.code=None
+        self.calls=[];self.code=None;self.failure_provider='jev';self.error_body=b'{"detail":{"error_type":"billing_error","message":"No credits"}}'
         def transport(request,**kwargs):
             provider='jev'if 'typesafe.ai'in request.full_url else 'perplexity';self.calls.append(provider)
-            if provider=='jev' and self.code:
-                raise urllib.error.HTTPError(request.full_url,self.code,'Authored failure',{},io.BytesIO(b'{"detail":{"error_type":"billing_error","message":"No credits"}}'))
+            if provider==self.failure_provider and self.code:
+                raise urllib.error.HTTPError(request.full_url,self.code,'Authored failure',{},io.BytesIO(self.error_body))
             return Response(provider)
         self.gateway=G.PersistentGateway(self.ledger,allow_live=True,transport=transport)
     def task(self,name):return EvidenceTask(name,'2030-05-27',{'yes':'Supported','unknown':'Unknown'},[{'id':'e','date':'2030-01-01','text':'Authored source.','note_id':'e'}])
+    def test_perplexity_quota_401_stops_novel_requests_but_preserves_cached_success(self):
+        task=self.task('Cached financial result');self.gateway.classify('perplexity',task)
+        self.failure_provider='perplexity';self.code=401;self.error_body=b'{"error":{"type":"insufficient_quota","message":"Current quota exceeded"}}'
+        with self.assertRaises(urllib.error.HTTPError)as first:self.gateway.classify('perplexity',self.task('Quota rejection'))
+        self.assertEqual(G.classify_provider_error(first.exception),'billing')
+        with self.assertRaises(G.ProviderUnavailable)as error:self.gateway.classify('perplexity',self.task('Different request'))
+        self.assertEqual(error.exception.kind,'billing');self.assertFalse(error.exception.provider_receipt['attempted'])
+        self.assertTrue(self.gateway.classify('perplexity',task)['cache_hit']);self.assertEqual(self.calls,['perplexity','perplexity'])
+        self.assertEqual(self.ledger.receipt()['calls'],{'failed':1,'validated':1})
+    def test_the_first_quota_rejection_also_uses_the_existing_typed_fallback(self):
+        self.failure_provider='perplexity';self.code=401;self.error_body=b'{"error":{"type":"insufficient_quota"}}'
+        with patch.object(S,'_gateway',return_value=self.gateway):
+            first=S.decide('First quota request',{'yes':'Supported'},[{'id':'e','text':'Source'}],as_of='2030-05-27',order=['perplexity','jev'],ledger=self.ledger)
+            second=S.decide('Later request',{'yes':'Supported'},[{'id':'e','text':'Source'}],as_of='2030-05-27',order=['perplexity','jev'],ledger=self.ledger)
+        self.assertEqual(first['decided_by'],'jev');self.assertEqual(second['decided_by'],'jev')
+        self.assertEqual(self.calls,['perplexity','jev','jev']);self.assertFalse(second['steps'][0]['attempted'])
+    def test_other_401_errors_are_not_misclassified_as_quota(self):
+        self.failure_provider='perplexity';self.code=401;self.error_body=b'{"error":{"type":"authentication_error"}}'
+        with self.assertRaises(urllib.error.HTTPError):self.gateway.classify('perplexity',self.task('Authored authorization failure'))
+        self.code=None;self.assertEqual(self.gateway.classify('perplexity',self.task('Different valid request'))['label'],'yes')
     def test_exact_success_cache_survives_billing_and_new_requests_are_not_reserved(self):
         task=self.task('Cached supported source');self.gateway.classify('jev',task)
         self.code=402

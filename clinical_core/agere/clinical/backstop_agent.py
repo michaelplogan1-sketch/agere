@@ -1154,7 +1154,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     answer['sources'] = kept
     static_feedback=[];prose_problem=None;prose_failures=[];workflow_problem=None;workflow_failure=None
     from ..deliverables.patient_evidence import clinical_collection_issues
-    static_feedback.extend(clinical_collection_issues(answer))
+    static_feedback.extend(clinical_collection_issues(answer,native_calls=calls))
     from .document_review import relation_composition_issues,source_scope_limits
     limits=source_scope_limits(getattr(tools,'document_reviews',[]))
     if limits:
