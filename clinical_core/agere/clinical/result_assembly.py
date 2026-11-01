@@ -12,6 +12,31 @@ VERSION='result-assembly/1'
 RETENTION_CONTRACT='collection-retention/2'
 
 
+def incomplete_dependencies(result, *, result_view=None):
+    """Explicit producer gaps survive complete calculations over their rows."""
+    inherited = result.get('incomplete_dependencies') or []
+    if not isinstance(inherited, list) or any(not isinstance(item, dict) for item in inherited):
+        raise ValueError('Incomplete native dependency receipt is malformed')
+    reasons = list(inherited)
+    name = result_view or result.get('result_view') or 'producer'
+    if result.get('truncated'):
+        reasons.append({'result_view': name, 'reason': 'truncated source result'})
+    rows = result.get('rows')
+    if not isinstance(rows, list):
+        rows = next((result[key] for key in ('table', 'documents', 'passages')
+                     if isinstance(result.get(key), list)), None)
+    if isinstance(rows, list) and type(result.get('table_rows')) is int and result['table_rows'] != len(rows):
+        reasons.append({'result_view': name, 'reason': 'source cardinality does not match its native rows'})
+    return list({json.dumps(item, sort_keys=True, allow_nan=False): item for item in reasons}.values())
+
+
+def incomplete_reason(result):
+    reasons = incomplete_dependencies(result)
+    return ('Incomplete native input: ' + '; '.join(
+        str(item.get('result_view', 'producer')) + ': ' + str(item.get('reason', 'incomplete source'))
+        for item in reasons)) if reasons else None
+
+
 def source_domain(condition,columns):
     """Compile an explicit exact source-domain predicate, without guessing labels."""
     if (not isinstance(condition,dict) or set(condition)!={'column','values'} or
@@ -114,7 +139,8 @@ def _rows(result):
     columns=result.get('columns');rows=result.get('rows')
     if not isinstance(rows,list):rows=next((result[k]for k in ('table','documents','passages')if isinstance(result.get(k),list)),None)
     if not isinstance(rows,list):raise ValueError('An executed tabular result is required')
-    if result.get('truncated'):raise ValueError('Complete result required; query with complete=true first')
+    problem=incomplete_reason(result)
+    if problem:raise ValueError('Complete result required. '+problem+'. Obtain complete producer output before composition.')
     if type(result.get('table_rows')) is int and result['table_rows']!=len(rows):raise ValueError('Native result rows do not match their declared complete cardinality')
     if columns is None:columns=list(dict.fromkeys(k for r in rows if isinstance(r,dict)for k in r))
     if not isinstance(columns,list)or not all(isinstance(c,str)for c in columns)or len(columns)!=len(set(columns)):

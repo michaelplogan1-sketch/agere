@@ -127,6 +127,27 @@ def classify(name):
     return found
 
 
+def group_member(name, group):
+    """Registered group membership, with unclassifiable names kept unknown."""
+    if group not in GROUPS:
+        raise ValueError('Unknown registered medication group: ' + str(group))
+    classes = classify(name)
+    return int(bool(set(classes) & set(GROUPS[group]))) if classes else None
+
+
+def classification_identity():
+    from ...contracts import digest
+    import hashlib
+    return digest({'contract': 'registered-drug-groups/1', 'classes': CLASSES, 'groups': GROUPS,
+                   'brands_sha256': hashlib.sha256(BRANDS_PATH.read_bytes()).hexdigest()
+                   if BRANDS_PATH.is_file() else None})
+
+
+def register(db):
+    db.create_function('drug_group_member', 2, group_member, deterministic=True)
+    return db
+
+
 # --- Brand -> generic (RxNorm naming: brand = BN, ingredient = IN) ---------------------------------------------------------
 import json as _json
 from functools import lru_cache as _lru_cache

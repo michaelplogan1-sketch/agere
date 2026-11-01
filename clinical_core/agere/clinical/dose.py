@@ -233,6 +233,8 @@ def statement_day(value):
 
 
 def register(db):
+    from .drug_classes import register as register_drug_classes
+    register_drug_classes(db)
     db.create_function('drug_key', 1, drug_key, deterministic=True)
     db.create_function('dose_mg', 1, dose_mg, deterministic=True)
     db.create_function('per_day', 1, per_day, deterministic=True)

@@ -153,7 +153,7 @@ def _render_clinical(context,output,cards,references):
   story.extend([P('Care team','head'),box([[[P('PRIMARY CARE','label'),P(team_text(c,'Primary care'))],[P('CARDIOLOGY','label'),P(team_text(c,'Cardiology'))]]],[270,270])])
   matrix=[[P('Medication pillar','label'),P('Fill observation and named medicines','label'),P('Dose information','label')]]
   for therapy in c['therapy']:
-   fills=therapy['fills'];fill_text=(therapy['observed_status']+('; medicine name not supplied'if therapy['fill_observed']else''))if not fills else'\n'.join(str(f['drug_name'])+'\nLatest fill '+D(f.get('latest_fill_date_in_window'))for f in fills)
+   fills=therapy['fills'];fill_text=(therapy['observed_status']+('; medicine name not supplied'if therapy['fill_observed']else''))if not fills else'\n'.join(str(f['drug_name'])+'\nLatest fill '+D(f.get('latest_fill_date_in_window')or f.get('latest_fill_12m'))for f in fills)
    doses=[]
    for d in therapy['dose_observations']:
     v=d.get('documented_daily_mg');text=human(d.get('drug_key'))+': '+(N(v)+' mg/day recorded'if v is not None else'daily dose not established')
@@ -167,11 +167,14 @@ def _render_clinical(context,output,cards,references):
   t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),pale),('LINEBELOW',(0,0),(-1,-1),.4,rule),('TOPPADDING',(0,0),(-1,-1),5),('BOTTOMPADDING',(0,0),(-1,-1),5)]));story.append(t)
   tolerance='Dated tolerance account follows; the current individual maximum needs confirmation'if c['individual_tolerance_statements']else c['individual_max_tolerated_dose']
   story.append(P('Individual maximum tolerated dose: '+str(tolerance)+'.','small'))
+  if c.get('regimen_statements'):
+   story.append(P('Dated therapy-status history is retained in the interactive regimen view. It does not establish current medication use.','small'))
   # One dated clinical account can support several fields. Print it once with
   # all its uses, rather than repeating the same whole note under each pillar.
   accounts={}
   additional=[(human(g['entity']['id'])+' / dated chart account',[g])for g in c.get('additional_documentary_accounts')or[]]
-  for label,groups in [(t['label'],t['documented_reasons'])for t in c['therapy']]+[('Titration',c['dose_limiting_statements']),('Individual tolerated maximum',c['individual_tolerance_statements'])]+additional:
+  limitations=[(human(g['entity']['id'])+' / recorded therapy limitation (non-use or dose, as documented)',[g])for g in c.get('therapy_limitation_accounts')or[]]
+  for label,groups in [(t['label'],t['documented_reasons'])for t in c['therapy']]+[('Titration',c['dose_limiting_statements']),('Individual tolerated maximum',c['individual_tolerance_statements'])]+limitations+additional:
    for g in groups:
     entity=next((f.get('entity')for f in g.get('findings',[])if f.get('entity')),None)
     excerpt=_note_excerpt(g.get('quote'),entity);key=excerpt
@@ -179,6 +182,8 @@ def _render_clinical(context,output,cards,references):
     if label not in a['labels']:a['labels'].append(label)
     a['groups'].append(g)
   story.append(P('Documented explanations to discuss','head'))
+  if limitations:
+   story.append(P('Recorded therapy limitations may concern non-use or a dose change. Their relevance to a current missing-pillar or titration question remains to be confirmed.','small'))
   if not accounts:story.append(P(c.get('empty_source_reason') or 'No explicit non-use or titration explanation was returned in the reviewed source scope. Clarify the reason with the patient and responsible clinician.'))
   else:
    missing=[t['label']for t in c['therapy']if not t['documented_reasons']]
@@ -186,12 +191,14 @@ def _render_clinical(context,output,cards,references):
     story.append(P('Review the dated accounts below alongside the medication table. These accounts have not been assigned as explanations for a specific current treatment gap.','small'))
    elif missing:
     note=P((c.get('empty_source_reason') + ' Review: ' if c.get('empty_source_reason') else 'No separate non-use reason returned for: ')+', '.join(missing)+'.','small');note.keepWithNext=True;story.append(note)
+  # A new, otherwise-unrecognised relation keeps its exact question meaning,
+  # once per patient/contract rather than repeated under every source account.
+  questions={q['question']for g in c.get('additional_documentary_accounts')or[]for q in g.get('source_questions')or[]if q.get('question')}
+  for question in sorted(questions):story.append(P('Additional account scope: '+question,'small'))
   for a in accounts.values():
    dates=sorted({str(s['date']) for g in a['groups']for s in g.get('sources',[])if s.get('date')})
    dated=D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0])if dates else'Date not recorded'
    account=[P(' / '.join(a['labels'])+'  |  '+dated,'label')]
-   questions={q['question']for g in a['groups']for q in g.get('source_questions')or[]if q.get('question')}
-   for question in sorted(questions):account.append(P('Source review question: '+question,'small'))
    if any(g.get('review_status')for g in a['groups']):account.append(P('Unresolved chart interpretation - confirm before using this account.','notice'))
    qualifications=sorted({human(g.get('polarity')) for g in a['groups']if g.get('polarity')not in [None,'affirmed']})
    if qualifications:account.append(P('The source account is '+', '.join(qualifications)+'.','small'))
@@ -369,6 +376,8 @@ def render(context,output,references=None,evidence=None):
   out.extend([P('Individual tolerated maximum',head),P(c['individual_max_tolerated_dose'],labelstyle)])
   if c.get('individual_tolerance_statements'):out.extend(grouped_reasons(c['individual_tolerance_statements']))
   out.extend([P('Dated titration explanations',head),*grouped_reasons(c['dose_limiting_statements'])])
+  if c.get('therapy_limitation_accounts'):
+   out.extend([P('Recorded therapy limitations',head),P('These dated accounts may concern non-use or a dose change; current applicability remains unconfirmed.',small),*grouped_reasons(c['therapy_limitation_accounts'])])
   if c['dated_correspondence_roles']:
    out.extend([P('Dated correspondence / additional clinician names',head),P('These source roles do not establish current assignment. Complete correspondence quotations and bindings remain in the embedded evidence.',small)])
    roles={}

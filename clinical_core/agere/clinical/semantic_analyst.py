@@ -173,32 +173,79 @@ class SemanticWarehouse:
         self._local.defined_views = dict(views)
         return self._local.defined_names
 
-    def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000):
+    def register_native_result(self, name, receipt):
+        from .result_assembly import incomplete_dependencies
+        native = getattr(self._local, 'native_results', None)
+        if native is None:
+            native = self._local.native_results = {}
+        native[name.casefold()] = {'name': name, 'kind': receipt.get('kind'),
+            'incomplete_dependencies': incomplete_dependencies(receipt, result_view=name)}
+
+    def query(self, sql, *, as_of=None, max_rows=2000, max_chars=60000, inspect_incomplete=False):
         if not isinstance(sql, str) or not sql.strip():
             raise ValueError('A read-only SQL statement is required')
         # Product investigation uses governed definitions; the standalone reader
         # remains independent of product compiler imports and type checks share
         # the query's existing timeout.
         defined = getattr(self._local, 'defined', None)
-        if not defined:
-            return bounded_query(self.db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars)
         reads, definitions = set(), set()
-        views = self._local.defined_views
+        views = getattr(self._local, 'defined_views', {}) if defined else {}
+        native = getattr(self._local, 'native_results', {})
+        bindings = set()
+        if native:
+            from .sql_query import native_query_bindings
+            _, tables = native_query_bindings(sql, native)
+            bindings = None if tables is None else {table.name.casefold() for table in tables}
+        native_reads, blocked, functions = set(), set(), set()
         def authorize(action, arg1, arg2, database, source):
             verdict = self._authorize(action, arg1, arg2, database, source)
             if verdict == sqlite3.SQLITE_OK:
+                if action == sqlite3.SQLITE_FUNCTION:
+                    functions.add(str(arg2).casefold())
                 if action == sqlite3.SQLITE_READ:
                     if database == 'main': reads.add(arg1)
                     if database == 'temp' and arg1 in views: definitions.add(arg1)
                 if source in views: definitions.add(source)
+                if action == sqlite3.SQLITE_READ:
+                    candidates = {str(source).casefold()}
+                    if database == 'temp': candidates.add(str(arg1).casefold())
+                    for name in candidates & native.keys():
+                        if bindings is None or name in bindings:
+                            native_reads.add(name)
+                            # Direct producer consumers (population selection,
+                            # field scopes) must not dispatch from clipped input.
+                            # The registered SQL inspection tool opts in below;
+                            # it may explore, while acceptance still rejects gaps.
+                            if not inspect_incomplete and native[name]['incomplete_dependencies']:
+                                blocked.add(name)
+                                return sqlite3.SQLITE_DENY
             return verdict
         db = self.db
         db.set_authorizer(authorize)
         try:
             result = bounded_query(db, sql, {'as_of': as_of or self.as_of}, self.timeout_s, max_rows, max_chars,
-                                   check_date_types=True)
+                                   check_date_types=bool(defined))
+        except sqlite3.DatabaseError as exc:
+            if blocked:
+                raise ValueError('Incomplete native dependency cannot define a producer scope: ' +
+                                 ', '.join(native[name]['name'] for name in sorted(blocked)) +
+                                 '. Obtain complete producer output first.') from exc
+            raise
         finally:
             db.set_authorizer(self._authorize)
+        if native_reads and bindings is None:
+            raise ValueError('Native SQL dependency binding is unavailable; no complete result was registered')
+        result['read_views'] = [native[name]['name'] for name in sorted(native_reads)]
+        reasons = [reason for name in sorted(native_reads) for reason in native[name]['incomplete_dependencies']]
+        if reasons:
+            result['incomplete_dependencies'] = list({json.dumps(item, sort_keys=True): item for item in reasons}.values())
+        if 'drug_group_member' in functions:
+            from .drug_classes import classification_identity
+            result['registered_domain_functions'] = [{'name': 'drug_group_member',
+                'registry_identity': classification_identity(),
+                'meaning': 'Registered medication class/group membership only; unclassifiable names are NULL. No current use, tolerated dose or clinical suitability is inferred.'}]
+        if not defined:
+            return result
         from ...contracts import digest
         meanings = semantic_docs.schema_doc()
         result['source_contracts'] = {'schema':'executed-source-contracts/1','as_of':defined,

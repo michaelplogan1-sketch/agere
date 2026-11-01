@@ -379,13 +379,34 @@ def review_cards(context, evidence=None):
             if missing:rationale.append(('Reconcile pillars without a fill in the returned history: 'if historical_fill else'Reconcile pillars without a recent-fill observation: ')+str(missing).replace('_',' '))
             if doses:rationale.append('Review dated dose/state observations and their reference-dose comparisons')
             regimen_statements=bound_reasons(findings,'gdmt',{'documented_medication_regimen'})
+            def declared_therapy_accounts(relation):
+                entities=dict.fromkeys((f.get('entity')or{}).get('id')for f in findings
+                    if isinstance(f,dict)and f.get('relation')==relation
+                    and(f.get('entity')or{}).get('kind')in('medication','medication_class'))
+                groups=[]
+                for entity in entities:
+                    for group in bound_reasons(findings,entity,{relation}):
+                        group['entity']=next(f['entity']for f in group['findings']if f.get('entity'))
+                        group['source_fields']=sorted({f['field']for f in group['findings']if f.get('field')})
+                        groups.append(group)
+                return groups
+            # These declared relations are broader than a current non-use or
+            # titration reason. Consume their actual meaning without changing
+            # the assertion, inferring current use, or aliasing reason types.
+            regimen_statements.extend(declared_therapy_accounts('therapy_status'))
+            therapy_limitation_accounts=declared_therapy_accounts('therapy_reason')
             dose_limiting=bound_reasons(findings,'gdmt',{'dose_titration_reason'})+bound_reasons(findings,'gdmt_dose')
+            represented_dose={finding_identity(f)for group in dose_limiting for f in group['findings']}
+            for group in declared_therapy_accounts('dose_titration_reason'):
+                if any(finding_identity(f)not in represented_dose for f in group['findings']):
+                    dose_limiting.append(group)
+                    represented_dose.update(finding_identity(f)for f in group['findings'])
             tolerance_statements=bound_reasons(findings,'gdmt',{'individual_maximum_tolerated_dose'})
             cardiology_statements=bound_reasons(findings,'cardiology')
             # Presentation categories are not an exhaustive relation registry.
             # Keep a new typed question visible without relabelling its meaning
             # as one of the older clinical reason/status contracts.
-            displayed=[*regimen_statements,*dose_limiting,*tolerance_statements,*cardiology_statements]
+            displayed=[*regimen_statements,*therapy_limitation_accounts,*dose_limiting,*tolerance_statements,*cardiology_statements]
             for t in therapy:displayed.extend(t['documented_reasons']);displayed.extend(t['documented_status_accounts'])
             represented={finding_identity(f)for g in displayed for f in g['findings']}
             audit_ids=set();questions={}
@@ -395,6 +416,10 @@ def review_cards(context, evidence=None):
                     if isinstance(q,dict):questions[digest(q)]=q
                     if field in review.get('audit_only_fields',[]):
                         audit_ids.update((v.get('assertion')or{}).get('id')for v in (review.get('findings')or{}).get(field,[])if isinstance(v,dict)and(v.get('assertion')or{}).get('id'))
+            for group in [*regimen_statements,*therapy_limitation_accounts,*dose_limiting]:
+                if group.get('relation')in('therapy_status','therapy_reason','dose_titration_reason'):
+                    group['source_questions']=list({digest(q):q for f in group['findings']
+                        if(q:=questions.get((f.get('assertion')or{}).get('question_digest')))is not None}.values())
             remaining=[f for f in findings if isinstance(f,dict)and(f.get('entity')or{}).get('id')and finding_identity(f)not in represented and
                 (f.get('assertion')or{}).get('id')not in audit_ids]
             additional=[]
@@ -416,6 +441,7 @@ def review_cards(context, evidence=None):
                 'cardiology_statements':cardiology_statements,
                 'dated_correspondence_roles':narrative_roles,'therapy':therapy,'all_dose_observations':doses,
                 'regimen_statements':regimen_statements,'dose_limiting_statements':dose_limiting,
+                'therapy_limitation_accounts':therapy_limitation_accounts,
                 'individual_tolerance_statements':tolerance_statements,'program_review':program,
                 'additional_documentary_accounts':additional,
                 'source_verification':patient_verification.get(pid),

@@ -184,5 +184,93 @@ class OpenQuestionPresentation(unittest.TestCase):
         self.assertEqual(P.review_cards(c)['A']['source_verification']['label'],'unknown')
 
 
+
+class DeclaredTherapyPresentation(unittest.TestCase):
+    def context(self, reason_relation='therapy_reason'):
+        from test_patient_review_profiles import CurrentNativeCardContracts
+        c = CurrentNativeCardContracts().context()
+        c.update(question='Review recorded medication status and limitations', source={'as_of': '2030-05-27'})
+        entity = {'kind': 'medication_class', 'id': 'mra', 'aliases': ['MRA']}
+        questions = {
+            'status': {'question': 'Does the source report MRA stopped, held, not started or reduced?',
+                       'entity': entity, 'relation': 'therapy_status', 'subject': 'patient'},
+            'reason': {'question': 'What reason was documented for MRA non-use or a dose change?' if reason_relation=='therapy_reason'
+                       else 'What reason was documented for not increasing the MRA dose?',
+                       'entity': entity, 'relation': reason_relation, 'subject': 'patient'}}
+        docs = [
+            {'record_id': 'STATUS', 'date': '2029-02-01', 'text': 'MRA remained listed in the historical medication account.'},
+            {'record_id': 'REASON', 'date': '2029-03-01', 'text': 'MRA dose unchanged because the patient requested clarification.'}]
+        findings = {}
+        for (field, q), doc in zip(questions.items(), docs):
+            findings[field] = [D.relation_finding('A', field, q, doc,
+                {'start': 0, 'end': len(doc['text']), 'text': doc['text']},
+                {'polarity': 'uncertain', 'temporality': 'historical', 'subject': 'patient'}, 'fixture')]
+        native = D.with_correspondence([{'patient_id': 'A', 'review_json': json.dumps(findings)}],
+                                      {'A': [docs]}, questions, '2030-05-27')[0]
+        c['answer']['table'][0]['documentary_findings'] = native['source_findings_json']
+        c['investigation'] = {'document_reviews': [{'questions': questions, 'rows': [native]}]}
+        return c
+
+    def test_declared_broad_relations_reach_their_qualified_views_without_becoming_narrow_reasons(self):
+        c = self.context()
+        before = copy.deepcopy(c)
+        card = P.review_cards(c)['A']
+        self.assertEqual(len(card['regimen_statements']), 1)
+        self.assertEqual(len(card['therapy_limitation_accounts']), 1)
+        limitation = card['therapy_limitation_accounts'][0]
+        self.assertEqual(limitation['relation'], 'therapy_reason')
+        self.assertEqual(limitation['polarity'], 'uncertain')
+        self.assertEqual(limitation['temporality'], 'historical')
+        self.assertEqual(limitation['entity']['id'], 'mra')
+        self.assertEqual(limitation['source_fields'], ['reason'])
+        self.assertFalse(card['therapy'][2]['documented_reasons'])
+        self.assertFalse(card['therapy'][2]['documented_status_accounts'])
+        self.assertFalse(card['dose_limiting_statements'])
+        self.assertFalse(card['individual_tolerance_statements'])
+        self.assertFalse(card['additional_documentary_accounts'])
+        self.assertFalse(card['program_review']['eligibility_established'])
+        self.assertEqual(c, before)
+
+    def test_clinical_pdf_keeps_broad_limit_and_qualifications_without_repeating_technical_prompts(self):
+        from pypdf import PdfReader
+        from clinical_core.agere.deliverables import patient_report_pdf, patient_dashboard
+        c = self.context()
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'review.pdf'
+            patient_report_pdf.render(c, target)
+            text = ' '.join(' '.join(page.extract_text() or '' for page in PdfReader(target).pages).split())
+        self.assertIn('recorded therapy limitation (non-use or dose, as documented)', text)
+        self.assertIn('MRA dose unchanged because the patient requested clarification.', text)
+        self.assertIn('uncertain', text)
+        self.assertNotIn('What reason was documented for MRA non-use or a dose change?', text)
+        payload = patient_dashboard.payload(c)
+        self.assertIn('MRA remained listed', payload['patient_reviews']['A']['regimen_statements'][0]['quote'])
+        self.assertEqual(payload['patient_reviews']['A']['therapy_limitation_accounts'][0]['source_questions'][0],
+                         c['investigation']['document_reviews'][0]['questions']['reason'])
+
+    def test_actual_native_fill_date_alias_remains_visible_in_clinical_pdf(self):
+        from pypdf import PdfReader
+        from clinical_core.agere.deliverables.patient_report_pdf import render
+        c = self.context()
+        c['answer']['table'][0]['recent_gdmt_fill_observations'] = json.dumps([
+            {'drug_class': 'ace_inhibitor', 'drug_name': 'Lisinopril',
+             'latest_fill_12m': '2030-04-17', 'fill_events_12m': 2}])
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'review.pdf'
+            render(c, target)
+            text = ' '.join(' '.join(page.extract_text() or '' for page in PdfReader(target).pages).split())
+        self.assertIn('Latest fill 17 Apr 2030', text)
+
+    def test_explicit_non_escalation_relation_keeps_its_medication_entity_binding(self):
+        card = P.review_cards(self.context('dose_titration_reason'))['A']
+        self.assertEqual(len(card['dose_limiting_statements']), 1)
+        group = card['dose_limiting_statements'][0]
+        self.assertEqual(group['relation'], 'dose_titration_reason')
+        self.assertEqual(group['entity']['id'], 'mra')
+        self.assertFalse(card['therapy_limitation_accounts'])
+        self.assertFalse(card['therapy'][2]['documented_reasons'])
+        self.assertFalse(card['individual_tolerance_statements'])
+
+
 if __name__ == '__main__':
     unittest.main()

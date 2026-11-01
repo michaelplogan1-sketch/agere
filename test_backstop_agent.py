@@ -54,8 +54,8 @@ class JudgeDocuments(unittest.TestCase):
         from clinical_core.agere.clinical import system_one
         t = B.Tools.__new__(B.Tools)
         t.as_of, t.ledger, t.stack, t.judged = '2030-05-27', None, SimpleNamespace(allow_live=True), []
-        t.read = {'N1': {'text': 'x' * 3000 + ' amLODIPine 2.5 MG: reported status: not using.', 'date': '2027-05-10', 'type': 'discharge_summary'},
-                  'N2': {'text': 'Unrelated visit.', 'date': '2026-01-01', 'type': 'progress'}}
+        t.read = {'N1': {'text': 'x' * 3000 + ' amLODIPine 2.5 MG: reported status: not using.', 'date': '2027-05-10', 'available': '2027-05-10', 'type': 'discharge_summary'},
+                  'N2': {'text': 'Unrelated visit.', 'date': '2026-01-01', 'available': '2026-01-01', 'type': 'progress'}}
         calls = []
         def decide(question, options, evidence, **kw):
             calls.append(len(evidence))

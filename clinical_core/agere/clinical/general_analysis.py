@@ -50,7 +50,8 @@ requirement quotes/how, while definitions describe stable source/measure meaning
 Authoritative definitions: use {{condition:concept_id}} for patients with a named condition (governed diagnosis
 policy), {{drug_fill:drug_class}} for patients with a picked-up fill of a class, and {{as_of}} for the snapshot date.
 Each macro expands to a subquery returning patient_id; use it as  patient_id IN {{condition:heart_failure}}.
-Dose: {{medication_dose}} is a governed relation (patient_id, source_stream, record_id, event_date, drug_text, status,
+Dose: drug_group_member(medicine_text, registered_group) returns registered group membership, or NULL when the name cannot be classified. For normalized drug_key use replace(drug_key,'_',' '). Derive a requested dose domain from the registered group (for example 'gdmt'), never from a list of names seen in a row preview. Group membership does not establish current use or dose tolerance.
+{{medication_dose}} is a governed relation (patient_id, source_stream, record_id, event_date, drug_text, status,
 per_admin_mg, times_per_day, daily_mg, target_daily_mg, target_max_daily_mg) built from structured order/list/label dose fields; use it for
 dose and target comparisons (never parse strengths with LIKE). SQL functions dose_mg(text), per_day(text) and
 target_mg(drug_text) parse other dose text deterministically.

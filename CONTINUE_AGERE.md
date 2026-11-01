@@ -1,10 +1,10 @@
-# Current Agere checkpoint - 2026-10-31T23:10:15.303804+00:00
+# Current Agere checkpoint - 2026-11-01T01:50:12.580240+00:00
 
-G3 ACTIVE; ordinary source-fulfillment candidate verified. No active provider/training/build job; owned8890stopped. Scheduler PAUSED; all ten areas retained.
+G3ACTIVE; native completeness/report/app candidate verified. No provider/training job. Isolated8890offline; schedulerPAUSED/alltenareasretained.
 
-Exact next: G3: ordinary source-review fulfillment candidate passes145checks and actual57patient controller/fulfillment check in70.008s/0providers; analysis was injected only for the consumer check, not ordinary acceptance. All15082shared attempts/source/raw patient table unchanged;12source suspensions explicit;70pagePDF ready. Commit/push coherent candidate, then one unassisted original-question warm confirmation using actual configured stack/routes/shared ledger, no owned_recovery or injected analysis, no custom caps. Freeze product/source for the run, retain all attempts/partials and stop providers on a real subscription limit. Then audit coverage/source/role costs, readable delivery and justified reuse; no partial-trace promotion. All ten areas retained; scheduler PAUSED.
+Exact next: G3: complete-native SQL/registered-domain and current patient delivery verified;253connected regressions,89dose source rows/17GDMTobjects,57patients/228pillars/64fills,79pagePDF/0attachments/allbounds. HTTP57source-review work items save/reopen exactly; old report work-change guards and regenerated downloads pass with0providers/all17927attempts unchanged. Next execute one targeted native recheck of6named observations plus one new explicit non-escalation question, then independent current typed verification and parameterized replay/changed-window/nonHF transfer/package. Preserve prior partial ordinary receipt and G5qualification/economics dependencies; alltenareas retained, schedulerPAUSED.
 
-Evidence: artifacts/agere-local-source-repair-2026-10-31/ordinary-source-fulfillment/integration-receipt.json
+Last sealed owner receipt unchanged. Evidence: artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/native-completeness-fix/integration-receipt.json
 
 ## Earlier checkpoint (superseded)
 

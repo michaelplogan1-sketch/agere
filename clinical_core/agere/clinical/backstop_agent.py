@@ -32,6 +32,7 @@ from pathlib import Path
 from .document_review import QUESTION_SCHEMA
 
 VERSION = 'backstop-agent/3'  # continuing evidence-bound investigation with System One final-answer review
+NATIVE_SQL_CONTRACT = 'complete-native-sql/2'
 
 
 class ProseIssue(ValueError):
@@ -83,8 +84,8 @@ TOOLS = [
         'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'retain_in_final':{'type':'boolean'},'domain':{'type':'object','properties':{'column':{'type':'string'},'values':{'type':'array','items':{},'minItems':1}},'required':['column','values'],'additionalProperties':False},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
-     "earlier results and compute comparisons/deltas without repeating source scans. Results are paged (2000 rows / 60K characters); aggregate in SQL.",
-     'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'},'complete':{'type':'boolean','description':'Store the complete final table in its result_view; the actor receives a preview.'}}, 'required': ['sql'], 'additionalProperties': False}},
+     "earlier results and compute comparisons/deltas without repeating source scans. Every executed SQL result is stored completely; the actor receives a reading preview. Incomplete input dependencies remain explicit and cannot support accepted calculations. drug_group_member(medicine_text, registered_group) selects registered medication groups, not an observed-key list; unclassifiable names return NULL. For normalized drug_key values use replace(drug_key,'_',' ').",
+     'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'},'complete':{'type':'boolean','description':'Compatibility option. SQL storage is always complete; only the actor reading projection is previewed.'}}, 'required': ['sql'], 'additionalProperties': False}},
     {'name': 'review_documents', 'description': 'Retrieve source candidates for each requested entity/relation, then review their whole document contexts. '
      'Use for population note review, open clinical reasons, medication reconciliation or other multi-field narrative questions. '
      'Supply the complete received patient IDs and a map of field names to precise questions. No patient or document sampling. '
@@ -152,8 +153,11 @@ has already declined this question, so it is yours to answer completely and corr
   Join its result_view to the structured cohort. Keep patients with no documents.
   Preserve the complete source-quoted findings (including record IDs/dates), not only a first example. If a requested value is missing
   or conflicting in structured data, explicitly ask the narrative reviewer for that value and its dates/status, not merely reasons.
-  Prefer patient_query_sql to bind the complete cohort in code. Use complete=true on the final query_sql so table_from_tool copies
-  EVERY computed row; model previews do not limit the stored result or patient membership.
+  Prefer patient_query_sql to bind the complete cohort in code. Every query_sql stores EVERY computed row; table_from_tool copies
+  the native result, independently of its model preview. An incomplete producer dependency must be repaired before acceptance.
+  A question about stopping, holding or reducing treatment does not cover why a dose was not increased. Ask that action explicitly,
+  using a separate dose_titration_reason contract bound to the named medication/entity. Keep reported supply issues and patient accounts
+  distinct from a documented prescribing rationale; an unrecorded rationale remains unknown.
   Before composing the final table, enumerate EVERY requested narrative field: medication doses, reasons, named clinicians,
   relationships, dates and patient-specific recommendations as applicable. The narrative_field_manifest lists available
   findings even when no preview row fits. A field must be represented by its source findings or a specific supported unknown;
@@ -330,7 +334,7 @@ class Tools:
             columns, rows = output_table(out)
             if columns and self.semantic is not None:
                 name = f'agere_result_{len(self.seen) + 1}'
-                self.result_sources[name] = define_result(self.semantic, name, columns, rows)
+                self.result_sources[name] = define_result(self.semantic, name, columns, rows, receipt=out)
                 out = {**out, 'result_view': name}
                 self.executed_results[name]=out
         self.seen.append(json.dumps(out, default=str))
@@ -352,9 +356,9 @@ class Tools:
                 'subscription_tool_protocol':hashlib.sha256((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_bytes()).hexdigest(),
                 'documentation_identity':getattr(getattr(self.semantic,'_local',None),'documentation_identity',None),
                 'documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','discover'),
-                'explicit_tool_quota':MAX_TOOLS,
+                'explicit_tool_quota':MAX_TOOLS, 'native_sql_contract':NATIVE_SQL_CONTRACT,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-                                 for name in ('backstop_agent.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','note_evidence.py')},
+                                 for name in ('backstop_agent.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py')},
                 'analytical_code':analysis_graph.code_identity(),'component_releases':component_learning.active_identity()}
 
     def _call(self, use):
@@ -382,17 +386,16 @@ class Tools:
                 sql = _expand(sql, Catalog.load(self.stack.path), set())
             from .general_analysis import scope_sql
             sql = scope_sql(self.semantic.db, sql, self.cohort)
-            complete=args.get('complete',False)
-            out = self.semantic.query(sql, as_of=self.as_of, max_rows=None if complete else 2000, max_chars=None if complete else 60000)
+            out = self.semantic.query(sql, as_of=self.as_of, max_rows=None, max_chars=None, inspect_incomplete=True)
+            out['native_sql_contract'] = NATIVE_SQL_CONTRACT
             out['executed_query'] = sql
             # A portable execution receipt includes the exact intermediate rows, rather than a dangling TEMP-view name.
             sources = getattr(self, 'result_sources', {})
-            used = [n for n in sources if re.search(r'\b' + re.escape(n) + r'\b', args['sql'])]
+            used = [name for name in out.get('read_views', []) if name in sources]
             if used:
-                ctes = ', '.join(f'{n} AS ({sources[n]})' for n in used)
-                sql = sql.strip()
-                expanded = re.sub(r'^WITH\s+(RECURSIVE\s+)?', lambda m: 'WITH ' + (m.group(1) or '') + ctes + ', ', sql, count=1, flags=re.I) if re.match(r'^WITH\b', sql, re.I) else 'WITH ' + ctes + ' ' + sql
-                out = {**out, 'executed_query': expanded}
+                from .sql_query import portable_native_query
+                out = {**out, 'declared_executed_query': sql,
+                       'executed_query': portable_native_query(sql, sources, used)}
             from .analyst_context import bind_loaded
             out = bind_loaded(self.semantic, args['sql'], out)
             return out
@@ -647,6 +650,7 @@ def define_cohort(semantic, ids):
         old = [r[0] for r in db.execute("SELECT name FROM sqlite_temp_master WHERE type='view'")]
         for name in old:
             if re.fullmatch(r'agere_result_\d+', name): db.execute(f'DROP VIEW "{name}"')
+        if hasattr(semantic, '_local'): semantic._local.native_results = {}
         db.execute('DROP VIEW IF EXISTS temp.cohort')
         body = 'SELECT patient_id FROM main.patient' if ids is None else "SELECT value AS patient_id FROM json_each(" + "'" + json.dumps(ids).replace("'", "''") + "')"
         db.execute('CREATE TEMP VIEW cohort AS ' + body)
@@ -671,7 +675,7 @@ def output_table(out):
     return [], []
 
 
-def define_result(semantic, name, columns, rows):
+def define_result(semantic, name, columns, rows, *, receipt=None):
     """Connection-local immutable result view. Source data stays read-only; SQL does all subsequent arithmetic and composition."""
     db = semantic.db
     fields = ', '.join(f'json_extract(value,\'$[{i}]\') AS "{str(c).replace(chr(34), chr(34)*2)}"' for i, c in enumerate(columns))
@@ -681,6 +685,7 @@ def define_result(semantic, name, columns, rows):
         db.execute(f'CREATE TEMP VIEW "{name}" AS SELECT {fields} FROM json_each(\'{data}\')')
     finally:
         db.execute('PRAGMA query_only=ON'); db.set_authorizer(semantic._authorize)
+    semantic.register_native_result(name, receipt if receipt is not None else {'rows': rows})
     return f"SELECT {fields} FROM json_each('{data}')"
 
 
@@ -690,7 +695,9 @@ def materialize_table(answer, calls):
     call = next((c for c in calls if isinstance(c.get('result'), dict) and not c['result'].get('error') and c['result'].get('result_view') == name), None)
     if call is None: raise ValueError('table_from_tool must name an actually executed result_view')
     result = call['result']
-    if result.get('truncated'): raise ValueError('The table source is truncated; compute the complete requested aggregation before returning it')
+    from .result_assembly import incomplete_reason
+    problem=incomplete_reason(result)
+    if problem:raise ValueError('The table source has incomplete input. '+problem)
     columns, rows = output_table(result)
     if not columns: raise ValueError('The referenced tool result is not a table')
     if type(result.get('table_rows')) is int and result['table_rows']!=len(rows):
@@ -910,8 +917,10 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
             call=next((c for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')==binding['result_view']),None)
             if call is None:raise ProseIssue('missing_native_result',field,'Computed scalar must name an executed result_view at '+field+'.'+name)
             result=call['result'];columns,rows=output_table(result)
-            if result.get('truncated') or type(result.get('table_rows')) is int and result['table_rows']!=len(rows):
-                raise ProseIssue('incomplete_native_result',field,'Computed scalar result is incomplete at '+field+'.'+name)
+            from .result_assembly import incomplete_reason
+            problem=incomplete_reason(result)
+            if problem:
+                raise ProseIssue('incomplete_native_result',field,'Computed scalar result is incomplete at '+field+'.'+name+': '+problem)
             if binding['column'] not in columns or binding['row']>=len(rows):raise ProseIssue('missing_native_cell',field,'Computed scalar cell is unavailable at '+field+'.'+name)
             cell=rows[binding['row']][columns.index(binding['column'])]
             if cell is not None and type(cell) not in (str,int,float,bool):raise ProseIssue('not_scalar',field,'Computed prose requires scalar cells at '+field+'.'+name)

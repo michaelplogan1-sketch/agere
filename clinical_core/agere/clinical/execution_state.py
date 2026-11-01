@@ -151,7 +151,8 @@ def catalog(calls):
                     entry['documentation_sections'] = documentation_references(out)
                 elif not any(isinstance(r,dict)and'patient_id'in r for r in rows) and len(json.dumps(rows,default=str))<2500:
                     entry['computed_rows']=rows
-                for key in ('coverage','method','record_ids_filter','accounting','assembly','source_scope','field_patient_queries','exhaustive_reason','scope_warnings'):
+                for key in ('coverage','method','record_ids_filter','accounting','assembly','source_scope','field_patient_queries','exhaustive_reason','scope_warnings',
+                            'native_sql_contract','read_views','incomplete_dependencies','registered_domain_functions'):
                     if key in out:
                         if key=='coverage'and isinstance(out[key],list):
                             entry['coverage']={'patients':len(out[key]),'received_documents':sum(r.get('received_documents',0)for r in out[key]),
@@ -188,7 +189,8 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
     state={'schema':VERSION,'original_request':request,'executed_results':catalog(calls),
         'latest_results':[recent(c) for c in recent_results],
         'instruction':'This is the current deterministic execution state, not a new question or a clinical summary. '
-            'All native receipts are retained. Every result_view contains its complete observed rows unless marked truncated. '
+            'All native receipts are retained. SQL result_views retain every computed row; a reading preview does not limit native membership. '
+            'A truncated producer or incomplete_dependencies cannot support an accepted calculation or population scope. '
             'Read any earlier result by query_sql; use compose_table to join already executed results without regenerating SQL. '
             'A missing preview is not missing evidence. Preserve original scope and all requested outputs. '
             'Avoid repeating successful work; correct unresolved errors and current review feedback. '

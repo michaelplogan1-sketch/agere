@@ -90,6 +90,49 @@ def statement_code(sql):
     return ''.join(out)
 
 
+def native_query_bindings(query, available):
+    """Resolve real table bindings, including CTE shadowing, with the SQL parser.
+
+    SQLite authorization remains the execution authority. Its source callback
+    alone cannot distinguish a view from a same-named CTE reading a main table.
+    """
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import traverse_scope
+    try:
+        tree = sqlglot.parse_one(query, read='sqlite')
+        bindings = {}
+        for scope in traverse_scope(tree):
+            for source in scope.sources.values():
+                if (isinstance(source, exp.Table) and isinstance(source.this, exp.Identifier)
+                        and source.db.casefold() in ('', 'temp')
+                        and source.name.casefold() in available):
+                    bindings[id(source)] = source
+        return tree, list(bindings.values())
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError, sqlglot.errors.OptimizeError):
+        return None, None
+
+
+def portable_native_query(query, sources, read_views):
+    """Bind actual native reads in a portable receipt; never execute this rewrite."""
+    available = {name.casefold(): name for name in read_views}
+    tree, tables = native_query_bindings(query, available)
+    if tree is None:
+        raise ValueError('Native SQL dependencies could not be bound for a portable receipt')
+    from sqlglot import exp
+    for table in tables:
+        table.set('db', None)
+        table.set('this', exp.to_identifier(available[table.name.casefold()]))
+    # Parse only the declared query. Complete native JSON literals can be large;
+    # retain their exact stored definitions without reparsing or copying an AST.
+    body = tree.sql(dialect='sqlite', comments=False)
+    ctes = ', '.join(name + ' AS (' + sources[name] + ')' for name in read_views)
+    if re.match(r'^WITH\b', body, re.I):
+        return re.sub(r'^WITH\s+(RECURSIVE\s+)?', lambda match:
+                      'WITH ' + (match.group(1) or '') + ctes + ', ', body, count=1, flags=re.I)
+    return 'WITH ' + ctes + ' ' + body
+
+
 def validate(p):
     if not isinstance(p, dict) or set(p) - {'query', 'returns'} or not isinstance(p.get('query'), str):
         raise ValueError('sql parameters: query (one SELECT), returns')

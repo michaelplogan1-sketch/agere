@@ -82,6 +82,8 @@ class State(unittest.TestCase):
    'table_binding':{'result_view':'agere_result_16','rows':1,'query':'SELECT '+"'source'"*20000}}}]
   db=sqlite3.connect(':memory:');self.addCleanup(db.close)
   tools=SimpleNamespace(semantic=SimpleNamespace(db=db,_authorize=lambda *args:sqlite3.SQLITE_OK),result_sources={},executed_results={},seen=[],rows_by_record={})
+  tools.semantic._local=SimpleNamespace()
+  tools.semantic.register_native_result=lambda name,receipt:S.SemanticWarehouse.register_native_result(tools.semantic,name,receipt)
   tools.retain_result=lambda out:B.Tools.retain_result(tools,out)
   replay={'calls':[],'downstream_review_feedback':feedback,'recovered_read_only_actions':19};before=copy.deepcopy(replay)
   projected=E.recovery_context(replay,tools);ref=projected['downstream_review_native']
