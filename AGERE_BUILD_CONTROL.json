@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-01T12:41:21.730466+00:00",
+  "updated_at": "2026-11-01T13:17:40.316921+00:00",
   "decision_basis": "docs/agere/MVP_BLUEPRINT_RECONCILIATION_2026-10-31.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -326,6 +326,10 @@
         {
           "path": "artifacts/agere-ordinary-source-review-2026-10-31/attempt-v1/delivery-audit.json",
           "sha256": "b95011790cf610b7ed569019e606fd27034bfa135cc7b87bb4edaee0ddcfb137"
+        },
+        {
+          "path": "artifacts/agere-native-review-feedback-2026-11-01/delivery-receipt.json",
+          "sha256": "3582c092c2d960948636a8dd94685f0ad83be6c26c20d07cb8204389b44d5369"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -405,11 +409,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_feedback_production_verified",
+    "kind": "native_feedback_live_and_current_transfer_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "An ordinary fresh-conversation request now saves the full57patient dashboard/PDF automatically with named fills/doses/care; source status remains partial.",
-    "measured_failure_reduction": "Same25474row isolated ledger reservation0.822636s to0.001358s; all2476offline operations1.233486s;302regressions pass. Actual ordinary runtime1226.386s vs prior3993.581s has cache/provider/trajectory confounds, so no causal whole-workflow saving claimed.",
+    "user_behavior_delta": "Current57patient clinical report and12row financial transfer save/reopen under7237738; field uncertainty remains explicit.",
+    "measured_failure_reduction": "Actualordinaryfeedback state5.318MB to79.655KB; recoveryfeedback18.964MB to15.182KB; live8actorprompts70-98KB succeed. Current723 source/native values and report verified;156regressions. API context latency remains39.392/16.641s.",
     "evidence": [
       "artifacts/agere-full-stack-2026-10-29/postrun-verification-isolated.json",
       "artifacts/agere-full-stack-2026-10-29/final-static-ui-qa.json",
@@ -846,18 +850,32 @@
       "artifacts/agere-native-review-feedback-2026-11-01/production-proof/receipt.json",
       "artifacts/agere-native-review-feedback-2026-11-01/production-proof/guidance-roundtrip.json",
       "artifacts/agere-native-review-feedback-2026-11-01/current-report-compatibility-failed.json",
-      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation/receipt.json"
+      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation/receipt.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/production-proof/recovery-limitations-roundtrip.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/current-source-observation-change.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/current-native-preflight-v3/receipt.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation-v3/receipt.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation-v3/final-delivery-audit/receipt.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation-v3/final-delivery-audit/layout-audit.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation-v3/final-delivery-audit/visual-equivalence.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation-v3/current-http-verification/receipt.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation-v3/browser-verification.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/delivery-receipt.json",
+      "artifacts/agere-current-financial-transfer-2026-11-01/final-claim-dependencies/current-final-check-7237738/receipt.json",
+      "artifacts/agere-native-review-feedback-2026-11-01/all-shared-attempts.json"
     ],
-    "remaining_gap": "Final actor feedback context overflow; current source/financial semantic uncertainty; independent role/clinical/outcome qualification and authentic total economics unavailable.",
-    "next_action": "G3: ONE existing owned-run continuation RUNNING PID76126/session85444 on c8dcb5b; product/source FROZEN. Exact26successfulnativeactions/1originaldocumentreview reexecute in18.195s with0providers,57clinical/source rows exact,2failedoriginalcalls retained. Native feedback correction passes155connected checks plus real66packet/1466claim productionSQL and exactguidance roundtrip; actualactorstate5.318MB to79.655KB. This is recovery of the actual incomplete original investigation, not fresh ordinary acceptance or learnedanswer reuse. Observe terminal; do not duplicate or rerun cohort readers. Audit actualpromptbytes/error/unknowns/newcalls/full accounting/57rows/canonical64fills17dosesdatedcare/current savedPDF before seal/currentapp and retained financialqualification. Oldb6context remains current-policy invalid; do not waive guards. Alltenareas/G5labels/economics/Perplexity0credit retained;schedulerPAUSED; owned8890stopped.",
+    "remaining_gap": "Measured context-open latency, source-verifier uncertainty, qualifiedlearning and independent clinical/model/outcome/total-economics evidence.",
+    "next_action": "G3:7237738 current owned continuation/report sealed:331.979s,123newattempts,$0.611963216knownAPI-equivalent+1unpriced;8successfulactorprompts70-98KB, no inputcontextfailure. All57patients/64fills/17doses/detailedcare/91pagePDF current; sourceunknownfor57 remains. Actualcurrentfinance native12rows reconcile rawclaims/cash;41.465s/4typedattempts,$0.00723849known+1unpriced, sourceverdictunknown, no reusepromotion. Current8890PID76806/session50992 servesverifiedcontextANS-d464446957cdae1a8a7c2d64/reportDLV-7F3156EBE028. No activeprovider/training/buildjob. Next profile measured59.170MB currentcontext load39.392sfirst/16.641srepeat and760.836MBpersistedcontext before choosing one existingread/serialization correction; preserve complete server-owned receipts, current source/version/uncertainty and allattempts. Do not assume file size is the entire latency cause. Then source-verifier/qualifiedlearning evidence only against named failures; no repeatedcohort campaign or indiscriminate training. G5independentlabels/outcomes/reviewereconomics and Perplexity0credit remain; currentmodel/reuseunpromoted. Prior51installedrelease remains recovery; alltenareasretained;schedulerPAUSED; primary/main untouched.",
     "latest_review": "docs/agere/reviews/2026-11-01-claude-native-binding-and-pdf.md",
-    "coordination": "One owned continuation running; no other provider/training job; product/source frozen; schedulerPAUSED.",
+    "coordination": "All provider jobs terminal; current8890serving; schedulerPAUSED; no source freeze.",
     "remaining_blockers": [
-      "Final source-review feedback exceeds actor context; retained partial output is not completed repair.",
-      "Independent role/source-family/clinical/outcome labels and authentic full-cost/reviewer economics unavailable.",
-      "Current financial semantic verification/reuse unqualified; Perplexity credits0."
+      "All57 source interpretations remain unresolved; no clinical accuracy claim.",
+      "Owned recovery is not a new unassisted ordinary benchmark or clinical bottle.",
+      "Current financial source support unknown despite exact independently reconciled raw amounts; no current reuse promotion.",
+      "Current context59.170MB; HTTP open39.392s first and16.641s repeat; PDF12.370s,HTML11.281s. Performance remains a measured gap.",
+      "Perplexity credits exhausted; independent role/clinical/outcome labels and authentic total reviewer/compute economics unavailable."
     ],
-    "latest_progress": "artifacts/agere-native-review-feedback-2026-11-01/production-proof/receipt.json",
+    "latest_progress": "artifacts/agere-native-review-feedback-2026-11-01/delivery-receipt.json",
     "results_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -890,8 +908,9 @@
       "scoped_local_release": "passed",
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
-      "ordinary_seconds": 1226.385796125047,
-      "evidence": "artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json"
+      "current_clinical_status": "partial",
+      "current_financial_status": "partial",
+      "evidence": "artifacts/agere-native-review-feedback-2026-11-01/delivery-receipt.json"
     },
     "latest_human_steering": "Mike returned and explicitly directs continued autonomous overnight completion, no questions or approval gates, retain all agreed stack components/concepts and north star. No unsupported completion or clinical qualification claim.",
     "comparison_status": {
@@ -907,17 +926,16 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-01T12:41:21.730466+00:00",
-    "workflow_change": "Gateway reservation stops repricing the entire ledger under write lock; actual ordinary report survives allattempt accounting and saves/reopens.",
+    "at": "2026-11-01T13:17:40.316921+00:00",
+    "workflow_change": "Complete reviewer prose/data stay native and queryable; source-feedback and recovered limitation messages no longer exceed model context. Current clinical/financial partial results save/reopen with complete user deliverables and unsupported claims remain blocked.",
     "unsealed_work": {
-      "status": "native_feedback_owned_continuation_running",
-      "path": "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation",
-      "source_frozen_for_run": true,
-      "pid": 76126,
-      "session": 85444,
-      "active_receipt": "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation/receipt.json",
-      "remaining_gap": "Current live repair/report and current financial/reuse qualification.",
-      "next_action": "G3: ONE existing owned-run continuation RUNNING PID76126/session85444 on c8dcb5b; product/source FROZEN. Exact26successfulnativeactions/1originaldocumentreview reexecute in18.195s with0providers,57clinical/source rows exact,2failedoriginalcalls retained. Native feedback correction passes155connected checks plus real66packet/1466claim productionSQL and exactguidance roundtrip; actualactorstate5.318MB to79.655KB. This is recovery of the actual incomplete original investigation, not fresh ordinary acceptance or learnedanswer reuse. Observe terminal; do not duplicate or rerun cohort readers. Audit actualpromptbytes/error/unknowns/newcalls/full accounting/57rows/canonical64fills17dosesdatedcare/current savedPDF before seal/currentapp and retained financialqualification. Oldb6context remains current-policy invalid; do not waive guards. Alltenareas/G5labels/economics/Perplexity0credit retained;schedulerPAUSED; owned8890stopped."
+      "status": "current_scoped_delivery_sealed_performance_and_qualification_open",
+      "path": "artifacts/agere-native-review-feedback-2026-11-01",
+      "source_frozen_for_run": false,
+      "pid": null,
+      "session": null,
+      "remaining_gap": "Measured context-open latency, source-verifier uncertainty, qualifiedlearning and independent clinical/model/outcome/total-economics evidence.",
+      "next_action": "G3:7237738 current owned continuation/report sealed:331.979s,123newattempts,$0.611963216knownAPI-equivalent+1unpriced;8successfulactorprompts70-98KB, no inputcontextfailure. All57patients/64fills/17doses/detailedcare/91pagePDF current; sourceunknownfor57 remains. Actualcurrentfinance native12rows reconcile rawclaims/cash;41.465s/4typedattempts,$0.00723849known+1unpriced, sourceverdictunknown, no reusepromotion. Current8890PID76806/session50992 servesverifiedcontextANS-d464446957cdae1a8a7c2d64/reportDLV-7F3156EBE028. No activeprovider/training/buildjob. Next profile measured59.170MB currentcontext load39.392sfirst/16.641srepeat and760.836MBpersistedcontext before choosing one existingread/serialization correction; preserve complete server-owned receipts, current source/version/uncertainty and allattempts. Do not assume file size is the entire latency cause. Then source-verifier/qualifiedlearning evidence only against named failures; no repeatedcohort campaign or indiscriminate training. G5independentlabels/outcomes/reviewereconomics and Perplexity0credit remain; currentmodel/reuseunpromoted. Prior51installedrelease remains recovery; alltenareasretained;schedulerPAUSED; primary/main untouched."
     },
     "bottling_assessment": {
       "current_clinical_full_question_bottle": false,
@@ -978,14 +996,7 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [
-      {
-        "kind": "native_feedback_owned_continuation",
-        "pid": 76126,
-        "session": 85444,
-        "receipt": "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation/receipt.json"
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2844,17 +2855,28 @@
         "artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/actor-context-failure.json"
       ],
       "scope_impact": "Existing execution state/native feedback only; no new model, source cache change, source restriction or removed acceptance area."
+    },
+    {
+      "at": "2026-11-01T12:51:06.761742+00:00",
+      "gate": "G3",
+      "decision": "Apply the same losslessfeedback contract to actual server limitation strings, and distinguish current machine observation revisions from rawsource changes.",
+      "reason": "Actual firstrecovery stillsends5.570MB limitations. Current sourcepreflight then correctlydetects2machine temporal-axis annotation updates from thatactualattempt. Preserving original quote/field/record evidence and current observedannotations explicitly permits exactcurrent replay; forcingoldmachine labels wouldclaimunjustifiedtruth.",
+      "evidence": [
+        "artifacts/agere-native-review-feedback-2026-11-01/production-proof/recovery-limitations-roundtrip.json",
+        "artifacts/agere-native-review-feedback-2026-11-01/current-source-observation-change.json",
+        "artifacts/agere-native-review-feedback-2026-11-01/current-native-preflight-v3/receipt.json"
+      ],
+      "scope_impact": "Same existing executionstate, originalcohort and source; no newclinicalthreshold, weights, blanketgradeor removedacceptancearea."
     }
   ],
   "unsealed_work": {
-    "status": "native_feedback_owned_continuation_running",
-    "path": "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation",
-    "source_frozen_for_run": true,
-    "pid": 76126,
-    "session": 85444,
-    "active_receipt": "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation/receipt.json",
-    "remaining_gap": "Current live repair/report and current financial/reuse qualification.",
-    "next_action": "G3: ONE existing owned-run continuation RUNNING PID76126/session85444 on c8dcb5b; product/source FROZEN. Exact26successfulnativeactions/1originaldocumentreview reexecute in18.195s with0providers,57clinical/source rows exact,2failedoriginalcalls retained. Native feedback correction passes155connected checks plus real66packet/1466claim productionSQL and exactguidance roundtrip; actualactorstate5.318MB to79.655KB. This is recovery of the actual incomplete original investigation, not fresh ordinary acceptance or learnedanswer reuse. Observe terminal; do not duplicate or rerun cohort readers. Audit actualpromptbytes/error/unknowns/newcalls/full accounting/57rows/canonical64fills17dosesdatedcare/current savedPDF before seal/currentapp and retained financialqualification. Oldb6context remains current-policy invalid; do not waive guards. Alltenareas/G5labels/economics/Perplexity0credit retained;schedulerPAUSED; owned8890stopped."
+    "status": "current_scoped_delivery_sealed_performance_and_qualification_open",
+    "path": "artifacts/agere-native-review-feedback-2026-11-01",
+    "source_frozen_for_run": false,
+    "pid": null,
+    "session": null,
+    "remaining_gap": "Measured context-open latency, source-verifier uncertainty, qualifiedlearning and independent clinical/model/outcome/total-economics evidence.",
+    "next_action": "G3:7237738 current owned continuation/report sealed:331.979s,123newattempts,$0.611963216knownAPI-equivalent+1unpriced;8successfulactorprompts70-98KB, no inputcontextfailure. All57patients/64fills/17doses/detailedcare/91pagePDF current; sourceunknownfor57 remains. Actualcurrentfinance native12rows reconcile rawclaims/cash;41.465s/4typedattempts,$0.00723849known+1unpriced, sourceverdictunknown, no reusepromotion. Current8890PID76806/session50992 servesverifiedcontextANS-d464446957cdae1a8a7c2d64/reportDLV-7F3156EBE028. No activeprovider/training/buildjob. Next profile measured59.170MB currentcontext load39.392sfirst/16.641srepeat and760.836MBpersistedcontext before choosing one existingread/serialization correction; preserve complete server-owned receipts, current source/version/uncertainty and allattempts. Do not assume file size is the entire latency cause. Then source-verifier/qualifiedlearning evidence only against named failures; no repeatedcohort campaign or indiscriminate training. G5independentlabels/outcomes/reviewereconomics and Perplexity0credit remain; currentmodel/reuseunpromoted. Prior51installedrelease remains recovery; alltenareasretained;schedulerPAUSED; primary/main untouched."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2882,13 +2904,6 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "kind": "native_feedback_owned_continuation",
-      "pid": 76126,
-      "session": 85444,
-      "receipt": "artifacts/agere-native-review-feedback-2026-11-01/native-feedback-continuation/receipt.json"
-    }
-  ],
-  "next_action": "G3: ONE existing owned-run continuation RUNNING PID76126/session85444 on c8dcb5b; product/source FROZEN. Exact26successfulnativeactions/1originaldocumentreview reexecute in18.195s with0providers,57clinical/source rows exact,2failedoriginalcalls retained. Native feedback correction passes155connected checks plus real66packet/1466claim productionSQL and exactguidance roundtrip; actualactorstate5.318MB to79.655KB. This is recovery of the actual incomplete original investigation, not fresh ordinary acceptance or learnedanswer reuse. Observe terminal; do not duplicate or rerun cohort readers. Audit actualpromptbytes/error/unknowns/newcalls/full accounting/57rows/canonical64fills17dosesdatedcare/current savedPDF before seal/currentapp and retained financialqualification. Oldb6context remains current-policy invalid; do not waive guards. Alltenareas/G5labels/economics/Perplexity0credit retained;schedulerPAUSED; owned8890stopped."
+  "active_jobs": [],
+  "next_action": "G3:7237738 current owned continuation/report sealed:331.979s,123newattempts,$0.611963216knownAPI-equivalent+1unpriced;8successfulactorprompts70-98KB, no inputcontextfailure. All57patients/64fills/17doses/detailedcare/91pagePDF current; sourceunknownfor57 remains. Actualcurrentfinance native12rows reconcile rawclaims/cash;41.465s/4typedattempts,$0.00723849known+1unpriced, sourceverdictunknown, no reusepromotion. Current8890PID76806/session50992 servesverifiedcontextANS-d464446957cdae1a8a7c2d64/reportDLV-7F3156EBE028. No activeprovider/training/buildjob. Next profile measured59.170MB currentcontext load39.392sfirst/16.641srepeat and760.836MBpersistedcontext before choosing one existingread/serialization correction; preserve complete server-owned receipts, current source/version/uncertainty and allattempts. Do not assume file size is the entire latency cause. Then source-verifier/qualifiedlearning evidence only against named failures; no repeatedcohort campaign or indiscriminate training. G5independentlabels/outcomes/reviewereconomics and Perplexity0credit remain; currentmodel/reuseunpromoted. Prior51installedrelease remains recovery; alltenareasretained;schedulerPAUSED; primary/main untouched."
 }

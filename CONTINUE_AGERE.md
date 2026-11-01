@@ -1,10 +1,10 @@
-# Current Agere checkpoint - 2026-11-01T12:41:21.730466+00:00
+# Current Agere checkpoint - 2026-11-01T13:17:40.316921+00:00
 
-G3 ACTIVE; ONE current owned continuation running; product/source frozen. SchedulerPAUSED.
+G3 ACTIVE; current scoped native-feedback/report delivery sealed. No providerjob; owned8890serving. SchedulerPAUSED.
 
-Exact next: G3: ONE existing owned-run continuation RUNNING PID76126/session85444 on c8dcb5b; product/source FROZEN. Exact26successfulnativeactions/1originaldocumentreview reexecute in18.195s with0providers,57clinical/source rows exact,2failedoriginalcalls retained. Native feedback correction passes155connected checks plus real66packet/1466claim productionSQL and exactguidance roundtrip; actualactorstate5.318MB to79.655KB. This is recovery of the actual incomplete original investigation, not fresh ordinary acceptance or learnedanswer reuse. Observe terminal; do not duplicate or rerun cohort readers. Audit actualpromptbytes/error/unknowns/newcalls/full accounting/57rows/canonical64fills17dosesdatedcare/current savedPDF before seal/currentapp and retained financialqualification. Oldb6context remains current-policy invalid; do not waive guards. Alltenareas/G5labels/economics/Perplexity0credit retained;schedulerPAUSED; owned8890stopped.
+Exact next: G3:7237738 current owned continuation/report sealed:331.979s,123newattempts,$0.611963216knownAPI-equivalent+1unpriced;8successfulactorprompts70-98KB, no inputcontextfailure. All57patients/64fills/17doses/detailedcare/91pagePDF current; sourceunknownfor57 remains. Actualcurrentfinance native12rows reconcile rawclaims/cash;41.465s/4typedattempts,$0.00723849known+1unpriced, sourceverdictunknown, no reusepromotion. Current8890PID76806/session50992 servesverifiedcontextANS-d464446957cdae1a8a7c2d64/reportDLV-7F3156EBE028. No activeprovider/training/buildjob. Next profile measured59.170MB currentcontext load39.392sfirst/16.641srepeat and760.836MBpersistedcontext before choosing one existingread/serialization correction; preserve complete server-owned receipts, current source/version/uncertainty and allattempts. Do not assume file size is the entire latency cause. Then source-verifier/qualifiedlearning evidence only against named failures; no repeatedcohort campaign or indiscriminate training. G5independentlabels/outcomes/reviewereconomics and Perplexity0credit remain; currentmodel/reuseunpromoted. Prior51installedrelease remains recovery; alltenareasretained;schedulerPAUSED; primary/main untouched.
 
-Last sealed receipt: artifacts/agere-reservation-performance-2026-11-01/delivery-receipt.json
+Last sealed receipt: artifacts/agere-native-review-feedback-2026-11-01/delivery-receipt.json
 
 ## Earlier checkpoint (superseded)
 
