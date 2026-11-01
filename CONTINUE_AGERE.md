@@ -1,10 +1,10 @@
-# Current Agere checkpoint - 2026-11-01T22:53:39.283952+00:00
+# Current Agere checkpoint - 2026-11-01T23:55:42.408617+00:00
 
-G3 ACTIVE; workspace-load correction sealed, current8890serving, no providerjob. SchedulerPAUSED.
+G3 ACTIVE; currentb41release/financialreuse sealed, owned8890ready. NarrowClaude review session51746 running; code/source frozen. Offlineprototype PID90541. SchedulerPAUSED.
 
-Exact next: G3:417c82c dependency parsing correction sealed: actualclinical111.77MB SQL probe reduces to54.995KB forsyntaxonly, table/column sets exact on24clinical+22financialqueries; completecontext/source/policy unchanged. Matchedload11.983s to4.770s; actualAPIcontext11.740/11.570s versus39.392/16.641s; PDF11.028s/HTML9.817s, exactfiles,0productprovider calls.78checks+narrowClaude review pass. Current8890PID83789/session58059servesexisting57patientcontext/report unchanged. Next repair actualfinancial unsupported prose only: no-reconciliation does not establish the difference isnotreceivable; move unclassified difference tolimitation, bind claim count wording toactual counts_in_metrics predicate. Keepall12rawreconciledrows unchanged and originalquestion/cohort/date/source. Use existing owned continuation and actualtypedreview; promote currentexecutionreuse onlyifactualsupportconfirmed+rawbaselineexact+freshreplay/fullworkflowpasses. No source-readercampaign, thresholdrelaxation orclinicaltruthbyvote. G5independentlabels/outcomes/economics and Perplexity0credit remain; alltenareasretained;schedulerPAUSED.
+Exact next: Observe Claude narrow review/session51746 and the single offlineprototypePID90541. No product/source edits while reviewruns. Currentb41release/financialreuse sealed and8890ready. Prototype only producer-marked operationalfeedback exclusion with exactnativeaudit retention; retain 9patientcompletecontexts/unknowns. Use review to choose existingnativeclosure/sourcepartition or measuredlarger-contextfallback for actual envelopefailures. No fullsourcecampaign, modeltraining, thresholdrelaxation, newcatalog or repeatedpackage. Alltenareas/G5/sourcequalificationand originalbatchlatency remain; schedulerPAUSED.
 
-Last sealed receipt: artifacts/agere-workspace-load-performance-2026-11-01/delivery-receipt.json
+Last sealed receipt: artifacts/agere-workspace-load-performance-2026-11-01/current-release-delivery-receipt.json
 
 ## Earlier checkpoint (superseded)
 
