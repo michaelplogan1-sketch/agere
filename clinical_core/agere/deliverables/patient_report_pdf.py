@@ -8,6 +8,25 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from pypdf import PdfReader,PdfWriter
 
+def _product_strength_mentions(groups):
+ """Index verbatim product mentions, without treating them as a regimen.
+
+ Historical dose-reading candidates can contain whole notes. A strength mention
+ is not a daily dose, use, frequency, tolerance or a reason for non-use. Complete
+ passages and their assertion qualifications stay in the interactive evidence.
+ """
+ mentions={}
+ for group in groups:
+  text=str(group.get('quote')or'')
+  entity=group.get('entity')or next((f.get('entity')for f in group.get('findings',[])if f.get('entity')),{} )
+  for alias in entity.get('aliases')or[]:
+   pattern=r'(?<!\w)'+re.escape(alias)+r'(?:/[A-Za-z]+)?\s+\d+(?:\.\d+)?(?:/\d+(?:\.\d+)?)?\s*(?:mcg|mg|µg|g)\b(?:\s+(?:tablet|capsule|patch))?'
+   for match in re.finditer(pattern,text,re.I):
+    literal=match.group();key=literal.casefold()
+    entry=mentions.setdefault(key,{'text':literal,'dates':set()})
+    entry['dates'].update(str(s['date'])for s in group.get('sources',[])if s.get('date'))
+ return [{'text':m['text'],'dates':sorted(m['dates'])}for m in mentions.values()]
+
 def _note_excerpt(quote,entity=None):
  """Copy relevant sentences plus adjacent qualifications, never paraphrase them.
 
@@ -170,10 +189,19 @@ def _render_clinical(context,output,cards,references):
   story.append(P('Individual maximum tolerated dose: '+str(tolerance)+'.','small'))
   if c.get('regimen_statements'):
    story.append(P('Dated therapy-status history is retained in the interactive regimen view. It does not establish current medication use.','small'))
+  dose_history=[g for g in c.get('additional_documentary_accounts')or[]if g.get('relation')=='documented_dose']
+  if dose_history:
+   story.append(P('Product strengths mentioned in dated notes','head'))
+   story.append(P('These are verbatim mentions in unverified historical passages, not established daily doses or current use. Frequency, prescribing intent and present applicability require reconciliation. Complete passages remain in the interactive evidence review.','small'))
+   mentions=_product_strength_mentions(dose_history)
+   for mention in mentions:
+    dates=mention['dates'];dated=(D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0]))if dates else'Date not recorded'
+    story.append(P(mention['text']+'  |  '+dated,'small'))
+   if not mentions:story.append(P('The returned historical passages do not expose a directly quotable named product-strength mention. Current dose remains unconfirmed.','small'))
   # One dated clinical account can support several fields. Print it once with
   # all its uses, rather than repeating the same whole note under each pillar.
   accounts={}
-  additional=[(human(g['entity']['id'])+' / dated chart account',[g])for g in c.get('additional_documentary_accounts')or[]]
+  additional=[(human(g['entity']['id'])+' / '+human(g.get('relation'))+' account',[g])for g in c.get('additional_documentary_accounts')or[]if g.get('relation')!='documented_dose']
   limitations=[(human(g['entity']['id'])+' / recorded therapy limitation (non-use or dose, as documented)',[g])for g in c.get('therapy_limitation_accounts')or[]]
   for label,groups in [(t['label'],t['documented_reasons'])for t in c['therapy']]+[('Titration',c['dose_limiting_statements']),('Individual tolerated maximum',c['individual_tolerance_statements'])]+limitations+additional:
    for g in groups:
@@ -194,7 +222,7 @@ def _render_clinical(context,output,cards,references):
     note=P((c.get('empty_source_reason') + ' Review: ' if c.get('empty_source_reason') else 'No separate non-use reason returned for: ')+', '.join(missing)+'.','small');note.keepWithNext=True;story.append(note)
   # A new, otherwise-unrecognised relation keeps its exact question meaning,
   # once per patient/contract rather than repeated under every source account.
-  questions={q['question']for g in c.get('additional_documentary_accounts')or[]for q in g.get('source_questions')or[]if q.get('question')}
+  questions={q['question']for g in c.get('additional_documentary_accounts')or[]if g.get('relation')!='documented_dose'for q in g.get('source_questions')or[]if q.get('question')}
   for question in sorted(questions):story.append(P('Additional account scope: '+question,'small'))
   for a in accounts.values():
    dates=sorted({str(s['date']) for g in a['groups']for s in g.get('sources',[])if s.get('date')})
