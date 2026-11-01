@@ -120,13 +120,33 @@ def portable_native_query(query, sources, read_views):
     if tree is None:
         raise ValueError('Native SQL dependencies could not be bound for a portable receipt')
     from sqlglot import exp
+    declared = {cte.alias_or_name.casefold() for cte in tree.find_all(exp.CTE)}
+    occupied = set(available) | {node.name.casefold() for node in tree.find_all(exp.Identifier)}
+    portable = {}
+    for index, name in enumerate(read_views, 1):
+        alias = name
+        if name.casefold() in declared:
+            alias = f'_agere_native_source_{index}'
+            while alias.casefold() in occupied:
+                alias += '_'
+        occupied.add(alias.casefold())
+        portable[name.casefold()] = alias
     for table in tables:
+        name = table.name.casefold()
+        if portable[name] != available[name] and not table.args.get('alias'):
+            # Preserve original column qualifiers when only the portable source
+            # name changes. The real executed statement remains untouched.
+            table.set('alias', exp.TableAlias(this=exp.to_identifier(table.name)))
         table.set('db', None)
-        table.set('this', exp.to_identifier(available[table.name.casefold()]))
+        table.set('this', exp.to_identifier(portable[name]))
+    for column in tree.find_all(exp.Column):
+        name = column.table.casefold()
+        if column.db.casefold() == 'temp' and name in portable and portable[name] != available[name]:
+            column.set('db', None)
     # Parse only the declared query. Complete native JSON literals can be large;
     # retain their exact stored definitions without reparsing or copying an AST.
     body = tree.sql(dialect='sqlite', comments=False)
-    ctes = ', '.join(name + ' AS (' + sources[name] + ')' for name in read_views)
+    ctes = ', '.join(portable[name.casefold()] + ' AS (' + sources[name] + ')' for name in read_views)
     if re.match(r'^WITH\b', body, re.I):
         return re.sub(r'^WITH\s+(RECURSIVE\s+)?', lambda match:
                       'WITH ' + (match.group(1) or '') + ctes + ', ', body, count=1, flags=re.I)

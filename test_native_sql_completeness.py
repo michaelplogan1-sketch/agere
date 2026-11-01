@@ -173,6 +173,25 @@ class NativeCompleteness(unittest.TestCase):
                     replayed = [dict(row) for row in fresh.execute(out['executed_query'])]
                 self.assertEqual(replayed, out['rows'])
 
+    def test_portable_receipt_separates_qualified_native_reads_from_shadowing_ctes(self):
+        source = self.query('SELECT event_id, amount FROM financial_event WHERE event_id < 3')
+        name = source['result_view']
+        queries = [
+            f'WITH {name} AS (SELECT 999 AS amount) SELECT SUM(amount) AS total FROM temp.{name}',
+            f'WITH {name} AS (SELECT 999 AS amount) SELECT SUM(temp.{name}.amount) AS total FROM temp.{name}',
+            f'WITH {name} AS (SELECT 999 AS amount), _agere_native_source_1 AS (SELECT 444 AS amount) '
+            f'SELECT n.amount, c.amount AS shadow_amount FROM temp.{name} n CROSS JOIN {name} c ORDER BY n.amount',
+            f'WITH RECURSIVE {name}(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM {name} WHERE value<3) '
+            f'SELECT SUM(s.amount) AS total FROM temp.{name} s JOIN {name} c ON c.value=s.amount',
+        ]
+        for sql in queries:
+            with self.subTest(sql=sql):
+                out = self.query(sql)
+                with sqlite3.connect(':memory:') as fresh:
+                    fresh.row_factory = sqlite3.Row
+                    replayed = [dict(row) for row in fresh.execute(out['executed_query'])]
+                self.assertEqual(replayed, out['rows'])
+
 
 if __name__ == '__main__':
     unittest.main()
