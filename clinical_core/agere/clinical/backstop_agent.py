@@ -338,7 +338,8 @@ class Tools:
                 out = {**out, 'result_view': name}
                 self.executed_results[name]=out
         self.seen.append(json.dumps(out, default=str))
-        for row in rows_with_record(out):
+        operational=any(item.get('authority')=='unverified_review_feedback' for item in (out.get('incomplete_dependencies')or[])) if isinstance(out,dict) else False
+        for row in (() if operational else rows_with_record(out)):
             self.rows_by_record.setdefault(str(row['record_id']), []).append(json.dumps(row, default=str))
         return out
 

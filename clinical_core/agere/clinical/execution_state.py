@@ -131,16 +131,45 @@ def review_reference(feedback,tools):
         if existing.get('columns')!=list(row) or existing.get('rows')!=[row] or existing.get('truncated'):
             raise ValueError('Review feedback native view changed')
     else:
-        existing=tools.retain_result({'columns':list(row),'rows':[row],
-            'truncated':False,'kind':'unverified_review_feedback','feedback_digest':ident})
+        # Operational state must neither consume clinical result sequence
+        # numbers nor populate the source-record quotation index.
+        from .backstop_agent import define_result
+        name='agere_review_feedback_'+ident
+        existing={'columns':list(row),'rows':[row],'result_view':name,
+            'truncated':False,'kind':'unverified_review_feedback','feedback_digest':ident,
+            'incomplete_dependencies':[{'result_view':name,'authority':'unverified_review_feedback',
+                'reason':'Reviewer feedback is queryable operational state, not source evidence for an answer.'}]}
+        tools.result_sources[name]=define_result(tools.semantic,name,list(row),[list(row.values())],receipt=existing)
+        tools.executed_results[name]=existing
     return {'result_view':existing['result_view'],'json_column':'feedback_json','feedback_digest':ident,
         'guidance_path':'$.feedback','packets_path':'$.support.packets',
+        'guidance':review_guidance(feedback.get('feedback')),
         'instruction':'The complete exact reviewer receipt, repair prose and every claim/source binding are retained here. '
             'Use query_sql with json_extract/json_each to inspect the relevant packet and claim_feedback entries. '
             'Packet IDs are opaque labels; use only explicit patient_id bindings. '
             'This is unverified reviewer feedback, not patient evidence or a clinical truth label. '
             'Unknown feedback is an unresolved dependency, not a proven source fault. '
             'Retain unaffected native work and uncertainty; verify any final answer against the current source receipts.'}
+
+
+def review_guidance(text):
+    """Preserve all repair prose; reference only embedded JSON data literals.
+
+    References include exact character offsets into the retained original text.
+    No prefix, word count, model summary or output ceiling is used. A replacement
+    is used only when shorter than that JSON literal; small guidance is exact.
+    """
+    if not isinstance(text,str):return text
+    decoder=json.JSONDecoder();parts=[];cursor=0;index=0
+    while index<len(text):
+        if text[index] not in '[{':index+=1;continue
+        try:value,end=decoder.raw_decode(text,index)
+        except ValueError:index+=1;continue
+        marker='[Exact JSON in native_feedback: substr(json_extract(feedback_json,\'$.feedback\'),'+str(index+1)+','+str(end-index)+')]'
+        if isinstance(value,(list,dict)) and len(marker)<end-index:
+            parts.extend([text[cursor:index],marker]);cursor=end
+        index=end
+    return ''.join([*parts,text[cursor:]])
 
 
 def documentation_references(out):
@@ -256,12 +285,14 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             visible=('status','reason','repair_kind') if feedback_native is not None else ('status','feedback','reason','repair_kind')
             state['current_review_feedback']={k:feedback[k]for k in visible if k in feedback}
             state['current_review_native_digest']=digest(feedback)
-            if feedback_native is not None:state['current_review_feedback']['native_feedback']=feedback_native
+            if feedback_native is not None:
+                state['current_review_feedback']['native_feedback']=feedback_native
+                if 'feedback'in feedback:state['current_review_feedback']['feedback']=feedback_native['guidance']
             coverage=feedback.get('coverage')or{}
             if coverage:
                 state['current_review_feedback']['coverage']={k:coverage[k]for k in ('label','reasons','reject')if k in coverage}
             support=feedback.get('support')or{}
-            fields=('id','patient_id','label','reason') if feedback_native is not None else ('id','patient_id','label','reason','claim_feedback')
+            fields=('id','patient_id','label','reason') if feedback_native is not None else ('id','label','reason','claim_feedback')
             pending=[]
             for packet in support.get('packets',[]):
                 if packet.get('label')=='supported':continue

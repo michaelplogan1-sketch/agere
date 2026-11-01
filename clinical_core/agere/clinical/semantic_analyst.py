@@ -140,7 +140,7 @@ class SemanticWarehouse:
         if action == sqlite3.SQLITE_READ:
             # Reads of main tables, CTEs/subqueries (database None) and json_each/json_tree; the temp schema only for the
             # definition views define() created (their own reads of main tables are authorized as above).
-            if database == 'temp' and (arg1 in cls.DEFINITION_VIEWS or arg1 in ('cohort', 'agere_data_model_context') or re.fullmatch(r'agere_result_\d+', str(arg1))):
+            if database == 'temp' and (arg1 in cls.DEFINITION_VIEWS or arg1 in ('cohort', 'agere_data_model_context') or re.fullmatch(r'agere_result_\d+|agere_review_feedback_[a-f0-9]{64}', str(arg1))):
                 return sqlite3.SQLITE_OK  # only code-created, request-local cohort and executed-result views
             if database == 'temp' and str(arg1).startswith('phenotype_'):
                 from .clinical_definitions import PHENOTYPES

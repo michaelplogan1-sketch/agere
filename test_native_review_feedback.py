@@ -2,8 +2,11 @@
 import copy
 import json
 import sqlite3
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 from clinical_core.agere.clinical import execution_state as E, semantic_analyst as S, backstop_agent as B
 
 
@@ -27,7 +30,7 @@ class NativeTools:
 
 
 def feedback():
-    return {'status': 'repair', 'feedback': 'Inspect the exact source dependency. ' * 20000,
+    return {'status': 'repair', 'feedback': 'Inspect the exact source dependency. ' + json.dumps([{'record_id': 'r1', 'detail': 'retained source context ' * 20000}]) + ' Preserve the original population and report unknown dates.',
             'coverage': {'label': 'answers_partially', 'reasons': ['A period remains unresolved'], 'reject': False},
             'support': {'label': 'unknown', 'all_dependencies_checked': True,
                         'failed_packet_ids': ['opaque-7'], 'packets': [
@@ -54,7 +57,8 @@ class NativeReviewFeedback(unittest.TestCase):
         state = json.loads(E.messages('Keep the original population and dates', [], feedback=review, feedback_native=ref)[0]['content'])
         self.assertLess(len(json.dumps(state)), 6000)
         visible = state['current_review_feedback']
-        self.assertNotIn('feedback', visible)
+        self.assertTrue(visible['feedback'].startswith('Inspect the exact source dependency. '))
+        self.assertTrue(visible['feedback'].endswith(' Preserve the original population and report unknown dates.'))
         self.assertEqual(visible['coverage']['label'], 'answers_partially')
         self.assertEqual(visible['unresolved_dependencies'], [{'id': 'opaque-7', 'patient_id': 'A', 'label': 'unknown', 'reason': 'Ambiguous date', 'claim_feedback_entries': 1}])
         self.assertEqual(visible['failed_dependency_ids'], ['opaque-7'])
@@ -87,6 +91,17 @@ class NativeReviewFeedback(unittest.TestCase):
         self.assertIsNone(E.review_reference(feedback(), lambda use: None))
         self.assertEqual(len(self.tools.executed_results), 0)
 
+    def test_prose_is_preserved_without_prefix_or_word_ceiling(self):
+        text = 'Review the scope [not JSON] and preserve every instruction. ' * 2000
+        self.assertEqual(E.review_guidance(text), text)
+        self.assertEqual(E.review_guidance('Keep the exact rule and [{"id":1}].'), 'Keep the exact rule and [{"id":1}].')
+        text = 'Unicode: β. Before ' + json.dumps([{'quote': 'exact α text' * 200}]) + ' After the data, preserve this rule.'
+        projected = E.review_guidance(text)
+        import re
+        start, length = map(int, re.search(r"\),([0-9]+),([0-9]+)\)", projected).groups())
+        self.assertEqual(json.loads(text[start-1:start-1+length]), [{'quote': 'exact α text' * 200}])
+        self.assertTrue(projected.endswith(' After the data, preserve this rule.'))
+
     def test_compiled_tool_loop_queries_the_retained_feedback_before_finishing(self):
         review = feedback()
         before = copy.deepcopy(review)
@@ -115,6 +130,49 @@ class NativeReviewFeedback(unittest.TestCase):
         self.assertEqual(len(out['tool_calls']), 1)
         self.assertEqual(review, before)
         self.assertEqual(sum(v.get('kind') == 'unverified_review_feedback' for v in self.tools.executed_results.values()), 1)
+
+
+class ProductionFeedbackQuery(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        path = self.root / 'semantic.sqlite3'
+        with sqlite3.connect(path) as db:
+            db.executescript("CREATE TABLE meta(key,value); INSERT INTO meta VALUES('as_of','2030-05-27'),('source_digest','authored-review-fixture'); CREATE TABLE patient(patient_id); INSERT INTO patient VALUES('A');")
+        self.wh = S.SemanticWarehouse(path)
+        self.addCleanup(self.wh.close)
+        self.tools = B.Tools(SimpleNamespace(path=self.root, allow_live=False), self.wh, '2030-05-27')
+        self.addCleanup(self.tools.db.close)
+
+    def query(self, sql):
+        return self.tools({'name': 'query_sql', 'input': {'sql': sql}})
+
+    def test_real_query_authorizer_json_paths_and_sequence_remain_correct(self):
+        first = self.query('SELECT patient_id FROM patient')
+        ref = E.review_reference(feedback(), self.tools)
+        self.assertEqual(first['result_view'], 'agere_result_1')
+        query = "SELECT json_extract(p.value,'$.id') AS packet_id,json_extract(c.value,'$.field') AS field FROM " + ref['result_view'] + " r,json_each(r.feedback_json,'$.support.packets') p,json_each(p.value,'$.claim_feedback') c"
+        out = self.query(query)
+        self.assertNotIn('error', out)
+        self.assertEqual(out['rows'], [{'packet_id': 'opaque-7', 'field': 'encounter_date'}])
+        self.assertEqual(out['result_view'], 'agere_result_2')
+        self.assertFalse(out['truncated'])
+        self.assertTrue(out['incomplete_dependencies'])
+        self.assertEqual(self.query('SELECT patient_id FROM patient')['result_view'], 'agere_result_3')
+
+    def test_review_derived_quotes_cannot_ground_a_citation_or_final_table(self):
+        ref = E.review_reference(feedback(), self.tools)
+        query = "SELECT json_extract(c.value,'$.source_record_ids[0]') AS record_id,json_extract(c.value,'$.quote') AS quote FROM " + ref['result_view'] + " r,json_each(r.feedback_json,'$.support.packets') p,json_each(p.value,'$.claim_feedback') c"
+        out = self.query(query)
+        self.assertNotIn('error', out)
+        self.assertNotIn('r1', self.tools.rows_by_record)
+        with patch.object(self.tools, 'read_document', side_effect=ValueError('No received document')):
+            kept, dropped = B.verified_sources({'sources': [{'record_id': 'r1', 'quote': out['rows'][0]['quote']}]}, self.tools)
+        self.assertEqual(kept, [])
+        self.assertEqual(dropped, 1)
+        with self.assertRaisesRegex(ValueError, 'incomplete|Incomplete'):
+            B.materialize_table({'table_from_tool': out['result_view']}, [{'result': out}])
 
 
 if __name__ == '__main__':
