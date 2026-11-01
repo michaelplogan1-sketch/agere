@@ -103,8 +103,14 @@ class BudgetLedger:
                     return json.loads(row[1])
                 ledger_event(self,'retry_blocked',key,provider=provider,model=model,status=row[0])
                 raise ValueError('Prior request pending/failed; explicit new attempt required, no silent paid retry')
-            remaining=self.receipt()['remaining_reservation_usd']
-            if remaining is not None and remaining<reservation:raise ValueError('Shared authorization exhausted')
+            # Authorization uses conservative reservations, not the separately
+            # reported API estimates. Do not price every historical response
+            # while holding the write lock for each new request.
+            self.cap=self.db.execute('SELECT cap FROM authorization WHERE id=1').fetchone()[0]
+            if self.cap is not None:
+                imports=self.db.execute('SELECT COALESCE(SUM(reserved),0) FROM imports').fetchone()[0]
+                current=self.db.execute('SELECT COALESCE(SUM(reserved),0) FROM calls').fetchone()[0]
+                if self.cap-imports-current<reservation:raise ValueError('Shared authorization exhausted')
             self.db.execute('INSERT INTO calls VALUES (?,?,?,?,?,?,?,?)',(key,provider,model,reservation,'pending',None,None,0))
             self.db.commit()
             ledger_event(self,'reserved',key,provider=provider,model=model,status='pending')
