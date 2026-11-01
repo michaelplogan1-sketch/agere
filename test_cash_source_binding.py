@@ -38,6 +38,16 @@ class CashBinding(unittest.TestCase):
   c=call("SELECT SUM(json_extract(payload,'$.allocated_cents'))/100.0 AS dollars FROM {{cash_records}}",reads=['record'])
   c['result']['executed_query']="SELECT SUM(json_extract(payload,'$.allocated_cents'))/100.0 AS dollars FROM record WHERE stream='payer_cash_allocations'"
   self.assertEqual(self.check([c]),[])
+ def test_native_json_each_receipt_without_schema_columns_keeps_real_ancestry(self):
+  a=call("SELECT SUM(json_extract(payload,'$.allocated_cents'))/100.0 AS dollars FROM record WHERE stream='payer_cash_allocations'",reads=['record'])
+  b=call('SELECT dollars FROM agere_result_1','agere_result_2',dependencies=['agere_result_1'])
+  b['result']['source_contracts']['relations'].append({'name':'json_each','columns':[]})
+  self.assertEqual(self.check([a,b]),[])
+ def test_named_cash_and_adjudication_columns_can_coexist(self):
+  a=call('SELECT SUM(paid_cents)/100.0 AS net_payer_paid_dollars FROM payer_claim',reads=['payer_claim'],columns=['net_payer_paid_dollars'],row={'net_payer_paid_dollars':200})
+  b=call("SELECT SUM(json_extract(payload,'$.allocated_cents'))/100.0 AS net_payer_cash_dollars FROM record WHERE stream='payer_cash_allocations'",'agere_result_2',reads=['record'],columns=['net_payer_cash_dollars'],row={'net_payer_cash_dollars':100})
+  c=call('SELECT p.net_payer_paid_dollars,c.net_payer_cash_dollars FROM agere_result_1 p CROSS JOIN agere_result_2 c','agere_result_3',dependencies=['agere_result_1','agere_result_2'],columns=['net_payer_paid_dollars','net_payer_cash_dollars'],row={'net_payer_paid_dollars':200,'net_payer_cash_dollars':100})
+  self.assertEqual(self.check([a,b,c]),[])
  def test_literals_wrong_stream_paths_and_unrestricted_or_cannot_assert_cash(self):
   for sql,reads in [("SELECT 1 AS dollars,'payer_cash_allocations' AS stream,'$.allocated_cents' AS path",[]),
    ("SELECT SUM(json_extract(payload,'$.paid_cents'))/100.0 AS dollars FROM record WHERE stream='payer_cash_allocations'",['record']),

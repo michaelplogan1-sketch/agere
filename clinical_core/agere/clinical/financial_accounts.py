@@ -49,7 +49,8 @@ def cash_source_issues(question,answer,calls):
         if not call:continue
         out=call['result'];contracts=out.get('source_contracts')or{}
         for rel in contracts.get('relations')or[]:
-            physical.add(rel['name'].casefold());schema[rel['name']]={c:'UNKNOWN'for c in rel.get('columns')or[]}
+            physical.add(rel['name'].casefold())
+            if rel.get('columns'):schema[rel['name']]={c:'UNKNOWN'for c in rel['columns']}
         for definition in contracts.get('definitions')or[]:sources[definition['name']]=definition['query']
         if call.get('name')=='query_sql':
             sources[name]=out.get('declared_executed_query')or out.get('executed_query')or(call.get('input')or{}).get('sql')
@@ -116,7 +117,10 @@ def cash_source_issues(question,answer,calls):
         return not node.downstream and isinstance(expression,exp.Null)
     try:
         checked=[]
+        explicit_cash_columns=[name for name in by[root]['result'].get('columns')or[]if monetary.search(name)and cash_label(name)]
+        cash_rows=any(any(cash_label(v)for v in row.values())for row in by[root]['result'].get('rows')or[]if isinstance(row,dict))
         for name in by[root]['result'].get('columns')or[]:
+            if explicit_cash_columns and name not in explicit_cash_columns and not cash_rows:continue
             graph=lineage(name,sources[root],schema=schema,sources={k:v for k,v in sources.items()if k!=root},dialect='sqlite',trim_selects=False)
             leaves=[n for n in graph.walk()if not n.downstream and isinstance(n.expression,exp.Table)]
             count_alias=any(isinstance(n.expression.this if isinstance(n.expression,exp.Alias)else n.expression,exp.Count)for n in graph.walk())
@@ -126,7 +130,7 @@ def cash_source_issues(question,answer,calls):
             branches=[n for n in graph.walk()if isinstance(n.source,exp.Select)and any(
                 isinstance(e,exp.Alias)and isinstance(e.this,exp.Literal)and e.this.is_string and cash_label(e.this.this)for e in n.source.expressions)]
             if branches:checked.extend(unknown_value(n)or cash_value(n)for n in branches)
-            elif cash_label(name)or not any(any(cash_label(v)for v in row.values())for row in by[root]['result'].get('rows')or[]if isinstance(row,dict)):
+            elif cash_label(name)or not cash_rows:
                 checked.append(unknown_value(graph)or cash_value(graph))
         if not checked or all(checked):return []
     except (SqlglotError,ValueError,TypeError,KeyError,RecursionError,AttributeError):
@@ -142,7 +146,7 @@ def cash_input_contract():
         'native_source':'record/current_record expose stream, patient_id, event_date, available_date and payload. Filter the registered stream before extracting its amount field with json_extract(payload, ...).',
         'clocks':'Use received availability for the cutoff and the cash event date for payment/posting periods. payer_adjudication.paid_cents and paid_date remain adjudication facts, not a cash-receipt ledger.',
         'currency':'Follow the existing account/source currency binding; cents without a known currency cannot establish USD.',
-        'scope':'Preserve the requested/input population. Historical financial flows do not acquire a living-only filter from a clinical example.',
+        'scope':'Preserve the population resolved by the existing decision context and original question, including its registered living-patient default when applicable. This cash source map does not broaden or narrow that population.',
         'coverage':'Counted payer-claim adjudication and received provider-account cash can cover different claims and organizations. Their difference does not establish a receivable, settlement gap or savings.',
         'limits':LIMITS}
 
