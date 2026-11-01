@@ -23,9 +23,12 @@ def _product_strength_mentions(groups):
    pattern=r'(?<!\w)'+re.escape(alias)+r'(?:/[A-Za-z]+)?\s+\d+(?:\.\d+)?(?:/\d+(?:\.\d+)?)?\s*(?:mcg|mg|µg|g)\b(?:\s+(?:tablet|capsule|patch))?'
    for match in re.finditer(pattern,text,re.I):
     literal=match.group();key=literal.casefold()
-    entry=mentions.setdefault(key,{'text':literal,'dates':set()})
+    entry=mentions.setdefault(key,{'text':literal,'dates':set(),'polarities':set(),'temporalities':set()})
     entry['dates'].update(str(s['date'])for s in group.get('sources',[])if s.get('date'))
- return [{'text':m['text'],'dates':sorted(m['dates'])}for m in mentions.values()]
+    if group.get('polarity'):entry['polarities'].add(group['polarity'])
+    if group.get('temporality'):entry['temporalities'].add(group['temporality'])
+ return [{'text':m['text'],'dates':sorted(m['dates']),
+          'polarities':sorted(m['polarities']),'temporalities':sorted(m['temporalities'])}for m in mentions.values()]
 
 def _note_excerpt(quote,entity=None):
  """Copy relevant sentences plus adjacent qualifications, never paraphrase them.
@@ -192,11 +195,14 @@ def _render_clinical(context,output,cards,references):
   dose_history=[g for g in c.get('additional_documentary_accounts')or[]if g.get('relation')=='documented_dose']
   if dose_history:
    story.append(P('Product strengths mentioned in dated notes','head'))
-   story.append(P('These are verbatim mentions in unverified historical passages, not established daily doses or current use. Frequency, prescribing intent and present applicability require reconciliation. Complete passages remain in the interactive evidence review.','small'))
+   story.append(P('These are verbatim product-strength mentions in source passages, not established daily doses, current use, or reasons for non-use. Frequency, prescribing intent and present applicability require reconciliation. Complete passages remain in the interactive evidence review.','small'))
    mentions=_product_strength_mentions(dose_history)
    for mention in mentions:
-    dates=mention['dates'];dated=(D(dates[0])+' to '+D(dates[-1])if len(dates)>1 else D(dates[0]))if dates else'Date not recorded'
-    story.append(P(mention['text']+'  |  '+dated,'small'))
+    dates=mention['dates'];dated=('First mentioned '+D(dates[0])+'; last mentioned '+D(dates[-1])if len(dates)>1 else'Mentioned '+D(dates[0]))if dates else'Date not recorded'
+    qualifiers=[human(x)for x in mention['polarities']if x!='affirmed']
+    qualifiers.extend(human(x)for x in mention['temporalities']if x!='historical')
+    suffix='; source qualifications: '+', '.join(qualifiers)if qualifiers else''
+    story.append(P(mention['text']+'  |  '+dated+suffix,'small'))
    if not mentions:story.append(P('The returned historical passages do not expose a directly quotable named product-strength mention. Current dose remains unconfirmed.','small'))
   # One dated clinical account can support several fields. Print it once with
   # all its uses, rather than repeating the same whole note under each pillar.

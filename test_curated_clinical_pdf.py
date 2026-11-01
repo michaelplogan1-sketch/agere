@@ -78,14 +78,16 @@ class CuratedClinicalPDF(unittest.TestCase):
   c=self.context();row=c['answer']['table'][0];findings=json.loads(row['documentary_findings'])
   for day in ('2027-03-01','2028-04-02'):
    findings.append({'field':'dose_note','entity':{'kind':'medication_class','id':'medicines','aliases':['spironolactone']},
-    'relation':'documented_dose','polarity':'affirmed','temporality':'historical','subject':'patient',
-    'quote':'History: spironolactone 25 mg tablet was mentioned. Dose frequency is unknown. Decision: return for reassessment; no prescribing reason recorded.',
+    'relation':'documented_dose','polarity':'negated','temporality':'planned','subject':'patient',
+    'quote':'History: no spironolactone 25mg tablet was supplied. Dose frequency is unknown. Decision: return for reassessment; no prescribing reason recorded.',
     'record_id':'dose-'+day,'date':day})
   row['documentary_findings']=json.dumps(findings);before=copy.deepcopy(c)
   text,_,attachments,_=self.pdf(c)
   self.assertIn('Product strengths mentioned in dated notes',text)
-  self.assertIn('spironolactone 25 mg tablet',text);self.assertIn('1 Mar 2027 to 2 Apr 2028',text)
-  self.assertIn('not established daily doses or current use',text)
+  self.assertIn('spironolactone 25mg tablet',text)
+  self.assertIn('First mentioned 1 Mar 2027; last mentioned 2 Apr 2028',text)
+  self.assertIn('not established daily doses, current use, or reasons for non-use',text)
+  self.assertIn('source qualifications: negated, planned',text)
   self.assertNotIn('Decision: return for reassessment',text)
   self.assertIn('Carvedilol was held for dizziness.',text)
   self.assertEqual(c,before);self.assertFalse(attachments)
