@@ -18,7 +18,7 @@ CLINICAL_REVIEW_CONTRACT={
         'on_mra_pillar':'MRA picked-up-fill flag: 0,1 or null',
         'on_sglt2i_pillar':'SGLT2 inhibitor picked-up-fill flag: 0,1 or null',
         'pillars_missing':'Native names of pillars without a fill observation',
-        'recent_gdmt_fill_observations':'Intact object list: drug_name,drug_class,latest_fill_date_in_window,observed_fill_count',
+        'recent_gdmt_fill_observations':'Intact object list: drug_name (received medicine name, explicit null if unavailable),drug_class,latest_fill_date_in_window,observed_fill_count. Missing drug_name is an unbound presentation field, not evidence that the source lacks a name.',
         'fill_window_start_exclusive':'Native lower date bound',
         'fill_window_end_inclusive':'Native upper date bound',
         'gdmt_dose_rows':'Intact dose objects restricted by registered GDMT membership; include all received source/date fields',
@@ -28,6 +28,32 @@ CLINICAL_REVIEW_CONTRACT={
         'proposed_review_steps':'Native patient-specific review steps; proposals, not care execution',
         'all_medication_context':'Optional intact broader medication collection for provenance; not the requested GDMT dose subset'},
     'unknowns':'Unavailable facts remain null or explicitly unknown with source scope. Missing data and missing column bindings are different. Preserve all retained source objects and all original patients.'}
+
+
+def clinical_collection_issues(answer):
+    """Validate the existing optional presentation interface before paid review.
+
+    Only a producer using this declared field opts into the contract. Names are
+    source values, never inferred from a drug class; explicit null stays unknown.
+    Native JSON aggregates and composition lists have the same shape.
+    """
+    for row in answer.get('table')or[]:
+        if not isinstance(row,dict)or'recent_gdmt_fill_observations'not in row:continue
+        value=row['recent_gdmt_fill_observations']
+        if value is None:continue
+        try:value=json.loads(value)if isinstance(value,str)else value
+        except ValueError:value=False
+        if not isinstance(value,list)or any(not isinstance(f,dict)or
+            not isinstance(f.get('drug_class'),str)or not f['drug_class'].strip()or
+            'drug_name'not in f or(f['drug_name']is not None and not isinstance(f['drug_name'],str))for f in value):
+            return ['Bind recent_gdmt_fill_observations to intact objects with drug_class and drug_name from the received fill source (explicit null when unavailable). Missing keys are unbound fields; do not infer medicine names from classes.']
+    return []
+
+
+def fill_name(fill):
+    """Keep historical missing bindings distinct from received unknown names."""
+    if'drug_name'not in fill:return 'Medicine name not returned in this result'
+    return fill['drug_name']or'Medicine name unavailable in the received source'
 
 
 def capture_profiles(path, patient_ids, answer=None,graph=None):

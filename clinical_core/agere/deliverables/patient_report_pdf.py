@@ -153,7 +153,8 @@ def _render_clinical(context,output,cards,references):
   story.extend([P('Care team','head'),box([[[P('PRIMARY CARE','label'),P(team_text(c,'Primary care'))],[P('CARDIOLOGY','label'),P(team_text(c,'Cardiology'))]]],[270,270])])
   matrix=[[P('Medication pillar','label'),P('Fill observation and named medicines','label'),P('Dose information','label')]]
   for therapy in c['therapy']:
-   fills=therapy['fills'];fill_text=(therapy['observed_status']+('; medicine name not supplied'if therapy['fill_observed']else''))if not fills else'\n'.join(str(f['drug_name'])+'\nLatest fill '+D(f.get('latest_fill_date_in_window')or f.get('latest_fill_12m'))for f in fills)
+   from .patient_evidence import fill_name
+   fills=therapy['fills'];fill_text=(therapy['observed_status']+('; medicine name not supplied'if therapy['fill_observed']else''))if not fills else'\n'.join(fill_name(f)+'\nLatest fill '+D(f.get('latest_fill_date_in_window')or f.get('latest_fill_12m'))for f in fills)
    doses=[]
    for d in therapy['dose_observations']:
     v=d.get('documented_daily_mg');text=human(d.get('drug_key'))+': '+(N(v)+' mg/day recorded'if v is not None else'daily dose not established')

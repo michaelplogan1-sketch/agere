@@ -185,7 +185,7 @@ function renderOverview() {
     (s.selection_summary?'<p><small>'+num(s.selection_summary.selected)+' selected for work · '+num(s.selection_summary.not_selected)+' outside the work criterion · '+num(s.selection_summary.unknown)+' unresolved</small></p>':'')+
     (s.context_id&&s.context_id!==c.id?'<a class="btn" href="/action-center?context='+esc(s.context_id)+'">Open this output’s workspace ↗</a>':'')+
     ((!s.context_id||s.context_id===c.id)&&s.kind==='deliverable'&&s.deliverable_id?'<button class="btn" data-workflow-studio>Open saved deliverable ↗</button>':'')+
-    ((!s.context_id||s.context_id===c.id)&&s.kind==='deliverable'&&s.status==='blocked'&&s.deliverable_id?'<button class="btn" data-workflow-retry="'+i+'">Retry generation ↗</button>':'')+
+    ((!s.context_id||s.context_id===c.id)&&s.kind==='deliverable'&&s.status==='blocked'&&(s.deliverable_id||s.render_error)?'<button class="btn" data-workflow-retry="'+i+'">Retry generation ↗</button>':'')+
     (s.attempts?.length?'<p><small>'+s.attempts.length+' generation attempts retained</small></p>':'')+
     ((!s.context_id||s.context_id===c.id)&&s.kind==='simulation'&&s.status==='ready'?'<button class="btn" data-workflow-board>Run simulated agents ↗</button>':'')+
     (s.kind==='monitor'&&s.mode==='work'&&s.observations?.length?'<p><strong>'+num(s.observations.at(-1).measurement.completed)+' / '+num(s.observations.at(-1).measurement.total)+' simulated journeys complete</strong><br>Simulated agent journeys needing attention: '+num(s.observations.at(-1).measurement.needs_attention)+'</p>':'')+

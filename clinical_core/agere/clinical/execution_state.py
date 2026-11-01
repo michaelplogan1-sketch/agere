@@ -54,6 +54,21 @@ def draft_state(candidate):
         'table','sources','evidence_text','system_one_judgments','table_binding','investigation_review','verification','limitations')},
         'last_draft_digest':digest(candidate)}if isinstance(candidate,dict)else{'last_draft':candidate,'last_draft_digest':digest(candidate)}
     if not isinstance(candidate,dict):return state
+    # Present unchanged compiled fields in their editable native form. This is
+    # only prompt state: the compiler must resolve every binding again.
+    draft=state['last_draft'];draft.pop('computed_prose',None)
+    for proof in candidate.get('computed_prose')or[]:
+        if not isinstance(proof,dict)or not all(k in proof for k in ('field','template','bindings','rendered')):continue
+        field=proof['field'];target=draft;key=field
+        if field.startswith('facts.'):
+            target=draft.get('facts');key=field[len('facts.'):]
+            if not isinstance(target,dict):continue
+            # Never mutate the saved candidate through its nested facts object.
+            target=draft['facts']=dict(target)
+        elif field!='headline':continue
+        if target.get(key)==proof['rendered']:
+            target[key]={'template':proof['template'],'bindings':proof['bindings']}
+    state['last_draft_prose_instruction']='Return unchanged quantitative fields as these template/bindings objects verbatim. Any edited sentence needs a new template; every binding is rechecked against current executed cells.'
     binding=candidate.get('table_binding')
     if isinstance(binding,dict):
         state['last_draft_table_binding']={k:v for k,v in binding.items()if k!='query'}

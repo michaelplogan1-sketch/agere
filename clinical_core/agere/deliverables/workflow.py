@@ -353,17 +353,26 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None, sour
                                                allow_live=allow_live, send=send)
                         reason = ('Frontier-generated view saved from this answer; structural evidence checks passed.' if d['status'] == 'delivered'
                                   else d.get('failure') or 'Generated view failed evidence/number checks. Open the studio to review the failure and costs.')
-                    elif generation == 'saved_report':
-                        from .saved_report import create
-                        d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title'],
-                            **({'retained_inspection':True} if source_review else {})})
-                        reason = ('Source-evidence inspection report saved with suspended readings and unresolved items explicit; no clinical acceptance or new model call.' if source_review else
-                                  'Reusable report saved from the exact answer, including analytical status and uncertainty; no model call for rendering.')
                     else:
-                        from .mock_views import create
-                        d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title']})
-                        reason = ('Partial evidence view saved with unresolved requirements; patient work remains blocked.'
-                                  if incomplete else 'Local template saved from this exact answer; no frontier generation.')
+                        if generation == 'saved_report':
+                            from .saved_report import create
+                        else:
+                            from .mock_views import create
+                        # This boundary surrounds pure local rendering only.
+                        # Provider exceptions and their accounting never enter it.
+                        try:
+                            d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title'],
+                                **({'retained_inspection':True} if source_review else {})})
+                        except Exception as exc:
+                            if isinstance(exc,(ValueError,OSError,sqlite3.Error)):raise
+                            s.update(status='blocked',reason='Local report rendering failed; the saved answer is retained. Retry this report after repair.',
+                                render_error={'type':type(exc).__name__,'message':str(exc),'context_id':key},
+                                costs={'known_api_estimate_usd':0,'api_cost_known':True},new_paid_api_calls=0)
+                            steps.append(s);continue
+                        reason = ('Source-evidence inspection report saved with suspended readings and unresolved items explicit; no clinical acceptance or new model call.' if source_review else
+                                  'Reusable report saved from the exact answer, including analytical status and uncertainty; no model call for rendering.' if generation=='saved_report' else
+                                  'Partial evidence view saved with unresolved requirements; patient work remains blocked.' if incomplete else
+                                  'Local template saved from this exact answer; no frontier generation.')
                     if d.get('provider_failure'):
                         s['provider_failure']=d['provider_failure']
                         subscription_stopped=d['provider_failure'].get('kind')=='rate_limit' and d['provider_failure'].get('transport')=='subscription'
@@ -455,29 +464,46 @@ def retry_deliverable(path, request, *, allow_live=False, send=None):
         raise ValueError('Choose a saved deliverable and its next attempt number')
     with _lock:
         key, index = request['context_id'], request['index']
-        A.load(path, key, current=True)
         record = read(path, key)
+        A.load(path, key, current=True,source_review=bool(record.get('source_review_identity')))
         if record.get('program_links'):
             raise ValueError('Open the producing output workspace to retry its deliverable')
         steps = record['steps']
         if not 0 <= index < len(steps):
             raise ValueError('Saved deliverable not found')
         step = steps[index]
-        if step['kind'] != 'deliverable' or step.get('status') != 'blocked' or not step.get('deliverable_id'):
+        local_error=bool(step.get('render_error'))and step.get('generation')in('saved_report','local_template')
+        if step['kind'] != 'deliverable' or step.get('status') != 'blocked' or not(step.get('deliverable_id')or local_error):
             raise ValueError('Only a failed saved deliverable can be retried')
         attempts = copy.deepcopy(step.get('attempts') or [{k: step.get(k) for k in
-            ('deliverable_id', 'status', 'reason', 'costs', 'new_paid_api_calls')}])
+            ('deliverable_id', 'status', 'reason', 'costs', 'new_paid_api_calls','render_error')}])
         if request['attempt'] != len(attempts) + 1:
             raise ValueError('The attempt changed. Reload before retrying.')
         from ..clinical.request_plan import quote_text
         brief = quote_text(step['quote']) if step.get('quote') else step['title']
-        d = A.compose_frontier(path, {'context_id': key, 'request': brief +
-            f'\nExplicit retry attempt {request["attempt"]} for this saved workflow. Preserve its exact evidence and scope.'},
-            allow_live=allow_live, send=send)
+        if local_error:
+            if step['generation']=='saved_report':
+                from .saved_report import create
+            else:
+                from .mock_views import create
+            try:
+                d=create(path,{'context_id':key,'template':step['template'],'request':step['title'],
+                    **({'retained_inspection':True}if record.get('source_review_identity')else{})})
+            except Exception as exc:
+                if isinstance(exc,(ValueError,OSError,sqlite3.Error)):raise
+                d={'id':None,'status':'blocked','failure':'Local report rendering failed; saved answer retained.',
+                    'render_error':{'type':type(exc).__name__,'message':str(exc),'context_id':key},
+                    'costs':{'known_api_estimate_usd':0,'api_cost_known':True},'new_paid_api_calls':0}
+        else:
+            d = A.compose_frontier(path, {'context_id': key, 'request': brief +
+                f'\nExplicit retry attempt {request["attempt"]} for this saved workflow. Preserve its exact evidence and scope.'},
+                allow_live=allow_live, send=send)
         latest = {'deliverable_id': d['id'], 'status': 'ready' if d['status'] == 'delivered' else 'blocked',
                   'reason': 'View saved after retry; earlier attempts and costs are retained.' if d['status'] == 'delivered'
                             else d.get('failure') or 'Generated view failed evidence checks.',
                   'costs': d['costs'], 'new_paid_api_calls': d.get('new_paid_api_calls', 0), 'at': A.now()}
+        if d.get('render_error'):latest['render_error']=d['render_error']
+        else:step.pop('render_error',None)
         attempts.append(latest)
         known = sum((a.get('costs') or {}).get('known_api_estimate_usd', (a.get('costs') or {}).get('total_usd') or 0) for a in attempts)
         complete = all((a.get('costs') or {}).get('api_cost_known', True) for a in attempts)
