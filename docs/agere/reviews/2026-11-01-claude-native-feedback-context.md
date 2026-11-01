@@ -54,3 +54,10 @@ The citation-grounding hypothesis was addressed with an executable regression: o
 The non-native pending-dependency projection is restored exactly. The execution-state version increase intentionally identifies the changed actor protocol; the three frozen source reader/model-policy cache producer files remain identical to fa28466. Error handling already catches representation/provider errors and retains the last partial draft, as the original ordinary failure demonstrated; the review's lost-answer concern is not an observed result. Strict JSON-native feedback remains required.
 
 Digest/serialization work and retained review memory remain proportional to actual feedback and are not claimed free or bounded by an assistant-selected cap. The measured correction covers packet-bearing source feedback; arbitrary oversized unstructured instructions remain outside this proof. No new source campaign, model weights, full-question bottle, primary promotion or complete-MVP/clinical-quality claim is made. The hardened follow-through was owner-tested; it was not independently rereviewed.
+
+
+## Actual owned-recovery follow-through
+
+The first live continuation returned no candidate after39.072s/2newattempts. The initial actor request still failed PromptTooLong: the saved server answer carried5.570MB of verifier-derived limitation strings into recovery's last draft. The earlier source-feedback projection was not the failing body in this distinct caller. The original failed receipt and attempts remain unchanged.
+
+The same exact-prose/embedded-JSON reference contract now projects those limitations at their original native JSON paths. The actual18.964MB retained feedback projects to15.182KB before the native tool catalog; every limitation and all4embedded JSON segments roundtrip exactly through production SQL in0.670s with0providers. Unfinished recovery feedback also propagates the same unverified authority, so it cannot become accepted source evidence.156connected regressions pass. This corrects the measured recovery representation; live completion remains separate. No prefix, word cap, source-row removal or clinical threshold change.

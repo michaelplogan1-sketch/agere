@@ -99,14 +99,29 @@ def recovery_context(replay,tools):
             raise ValueError('Recovery feedback native view changed')
     else:
         existing=tools.retain_result({'columns':columns,'rows':[dict(zip(columns,rows[0]))],
-            'truncated':False,'kind':'unverified_recovery_feedback','feedback_digest':native_digest})
+            'truncated':False,'kind':'unverified_recovery_feedback','feedback_digest':native_digest,
+            'incomplete_dependencies':[{'authority':'unverified_review_feedback',
+                'reason':'Retained unfinished feedback/draft is operational state, not source evidence for an answer.'}]})
     name=existing['result_view']
     reference={'result_view':name,'json_column':'feedback_json','feedback_digest':native_digest,
         'instruction':'Full original feedback and draft remain queryable with query_sql/json_extract. Draft values are unverified; bind any final answer to current executed results and complete verification.'}
-    def project(value):
-        if isinstance(value,list):return[project(v)for v in value]
+    def project(value,path='$'):
+        if isinstance(value,list):return[project(v,path+'['+str(i)+']')for i,v in enumerate(value)]
         if not isinstance(value,dict):return value
-        return{k:({'native_feedback':reference,**draft_state(v)}if k=='unverified_retained_draft'else project(v))for k,v in value.items()}
+        out={}
+        for key,item in value.items():
+            child=path+'.'+json.dumps(key)
+            if key=='unverified_retained_draft':
+                draft=draft_state(item)
+                # Finished server responses can carry complete verifier JSON
+                # inside limitation strings. Preserve the prose and retain all
+                # embedded structured data at its exact original native path.
+                if isinstance(item,dict) and isinstance(item.get('limitations'),list):
+                    draft['last_draft']['limitations']=[review_guidance(text,json_path=child+'."limitations"['+str(i)+']')
+                        for i,text in enumerate(item['limitations'])]
+                out[key]={'native_feedback':reference,**draft}
+            else:out[key]=project(item,child)
+        return out
     meta['downstream_review_feedback']=project(feedback)
     meta['downstream_review_native']=reference
     return meta
@@ -152,7 +167,7 @@ def review_reference(feedback,tools):
             'Retain unaffected native work and uncertainty; verify any final answer against the current source receipts.'}
 
 
-def review_guidance(text):
+def review_guidance(text,*,json_path='$.feedback'):
     """Preserve all repair prose; reference only embedded JSON data literals.
 
     References include exact character offsets into the retained original text.
@@ -165,7 +180,7 @@ def review_guidance(text):
         if text[index] not in '[{':index+=1;continue
         try:value,end=decoder.raw_decode(text,index)
         except ValueError:index+=1;continue
-        marker='[Exact JSON in native_feedback: substr(json_extract(feedback_json,\'$.feedback\'),'+str(index+1)+','+str(end-index)+')]'
+        marker="[Exact JSON in native_feedback: substr(json_extract(feedback_json,'"+json_path.replace("'","''")+"'),"+str(index+1)+','+str(end-index)+')]'
         if isinstance(value,(list,dict)) and len(marker)<end-index:
             parts.extend([text[cursor:index],marker]);cursor=end
         index=end

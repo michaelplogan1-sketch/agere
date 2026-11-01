@@ -174,6 +174,30 @@ class ProductionFeedbackQuery(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'incomplete|Incomplete'):
             B.materialize_table({'table_from_tool': out['result_view']}, [{'result': out}])
 
+    def test_recovered_limitation_feedback_keeps_all_prose_and_exact_native_paths(self):
+        import re
+        limitation = 'Preserve uncertain date. ' + json.dumps([{'field': 'date', 'records': ['r1'] * 20000}]) + ' Preserve the full cohort.'
+        original = [{'unverified_retained_draft': {'status': 'partial', 'missing': ['Date unresolved'],
+                                                  'limitations': [limitation]}}]
+        before = copy.deepcopy(original)
+        projected = E.recovery_context({'downstream_review_feedback': original}, self.tools)
+        ref = projected['downstream_review_native']
+        draft = projected['downstream_review_feedback'][0]['unverified_retained_draft']['last_draft']
+        shown = draft['limitations'][0]
+        self.assertTrue(shown.startswith('Preserve uncertain date. '))
+        self.assertTrue(shown.endswith(' Preserve the full cohort.'))
+        pattern = re.compile(r"\[Exact JSON in native_feedback: (substr\(json_extract\(feedback_json,'[^']*'\),[0-9]+,[0-9]+\))\]")
+
+        def restore(match):
+            out = self.query('SELECT ' + match.group(1) + ' AS original_segment FROM ' + ref['result_view'])
+            self.assertNotIn('error', out)
+            self.assertTrue(out['incomplete_dependencies'])
+            return out['rows'][0]['original_segment']
+
+        self.assertEqual(pattern.sub(restore, shown), limitation)
+        self.assertLess(len(json.dumps(projected)), 15000)
+        self.assertEqual(original, before)
+
 
 if __name__ == '__main__':
     unittest.main()
