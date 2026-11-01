@@ -1,6 +1,7 @@
 """Native JSON payloads are data, never dependency identifiers."""
 import json
 import unittest
+from unittest.mock import patch
 from clinical_core.agere.clinical import plan_fence as P
 
 
@@ -65,6 +66,25 @@ class DependencyLiteralProjection(unittest.TestCase):
         self.assertEqual(P._dependency_sql(sql), sql)
         with self.assertRaises(sqlglot.errors.TokenError):
             P._parsed_dependencies((sql,))
+
+    def test_nested_and_quoted_generated_sql_matches_the_original_parser(self):
+        payloads = [json.dumps([{'text': 'FROM ghost JOIN phantom; \'quoted\' " [ ]'}]),
+                    json.dumps([{'text': '/* json_each( -- */'}, {'value': 7}]), '[]']
+        templates = [
+            'SELECT p."patient_id",j.value FROM "patient" p JOIN json_each({data}) j ON 1=1',
+            'WITH x AS (SELECT p.patient_id FROM patient p JOIN json_tree({data} || p.payload) j ON 1=1) SELECT * FROM x',
+            'SELECT p.patient_id FROM patient p WHERE EXISTS (SELECT 1 FROM json_each(/* literal */ {data}) j)',
+            'SELECT p.[patient_id] FROM [patient] p JOIN json_each({data},\'$\') j ON 1=1',
+        ]
+        for payload in payloads:
+            for template in templates:
+                sql = template.format(data="'" + payload.replace("'", "''") + "'")
+                with self.subTest(sql=sql):
+                    P._parsed_dependencies.cache_clear()
+                    with patch.object(P, '_dependency_sql', lambda text: text):
+                        original = P._parsed_dependencies((sql,))
+                    P._parsed_dependencies.cache_clear()
+                    self.assertEqual(P._parsed_dependencies((sql,)), original)
 
 
 if __name__ == '__main__':

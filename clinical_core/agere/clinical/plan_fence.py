@@ -28,7 +28,7 @@ _QUALIFIED = re.compile(r'\b([a-z_][a-z0-9_]*)\.([a-z_][a-z0-9_]*)\b')
 _CTE = re.compile(r'(?:\bwith\b|,)\s*([A-Za-z_][A-Za-z0-9_]*)\s+as\s*\(', re.I)
 
 # Lex quoted identifiers/comments before looking inside their contents. Only
-# a literal first argument to SQLite's JSON table functions is replaceable for
+# a leading literal in the first argument of SQLite's JSON table functions is replaceable for
 # dependency parsing; quoted table names and all executable SQL stay intact.
 _DEPENDENCY_TOKENS = re.compile(
     r"(?P<json>\bjson_(?:each|tree)\s*\(\s*)"

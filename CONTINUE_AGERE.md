@@ -1,10 +1,10 @@
-# Current Agere checkpoint - 2026-11-01T13:17:40.316921+00:00
+# Current Agere checkpoint - 2026-11-01T22:53:39.283952+00:00
 
-G3 ACTIVE; current scoped native-feedback/report delivery sealed. No providerjob; owned8890serving. SchedulerPAUSED.
+G3 ACTIVE; workspace-load correction sealed, current8890serving, no providerjob. SchedulerPAUSED.
 
-Exact next: G3:7237738 current owned continuation/report sealed:331.979s,123newattempts,$0.611963216knownAPI-equivalent+1unpriced;8successfulactorprompts70-98KB, no inputcontextfailure. All57patients/64fills/17doses/detailedcare/91pagePDF current; sourceunknownfor57 remains. Actualcurrentfinance native12rows reconcile rawclaims/cash;41.465s/4typedattempts,$0.00723849known+1unpriced, sourceverdictunknown, no reusepromotion. Current8890PID76806/session50992 servesverifiedcontextANS-d464446957cdae1a8a7c2d64/reportDLV-7F3156EBE028. No activeprovider/training/buildjob. Next profile measured59.170MB currentcontext load39.392sfirst/16.641srepeat and760.836MBpersistedcontext before choosing one existingread/serialization correction; preserve complete server-owned receipts, current source/version/uncertainty and allattempts. Do not assume file size is the entire latency cause. Then source-verifier/qualifiedlearning evidence only against named failures; no repeatedcohort campaign or indiscriminate training. G5independentlabels/outcomes/reviewereconomics and Perplexity0credit remain; currentmodel/reuseunpromoted. Prior51installedrelease remains recovery; alltenareasretained;schedulerPAUSED; primary/main untouched.
+Exact next: G3:417c82c dependency parsing correction sealed: actualclinical111.77MB SQL probe reduces to54.995KB forsyntaxonly, table/column sets exact on24clinical+22financialqueries; completecontext/source/policy unchanged. Matchedload11.983s to4.770s; actualAPIcontext11.740/11.570s versus39.392/16.641s; PDF11.028s/HTML9.817s, exactfiles,0productprovider calls.78checks+narrowClaude review pass. Current8890PID83789/session58059servesexisting57patientcontext/report unchanged. Next repair actualfinancial unsupported prose only: no-reconciliation does not establish the difference isnotreceivable; move unclassified difference tolimitation, bind claim count wording toactual counts_in_metrics predicate. Keepall12rawreconciledrows unchanged and originalquestion/cohort/date/source. Use existing owned continuation and actualtypedreview; promote currentexecutionreuse onlyifactualsupportconfirmed+rawbaselineexact+freshreplay/fullworkflowpasses. No source-readercampaign, thresholdrelaxation orclinicaltruthbyvote. G5independentlabels/outcomes/economics and Perplexity0credit remain; alltenareasretained;schedulerPAUSED.
 
-Last sealed receipt: artifacts/agere-native-review-feedback-2026-11-01/delivery-receipt.json
+Last sealed receipt: artifacts/agere-workspace-load-performance-2026-11-01/delivery-receipt.json
 
 ## Earlier checkpoint (superseded)
 
