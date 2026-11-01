@@ -10,8 +10,8 @@ stops/barriers). system_one.decide reads it (Jev first, Perplexity when Jev is u
   count      patients with a selected label (count, or share over evaluated patients)
   conflict   per-document labels; a patient conflicts when documents both affirm and negate
   trajectory per-document labels ordered by date; the changes over time
-Every non-unknown label cites the evidence ids System One chose (or the top passage). Patient count per call is bounded
-(AGERE_ATOMIC_MAX_PATIENTS, default 25); a capped run is status 'partial' and says so in the value and limitations.
+Every non-unknown label cites the evidence ids System One chose (or the top passage). There is no default population
+cap. An explicit deployment limit (AGERE_ATOMIC_MAX_PATIENTS) remains partial and is reported in the result.
 
 Planner order (no Claude needed): deterministic patterns, then the local Qwen typed interpreter (AGERE_LOCAL_TYPED), then
 hosted Claude only with stack.allow_live (ProviderUnavailable / no credits -> continue without it).
@@ -131,6 +131,38 @@ def population_concept(question):
 def requested(question):
     from .analysis_graph import requested_shape
     return requested_shape(question)
+
+
+def output_contract_issue(question):
+    """Closed-choice labels/counts/shares cannot supply arbitrary aggregates.
+
+    Use the shared requested-shape parser, after removing this operator's own
+    patient/document row grain. The original request still goes unchanged to
+    scope, literal and source checks. An abstention leaves native calculations
+    and the other existing proposers available; it never drops a requirement.
+    """
+    from .answer_shape import requested as answer_requested,shape_wording,_breakdown_by,_VALUE_ANYWHERE,_family
+    wording=shape_wording(question)
+    grain=r'(?:patients?|members?|people|persons?|individuals?|documents?|notes?)'
+    reduced=re.sub(r'\b(?:one row\s+(?:per|for each)|for each|for every|per|by)\s+(?:the\s+|our\s+)?'+grain+r'\b',' ',wording,flags=re.I)
+    shape=answer_requested(reduced)
+    if shape['cue']=='breakdown'or _breakdown_by(reduced):
+        return 'Atomic closed-choice output has patient/document rows and no requested grouping computation; use a native grouped calculation.'
+    categorical_status=bool(re.search(r'\bstatus(?:es)?\b',wording,re.I)and
+        re.search(r'\b(?:each|every|per)\s+(?:the\s+|our\s+)?'+grain+r'\b',wording,re.I))
+    count_total=False
+    # Primary shape alone can hide a secondary measure or an open-prefixed
+    # comparison. Reuse the same measure recognizer on the complete wording.
+    for match in _VALUE_ANYWHERE.finditer(reduced):
+        word=match.group().lower();family=_family(word)
+        if family in('share','percentage'):continue
+        if word=='total'and re.match(r'\s+(?:(?:number|count)\s+of\s+)?'+grain+r'\b',reduced[match.end():],re.I):
+            count_total=True;continue
+        if family=='rate'and(categorical_status or LEAD.search(wording)):continue
+        return 'Atomic closed-choice output has no computation for the requested '+family+' measure; use a native calculation.'
+    if shape['shape']=='value'and shape['cue']not in('share','percentage')and not categorical_status and not count_total:
+        return 'Atomic closed-choice output can count selected patients or compute their share; it cannot compute the requested '+str(shape['cue'])+' value.'
+    return None
 
 
 def atom_text(question, named):
@@ -256,6 +288,7 @@ def plan(stack, question, population=None, *, maximum_patients=None, ledger=None
     """-> {'subject_question','options','sub_questions','scope':{'patients','cohort','sources','window'},'aggregation','returns',
     'unit','select_labels','maximum_patients','planner','planner_receipt'} or None."""
     from .evidence_proposers import window
+    if output_contract_issue(question):return None
     core, planner, receipt = deterministic(stack, question, population), 'deterministic', None
     if core is None:
         try: core, planner = local_core(stack, question, population), 'qwen_typed_interpreter'
@@ -708,7 +741,7 @@ def graph_of(question, plan_):
     return base(question, [population, node])
 
 
-def tier(stack, question, population=None, *, maximum_patients=None, decide=None, ledger=None, early_check=None):
+def tier(stack, question, population=None, *, maximum_patients=None, decide=None, ledger=None, early_check=None,plan_review=None):
     """Ladder-rung contract: (graph, receipt) or None. System One is called here once (memoized), so the receipt carries
     the exact new calls and cost and stack.run_graph replays the same decisions free."""
     if not getattr(stack, 'allow_live', False) and os.environ.get('AGERE_ATOMIC_OFFLINE') != 'on': return None
@@ -723,6 +756,7 @@ def tier(stack, question, population=None, *, maximum_patients=None, decide=None
     from .analysis_graph import validate as validate_graph
     validate_graph(graph, as_of)
     if early_check: early_check(graph)  # the cascade's literal check on the plan, before the first paid decision
+    if plan_review:plan_review(graph,p['planner'])
     pre = execute(stack, p, decide=decide)['report']
     s1 = pre['system_one']
     if pre['cells'] and s1['errors'] == len(pre['cells']): return None  # System One unavailable for every decision: next proposer

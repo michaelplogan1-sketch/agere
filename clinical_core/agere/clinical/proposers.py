@@ -1334,21 +1334,28 @@ class Cascade:
         from .evidence_proposers import review_tier
         return self.graph('evidence_review', review_tier(self.stack, self.question, self.population))
     def tier_atomic_system_one(self):
-        from .atomic_questions import tier
+        from .atomic_questions import tier,output_contract_issue
         from . import system_one_gate
+        issue=output_contract_issue(self.question)
+        if issue:return self.reject('atomic_system_one',[issue])
         def early(graph):  # System One is paid per patient: a plan the literal check will reject is declined before any call
             gaps = self.gaps(executable_text([n.get('parameters') for n in graph.get('nodes', [])]))
             if gaps: raise QuestionNotUnderstood('literal pre-check before any System One call: the plan drops ' + '; '.join(gaps)[:300])
+        def plan_review(graph,planner):
             try:
                 review=system_one_gate.check_plan(self.question, graph, stack=self.stack, ledger=self.ledger)
                 self.spend(review['calls'],review['cost_usd'])
                 self.note('atomic_system_one','plan_coverage',json.dumps(review),self.started)
             except Exception as exc:
                 self.note('atomic_system_one','plan_coverage_unavailable',type(exc).__name__,self.started)
-                return  # provider failure must not remove execution/reasoning alternatives
+                if planner!='deterministic':
+                    raise QuestionNotUnderstood('Atomic plan coverage unavailable; continue with another existing proposer') from exc
+                return
             if review['reject']:
                 raise QuestionNotUnderstood('System One plan coverage: '+review['label']+'; continue investigation of the complete request')
-        return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger, early_check=early))
+            if planner!='deterministic'and(review.get('label')!='covers_all'or not review.get('provider')):
+                raise QuestionNotUnderstood('Atomic plan coverage is not confirmed; continue with another existing proposer')
+        return self.graph('atomic_system_one', tier(self.stack, self.question, self.population, ledger=self.ledger, early_check=early,plan_review=plan_review))
     def tier_hcc_suspecting(self):
         from .hcc_suspecting import tier
         return self.graph('hcc_suspecting', tier(self.stack, self.question, self.population))
