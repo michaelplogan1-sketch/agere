@@ -1,7 +1,7 @@
 {
   "schema": "agere-current-engineering-acceptance/1",
   "status": "passed",
-  "recorded_at": "2026-11-02T16:00:10.181155+00:00",
+  "recorded_at": "2026-11-02T20:17:55.409061+00:00",
   "engineering_passed": 9,
   "engineering_total": 9,
   "scope_areas": [
@@ -21,38 +21,50 @@
   "production_authority": false,
   "full_mvp_acceptance": false,
   "new_provider_calls": 0,
-  "scorecard_sha256": "4fa22778f27ca0db118e2ec817900405019273f098a374bec4ff4991e70cc3f8",
-  "delivery_receipt": "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json",
-  "product_commit": "e400bb5a682ae2baa40983af0be3deb35ad74574",
+  "scorecard_sha256": "9a003678bbaea5092a0aa9d6a29e041a6e2087306e32b233e10caa2e5a66e554",
+  "delivery_receipt": "artifacts/agere-current-release-decision-2026-11-02/delivery-receipt.json",
+  "product_commit": "aec778d4eff79583405864744119f663f2f57ff8",
   "current_gate": "G3",
   "clinical_answer_status": "partial",
   "clinical_qualification": false,
   "model_qualification": false,
   "remaining": [
-    "Original 57-patient clinical answer remains partial/unverified; independent source-family and clinical-role reference evidence is missing.",
-    "No matched current whole-clinical first-run latency improvement or authentic complete compute/reviewer/billing economics has been established.",
-    "Selected outcome targets are single-class; independent model/outcome qualification and relevant fair baselines remain open.",
-    "Perplexity fallback quota dependency remains; customer connections and deployment authority are separate. OWASP/HHS work is explicitly deferred."
+    "The original57patient clinical answer remains partial/unverified; independent source-family/clinical-role/model/outcome qualification remains open.508accepted field readings are machine judgments, not clinical adjudication.",
+    "Measured patient workspace/PDF HTTP reads18.863s/17.248s need engineering improvement; no matched whole-clinical cold/warm improvement or authentic all-in economics is established.",
+    "Selected outcome targets remain single-class; Perplexity failed/pending attempts retain protection. Customer connections/deployment authority remain separate. OWASP/HHS remains deferred."
   ],
   "browser_transport": {
-    "previous_wire_bytes": 363696646,
-    "current_original_context_wire_bytes": 1514344,
-    "wire_reduction_pct": 99.58362442528546,
-    "all_patient_answer_profile_source_and_work_values_exact": true,
-    "saved_context_byte_exact": true,
-    "gzip_q0_lossless_identity_verified": true,
-    "installed_context_with_57_review_items_wire_bytes": 11735190,
-    "no_patient_document_token_or_workflow_cap": true,
-    "original_context_reopen_seconds": 10.761474999948405,
-    "not_a_whole_clinical_workflow_speedup_claim": true
+    "historical_e400bb5": {
+      "previous_wire_bytes": 363696646,
+      "current_original_context_wire_bytes": 1514344,
+      "wire_reduction_pct": 99.58362442528546,
+      "all_patient_answer_profile_source_and_work_values_exact": true,
+      "saved_context_byte_exact": true,
+      "gzip_q0_lossless_identity_verified": true,
+      "installed_context_with_57_review_items_wire_bytes": 11735190,
+      "no_patient_document_token_or_workflow_cap": true,
+      "original_context_reopen_seconds": 10.761474999948405,
+      "not_a_whole_clinical_workflow_speedup_claim": true
+    },
+    "current_scoped_HTTP": {
+      "patient_context_wire_bytes": 1788193,
+      "patient_context_seconds": 18.863472625031136,
+      "patient_PDF_seconds": 17.24761929200031,
+      "patient_PDF_byte_exact": true,
+      "all57patients_and1497_field_states_visible": true,
+      "matched_performance_improvement_claimed": false
+    }
   },
   "latest_scoped_followup": {
-    "product_commit": "f4cea430d6c6d4b57e7633f91ad28f03e6d100bd",
-    "receipt": "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json",
-    "targeted_checks": 99,
-    "full_matrix_reassessed": false,
+    "product_commit": "aec778d4eff79583405864744119f663f2f57ff8",
+    "receipt": "artifacts/agere-field-review-disposition-2026-11-02/delivery-receipt.json",
+    "targeted_checks": 175,
+    "full_matrix_reassessed": true,
+    "basis": "Explicit compatibility and fresh affected checks; historical execution not relabeled fresh.",
     "clinical_status": "partial",
     "financial_status": "answered",
     "full_mvp_acceptance": false
-  }
+  },
+  "decision_basis": "Fresh affected behavior and six real API reopens plus exact scoped historical source/module/recovery applicability. No new archive installation or recovery drill.",
+  "fresh_current_archive_or_recovery_execution_claimed": false
 }

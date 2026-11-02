@@ -1,8 +1,8 @@
 # Current synthetic engineering release — November 2
 
-The `e400bb5` candidate passed **nine of nine engineering requirements**, covering all ten acceptance areas. The latest scoped routing follow-up `f4cea43` now runs on owned localhost8890; its current native/API checks are described in [the routing diagnosis](CLINICAL_ROUTING_DIAGNOSIS_2026-11-02.md). The full matrix and executable recovery below remain pinned to e400bb5. The existing private integration branch and draft PR remain the delivery surface; main and primary 8885 are unchanged.
+Current product `aec778d` passes the finite nine-of-nine engineering applicability decision across all ten areas, combining fresh affected/source-work/API checks with explicit unchanged implementation and recovery scope. [Current decision and limitations](CURRENT_ENGINEERING_DECISION_2026-11-02.md) records the evidence. Full MVP and independent clinical/model qualification remain false; current archive installation and recovery were not rerun.
 
-This is an engineering acceptance result. Full MVP qualification remains false: the original 57-patient clinical answer is partial, its source interpretations remain unverified, and independent model/clinical/outcome qualification and authentic total economics are missing. The earlier 20m26s ordinary clinical result is not replaced by a claimed whole-workflow speedup. Perplexity fallback remains unavailable in the retained quota receipts. OWASP/HHS work is deferred.
+The following records the earlier `e400bb5` full execution, archive and recovery. Its historical measurements remain unchanged.
 
 ## What changed
 
