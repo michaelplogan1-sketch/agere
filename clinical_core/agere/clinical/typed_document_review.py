@@ -10,7 +10,10 @@ import threading
 import os
 import time
 import sqlite3
+from pathlib import Path
 from contextlib import closing
+from contextvars import copy_context
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, CancelledError
 from ...contracts import digest
 from ..request_lineage import component
 
@@ -378,6 +381,102 @@ def prior_source_candidates(path,documents,questions,*,patient_id=None):
     return selected
 
 
+def _run_source_batches(batches, ledger, run):
+    """Overlap disjoint source work without sharing a ledger connection.
+
+    A complete source can occur in several transport batches. Those batches
+    retain their original order, so a later batch sees the earlier source-field
+    cache and cannot create a duplicate paid request. Independent sources can
+    proceed while it waits. Results always return in the original batch order.
+    """
+    workers = int(os.environ.get('AGERE_DOCUMENT_BATCH_WORKERS', '3'))
+    if workers < 1:
+        raise ValueError('Document batch workers must be positive')
+    from ..gateway import BudgetLedger
+    # A caller-supplied wrapper/subclass may own additional ledger behavior.
+    # Keep that caller on its original connection and execution contract.
+    if (len(batches) < 2 or workers == 1 or type(ledger) is not BudgetLedger or
+            not Path(ledger.path).is_file() or set(vars(ledger)) != {'path', 'db', 'cap'}):
+        return [run(batch, ledger) for batch in batches]
+    sources = [{(doc.get('record_id'), doc.get('date')) for _, _, _, doc in batch}
+               for batch in batches]
+    if any(not keys or any(not isinstance(key[0], str) or not key[0] for key in keys) for keys in sources):
+        return [run(batch, ledger) for batch in batches]
+    workers = min(workers, len(batches))
+    results = [None] * len(batches)
+    dispatch_lock = threading.Lock()
+    failed = threading.Event()
+
+    def invoke(index):
+        worker = None
+        error = None
+        try:
+            worker = BudgetLedger(ledger.path)
+            return run(batches[index], worker)
+        except BaseException as exc:
+            error = exc
+            with dispatch_lock:
+                failed.set()
+            raise
+        finally:
+            if worker is not None:
+                try:
+                    worker.close()
+                except BaseException as close_error:
+                    with dispatch_lock:
+                        failed.set()
+                    if error is None:
+                        raise
+                    error.add_note('Source batch ledger close: '+type(close_error).__name__+': '+str(close_error))
+
+    waiting = list(range(len(batches)))
+    pending = {}
+    active_sources = set()
+    with component('typed_document_batch_schedule', batches=len(batches), workers=workers) as metrics:
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix='agere-document-batch') as pool:
+            try:
+                while waiting or pending:
+                    earlier_sources = set()
+                    for index in list(waiting):
+                        if len(pending) >= workers:
+                            break
+                        # A blocked earlier source also owns its position ahead
+                        # of every later overlapping batch, even before dispatch.
+                        if sources[index].intersection(active_sources | earlier_sources):
+                            earlier_sources.update(sources[index])
+                            continue
+                        with dispatch_lock:
+                            if failed.is_set():
+                                break
+                            future = pool.submit(copy_context().run, invoke, index)
+                        pending[future] = index
+                        waiting.remove(index)
+                        active_sources.update(sources[index])
+                    metrics['peak_in_flight'] = max(metrics.get('peak_in_flight', 0), len(pending))
+                    done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                    # Inspect every completed failure before dispatching again.
+                    # In-flight work finishes with its normal immutable receipts.
+                    for future in sorted(done, key=lambda f: pending[f]):
+                        index = pending.pop(future)
+                        active_sources.difference_update(sources[index])
+                        results[index] = future.result()
+            except BaseException as primary:
+                for future in pending:
+                    future.cancel()
+                for future, index in sorted(pending.items(), key=lambda item: item[1]):
+                    try:
+                        future.result()
+                    except CancelledError:
+                        pass
+                    except BaseException as additional:
+                        # Preserve the original exception type/kind (including
+                        # subscription limits) while retaining concurrent errors.
+                        primary.add_note('Concurrent source batch '+str(index)+': '+
+                                         type(additional).__name__+': '+str(additional))
+                raise
+    return results
+
+
 def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidates=None,field_documents=None):
     from . import system_one
     from .document_review import validate_questions,question_text,relation_finding,RELATION_RULES,entity_definition
@@ -416,7 +515,8 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
         checks.append({'phase':'native_entity_precheck','steps':[],'cost_usd':0.0,'fields_judged':0,
             'unresolved_source_field_blocks':len(native_gaps),'absence_established':False,
             'reason':'The unchanged complete source cannot establish the requested entity binding. Correct aliases or expand source evidence.'})
-    for batch in batches:
+    def read_batch(batch, ledger):
+        found={k:[] for k in questions};checks=[];unresolved=[]
         unique={digest([d['record_id'],d['date'],d['text']]):d for field,instruction,span,d in batch}
         counts={d['record_id']:sum(v['record_id']==d['record_id']for v in unique.values())for d in unique.values()}
         ids={key:d['record_id']+('#segment_'+key[:12]if counts[d['record_id']]>1 else '')for key,d in unique.items()}
@@ -475,6 +575,11 @@ def read(tools,pid,documents,questions,ledger,*,judge=None,ranking=True,candidat
                 if isinstance(instruction,dict):
                     bind_assertion_observations(getattr(tools.stack,'path',None),finding['assertion']['id'],
                         [reading.get('source_observation_id'),*((axis_receipt or{}).get('source_observation_ids',{}).get(str(i),[]))])
+        return found,checks,unresolved
+
+    for batch_found,batch_checks,batch_unresolved in _run_source_batches(batches,ledger,read_batch):
+        for field,values in batch_found.items():found[field].extend(values)
+        checks.extend(batch_checks);unresolved.extend(batch_unresolved)
     return {'findings':found,'checks':checks,'unresolved':unresolved,'coverage':coverage,'ranking':ranking_receipt,
         'version':VERSION,'all_blocks_processed':candidates is None and field_documents is None,
         'all_selected_blocks_processed':True,'focused_field_scope':field_documents is not None,

@@ -119,6 +119,7 @@ def links(value):
 class Execution:
     def __init__(self,path,operation,request):
         self.path=Path(path);self.id=uuid.uuid4().hex;self.sequence=0
+        self._append_lock=threading.Lock()
         self.started=time.perf_counter();self.cpu_started=time.thread_time()
         bound=links(request)
         if operation=='/api/stack/decision/statement-review-attach':
@@ -143,14 +144,17 @@ class Execution:
         self.close();return False
 
     def append(self,kind,**data):
-        event={'schema':VERSION,'execution_id':self.id,'sequence':self.sequence,
-               'at':datetime.now(timezone.utc).isoformat(),'kind':kind,**data}
-        db=database(self.path)
-        try:
-            with db:db.execute('INSERT INTO question_request_events VALUES (?,?,?)',
-                (self.id,self.sequence,json.dumps(event,allow_nan=False)))
-        finally:db.close()
-        self.sequence+=1
+        # A copied request context can accompany independent source workers.
+        # Reserve and commit each sequence together; the journal stays append-only.
+        with self._append_lock:
+            event={'schema':VERSION,'execution_id':self.id,'sequence':self.sequence,
+                   'at':datetime.now(timezone.utc).isoformat(),'kind':kind,**data}
+            db=database(self.path)
+            try:
+                with db:db.execute('INSERT INTO question_request_events VALUES (?,?,?)',
+                    (self.id,self.sequence,json.dumps(event,allow_nan=False)))
+            finally:db.close()
+            self.sequence+=1
 
     def finish(self,result=None):
         effort={'elapsed_seconds':time.perf_counter()-self.started,
