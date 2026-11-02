@@ -1,7 +1,7 @@
 {
   "schema": "agere-current-engineering-acceptance/1",
   "status": "passed",
-  "recorded_at": "2026-11-02T14:48:15.628319+00:00",
+  "recorded_at": "2026-11-02T16:00:10.181155+00:00",
   "engineering_passed": 9,
   "engineering_total": 9,
   "scope_areas": [
@@ -21,16 +21,29 @@
   "production_authority": false,
   "full_mvp_acceptance": false,
   "new_provider_calls": 0,
-  "scorecard_sha256": "53bf3d5d4f8ac77a19ecf7bbe6d86fa2cebe5c8a12f0a5450854365236846699",
-  "delivery_receipt": "artifacts/agere-current-ten-area-acceptance-2026-11-02/delivery-receipt.json",
+  "scorecard_sha256": "4fa22778f27ca0db118e2ec817900405019273f098a374bec4ff4991e70cc3f8",
+  "delivery_receipt": "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json",
+  "product_commit": "e400bb5a682ae2baa40983af0be3deb35ad74574",
   "current_gate": "G3",
   "clinical_answer_status": "partial",
   "clinical_qualification": false,
   "model_qualification": false,
   "remaining": [
-    "Independent source-family/model/clinical/outcome reference evidence and actual compute/reviewer economics.",
-    "Original clinical question remains partial; no newly demonstrated whole-clinical-workflow cold-latency gain.",
-    "Perplexity fallback quota dependency; no billing purchase or repeat probe.",
-    "Customer connections and deployment authority remain external; OWASP/HHS explicitly deferred."
-  ]
+    "Original 57-patient clinical answer remains partial/unverified; independent source-family and clinical-role reference evidence is missing.",
+    "No matched current whole-clinical first-run latency improvement or authentic complete compute/reviewer/billing economics has been established.",
+    "Selected outcome targets are single-class; independent model/outcome qualification and relevant fair baselines remain open.",
+    "Perplexity fallback quota dependency remains; customer connections and deployment authority are separate. OWASP/HHS work is explicitly deferred."
+  ],
+  "browser_transport": {
+    "previous_wire_bytes": 363696646,
+    "current_original_context_wire_bytes": 1514344,
+    "wire_reduction_pct": 99.58362442528546,
+    "all_patient_answer_profile_source_and_work_values_exact": true,
+    "saved_context_byte_exact": true,
+    "gzip_q0_lossless_identity_verified": true,
+    "installed_context_with_57_review_items_wire_bytes": 11735190,
+    "no_patient_document_token_or_workflow_cap": true,
+    "original_context_reopen_seconds": 10.761474999948405,
+    "not_a_whole_clinical_workflow_speedup_claim": true
+  }
 }

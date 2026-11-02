@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-02T12:30:06.846386+00:00",
+  "updated_at": "2026-11-02T16:12:07.102864+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -358,6 +358,10 @@
         {
           "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02/delivery-receipt.json",
           "sha256": "6c3e6a27fb81d1d98be160acfd2ecd0a5e107b672c354f69cb0486c43c032902"
+        },
+        {
+          "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json",
+          "sha256": "9b6894fb8be63855c12f8af4af734d68ed2530538ade29d53863f84028452b7f"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -443,29 +447,34 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_local_engineering_release_delivered",
+    "kind": "browser_corrected_current_engineering_release_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current saved work, source review and reports reopen in the live app and independent executable recovery copies.",
-    "measured_failure_reduction": "Six stale source workflows repaired; current engineering evidence reconciled from unassessed to9/9 with explicit applicability; all current recovery checks passed.",
+    "user_behavior_delta": "Original57-patient workspace transfers1.51MB instead of363.70MB, preserving every patient/answer/source/work value; saved patient and financial reports reopen in current and installed apps.",
+    "measured_failure_reduction": "Actual original clinical action-context wire size reduced99.5836%;62focused checks pass;9/9engineering requirements rebound to current browser-corrected code. Source reconstruction198checks remain applicable.",
     "evidence": [
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/acceptance/receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/acceptance/scorecard.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/final-runtime-http/receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/current-operations-proof.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/final-attempt-preservation.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/acceptance/receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/acceptance/scorecard.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/current-operations-proof.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/installed-http/receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/final-live-receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-payload-native-proof.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-transport-http-v2/receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-projection-tests.log",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/delivery-receipt.json",
       "artifacts/agere-current-ten-area-acceptance-2026-11-02/source-delivery-receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/component-applicability.json"
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/component-applicability.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json"
     ],
-    "remaining_gap": "Original clinical source support remains partial/unverified; independent G5qualification, authentic total economics and whole-clinical first-run performance remain open. Customer deployment authority is separate; OWASP/HHS deferred.",
-    "next_action": "Current synthetic engineering release086c6b2 is sealed9/9 across all ten areas; owned8890 ready, no jobs or source freeze. G3clinical and G5qualification remain open: obtain independently validated source-family/model/clinical/outcome evidence and authentic review/compute economics, qualify named roles on fair baselines, then reassess the original partial clinical workflow and its first-run latency/cost. Preserve57patients, all27273attempts, current executable recovery and all scope areas. Do not repeat full-cohort inference, raise/lower thresholds, promote unverified clinical traces or launch broad training to force completion. Perplexity fallback remains an external quota dependency; OWASP/HHS deferred. Scheduler PAUSED; no approval request pending.",
+    "remaining_gap": "Original 57-patient clinical answer remains partial/unverified; independent source-family and clinical-role reference evidence is missing.; No matched current whole-clinical first-run latency improvement or authentic complete compute/reviewer/billing economics has been established.; Selected outcome targets are single-class; independent model/outcome qualification and relevant fair baselines remain open.; Perplexity fallback quota dependency remains; customer connections and deployment authority are separate. OWASP/HHS work is explicitly deferred.",
+    "next_action": "Continue G3 from the sealed browser-corrected engineering candidate. Reconcile the retained principal/Claude findings against current evidence; target the unresolved clinical interpretation and role-routing failures with equivalent source packets and appropriate native/small/frontier baselines, without treating model agreement as clinical truth. Independent clinical/reference evidence, viable outcomes and complete economics remain named G5 dependencies. Diagnose the original full clinical runtime from the existing trace before authorizing a changed-path confirmation. Do not repeat broad source/training/architecture work or a passing recovery drill; do not promote thresholds, weights or clinical bottles from engineering passes.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-question-cost-ownership.md",
-    "coordination": "Current086c6b2 on owned8890 ready; all validation jobs terminal; source freeze released; primary/main unchanged; scheduler PAUSED.",
+    "coordination": "All recovery/HTTP/acceptance jobs terminalpassed. Owned8890PID41764/session84238 remains running at e400bb5. No provider/training job or frozen source; schedulerPAUSED.",
     "remaining_blockers": [
-      "Independent source-family/model/clinical/outcome reference evidence and actual compute/reviewer economics.",
-      "Original clinical question remains partial; no newly demonstrated whole-clinical-workflow cold-latency gain.",
-      "Perplexity fallback quota dependency; no billing purchase or repeat probe.",
-      "Customer connections and deployment authority remain external; OWASP/HHS explicitly deferred."
+      "Original 57-patient clinical answer remains partial/unverified; independent source-family and clinical-role reference evidence is missing.",
+      "No matched current whole-clinical first-run latency improvement or authentic complete compute/reviewer/billing economics has been established.",
+      "Selected outcome targets are single-class; independent model/outcome qualification and relevant fair baselines remain open.",
+      "Perplexity fallback quota dependency remains; customer connections and deployment authority are separate. OWASP/HHS work is explicitly deferred."
     ],
     "latest_progress": "artifacts/agere-workspace-load-performance-2026-11-01/delivery-receipt.json",
     "results_report": "docs/agere/CURRENT_ENGINEERING_RELEASE_2026-11-02.md",
@@ -503,7 +512,7 @@
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-current-ten-area-acceptance-2026-11-02/delivery-receipt.json"
+      "evidence": "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json"
     },
     "latest_human_steering": "Continue build; OWASP/HHS work deferred. Existing approvals persist.",
     "comparison_status": {
@@ -519,8 +528,8 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-02T14:55:45.941137+00:00",
-    "workflow_change": "All six current source-grounded workflows reopen exactly; current patient and financial reports remain available; current executable copy installs, restarts, rolls back uncommitted work and restores without provider-ledger rewind.",
+    "at": "2026-11-02T16:12:07.102864+00:00",
+    "workflow_change": "Existing browser inspection uses immutable intermediate references and lossless transport; current executable installation,57review-item restart/idempotency, actual uncommitted WAL rollback, fresh restore and actual HTTP pass.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -572,8 +581,8 @@
     "owned_recovery_run": {
       "kind": "actual_installed_local_operations",
       "status": "passed",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/run-receipt.json",
-      "finished_at": "2026-10-30T12:20:12.579678+00:00",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-current-browser-release-2026-11-02/run-receipt.json",
+      "finished_at": "2026-11-02T15:47:39.362627+00:00",
       "source_frozen": false
     },
     "provider_dependency": {
@@ -2563,6 +2572,17 @@
         "artifacts/agere-operational-source-projection-2026-11-01/current-financial-ordinary/run-receipt.json"
       ],
       "scope_impact": "Orderchangeonly;G3remainsunfinished and alltenacceptanceareas/G5requirements stayintact. No narrowedcharter,modelclinicalsuperiorityclaimorproductionpromotion."
+    },
+    {
+      "at": "2026-11-02T16:12:07.102864+00:00",
+      "gate": "G3",
+      "decision": "Seal browser-corrected engineering evidence after actual archived HTTP exposed a364MB usability defect missed by the first scorecard. Retain all original acceptance and recovery artifacts; use separate correction namespace.",
+      "reason": "New actual current and archived transport tests preserve all patient/source/work values and show99.5836%wire reduction;62focused tests and full1287.486soperations pass, with0newproviders and all27273attemptrows exact.",
+      "evidence": [
+        "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json",
+        "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/installed-http/receipt.json"
+      ],
+      "scope_impact": "Alltenareas retained. G3clinical remainsactive and G5independent qualificationblocked; no clinical authority, weight/threshold/bottle promotion or new service. The latest user requests an explainer and asks about a focused audit; no build pause or new window requested."
     }
   ],
   "unsealed_work": null,
@@ -2593,7 +2613,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Current synthetic engineering release086c6b2 is sealed9/9 across all ten areas; owned8890 ready, no jobs or source freeze. G3clinical and G5qualification remain open: obtain independently validated source-family/model/clinical/outcome evidence and authentic review/compute economics, qualify named roles on fair baselines, then reassess the original partial clinical workflow and its first-run latency/cost. Preserve57patients, all27273attempts, current executable recovery and all scope areas. Do not repeat full-cohort inference, raise/lower thresholds, promote unverified clinical traces or launch broad training to force completion. Perplexity fallback remains an external quota dependency; OWASP/HHS deferred. Scheduler PAUSED; no approval request pending.",
+  "next_action": "Continue G3 from the sealed browser-corrected engineering candidate. Reconcile the retained principal/Claude findings against current evidence; target the unresolved clinical interpretation and role-routing failures with equivalent source packets and appropriate native/small/frontier baselines, without treating model agreement as clinical truth. Independent clinical/reference evidence, viable outcomes and complete economics remain named G5 dependencies. Diagnose the original full clinical runtime from the existing trace before authorizing a changed-path confirmation. Do not repeat broad source/training/architecture work or a passing recovery drill; do not promote thresholds, weights or clinical bottles from engineering passes.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2602,5 +2622,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-02T14:55:45.941137+00:00"
+  "latest_checkpoint": "2026-11-02T16:12:07.102864+00:00"
 }
