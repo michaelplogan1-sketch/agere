@@ -2,6 +2,72 @@
 from pathlib import Path
 
 
+def _review_prose(text, reference):
+    """Keep every prose character outside bound structured reviewer data."""
+    import json
+    if not isinstance(text,str):return text,[]
+    decoder=json.JSONDecoder();parts=[];references=[];cursor=index=0
+    marker='[Structured review details retained in the native source review.]'
+    while index<len(text):
+        if text[index] not in '[{':index+=1;continue
+        try:value,end=decoder.raw_decode(text,index)
+        except ValueError:index+=1;continue
+        if isinstance(value,(list,dict)) and end-index>len(marker):
+            parts.extend([text[cursor:index],marker]);cursor=end
+            references.append({**reference,'start':index,'end':end})
+        index=end
+    return ''.join([*parts,text[cursor:]]),references
+
+
+def _review_projection(context):
+    """One complete set of current field judgments, with exact history links."""
+    from ...contracts import digest
+    def reference(path):
+        return {'native_context_id':context['id'],'path':path,
+                'context_derivation':(context.get('dependencies')or{}).get('derivation')}
+    def history(reviews,path):
+        if not isinstance(reviews,list):return reviews
+        return [{**{k:v for k,v in review.items()if k not in ('feedback','support')},
+                 'native_reference':reference(path+[i])} if isinstance(review,dict)and isinstance(review.get('support'),dict)
+                else review for i,review in enumerate(reviews)]
+    def receipt_view(receipt,path):
+        if not isinstance(receipt,dict):return receipt
+        out=dict(receipt)
+        if isinstance(out.get('backstop'),dict)and isinstance(out['backstop'].get('answer_reviews'),list):
+            backstop=out['backstop'];out['backstop']={**backstop,
+                'answer_reviews':history(backstop.get('answer_reviews'),path+['backstop','answer_reviews'])}
+        if isinstance(out.get('request_contract'),dict):
+            contract=out['request_contract'];out['request_contract']={**contract}
+            if isinstance(contract.get('legacy_receipt'),dict):
+                out['request_contract']['legacy_receipt']=receipt_view(contract['legacy_receipt'],path+['request_contract','legacy_receipt'])
+        return out
+    answer=context.get('answer')or{};review=answer.get('investigation_review')
+    shown=answer
+    if isinstance(review,dict)and isinstance(review.get('support'),dict):
+        path=['answer','investigation_review'];support=review['support'];claims=support.get('claim_feedback')
+        view=dict(review);feedback=review.get('feedback');guidance,spans=_review_prose(feedback,reference(path+['feedback']))
+        if spans:view.update(feedback=guidance,feedback_native_spans=spans)
+        if isinstance(claims,list)and isinstance(support.get('packets'),list):
+            indices={digest(claim):i for i,claim in enumerate(claims)};packets=[]
+            for packet in support['packets']:
+                feedbacks=packet.get('claim_feedback')if isinstance(packet,dict)else None
+                if isinstance(feedbacks,list)and all(digest(claim)in indices for claim in feedbacks):
+                    packet={k:v for k,v in packet.items()if k!='claim_feedback'}
+                    packet['claim_feedback_native_references']=[reference(path+['support','claim_feedback',indices[digest(claim)]])for claim in feedbacks]
+                packets.append(packet)
+            view['support']={**support,'packets':packets}
+        shown={**answer,'investigation_review':view}
+        if spans and isinstance(answer.get('limitations'),list):
+            limitations=[];bindings=[]
+            for i,text in enumerate(answer['limitations']):
+                if isinstance(text,str)and feedback in text:
+                    limitations.append(text.replace(feedback,guidance));bindings.append(reference(['answer','limitations',i]))
+                else:limitations.append(text)
+            shown.update(limitations=limitations,limitation_native_references=bindings)
+    return shown,receipt_view(context.get('planner_receipt')or{},['planner_receipt']),history(
+        (context.get('investigation')or{}).get('answer_reviews')or[],['investigation','answer_reviews'])
+
+
 def inspection_view(record):
     """Present a saved investigation without transferring duplicate native history.
 
@@ -31,22 +97,22 @@ def inspection_view(record):
             'output':{**{k:node['output'][k]for k in ('result_view','columns','computed_rows','table_rows','truncated')if k in node['output']},
                       'native_reference':{**reference,'path':['investigation','tool_calls',index,'result']}}})
     graph={**graph,'nodes':nodes}
-    receipt = dict(context.get('planner_receipt') or {})
+    answer,receipt,reviews = _review_projection(context)
     contract = receipt.get('request_contract')
     if isinstance(contract, dict) and contract.get('kind') == 'checked_graph':
         receipt['request_contract'] = {**contract, 'graph': graph}
     return {**record, 'context': {**context,
-        'graph': graph, 'results': None, 'planner_receipt': receipt,
+        'graph': graph, 'results': None, 'planner_receipt': receipt,'answer':answer,
         'investigation': {
             'model': investigation.get('model'),
             'tool_call_count': len(calls),
             'document_review_count': len(investigation.get('document_reviews') or []),
-            'answer_reviews': investigation.get('answer_reviews') or [],
+            'answer_reviews': reviews,
             'native_context_id': context['id'],
             'complete_native_history_retained': True,
         },
         'inspection_projection': {
-            'schema': 'native-investigation-workspace-view/2',
+            'schema': 'native-investigation-workspace-view/3',
             'native_context_id': context['id'],
             'complete_native_history_retained': True,
             'clinical_acceptance_changed': False,
