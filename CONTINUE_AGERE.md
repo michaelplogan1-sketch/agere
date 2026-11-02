@@ -1,3 +1,27 @@
+# Current Agere checkpoint — 2026-11-02T21:58:47.640219+00:00
+
+G3 ACTIVE. The ordinary current warm HTTP original-question confirmation is sealed at artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json; report docs/agere/ORDINARY_WARM_CONFIRMATION_2026-11-02.md. Product b4011fc unchanged. Prior finite functional9/9 across alltenareas remains scoped to aec778d plus explicit later compatibility; saved-read improvement remains sealed. FullMVP and independentclinical/modelqualification false. G5 remains independently blocked. OWASP/HHS deferred; scheduler PAUSED.
+
+Owned8890 app PID61180/session77232 is ready. Current clinical context ANS-072b2e40b263f01efdeec306/report DLV-991526416074 returned all57patients, dashboard and74pagePDF. Clinical remains partial: all58packets checked,522below-threshold feedback entries,one machine-supported patient/56unresolved. Current PDF SHA256 ed2bf845852289ac7c4ac8cbbef8827ecc4b200499a5ef88928b1168383d859b. Previous clinical ANS-125b574a460c5f126738c478 and answered12rowfinancial ANS-698aa8fadbd07ba936b773db still current. Primary8885/main unchanged.
+
+Actual ordinary runtime1273.209s vs prior1226.386s warm reference, so no whole-workflow speed improvement. Newattempts1616→817; knownAPI-equivalent subtotal7.765660→2.684840(65.4%lower),fourunpricedPerplexityquota failures. Claude subscription only,no actual limit. All817newattempts explicitlyowned; allprior27274rows exact including6pending. Currentledger28091rows(27809validated/276failed/6pending). Code/source/config and three source producers byteexact. No newweights or clinicalbottle promoted; authenticall-incostunknown.
+
+The558.106sHaiku call reported128912aggregateoutputtokens/twoCLIturns for a smallSQLaction.32investigatorcallbacks and constructionrepair loops remain performance targets. Provider intervals overlap; do not add them. LocalMiniLM retrieval calls reused embeddings; no newlyencodedtexts or unsupported claim that every loadedmodelran.
+
+A separate explicit offline retained replay first stopped at the original invalidSQL(no such column:lp.sex), as required. Correcteddiagnostic omitted that non-view-producing failedaction, preserved originalviewIDs, ran29successfulactions in15.545s/zero providers;27semanticcomparisons pass,review_documents/projection differ. Patientdocumentaryrows/questions/manifests exact under declared seedcount normalization, but provenance/coverage representations still differ. No automaticselection, clinicalanswerreuse or changedguard. Bothdiagnostics terminal; failures retained. This is not an ordinary benchmark.
+
+No active provider/training/proofjob; no sourcefreeze. Durableselectedproof/currentPDFandHTML: /Users/mikel/clinical-insights-local/artifacts/wollstonecraft-ordinary-warm-confirmation-2026-11-02. Fullresponse/allattempts remain in their governed originalstores.
+
+Exact next: Diagnose the two differing native replay results from the sealed ordinary trajectory before changing reuse: separate exact patient/source/coverage meaning from recovery provenance, retain raw receipts and qualify the existing native acquisition/composition route with changed-source, patient, time, cohort and field guards. Preserve selected financial reuse and rollback; fresh interpretation/final checks remain required. Do not repeat the whole provider run, promote the partial clinical answer, lower thresholds or add a disease-specific handler.
+
+Remaining: The original clinical question remains partial: all58declared packets checked,57undecided/one machine-decided; independent source-family,clinical,model and outcome qualification remains open.; Current ordinary runtime1273.209s did not improve over1226.386s warm reference. One558.106s CLI aggregate128912output-token call and repeated construction repairs remain measured performance targets.; Native explicit replay29actions/15.545s/zero providers passes27comparisons; document review/projection recovery provenance differs. It is not ordinary automatic reuse or a selected clinical bottle.; Authentic all-in cost remains unknown despite complete ownership: four unpriced Perplexity quota failures plus unpriced compute/review/subscription allocation. Customer deployment prerequisites remain separate; OWASP/HHS deferred.
+
+AGERE_BUILD_CONTROL.json owns sequence. Readowner/control/latestheader and runcontinuitycheck beforeproductwork. PreserveOctober11baseline/October31blueprint/currentprincipalreview/fullqueue/product/researchscope. Existing synthetic/provider/privatepushauthority persists. No protected/dev3/heldoutkeys,generatortruth,Documentscorpus,extraagents/chats,mainmerge,publishing,externalcontacts orrealcare. No approval pending.
+
+# Historical checkpoints
+
+## Superseded header before ordinary confirmation seal
+
 # Current Agere checkpoint — 2026-11-02T21:07:32.000086+00:00
 
 G3 ACTIVE. Scoped read-performance productb4011fc is sealed at artifacts/agere-context-read-performance-2026-11-02/delivery-receipt.json; report docs/agere/SAVED_CONTEXT_READ_PERFORMANCE_2026-11-02.md. Priorfinitefunctional9/9 alltenareas remains aec778d with explicit historical applicability; prior fullarchive/recoveryexecutione400bb5 preserved. No newfullmatrix/archive/recovery claimed. FullMVP/independentclinicalmodelqualification false; OWASP/HHS deferred; schedulerPAUSED. All proofjobs terminal, no provider/trainingjob or sourcefreeze.
@@ -14,7 +38,13 @@ Remaining: The original57patient clinical answer remains partial/unverified; ind
 
 AGERE_BUILD_CONTROL.json ownssequence. Readowner/control/continuation/runcontinuitycheck beforework. PreserveOctober11baseline/October31blueprint/currentprincipalaudit/fullqueue/product/researchscope. Approvedsynthetic/privatepushauthority persists. No protected/dev3/heldoutkeys,generatortruth,Documentscorpus,extraagents/chats,mainmerge,publishing,externalcontacts orrealcare. Noapprovalpending.
 
-# Historical checkpoints
+Current unsealed ordinary warm confirmation prepared at /private/tmp/agere-codex-integration-20261026/artifacts/agere-ordinary-warm-confirmation-2026-11-02/run-protocol.json. Execute exactly one prepared ordinary warm original-question HTTP request, no automatic resubmission. Source/code/config frozen; monitor actual roles, attempts and subscription status; retain partial response and all accounting.
+No duplicate owned job or actual new provider call yet; prior6pending rows preserved.
+
+ACTIVE ORDINARY RUN: clientPID61300/session31676, guardednormalappPID61180/session77232, receipt artifacts/agere-ordinary-warm-confirmation-2026-11-02/run-receipt.json. Source/code frozen untilactualrequestterminal; neverduplicate/resubmit. Inspectledger/trace progress andsubscriptionstatus. Existing savedreadfix b4011fc remainssealed.
+
+
+
 
 # Current Agere checkpoint — 2026-11-02T17:17:48.139695+00:00
 
@@ -47,3 +77,5 @@ Financial-v2 terminal/pass22.274s;22actions executed twice,stable evidence exact
 Clinical first proof terminal44.619s,0providers/all27274calls exact; only2unsuccessfulPerplexitystep metadata changes from prepared to explicit priorattemptblock. Allclinicaljudgments/fields unchanged. Corrected clinical-v2 proof PID51993/session32672 at artifacts/agere-verifier-cache-identity-2026-11-02/clinical-v2/receipt.json; source frozen.
 
 Clinical-v2 terminal/pass; all57patientvalues andclinicaljudgments preserved,2unsuccessfulprovidersteps explicitlyblocked as expected,0newproviders/all27274calls exact. Nativeproofs finished; source unfrozen. Next commitcandidate/restartowned8890/checkcurrentAPIandbyte-exactPDF.
+
+ORDINARY REQUEST TERMINAL: 1273.209s, HTTP200,57patients, reportDLV-991526416074/contextANS-072b2e40b263f01efdeec306,817newattempts fullyowned, knownAPI-equivalent$2.68484 plus4unpricedPerplexityfailures. Allprior27274rows/source/codeexact. Native-replay diagnosticPID67838/session50960 is explicit offline/providerblocked; inspect receipt before edits. No ordinaryresubmission.
