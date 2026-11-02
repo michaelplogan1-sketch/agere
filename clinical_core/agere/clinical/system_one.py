@@ -52,7 +52,9 @@ def _open_ledger(ledger):
     """(ledger, owned): a BudgetLedger passes through; a path or None opens one (closed by the caller)."""
     if isinstance(ledger, BudgetLedger) or (ledger is not None and hasattr(ledger, 'db')):
         return ledger, False
-    return BudgetLedger(Path(ledger) if ledger else default_ledger_path()), True
+    from .cost_telemetry import QuestionLedgerPath
+    path = ledger or default_ledger_path()
+    return BudgetLedger(path if isinstance(path, QuestionLedgerPath) else Path(path)), True
 
 
 def _options(options):
@@ -340,8 +342,9 @@ def _batch(jobs, workers):
             return None
     if workers <= 1 or len(jobs) <= 1:
         return [run(j) for j in jobs]
+    from .cost_telemetry import inherit_context
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        return list(pool.map(run, jobs))
+        return list(pool.map(inherit_context(run), jobs))
 
 
 def attribute(question, options, evidence, label, *, as_of, ledger=None, allow_live=True, max_sentences=12, provider='jev',
@@ -354,7 +357,8 @@ def attribute(question, options, evidence, label, *, as_of, ledger=None, allow_l
     opts = _options(options)
     parts = sentences(ev, max_sentences=max_sentences)
     path = getattr(ledger, 'path', ledger)  # per-worker connections: sqlite handles are not shared across threads
-    path = str(path) if path else None
+    from .cost_telemetry import bind_ledger_path
+    path = bind_ledger_path(path) if path else None
     workers = workers or int(os.environ.get('AGERE_SYSTEM_ONE_WORKERS', '8'))
 
     def job(items):

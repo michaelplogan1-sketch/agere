@@ -50,19 +50,22 @@ class Telemetry(unittest.TestCase):
         ids = [a['attempt_id'] for a in tel['attempts']]
         self.assertEqual(ids[:2], ['mine', 'thread'])
         self.assertNotIn('theirs', ids); self.assertEqual(ids.count('before'), 1)
-        self.assertEqual(tel['api_calls'], 2)
-        self.assertEqual(tel['calls_by_model'], {'claude-sonnet-5-5': 1, 'claude-opus-5-5': 1})
+        self.assertIsNone(tel['api_calls'])
+        self.assertEqual(tel['attributed_paid_calls'], 1)
+        self.assertEqual(tel['calls_by_model'], {'claude-sonnet-5-5': 1})
         mine = tel['attempts'][0]
         self.assertEqual((mine['input_tokens'], mine['output_tokens'], mine['cache_read_tokens']), (40000, 300, 30000))
         self.assertEqual(mine['review'], 'failed'); self.assertEqual(mine['attribution'], 'tagged')
         self.assertEqual(tel['attempts'][1]['attribution'], 'window')
         self.assertEqual(tel['attempts'][-1]['attempt_id'], 'before')
         self.assertTrue(tel['attempts'][-1]['cache_hit']); self.assertEqual(tel['attempts'][-1]['usd'], 0.0)
-        self.assertGreater(tel['api_usd'], 0); self.assertTrue(tel['usd_known'])
+        self.assertIsNone(tel['api_usd']); self.assertFalse(tel['usd_known'])
+        self.assertGreater(tel['known_owned_api_estimate_usd'], 0)
+        self.assertEqual(tel['ambiguous_attempt_ids'], ['thread'])
         self.assertEqual(tel['opus_without_failed_sonnet'], [])  # Opus followed a failed Sonnet review
         self.assertTrue(tel['pricing_version'].startswith('2026-'))
         self.assertEqual(tel['stages']['cascade'][0]['tier'], 'semantic_cache')
-        self.assertFalse(tel['llm_free'])
+        self.assertIsNone(tel['llm_free'])
 
     def test_opus_without_failed_sonnet_is_flagged(self):
         probe = T.start('q', ledger_path=self.ledger_path)

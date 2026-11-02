@@ -103,11 +103,12 @@ def warehouse(path):
 
 
 def _ledger_path(stack):
+    from .cost_telemetry import bind_ledger_path, QuestionLedgerPath
     explicit = getattr(stack, 'ledger_path', None)
     if explicit:
-        return Path(explicit)
+        return bind_ledger_path(explicit if isinstance(explicit, QuestionLedgerPath) else Path(explicit))
     from ..gateway import default_ledger_path
-    return default_ledger_path()
+    return bind_ledger_path(default_ledger_path())
 
 
 def _ledgered_send(stack, ledger, receipts):

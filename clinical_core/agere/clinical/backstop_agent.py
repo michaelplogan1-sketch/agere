@@ -1671,6 +1671,8 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
     # through the ordinary writable constructor. Ordinary connections reopen
     # the same persisted authorization and failed-key protections.
     worker_ledger=getattr(ledger,'path',ledger)if parallel_safe else ledger
+    from .cost_telemetry import bind_ledger_path,inherit_context
+    if parallel_safe and worker_ledger is not None:worker_ledger=bind_ledger_path(worker_ledger)
     def check(packet):
         steps=[]
         identity={k:packet[k]for k in ('id','parent_packet_id')if k in packet}
@@ -1765,13 +1767,14 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         from concurrent.futures import ThreadPoolExecutor,wait,FIRST_COMPLETED
         workers=min(len(scheduled)-1,max(1,int(os.environ.get('AGERE_SYSTEM_ONE_WORKERS','8'))))
         with ThreadPoolExecutor(max_workers=workers,thread_name_prefix='agere-source-check')as pool:
+            worker_check=inherit_context(check)
             pending={};remaining=iter(range(1,len(scheduled)))
             def fill():
                 while not stopped and len(pending)<workers:
                     index=next(remaining,None)
                     if index is None:break
                     if not eligible(index):continue
-                    pending[pool.submit(check,scheduled[index])]=index
+                    pending[pool.submit(worker_check,scheduled[index])]=index
             fill()
             while pending:
                 completed,_=wait(pending,return_when=FIRST_COMPLETED)

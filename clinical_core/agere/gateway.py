@@ -220,6 +220,8 @@ class PersistentGateway:
         key=self.ledger.resolve_request_key(digest(identity))
         old=self.ledger.db.execute('SELECT status,response FROM calls WHERE id=?',(key,)).fetchone()
         if old and old[0]=='validated':
+            from .clinical.cost_telemetry import tag
+            tag(self.ledger,key,reused=True)
             raw=json.loads(old[1]);return {**self._parse(parser,task,raw),'request_hash':key,'cache_hit':True,'new_paid_api_usd':0,'usage':raw.get('usage')}
         if not self.allow_live: return {'status':'prepared','provider':provider,'request_hash':key,'request':body}
         endpoint,variable=self.ENDPOINTS[provider];secret=os.environ.get(variable)

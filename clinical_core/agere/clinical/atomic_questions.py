@@ -558,8 +558,9 @@ def run(stack, patient_ids, params, as_of, *, decide=None):
         pid, s, doc, evidence = task
         return ask(s['atom'], s['options'], evidence, as_of=as_of[:10], task_key=s['task_key'], providers=p['providers'],
                    allow_live=live, decide=decide)
+    from .cost_telemetry import inherit_context
     with ThreadPoolExecutor(max_workers=workers()) as pool:
-        decisions = list(pool.map(one, tasks))
+        decisions = list(pool.map(inherit_context(one), tasks))
     cells, calls, usd, errors, by = [], 0, 0.0, 0, {}
     for (pid, s, doc, evidence), d in zip(tasks, decisions):
         c, u = _spent(d)
