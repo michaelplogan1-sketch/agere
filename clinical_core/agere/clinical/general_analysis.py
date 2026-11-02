@@ -267,6 +267,10 @@ patient table. This monitor measures simulated progress and exceptions, never ac
 only: {"equivalent":true|false,"issues":["specific mismatch"]}. Same-model review is an engineering
 check, not independent qualification.'''
 
+# Review uses the same owner definitions as planning and native execution.
+from .decision_context import prompt_block as _decision_block
+AUDIT_SYSTEM += '\n' + _decision_block() + '\n'
+
 
 def _macro_sql(kind, arg, catalog):
     from . import concepts, drug_classes

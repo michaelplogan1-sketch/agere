@@ -293,6 +293,7 @@ requested monitoring metrics are computed by select/analyses or explicitly unres
 A correctly unresolved downstream intention is represented, not silently discarded. Top-level unresolved is for
 missing analytical/population requirements. Never accept a broadened population to compensate for unknown eligibility.
 '''
+AUDIT_SYSTEM += '\n' + _decision_block() + '\n'
 
 
 def graph_for(contract):
@@ -688,7 +689,8 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                 audit_catalog = schema_prompt_view(schema_slice(catalog, question,
                     extra=list(dict.fromkeys(source_tables)), operations=list(dict.fromkeys(review_operations)), streams=streams))
                 raw_audit, stats = call(request_program.AUDIT_SYSTEM, json.dumps({
-                    'original_question': question, 'program': contract['program'], 'nodes': shown,
+                    'original_question': question, 'as_of': catalog.identity.get('as_of'),
+                    'program': contract['program'], 'nodes': shown,
                     'catalog': audit_catalog, 'discovery': discovery_context,
                     'reported_corrections': corrections,
                     'saved_cohort_size': len(population) if population is not None else None,
@@ -715,7 +717,8 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                 contract = general_analysis.prepare(catalog, question, plan['analysis'], population=population)
                 _, shown = general_analysis.preview(catalog, contract, population)
                 raw_audit, stats = call(general_analysis.AUDIT_SYSTEM, json.dumps({
-                    'original_question': question, 'analysis': contract['analysis'],
+                    'original_question': question, 'as_of': catalog.identity.get('as_of'),
+                    'analysis': contract['analysis'],
                     'governed_macros': contract['governed_macros'], 'compiled_sql': contract['query'],
                     'result_preview': shown, 'discovery': discovery_context,
                     'source_coverage': catalog_context.get('source_coverage'),
@@ -806,7 +809,8 @@ def _interpret(catalog, question, *, population=None, model=None, force_model=Fa
                 contract = general_analysis.prepare(catalog, question, proposal['analysis'], population=population, relaxed=True)
                 _, shown = general_analysis.preview(catalog, contract, population)
                 raw_audit, stats = call(general_analysis.AUDIT_SYSTEM, json.dumps({
-                    'original_question': question, 'analysis': contract['analysis'],
+                    'original_question': question, 'as_of': catalog.identity.get('as_of'),
+                    'analysis': contract['analysis'],
                     'governed_macros': contract['governed_macros'], 'compiled_sql': contract['query'],
                     'result_preview': shown,
                     'source_coverage': catalog_context.get('source_coverage'),
