@@ -74,7 +74,7 @@ def prepare(path, answer_id):
     if answer.get('schema') == VERSION: raise ValueError('This answer already uses stable reconciliation references')
     if len(answer.get('passes', [])) < 2: raise ValueError('Saved multi-pass interpretation required')
     row = source_synthesis.context(path, answer['context_id']); refs = manifest(answer, row)
-    received = availability.snapshot(path, row)
+    received = availability.historical_snapshot(availability.snapshot(path, row),row,answer)
     if received['dependency'] != answer['dependencies'].get('availability_dependency'):
         raise ValueError('Received-source availability changed since source passes')
     planned = jobs(row, answer['passes'], answer['dependencies'], refs, received)
@@ -96,10 +96,47 @@ def preview(path, answer_id):
 
 def inspect(path, key):
     saved = json.loads(location(path,key).read_text())
-    if saved['id'] != key or saved['code_identity'] != identity() or saved['status'] != 'complete': raise ValueError('Stable reconciliation identity changed')
+    if saved['id'] != key or saved['status'] != 'complete': raise ValueError('Stable reconciliation identity changed')
     if saved.get('result_digest') != digest({k:v for k,v in saved.items() if k!='result_digest'}): raise ValueError('Stable reconciliation result integrity changed')
-    _, row, _, _, expected = prepare(path, saved['parent_answer_id'])
-    if expected != key or digest(row) != saved['context_digest']: raise ValueError('Stable reconciliation source/parent changed')
+    parent,row,refs,planned,_=prepare(path,saved['parent_answer_id'])
+    expected=digest([VERSION,saved['code_identity'],parent['id'],digest(parent),digest(row),refs])
+    if expected!=key or digest(row)!=saved['context_digest']or len(planned)!=len(saved['reconciliation']['groups']):
+        raise ValueError('Stable reconciliation source/parent changed')
+    groups=[]
+    for i,(job,group)in enumerate(zip(planned,saved['reconciliation']['groups']),1):
+        body=job['body'];request=digest({'contract':'context-student/1','provider':'claude','body':body})
+        if group['usage']['request_hash']!=request:raise ValueError('Stable reconciliation exact request changed')
+        raw=json.loads((location(path,key).parent/'provider'/(request+'.json')).read_text())['response']
+        result=passes._rename(parse(raw,job,refs),'r'+str(i)+'_')
+        rebuilt={'result':result,'source_records':job['source_records'],'input_finding_ids':job['finding_ids'],
+                 'source_availability':json.loads(body['messages'][0]['content'])['received_source_availability'],
+                 'usage':group['usage'],'token_check':group['token_check'],'request_bytes':passes.request_bytes(body)}
+        if rebuilt!=group:raise ValueError('Stable reconciliation current parser or source scope changed')
+        groups.append(rebuilt)
+    source_passes=parent['passes'];stages=source_passes+groups
+    final={k:[v for g in groups for v in g['result'][k]]for k in ('findings','unanswered','review_steps')}
+    if len(groups)>1:final['unanswered'].append('Relations between reconciliation groups remain unassessed; documentary grouping does not establish clinical independence.')
+    rebuilt={**parent,'schema':VERSION,'id':key,'parent_answer_id':parent['id'],'parent_answer_hash':digest(parent),
+        'code_identity':saved['code_identity'],'context_digest':digest(row),'status':'complete','reference_manifest':refs,
+        'findings':[f for p in stages for f in p['result']['findings']],
+        'review_steps':[{**s,'id':digest([key,i,s]),'status':'proposed','execution_authorized':False}
+            for i,s in enumerate(s for p in stages for s in p['result']['review_steps'])],
+        'unanswered':list(dict.fromkeys([u for p in source_passes for u in p['result']['unanswered']]+final['unanswered'])),
+        'reconciliation':{'result':final,'groups':groups},'usage':[p['usage']for p in stages],
+        'token_check':{'input_tokens':input_token_total(p['token_check']for p in stages)},
+        'coverage':{**parent['coverage'],'reconciliation_groups':len(groups),'cross_group_relations_assessed':len(groups)<=1},
+        'new_paid_api_calls':saved['new_paid_api_calls'],'new_token_count_calls':saved['new_token_count_calls'],
+        'cache_hit':False,'reused_source_passes':len(source_passes),
+        'limits':parent['limits']+['Pass-qualified references verify transport identity, not semantic or clinical correctness. Previous reconciliation remains in the immutable parent answer.']}
+    rebuilt['result_digest']=digest(rebuilt)
+    if rebuilt!=saved:raise ValueError('Stable reconciliation complete current reconstruction differs')
+    if saved['code_identity']!=identity():
+        proof={'schema':'availability-reconciliation-current-revalidation/1','status':'passed','answer_id':key,
+            'historical_identity':saved['code_identity'],'current_identity':identity(),
+            'exact_requests_and_current_parser_results':True,'complete_current_reconstruction_equal':True,
+            'provider_calls':0,'clinical_qualification_transferred':False}
+        target=location(path,key).parent/'current-revalidation'/(key+'.json');target.parent.mkdir(exist_ok=True)
+        if not target.exists()or json.loads(target.read_text())!=proof:passes.atomic_write(target,proof)
     return saved
 
 

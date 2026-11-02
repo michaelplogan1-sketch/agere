@@ -35,9 +35,13 @@ class CasePasses(unittest.TestCase):
   return self.raw(body,result)
  def sender(self,body,provider,ledger,out,*,parse):
   key=digest({'contract':'context-student/1','provider':provider,'body':body})
+  def persist(raw):
+   target=Path(out);target.mkdir(parents=True,exist_ok=True)
+   (target/(key+'.json')).write_text(json.dumps({'response':raw}))
   old=ledger.db.execute('SELECT response FROM calls WHERE id=? AND status=?',(key,'validated')).fetchone()
-  if old:return parse(json.loads(old[0])),{'request_hash':key,'cache_hit':True}
-  ledger.reserve(key,provider,body['model']);raw=self.answer(body);result=parse(raw);ledger.finish(key,response=raw)
+  if old:
+   raw=json.loads(old[0]);persist(raw);return parse(raw),{'request_hash':key,'cache_hit':True}
+  ledger.reserve(key,provider,body['model']);raw=self.answer(body);persist(raw);result=parse(raw);ledger.finish(key,response=raw)
   return result,{'request_hash':key,'cache_hit':False,'usage':{'input_tokens':600,'output_tokens':200}}
  def run_synthesis(self,send=None):
   with patch.object(cs,'send',side_effect=send or self.sender),patch.object(cs,'token_check',return_value={'input_tokens':600,'provider_count_cached':False}):

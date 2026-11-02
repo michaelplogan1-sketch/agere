@@ -135,7 +135,7 @@ def prepare(path, parent_id):
         raise ValueError('Original multi-pass source-stage receipt required')
     row = S.context(path, parent['context_id'])
     refs = R.manifest(parent, row)
-    received = A.snapshot(path, row)
+    received = A.historical_snapshot(A.snapshot(path, row),row,parent)
     if received['dependency'] != parent['dependencies'].get('availability_dependency'):
         raise ValueError('Received-source availability changed')
     job = request(parent, row, refs, received)

@@ -127,8 +127,10 @@ def quotation_feedback(body, units, row, failure, raw):
     return revised,issues,signature
 
 
-def prepare(path, context_id):
-    row, bundle, links, packets, original_id = O.M.prepare(path, context_id)
+def prepare(path, context_id, *, historical=None):
+    origin=({'context_digest':historical['context_digest'],'dependencies':historical['dependencies'],
+             'stage_id':historical['recovery']['original_stage_id']}if historical else None)
+    row, bundle, links, packets, original_id = O.M.prepare(path, context_id,**({'historical':origin}if origin else {}))
     source_out = O.M.location(path, original_id).parent/'provider'
     failures, corrected = [], []
     for number, (body, units) in enumerate(packets, 1):
@@ -192,7 +194,7 @@ def inspect(path, key):
     if (saved.get('id') != key or saved.get('schema')!=VERSION or saved.get('status') != 'complete'
             or saved.get('source_stage_digest') != digest({k:v for k,v in saved.items() if k != 'source_stage_digest'})):
         raise ValueError('Citation recovery receipt integrity changed')
-    row,bundle,links,packets,expected,binding,source_out = prepare(path,saved['context_id'])
+    row,bundle,links,packets,expected,binding,source_out = prepare(path,saved['context_id'],historical=saved)
     if (saved.get('recovery')!=binding or key!=digest([VERSION,saved.get('code_identity'),binding])
             or len(saved['passes']) != len(packets)):
         raise ValueError('Citation recovery dependencies or pass coverage changed')

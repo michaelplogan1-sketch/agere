@@ -39,12 +39,12 @@ class RequestSizeLimitError(ValueError):
         super().__init__(f'Model request exceeds its {max_bytes}-byte bound ({request_bytes} bytes)')
 
 
-def _revalidate_saved(key, expected, ledger_model, out, parse, reason, ledger):
+def _revalidate_saved(key, expected, ledger_model, out, parse, reason, ledger=None):
     raw = json.loads((out/(key+'.json')).read_text())['response']
     if expected and raw.get('model') != expected: raise ValueError('Unexpected saved model revision')
     result = parse(raw)
     from .cost_telemetry import tag
-    tag(ledger,key,reused=True)
+    if ledger is not None:tag(ledger,key,reused=True)
     receipt = {'cache_hit': True, 'request_hash': key, 'offline_revalidation': reason,
                'prior_failed_reservation_preserved': True, 'new_paid_api_calls': 0,
                'model': raw.get('model'), 'usage': raw.get('usage'),

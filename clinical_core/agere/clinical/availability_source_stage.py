@@ -21,24 +21,21 @@ def location(path,key):return single.receipt_path(path,key).parent.parent /'avai
 def exists(path,key):return location(path,key).exists()
 
 
-def prepare(path,context_id):
+def prepare(path,context_id,*,historical=None):
     scoped=record_context.exists(path,context_id)
     row=record_context.verified(path,context_id) if scoped else single.verified_context(path,context_id)
     links=passes.dependencies(path,row)
-    received=availability.snapshot(path,row)
+    received=availability.historical_snapshot(availability.snapshot(path,row),row,historical)
     bundle,links=availability.plan(row,links,received)
     packets=[availability.pass_request(p,links,row,received) for p in bundle['passes']]
-    key=digest([VERSION,identity(),digest(row),digest(links)])
+    key=digest([VERSION,historical['code_identity']if historical else identity(),digest(row),digest(links)])
     return row,bundle,links,packets,key
 
 
 def inspect(path,key):
     saved=json.loads(location(path,key).read_text())
-    if saved.get('id')!=key or saved.get('code_identity')!=identity() or saved.get('status')!='complete':raise ValueError('Source-stage identity changed')
-    if saved.get('source_stage_digest')!=digest({k:v for k,v in saved.items() if k!='source_stage_digest'}):raise ValueError('Source-stage result integrity changed')
-    *_,expected=prepare(path,saved['context_id'])
-    if key!=expected:raise ValueError('Source-stage input dependencies changed')
-    return saved
+    return availability.verify_stage(path,key,saved,prepare=prepare,current_identity=identity(),
+        location=location,parser=passes.parse_pass,schema=VERSION)
 
 
 def preview(path,context_id):

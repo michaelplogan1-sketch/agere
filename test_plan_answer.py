@@ -1,4 +1,4 @@
-"""Complete-question integrity checks over the actual saved synthetic payer selection."""
+"""Complete-question integrity checks over an authored portable source selection."""
 import json
 import tempfile
 import unittest
@@ -9,9 +9,45 @@ from unittest.mock import patch
 from clinical_core.contracts import digest
 from clinical_core.agere.clinical import plan_answer as P, source_synthesis as S, question_decision as Q
 
+
+def authored_selection():
+    """Two source groups with colliding local aliases and explicitly missing care data."""
+    patient='authored-patient';question='What do the received coverage accounts report?'
+    snapshot={'as_of':'2030-05-27','source':'authored-engineering-fixture'}
+    contexts=[];answers=[];groups=[]
+    for i,stream in enumerate(['coverage','coverage_verifications'],1):
+        rid='record-'+str(i);source={'record_id':rid,'record_hash':digest([patient,rid,stream]),
+            'source_table':stream,'patient_id':patient}
+        evidence=[{'id':rid+'-unit-'+str(n),'text':'Authored coverage account; benefit verification unknown.'}for n in range(i)]
+        context={'patient_id':patient,'parameters':{'question':question},'record_scope':{'record_ids':[rid]},
+            'model_context':{'snapshot':deepcopy(snapshot),'sources':{rid:{'source':source}},'evidence':evidence},'omissions':[]}
+        context['id']=digest(context)
+        citation={'source':source,'quote':evidence[0]['text'],'citation_verified':True,'source_unit_id':evidence[0]['id']}
+        answer={'patient_id':patient,'context_id':context['id'],'context_digest':digest(context),
+            'question':question,'status':'complete','coverage':{'unassessed_units':[],
+                'unit_dispositions':{'accounted':i},'reconciliation_groups':1,'cross_group_relations_assessed':True},
+            'findings':[{'id':'local-prior','text':'Earlier source observation retained.','stage':'p1','citations':[deepcopy(citation)]},
+                        {'id':'local-current','text':'Coverage account remains a documentary observation.','stage':'reconciled','citations':[deepcopy(citation)]}],
+            'unanswered':['Clinical need and verified benefits remain unknown.'],'review_steps':[],
+            'passes':[{'pass_number':1}],'usage':{},'token_check':{'input_tokens':i}}
+        answer['id']=digest(answer)
+        contexts.append(context);answers.append(answer)
+        groups.append({'group_number':i,'context_id':context['id'],'answer_id':answer['id'],
+                       'record_ids':[rid],'source_units':len(evidence)})
+    window={'basis':'all_observed','start':'','end':'2030-05-27'}
+    plan={'preview':{'patient_id':patient,'snapshot':deepcopy(snapshot),'selected_record_ids':['record-1','record-2'],
+                    'records':[{'source_category':'coverage'},{'source_category':'coverage_verifications'}],
+                    'excluded_by_category':{'medication_orders':1}},'groups':deepcopy(groups)}
+    plan['id']=digest(plan)
+    selected={'plan_id':plan['id'],'plan_digest':digest(plan),'patient_id':patient,'original_question':question,
+              'analysis_window':window,'groups':groups,'source_units':3,'excluded_records':1}
+    selected['id']=digest(selected)
+    return {'plan':plan,'snapshot':selected,'contexts':contexts,'answers':answers}
+
+
 class CompleteQuestion(unittest.TestCase):
     def setUp(self):
-        self.result=json.loads(Path('artifacts/agere-complete-question-v1/payer/snapshot.json').read_text())
+        self.result=authored_selection()
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.r=SimpleNamespace(path=Path(self.temp.name));self.request={'snapshot_id':self.result['snapshot']['id']}
         self.mock=patch.object(P.A,'inspect',side_effect=lambda *a:deepcopy(self.result));self.mock.start();self.addCleanup(self.mock.stop)
@@ -22,8 +58,8 @@ class CompleteQuestion(unittest.TestCase):
         self.assertEqual(S.inspect(self.r.path,a['id']),a)
         self.assertEqual(P.prepare(self.r,self.request),a)
         self.assertEqual(a['question'],self.result['snapshot']['original_question'])
-        self.assertEqual(len(c['model_context']['sources']),24)
-        self.assertEqual(a['coverage']['submitted_units'],53)
+        self.assertEqual(len(c['model_context']['sources']),2)
+        self.assertEqual(a['coverage']['submitted_units'],3)
         self.assertEqual(a['coverage']['unassessed_units'],[])
         self.assertFalse(a['coverage']['cross_group_relations_assessed'])
         self.assertFalse(c['dispatch']['source_review_allowed'])
@@ -88,8 +124,7 @@ class SelectionAcceptance(unittest.TestCase):
     def setUp(self):
         from clinical_core.agere.workflow_scorecard import complete_selection_valid
         self.check=complete_selection_valid
-        folder=Path('artifacts/agere-complete-question-v1/payer')
-        snapshot=json.loads((folder/'snapshot.json').read_text())
+        snapshot=authored_selection()
         composed=P.assemble(snapshot);self.a=composed['answer'];c=composed['context']
         self.row={'snapshot':snapshot['snapshot'],'plan':snapshot['plan'],'context':c}
         self.case={'patient':self.a['patient_id'],'question':self.a['question'],'required_categories_if_received':['coverage','coverage_verifications']}

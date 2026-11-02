@@ -75,7 +75,8 @@ def prepare(retriever, body):
     row, parent, aliases, claims = assemble(result)
     parent['dependencies'] = P.dependencies(retriever.path, row)
     refs = R.manifest(parent,row)
-    received = V.snapshot(retriever.path,result['contexts'][0])
+    received = V.historical_snapshot(V.snapshot(retriever.path,result['contexts'][0]),
+                                     result['contexts'][0],result['answers'][0])
     job = L.request(parent,row,refs,received)
     # Only cited units are actually supplied in this excerpt request. Reject
     # even syntactically valid global aliases for uncited/unsent source units.
