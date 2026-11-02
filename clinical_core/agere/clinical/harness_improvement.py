@@ -6,6 +6,7 @@ them. The next outcome feeds the next revision. Source/meaning changes abstain.
 This learns execution, never clinical definitions or a supposed correct answer.
 Only these new operational tables are read; legacy learning/answer stores are not.
 """
+import copy
 import json
 import os
 import sqlite3
@@ -29,7 +30,7 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
     finally: _OWNED_RECOVERY.reset(token)
 
 
-VERSION='recursive-harness/1'
+VERSION='recursive-harness/2'
 READ_ONLY={'query_sql','compose_table','list_documents','read_document','review_documents','execute_metric','list_metrics',
            'list_analyses','describe_analysis','execute_analysis','search_documents'}
 VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',
@@ -46,6 +47,11 @@ def semantic_result(value):
         out={}
         for k,v in value.items():
             if k in VOLATILE:continue
+            if k in ('rows','columns') and isinstance(value.get('rows'),list) and isinstance(value.get('columns'),list):
+                # Table cells are evidence, even when a business column happens
+                # to be called accounting, elapsed_s, or cache_hit.
+                out[k]=copy.deepcopy(v)
+                continue
             if k=='assembly'and isinstance(v,dict)and v.get('schema')=='result-assembly/1'and isinstance(value.get('rows'),list)and isinstance(value.get('columns'),list):
                 # Raw input hashes include elapsed time and accounting. Keep
                 # them in the immutable native receipt, while comparing actual
@@ -55,9 +61,56 @@ def semantic_result(value):
                 if isinstance(v.get('joins'),list):
                     v={**v,'joins':[{a:b for a,b in j.items()if a!='source_result_digest'}if isinstance(j,dict)else j for j in v['joins']]}
             out[k]=semantic_result(v)
+        if value.get('source_scope')=='focused' and isinstance(value.get('coverage'),list) and isinstance(value.get('rows'),list) and 'evidence_scope_json' in value.get('columns',[]):
+            # Only the typed retrieval receipt's seed counts describe how the
+            # same sources were found. Selected sources, patient/field scope,
+            # coverage and every clinical finding still compare exactly.
+            for item in out['coverage']:
+                if isinstance(item,dict) and 'source_selection' in item:
+                    item['source_selection']=_retrieval_meaning(item['source_selection'])
+            for row in out['rows']:
+                if not isinstance(row,dict):continue
+                raw=row.get('evidence_scope_json')
+                if not isinstance(raw,str):continue
+                try:scope=json.loads(raw)
+                except (ValueError,TypeError):continue
+                normalized=_retrieval_meaning(scope)
+                if normalized!=scope:row['evidence_scope_json']=json.dumps(normalized,sort_keys=True)
         return out
     if isinstance(value,list):return [semantic_result(v) for v in value]
     return value
+
+
+def _retrieval_meaning(value):
+    if not isinstance(value,dict) or value.get('schema')!='focused-document-retrieval/1':return value
+    seeds=value.get('prior_source_seeds')
+    if not isinstance(seeds,dict) or not all(type(v)is int and v>=0 for v in seeds.values()):return value
+    return {k:v for k,v in value.items() if k!='prior_source_seeds'}
+
+
+def comparison_result(name,value,prior_calls):
+    """Compare a portable SQL receipt only after proving its exact raw binding.
+
+    The declared SQL and actual rows remain intact. Each earlier source output
+    is independently checked by the replay loop; nothing is executed from this
+    comparison representation, and the original receipt is never rewritten.
+    """
+    result=semantic_result(value)
+    if name!='query_sql' or not isinstance(value,dict):return result
+    declared=value.get('declared_executed_query');views=value.get('read_views')
+    if not isinstance(declared,str) or not isinstance(views,list) or not views:return result
+    from .backstop_agent import output_table
+    from .sql_query import native_result_source,portable_native_query
+    sources={c['result']['result_view']:c['result'] for c in prior_calls
+             if isinstance(c.get('result'),dict) and c['result'].get('result_view')}
+    if any(name not in sources for name in views):return result
+    raw={name:native_result_source(*output_table(sources[name])) for name in views}
+    try:
+        if portable_native_query(declared,raw,views)!=value.get('executed_query'):return result
+        normalized={name:native_result_source(*output_table(semantic_result(sources[name]))) for name in views}
+        result['executed_query']=portable_native_query(declared,normalized,views)
+    except (ValueError,TypeError):return result
+    return result
 
 
 def database(path):
@@ -289,7 +342,7 @@ def replay(tools,question,context,model,*,_report=None):
         report['calls'].append(call)
         if identity(tools,question,context,model)!=key:
             report['reason']='Source or meaning changed during execution; actor must recheck retained results';break
-        if digest(semantic_result(out))!=action['expected_result']:
+        if digest(comparison_result(action['name'],out,report['calls'][:-1]))!=action['expected_result']:
             report['reason']='Native receipt differs from validation; actor resumes with actual results';break
         certificate={'candidate':config['id'],'substituted_callback_id':action['actor_callback_id'],
                      'literal_action_digest':digest([action['name'],action['input']]),'receipt_digest':action['expected_result'],
@@ -315,10 +368,10 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
     if not enabled():return None
     key=identity(tools,question,context,model);selected=latest(tools.stack.path,key);parent=latest(tools.stack.path,key,selected=False)
     actions=[]
-    for c in calls:
+    for index,c in enumerate(calls):
         out=c.get('result')
         if c.get('name') not in READ_ONLY or not c.get('actor_callback_id') or not isinstance(out,dict):break
-        actions.append({'name':c['name'],'input':c['input'],'expected_result':digest(semantic_result(out)),
+        actions.append({'name':c['name'],'input':c['input'],'expected_result':digest(comparison_result(c['name'],out,calls[:index])),
                         'actor_callback_id':c['actor_callback_id']})
     if not actions:return None
     if selected and len(actions)<=len(selected['actions']) and (selected.get('final_answer') or final_answer is None):return None
@@ -339,13 +392,14 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
                                           if json.loads(payload).get('question_digest')==digest(question)],
                                       'parent_callbacks':len({a['actor_callback_id'] for a in parent['actions']}) if parent else 0})
         fresh=make_executor()
-        validation=[]
+        validation=[];fresh_calls=[]
         try:
             for action in actions:
                 if identity(fresh,question,context,model)!=key:raise ValueError('Source/meaning changed during validation')
                 try:out=fresh({'name':action['name'],'input':action['input']})
                 except (ValueError,sqlite3.Error) as exc:out={'error':str(exc)}
-                same=digest(semantic_result(out))==action['expected_result']
+                same=digest(comparison_result(action['name'],out,fresh_calls))==action['expected_result']
+                fresh_calls.append({'result':out})
                 validation.append({'action':digest([action['name'],action['input']]),'same_output':same})
                 if not same:raise ValueError('Candidate changed a native tool output')
                 if identity(fresh,question,context,model)!=key:raise ValueError('Source/meaning changed during validation')

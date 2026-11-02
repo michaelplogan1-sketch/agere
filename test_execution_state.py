@@ -160,13 +160,14 @@ class State(unittest.TestCase):
   feedback={'status':'repair','feedback':'Reconcile the episode denominator.','reason':'Conflicting dates',
    'coverage':{'label':'unknown','reasons':['One period is unresolved'],'reject':False,'probabilities':{'unknown':.9}},
    'support':{'failed_packet_ids':['patient_A'],'packets':[{'id':'patient_A','label':'contradicted'},
-    {'id':'patient_B','label':'unknown','reason':'Source unavailable'},{'id':'patient_C','label':'supported'}]},
+    {'id':'patient_B','label':'unknown','reason':'Source unavailable'},{'id':'patient_C','label':'supported'},
+    {'id':'patient_D','label':'supported','decided_by':'fixture_provider'}]},
    'steps':[{'provider':'test','raw':'operational receipt'*20000}]}
   before=copy.deepcopy(feedback);state=json.loads(E.messages('Admissions and outcomes',[],feedback=feedback)[0]['content']);view=state['current_review_feedback']
   self.assertLess(len(json.dumps(state)),5000);self.assertEqual(view['feedback'],feedback['feedback'])
   self.assertEqual(view['reason'],feedback['reason']);self.assertEqual(view['coverage']['label'],'unknown')
   self.assertEqual(view['failed_dependency_ids'],['patient_A'])
-  self.assertEqual([r['id']for r in view['unresolved_dependencies']],['patient_A','patient_B'])
+  self.assertEqual([r['id']for r in view['unresolved_dependencies']],['patient_A','patient_B','patient_C'])
   self.assertEqual(view['unresolved_dependencies'][1]['reason'],'Source unavailable')
   self.assertTrue(state['current_review_native_digest']);self.assertEqual(feedback,before)
 

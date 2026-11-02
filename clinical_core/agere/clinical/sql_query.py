@@ -113,6 +113,13 @@ def native_query_bindings(query, available):
         return None, None
 
 
+def native_result_source(columns, rows):
+    """Exact SQL representation shared by native views and portable receipts."""
+    fields = ', '.join(f'json_extract(value,\'$[{i}]\') AS "{str(c).replace(chr(34), chr(34)*2)}"' for i, c in enumerate(columns))
+    data = json.dumps(rows, default=str, allow_nan=False).replace("'", "''")
+    return f"SELECT {fields} FROM json_each('{data}')"
+
+
 def portable_native_query(query, sources, read_views):
     """Bind actual native reads in a portable receipt; never execute this rewrite."""
     available = {name.casefold(): name for name in read_views}

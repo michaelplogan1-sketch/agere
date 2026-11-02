@@ -680,15 +680,15 @@ def output_table(out):
 def define_result(semantic, name, columns, rows, *, receipt=None):
     """Connection-local immutable result view. Source data stays read-only; SQL does all subsequent arithmetic and composition."""
     db = semantic.db
-    fields = ', '.join(f'json_extract(value,\'$[{i}]\') AS "{str(c).replace(chr(34), chr(34)*2)}"' for i, c in enumerate(columns))
-    data = json.dumps(rows, default=str, allow_nan=False).replace("'", "''")
+    from .sql_query import native_result_source
+    source = native_result_source(columns, rows)
     db.set_authorizer(None); db.execute('PRAGMA query_only=OFF')
     try:
-        db.execute(f'CREATE TEMP VIEW "{name}" AS SELECT {fields} FROM json_each(\'{data}\')')
+        db.execute(f'CREATE TEMP VIEW "{name}" AS {source}')
     finally:
         db.execute('PRAGMA query_only=ON'); db.set_authorizer(semantic._authorize)
     semantic.register_native_result(name, receipt if receipt is not None else {'rows': rows})
-    return f"SELECT {fields} FROM json_each('{data}')"
+    return source
 
 
 def materialize_table(answer, calls):
