@@ -1,0 +1,36 @@
+{
+  "schema": "agere-current-engineering-acceptance/1",
+  "status": "passed",
+  "recorded_at": "2026-11-02T14:48:15.628319+00:00",
+  "engineering_passed": 9,
+  "engineering_total": 9,
+  "scope_areas": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "complete_workflows": 6,
+  "independent_model_clinical_qualification": false,
+  "production_authority": false,
+  "full_mvp_acceptance": false,
+  "new_provider_calls": 0,
+  "scorecard_sha256": "53bf3d5d4f8ac77a19ecf7bbe6d86fa2cebe5c8a12f0a5450854365236846699",
+  "delivery_receipt": "artifacts/agere-current-ten-area-acceptance-2026-11-02/delivery-receipt.json",
+  "current_gate": "G3",
+  "clinical_answer_status": "partial",
+  "clinical_qualification": false,
+  "model_qualification": false,
+  "remaining": [
+    "Independent source-family/model/clinical/outcome reference evidence and actual compute/reviewer economics.",
+    "Original clinical question remains partial; no newly demonstrated whole-clinical-workflow cold-latency gain.",
+    "Perplexity fallback quota dependency; no billing purchase or repeat probe.",
+    "Customer connections and deployment authority remain external; OWASP/HHS explicitly deferred."
+  ]
+}
