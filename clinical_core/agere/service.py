@@ -920,7 +920,18 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         else:
                             spec,_,_,doc=load(ws,params.get('id',[''])[0])
                             result={**spec,'html':doc if spec.get('status')=='delivered' else None}
-                    raw=json.dumps(result,default=str).encode();mime='application/json'
+                    mime='application/json'
+                    if parsed.path.endswith('/action-context'):
+                        from .deliverables.action_center import encode_inspection
+                        raw,encoding=encode_inspection(result,self.headers.get('Accept-Encoding',''))
+                        self.send_response(200);self.send_header('Content-Type',mime)
+                        self.send_header('Content-Length',str(len(raw)))
+                        self.send_header('Vary','Accept-Encoding')
+                        self.send_header('Cache-Control','no-store')
+                        self.send_header('X-Content-Type-Options','nosniff')
+                        if encoding:self.send_header('Content-Encoding',encoding)
+                        self.end_headers();self.wfile.write(raw);return
+                    raw=json.dumps(result,default=str).encode()
                 except (ValueError,FileNotFoundError) as exc:
                     self.send_response(400);self.send_header('Content-Type','application/json');self.end_headers()
                     self.wfile.write(json.dumps({'error':str(exc)}).encode());return
