@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-02T23:25:03.459762+00:00",
+  "updated_at": "2026-11-02T23:33:49.176431+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -394,7 +394,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Ordinary current performance/role/cost confirmation completed; native acquisition/reuse mismatch and planning latency remain the next measured engineering target. Clinical/source-family/model qualification remains distinct G5 scope.",
       "engineering_current_status": "Priorfinite9/9alltenareas plus same-codeb4011fc ordinary57-patient HTTP confirmation, current dashboard/PDF and unchanged prior contexts; original clinical answer partial.",
-      "next_action": "Fix the measured 52,589,412-byte decoded current clinical workspace response in the existing inspection projection. Locate duplicated operational review/SQL history, replace only those copies with native-context references, retain all57patient values, all522field judgments and complete durable evidence, and verify actual HTTP/PDF plus financial/current-source guards. Do not change clinical thresholds, promote a partial answer or repeat the provider cohort."
+      "next_action": "Qualify transfer in the existing general_analysis parameter binding and native execution reuse paths against Claude E7: identify a completed source-bound composition, exercise changed numeric/time/population bindings with exact source/domain/unknown-state guards, and compare native results before any ordinary-route activation. Keep original57patient/financial regressions, full-request acceptance and fresh final checks. Do not select the partial clinical answer, invent clinical labels, introduce another catalog or repeat an unchanged whole-cohort provider run."
     },
     {
       "id": "G5",
@@ -472,27 +472,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "ordinary_warm_original_question_confirmation",
+    "kind": "saved_patient_review_response",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Guarded native execution no longer mistakes typed source-reuse counters for changed evidence. Normal financial path preserves22nativeactions/zeroactor; current patient deliverable preserved.",
-    "measured_failure_reduction": "New provider attempts1616\u2192817 and recorded known API-equivalent subtotal7.765660\u21922.684840. Total runtime1226.386\u21921273.209s, so no whole-workflow speed improvement established. All817newattempts have one explicit owner.",
+    "user_behavior_delta": "Patient review response now4.75MBdecoded/335KBcompressed, preserving57patients/522fieldjudgments/currentwork/PDF.",
+    "measured_failure_reduction": "Actual HTTP decoded response 52,589,412 to 4,752,172 bytes (90.96% reduction); gzip 2,844,703 to 335,437 bytes (88.21%). All57patientrows/522judgments/nativecontexts and PDF exact; zero providers.",
     "evidence": [
-      "artifacts/agere-native-replay-equivalence-2026-11-02/delivery-receipt.json",
-      "docs/agere/NATIVE_REPLAY_EQUIVALENCE_2026-11-02.md"
+      "artifacts/agere-inspection-response-2026-11-02/delivery-receipt.json",
+      "docs/agere/INSPECTION_RESPONSE_2026-11-02.md"
     ],
-    "remaining_gap": "Original clinical question remains partial;58packets checked,522below-threshold fields; independent clinical/model/source-family qualification remains open.; 29nativeactions now compare correctly, but no automatic full-question clinical bottle is selected because the original answer is partial. No ordinary clinical latency improvement is claimed.; Current actual patient workspace still transfers52.6MB decoded JSON (2.84MB gzip); duplicate operational review/history remains the next measured engineering failure.; All-in cost/customer deployment qualification remains unknown; OWASP/HHS explicitly deferred.",
-    "next_action": "Fix the measured 52,589,412-byte decoded current clinical workspace response in the existing inspection projection. Locate duplicated operational review/SQL history, replace only those copies with native-context references, retain all57patient values, all522field judgments and complete durable evidence, and verify actual HTTP/PDF plus financial/current-source guards. Do not change clinical thresholds, promote a partial answer or repeat the provider cohort.",
+    "remaining_gap": "Original clinical question remains partial with58checkedpackets and522below-threshold fields; independent clinical/model/source-family qualification remains open.; Ordinary whole-clinical runtime1273.209s remains the last observation. Native29action13.505s is a retained diagnostic, not an ordinary speed claim.; Exact financial reuse is demonstrated; parameterized full-question transfer and justified source-family model promotion still require their named comparison evidence.; All-in economics and customer deployment prerequisites remain separate; OWASP/HHS deferred.",
+    "next_action": "Qualify transfer in the existing general_analysis parameter binding and native execution reuse paths against Claude E7: identify a completed source-bound composition, exercise changed numeric/time/population bindings with exact source/domain/unknown-state guards, and compare native results before any ordinary-route activation. Keep original57patient/financial regressions, full-request acceptance and fresh final checks. Do not select the partial clinical answer, invent clinical labels, introduce another catalog or repeat an unchanged whole-cohort provider run.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
     "coordination": "Ordinary request and both offline diagnostics are terminal. No provider/training/proof job or source freeze. Normal owned8890app remains ready; schedulerPAUSED.",
     "remaining_blockers": [
-      "The original clinical question remains partial: all58declared packets checked,57undecided/one machine-decided; independent source-family,clinical,model and outcome qualification remains open.",
-      "Current ordinary runtime1273.209s did not improve over1226.386s warm reference. One558.106s CLI aggregate128912output-token call and repeated construction repairs remain measured performance targets.",
-      "Native explicit replay29actions/15.545s/zero providers passes27comparisons; document review/projection recovery provenance differs. It is not ordinary automatic reuse or a selected clinical bottle.",
-      "Authentic all-in cost remains unknown despite complete ownership: four unpriced Perplexity quota failures plus unpriced compute/review/subscription allocation. Customer deployment prerequisites remain separate; OWASP/HHS deferred."
+      "Original clinical question remains partial with58checkedpackets and522below-threshold fields; independent clinical/model/source-family qualification remains open.; Ordinary whole-clinical runtime1273.209s remains the last observation. Native29action13.505s is a retained diagnostic, not an ordinary speed claim.; Exact financial reuse is demonstrated; parameterized full-question transfer and justified source-family model promotion still require their named comparison evidence.; All-in economics and customer deployment prerequisites remain separate; OWASP/HHS deferred."
     ],
-    "latest_progress": "Sealed1b0c7cbnative-replay-equivalence; currentHTTP exposes52.6MBworkspace projection.",
-    "results_report": "docs/agere/NATIVE_REPLAY_EQUIVALENCE_2026-11-02.md",
+    "latest_progress": "Sealdd5a7e5displaycorrection,42checks/0providers/currentHTTP; G3active/G5qualificationblocked.",
+    "results_report": "docs/agere/INSPECTION_RESPONSE_2026-11-02.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -527,7 +524,7 @@
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json"
+      "evidence": "artifacts/agere-inspection-response-2026-11-02/delivery-receipt.json"
     },
     "latest_human_steering": "Continue build; OWASP/HHS work deferred. Existing approvals persist.",
     "comparison_status": {
@@ -543,8 +540,8 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-02T23:25:03.459762+00:00",
-    "workflow_change": "Existing guarded execution comparison, financial reuse and current patient report verified.",
+    "at": "2026-11-02T23:33:49.176431+00:00",
+    "workflow_change": "Current patient workspace transports one complete set of field judgments. Duplicate review history, copied JSON repair prose and packet copies use exact native-context/path references.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -631,7 +628,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Native equivalent actions27\u219229; changed business/source fields still fail.",
+    "measured_failure_removed": "Decoded52,589,412\u21924,752,172bytes; gzip2,844,703\u2192335,437bytes.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -2698,6 +2695,14 @@
       "reason": "29/29nativecomparisons and172checks pass; actualnormalfinancial uses22actions/0actor,2Jevfinalchecks; actualHTTPcurrentclinical remains52.6MBdecoded.",
       "scope_impact": "Alltenareas retained. G3active/G5independentqualificationblocked. No model/clinical/defaultprimary promotion.",
       "evidence": "artifacts/agere-native-replay-equivalence-2026-11-02/delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-02T23:33:49.176431+00:00",
+      "gate": "G3",
+      "decision": "Seal display-only duplication correction; next qualify parameter transfer under existing native/analysis paths and full-request acceptance guard.",
+      "reason": "ActualHTTP91%decodedreduction withsame57patients/522judgments/PDF/work. Clinicalwholeworkflow still1273.209s; exactnativefinancialreuseworks but fullquestionparametertransfer notestablished.",
+      "scope_impact": "Alltenareas retained. No newclinicalbottle,sourceinterpretation,thresholds,weights,policy orprimarypromotion.",
+      "evidence": "artifacts/agere-inspection-response-2026-11-02/delivery-receipt.json"
     }
   ],
   "unsealed_work": null,
@@ -2728,7 +2733,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Fix the measured 52,589,412-byte decoded current clinical workspace response in the existing inspection projection. Locate duplicated operational review/SQL history, replace only those copies with native-context references, retain all57patient values, all522field judgments and complete durable evidence, and verify actual HTTP/PDF plus financial/current-source guards. Do not change clinical thresholds, promote a partial answer or repeat the provider cohort.",
+  "next_action": "Qualify transfer in the existing general_analysis parameter binding and native execution reuse paths against Claude E7: identify a completed source-bound composition, exercise changed numeric/time/population bindings with exact source/domain/unknown-state guards, and compare native results before any ordinary-route activation. Keep original57patient/financial regressions, full-request acceptance and fresh final checks. Do not select the partial clinical answer, invent clinical labels, introduce another catalog or repeat an unchanged whole-cohort provider run.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2737,5 +2742,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-02T23:25:03.459762+00:00"
+  "latest_checkpoint": "2026-11-02T23:33:49.176431+00:00"
 }

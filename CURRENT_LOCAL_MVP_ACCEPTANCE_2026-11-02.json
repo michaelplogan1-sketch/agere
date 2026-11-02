@@ -56,40 +56,11 @@
     }
   },
   "latest_scoped_followup": {
-    "product_commit": "b4011fc8377a3f8e9b6ef03ad0e478c4972d493d",
-    "receipt": "artifacts/agere-context-read-performance-2026-11-02/delivery-receipt.json",
-    "unique_passed_checks": 161,
-    "full_matrix_reassessed": false,
-    "existing_policy_context_work_identities_preserved": true,
-    "clinical_status": "partial",
-    "financial_status": "answered",
-    "full_mvp_acceptance": false,
-    "read_performance_HTTP": [
-      {
-        "route": "/api/stack/action-context",
-        "baseline_seconds": 10.80022008297965,
-        "candidate_seconds": 9.531739250058308,
-        "reduction_percent": 11.74495355812585,
-        "wire_bytes": 1788193,
-        "wire_and_decoded_hashes_exact": true
-      },
-      {
-        "route": "/api/stack/action-deliverable",
-        "baseline_seconds": 10.013076166971587,
-        "candidate_seconds": 5.718974333023652,
-        "reduction_percent": 42.884941274212515,
-        "wire_bytes": 270645,
-        "wire_and_decoded_hashes_exact": true
-      },
-      {
-        "route": "/api/stack/action-context",
-        "baseline_seconds": 0.2396855829283595,
-        "candidate_seconds": 0.2520380000350997,
-        "reduction_percent": -5.15359203328981,
-        "wire_bytes": 11737,
-        "wire_and_decoded_hashes_exact": true
-      }
-    ]
+    "product_commit": "dd5a7e52ae0e22f5d0d28f5c68bd4cc5deea062b",
+    "receipt": "artifacts/agere-inspection-response-2026-11-02/delivery-receipt.json",
+    "prior_native_replay_receipt": "artifacts/agere-native-replay-equivalence-2026-11-02/delivery-receipt.json",
+    "scope": "Current scoped native/replay and display qualification; original9/9decision retained in its actual evidence scope, no new whole-matrix/restore claim.",
+    "new_full_acceptance": false
   },
   "decision_basis": "Fresh affected behavior and six real API reopens plus exact scoped historical source/module/recovery applicability. No new archive installation or recovery drill.",
   "fresh_current_archive_or_recovery_execution_claimed": false
