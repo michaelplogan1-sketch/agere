@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-02T18:37:03.501715+00:00",
+  "updated_at": "2026-11-02T20:04:43.276968+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -370,6 +370,10 @@
         {
           "path": "artifacts/agere-verifier-cache-identity-2026-11-02/delivery-receipt.json",
           "sha256": "c50fe7f9336480038754d374d1fcf47f90e0e76f87110efc01d563e7a055520e"
+        },
+        {
+          "path": "artifacts/agere-field-review-disposition-2026-11-02/delivery-receipt.json",
+          "sha256": "1838950c1983ffb41e5263921ab77e98507ccb560e5961d69b0334bf48e04ef9"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -377,7 +381,7 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Original57patient clinical answer remains partial/unverified. Independent source/clinical-role qualification and acceptable measured whole-clinical first-run performance remain open; engineering/cache reuse does not resolve those requirements.",
-      "engineering_current_status": "Prior e400bb5matrix9/9; scoped f1a87d9verifier-cache/currentnative/API/PDF followup verified"
+      "engineering_current_status": "Scoped aec778dfield-disposition/handoff/currentnative/API/PDF verified; current finite release compatibility next, prior fullmatrix e400bb5"
     },
     {
       "id": "G5",
@@ -455,11 +459,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "native_verifier_cache_identity_delivery",
+    "kind": "field_review_disposition_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "SQL execution timing alone no longer invalidates native verifier evidence. Exact legacy compatibility reuses validated original attempts while retaining complete raw receipts and billing history.",
-    "measured_failure_reduction": "Two22-action executions changed22raw SQL timings but0stable verifier texts; original validated request reused with0providers. All57patient rows,66packetjudgments and1497fieldfeedback exact; currentAPI/PDFpassed.",
+    "user_behavior_delta": "Keep actual per-field judgment/threshold/provider disposition and distinguish acceptance uncertainty from source gaps. Compact actor feedback retains every unsettled packet, showing undecided votes as unknown with the raw label preserved.",
+    "measured_failure_reduction": "1497generic source-gap explanations replaced with actual observed model/service states;16hiddenunsettledpackets restored. All2005fieldreadings/57patientvalues preserved;0providers/currentAPI/PDFpass.",
     "evidence": [
       "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json",
       "docs/agere/CLINICAL_ROUTING_DIAGNOSIS_2026-11-02.md",
@@ -502,19 +506,41 @@
       "artifacts/agere-verifier-cache-identity-2026-11-02/clinical-result-summary.json",
       "artifacts/agere-verifier-cache-identity-2026-11-02/ledger-preservation.json",
       "artifacts/agere-verifier-cache-identity-2026-11-02/current-app/server-process.json",
-      "artifacts/agere-verifier-cache-identity-2026-11-02/final-http-receipt.json"
+      "artifacts/agere-verifier-cache-identity-2026-11-02/final-http-receipt.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/delivery-receipt.json",
+      "docs/agere/FIELD_REVIEW_DISPOSITION_2026-11-02.md",
+      "artifacts/agere-field-review-disposition-2026-11-02/baseline-reproduction.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/retained-baseline-audit.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/retained-field-readings.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/final-path-tests.log",
+      "artifacts/agere-field-review-disposition-2026-11-02/disposition-tests.log",
+      "artifacts/agere-field-review-disposition-2026-11-02/consumer-baseline.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/consumer-proof.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/clinical/receipt.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/clinical/clinical-judgment-equality.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/clinical/actual-field-readings.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/clinical/retained-source-binding.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/current-delivery/receipt.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/current-delivery/compatibility.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/current-delivery/clinical.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/current-delivery/financial.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/current-delivery/financial-verdict.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/ledger-preservation.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/current-app/server-process.json",
+      "artifacts/agere-field-review-disposition-2026-11-02/final-http-receipt.json"
     ],
-    "remaining_gap": "Original57patient clinical answer remains partial/unverified. Independent source-family, clinical-role, model and outcome qualification and authentic total economics remain missing.; No matched whole-clinical cold/warm improvement has been established. Retained Perplexity failed/pending attempts stay protected; no repeat probe or purchase.; Customer deployment authority remains separate. OWASP/HHS remains explicitly deferred.",
-    "next_action": "Qualify one existing clinical source-to-claim role against the retained unresolved field obligations using equivalent source/date/entity-bound evidence and a simple baseline. Preserve all57patients and distinct field obligations; require measured correct/unknown/error behavior before promotion. Separate independently unqualified clinical claims from missing wiring. No broad provider campaign, threshold change, source-local/dedup default promotion or new catalog.",
+    "remaining_gap": "The original57patient clinical answer remains partial/unverified. Its field probabilities and508accepted support readings are machine judgments, not independent clinical/source-family/model/outcome qualification.; Current G3 whole-product engineering compatibility needs a finite current release decision; prior full9/9matrix/recovery is pinned to e400bb5, not restamped by this scoped delivery.; Matched whole-clinical cold/warm performance and authentic total economics remain unqualified. CurrentHTTPpatient context18.863s/PDF17.248s are observed checks, not a matched performance benchmark.; Customer deployment authority remains separate; OWASP/HHS remains deferred. Alltenacceptanceareas retained.",
+    "next_action": "Reconcile the current finite G3 engineering release against the corrected unknown-state and all-dependency handoff. Bind the existing ten-area scorecard to aec778d with explicit compatibility for unchanged workflows and recovery, rerun only affected predicates, and list ordinary whole-clinical performance plus independent clinical/model/outcome/economic qualification as distinct gaps. Do not repeat whole-cohort inference or a passing recovery drill just to restamp source hashes.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "All proof jobs terminal. Owned8890PID52132/session56374servesf1a87d9. No provider/training job or frozen source. SchedulerPAUSED.",
+    "coordination": "All proof jobs terminal;owned8890PID55536/session15433servesaec778d. No provider/training job or frozen source. SchedulerPAUSED.",
     "remaining_blockers": [
-      "Original57patient clinical answer remains partial/unverified. Independent source-family, clinical-role, model and outcome qualification and authentic total economics remain missing.",
-      "No matched whole-clinical cold/warm improvement has been established. Retained Perplexity failed/pending attempts stay protected; no repeat probe or purchase.",
-      "Customer deployment authority remains separate. OWASP/HHS remains explicitly deferred."
+      "The original57patient clinical answer remains partial/unverified. Its field probabilities and508accepted support readings are machine judgments, not independent clinical/source-family/model/outcome qualification.",
+      "Current G3 whole-product engineering compatibility needs a finite current release decision; prior full9/9matrix/recovery is pinned to e400bb5, not restamped by this scoped delivery.",
+      "Matched whole-clinical cold/warm performance and authentic total economics remain unqualified. CurrentHTTPpatient context18.863s/PDF17.248s are observed checks, not a matched performance benchmark.",
+      "Customer deployment authority remains separate; OWASP/HHS remains deferred. Alltenacceptanceareas retained."
     ],
     "latest_progress": "artifacts/agere-workspace-load-performance-2026-11-01/delivery-receipt.json",
-    "results_report": "docs/agere/VERIFIER_CACHE_IDENTITY_2026-11-02.md",
+    "results_report": "docs/agere/FIELD_REVIEW_DISPOSITION_2026-11-02.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -543,13 +569,13 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Scoped f1a87d9cache identity delivery verified; prior full9/9matrix at e400bb5",
+      "current_engineering": "Scoped aec778dfield-disposition/handoff/native/API/PDF verified;prior full9/9matrixe400bb5",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-verifier-cache-identity-2026-11-02/delivery-receipt.json"
+      "evidence": "artifacts/agere-field-review-disposition-2026-11-02/delivery-receipt.json"
     },
     "latest_human_steering": "Continue build; OWASP/HHS work deferred. Existing approvals persist.",
     "comparison_status": {
@@ -565,8 +591,8 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-02T18:37:03.501715+00:00",
-    "workflow_change": "SQL execution timing alone no longer invalidates native verifier evidence. Exact legacy compatibility reuses validated original attempts while retaining complete raw receipts and billing history.",
+    "at": "2026-11-02T20:04:43.276968+00:00",
+    "workflow_change": "Keep actual per-field judgment/threshold/provider disposition and distinguish acceptance uncertainty from source gaps. Compact actor feedback retains every unsettled packet, showing undecided votes as unknown with the raw label preserved.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -653,7 +679,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "SQL timing no longer turns unchanged native source/results into new verifier requests."
+    "measured_failure_removed": "Uncertainty attribution and compact pending-dependency omission corrected."
   },
   "decisions": [
     {
@@ -2643,6 +2669,25 @@
         "artifacts/agere-verifier-cache-identity-2026-11-02/final-http-receipt.json"
       ],
       "scope_impact": "Alltenareas retained;G3active/G5independentqualificationblocked. No thresholds/weights/clinical bottle promoted. Prior recovery preserved; no new fullmatrixclaim. OWASP/HHSdeferred;primary/main/scheduler unchanged."
+    },
+    {
+      "at": "2026-11-02T19:50:46.247437+00:00",
+      "gate": "G3",
+      "decision": "Qualify the existing field-review acceptance disposition before any new model/input-shape experiment.",
+      "reason": "All1497unsettled field entries use the source-does-not-settle explanation, although actualcachedJevreadings include1003supportedargmaxes,491faultlikeargmaxes and3unknownargmaxes, allbelow.8. The localizer discards probabilities/threshold/provider context and conflates acceptance uncertainty with a source-evidence gap.",
+      "scope_impact": "Alltenareas and independentG5requirements retained. This is observed-state wiring, not clinical truth or threshold tuning; no new inference needed."
+    },
+    {
+      "at": "2026-11-02T20:04:43.276968+00:00",
+      "gate": "G3",
+      "decision": "Repair observed field acceptance attribution and complete the same compact actor handoff; no new model campaign.",
+      "reason": "All1497unsettled field explanations previously claimed source nonresolution; actual2005readings expose1494belowthreshold+3abstentions. Consumer omitted16undecided supported votes. Current proofs retain all2005readings/57patientvalues and restoreall66pending dependencies,0providers.",
+      "evidence": [
+        "artifacts/agere-field-review-disposition-2026-11-02/delivery-receipt.json",
+        "artifacts/agere-field-review-disposition-2026-11-02/consumer-proof.json",
+        "artifacts/agere-field-review-disposition-2026-11-02/final-http-receipt.json"
+      ],
+      "scope_impact": "Alltenareas retained,G3active/G5independentqualificationblocked. No clinical meaning, thresholds, weights ormodel/default promotion. Next finite current engineering decision, with explicit independent qualification/performance gaps; no fresh fullmatrix/recovery claim."
     }
   ],
   "unsealed_work": null,
@@ -2673,7 +2718,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Qualify one existing clinical source-to-claim role against the retained unresolved field obligations using equivalent source/date/entity-bound evidence and a simple baseline. Preserve all57patients and distinct field obligations; require measured correct/unknown/error behavior before promotion. Separate independently unqualified clinical claims from missing wiring. No broad provider campaign, threshold change, source-local/dedup default promotion or new catalog.",
+  "next_action": "Reconcile the current finite G3 engineering release against the corrected unknown-state and all-dependency handoff. Bind the existing ten-area scorecard to aec778d with explicit compatibility for unchanged workflows and recovery, rerun only affected predicates, and list ordinary whole-clinical performance plus independent clinical/model/outcome/economic qualification as distinct gaps. Do not repeat whole-cohort inference or a passing recovery drill just to restamp source hashes.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2682,5 +2727,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-02T18:37:03.501715+00:00"
+  "latest_checkpoint": "2026-11-02T20:04:43.276968+00:00"
 }
