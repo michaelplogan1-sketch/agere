@@ -1,3 +1,9 @@
+# Current local update — November 2, 2026
+
+Product dcba5e0 is live on owned localhost8890. Concurrent question-cost ownership is repaired; current-policy patient/financial contexts and PDF/HTML/API access pass. The inspected57patientPDF remains byte-identical and clinical interpretation stays partial/unverified. The original12rowfinancialquestion completes in41.627seconds through validated22actionnative execution reuse with0Claudecallbacks. Its3newattempts are exactly owned; a Perplexityquota failure makes totalUSDunknown. All27273sharedattempts remain. 319testsrun/3skipped;25legacyanswer-guardfixture failures reproduceunchangedonbaseline. [Repair, diagnosis and local activation](QUESTION_COST_OWNERSHIP_2026-11-02.md) records the evidence. Current ten-area engineering acceptance/recovery compatibility and independentG5qualification remain distinct unfinished work. OWASP/HHS deferred by Mike; no provider/trainingjob or sourcefreeze; schedulerPAUSED. AGERE_BUILD_CONTROL.json owns sequencing.
+
+## Previous delivery detail
+
 # November 2 architecture and delivery-plan audit
 
 Product74984dd remains the latest scoped local delivery below; the audit changed no runtime source or patient/financial value. The [precommercial audit](PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md) records a reproduced concurrent cost-ownership defect,118targeted tests, one independent subscription critique and verified owner dispositions. The canonical sequence now resumes G3engineering for that repair and retained verifier diagnosis, while G5independent clinical/model/outcome qualification remains a separate blocked track. No commercial, clinical or full-MVP acceptance is claimed.

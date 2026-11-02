@@ -1,3 +1,15 @@
+# Current Agere checkpoint - 2026-11-02T12:30:06.846386+00:00
+
+G3 ACTIVE. dcba5e0costrepair locally activated on owned8890PID4014/session30789; current57patientPDF/HTML/API and ordinary12rowfinancialnative-reuse checks pass. No provider/training job or sourcefreeze. Scheduler PAUSED. Alltenareas retained; fullMVPacceptance false. OWASP/HHS deferred by Mike.
+
+Exact next: G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.
+
+Last sealed receipt: artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json. ClinicalcontextANS-35c555a3c593d5b494b7aee9, reportDLV-61BDF9D417EF stayspartial/unverified; PDFbyteidentical. OrdinaryfinancialcontextANS-c0b6f156fd24b8ea28b313ef, reportDLV-A1E9DD613A99 answered41.627s/22native/0Claudeactors/3ownednewattempts/6cachereuses;2Jevsuccesses and1unpricedPerplexityquotafailure. TotalUSDunknown, knownownedsubtotal$0.002593; no speedup/totalcost claim. Currentfinancialqualification separately added1Jevsuccess. All27273sharedattempts and6oldpending retained. Costrepair source receipt and exact66packet/1497feedback diagnosis preserved. G5independentqualification remains separate.
+
+AGERE_BUILD_CONTROL.json owns the one sequence and checkpoint.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-11-02T12:12:55.823630+00:00
 
 G3 ACTIVE. Cost-ownership source candidate dcba5e0 sealed; current policy/app promotion remains next. Exact retained66packet/1497feedback diagnosis completed. Known-good74984dd remains on8890; no provider/training job or source freeze. Scheduler PAUSED. All ten areas retained; full MVP acceptance false. Mike explicitly defers OWASP/HHS work.

@@ -1,6 +1,6 @@
 # Concurrent question-cost repair and retained source diagnosis — November 2, 2026
 
-G3 scoped engineering candidate. Concurrent patient/source workers retain their originating question, and genuinely ambiguous attempts no longer produce known per-question calls or USD. This is not whole-product MVP acceptance or a clinical/model promotion. OWASP/HHS assessment is deferred by Mike's current instruction; all ten acceptance areas remain in the canonical control.
+G3 scoped engineering delivery, now verified in the owned local runtime. Concurrent patient/source workers retain their originating question, and genuinely ambiguous attempts no longer produce known per-question calls or USD. This is not whole-product MVP acceptance or a clinical/model promotion. OWASP/HHS assessment is deferred by Mike's current instruction; all ten acceptance areas remain in the canonical control.
 
 ## Delivered behavior
 
@@ -33,4 +33,10 @@ The [exact Claude review](reviews/2026-11-02-claude-question-cost-ownership.md) 
 
 One subscription review returned after one DNS-failed provider attempt and one locally blocked retry. The explicit retry and all original rows are preserved in the separate review ledger. Returned usage has a $0.229092 API-equivalent estimate; actual subscription allocation and the failed transport's billing are unknown. No external Anthropic API key was used.
 
-This is a verified source candidate. The known-good 74984dd process remains the local runtime on 8890. Current policy/report rebind, ordinary-route checks and current ten-area engineering acceptance precede candidate promotion. Independent G5 qualification remains a distinct dependency and does not stop unrelated engineering. `AGERE_BUILD_CONTROL.json` retains the one exact next action.
+The repaired dcba5e0 candidate is now running on owned localhost8890 (PID4014/session30789). Current-policy contexts reopen and the API serves both reports. The patient PDF remains byte-identical. Its current context is `ANS-35c555a3c593d5b494b7aee9`; source interpretation remains partial/unverified.
+
+The original financial question completed through the normal stack entrypoint in 41.627 seconds, selecting qualified execution trace `b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01` with 22 native actions and zero Claude/actor callbacks. All 12 financial values match, with optional null fields normalized at serialization. Its receipt owns exactly three unique new attempts and six cache uses, with zero window attribution. Two Jev successes and one unpriced Perplexity quota failure give a known API subtotal of $0.002593 and an unknown total. This is not a speedup or total-cost-benefit claim. Current ordinary financial context: `ANS-c0b6f156fd24b8ea28b313ef`.
+
+The preceding current financial qualification separately needed one new Jev check of a changed final-support packet. Both current confirmation stages and the ordinary run preserve every prior attempt. The shared ledger now contains 27,273 attempts: 26,995 validated, 272 failed and the same six pending. No new Claude/source-reader campaign, trained weights or clinical full-question bottle was used. See `artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json` for the local activation evidence.
+
+Current ten-area engineering acceptance and materially affected recovery/compatibility checks remain. Independent G5 qualification remains a distinct dependency and does not stop unrelated engineering. `AGERE_BUILD_CONTROL.json` retains the one exact next action. Full MVP acceptance remains false; OWASP/HHS stay deferred by Mike.

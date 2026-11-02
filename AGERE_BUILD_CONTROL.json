@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-02T12:12:55.823630+00:00",
+  "updated_at": "2026-11-02T12:30:06.846386+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -346,6 +346,10 @@
         {
           "path": "artifacts/agere-question-cost-ownership-2026-11-02/delivery-receipt.json",
           "sha256": "7cdb3ed25df534efd5a1376dc18dc968c5e5ac6d5941c55f65bcf271c394b23d"
+        },
+        {
+          "path": "artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json",
+          "sha256": "7f3eca4c6206961db90e10efe9fff6d4e51b59d4d711b45e6b53f48e0b64e9b4"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -430,18 +434,18 @@
     }
   ],
   "checkpoint": {
-    "kind": "scoped_engineering_candidate_delivered",
+    "kind": "scoped_local_activation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Actual outer patient/source dispatch retains explicit originating question; genuinely ambiguous/unowned charges cannot be reported as known per-question usage. Early cache uses retain lineage. Only cost ownership crosses new executor boundaries.",
-    "measured_failure_reduction": "Two concurrent fixture questions previously each claimed2attempts from a2rowledger. Real patient-worker proof now claims1ownedattempt each, union2; missing/reuse-only/conflicting tags yield unknown, not known cost.",
+    "user_behavior_delta": "Current patient and financial PDF/HTML reports available after policy refresh;57patient/12financial values preserved. Per-question cost attribution confirmed through the normal financial entrypoint.",
+    "measured_failure_reduction": "Stale policy contexts replaced with current validated contexts. Actual normal-route paid_calls3 equals3unique owned reservations, windowed0, no ambiguous IDs, unpriced failedfallback retained.",
     "evidence": [
-      "docs/agere/QUESTION_COST_OWNERSHIP_2026-11-02.md",
-      "artifacts/agere-question-cost-ownership-2026-11-02/delivery-receipt.json",
-      "artifacts/agere-question-cost-ownership-2026-11-02/retained-verifier-diagnosis-exact/receipt.json"
+      "artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json",
+      "artifacts/agere-current-release-confirmation-2026-11-02/current-http/receipt.json",
+      "artifacts/agere-current-release-confirmation-2026-11-02/ordinary-output-audit.json"
     ],
-    "remaining_gap": "Cost-ownership repair and exact retained verifier diagnosis delivered as a source candidate. Current-policy ordinary-route/report/recovery confirmation and current ten-area engineering acceptance remain. All57source interpretations remain unverified; independent G5labels/economics and unavailable Perplexity fallback remain separate dependencies. No whole-workflow speedup or clinical qualification established.",
-    "next_action": "G3: confirm the dcba5e0 cost-ownership source candidate through the existing ordinary app routes before local promotion. Rebind retained clinical/financial contexts to the current policy using exact native work and only matching cached checks; preserve all57patients, partial source status,12financial rows, clear PDF/HTML and all-attempt ownership. Forbid new full-cohort/source-reading or training campaigns. Reopen and verify current app/report/recovery, then assess the current ten-area engineering release through existing scorecard with explicit compatibility and concrete dependencies. Use the exact66packet/2005field diagnosis to represent low-confidence and unavailable-fallback states; do not relabel raw votes as clinical errors or change thresholds. G5 independent qualification remains separate. OWASP/HHS deferred by Mike; schedulerPAUSED; no provider/training job pending.",
+    "remaining_gap": "Current ten-area engineering acceptance and materially affected recovery/compatibility checks remain. Clinical source support stays unverified; independent G5labels/economics and Perplexity quota are separate dependencies. OWASP/HHS assessment deferred by Mike.",
+    "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-question-cost-ownership.md",
     "coordination": "All providerjobs terminal; current8890serving; no sourcefreeze;schedulerPAUSED.",
     "remaining_blockers": [
@@ -501,23 +505,24 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-02T12:12:55.823630+00:00",
-    "workflow_change": "Actual outer patient/source dispatch retains explicit originating question; genuinely ambiguous/unowned charges cannot be reported as known per-question usage. Early cache uses retain lineage. Only cost ownership crosses new executor boundaries.",
+    "at": "2026-11-02T12:30:06.846386+00:00",
+    "workflow_change": "Current-policy saved patient/financial contexts reopen in the repaired local app. Ordinary financial question selects validated native execution reuse with0Claude callbacks,3ownednewattempts and6cacheuses; its1quota failure keeps totalUSDunknown.",
     "unsealed_work": {
-      "status": "awaiting_current_policy_workflow_confirmation",
-      "path": "artifacts/agere-current-release-confirmation-2026-11-02",
+      "status": "awaiting_current_ten_area_acceptance",
+      "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02",
       "source_frozen_for_run": false,
       "pid": null,
       "session": null,
-      "next_action": "G3: confirm the dcba5e0 cost-ownership source candidate through the existing ordinary app routes before local promotion. Rebind retained clinical/financial contexts to the current policy using exact native work and only matching cached checks; preserve all57patients, partial source status,12financial rows, clear PDF/HTML and all-attempt ownership. Forbid new full-cohort/source-reading or training campaigns. Reopen and verify current app/report/recovery, then assess the current ten-area engineering release through existing scorecard with explicit compatibility and concrete dependencies. Use the exact66packet/2005field diagnosis to represent low-confidence and unavailable-fallback states; do not relabel raw votes as clinical errors or change thresholds. G5 independent qualification remains separate. OWASP/HHS deferred by Mike; schedulerPAUSED; no provider/training job pending.",
-      "remaining_gap": "Cost-ownership repair and exact retained verifier diagnosis delivered as a source candidate. Current-policy ordinary-route/report/recovery confirmation and current ten-area engineering acceptance remain. All57source interpretations remain unverified; independent G5labels/economics and unavailable Perplexity fallback remain separate dependencies. No whole-workflow speedup or clinical qualification established."
+      "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
+      "remaining_gap": "Current ten-area engineering acceptance and materially affected recovery/compatibility checks remain. Clinical source support stays unverified; independent G5labels/economics and Perplexity quota are separate dependencies. OWASP/HHS assessment deferred by Mike."
     },
     "bottling_assessment": {
-      "current_clinical_full_question_bottle": false,
-      "current_financial_trace_promotion": true,
-      "known_good_financial_replay": "Current22nativeactions match raw12row baseline and fresh-executor outputs; retained qualification18.711s,0actor/source-reader calls. Currentselectedtrace; no new ordinary financial benchmark.",
-      "next": "No clinicalbottle or newweights untilsource/role qualification; retainexactnative/output/cost/rollbackguards.",
-      "current_financial_trace": "af5ae02162d8a08ea7207966826bb0dec3cf636c08ea39d56372bba1ea961763"
+      "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
+      "actual_ordinary_native_actions": 22,
+      "actual_ordinary_actor_callbacks": 0,
+      "clinical_full_question_promoted": false,
+      "new_weights": false,
+      "total_cost_qualified": false
     },
     "owner_review": {
       "at": "2026-10-29T11:48:18.601324+00:00",
@@ -1326,6 +1331,15 @@
       ],
       "scope_impact": "Alltenareas retained. No local default promotion or clinical/model acceptance. OWASP/HHS stay deferred; no new services, labels or source campaigns.",
       "correction": "Independent Claude reuse-only gap repaired. Carry only cost vars to preserve request identity. Optional helper binding removed after observed cache invalidation; interrupted offline candidate preserved and active source unchanged."
+    },
+    {
+      "at": "2026-11-02T12:30:06.846386+00:00",
+      "gate": "G3",
+      "decision": "Locally activate the reviewed cost repair after current context/report rebind and ordinary financial confirmation; assess current ten-area acceptance next.",
+      "evidence": [
+        "artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json"
+      ],
+      "scope_impact": "Only owned8890candidate; primary/main unchanged.57clinicalinterpretations stayunverified. Fournewsharedattempts retained:3Jevsuccesses and1Perplexityquota failure. NoClaude, weights, fullcohort/source campaign or independentclinical/model promotion. OWASP/HHS remain deferred."
     }
   ],
   "decision_log": [
@@ -2530,13 +2544,13 @@
     }
   ],
   "unsealed_work": {
-    "status": "awaiting_current_policy_workflow_confirmation",
-    "path": "artifacts/agere-current-release-confirmation-2026-11-02",
+    "status": "awaiting_current_ten_area_acceptance",
+    "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "next_action": "G3: confirm the dcba5e0 cost-ownership source candidate through the existing ordinary app routes before local promotion. Rebind retained clinical/financial contexts to the current policy using exact native work and only matching cached checks; preserve all57patients, partial source status,12financial rows, clear PDF/HTML and all-attempt ownership. Forbid new full-cohort/source-reading or training campaigns. Reopen and verify current app/report/recovery, then assess the current ten-area engineering release through existing scorecard with explicit compatibility and concrete dependencies. Use the exact66packet/2005field diagnosis to represent low-confidence and unavailable-fallback states; do not relabel raw votes as clinical errors or change thresholds. G5 independent qualification remains separate. OWASP/HHS deferred by Mike; schedulerPAUSED; no provider/training job pending.",
-    "remaining_gap": "Cost-ownership repair and exact retained verifier diagnosis delivered as a source candidate. Current-policy ordinary-route/report/recovery confirmation and current ten-area engineering acceptance remain. All57source interpretations remain unverified; independent G5labels/economics and unavailable Perplexity fallback remain separate dependencies. No whole-workflow speedup or clinical qualification established."
+    "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
+    "remaining_gap": "Current ten-area engineering acceptance and materially affected recovery/compatibility checks remain. Clinical source support stays unverified; independent G5labels/economics and Perplexity quota are separate dependencies. OWASP/HHS assessment deferred by Mike."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2565,7 +2579,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: confirm the dcba5e0 cost-ownership source candidate through the existing ordinary app routes before local promotion. Rebind retained clinical/financial contexts to the current policy using exact native work and only matching cached checks; preserve all57patients, partial source status,12financial rows, clear PDF/HTML and all-attempt ownership. Forbid new full-cohort/source-reading or training campaigns. Reopen and verify current app/report/recovery, then assess the current ten-area engineering release through existing scorecard with explicit compatibility and concrete dependencies. Use the exact66packet/2005field diagnosis to represent low-confidence and unavailable-fallback states; do not relabel raw votes as clinical errors or change thresholds. G5 independent qualification remains separate. OWASP/HHS deferred by Mike; schedulerPAUSED; no provider/training job pending.",
+  "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
