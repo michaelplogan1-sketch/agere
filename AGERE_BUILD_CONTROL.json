@@ -434,20 +434,26 @@
     }
   ],
   "checkpoint": {
-    "kind": "scoped_local_activation_delivered",
+    "kind": "scoped_local_source_revalidation_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current patient and financial PDF/HTML reports available after policy refresh;57patient/12financial values preserved. Per-question cost attribution confirmed through the normal financial entrypoint.",
-    "measured_failure_reduction": "Stale policy contexts replaced with current validated contexts. Actual normal-route paid_calls3 equals3unique owned reservations, windowed0, no ambiguous IDs, unpriced failedfallback retained.",
+    "user_behavior_delta": "Six historical source-grounded workflows reopen under current code with exact answers, decisions, work and follow-ups; unchanged evidence is not reinterpreted because transport bookkeeping changed.",
+    "measured_failure_reduction": "Six stale historical workflows now reopen exactly with zero provider attempts.",
     "evidence": [
-      "artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json",
-      "artifacts/agere-current-release-confirmation-2026-11-02/current-http/receipt.json",
-      "artifacts/agere-current-release-confirmation-2026-11-02/ordinary-output-audit.json"
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/final-source-acceptance/receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/current-runtime-http/receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/all-attempt-preservation.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/source-compatibility-tests-v7.log",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/source-conformance/run-receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/adapter-current/run-receipt.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/component-applicability.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/sequencing-correction.json",
+      "artifacts/agere-current-ten-area-acceptance-2026-11-02/claude-review/automatic-review-rejection.json"
     ],
-    "remaining_gap": "Current ten-area engineering acceptance and materially affected recovery/compatibility checks remain. Clinical source support stays unverified; independent G5labels/economics and Perplexity quota are separate dependencies. OWASP/HHS assessment deferred by Mike.",
-    "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
+    "remaining_gap": "Current acceptance bundle and executable recovery; independent clinical/model/outcome and economic evidence remain distinct dependencies. OWASP/HHS deferred; scheduler PAUSED.",
+    "next_action": "Finish current acceptance evidence using explicit source/module/function applicability and a new current executable installation/restart/recovery check. Source repair a2a7de5 is sealed; no provider/training/native validation job remains. Keep owned8890 PID9708 ready until the consistent recovery checkpoint requires stopping it. Preserve all ten areas and all attempts; no new full-cohort provider campaign.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-question-cost-ownership.md",
-    "coordination": "All providerjobs terminal; current8890serving; no sourcefreeze;schedulerPAUSED.",
+    "coordination": "All owned validation jobs terminal; product8890 PID9708 ready; source freeze released; scheduler PAUSED.",
     "remaining_blockers": [
       "Current-policy app/report/recovery and ten-area engineering release confirmation remain.",
       "Independent G5source-family/model/clinical/outcome labels and authentic compute/reviewer economics unavailable.",
@@ -505,16 +511,17 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-02T12:30:06.846386+00:00",
-    "workflow_change": "Current-policy saved patient/financial contexts reopen in the repaired local app. Ordinary financial question selects validated native execution reuse with0Claude callbacks,3ownednewattempts and6cacheuses; its1quota failure keeps totalUSDunknown.",
+    "at": "2026-11-02T14:16:23.497178+00:00",
+    "workflow_change": "Six historical source-grounded workflows reopen under current code with exact answers, decisions, work and follow-ups; unchanged evidence is not reinterpreted because transport bookkeeping changed.",
     "unsealed_work": {
-      "status": "awaiting_current_ten_area_acceptance",
+      "status": "preparing_current_acceptance_and_recovery",
       "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02",
       "source_frozen_for_run": false,
       "pid": null,
       "session": null,
-      "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
-      "remaining_gap": "Current ten-area engineering acceptance and materially affected recovery/compatibility checks remain. Clinical source support stays unverified; independent G5labels/economics and Perplexity quota are separate dependencies. OWASP/HHS assessment deferred by Mike."
+      "next_action": "Finish current acceptance evidence using explicit source/module/function applicability and a new current executable installation/restart/recovery check. Source repair a2a7de5 is sealed; no provider/training/native validation job remains. Keep owned8890 PID9708 ready until the consistent recovery checkpoint requires stopping it. Preserve all ten areas and all attempts; no new full-cohort provider campaign.",
+      "remaining_gap": "Current acceptance bundle and executable recovery; independent clinical/model/outcome and economic evidence remain distinct dependencies. OWASP/HHS deferred; scheduler PAUSED.",
+      "source_commit": "a2a7de5"
     },
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -1340,6 +1347,17 @@
         "artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json"
       ],
       "scope_impact": "Only owned8890candidate; primary/main unchanged.57clinicalinterpretations stayunverified. Fournewsharedattempts retained:3Jevsuccesses and1Perplexityquota failure. NoClaude, weights, fullcohort/source campaign or independentclinical/model promotion. OWASP/HHS remain deferred."
+    },
+    {
+      "at": "2026-11-02T12:59:41.835918+00:00",
+      "gate": "G3",
+      "decision": "Fix measured reusable-source-context invalidation before another acceptance run.",
+      "reason": "Allsixcurrentlegacyquestion/work/followup reopens fail at source-plan comparison. Received2,396,490literalrecords/4,115roster andsourceclocks are exact. Allsixpreviewdifferences are only derivedid and reference_tables implementationstamp, whose dependency includes transport bookkeeping/retry code. Add per-artifact current native reconstruction equality for source-selection/reference-context metadata; preserve originalIDs, sourcebytes/clocks and fail any substantive mutation. No newmodel, threshold, labels or automaticclinicalauthority. Also retain private recovery helper call compatibility.",
+      "evidence": [
+        "artifacts/agere-current-ten-area-acceptance-2026-11-02/six-plan-version-differences.json",
+        "artifacts/agere-current-ten-area-acceptance-2026-11-02/source-conformance/run-receipt.json"
+      ],
+      "scope_impact": "Metadata compatibility only when current fullnative content reconstrucexact; no waiver of source, context, request, parser or clinical guards."
     }
   ],
   "decision_log": [
@@ -2544,13 +2562,14 @@
     }
   ],
   "unsealed_work": {
-    "status": "awaiting_current_ten_area_acceptance",
+    "status": "preparing_current_acceptance_and_recovery",
     "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02",
     "source_frozen_for_run": false,
     "pid": null,
     "session": null,
-    "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
-    "remaining_gap": "Current ten-area engineering acceptance and materially affected recovery/compatibility checks remain. Clinical source support stays unverified; independent G5labels/economics and Perplexity quota are separate dependencies. OWASP/HHS assessment deferred by Mike."
+    "next_action": "Finish current acceptance evidence using explicit source/module/function applicability and a new current executable installation/restart/recovery check. Source repair a2a7de5 is sealed; no provider/training/native validation job remains. Keep owned8890 PID9708 ready until the consistent recovery checkpoint requires stopping it. Preserve all ten areas and all attempts; no new full-cohort provider campaign.",
+    "remaining_gap": "Current acceptance bundle and executable recovery; independent clinical/model/outcome and economic evidence remain distinct dependencies. OWASP/HHS deferred; scheduler PAUSED.",
+    "source_commit": "a2a7de5"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -2579,7 +2598,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: compute current ten-area engineering acceptance at dcba5e0/source de1e4873 using the existing scorecard and explicit code/source/workflow compatibility. Reuse historical checks only where applicability is demonstrated; execute materially affected current recovery and supported general-question/unknown/follow-up checks. Preserve current57patient partial report and ordinary12rowfinancial native reuse, every27273sharedattempt, correct question ownership, b41recovery and alltenareas. Source review remains low-confidence with unavailable Perplexityfallback; no threshold lowering, clinical/full-question promotion, broad training or repeated full-cohort campaign. G5 independent labels/outcome/economic qualification remains distinct and must not stop unrelated engineering. OWASP/HHS deferred by Mike. SchedulerPAUSED; owned8890dcba5e0PID4014/session30789ready; no provider/training job or source freeze.",
+  "next_action": "Finish current acceptance evidence using explicit source/module/function applicability and a new current executable installation/restart/recovery check. Source repair a2a7de5 is sealed; no provider/training/native validation job remains. Keep owned8890 PID9708 ready until the consistent recovery checkpoint requires stopping it. Preserve all ten areas and all attempts; no new full-cohort provider campaign.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2587,5 +2606,6 @@
       "at": "2026-11-02T11:34:53.811110+00:00",
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
-  ]
+  ],
+  "latest_checkpoint": "2026-11-02T14:16:23.497178+00:00"
 }

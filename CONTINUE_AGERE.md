@@ -1,3 +1,27 @@
+# Current Agere checkpoint - 2026-11-02T14:17:22.056618+00:00
+
+G3 ACTIVE. Source-reconstruction repair a2a7de5 sealed and live on owned8890 PID9708/session80658. All six final-current native API workflows reopen with exact answers, decisions, work and follow-ups; 198 regressions pass; current57patientPDF and12financialrows preserved. Zero new provider attempts; all27273rows exact. All owned validation jobs terminal and source freeze released. Scheduler PAUSED. All ten areas retained; fullMVPacceptance false.
+
+Exact next: Finish current acceptance evidence using explicit source/module/function applicability and a new current executable installation/restart/recovery check. Source repair a2a7de5 is sealed; no provider/training/native validation job remains. Keep owned8890 PID9708 ready until the consistent recovery checkpoint requires stopping it. Preserve all ten areas and all attempts; no new full-cohort provider campaign.
+
+Last sealed receipt: artifacts/agere-current-ten-area-acceptance-2026-11-02/source-delivery-receipt.json. Current received-source and independent adapter checks passed. Explicit component applicability permits reuse only of unchanged native functions/modules. Completed current full-roster financial/prediction audits retained; incomplete broad rerun and refused changing-source backup remain failures/incomplete, not passes. Claude source review was automatically rejected before dispatch; local owner review and executable checks support this scoped increment.
+
+AGERE_BUILD_CONTROL.json owns the one sequence.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-11-02T13:54:30.037284+00:00
+
+G3 ACTIVE. Source reconstruction candidate a2a7de5 committed and pushed; 198 targeted tests passed and six saved source/answer/decision/work/followup HTTP reopens matched exactly with zero new providers. Current candidate verification server PID9422, session16286, port49644; product dcba5e0 remains on8890. Full-population financial/prediction/discovery PID9435 and isolated source-mutation PID9425 are running. Source frozen; do not duplicate or edit. Adapter current native check passed. Scheduler PAUSED; all ten acceptance areas retained.
+
+Exact next: observe those existing checks, finish current routing and materially affected operations/recovery compatibility, then compute the nine engineering requirements. Clinical/model/outcome/economic qualification remains separate. OWASP/HHS deferred. One external Claude source-review dispatch was rejected by automatic approval review before any provider attempt; local owner review and executable checks continue without bypass.
+
+Last sealed delivery remains artifacts/agere-current-release-confirmation-2026-11-02/delivery-receipt.json. This broader acceptance work remains unsealed; no full MVP or clinical qualification claim.
+
+AGERE_BUILD_CONTROL.json owns the one sequence.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-11-02T12:30:06.846386+00:00
 
 G3 ACTIVE. dcba5e0costrepair locally activated on owned8890PID4014/session30789; current57patientPDF/HTML/API and ordinary12rowfinancialnative-reuse checks pass. No provider/training job or sourcefreeze. Scheduler PAUSED. Alltenareas retained; fullMVPacceptance false. OWASP/HHS deferred by Mike.
