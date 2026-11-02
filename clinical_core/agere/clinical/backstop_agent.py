@@ -1298,7 +1298,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                                       source_observation_path=getattr(stack,'path',None),
                                       long_context_decider=gate.s1().decide)
         n, usd = gate.cost(support)
-        assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback',
+        assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback','field_review_states',
                           'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked',
                           'blocked_family_ids','global_stop')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
@@ -1846,13 +1846,47 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
                 'reason':'Not sent: repair the diagnosed dependency first. This packet has not been accepted or rejected.'})
     failed=[r for r in results if r['label']in ('contradicted','not_established')and r.get('decided_by')]
     settled=bool(results)and all(r['label']=='supported'and r.get('decided_by')for r in results)
+    feedback=[f for r in results for f in r.get('claim_feedback',[])]
+    from collections import Counter
+    review_states=Counter((f.get('verification_observation')or{}).get('state','undetermined')for f in feedback)
     return {'label':'supported'if settled else failed[0]['label']if failed else 'unknown',
         'decided_by':'all_dependency_checks'if settled or failed else None,'steps':steps,'packets':results,
         'complete_dependency_packets':logical_count,'scheduled_source_packets':len(scheduled),
         'checked_source_packets':len(observed),'unchecked_packet_ids':unchecked,
         'packet_manifest_complete':True,'blocked_family_ids':sorted(blocked),'global_stop':stopped,
         'all_dependencies_checked':not unchecked,'failed_packet_ids':[r['id']for r in failed],
-        'claim_feedback':[f for r in results for f in r.get('claim_feedback',[])]}
+        'claim_feedback':feedback,'field_review_states':dict(sorted(review_states.items()))}
+
+
+def field_review_observation(reading,steps,claim_id):
+    """Explain acceptance from observed model/service state, never source truth.
+
+    A below-threshold vote is not evidence that the source is missing or wrong.
+    Preserve the actual reading and fallback disposition without reclassifying
+    the claim, changing a threshold or requesting another provider response.
+    """
+    judgment={k:reading[k]for k in ('label','probabilities','probability','threshold','provider','model','decided_by')if k in reading}
+    attempts=[{k:s[k]for k in ('provider','status','request_hash','cache_hit')if k in s}
+        for s in steps if not s.get('fields')or claim_id in s['fields']]
+    p=reading.get('probability');threshold=reading.get('threshold')
+    numeric=lambda x:type(x)in(int,float)and math.isfinite(x)
+    if reading.get('decided_by')and reading.get('label')!='unknown':
+        state='decided_fault';reason=None
+    elif reading.get('probabilities')and reading.get('label')=='unknown':
+        state='model_abstained';reason='The model returned an unknown judgment; this does not establish missing or incorrect source evidence.'
+    elif numeric(p)and numeric(threshold)and p<threshold:
+        state='below_acceptance_threshold'
+        reason=('The model favored '+str(reading.get('label'))+' at probability '+format(p,'.6g')+
+            ', below the required '+format(threshold,'.6g')+'; no support or source fault is established.')
+    elif any(claim_id in(s.get('invalid_fields')or{})for s in steps):
+        state='invalid_provider_response';reason='No valid typed judgment was returned for this field; its source support remains unassessed.'
+    elif not reading.get('probabilities')and any(s.get('status')=='error'for s in steps):
+        state='provider_unavailable';reason='No model judgment was available for this field because provider execution failed or was blocked; no source conclusion is inferred.'
+    elif not reading.get('probabilities')and attempts and all(s.get('status')=='prepared'for s in attempts):
+        state='not_executed';reason='The field check was prepared but not executed; no source conclusion is inferred.'
+    else:
+        state='undetermined';reason='The recorded review does not establish why this field remains unsettled; inspect its judgment and provider receipts.'
+    return {'schema':'typed-field-review-observation/1','state':state,'model_judgment':judgment,'attempts':attempts},reason
 
 
 def localize_support_failure(packet,judge,*,as_of,ledger):
@@ -1915,6 +1949,7 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
         for claim in chunk:
             reading=result.get('judgments',{}).get(claim['id'],{})
             if reading.get('label')=='supported' and reading.get('decided_by'):continue
+            observation,review_reason=field_review_observation(reading,result.get('steps')or[],claim['id'])
             label=reading.get('label') if reading.get('decided_by') else 'unknown'
             value=_claim_value(state,claim['path'])
             source_assertion=(value.get('assertion')if isinstance(value.get('assertion'),dict)else
@@ -1922,7 +1957,8 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
             cited_ids={s['citation']['record_id']for s in state.get('cited_source_evidence',[])
                 if isinstance(value,str)and s['citation']['record_id']in value}
             feedback.append({'packet_id':packet['id'],'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
-                'label':label,'reason':options.get(label,options['unknown']),'decided_by':reading.get('decided_by'),
+                'label':label,'reason':review_reason or options.get(label,options['unknown']),'decided_by':reading.get('decided_by'),
+                'verification_observation':observation,
                 **({'source_assertion_id':source_assertion['id']}if isinstance(source_assertion.get('id'),str)else {}),
                 'source_record_ids':sorted(source_ids(value) or cited_ids or source_ids(state.get('evidence',[]))),'result_view':packet.get('result_view')})
     return {'feedback':feedback,'steps':steps}

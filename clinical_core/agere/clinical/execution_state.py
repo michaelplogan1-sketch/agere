@@ -332,11 +332,16 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             if coverage:
                 state['current_review_feedback']['coverage']={k:coverage[k]for k in ('label','reasons','reject')if k in coverage}
             support=feedback.get('support')or{}
+            if support.get('field_review_states'):
+                state['current_review_feedback']['field_review_states']=support['field_review_states']
             fields=('id','patient_id','label','reason') if feedback_native is not None else ('id','label','reason','claim_feedback')
             pending=[]
             for packet in support.get('packets',[]):
-                if packet.get('label')=='supported':continue
+                if packet.get('label')=='supported'and packet.get('decided_by'):continue
                 item={k:packet[k]for k in fields if k in packet}
+                if not packet.get('decided_by'):
+                    item['label']='unknown'
+                    if packet.get('label')!='unknown':item['observed_label']=packet.get('label')
                 if feedback_native is not None:item['claim_feedback_entries']=len(packet.get('claim_feedback')or[])
                 pending.append(item)
             if pending:state['current_review_feedback']['unresolved_dependencies']=pending

@@ -37,13 +37,25 @@ def feedback():
                 {'id': 'opaque-7', 'patient_id': 'A', 'label': 'unknown', 'reason': 'Ambiguous date',
                  'claim_feedback': [{'field': 'encounter_date', 'path': ['answer_rows', 0, 'encounter_date'],
                                      'label': 'unknown', 'source_record_ids': ['r1', 'r2'], 'quote': 'Source text. ' * 20000}]},
-                {'id': 'opaque-supported', 'label': 'supported', 'claim_feedback': []}]}}
+                {'id': 'opaque-supported', 'label': 'supported', 'decided_by': 'fixture', 'claim_feedback': []}]}}
 
 
 class NativeReviewFeedback(unittest.TestCase):
     def setUp(self):
         self.tools = NativeTools()
         self.addCleanup(self.tools.db.close)
+
+    def test_undecided_votes_remain_visible_as_unknown_with_review_states(self):
+        review=feedback();review['support']['field_review_states']={'below_acceptance_threshold':1}
+        for vote in ('supported','contradicted','not_established','unknown'):
+            review['support']['packets'][0]['label']=vote
+            ref=E.review_reference(review,self.tools)
+            state=json.loads(E.messages('Keep every source dependency.',[],feedback=review,feedback_native=ref)[0]['content'])
+            visible=state['current_review_feedback'];pending=visible['unresolved_dependencies']
+            self.assertEqual(len(pending),1);self.assertEqual(pending[0]['label'],'unknown')
+            if vote!='unknown':self.assertEqual(pending[0]['observed_label'],vote)
+            self.assertEqual(visible['field_review_states'],{'below_acceptance_threshold':1})
+            self.assertEqual(review['support']['packets'][0]['label'],vote)
 
     def test_complete_receipt_and_claim_paths_remain_exact_and_queryable(self):
         review = feedback()
