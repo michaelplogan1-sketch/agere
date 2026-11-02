@@ -45,5 +45,14 @@
     "no_patient_document_token_or_workflow_cap": true,
     "original_context_reopen_seconds": 10.761474999948405,
     "not_a_whole_clinical_workflow_speedup_claim": true
+  },
+  "latest_scoped_followup": {
+    "product_commit": "f4cea430d6c6d4b57e7633f91ad28f03e6d100bd",
+    "receipt": "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json",
+    "targeted_checks": 99,
+    "full_matrix_reassessed": false,
+    "clinical_status": "partial",
+    "financial_status": "answered",
+    "full_mvp_acceptance": false
   }
 }

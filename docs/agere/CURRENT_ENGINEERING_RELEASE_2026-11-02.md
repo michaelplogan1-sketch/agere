@@ -1,6 +1,6 @@
 # Current synthetic engineering release — November 2
 
-The current candidate passes **nine of nine engineering requirements**, covering all ten acceptance areas. Product/config commit `e400bb5` is running on owned localhost 8890. The existing private integration branch and draft PR remain the delivery surface; main and primary 8885 are unchanged.
+The `e400bb5` candidate passed **nine of nine engineering requirements**, covering all ten acceptance areas. The latest scoped routing follow-up `f4cea43` now runs on owned localhost8890; its current native/API checks are described in [the routing diagnosis](CLINICAL_ROUTING_DIAGNOSIS_2026-11-02.md). The full matrix and executable recovery below remain pinned to e400bb5. The existing private integration branch and draft PR remain the delivery surface; main and primary 8885 are unchanged.
 
 This is an engineering acceptance result. Full MVP qualification remains false: the original 57-patient clinical answer is partial, its source interpretations remain unverified, and independent model/clinical/outcome qualification and authentic total economics are missing. The earlier 20m26s ordinary clinical result is not replaced by a claimed whole-workflow speedup. Perplexity fallback remains unavailable in the retained quota receipts. OWASP/HHS work is deferred.
 

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-02T16:12:07.102864+00:00",
+  "updated_at": "2026-11-02T17:17:48.139695+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -362,6 +362,10 @@
         {
           "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json",
           "sha256": "9b6894fb8be63855c12f8af4af734d68ed2530538ade29d53863f84028452b7f"
+        },
+        {
+          "path": "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json",
+          "sha256": "9ecb06683e09718bedd204113c64cab3887a4053aff9a06bbbb0c1b23916b8fe"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -369,7 +373,7 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "The original57patient clinical answer remains partial/unverified. Independent source/clinical-role qualification and acceptable measured whole-clinical first-run performance remain open; engineering9/9 does not resolve those requirements.",
-      "engineering_current_status": "passed9of9"
+      "engineering_current_status": "prior e400bb5matrix9/9; scoped f4cea43routing correction verified"
     },
     {
       "id": "G5",
@@ -447,37 +451,45 @@
     }
   ],
   "checkpoint": {
-    "kind": "browser_corrected_current_engineering_release_delivered",
+    "kind": "unresolved_field_routing_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Original57-patient workspace transfers1.51MB instead of363.70MB, preserving every patient/answer/source/work value; saved patient and financial reports reopen in current and installed apps.",
-    "measured_failure_reduction": "Actual original clinical action-context wire size reduced99.5836%;62focused checks pass;9/9engineering requirements rebound to current browser-corrected code. Source reconstruction198checks remain applicable.",
+    "user_behavior_delta": "Unsettled packet argmax labels and explicitly unknown field feedback no longer trigger automatic actor promotion. Existing evidence-progress protection retains the partial answer when evidence is unchanged. Located faults retain ordinary checked escalation.",
+    "measured_failure_reduction": "Actual retained unknown-field routing changes1automatic actor promotion to0in the scripted tool-loop reproduction; all57patient values preserved and current native/API/PDF checks pass.",
     "evidence": [
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/acceptance/receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/acceptance/scorecard.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/current-operations-proof.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/installed-http/receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/final-live-receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-payload-native-proof.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-transport-http-v2/receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-projection-tests.log",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/delivery-receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/source-delivery-receipt.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/component-applicability.json",
-      "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json"
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json",
+      "docs/agere/CLINICAL_ROUTING_DIAGNOSIS_2026-11-02.md",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/retained-input-audit.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/trial-summary.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/trial-v2/protocol.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/trial-v2/run-receipt.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/trial-v2/all-attempts.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/review/review-run.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/review/provider-receipt.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/baseline-unknown-feedback-routing.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/candidate-v2-unknown-feedback-routing.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/routing-tests-v2.log",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/current-clinical-validation/receipt.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/current-clinical-validation/retained-source-binding.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/independent-source-audit.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/all-new-attempts.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/final-http-receipt.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/implementation-scope.json",
+      "artifacts/agere-clinical-role-diagnosis-2026-11-02/cache-identity-diagnosis.json"
     ],
-    "remaining_gap": "Original 57-patient clinical answer remains partial/unverified; independent source-family and clinical-role reference evidence is missing.; No matched current whole-clinical first-run latency improvement or authentic complete compute/reviewer/billing economics has been established.; Selected outcome targets are single-class; independent model/outcome qualification and relevant fair baselines remain open.; Perplexity fallback quota dependency remains; customer connections and deployment authority are separate. OWASP/HHS work is explicitly deferred.",
-    "next_action": "Continue G3 from the sealed browser-corrected engineering candidate. Reconcile the retained principal/Claude findings against current evidence; target the unresolved clinical interpretation and role-routing failures with equivalent source packets and appropriate native/small/frontier baselines, without treating model agreement as clinical truth. Independent clinical/reference evidence, viable outcomes and complete economics remain named G5 dependencies. Diagnose the original full clinical runtime from the existing trace before authorizing a changed-path confirmation. Do not repeat broad source/training/architecture work or a passing recovery drill; do not promote thresholds, weights or clinical bottles from engineering passes.",
-    "latest_review": "docs/agere/reviews/2026-11-02-claude-question-cost-ownership.md",
-    "coordination": "All recovery/HTTP/acceptance jobs terminalpassed. Owned8890PID41764/session84238 remains running at e400bb5. No provider/training job or frozen source; schedulerPAUSED.",
+    "remaining_gap": "Native verifier identity includes volatile top-level elapsed_s; two exact22-action financial executions changed22result digests and request hashes. Fix stable evidence identity with raw provenance preserved and exact legacy compatibility.; Original57patient clinical answer remains partial; independent source-family/clinical/model/outcome qualification and authentic total economics remain missing.; No matched whole-clinical cold/warm improvement has been established. Perplexity fallback remains unavailable in retained receipts; no repeat probe or purchase.; Customer deployment authority remains separate. OWASP/HHS work remains explicitly deferred.",
+    "next_action": "Native verifier identity includes volatile top-level elapsed_s; two exact22-action financial executions changed22result digests and request hashes. Fix stable evidence identity with raw provenance preserved and exact legacy compatibility. Use the existing support-packet/native receipt path, authored metadata-versus-business-value mutations, and exact retained request reconstruction. No threshold/weight/clinical promotion, whole-cohort rerun or repeated passing recovery drill. Retain alltenareas and separate G5dependencies.",
+    "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
+    "coordination": "All review/trial/native/HTTP jobs terminal. Owned8890PID48432/session61913 remains ready. No provider/training job or frozen source; schedulerPAUSED.",
     "remaining_blockers": [
-      "Original 57-patient clinical answer remains partial/unverified; independent source-family and clinical-role reference evidence is missing.",
-      "No matched current whole-clinical first-run latency improvement or authentic complete compute/reviewer/billing economics has been established.",
-      "Selected outcome targets are single-class; independent model/outcome qualification and relevant fair baselines remain open.",
-      "Perplexity fallback quota dependency remains; customer connections and deployment authority are separate. OWASP/HHS work is explicitly deferred."
+      "Native verifier identity includes volatile top-level elapsed_s; two exact22-action financial executions changed22result digests and request hashes. Fix stable evidence identity with raw provenance preserved and exact legacy compatibility.",
+      "Original57patient clinical answer remains partial; independent source-family/clinical/model/outcome qualification and authentic total economics remain missing.",
+      "No matched whole-clinical cold/warm improvement has been established. Perplexity fallback remains unavailable in retained receipts; no repeat probe or purchase.",
+      "Customer deployment authority remains separate. OWASP/HHS work remains explicitly deferred."
     ],
     "latest_progress": "artifacts/agere-workspace-load-performance-2026-11-01/delivery-receipt.json",
-    "results_report": "docs/agere/CURRENT_ENGINEERING_RELEASE_2026-11-02.md",
+    "results_report": "docs/agere/CLINICAL_ROUTING_DIAGNOSIS_2026-11-02.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -506,13 +518,13 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "passed9of9",
+      "current_engineering": "Scoped routing correction verified; prior full9/9matrix preserved at e400bb5",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json"
+      "evidence": "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json"
     },
     "latest_human_steering": "Continue build; OWASP/HHS work deferred. Existing approvals persist.",
     "comparison_status": {
@@ -528,8 +540,8 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-02T16:12:07.102864+00:00",
-    "workflow_change": "Existing browser inspection uses immutable intermediate references and lossless transport; current executable installation,57review-item restart/idempotency, actual uncommitted WAL rollback, fresh restore and actual HTTP pass.",
+    "at": "2026-11-02T17:17:48.139695+00:00",
+    "workflow_change": "Unsettled packet argmax labels and explicitly unknown field feedback no longer trigger automatic actor promotion. Existing evidence-progress protection retains the partial answer when evidence is unchanged. Located faults retain ordinary checked escalation.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -2583,6 +2595,17 @@
         "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/installed-http/receipt.json"
       ],
       "scope_impact": "Alltenareas retained. G3clinical remainsactive and G5independent qualificationblocked; no clinical authority, weight/threshold/bottle promotion or new service. The latest user requests an explainer and asks about a focused audit; no build pause or new window requested."
+    },
+    {
+      "at": "2026-11-02T17:17:48.139695+00:00",
+      "gate": "G3",
+      "decision": "Reject source-local/deduplication default promotion from the fixed trial; fix the reproduced unresolved-feedback/undecided-argmax escalation defect in the existing guard.",
+      "reason": "Whole authored input resolved8/8versus7plus1unknown locally. Actual1497unknown field entries with no located fault caused automatic stronger-actor promotion. Corrected real tool-loop reproduction removes that promotion and preserves partial57patient output;99tests plus actual current native/HTTP pass.",
+      "evidence": [
+        "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json",
+        "artifacts/agere-clinical-role-diagnosis-2026-11-02/cache-identity-diagnosis.json"
+      ],
+      "scope_impact": "Alltenareas retained. No clinical labels, thresholds, weights or clinical bottle promoted. Prior recovery preserved; no fresh full-matrix assertion. Next is observed operational-timing cache identity churn; G5independent qualification remains blocked."
     }
   ],
   "unsealed_work": null,
@@ -2613,7 +2636,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Continue G3 from the sealed browser-corrected engineering candidate. Reconcile the retained principal/Claude findings against current evidence; target the unresolved clinical interpretation and role-routing failures with equivalent source packets and appropriate native/small/frontier baselines, without treating model agreement as clinical truth. Independent clinical/reference evidence, viable outcomes and complete economics remain named G5 dependencies. Diagnose the original full clinical runtime from the existing trace before authorizing a changed-path confirmation. Do not repeat broad source/training/architecture work or a passing recovery drill; do not promote thresholds, weights or clinical bottles from engineering passes.",
+  "next_action": "Native verifier identity includes volatile top-level elapsed_s; two exact22-action financial executions changed22result digests and request hashes. Fix stable evidence identity with raw provenance preserved and exact legacy compatibility. Use the existing support-packet/native receipt path, authored metadata-versus-business-value mutations, and exact retained request reconstruction. No threshold/weight/clinical promotion, whole-cohort rerun or repeated passing recovery drill. Retain alltenareas and separate G5dependencies.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2622,5 +2645,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-02T16:12:07.102864+00:00"
+  "latest_checkpoint": "2026-11-02T17:17:48.139695+00:00"
 }
