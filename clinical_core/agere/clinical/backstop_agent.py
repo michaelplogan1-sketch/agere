@@ -24,6 +24,7 @@ System One reviews completeness and evidence support before a final answer ends 
 """
 import json
 import hashlib
+import math
 import os
 import re
 import sqlite3
@@ -1424,8 +1425,9 @@ def documentary_sources(value):
 def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
-    Operational probabilities/timing are retained in the native receipt, bound
-    by digest here. They are not clinical evidence. No patient/finding is sampled.
+    Raw operational receipts remain intact. SQL elapsed time is excluded only
+    from the verifier's receipt digest; its exact old view remains available
+    for checked cache compatibility. No patient/finding is sampled.
     Global claims see all final rows and shared scalars. Patient claims see every
     observed row for that patient and shared results in the final view's native
     dependency closure; unknown lineage retains all shared results.
@@ -1434,7 +1436,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     from ...contracts import digest
     from ..deliverables.receipts import compact_json,readable_json
     from .execution_state import OPERATIONAL_FEEDBACK_AUTHORITIES,operational_feedback_result,review_limitation_view
-    by={};shared={};shared_views={};native=[];origins={};shared_origins={}
+    by={};shared={};shared_views={};native=[];legacy_native=[];timing_bindings=[];origins={};shared_origins={}
     local_dependencies=native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')])
     operational_views={c['result']['result_view'] for c in calls
         if isinstance(c.get('result'),dict) and c['result'].get('result_view') and operational_feedback_result(c['result'])}
@@ -1478,9 +1480,20 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         view=observed.get('result_view')if isinstance(observed,dict)else None
         origin={'kind':'executed_native_result','result_view':view,'tool':c.get('name'),'input_digest':digest(c.get('input'))}
         native.append({'tool_index':i,'tool':c.get('name'),'result_view':view,'input_digest':digest(c.get('input')),'result_digest':digest(observed)})
+        legacy_native.append(dict(native[-1]))
+        elapsed=observed.get('elapsed_s')if isinstance(observed,dict)else None
+        # Only the SQL executor's reserved top-level metric is operational.
+        # Business columns/rows (including elapsed_s) and other tools stay exact.
+        if(c.get('name')=='query_sql'and isinstance(observed,dict)and isinstance(observed.get('rows'),list)
+           and isinstance(observed.get('columns'),list)and isinstance(observed.get('executed_query'),str)
+           and view and type(elapsed)in(int,float)and math.isfinite(elapsed)and elapsed>=0):
+            native[-1]['result_digest']=digest({k:v for k,v in observed.items()if k!='elapsed_s'})
+            timing_bindings.append({'index':i,'legacy_digest':legacy_native[-1]['result_digest'],
+                'current_digest':native[-1]['result_digest'],'excluded_fields':['elapsed_s']})
         if view in excluded_operational:
             native[-1]['operational_inputs']={'authority':'unverified_review_feedback',
                 'rows':len(observed.get('rows')or[]),'excluded_from_clinical_evidence':True}
+            legacy_native[-1]['operational_inputs']=dict(native[-1]['operational_inputs'])
             continue
         rows=observed.get('rows')if isinstance(observed,dict)else None
         if isinstance(rows,list):
@@ -1597,6 +1610,13 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     # Conservative UTF-8 byte bound beneath the smallest live context's token
     # limit, including prompt overhead. It bounds requests, never population.
     # An oversized dependency cannot be silently sampled or certified.
+    def encode(packet):
+        readable=json.dumps(readable_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
+        text=readable if len(readable.encode())<=230000 else json.dumps(compact_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
+        if len(text.encode())>230000:
+            alternate=json.dumps(compact_json(packet,expand_json_strings=True),ensure_ascii=False,separators=(',',':'),default=str)
+            if len(alternate.encode())<len(text.encode()):text=alternate
+        return text,text==readable
     result=[]
     for packet in packets:
         claims=[]
@@ -1612,11 +1632,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                     if key=='patient_id':continue
                     claims.append({'id':'claim_'+str(len(claims)),'field':str(key),'path':['answer_rows',i,key]})
         packet['claim_manifest']=claims
-        readable=json.dumps(readable_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
-        text=readable if len(readable.encode())<=230000 else json.dumps(compact_json(packet),ensure_ascii=False,separators=(',',':'),default=str)
-        if len(text.encode())>230000:
-            alternate=json.dumps(compact_json(packet,expand_json_strings=True),ensure_ascii=False,separators=(',',':'),default=str)
-            if len(alternate.encode())<len(text.encode()):text=alternate
+        text,readable=encode(packet)
         result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':not bool(unsafe_operational),
             **({'operational_claim_dependencies':sorted(unsafe_operational)} if unsafe_operational else {}),
             **({'source_dependency_patient_id':packet['patient_id'],'patient_dependency_bound':True}
@@ -1624,7 +1640,12 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                   all(r.get('patient_id')==packet['patient_id']for r in packet['answer_rows'])else{}),
             'source_context_complete':not bool(packet.get('source_context_gaps')),
             'claim_manifest':claims,'result_view':final_view,
-            'representation':'readable_native_json' if text==readable else 'lossless_compact_fallback'})
+            'representation':'readable_native_json' if readable else 'lossless_compact_fallback'})
+        if packet['id']=='summary'and timing_bindings:
+            legacy={**packet,'native_bindings':legacy_native};legacy_text,_=encode(legacy)
+            result[-1]['native_timing_compatibility']={'schema':'native-query-timing-cache/1',
+                'current_fingerprint':digest(packet),'legacy_fingerprint':digest(legacy),
+                'bindings':timing_bindings,'legacy_text':legacy_text}
     return result
 
 
@@ -1731,7 +1752,8 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
             task_key='agere_investigation_support_dependency_long_context' if oversized else 'agere_investigation_support_dependency',
             ledger=worker_ledger,allow_live=True,select_source=False,
-            long_context=packet['bytes']>32768,**({'order':('jev',)} if oversized else {}))
+            long_context=packet['bytes']>32768,**({'order':('jev',)} if oversized else {}),
+            **({'cache_evidence':packet['native_timing_compatibility']}if packet.get('native_timing_compatibility')else{}))
         checked={**identity,**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
         if oversized:
             route={'requested_provider':'jev','mode':'documented_long_context','declared_context':'262k tokens per request and per question',
@@ -1840,6 +1862,14 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
     state=uncompact_json(json.loads(packet['text']))
     readable=json.dumps(state,ensure_ascii=False,separators=(',',':'),default=str)
     source_text=readable if len(readable.encode())<=230000 else packet['text']
+    compatibility=packet.get('native_timing_compatibility')
+    if compatibility:
+        from .evidence_projection import native_timing_legacy_evidence
+        if native_timing_legacy_evidence([{'id':packet['id'],'date':packet['date'],'text':packet['text']}],compatibility):
+            legacy_state=uncompact_json(json.loads(compatibility['legacy_text']))
+            legacy_readable=json.dumps(legacy_state,ensure_ascii=False,separators=(',',':'),default=str)
+            compatibility={**compatibility,'legacy_text':legacy_readable if len(legacy_readable.encode())<=230000 else compatibility['legacy_text']}
+        else:compatibility=None
     def source_ids(value):
         ids=set()
         if isinstance(value,str) and value[:1] in ('{','['):
@@ -1879,7 +1909,8 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
             # in the same source packet. No source bytes or fields are cut.
         with component('claim_local_source_review',packet_id=packet['id'],fields=len(named)):
             result=judge('Localize the source-supported failure in each named answer field',named,
-                [{'id':packet['id'],'date':packet['date'],'text':source_text}],as_of=as_of,ledger=ledger,allow_live=True,long_context=len(source_text.encode())>32768)
+                [{'id':packet['id'],'date':packet['date'],'text':source_text}],as_of=as_of,ledger=ledger,allow_live=True,long_context=len(source_text.encode())>32768,
+                **({'cache_evidence':compatibility}if compatibility else{}))
         steps.extend(result.get('steps')or[])
         for claim in chunk:
             reading=result.get('judgments',{}).get(claim['id'],{})

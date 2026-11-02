@@ -72,6 +72,47 @@ class BudgetLedger:
             self.db.commit()
             return {'logical_request_hash':key,'request_hash':attempt,'prior_attempt_key':prior,'prior_failed_attempt_preserved':True}
         except Exception:self.db.rollback();raise
+    def cached_equivalent(self,key,provider,model):
+        """Read an exact producer-proven cache binding; never replace an attempt.
+
+        Actual requests and explicit retries take precedence. The target stays
+        the original validated, priced attempt, including its immutable bytes.
+        This index is not a reservation, retry authorization or clinical label.
+        """
+        if self.db.execute('SELECT 1 FROM calls WHERE id=?',(key,)).fetchone():return None
+        if self.db.execute('SELECT 1 FROM request_retries WHERE attempt_key=?',(key,)).fetchone():return None
+        if not self.db.execute("SELECT 1 FROM sqlite_master WHERE type='table'AND name='request_equivalences'").fetchone():return None
+        row=self.db.execute('SELECT payload FROM request_equivalences WHERE request_key=?',(key,)).fetchone()
+        if not row:return None
+        saved=json.loads(row[0]);proof={k:v for k,v in saved.items()if k!='payload_digest'}
+        if(saved.get('schema')!='native-query-timing-cache/1'or saved.get('request_key')!=key
+           or saved.get('provider')!=provider or saved.get('model')!=model
+           or saved.get('payload_digest')!=digest(proof)):
+            raise ValueError('Equivalent request cache binding changed')
+        original=self.db.execute('SELECT * FROM calls WHERE id=?',(saved.get('attempt_key'),)).fetchone()
+        if(not original or original[1]!=provider or original[2]!=model or original[4]!='validated'
+           or not original[5]or digest(original)!=saved.get('attempt_digest')):
+            raise ValueError('Equivalent request cache target changed or is not validated')
+        return {'raw':json.loads(original[5]),'request_hash':original[0],
+                'cache_compatibility':{'schema':saved['schema'],'canonical_request_hash':key,
+                    'original_request_hash':original[0],'proof_digest':saved['proof_digest']}}
+    def remember_equivalent(self,key,attempt,provider,model,proof):
+        """Append a checked cache index without creating or editing billable rows."""
+        with self.db:
+            self.db.execute('''CREATE TABLE IF NOT EXISTS request_equivalences(
+                request_key TEXT PRIMARY KEY,payload TEXT NOT NULL)''')
+            # A real failed/pending request or retry authorization is never
+            # hidden by a successful older equivalent response.
+            if self.db.execute('SELECT 1 FROM calls WHERE id=?',(key,)).fetchone():return False
+            if self.db.execute('SELECT 1 FROM request_retries WHERE attempt_key=?',(key,)).fetchone():return False
+            row=self.db.execute('SELECT * FROM calls WHERE id=?',(attempt,)).fetchone()
+            if(not row or row[1]!=provider or row[2]!=model or row[4]!='validated'or not row[5]):
+                raise ValueError('Equivalent cache needs a validated same-provider/model attempt')
+            value={'schema':'native-query-timing-cache/1','request_key':key,'attempt_key':attempt,
+                   'provider':provider,'model':model,'attempt_digest':digest(row),'proof_digest':digest(proof)}
+            value['payload_digest']=digest(value)
+            self.db.execute('INSERT OR IGNORE INTO request_equivalences VALUES (?,?)',(key,json.dumps(value)))
+        return True
     def receipt(self):
         from .economics import usage_cost
         self.cap=self.db.execute('SELECT cap FROM authorization WHERE id=1').fetchone()[0]

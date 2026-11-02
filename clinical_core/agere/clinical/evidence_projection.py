@@ -12,6 +12,40 @@ from ...contracts import digest
 VERSION='coverage-dependencies/1'
 
 
+def native_timing_legacy_evidence(evidence,compatibility):
+    """Validate the producer's exact old view before any cache-only lookup.
+
+    Only the root native SQL receipt digests may differ. Actual source text,
+    rows, assertions, dates, scope, contracts and claims remain byte-for-byte
+    values after lossless decoding. No semantic or approximate match is used.
+    """
+    from ..deliverables.receipts import uncompact_json
+    if not isinstance(compatibility,dict)or compatibility.get('schema')!='native-query-timing-cache/1':return None
+    if len(evidence)!=1:return None
+    def decode(text):
+        value=json.loads(text)
+        return uncompact_json(value)if isinstance(value,dict)and 'encoding'in value else value
+    try:
+        source=evidence[0];current=decode(source['text']);legacy=decode(compatibility['legacy_text'])
+        if(not isinstance(current,dict)or not isinstance(legacy,dict)
+           or digest(current)!=compatibility['current_fingerprint']or digest(legacy)!=compatibility['legacy_fingerprint']
+           or current.get('id')!=source['id']or current.get('as_of')!=source['date']):return None
+        a,b=current['native_bindings'],legacy['native_bindings']
+        if not isinstance(a,list)or not isinstance(b,list)or len(a)!=len(b):return None
+        pairs=compatibility['bindings']
+        if not isinstance(pairs,list)or not pairs:return None
+        seen=set();restored=copy.deepcopy(legacy)
+        for pair in pairs:
+            i=pair['index']
+            if(type(i)is not int or not 0<=i<len(a)or i in seen or pair['excluded_fields']!=['elapsed_s']
+               or a[i].get('tool')!='query_sql'or b[i].get('tool')!='query_sql'
+               or a[i].get('result_digest')!=pair['current_digest']or b[i].get('result_digest')!=pair['legacy_digest']):return None
+            seen.add(i);restored['native_bindings'][i]['result_digest']=pair['current_digest']
+        if restored!=current:return None
+        return [{**source,'text':compatibility['legacy_text']}]
+    except (ValueError,KeyError,TypeError,IndexError,AttributeError):return None
+
+
 def finding_collection(value):
     if isinstance(value,str):
         try:value=json.loads(value)
