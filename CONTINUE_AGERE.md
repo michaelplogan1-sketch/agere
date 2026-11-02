@@ -1,3 +1,28 @@
+# Current Agere checkpoint - 2026-11-02T02:12:28.429579+00:00
+
+G5 BLOCKED on independent qualification, before unfinished G3 clinical acceptance. Current 74984dd scoped scheduling delivery sealed; owned localhost8890 PID94471/session26072 ready. No provider/training job or source freeze. Scheduler PAUSED. All ten acceptance areas retained; full MVP acceptance false.
+
+Exact next: G5 qualification dependency: current74984dd source-batch scheduling, copied-context accounting, retained clinical/financial native validation and local API/browser/report checks are verified. All57patient source interpretations remain unverified and original question partial. Independent source-family/model/clinical/outcome labels and authentic reviewer/compute economics remain unavailable. Preserve this candidate, all27269shared attempts, separate18Jevcomparison attempts and2subscription reviews, and b41runnable recovery. Qualify named roles on fair visible baselines when independent evidence becomes available, then return to unfinished G3 clinical acceptance and first-run performance. No new source campaign, repeated full cohort, broad training or clinical trace promotion from uncertain model votes. No approval request or provider/training job is pending. Scheduler PAUSED; owned8890PID94471/session26072ready; primary/main unchanged.
+
+Last sealed receipt: artifacts/agere-source-batch-performance-2026-11-02/delivery-receipt.json
+Durable current audit: /Users/mikel/clinical-insights-local/artifacts/wollstonecraft-runtime-audit-2026-11-02-74984dd (41files, complete ledgers; no automatic restore or qualification transfer).
+
+AGERE_BUILD_CONTROL.json owns sequence and checkpoint.
+
+## Earlier checkpoint (superseded)
+
+# Current Agere checkpoint - 2026-11-02T01:44:29.188071+00:00
+
+G3 ACTIVE for source-reading performance; G5 remains blocked. No provider/training job or source freeze. Scheduler PAUSED. All ten areas retained; full MVP acceptance false.
+
+Exact next: G3 first-run source-reading performance: execute independent existing typed source batches concurrently only when their complete source identities are disjoint. Preserve exact questions/source bytes, source-cache keys, result order, per-worker ledger accounting, failures/quarantines and the three pinned source producer files. Prove retained actual-source equivalence and scheduling behavior before one bounded new synthetic role check. G5 independent clinical/model/outcome/economic qualification remains blocked; no whole-cohort provider rerun, new weights or clinical trace promotion. Scheduler PAUSED.
+
+Last sealed receipt: artifacts/agere-operational-source-projection-2026-11-01/delivery-receipt.json
+
+AGERE_BUILD_CONTROL.json owns the sequence.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-11-02T01:28:57.383555+00:00
 
 G5 BLOCKED on independentqualification, sequenced before unfinishedG3clinicalacceptance. Current768e928scopedlocaldeliverysealed;8890PID92337/session4729ready. No provider/trainingjob orsourcefreeze. Scheduler PAUSED. Alltenareasretained;fullMVPacceptancefalse.
