@@ -1,3 +1,9 @@
+# November 2 architecture and delivery-plan audit
+
+Product74984dd remains the latest scoped local delivery below; the audit changed no runtime source or patient/financial value. The [precommercial audit](PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md) records a reproduced concurrent cost-ownership defect,118targeted tests, one independent subscription critique and verified owner dispositions. The canonical sequence now resumes G3engineering for that repair and retained verifier diagnosis, while G5independent clinical/model/outcome qualification remains a separate blocked track. No commercial, clinical or full-MVP acceptance is claimed.
+
+## Latest scoped product delivery
+
 # Current local delivery — November 1 night / November 2 UTC
 
 Current product: `74984dd`, isolated localhost8890, private integration branch/draft PR2. Independent source batches now overlap while same-source batches retain order and cache reuse. Each worker has its own ledger connection. Detected failure stops new dispatch, concurrent errors drain without losing the original exception kind, and copied request contexts retain atomic journal sequences and question-cost attribution. In-memory/customized ledgers retain serial behavior. `AGERE_DOCUMENT_BATCH_WORKERS=1` restores serial scheduling. Source texts, questions, thresholds and cache keys are unchanged; the three pinned source producer files remain byte-identical to fa28466.

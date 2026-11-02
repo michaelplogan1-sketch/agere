@@ -1,3 +1,15 @@
+# Current Agere checkpoint - 2026-11-02T11:24:38.434720+00:00
+
+G3 ACTIVE for reproduced concurrent question-cost ownership defect. G5 independent qualification remains blocked separately. Mike requested a precommercial architecture/plan audit; owner and one Claude subscription review completed with product74984dd unchanged. No provider/training job or source freeze. Scheduler PAUSED. All ten areas retained; full MVP acceptance false.
+
+Exact next: G3: implement the reproduced concurrent question-cost ownership repair from docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md. Bind each actual dispatch to its originating question through patient/source workers; retain failures, pending attempts, retries and cache/shared-use identities. Untagged window attribution must remain explicitly ambiguous and must not report known per-question USD. Preserve document_review.py,span_repair.py and model_policy.py byte identities for existing source caches; do not alter old ledger rows. Prove one owned attempt per question and unique-union reconciliation in zero-provider fixtures including the real worker boundary, then verify unchanged current source/financial/report behavior. Next diagnose all66unsettled verifier packets offline before any new full-cohort run. G5independent clinical/model/outcome qualification remains separate and blocked; no new weights, clinical trace promotion or customer-PHI activation. Scheduler PAUSED; no provider/training job pending.
+
+Last sealed product receipt remains artifacts/agere-source-batch-performance-2026-11-02/delivery-receipt.json. Audit receipt: artifacts/agere-commercial-readiness-audit-2026-11-02/audit-receipt.json. No product repair or commercial qualification was claimed by the audit.
+
+AGERE_BUILD_CONTROL.json owns sequence and checkpoint; principal review: docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-11-02T02:12:28.429579+00:00
 
 G5 BLOCKED on independent qualification, before unfinished G3 clinical acceptance. Current 74984dd scoped scheduling delivery sealed; owned localhost8890 PID94471/session26072 ready. No provider/training job or source freeze. Scheduler PAUSED. All ten acceptance areas retained; full MVP acceptance false.
