@@ -7,6 +7,31 @@ import json
 from ...contracts import digest
 
 VERSION = 'execution-state/5'
+OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
+
+
+def operational_feedback_result(result):
+    """Recognize only complete producer declarations, never row content/names."""
+    dependencies = result.get('incomplete_dependencies') if isinstance(result, dict) else None
+    return (isinstance(dependencies, list) and bool(dependencies) and all(
+        isinstance(item, dict) and item.get('authority') in OPERATIONAL_FEEDBACK_AUTHORITIES
+        for item in dependencies))
+
+
+def review_limitation_view(text, feedback, reference):
+    """Project only a bound prior review inside otherwise unchanged prose."""
+    if not isinstance(text, str) or not isinstance(feedback, dict) or not isinstance(reference, dict):
+        return text
+    original = feedback.get('feedback')
+    if (reference.get('feedback_digest') != digest(feedback) or not reference.get('result_view') or
+            not isinstance(original, str) or not original or original not in text):
+        return text
+    guidance = review_guidance(original)
+    if guidance == original:
+        return text
+    return {'prose': text.replace(original, guidance), 'original_text_digest': digest(text),
+            'authority': 'unverified_review_feedback', 'native_review_reference': reference,
+            'meaning': 'Only embedded JSON in the exact prior machine review is referenced. All limitation prose survives; this is not clinical source evidence.'}
 
 
 def progress_evidence(calls,candidate=None):

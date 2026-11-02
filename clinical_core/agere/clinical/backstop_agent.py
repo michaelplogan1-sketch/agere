@@ -1255,7 +1255,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     if context: request += '\nRequest context (including follow-ups and selected population): ' + json.dumps(context, default=str)
     try:
         from .evidence_projection import coverage_answer
-        coverage = gate.check(request, graph, {'answer': coverage_answer(answer)}, stack=stack, ledger=ledger, as_of_date=as_of)
+        from .execution_state import review_reference,review_limitation_view
+        prior_review=answer.get('investigation_review')
+        prior_reference=review_reference(prior_review,tools) if isinstance(prior_review,dict) else None
+        coverage_view=coverage_answer(answer)
+        if isinstance(coverage_view.get('limitations'),list) and prior_reference is not None:
+            coverage_view['limitations']=[review_limitation_view(text,prior_review,prior_reference)
+                for text in coverage_view['limitations']]
+        coverage = gate.check(request, graph, {'answer': coverage_view}, stack=stack, ledger=ledger, as_of_date=as_of)
         assessment.update(coverage=coverage, calls=assessment['calls']+coverage['calls'], cost_usd=assessment['cost_usd']+coverage['cost_usd'])
         # All tool results and the cited documents' context, rather than numeric-token overlap or the quote alone.
         bound = (answer.get('table_binding') or {}).get('result_view')
@@ -1281,13 +1288,14 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                   'computed_table_value_counts':table_value_counts(answer.get('table') or [])}
         assessment['evidence_coverage'].update(original_fingerprint=fingerprint(original))
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
-                                source_documents=getattr(tools,'read',{}))
+                                source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference)
         assessment['evidence_coverage'].update(model_view='patient-dependency-packets/1',
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
             operational_receipts='Retained by native digest; excluded from clinical model context')
         support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,field_decider=getattr(gate.s1(),'judge_fields',None),
-                                      source_observation_path=getattr(stack,'path',None))
+                                      source_observation_path=getattr(stack,'path',None),
+                                      long_context_decider=gate.s1().decide)
         n, usd = gate.cost(support)
         assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback',
                           'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked',
@@ -1381,7 +1389,7 @@ def documentary_sources(value):
     return list(found.values())
 
 
-def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None):
+def support_packets(question,answer,calls,document_reviews,as_of,*,source_documents=None,prior_review_reference=None):
     """Final clinical claims, deduplicated and grouped by patient dependency.
 
     Operational probabilities/timing are retained in the native receipt, bound
@@ -1393,8 +1401,28 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     """
     from ...contracts import digest
     from ..deliverables.receipts import compact_json,readable_json
+    from .execution_state import OPERATIONAL_FEEDBACK_AUTHORITIES,operational_feedback_result,review_limitation_view
     by={};shared={};shared_views={};native=[];origins={};shared_origins={}
     local_dependencies=native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')])
+    operational_views={c['result']['result_view'] for c in calls
+        if isinstance(c.get('result'),dict) and c['result'].get('result_view') and operational_feedback_result(c['result'])}
+    tainted_views={c['result']['result_view'] for c in calls
+        if isinstance(c.get('result'),dict) and c['result'].get('result_view') and any(
+            isinstance(item,dict) and item.get('authority') in OPERATIONAL_FEEDBACK_AUTHORITIES
+            for item in (c['result'].get('incomplete_dependencies')or[]))}
+    claim_roots=[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')]
+    def prose_roots(value):
+        if isinstance(value,dict):
+            if isinstance(value.get('result_view'),str):claim_roots.append(value['result_view'])
+            for item in value.values():prose_roots(item)
+        elif isinstance(value,list):
+            for item in value:prose_roots(item)
+    prose_roots(answer.get('computed_prose',[]))
+    claim_dependencies=native_result_dependencies(calls,list(dict.fromkeys(claim_roots)))
+    known_dependencies=set(claim_roots)
+    for root in claim_roots:known_dependencies.update(native_result_dependencies(calls,[root])or[])
+    unsafe_operational=tainted_views & known_dependencies
+    excluded_operational=operational_views-claim_dependencies if claim_dependencies is not None else set()
     def decode(value):
         if isinstance(value,str)and value[:1]in ('{','['):
             try:return decode(json.loads(value))
@@ -1418,6 +1446,10 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         view=observed.get('result_view')if isinstance(observed,dict)else None
         origin={'kind':'executed_native_result','result_view':view,'tool':c.get('name'),'input_digest':digest(c.get('input'))}
         native.append({'tool_index':i,'tool':c.get('name'),'result_view':view,'input_digest':digest(c.get('input')),'result_digest':digest(observed)})
+        if view in excluded_operational:
+            native[-1]['operational_inputs']={'authority':'unverified_review_feedback',
+                'rows':len(observed.get('rows')or[]),'excluded_from_clinical_evidence':True}
+            continue
         rows=observed.get('rows')if isinstance(observed,dict)else None
         if isinstance(rows,list):
             columns=observed.get('columns')or[]
@@ -1433,12 +1465,16 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         for row in review['rows']:add(row,origin={'kind':'machine_document_observation','question_digest':digest(review['questions'])})
     table=answer.get('table')or[]
     summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
+    if isinstance(summary.get('limitations'),list) and prior_review_reference is not None:
+        summary['limitations']=[review_limitation_view(text,answer.get('investigation_review'),prior_review_reference)
+            for text in summary['limitations']]
     final_view=(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')
     def contracts_for(views):
         contracts=[];source_definitions={}
         for c in calls:
             result=c.get('result')or{}
             if not isinstance(result,dict)or not result.get('result_view')or result['result_view']not in views:continue
+            if result['result_view'] in excluded_operational:continue
             contract={'result_view':result['result_view'],'tool':c.get('name'),'input':c.get('input'),
                 'meaning':'Executed calculation/source-selection contract, not independent proof of its clinical interpretation.'}
             assembly=result.get('assembly')
@@ -1549,7 +1585,8 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         if len(text.encode())>230000:
             alternate=json.dumps(compact_json(packet,expand_json_strings=True),ensure_ascii=False,separators=(',',':'),default=str)
             if len(alternate.encode())<len(text.encode()):text=alternate
-        result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':True,
+        result.append({'id':packet['id'],'date':as_of,'text':text,'bytes':len(text.encode()),'dependency_complete':not bool(unsafe_operational),
+            **({'operational_claim_dependencies':sorted(unsafe_operational)} if unsafe_operational else {}),
             **({'source_dependency_patient_id':packet['patient_id'],'patient_dependency_bound':True}
                if packet.get('patient_id')and packet.get('answer_rows')and
                   all(r.get('patient_id')==packet['patient_id']for r in packet['answer_rows'])else{}),
@@ -1597,7 +1634,7 @@ def source_fault_family(packet,result,by_id):
     return parent
 
 
-def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None):
+def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None,long_context_decider=None):
     """Repair a local source family while continuing proven independent families.
 
     The first packet normally owns the global summary. Once it clears that
@@ -1607,7 +1644,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
     """
     logical_count=len(packets);scheduled=[]
     for packet in packets:
-        if packet['bytes']>240000 and packet.get('source_context_complete') is not False:
+        if packet['bytes']>240000 and packet.get('source_context_complete') is not False and packet.get('dependency_complete') is not False:
             from .evidence_projection import partition_support_packet
             try:
                 scheduled.extend(partition_support_packet(packet));continue
@@ -1637,6 +1674,9 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
     def check(packet):
         steps=[]
         identity={k:packet[k]for k in ('id','parent_packet_id')if k in packet}
+        if packet.get('dependency_complete') is False:
+            return {**identity,'label':'unknown','decided_by':None,
+                'reason':'A final claim depends on unverified operational review state. No provider may certify it as source evidence.'},steps
         if (packet.get('source_dependency_mechanical_only')is True and not packet.get('claim_manifest')and
                 packet.get('source_dependency_roundtrip_verified')is True and packet.get('required_source_packet_ids')):
             return {**identity,'label':'supported','decided_by':'native_source_dependency_closure',
@@ -1644,18 +1684,34 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         if packet.get('source_context_complete')is False:
             return {**identity,'label':'unknown','decided_by':None,
                 'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'},steps
-        if packet['bytes']>240000:
+        oversized=packet['bytes']>240000
+        # The configured Jev gateway already supports the documented 262k-token
+        # mode. Its encoder enforces the actual 32MiB request-body boundary;
+        # the provider enforces token fit. Neither is a population/output cap.
+        # https://docs.typesafe.ai/models and /api/errors, verified 2026-11-01.
+        if oversized and (long_context_decider is None or packet['bytes']>32*1024*1024):
             return {**identity,'label':'unknown','decided_by':None,
                 'reason':'Complete dependency exceeds conservative provider context envelope; retain it for explicit partition/repair, never truncate.'},steps
-        result=decider('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
+        selected=long_context_decider if oversized else decider
+        result=selected('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
-            task_key='agere_investigation_support_dependency',ledger=worker_ledger,allow_live=True,select_source=False,
-            long_context=packet['bytes']>32768)
+            task_key='agere_investigation_support_dependency_long_context' if oversized else 'agere_investigation_support_dependency',
+            ledger=worker_ledger,allow_live=True,select_source=False,
+            long_context=packet['bytes']>32768,**({'order':('jev',)} if oversized else {}))
         checked={**identity,**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
+        if oversized:
+            route={'requested_provider':'jev','mode':'documented_long_context','declared_context':'262k tokens per request and per question',
+                'source_packet_bytes':packet['bytes'],'source_packet_digest':hashlib.sha256(packet['text'].encode()).hexdigest(),
+                'token_fit':'provider_enforced','independent_reading_qualification':False}
+            checked['context_route']=route
+            if result.get('label')!='supported' or not result.get('decided_by'):
+                checked.update(label='unknown',decided_by=None,
+                    routed_judgment={k:result.get(k)for k in ('label','decided_by','probabilities')})
+            for step in result.get('steps',[]):step['context_route']=route
         if result.get('label')!='supported':checked['reason']='Source support '+str(result.get('label'))+' for this exact dependency; no successful check is inferred.'
         responded=bool(result.get('decided_by') or result.get('probabilities') or any(s.get('status')in ('answered','partial') for s in result.get('steps',[])))
         if result.get('label')!='supported' or not result.get('decided_by'):
-            needs_diagnosis=responded and field_decider and packet.get('claim_manifest')
+            needs_diagnosis=not oversized and responded and field_decider and packet.get('claim_manifest')
         else:needs_diagnosis=False
         if needs_diagnosis:
             localized=localize_support_failure(packet,field_decider,as_of=as_of,ledger=worker_ledger)
