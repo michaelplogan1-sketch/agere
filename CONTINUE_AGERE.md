@@ -1,10 +1,11 @@
-# Current Agere checkpoint - 2026-11-01T23:55:42.408617+00:00
+# Current Agere checkpoint - 2026-11-02T01:28:57.383555+00:00
 
-G3 ACTIVE; currentb41release/financialreuse sealed, owned8890ready. NarrowClaude review session51746 running; code/source frozen. Offlineprototype PID90541. SchedulerPAUSED.
+G5 BLOCKED on independentqualification, sequenced before unfinishedG3clinicalacceptance. Current768e928scopedlocaldeliverysealed;8890PID92337/session4729ready. No provider/trainingjob orsourcefreeze. Scheduler PAUSED. Alltenareasretained;fullMVPacceptancefalse.
 
-Exact next: Observe Claude narrow review/session51746 and the single offlineprototypePID90541. No product/source edits while reviewruns. Currentb41release/financialreuse sealed and8890ready. Prototype only producer-marked operationalfeedback exclusion with exactnativeaudit retention; retain 9patientcompletecontexts/unknowns. Use review to choose existingnativeclosure/sourcepartition or measuredlarger-contextfallback for actual envelopefailures. No fullsourcecampaign, modeltraining, thresholdrelaxation, newcatalog or repeatedpackage. Alltenareas/G5/sourcequalificationand originalbatchlatency remain; schedulerPAUSED.
+Exact next: G5 qualification dependency: current source dispatch/native/report/financial reuse wiring is verified, while all57patient source interpretations remain unverified and question coverage remains partial. Independent source-family/clinical/model/outcome labels and authentic review/compute cost evidence are unavailable. Preserve this scoped local candidate, every attempt and b41 recovery; do not manufacture labels, use protected truth, contact others, repeat the full cohort or start broad training. Qualify named roles against fair visible baselines when independent evidence is available, then return to unfinished G3 clinical acceptance and first-run performance. Existing authorization persists; no approval request is pending. Scheduler PAUSED; no provider/training job; owned8890PID92337/session4729ready; primary/main unchanged.
 
-Last sealed receipt: artifacts/agere-workspace-load-performance-2026-11-01/current-release-delivery-receipt.json
+Last sealed receipt: artifacts/agere-operational-source-projection-2026-11-01/delivery-receipt.json
+Durableaudit: /Users/mikel/clinical-insights-local/artifacts/wollstonecraft-runtime-audit-2026-11-01-768e928 (not an automatic ledger restore or qualification transfer).
 
 ## Earlier checkpoint (superseded)
 
