@@ -1,3 +1,15 @@
+# Current Agere checkpoint - 2026-11-02T12:12:55.823630+00:00
+
+G3 ACTIVE. Cost-ownership source candidate dcba5e0 sealed; current policy/app promotion remains next. Exact retained66packet/1497feedback diagnosis completed. Known-good74984dd remains on8890; no provider/training job or source freeze. Scheduler PAUSED. All ten areas retained; full MVP acceptance false. Mike explicitly defers OWASP/HHS work.
+
+Exact next: G3: confirm the dcba5e0 cost-ownership source candidate through the existing ordinary app routes before local promotion. Rebind retained clinical/financial contexts to the current policy using exact native work and only matching cached checks; preserve all57patients, partial source status,12financial rows, clear PDF/HTML and all-attempt ownership. Forbid new full-cohort/source-reading or training campaigns. Reopen and verify current app/report/recovery, then assess the current ten-area engineering release through existing scorecard with explicit compatibility and concrete dependencies. Use the exact66packet/2005field diagnosis to represent low-confidence and unavailable-fallback states; do not relabel raw votes as clinical errors or change thresholds. G5 independent qualification remains separate. OWASP/HHS deferred by Mike; schedulerPAUSED; no provider/training job pending.
+
+Last sealed source-candidate receipt: artifacts/agere-question-cost-ownership-2026-11-02/delivery-receipt.json. Product dcba5e0 is not yet locally promoted. 319tests run/3skipped;25oldanswer-guardfixture failures reproduce onbaseline. Native26clinical/22financialactions preserve57patients/12financialrows; patientPDF unchanged; allprior sharedattempts unchanged. One subscriptionreview returned after one DNS-failedattempt; both preserved. No clinical/model/bottling promotion.
+
+AGERE_BUILD_CONTROL.json owns the one sequence and checkpoint.
+
+## Earlier checkpoint (superseded)
+
 # Current Agere checkpoint - 2026-11-02T11:24:38.434720+00:00
 
 G3 ACTIVE for reproduced concurrent question-cost ownership defect. G5 independent qualification remains blocked separately. Mike requested a precommercial architecture/plan audit; owner and one Claude subscription review completed with product74984dd unchanged. No provider/training job or source freeze. Scheduler PAUSED. All ten areas retained; full MVP acceptance false.
