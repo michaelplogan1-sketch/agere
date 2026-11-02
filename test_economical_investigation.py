@@ -135,6 +135,57 @@ class Investigator(unittest.TestCase):
         self.assertEqual([b['model']for b in self.sent],[M.HAIKU]*2)
         self.assertEqual(r['answer']['status'],'answered');self.assertFalse(r.get('model_escalations'))
 
+    def test_explicit_unknown_field_feedback_keeps_actor_and_partial_result(self):
+        field={'packet_id':'patient_A','claim_id':'c','field':'reason','path':['answer_rows',0,'reason'],
+               'label':'unknown','decided_by':None,'source_record_ids':['r1']}
+        support={'label':'unknown','claim_feedback':[field],
+                 'packets':[{'id':'patient_A','label':'unknown','decided_by':None,'claim_feedback':[field]}]}
+        def check(answer,calls):
+            return {'status':'repair','repair_kind':'unresolved_verification','feedback':'Reason remains unknown',
+                    'progress_state':B.verification_repair_state({'label':'answers_partially'},support)}
+        state=B.verification_repair_state({'label':'answers_partially'},support)
+        self.assertEqual(state['unresolved_field_checks']['count'],1)
+        r=self.run_loop([TOOL_REPLY,reply({'status':'answered','count':7}),reply({'status':'answered','count':7})],check)
+        self.assertEqual([b['model']for b in self.sent],[M.HAIKU]*3)
+        self.assertFalse(r.get('model_escalations'));self.assertEqual(r['review_stopped'],'no_progress')
+        self.assertEqual(r['answer']['verification'],'unverified');self.assertEqual(len(self.executed),1)
+
+    def test_unknown_field_progress_tracks_source_and_field_without_prose_churn(self):
+        field={'packet_id':'patient_A','claim_id':'c','field':'reason','path':['answer_rows',0,'reason'],
+               'label':'unknown','decided_by':None,'source_record_ids':['r2','r1']}
+        def state(fields):
+            return B.verification_repair_state({'label':'answers_partially'},
+                {'label':'unknown','claim_feedback':fields,'packets':[{'id':'patient_A','label':'unknown'}]})
+        first=state([field]);same={**field,'source_record_ids':['r1','r2'],'reason':'Rephrased uncertainty','result_view':'new_alias'}
+        self.assertEqual(first,state([same]))
+        for change in ({'source_record_ids':['new']},{'field':'different','path':['answer_rows',0,'different']},
+                       {'source_assertion_id':'changed'}):
+            with self.subTest(change=change):self.assertNotEqual(first,state([{**field,**change}]))
+
+    def test_faults_and_invalid_unknown_bindings_do_not_hide_escalation(self):
+        field={'packet_id':'patient_A','claim_id':'c','field':'reason','path':['answer_rows',0,'reason'],
+               'label':'unknown','decided_by':None,'source_record_ids':['r1']}
+        for change in ({'label':'wrong_entity','decided_by':'jev'},{'decided_by':'jev'},
+                       {'packet_id':'unbound'},{'packet_id':[]},{'claim_id':''},{'path':[]},{'path':['answer_rows',True]},
+                       {'source_record_ids':'r1'},{'source_assertion_id':[]}):
+            support={'label':'unknown','claim_feedback':[{**field,**change}],
+                     'packets':[{'id':'patient_A','label':'unknown'}]}
+            with self.subTest(change=change):self.assertIsNone(B.verification_repair_state({'label':'answers_partially'},support))
+        conflict={**field,'source_record_ids':['other']}
+        support={'label':'unknown','claim_feedback':[field],
+                 'packets':[{'id':'patient_A','label':'unknown','claim_feedback':[conflict]}]}
+        self.assertIsNone(B.verification_repair_state({'label':'answers_partially'},support))
+
+    def test_undecided_packet_argmax_is_not_a_confirmed_fault_or_new_progress(self):
+        def state(label,decided=None):
+            return B.verification_repair_state({'label':'answers_partially'},
+                {'label':'unknown','packets':[{'id':'patient_A','label':label,'decided_by':decided}]})
+        expected=state('unknown')
+        for label in ('supported','contradicted','not_established'):
+            with self.subTest(label=label):self.assertEqual(state(label),expected)
+        self.assertIsNone(state('contradicted','jev'))
+        self.assertIsNone(state('not_established','jev'))
+
     def test_repeating_a_tool_after_unlocated_verifier_uncertainty_keeps_the_partial_result(self):
         r=self.run_loop([TOOL_REPLY,reply({'status':'answered','count':7}),TOOL_REPLY],
             lambda a,c:{'status':'repair','repair_kind':'unresolved_verification','feedback':'Source check unresolved'})

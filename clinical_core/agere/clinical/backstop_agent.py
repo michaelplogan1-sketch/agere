@@ -1340,11 +1340,43 @@ def verification_repair_state(coverage,support):
     packets=support.get('packets')or[]
     pending=[p for p in packets if p.get('label')!='supported'or not p.get('decided_by')]
     if(coverage.get('label')not in ('answers_fully','answers_partially')or support.get('label')!='unknown'
-       or support.get('claim_feedback')or support.get('failed_packet_ids')or not pending
-       or any(not isinstance(p.get('id'),str)or p.get('label')not in ('supported','unknown')or p.get('claim_feedback')for p in packets)):
+       or support.get('failed_packet_ids')or not pending
+       or any(not isinstance(p.get('id'),str)or p.get('label')not in SUPPORT_OPTIONS
+              or p.get('decided_by')and p.get('label')!='supported'for p in packets)):
         return None
-    return {'coverage':coverage['label'],'unresolved_verification':sorted(
-        [{'id':p['id'],'label':p.get('label')}for p in pending],key=lambda p:p['id'])}
+    by_id={p['id']:p for p in packets}
+    if len(by_id)!=len(packets):return None
+    # The field localizer emits explicit unknown feedback when no provider has
+    # settled a field. Its presence is not a located semantic fault. Preserve
+    # every field/source obligation in the progress identity, while confirmed
+    # faults and malformed/detached feedback retain ordinary checked escalation.
+    fields={}
+    groups=[(None,support.get('claim_feedback')or[])]+[(p['id'],p.get('claim_feedback')or[])for p in packets]
+    for owner,feedback in groups:
+        if not isinstance(feedback,list):return None
+        for f in feedback:
+            if not isinstance(f,dict):return None
+            pid=f.get('packet_id');claim=f.get('claim_id');path=f.get('path');field=f.get('field')
+            if(f.get('label')!='unknown'or f.get('decided_by')or not isinstance(pid,str)or pid not in by_id
+               or owner is not None and pid!=owner
+               or not isinstance(claim,str)or not claim or not isinstance(field,str)or not field
+               or not isinstance(path,list)or not path
+               or any(not(isinstance(k,str)and k or type(k)is int and k>=0)for k in path)):
+                return None
+            sources=f.get('source_record_ids')or[]
+            if not isinstance(sources,list)or any(not isinstance(s,str)or not s for s in sources):return None
+            if 'source_assertion_id'in f and(not isinstance(f['source_assertion_id'],str)or not f['source_assertion_id']):return None
+            binding={k:f[k]for k in ('packet_id','claim_id','field','path','source_assertion_id')if k in f}
+            binding['source_record_ids']=sorted(set(sources))
+            key=(pid,claim)
+            if key in fields and fields[key]!=binding:return None
+            fields[key]=binding
+    state={'coverage':coverage['label'],'unresolved_verification':sorted(
+        [{'id':p['id'],'label':p.get('label')if p.get('decided_by')else'unknown'}for p in pending],key=lambda p:p['id'])}
+    if fields:
+        from ...contracts import digest
+        state['unresolved_field_checks']={'count':len(fields),'fingerprint':digest([fields[k]for k in sorted(fields)])}
+    return state
 
 
 
