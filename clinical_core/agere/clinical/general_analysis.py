@@ -1065,29 +1065,10 @@ def _swap(text, old, new, *, strict=True):
     return _SLOT.sub(lambda m: mapping.get(m.group(), m.group()), str(text))
 
 
-def lookup_shape(path, catalog, question, policy, population=None):
-    from .learning import correction_context
-    if correction_context(path, question): return None
-    text, values = template(question)
-    scope = None if population is None else sorted(set(population))
-    key = fingerprint({'template': text, 'policy': policy, 'source': catalog.identity, 'population': scope})
-    carried = False
-    with _shapes(path) as db:
-        row = db.execute("SELECT payload FROM analysis_shapes WHERE id=? AND status='active'", (key,)).fetchone()
-        if not row:
-            # A checked shape saved under an earlier code release; it is recompiled under the current code below.
-            for (payload,) in db.execute("SELECT payload FROM analysis_shapes WHERE template=? AND source=? AND "
-                                         "status='active' ORDER BY rowid DESC", (text, fingerprint(catalog.identity))):
-                if json.loads(payload).get('population') == scope:
-                    row, carried = (payload,), True
-                    break
-    if not row: return None
-    saved = json.loads(row[0])
-    from .clinical_definitions import superseded
-    if superseded(question, {'analysis': saved['analysis']}, catalog.tables): return None
+def _rebind_shape(catalog, question, saved, values, population):
+    """Recompile one stored shape without changing its SQL or evidence authority."""
     old = saved['values']
-    if (not saved.get('slots') or len(old) != len(values) or len(set(old)) != len(old)
-            or saved.get('population') != scope): return None
+    if not saved.get('slots') or len(old) != len(values) or len(set(old)) != len(old): return None
     spec = copy.deepcopy(saved['analysis'])
     changed = {o for o, n in zip(old, values) if o != n}
     def mentions_changed(value):
@@ -1126,9 +1107,35 @@ def lookup_shape(path, catalog, question, policy, population=None):
         contract = prepare(catalog, question, spec, population=population)
     except PlanError:
         return None
+    return contract
+
+
+def lookup_shape(path, catalog, question, policy, population=None):
+    from .learning import correction_context
+    if correction_context(path, question): return None
+    text, values = template(question)
+    scope = None if population is None else sorted(set(population))
+    with _shapes(path) as db:
+        rows = db.execute("SELECT id,payload,policy FROM analysis_shapes WHERE template=? AND source=? "
+                          "AND status='active' ORDER BY rowid DESC",
+                          (text, fingerprint(catalog.identity))).fetchall()
+    from .clinical_definitions import superseded
+    matches = []
+    for ident, payload, saved_policy in rows:
+        saved = json.loads(payload)
+        if saved.get('population') != scope: continue
+        if superseded(question, {'analysis': saved['analysis']}, catalog.tables): continue
+        contract = _rebind_shape(catalog, question, saved, values, population)
+        if contract is not None:
+            matches.append((ident, saved_policy, saved, contract))
+    # A release boundary is not evidence that a disagreeing teacher is right.
+    # Compare complete recompiled contracts, including workflow/unknown states;
+    # ambiguous active interpretations must return to the ordinary planner.
+    if not matches or len({c['id'] for _, _, _, c in matches}) != 1: return None
+    ident, saved_policy, saved, contract = next((m for m in matches if m[1] == (policy or '')), matches[0])
     return contract, {'interpreter': 'learned_analysis_shape', 'review': 'explicit_parameter_recompile',
-                      'analysis_shape_id': key, 'shape_source_question': saved['question'],
+                      'analysis_shape_id': ident, 'shape_source_question': saved['question'],
                       'qualified_interpretation': False, 'acceptance_scope': saved['qualification'],
                       'execution_accepted': True, 'attempts': [],
                       **({'carry_forward': 'Shape saved under an earlier code release; recompiled under the current code.'}
-                         if carried else {})}
+                         if saved_policy != (policy or '') else {})}
