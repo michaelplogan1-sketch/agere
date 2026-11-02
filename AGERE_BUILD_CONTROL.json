@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-02T20:17:55.409061+00:00",
+  "updated_at": "2026-11-02T21:07:32.000086+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -378,14 +378,18 @@
         {
           "path": "artifacts/agere-current-release-decision-2026-11-02/delivery-receipt.json",
           "sha256": "eba049f2eb947dfb5f18b189cd3f128ff0ddd33249bd3bfe4a5a91160244bf39"
+        },
+        {
+          "path": "artifacts/agere-context-read-performance-2026-11-02/delivery-receipt.json",
+          "sha256": "b02cb42bd79f8ce1d1bc1495c5b050634f941b87373c5ebbfc47fe78a06a2830"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Measured patient workspace/PDF reopen latency and ordinary whole-clinical performance remain engineering work. Independent clinical/source-family/model qualification is distinct G5 scope; original57patient answer remains partial/unverified.",
-      "engineering_current_status": "Currentaec778dfiniteengineering9/9applicable; prior actualfullmatrix/archive/recoverye400bb5explicitlyscoped"
+      "remaining_acceptance": "One justified current ordinary warm original-question performance/role/cost confirmation remains; clinical/source-family/model qualification is distinct G5 scope. Original clinical answer remains partial/unverified.",
+      "engineering_current_status": "Prior aec778dfinite9/9 plus scopedb4011fcreadperformance161checks/currentHTTP; source/policy/cohort/work IDs unchanged"
     },
     {
       "id": "G5",
@@ -463,11 +467,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_finite_engineering_decision",
+    "kind": "saved_context_read_performance_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current finite engineering applicability is evidenced9/9; six original question/answer/decision/work/follow-up paths are freshly reopened and exact.",
-    "measured_failure_reduction": "Closed current release-evidence applicability gap across5changed runtime modules;1045otherfiles exact;6realAPI workflows/currentcasechecks pass.",
+    "user_behavior_delta": "Skip saved-answer bundle construction when no independent review file exists. Recorded report downloads keep one full strict current-context validation after loading the bound bundle and skip unused HTML reads. Existing saved context, policy, work identities and all outputs stay unchanged.",
+    "measured_failure_reduction": "PairedHTTPworkspace10.800\u21929.532s/PDF10.013\u21925.719s;exactwire/decodedhashes andsamecontexts/work;0providers.",
     "evidence": [
       "artifacts/agere-clinical-role-diagnosis-2026-11-02/delivery-receipt.json",
       "docs/agere/CLINICAL_ROUTING_DIAGNOSIS_2026-11-02.md",
@@ -544,19 +548,39 @@
       "artifacts/agere-current-release-decision-2026-11-02/acceptance-v2/scorecard.json",
       "artifacts/agere-current-release-decision-2026-11-02/acceptance-v2/capability-map.json",
       "artifacts/agere-current-release-decision-2026-11-02/ledger-preservation.json",
-      "CURRENT_LOCAL_MVP_ACCEPTANCE_2026-11-02.json"
+      "CURRENT_LOCAL_MVP_ACCEPTANCE_2026-11-02.json",
+      "artifacts/agere-context-read-performance-2026-11-02/delivery-receipt.json",
+      "docs/agere/SAVED_CONTEXT_READ_PERFORMANCE_2026-11-02.md",
+      "artifacts/agere-context-read-performance-2026-11-02/baseline/receipt.json",
+      "artifacts/agere-context-read-performance-2026-11-02/baseline-v2/receipt.json",
+      "artifacts/agere-context-read-performance-2026-11-02/baseline-v2/workspace.json",
+      "artifacts/agere-context-read-performance-2026-11-02/baseline-v2/PDF.json",
+      "artifacts/agere-context-read-performance-2026-11-02/candidate/receipt.json",
+      "artifacts/agere-context-read-performance-2026-11-02/candidate/workspace.json",
+      "artifacts/agere-context-read-performance-2026-11-02/candidate/PDF.json",
+      "artifacts/agere-context-read-performance-2026-11-02/matched-native-comparison.json",
+      "artifacts/agere-context-read-performance-2026-11-02/http-baseline/final-http-receipt.json",
+      "artifacts/agere-context-read-performance-2026-11-02/http-candidate/final-http-receipt.json",
+      "artifacts/agere-context-read-performance-2026-11-02/matched-HTTP-comparison.json",
+      "artifacts/agere-context-read-performance-2026-11-02/final-read-boundary-tests.log",
+      "artifacts/agere-context-read-performance-2026-11-02/final-source-work-recovery-tests.log",
+      "artifacts/agere-context-read-performance-2026-11-02/focused-read-tests.log",
+      "artifacts/agere-context-read-performance-2026-11-02/final-test-summary.json",
+      "artifacts/agere-context-read-performance-2026-11-02/final-implementation-scope.json",
+      "artifacts/agere-context-read-performance-2026-11-02/ledger-preservation.json",
+      "artifacts/agere-context-read-performance-2026-11-02/current-app/server-process.json"
     ],
-    "remaining_gap": "The original57patient clinical answer remains partial/unverified; independent source-family/clinical-role/model/outcome qualification remains open.508accepted field readings are machine judgments, not clinical adjudication.; Measured patient workspace/PDF HTTP reads18.863s/17.248s need engineering improvement; no matched whole-clinical cold/warm improvement or authentic all-in economics is established.; Selected outcome targets remain single-class; Perplexity failed/pending attempts retain protection. Customer connections/deployment authority remain separate. OWASP/HHS remains deferred.",
-    "next_action": "Profile and reduce the measured18.863s patient-context and17.248s PDF reopen path, starting with immutable saved-context loading, source validation, duplicate receipt projection and serialization. Preserve all57patient rows/1497fielddispositions, native full history, exact source/policy invalidation, work state, PDFbytes and all-attempt accounting. Use existing read-only routes and0providercalls; no model campaign or weaker source checks.",
+    "remaining_gap": "The original57patient clinical answer remains partial/unverified; independent source-family/clinical-role/model/outcome qualification remains open.; Current ordinary whole-clinical performance and authentic all-in economics remain unqualified; matched saved-context/PDF read improvements do not replace that benchmark.; The workspace still performs its existing complete validations; further read-path work must retain source/policy/work guards and stable saved identities. Customer deployment authority is separate; OWASP/HHS remains deferred.",
+    "next_action": "Prepare one justified ordinary warm original-question confirmation from artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/run-protocol.json, using retained source observations and current routing. Inspect owned jobs first, pin code/source/config, keep the original full question/cohort, preserve all attempts and failures, measure actual roles/wall time/new charges and partial status against the1226.386s warm reference. No forced cache misses, source-reading campaign, threshold change or clinical qualification claim; Claude subscription only and stop provider work on an actual subscription limit.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "All proof jobs terminal; temporary API instance stopped. Owned8890PID55536/session15433servesaec778d. No provider/training job or frozen source; schedulerPAUSED.",
+    "coordination": "Allproofjobs terminal;owned8890PID59550/session35577servesb4011fc. No provider/training job or frozen source. SchedulerPAUSED.",
     "remaining_blockers": [
-      "The original57patient clinical answer remains partial/unverified; independent source-family/clinical-role/model/outcome qualification remains open.508accepted field readings are machine judgments, not clinical adjudication.",
-      "Measured patient workspace/PDF HTTP reads18.863s/17.248s need engineering improvement; no matched whole-clinical cold/warm improvement or authentic all-in economics is established.",
-      "Selected outcome targets remain single-class; Perplexity failed/pending attempts retain protection. Customer connections/deployment authority remain separate. OWASP/HHS remains deferred."
+      "The original57patient clinical answer remains partial/unverified; independent source-family/clinical-role/model/outcome qualification remains open.",
+      "Current ordinary whole-clinical performance and authentic all-in economics remain unqualified; matched saved-context/PDF read improvements do not replace that benchmark.",
+      "The workspace still performs its existing complete validations; further read-path work must retain source/policy/work guards and stable saved identities. Customer deployment authority is separate; OWASP/HHS remains deferred."
     ],
     "latest_progress": "artifacts/agere-workspace-load-performance-2026-11-01/delivery-receipt.json",
-    "results_report": "docs/agere/CURRENT_ENGINEERING_DECISION_2026-11-02.md",
+    "results_report": "docs/agere/SAVED_CONTEXT_READ_PERFORMANCE_2026-11-02.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -585,13 +609,13 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Currentaec778dfinite9/9applicable with fresh affected checks and scoped historicalsource/module/recovery proof",
+      "current_engineering": "Prior aec778dfinite9/9plus scoped b4011fcread-path/native/HTTP/protection followup",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-current-release-decision-2026-11-02/delivery-receipt.json"
+      "evidence": "artifacts/agere-context-read-performance-2026-11-02/delivery-receipt.json"
     },
     "latest_human_steering": "Continue build; OWASP/HHS work deferred. Existing approvals persist.",
     "comparison_status": {
@@ -607,8 +631,8 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-02T20:17:55.409061+00:00",
-    "workflow_change": "Current finite engineering applicability9/9with explicit scope for prior execution and fresh affected behavior.",
+    "at": "2026-11-02T21:07:32.000086+00:00",
+    "workflow_change": "Skip saved-answer bundle construction when no independent review file exists. Recorded report downloads keep one full strict current-context validation after loading the bound bundle and skip unused HTML reads. Existing saved context, policy, work identities and all outputs stay unchanged.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -695,7 +719,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Current finite engineering evidence no longer relies on an unstated e400bb5manifest inheritance."
+    "measured_failure_removed": "Unused review bundle construction and duplicate pre-validation context read on recorded downloads removed."
   },
   "decisions": [
     {
@@ -2715,6 +2739,17 @@
         "artifacts/agere-current-release-decision-2026-11-02/acceptance-v2/receipt.json"
       ],
       "scope_impact": "Alltenareas retained; fullMVPclinical/model/outcome/economics/customerqualification still false. Next18.863scontext/17.248sPDFread path; no providercampaign or weakenedsourceinvalidation."
+    },
+    {
+      "at": "2026-11-02T21:07:32.000086+00:00",
+      "gate": "G3",
+      "decision": "Remove measured display/download overhead within two non-policy modules; preserve exact existing contexts, work and validation policy.",
+      "reason": "Profilefound594MBcontextdoubleload anddiscardedabsentreviewbundle. MatchednativeandrealHTTP improve savedreads withbyteexactoutputs,161distinctchecks/0providers/all27274rows exact. Workspace originalvalidation remains; strictPDFcontextvalidationonce afterboundbundle.",
+      "evidence": [
+        "artifacts/agere-context-read-performance-2026-11-02/delivery-receipt.json",
+        "artifacts/agere-context-read-performance-2026-11-02/matched-HTTP-comparison.json"
+      ],
+      "scope_impact": "Alltenareas retained; no newmodel/threshold/weight/clinicalbottle. Largercontext-reuse candidate narrowed beforeactivation toretainpolicy/workidentity. Priorfunctional9/9scope preserved; nextoneordinarywarmconfirmation, not source campaign."
     }
   ],
   "unsealed_work": null,
@@ -2745,7 +2780,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Profile and reduce the measured18.863s patient-context and17.248s PDF reopen path, starting with immutable saved-context loading, source validation, duplicate receipt projection and serialization. Preserve all57patient rows/1497fielddispositions, native full history, exact source/policy invalidation, work state, PDFbytes and all-attempt accounting. Use existing read-only routes and0providercalls; no model campaign or weaker source checks.",
+  "next_action": "Prepare one justified ordinary warm original-question confirmation from artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/run-protocol.json, using retained source observations and current routing. Inspect owned jobs first, pin code/source/config, keep the original full question/cohort, preserve all attempts and failures, measure actual roles/wall time/new charges and partial status against the1226.386s warm reference. No forced cache misses, source-reading campaign, threshold change or clinical qualification claim; Claude subscription only and stop provider work on an actual subscription limit.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2754,5 +2789,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-02T20:17:55.409061+00:00"
+  "latest_checkpoint": "2026-11-02T21:07:32.000086+00:00"
 }
