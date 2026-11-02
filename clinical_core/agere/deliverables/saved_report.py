@@ -113,14 +113,25 @@ def create(path, request):
 def read_format(path, context_id, deliverable_id, format_name):
     """Download only a source-bound, hash-verified recorded report format."""
     import hashlib
+    from types import SimpleNamespace
     from .compose import load
-    context = A.load(path, context_id)
-    ws = A.workspace(path, context)
-    spec, bundle, _, _ = load(ws, deliverable_id)
+    if not isinstance(context_id,str) or not re.fullmatch(r'ANS-[0-9a-f]{24}',context_id):
+        raise ValueError('A saved answer context is required')
+    if not(A.root(path)/context_id/'answer.json').is_file():
+        raise ValueError('Saved answer not found in this warehouse')
+    ws=SimpleNamespace(dir=A.root(path)/context_id,slug=context_id)
+    spec, bundle, _, _ = load(ws, deliverable_id, documents=False)
     if spec.get('status') != 'delivered' or spec.get('generation') != 'saved_report':
         raise ValueError('No saved report format is available')
+    saved=[rid for rid,r in bundle.receipts.items()if r.get('tool')=='saved_answer']
+    if(len(saved)!=1 or bundle.meta.get('workspace')!=context_id
+       or bundle.receipts[saved[0]].get('args',{}).get('context_id')!=context_id
+       or bundle.results.get(saved[0],{}).get('id')!=context_id):
+        raise ValueError('Report bundle belongs to a different saved context')
     # Verify recorded historical bytes without rewriting their original source
     # projection. Creation still rechecks the live projection after rendering.
+    # This performs the full current-context read once, after the bundle is
+    # loaded; avoid a duplicate inspection read before these stricter checks.
     A.bundle_validator(path, bundle, source_projection=False)()
     if format_name not in ('html', 'pdf', 'json', 'csv'):
         raise ValueError('Choose a recorded HTML, PDF, JSON or CSV format')

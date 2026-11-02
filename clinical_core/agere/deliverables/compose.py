@@ -206,9 +206,12 @@ def context_review(path, context):
             or not re.fullmatch(r'ANS-[a-f0-9]{24}',str(context.get('id') or ''))):
         return None
     from . import answer_context
+    ws=answer_context.workspace(path,context)
+    if not(Path(ws.dir)/'answer-review.json').is_file():
+        return None
     bundle=Bundle()
     bundle.add('saved_answer',{'context_id':context['id']},context)
-    return _bound_user_review(answer_context.workspace(path,context),bundle)
+    return _bound_user_review(ws,bundle)
 
 
 def render_models():
@@ -317,14 +320,14 @@ def _save(ws, dlv_id, *, doc, body, bundle, spec, revision=None):
     return d
 
 
-def load(ws, dlv_id):
+def load(ws, dlv_id, *, documents=True):
     d = _dir(ws) / str(dlv_id)
     if not re.fullmatch(r'DLV-[0-9A-F]{12}', str(dlv_id)) or not (d / 'spec.json').is_file():
         raise FileNotFoundError(f'No deliverable {dlv_id!r} in workspace {ws.slug}')
     spec = json.loads((d / 'spec.json').read_text())
     bundle = Bundle.from_json(json.loads((d / 'bundle.json').read_text()))
-    body = (d / 'body.html').read_text() if (d / 'body.html').is_file() else None
-    doc = (d / 'artifact.html').read_text() if (d / 'artifact.html').is_file() else None
+    body = (d / 'body.html').read_text() if documents and (d / 'body.html').is_file() else None
+    doc = (d / 'artifact.html').read_text() if documents and (d / 'artifact.html').is_file() else None
     return spec, bundle, body, doc if spec.get('status') == 'delivered' else None
 
 
