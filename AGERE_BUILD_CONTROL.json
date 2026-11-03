@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T15:16:39.383879+00:00",
+  "updated_at": "2026-11-03T15:42:51.146054+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -476,24 +476,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "whole_source_field_screen_scoped_delivery",
+    "kind": "native_profile_answer_integration",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Whole-source/field relevance can avoid detailed statement checks for decided irrelevant sources; uncertain, failed, quarantined and previously read source fields preserve detailed reading. Exact full context and source-bound machine screening receipts remain available.",
-    "measured_failure_reduction": "One complete23document dependency:52to46attempts,49.061to34.104s,$0.022997782to$0.019564920;9priorfindings retained. Both warm dependencies exact with0newcalls. Not a whole-workflow or accuracy result.",
+    "user_behavior_delta": "The ordinary investigator can retrieve exact received profile names, dates and demographics before composing its answer. Full native result composition preserves patient membership and prior clinical fields. Native copy proofs cover profile cells after a supported global meaning check; clinical/role/mixed tables retain ordinary source review.",
+    "measured_failure_reduction": "Received names0to57 in retained native patient composition; exact membership/all clinical values. Complete profile support61to1providerattempts after global meaning check. Scope is profile integration, not whole clinical performance.",
     "evidence": [
-      "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json",
-      "docs/agere/DOCUMENT_FIELD_SCREEN_2026-11-03.md"
+      "artifacts/agere-patient-answer-integration-2026-11-03/delivery-receipt.json",
+      "docs/agere/PATIENT_PROFILE_ANSWER_INTEGRATION_2026-11-03.md"
     ],
-    "remaining_gap": "Ordinary clinical response remains partial: patient-specific narrative unfinished, profile names available downstream but missing to planner, current clinician-role support limited,18unsettled machine support packets and2unsettled field checks. Full-workflow latency remains57.7minutes at priorbc3code; the scoped reader study does not replace that benchmark. Current ten-area engineering release/learning reuse assessment and independent qualification remain open.",
-    "next_action": "Finish the ordinary patient answer through existing planner/native tools and patient_evidence composition. The retained current context already has57received display names and57review cards; the planner nonetheless says names unavailable. Expose the existing exact-ID/profile/clock evidence to the ordinary planning path, and compose patient-specific rationale and dated roles from existing assertions/state instead of returning raw findings collections. First reproduce on retained context, then verify exact57membership, source references, unresolved distinctions, names, clinical facts and recommendations without another full-cohort provider run or automatic PDF. Keep the reader screen selected only on owned8890; default off and rollback retained. Reassess the current ten-area release after this missing behavior is corrected; independent qualification stays separate.",
+    "remaining_gap": "Profile access is repaired and exact native identity copies avoid redundant patient-level model checks. Original full clinical answer remains partial: patient-specific interpretation unfinished, current clinician-role evidence limited,18unsettled support packets and2unsettled field checks. Current full-workflow performance, ten-area release/learning reuse assessment and independent qualification remain open.",
+    "next_action": "Finish patient-specific interpretation in the ordinary answer using existing typed assertions/state and native composition. The old57patient question explicitly left narrative reading unfinished. Inspect the current table_from_tool-only final-table contract and headline/facts-only prose compiler: determine whether they prevent source-bound per-entity synthesis rather than adding another reader or disease handler. Connect per-patient rationale, dated clinician roles and proposed review steps to exact native/source dependencies; preserve all57patients and supported unknowns. Exercise the retained clinical evidence and an unfamiliar non-disease composition without another whole-cohort source-reading campaign or automatic PDF. Then assess current ten-area release compatibility, measured reuse and remaining qualification dependencies.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "Owned8890PID21269/session67922 selected candidate; no provider/training job or source freeze.",
+    "coordination": "Owned8890PID22308/session43530 ate7f3ac1; no active provider/training job or source freeze.",
     "remaining_blockers": [
-      "Ordinary clinical response remains partial: patient-specific narrative unfinished, profile names available downstream but missing to planner, current clinician-role support limited,18unsettled machine support packets and2unsettled field checks. Full-workflow latency remains57.7minutes at priorbc3code; the scoped reader study does not replace that benchmark. Current ten-area engineering release/learning reuse assessment and independent qualification remain open."
+      "Profile access is repaired and exact native identity copies avoid redundant patient-level model checks. Original full clinical answer remains partial: patient-specific interpretation unfinished, current clinician-role evidence limited,18unsettled support packets and2unsettled field checks. Current full-workflow performance, ten-area release/learning reuse assessment and independent qualification remain open."
     ],
-    "latest_progress": "Reader scheduling selected locally with rollback;141tests/offline replay/HTTP preservation. Existing57names expose next planner-to-answer gap.",
-    "results_report": "docs/agere/DOCUMENT_FIELD_SCREEN_2026-11-03.md",
+    "latest_progress": "57native names/dates and targeted autonomous investigator result exact;99tests; retained profile support1Jevcall/57nativechecks; actualHTTPpreservation.",
+    "results_report": "docs/agere/PATIENT_PROFILE_ANSWER_INTEGRATION_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -522,18 +522,18 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "ebff3c3 scoped source-screen engineering selected on owned candidate. Original clinical still partial; existing profiles not exposed to planner and narrative unfinished.",
+      "current_engineering": "e7f3ac1 profile access/native fidelity integrated. Original clinical narrative remains unfinished; current whole-release assessment still open.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json"
+      "evidence": "artifacts/agere-patient-answer-integration-2026-11-03/delivery-receipt.json"
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
-    "comparison_status": "Scoped comparison only. Ordinary clinical57patient run terminal partial at bc3b256; no full-workflow speed or clinical accuracy claim.",
-    "at": "2026-11-03T15:16:39.383879+00:00",
-    "workflow_change": "Whole-source/field relevance can avoid detailed statement checks for decided irrelevant sources; uncertain, failed, quarantined and previously read source fields preserve detailed reading. Exact full context and source-bound machine screening receipts remain available.",
+    "comparison_status": "Profile support stage only. Original full clinical question remains terminal partial atbc3b256; no current full-workflow speed or clinical accuracy claim.",
+    "at": "2026-11-03T15:42:51.146054+00:00",
+    "workflow_change": "The ordinary investigator can retrieve exact received profile names, dates and demographics before composing its answer. Full native result composition preserves patient membership and prior clinical fields. Native copy proofs cover profile cells after a supported global meaning check; clinical/role/mixed tables retain ordinary source review.",
     "unsealed_work": null,
     "bottling_assessment": {
       "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
@@ -619,7 +619,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Unnecessary statement expansion on machine-decided irrelevant source fields; repeated screening of prior source readings prevented.",
+    "measured_failure_removed": "Received patient profiles were unavailable to the ordinary investigator; copied identity cells received redundant model checks.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -701,6 +701,13 @@
       "fresh_attempts_before": 52,
       "fresh_attempts_after": 46,
       "new_weights": 0
+    },
+    "patient_profile_integration": {
+      "receipt": "artifacts/agere-patient-answer-integration-2026-11-03/delivery-receipt.json",
+      "received_names": 57,
+      "native_support_packets": 57,
+      "global_provider_calls": 1,
+      "full_clinical_answer_complete": false
     }
   },
   "decisions": [
@@ -3003,6 +3010,16 @@
         "artifacts/agere-document-field-screen-2026-11-03/composition-inspection.json"
       ],
       "scope_impact": "All ten areas retained; no global default or clinical/model promotion, full-cohort repeat, automatic PDF or architecture rewrite."
+    },
+    {
+      "at": "2026-11-03T15:42:51.146054+00:00",
+      "gate": "G3",
+      "decision": "Connect the existing received profile reader and native cell-fidelity route; continue per-entity clinical interpretation through existing composition.",
+      "basis": "Existing57names were absent to the planner. A fresh targeted investigator answered them correctly but made163providerattempts. Exact native copy proof plus a complete global meaning check reduces its final support stage61to1calls. Clinical fields and roles do not qualify for this shortcut.",
+      "evidence": [
+        "artifacts/agere-patient-answer-integration-2026-11-03/delivery-receipt.json"
+      ],
+      "scope_impact": "All ten areas retained. No full cohort source rereading, clinical/model promotion, PDF, new service or default reader-screen change."
     }
   ],
   "unsealed_work": null,
@@ -3033,7 +3050,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Finish the ordinary patient answer through existing planner/native tools and patient_evidence composition. The retained current context already has57received display names and57review cards; the planner nonetheless says names unavailable. Expose the existing exact-ID/profile/clock evidence to the ordinary planning path, and compose patient-specific rationale and dated roles from existing assertions/state instead of returning raw findings collections. First reproduce on retained context, then verify exact57membership, source references, unresolved distinctions, names, clinical facts and recommendations without another full-cohort provider run or automatic PDF. Keep the reader screen selected only on owned8890; default off and rollback retained. Reassess the current ten-area release after this missing behavior is corrected; independent qualification stays separate.",
+  "next_action": "Finish patient-specific interpretation in the ordinary answer using existing typed assertions/state and native composition. The old57patient question explicitly left narrative reading unfinished. Inspect the current table_from_tool-only final-table contract and headline/facts-only prose compiler: determine whether they prevent source-bound per-entity synthesis rather than adding another reader or disease handler. Connect per-patient rationale, dated clinician roles and proposed review steps to exact native/source dependencies; preserve all57patients and supported unknowns. Exercise the retained clinical evidence and an unfamiliar non-disease composition without another whole-cohort source-reading campaign or automatic PDF. Then assess current ten-area release compatibility, measured reuse and remaining qualification dependencies.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3042,5 +3059,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T15:16:39.383879+00:00"
+  "latest_checkpoint": "2026-11-03T15:42:51.146054+00:00"
 }
