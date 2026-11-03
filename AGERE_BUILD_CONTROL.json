@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T23:27:47.511956+00:00",
+  "updated_at": "2026-11-03T23:30:27.914642+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -489,7 +489,7 @@
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Arithmetic verification supports compositional calendar and scalar aggregates; unsupported exact numeric programs request one localized repair instead of per-patient model votes. An ordinary harder payer-payment question completes and automatically bottles five native steps for a checked identical-question repeat.",
-    "measured_failure_reduction": "Full ordinary result and automatic repeat pass:1920patients/26880cells.145.090s->$0.054511348 first;25.887s/$0.019622528 repeat;82.158%time and64.003%API-equivalent reduction,0Claude repeat calls.164focused/reuse/accounting checks pass.",
+    "measured_failure_reduction": "Harder ordinary/reuse pair:1920patients/26880cells exact;145.090s/$0.054511348 first,25.887s/$0.019622528 repeat;82.158%time and64.003%API-equivalent reduction,0Claude repeat calls.164focused/reuse/accounting checks pass. Clinical diagnosis establishes no additional failure reduction.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -581,10 +581,11 @@
       "artifacts/agere-harder-bottling-2026-11-03/program-verifier-repair/tests.log",
       "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/run-receipt.json",
       "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/ledger-recovery.json",
-      "artifacts/agere-harder-bottling-2026-11-03/delivery-receipt.json"
+      "artifacts/agere-harder-bottling-2026-11-03/delivery-receipt.json",
+      "artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json"
     ],
     "remaining_gap": "Original57patient clinical ordinary reuse/economics and six source-review dependencies; targeted learning/generalization and independentG5/customer prerequisites remain.",
-    "next_action": "G3: harder1920patient ordinary/reuse pair is sealed at703f5a5; do not rerun it. Return to original57patient clinical context ANS-39a99a79fc18fc9a250d80d8 and retained clinical native-replay qualification. Diagnose whether the six unresolved source dependencies are actual source gaps or representation/model uncertainty, then close the named engineering fault through existing assertion/state/verification. Qualify ordinary reuse of independently completed native work without selecting an unverified clinical answer, with equal-information regression and cost evidence. No full-cohort reread or broad training; preserve55/61supported packets,57patients,alltenareas and separateG5/customer dependencies. Targeted question-family knowledge/bottling follows.",
+    "next_action": "G3: harder1920patient ordinary/reuse pair sealed at703f5a5; do not rerun. Current original57patient diagnosis is artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json: five complete large packets remain undecided after Jev/Perplexity; existing source partition fails because non-source dependencies remain oversized. One rationale_interpretation field and coverage are also undecided; these are not established clinical source faults. Use the retained packets to localize actual assertion/program dependencies through existing projection and state, preserving complete source reconstruction; qualify on counterexamples before one affected provider check. Separately qualify ordinary reuse of completed native prefixes without selecting an unverified clinical final answer. Preserve55supportedpackets,57patients,alltenareas,G5/customer dependencies; no whole-cohort campaign or threshold lowering. Targeted knowledge/question-family learning follows.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All harder-question jobs terminal. Prior owned8890PID41475 stopped; same-code app restored on8890PID47807/session12518, GET/ask200. No active sourcefreeze or provider job.",
     "remaining_blockers": [
@@ -635,10 +636,12 @@
     "at": "2026-11-03T23:27:47.511956+00:00",
     "workflow_change": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
     "unsealed_work": {
-      "status": "none",
+      "status": "clinical_dependency_diagnosis_only",
+      "receipt": "artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json",
       "all_jobs_terminal": true,
       "source_frozen": false,
-      "product_edits": false
+      "product_edits": false,
+      "new_provider_attempts": 0
     },
     "bottling_assessment": {
       "candidate": "d9f9ae8cd0bcdd7b32fd874203f578ee6db1e41751e364c2561cc45ebf297570",
@@ -754,12 +757,7 @@
       "after_evaluations": 2,
       "fresh_ordinary_confirmation_pending": false
     },
-    "clinical_dependency_diagnosis": {
-      "receipt": "artifacts/agere-clinical-dependency-diagnosis-2026-11-03/delivery-receipt.json",
-      "field_receipts": 22,
-      "complete_packet": "unknown",
-      "verified_next_defects": 2
-    },
+    "clinical_dependency_diagnosis": "artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json",
     "source_statement_boundaries": {
       "receipt": "artifacts/agere-source-boundaries-2026-11-03/delivery-receipt.json",
       "mid_token_cuts": 0,
@@ -3375,10 +3373,12 @@
     }
   ],
   "unsealed_work": {
-    "status": "none",
+    "status": "clinical_dependency_diagnosis_only",
+    "receipt": "artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json",
     "all_jobs_terminal": true,
     "source_frozen": false,
-    "product_edits": false
+    "product_edits": false,
+    "new_provider_attempts": 0
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3407,7 +3407,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: harder1920patient ordinary/reuse pair is sealed at703f5a5; do not rerun it. Return to original57patient clinical context ANS-39a99a79fc18fc9a250d80d8 and retained clinical native-replay qualification. Diagnose whether the six unresolved source dependencies are actual source gaps or representation/model uncertainty, then close the named engineering fault through existing assertion/state/verification. Qualify ordinary reuse of independently completed native work without selecting an unverified clinical answer, with equal-information regression and cost evidence. No full-cohort reread or broad training; preserve55/61supported packets,57patients,alltenareas and separateG5/customer dependencies. Targeted question-family knowledge/bottling follows.",
+  "next_action": "G3: harder1920patient ordinary/reuse pair sealed at703f5a5; do not rerun. Current original57patient diagnosis is artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json: five complete large packets remain undecided after Jev/Perplexity; existing source partition fails because non-source dependencies remain oversized. One rationale_interpretation field and coverage are also undecided; these are not established clinical source faults. Use the retained packets to localize actual assertion/program dependencies through existing projection and state, preserving complete source reconstruction; qualify on counterexamples before one affected provider check. Separately qualify ordinary reuse of completed native prefixes without selecting an unverified clinical final answer. Preserve55supportedpackets,57patients,alltenareas,G5/customer dependencies; no whole-cohort campaign or threshold lowering. Targeted knowledge/question-family learning follows.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
