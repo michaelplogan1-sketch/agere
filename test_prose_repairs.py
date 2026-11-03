@@ -219,5 +219,21 @@ class ProseRepairs(unittest.TestCase):
         self.assertTrue(all('focused_prose_repair'in json.loads(b['messages'][0]['content'])for b in sent))
         self.assertIn('preserve the original',sent[-1]['messages'][0]['content'])
 
+    def test_source_free_keyed_constants_do_not_establish_patient_evidence(self):
+        feedback=self.located_failure()
+        self.calls.append({'name':'query_sql','input':{'sql':"SELECT 'A' AS patient_id,2 AS events"},
+            'result':{'result_view':'agere_result_2','columns':['patient_id','events'],'rows':[['A',2]],
+                'native_sql_contract':B.NATIVE_SQL_CONTRACT,'read_views':[]}})
+        p=self.patch(review=self.bound_review('agere_result_2'))
+        p['repair_draft']['rows'][0]['basis_additions']=[{'result_view':'agere_result_2','row':0}]
+        merged=E.apply_prose_repair(p,self.base,calls=self.calls,feedback=feedback)
+        with self.assertRaisesRegex(B.ComputedProseError,'source-free SQL constants')as caught:self.compile(merged)
+        self.assertEqual(caught.exception.repair_targets[0]['code'],'missing_scalar_source')
+        # A retained observation is still compiled, with semantic source review
+        # required afterwards. This is not a general SQL lineage proof.
+        self.calls[-1]['input']['sql']='SELECT patient_id,events FROM received_events'
+        self.calls[-1]['result']['read_views']=['received_events']
+        self.compile(merged)
+
 
 if __name__=='__main__':unittest.main()

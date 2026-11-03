@@ -187,7 +187,7 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
             target=located.get((ident,field))
             if targets and target is None:
                 raise ValueError('A focused binding repair may edit only the compiler-located fields')
-            if target and target['code']=='unbound_literal':
+            if target and target['code']in ('unbound_literal','missing_scalar_source'):
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native)
                 if canonical_repair_prose(rendered)!=canonical_repair_prose(repair_rendered_value(original,native)):
@@ -312,6 +312,7 @@ def focused_prose_state(candidate,feedback,calls):
         'instruction':'These are all located compiler failures, not a reduced patient cohort or a clinical conclusion. '
             'Repair only the named fields. Preserve each original sentence, numerical details, units, dates and uncertainty; '
             'use scalar bindings rather than deleting facts. Number words may become the equivalent numeral. '
+            'Do not copy draft numbers or entity IDs into source-free SQL constants: that cannot establish an evidence binding. '
             'Every other native row, original prose field and source remains retained and receives the complete review. '
             'Additional basis rows must carry the same entity keys. For a source value inside a nested column, use query_sql '
             'to select its complete exact value with the entity keys and source record/date; do not truncate quotes. '

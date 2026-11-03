@@ -273,7 +273,10 @@ has already declined this question, so it is yours to answer completely and corr
   Use SQL ROUND for display precision. Put a percent sign or dollar sign in the template when those are the source units.
   Fixed numeric definitions used in a quantitative sentence can be returned as explicitly named SQL columns too.
   This includes category labels: in "0 eligible patients", the category label is a literal quantity too.
-  Return a named SQL constant and bind its placeholder; spelling a numeral as a word does not resolve the error.
+  For an aggregate definition label, return its explicitly named definition and bind the placeholder.
+  Patient/entity prose must select measurements or complete exact observations from actual evidence; copying a draft
+  number into SELECT (even with a literal patient ID) does not establish a source. Compute definition counts from their
+  registered rows. Spelling a numeral as a word does not resolve the binding error.
   Keep dates and patient/record identifiers literal. A bound text column may supply an exact source observation.
   An exact attributed quotation with its record ID in the prose and a matching sources entry may keep its observed
   measurements verbatim: code checks that passage in its own record. Do not turn that quote into a population total.
@@ -976,6 +979,20 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
             call=next((c for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')==binding['result_view']),None)
             if call is None:raise ProseIssue('missing_native_result',field,'Computed scalar must name an executed result_view at '+field+'.'+name)
             result=call['result'];columns,rows=output_table(result)
+            source_free=False
+            if (row_mode and call.get('name')=='query_sql'and result.get('native_sql_contract')==NATIVE_SQL_CONTRACT
+                    and result.get('read_views')==[]):
+                # Native read_views excludes direct warehouse/definition reads.
+                # Reject the demonstrated SELECT-literals path only; this is
+                # not a new claim of complete SQL column-lineage verification.
+                import sqlglot
+                sql=result.get('declared_executed_query')or result.get('executed_query')or(call.get('input')or{}).get('sql')
+                try:source_free=bool(sql)and sqlglot.parse_one(sql,read='sqlite').find(sqlglot.exp.From)is None
+                except (sqlglot.errors.SqlglotError,ValueError,TypeError):pass
+            if source_free:
+                raise ProseIssue('missing_scalar_source',field,'Entity prose cannot use source-free SQL constants at '+field+'.'+name+
+                    '. Select the actual value or complete exact quotation from retained evidence with its entity key and source record/date. '
+                    'A copied number with a literal entity key is not evidence; compute definition counts from their registered definition rows.')
             from .result_assembly import incomplete_reason
             problem=incomplete_reason(result)
             if problem:
