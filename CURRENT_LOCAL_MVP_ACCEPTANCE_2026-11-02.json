@@ -1,7 +1,7 @@
 {
   "schema": "agere-current-engineering-acceptance/1",
   "status": "passed",
-  "recorded_at": "2026-11-02T20:17:55.409061+00:00",
+  "recorded_at": "2026-11-03T00:44:27.450589+00:00",
   "engineering_passed": 9,
   "engineering_total": 9,
   "scope_areas": [
@@ -21,17 +21,19 @@
   "production_authority": false,
   "full_mvp_acceptance": false,
   "new_provider_calls": 0,
-  "scorecard_sha256": "9a003678bbaea5092a0aa9d6a29e041a6e2087306e32b233e10caa2e5a66e554",
-  "delivery_receipt": "artifacts/agere-current-release-decision-2026-11-02/delivery-receipt.json",
-  "product_commit": "aec778d4eff79583405864744119f663f2f57ff8",
+  "scorecard_sha256": "b29e47086f887cdde18592c44043480c78978afbf0fa3956eaff67a8534d2bd3",
+  "delivery_receipt": "artifacts/agere-engineering-release-2026-11-02/delivery-receipt.json",
+  "product_commit": "a32a2c5501d1191d6308c3a90195aedd3d58a4c4",
   "current_gate": "G3",
   "clinical_answer_status": "partial",
   "clinical_qualification": false,
   "model_qualification": false,
   "remaining": [
-    "The original57patient clinical answer remains partial/unverified; independent source-family/clinical-role/model/outcome qualification remains open.508accepted field readings are machine judgments, not clinical adjudication.",
-    "Measured patient workspace/PDF HTTP reads18.863s/17.248s need engineering improvement; no matched whole-clinical cold/warm improvement or authentic all-in economics is established.",
-    "Selected outcome targets remain single-class; Perplexity failed/pending attempts retain protection. Customer connections/deployment authority remain separate. OWASP/HHS remains deferred."
+    "Clinical result remains partial:57 patients,58 review packets,522 unresolved field judgments. Independent source-family/clinical/model qualification remains open.",
+    "Latest ordinary clinical observation is1273.209 seconds,817 attempts,$2.68483958 known API equivalent; acceptable full-clinical latency and all-in economics remain unqualified.",
+    "Three automatic numeric transfers pass; the full-investigator and cross-domain comparison remains unqualified. No new weights or partial clinical whole-answer bottle is promoted.",
+    "Deliverables are on demand under Mike\u2019s latest instruction; verify ordinary requests do not generate unrequested PDF exports.",
+    "Customer deployment authority and outcome qualification remain separate; OWASP/HHS deferred."
   ],
   "browser_transport": {
     "historical_e400bb5": {
@@ -47,20 +49,16 @@
       "not_a_whole_clinical_workflow_speedup_claim": true
     },
     "current_scoped_HTTP": {
-      "patient_context_wire_bytes": 1788193,
-      "patient_context_seconds": 18.863472625031136,
-      "patient_PDF_seconds": 17.24761929200031,
+      "patient_context_wire_bytes": 335427,
+      "patient_context_decoded_bytes": 4752172,
+      "patient_context_seconds": 3.5871408749371767,
+      "patient_PDF_seconds": 1.574265707982704,
       "patient_PDF_byte_exact": true,
-      "all57patients_and1497_field_states_visible": true,
-      "matched_performance_improvement_claimed": false
+      "all57patients_and522_field_states_visible": true,
+      "matched_whole_workflow_improvement_claimed": false
     }
   },
-  "latest_scoped_followup": {
-    "product_commit": "a32a2c5501d1191d6308c3a90195aedd3d58a4c4",
-    "receipt": "artifacts/agere-parameter-transfer-2026-11-02/delivery-receipt.json",
-    "scope": "Current scoped parameter/reviewer/output/source guards and exact clinical/financial/HTTP checks; no new whole-matrix or restore claim.",
-    "new_full_acceptance": false
-  },
-  "decision_basis": "Fresh affected behavior and six real API reopens plus exact scoped historical source/module/recovery applicability. No new archive installation or recovery drill.",
-  "fresh_current_archive_or_recovery_execution_claimed": false
+  "latest_scoped_followup": null,
+  "decision_basis": "Current scoped code compatibility plus six real API reopens,fresh changed-path evidence and actual current executable install/restart/rollback/restore/HTTP.",
+  "fresh_current_archive_or_recovery_execution_claimed": true
 }

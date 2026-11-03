@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T00:19:02.013387+00:00",
+  "updated_at": "2026-11-03T00:44:27.450589+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -392,9 +392,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Current whole-product engineering release/recovery decision plus explicitly separate clinical/model/full-transfer qualifications.",
+      "remaining_acceptance": "On-demand output behavior, observed clinical performance and actual-investigator transfer; independent qualification remains separate.",
       "engineering_current_status": "Priorfinite9/9alltenareas plus same-codeb4011fc ordinary57-patient HTTP confirmation, current dashboard/PDF and unchanged prior contexts; original clinical answer partial.",
-      "next_action": "Assess the current ten-area synthetic engineering release at a32a2c5 through the existing executable scorecard: declare scoped compatibility for the changed planner/reviewer/source/output checks, rerun only affected ordinary workflow checks, and verify an isolated clean installation/restore with declared local dependencies and preserved all-attempt accounting. Retain original clinical uncertainty, all broader population/VBC/work/follow-up areas, and the unqualified full-investigator/cross-domain transfer and independent model/clinical requirements. Do not repeat failed baseline arms or the unchanged whole clinical cohort, introduce another catalog, or promote the partial clinical answer."
+      "next_action": "Verify the ordinary question-answering path generates a deliverable only when requested, per Mike\u2019s latest instruction. Retain on-demand report/PDF capability; remove any demonstrated automatic export work from ordinary answers or repeated verification. Check the affected request path without another whole-cohort inference or routine PDF regeneration. Then return to the observed clinical reasoning/reuse bottleneck and the actual-investigator transfer comparison, preserving all ten areas and independent qualification requirements."
     },
     {
       "id": "G5",
@@ -472,27 +472,28 @@
     }
   ],
   "checkpoint": {
-    "kind": "parameter_transfer_and_source_binding",
+    "kind": "current_executable_engineering_release",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Saved numeric plans transfer across thresholds without new model calls; patient detail lists keep their columns; explicit provider sources cannot broaden to merged claims.",
-    "measured_failure_reduction": "Carried shape identity and conflict defects fixed; one actual false review and patient shape rejection removed; wrong merged-source contract now rejected; three automatic native transfers exact with zero calls.",
+    "user_behavior_delta": "A frozen current executable local release now reproduces saved answers and review work through installation,restart,actual uncommitted work rollback,fresh restore and HTTP; all six original workflow reads remain exact.",
+    "measured_failure_reduction": "Current whole-product acceptance and recovery no longer refer only to earlier product code.",
     "evidence": [
-      "artifacts/agere-parameter-transfer-2026-11-02/delivery-receipt.json",
-      "docs/agere/PARAMETER_TRANSFER_2026-11-02.md"
+      "artifacts/agere-engineering-release-2026-11-02/delivery-receipt.json",
+      "docs/agere/ENGINEERING_RELEASE_A32A2C5_2026-11-02.md"
     ],
-    "remaining_gap": "Original clinical result remains partial: 57 patients, 58 checked packets and 522 unresolved field judgments; independent clinical/model/source-family qualification is open.; Three automatic numeric threshold transfers passed, but the full E7 investigator and cross-domain comparison remains unqualified. No isolated comparison shape or new model weights were installed in the live warehouse.; The last ordinary whole-clinical observation remains 1,273.209 seconds, 817 attempts and $2.68483958 known API-equivalent cost; no new whole-clinical speed claim.; Current whole-product installation/recovery and release decision need their executable evidence. Customer deployment and all-in economics remain separate; OWASP/HHS deferred.",
-    "next_action": "Assess the current ten-area synthetic engineering release at a32a2c5 through the existing executable scorecard: declare scoped compatibility for the changed planner/reviewer/source/output checks, rerun only affected ordinary workflow checks, and verify an isolated clean installation/restore with declared local dependencies and preserved all-attempt accounting. Retain original clinical uncertainty, all broader population/VBC/work/follow-up areas, and the unqualified full-investigator/cross-domain transfer and independent model/clinical requirements. Do not repeat failed baseline arms or the unchanged whole clinical cohort, introduce another catalog, or promote the partial clinical answer.",
+    "remaining_gap": "Clinical result remains partial:57 patients,58 review packets,522 unresolved field judgments. Independent source-family/clinical/model qualification remains open.; Latest ordinary clinical observation is1273.209 seconds,817 attempts,$2.68483958 known API equivalent; acceptable full-clinical latency and all-in economics remain unqualified.; Three automatic numeric transfers pass; the full-investigator and cross-domain comparison remains unqualified. No new weights or partial clinical whole-answer bottle is promoted.; Deliverables are on demand under Mike\u2019s latest instruction; verify ordinary requests do not generate unrequested PDF exports.; Customer deployment authority and outcome qualification remain separate; OWASP/HHS deferred.",
+    "next_action": "Verify the ordinary question-answering path generates a deliverable only when requested, per Mike\u2019s latest instruction. Retain on-demand report/PDF capability; remove any demonstrated automatic export work from ordinary answers or repeated verification. Check the affected request path without another whole-cohort inference or routine PDF regeneration. Then return to the observed clinical reasoning/reuse bottleneck and the actual-investigator transfer comparison, preserving all ten areas and independent qualification requirements.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "All comparison and verification jobs terminal; owned app ready; source unfrozen; scheduler paused.",
+    "coordination": "All recovery/proof jobs terminal; owned8890 ready; source unfrozen; scheduler paused.",
     "remaining_blockers": [
-      "Original clinical result remains partial: 57 patients, 58 checked packets and 522 unresolved field judgments; independent clinical/model/source-family qualification is open.",
-      "Three automatic numeric threshold transfers passed, but the full E7 investigator and cross-domain comparison remains unqualified. No isolated comparison shape or new model weights were installed in the live warehouse.",
-      "The last ordinary whole-clinical observation remains 1,273.209 seconds, 817 attempts and $2.68483958 known API-equivalent cost; no new whole-clinical speed claim.",
-      "Current whole-product installation/recovery and release decision need their executable evidence. Customer deployment and all-in economics remain separate; OWASP/HHS deferred."
+      "Clinical result remains partial:57 patients,58 review packets,522 unresolved field judgments. Independent source-family/clinical/model qualification remains open.",
+      "Latest ordinary clinical observation is1273.209 seconds,817 attempts,$2.68483958 known API equivalent; acceptable full-clinical latency and all-in economics remain unqualified.",
+      "Three automatic numeric transfers pass; the full-investigator and cross-domain comparison remains unqualified. No new weights or partial clinical whole-answer bottle is promoted.",
+      "Deliverables are on demand under Mike\u2019s latest instruction; verify ordinary requests do not generate unrequested PDF exports.",
+      "Customer deployment authority and outcome qualification remain separate; OWASP/HHS deferred."
     ],
-    "latest_progress": "Sealed a32a2c5: 274 tests; current clinical/financial/HTTP checks; 3/3 native transfer; full baseline comparison unqualified.",
-    "results_report": "docs/agere/PARAMETER_TRANSFER_2026-11-02.md",
+    "latest_progress": "Current9/9 ten-area engineering decision and fresh executable recovery/HTTP passed with zero providers.",
+    "results_report": "docs/agere/ENGINEERING_RELEASE_A32A2C5_2026-11-02.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -521,15 +522,15 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Prior aec778dfinite9/9 alltenareas, b4011fc scoped read-path161checks and current ordinary HTTP confirmation; no new fullmatrix/recovery claimed.",
+      "current_engineering": "Currenta32a2c5:9/9engineering acrossalltenareas; six original API workflows and actual current executable recovery/HTTP.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-parameter-transfer-2026-11-02/delivery-receipt.json"
+      "evidence": "artifacts/agere-engineering-release-2026-11-02/delivery-receipt.json"
     },
-    "latest_human_steering": "Continue build; OWASP/HHS work deferred. Existing approvals persist.",
+    "latest_human_steering": "Accuracy,cost and useful innovation against strong simple baselines; frontier models for appropriate roles. PDF/deliverables only when requested, not every run. Existing synthetic/private-push authorization continues.",
     "comparison_status": {
       "at": "2026-10-29T00:02:03.686914+00:00",
       "status": "all_three_returned_analytically_partial",
@@ -543,12 +544,9 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-03T00:19:02.013387+00:00",
+    "at": "2026-11-03T00:44:27.450589+00:00",
     "workflow_change": [
-      "Carried parameter templates retain the actual saved identity; disagreeing active release shapes decline instead of silently picking the newest.",
-      "Typed, analysis and program interpretation review receives the shared decision definitions and snapshot clock.",
-      "Patient lists with per-person total/average columns remain tables; scalar-only questions still reject patient tables.",
-      "Explicit provider-claim plans must bind the provider feed before aggregation; an unfiltered merged or payer-only claim read is rejected. The existing source adapter recognizes the short provider claims wording."
+      "A frozen current executable local release now reproduces saved answers and review work through installation,restart,actual uncommitted work rollback,fresh restore and HTTP; all six original workflow reads remain exact."
     ],
     "unsealed_work": null,
     "bottling_assessment": {
@@ -601,8 +599,8 @@
     "owned_recovery_run": {
       "kind": "actual_installed_local_operations",
       "status": "passed",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-current-browser-release-2026-11-02/run-receipt.json",
-      "finished_at": "2026-11-02T15:47:39.362627+00:00",
+      "receipt": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-engineering-release-a32a2c5-2026-11-02/run-receipt.json",
+      "finished_at": "2026-11-03T00:40:26.145882+00:00",
       "source_frozen": false
     },
     "provider_dependency": {
@@ -636,7 +634,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Four connected construction/reuse failures removed with actual retained and authored regression evidence.",
+    "measured_failure_removed": "Current whole-product acceptance and recovery no longer refer only to earlier product code.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -2742,6 +2740,14 @@
       "reason": "3/3 native changes preserve exact source values; 1/6 fresh interpreter baselines pass; observed merged-source acceptance repaired. Current 57-patient and financial deliverables pass with no provider calls. Further model retries would not establish the remaining customer workflow/recovery promises.",
       "scope_impact": "All ten areas and full transfer/model/clinical requirements retained. No partial clinical bottle, new weights, main merge or publication.",
       "evidence": "artifacts/agere-parameter-transfer-2026-11-02/delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-03T00:44:27.450589+00:00",
+      "gate": "G3",
+      "decision": "Seal current whole-product engineering/recovery evidence; follow latest human instruction to keep deliverables on demand.",
+      "reason": "Current whole-product acceptance and recovery no longer refer only to earlier product code.",
+      "scope_impact": "Alltenareas and model/clinical/transfer requirements retained. No routine PDF generation; no new models,thresholds,main merge or publication.",
+      "evidence": "artifacts/agere-engineering-release-2026-11-02/delivery-receipt.json"
     }
   ],
   "unsealed_work": null,
@@ -2772,7 +2778,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Assess the current ten-area synthetic engineering release at a32a2c5 through the existing executable scorecard: declare scoped compatibility for the changed planner/reviewer/source/output checks, rerun only affected ordinary workflow checks, and verify an isolated clean installation/restore with declared local dependencies and preserved all-attempt accounting. Retain original clinical uncertainty, all broader population/VBC/work/follow-up areas, and the unqualified full-investigator/cross-domain transfer and independent model/clinical requirements. Do not repeat failed baseline arms or the unchanged whole clinical cohort, introduce another catalog, or promote the partial clinical answer.",
+  "next_action": "Verify the ordinary question-answering path generates a deliverable only when requested, per Mike\u2019s latest instruction. Retain on-demand report/PDF capability; remove any demonstrated automatic export work from ordinary answers or repeated verification. Check the affected request path without another whole-cohort inference or routine PDF regeneration. Then return to the observed clinical reasoning/reuse bottleneck and the actual-investigator transfer comparison, preserving all ten areas and independent qualification requirements.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2781,5 +2787,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T00:19:02.013387+00:00"
+  "latest_checkpoint": "2026-11-03T00:44:27.450589+00:00"
 }
