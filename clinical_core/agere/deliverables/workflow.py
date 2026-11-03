@@ -361,7 +361,9 @@ def materialize(path, key, *, allow_live=False, generation=None, send=None, sour
                         # This boundary surrounds pure local rendering only.
                         # Provider exceptions and their accounting never enter it.
                         try:
-                            d = create(path, {'context_id': key, 'template': s['template'], 'request': s['title'],
+                            from ..clinical.request_plan import quote_text
+                            brief = quote_text(s['quote']) if generation == 'saved_report' and s.get('quote') else s['title']
+                            d = create(path, {'context_id': key, 'template': s['template'], 'request': brief,
                                 **({'retained_inspection':True} if source_review else {})})
                         except Exception as exc:
                             if isinstance(exc,(ValueError,OSError,sqlite3.Error)):raise
@@ -487,7 +489,8 @@ def retry_deliverable(path, request, *, allow_live=False, send=None):
             else:
                 from .mock_views import create
             try:
-                d=create(path,{'context_id':key,'template':step['template'],'request':step['title'],
+                d=create(path,{'context_id':key,'template':step['template'],
+                    'request':brief if step['generation']=='saved_report' else step['title'],
                     **({'retained_inspection':True}if record.get('source_review_identity')else{})})
             except Exception as exc:
                 if isinstance(exc,(ValueError,OSError,sqlite3.Error)):raise

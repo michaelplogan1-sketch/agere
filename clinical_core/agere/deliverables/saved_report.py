@@ -49,7 +49,6 @@ def create(path, request):
     validator()
     from .patient_dashboard import render as dashboard, exports
     from .patient_evidence import projection
-    from .patient_report_pdf import render as pdf_report
     import hashlib
     import tempfile
     from urllib.parse import urlencode
@@ -64,13 +63,14 @@ def create(path, request):
     renderers = {name: Path(__file__).with_name(name).read_text() for name in
                  ('saved_report.py', 'patient_dashboard.py', 'patient_evidence.py', 'patient_report_pdf.py')}
     key = 'DLV-' + fingerprint([VERSION, renderers, context['id'], request, payload])[:12].upper()
-    wanted = ' '.join([title, context['question']] + [str(s.get('quote', '')) for s in context.get('workflow') or []])
-    want_pdf = bool(re.search(r'\bpdf\b', wanted, re.I))
+    # Export intent belongs to this request, not a prior question or report.
+    want_pdf = bool(re.search(r'\bpdf\b', title, re.I))
     pdf_url = '/api/stack/action-deliverable?' + urlencode({'context': context['id'], 'id': key, 'format': 'pdf'}) if want_pdf else None
     body = dashboard(context, title=title, pdf_url=pdf_url, evidence=evidence)
     pdf_bytes = None
     pdf_receipt = None
     if want_pdf:
+        from .patient_report_pdf import render as pdf_report
         with tempfile.TemporaryDirectory(prefix='agere-report-') as tmp:
             output = Path(tmp) / 'artifact.pdf'
             pdf_receipt = pdf_report(context, output, evidence=evidence)
