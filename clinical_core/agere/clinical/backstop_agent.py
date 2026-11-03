@@ -361,6 +361,7 @@ class Tools:
                 'subscription_tool_protocol':hashlib.sha256((Path(__file__).resolve().parents[1]/'subscription_transport.py').read_bytes()).hexdigest(),
                 'documentation_identity':getattr(getattr(self.semantic,'_local',None),'documentation_identity',None),
                 'documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','discover'),
+                'document_field_screen':os.environ.get('AGERE_DOCUMENT_FIELD_SCREEN','off'),
                 'explicit_tool_quota':MAX_TOOLS, 'native_sql_contract':NATIVE_SQL_CONTRACT,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                                  for name in ('backstop_agent.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py')},

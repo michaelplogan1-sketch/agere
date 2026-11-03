@@ -130,17 +130,20 @@ class Relations(unittest.TestCase):
     def test_class_swap_changes_only_the_bound_finding_and_keeps_exact_source(self):
         seen=[]
         def judge(task,named,evidence,**kw):
+            self.assertTrue(all(source['text']==self.doc['text']for source in evidence))
             seen.extend(named.values());judgments={}
             for key,value in named.items():
                 self.assertIn('unknown',value['criteria'])
                 ins=value['instructions'];axis=ins.get('axis');bound=ins.get('relation_binding')
-                label='supported'if axis=='relation_support'else self.axes[axis] if axis else 'finding' if bound['entity']['id']=='mra' else 'irrelevant'
+                label='supported'if axis=='relation_support'else self.axes[axis] if axis else 'finding' if bound['entity']['id']=='mra'and ins['target_block']=='MRA held for potassium.' else 'irrelevant'
                 judgments[key]={'label':label,'decided_by':'fixture','provider':'fixture'}
             return {'judgments':judgments,'steps':[],'cost_usd':0}
         out=T.read(self.tools,'A',[self.doc],{'mra_reason':question(),'rasi_reason':question('rasi')},None,judge=judge,ranking=False)
         self.assertEqual(out['findings']['rasi_reason'],[])
+        self.assertEqual(len(out['findings']['mra_reason']),1)
         value=out['findings']['mra_reason'][0]
-        self.assertEqual(value['quote'],self.doc['text']);self.assertEqual(value['entity']['id'],'mra')
+        self.assertEqual(value['quote'],'MRA held for potassium.');self.assertEqual(value['entity']['id'],'mra')
+        self.assertEqual(self.doc['text'][value['span_start']:value['span_end']],value['quote'])
         self.assertEqual(value['assertion']['clocks']['clinical_date'],None)
         self.assertEqual(value['assertion']['clocks']['source_date'],self.doc['date'])
         self.assertTrue(all(v['instructions']['relation_binding'] in [question(),question('rasi')] for v in seen))
@@ -152,8 +155,9 @@ class Relations(unittest.TestCase):
                     'supported'if v['instructions'].get('axis')=='relation_support'else self.axes[v['instructions']['axis']] if v['instructions'].get('axis') else 'finding',
                     'decided_by':'fixture','provider':'fixture'} for k,v in named.items()},'steps':[],'cost_usd':0}
             out=T.read(self.tools,'A',[self.doc],{'reason':question()},None,judge=judge,ranking=False)
-            self.assertEqual(out['findings']['reason'],[]);self.assertEqual(len(out['unresolved']),1)
-            self.assertEqual(out['unresolved'][0]['relation_binding'],question())
+            self.assertEqual(out['findings']['reason'],[])
+            self.assertEqual({u['quote']for u in out['unresolved']},{'MRA held for potassium.','RASI continued.'})
+            self.assertTrue(all(u['relation_binding']==question()for u in out['unresolved']))
 
     def test_axes_batching_does_not_drop_any_passages(self):
         docs=[{**self.doc,'text':'\n\n'.join(['MRA held.']*30)}];sizes=[]
