@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T11:31:35.117624+00:00",
+  "updated_at": "2026-11-03T11:38:48.659351+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -476,24 +476,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "executed_contract_and_completeness_repair",
+    "kind": "specification_verifier_cost_ownership",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Compiled execution state retains exact compact scoped SQL and native-view dependencies. Answered-plus-missing contradictions trigger repair before paid final review; genuine unknowns stay partial or unsupported.",
-    "measured_failure_reduction": "0 to 12 inspectable native SQL contracts; retained answered/missing contradiction now repaired before paid review; focused finalization preserves 795 rows with no missing requirement.",
+    "user_behavior_delta": "Specification-verifier background workers preserve explicit question cost ownership and free cache reuse without changing provider/model/evaluation inputs.",
+    "measured_failure_reduction": "All 14 formerly invisible spec cache reuses now attributed and free; exact concurrent fixture ownership; all original requests and verdicts unchanged.",
     "evidence": [
-      "artifacts/agere-executed-contract-context-2026-11-03/delivery-receipt.json",
-      "docs/agere/EXECUTED_CONTRACT_COMPLETENESS_2026-11-03.md"
+      "artifacts/agere-spec-cost-ownership-2026-11-03/delivery-receipt.json",
+      "docs/agere/SPEC_VERIFIER_COST_OWNERSHIP_2026-11-03.md"
     ],
-    "remaining_gap": "Original ordinary numeric request has exact 795 patient/count/amount rows but failed completeness acceptance; 208.519 seconds and 867 provider attempts remain excessive. Its request telemetry owns 853 attempts and leaves 14 ambiguous. The focused post-fix finalization is complete with the same table, but is not fresh semantic or ordinary end-to-end acceptance. The original 57-patient clinical result remains partial with 522 unresolved field judgments, which are not 522 established errors. No new model weights or clinical bottle are promoted. Independent clinical/model qualification, authentic total cost and customer deployment requirements remain separate; OWASP/HHS is deferred.",
-    "next_action": "Diagnose the 14 unowned attempts in the retained ordinary numeric run before another paid campaign. Reproduce the responsible worker boundary with isolated real-ledger fixtures, preserve provider request/model identity, and require two concurrent questions to own their new attempts exactly without stealing cache reuse. spec_verify.verify currently converts the ledger to a plain string and dispatches unwrapped workers; this is a hypothesis until linked to the retained attempts. Do not retrospectively tag old rows or infer ownership from a time window. Then use retained native dependencies to reduce repetitive numeric verification and target the clinical source-reading uncertainties with current Jev/Perplexity. No whole-cohort replay, forced model participation, threshold relaxation or new training campaign.",
+    "remaining_gap": "The ordinary numeric result has exact 795 patient/count/amount rows, but its original completeness acceptance failed and 208.519 seconds/867 attempts remain excessive. The compact-context finisher passed a scoped check, not a new ordinary end-to-end or semantic acceptance. The newly found specification-worker ownership defect is now repaired with exact retained-request and concurrent-fixture evidence; historical ambiguous rows remain unchanged. The 57-patient clinical answer remains partial with 522 unresolved judgments. Independent model/clinical qualification, broad ordinary-workflow transfer and authentic total economics remain open; customer deployment prerequisites are separate and OWASP/HHS deferred.",
+    "next_action": "Use the retained ordinary 795-row/12-call numeric trace to measure which final claims are already established by native source/domain/value checks and which still require semantic review. Correct the existing claim-support/projection path so deterministic numeric fidelity is checked natively and only residual interpretation claims require typed providers. Require changed source, year, amount, unit, denominator, patient binding and unsupported narrative regressions to remain rejected; do not blanket-bypass review or relax thresholds. Verify the retained workflow before any focused live comparison. Then address the retained clinical source-reading uncertainties with current Jev/Perplexity, preserving genuine unknowns. No full numeric/clinical cohort replay or untargeted training campaign.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "No provider/training/frozen job. Owned 8890 PID 8020 at 42ff610; quiet continuation ACTIVE.",
+    "coordination": "No provider/training/frozen job. Owned 8890 PID 9087/session93011 at 39814ce; quiet continuation ACTIVE.",
     "remaining_blockers": [
-      "Original ordinary numeric request has exact 795 patient/count/amount rows but failed completeness acceptance; 208.519 seconds and 867 provider attempts remain excessive. Its request telemetry owns 853 attempts and leaves 14 ambiguous. The focused post-fix finalization is complete with the same table, but is not fresh semantic or ordinary end-to-end acceptance. The original 57-patient clinical result remains partial with 522 unresolved field judgments, which are not 522 established errors. No new model weights or clinical bottle are promoted. Independent clinical/model qualification, authentic total cost and customer deployment requirements remain separate; OWASP/HHS is deferred."
+      "The ordinary numeric result has exact 795 patient/count/amount rows, but its original completeness acceptance failed and 208.519 seconds/867 attempts remain excessive. The compact-context finisher passed a scoped check, not a new ordinary end-to-end or semantic acceptance. The newly found specification-worker ownership defect is now repaired with exact retained-request and concurrent-fixture evidence; historical ambiguous rows remain unchanged. The 57-patient clinical answer remains partial with 522 unresolved judgments. Independent model/clinical qualification, broad ordinary-workflow transfer and authentic total economics remain open; customer deployment prerequisites are separate and OWASP/HHS deferred."
     ],
-    "latest_progress": "85 affected checks; exact 795-row historical HTTP inspection; scoped finalization only.",
-    "results_report": "docs/agere/EXECUTED_CONTRACT_COMPLETENESS_2026-11-03.md",
+    "latest_progress": "67 affected tests, exact retained 14-request replay, current HTTP/source/ledger preservation.",
+    "results_report": "docs/agere/SPEC_VERIFIER_COST_OWNERSHIP_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -522,18 +522,18 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Prior a32a2c5 nine-of-nine release remains versioned; scoped 42ff610 repair selected with retained-state and HTTP evidence.",
+      "current_engineering": "Prior a32a2c5 nine-of-nine release remains versioned; scoped 39814ce ownership correction selected after retained-request/concurrent fixtures and HTTP checks.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-executed-contract-context-2026-11-03/delivery-receipt.json"
+      "evidence": "artifacts/agere-spec-cost-ownership-2026-11-03/delivery-receipt.json"
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "Ordinary numeric fidelity exact but completeness acceptance failed; scoped repaired finalization complete, fresh semantic/ordinary acceptance open.",
-    "at": "2026-11-03T11:31:35.117624+00:00",
-    "workflow_change": "Compiled execution state retains exact compact scoped SQL and native-view dependencies. Answered-plus-missing contradictions trigger repair before paid final review; genuine unknowns stay partial or unsupported.",
+    "at": "2026-11-03T11:38:48.659351+00:00",
+    "workflow_change": "Specification-verifier background workers preserve explicit question cost ownership and free cache reuse without changing provider/model/evaluation inputs.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -620,7 +620,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Compiled context no longer drops executed SQL; contradictory complete status no longer reaches paid final review.",
+    "measured_failure_removed": "Specification verifier worker dispatch no longer drops the question cost owner.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -643,6 +643,12 @@
       "explicitly_owned_attempts": 853,
       "ambiguous_attempts": 14,
       "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-ordinary-numeric-confirmation-2026-11-03/run-receipt.json"
+    },
+    "cost_ownership_followup": {
+      "receipt": "artifacts/agere-spec-cost-ownership-2026-11-03/delivery-receipt.json",
+      "historical_rows_retagged": false,
+      "future_worker_boundary_repaired": true,
+      "fresh_ordinary_request_not_yet_checked": true
     }
   },
   "decisions": [
@@ -2800,6 +2806,26 @@
         "artifacts/agere-executed-contract-context-2026-11-03/delivery-receipt.json"
       ],
       "scope_impact": "All ten areas retained. No answer relabeling, automatic ownership backfill, clinical promotion, threshold change, whole-cohort rerun or source mutation."
+    },
+    {
+      "at": "2026-11-03T11:34:00.551863+00:00",
+      "gate": "G3",
+      "decision": "Repair the proven spec verifier worker cost-ownership loss.",
+      "evidence": [
+        "artifacts/agere-spec-cost-ownership-2026-11-03/retained-request-match.json"
+      ],
+      "basis": "Exact provider request hashes match all 14 unowned attempts; no speculative attribution or source lookup required.",
+      "scope_impact": "Bookkeeping only, existing worker/ledger helper; preserve model policy, request identities, original rows, all ten areas."
+    },
+    {
+      "at": "2026-11-03T11:38:48.659351+00:00",
+      "gate": "G3",
+      "decision": "Select verified spec-worker ownership repair and return to excessive numeric verification.",
+      "basis": "All 14 unknown calls exactly reconstructed; two failing regressions now pass; retained 14-request models/inputs/probabilities/verdicts unchanged. No paid campaign needed.",
+      "evidence": [
+        "artifacts/agere-spec-cost-ownership-2026-11-03/delivery-receipt.json"
+      ],
+      "scope_impact": "All ten areas retained, no clinical promotion or historic accounting rewrite; no frontier, student or threshold change."
     }
   ],
   "unsealed_work": null,
@@ -2830,7 +2856,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Diagnose the 14 unowned attempts in the retained ordinary numeric run before another paid campaign. Reproduce the responsible worker boundary with isolated real-ledger fixtures, preserve provider request/model identity, and require two concurrent questions to own their new attempts exactly without stealing cache reuse. spec_verify.verify currently converts the ledger to a plain string and dispatches unwrapped workers; this is a hypothesis until linked to the retained attempts. Do not retrospectively tag old rows or infer ownership from a time window. Then use retained native dependencies to reduce repetitive numeric verification and target the clinical source-reading uncertainties with current Jev/Perplexity. No whole-cohort replay, forced model participation, threshold relaxation or new training campaign.",
+  "next_action": "Use the retained ordinary 795-row/12-call numeric trace to measure which final claims are already established by native source/domain/value checks and which still require semantic review. Correct the existing claim-support/projection path so deterministic numeric fidelity is checked natively and only residual interpretation claims require typed providers. Require changed source, year, amount, unit, denominator, patient binding and unsupported narrative regressions to remain rejected; do not blanket-bypass review or relax thresholds. Verify the retained workflow before any focused live comparison. Then address the retained clinical source-reading uncertainties with current Jev/Perplexity, preserving genuine unknowns. No full numeric/clinical cohort replay or untargeted training campaign.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2839,5 +2865,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T11:31:35.117624+00:00"
+  "latest_checkpoint": "2026-11-03T11:38:48.659351+00:00"
 }
