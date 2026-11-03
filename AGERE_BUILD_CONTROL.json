@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T13:20:51.320350+00:00",
+  "updated_at": "2026-11-03T13:33:44.109311+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -476,24 +476,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "complete_source_statement_boundaries",
+    "kind": "intact_dated_source_reference",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Typed source review now uses complete source statements with exact offsets, preserving full-document context and unknown judgments instead of splitting words or combining unrelated statements in arbitrary 2048character blocks.",
-    "measured_failure_reduction": "7\u21920mid-word cuts across161retained sources; affected two-note typed check no longer returns mixed-subject RAAS excerpt.",
+    "user_behavior_delta": "The shared SQL planner and product investigator reject independently aggregated source clocks and record IDs, with local repair guidance to retain an intact source row and explicit tie/unknown handling.",
+    "measured_failure_reduction": "18\u21920mismatched date/record pairs across28finding groups;57patients and all counts preserved;13reference displays corrected.",
     "evidence": [
-      "artifacts/agere-source-boundaries-2026-11-03/delivery-receipt.json",
-      "docs/agere/SOURCE_STATEMENT_BOUNDARIES_2026-11-03.md"
+      "artifacts/agere-source-tuples-2026-11-03/delivery-receipt.json",
+      "docs/agere/SOURCE_REFERENCE_TUPLES_2026-11-03.md"
     ],
-    "remaining_gap": "The original57patient clinical answer remains partial and its522retained field uncertainties are not globally regraded. The two-note reader check removes the wrong mixed-medication excerpt while retaining unresolved statement judgments; it is not independent clinical qualification. The next verified defect is mismatched source-date/record aggregation. Current whole-product ordinary transfer/release acceptance, independent model/clinical qualification and all-in economics remain open. Prior795row numeric acceptance is versioned at a9e8be8; no historical answer or bottle is restamped under this policy. Deployment prerequisites remain separate.",
-    "next_action": "Repair the owner-verified source-date/record tuple defect in generated agere_result_26 through the existing native assertion/composition path. Independent MAX(date)/MAX(record_id) pairs2030-04-30withWHR-4e50a7fda82428e011af500a dated2026-09-14. Reproduce the retained dependency, preserve one actual source row for each dated reference, and verify other groups, ties, missing dates and joins with native regressions and the affected retained composition. Inspect documentary_state_json usage before any repeated-state/count change; do not infer copy-forward meaning from prefixes. Preserve conflicts and unknowns; no clinical truth claim, threshold reduction, therapy_barriers.py edit, full cohort replay or repeated passing numeric run. Inspect owned terminal receipts first; no frozen provider job remains.",
+    "remaining_gap": "Both owner-verified construction defects have scoped repairs: complete-statement source boundaries and intact dated-source references. The original57patient clinical answer remains partial and its522field uncertainties are not globally regraded. A source-correct tuple does not establish current clinical meaning. One current affected dependency needs to combine the repairs and pass its unchanged support contract before a broader ordinary confirmation. Current whole-product release/ordinary transfer, independent model/clinical qualification and all-in economics remain open; deployment is separate. Prior795row numeric acceptance remains versioned at a9e8be8, with changed-policy guards invalidated.",
+    "next_action": "Reconstruct the one affected retained clinical dependency using the selected complete-statement reader and intact dated-source composition, then check whether its independent complete-packet support is resolved at the existing0.8threshold. Reuse exact cached typed judgments where bindings match; preserve original and all candidate rows separately. Inspect existing patient_evidence/documentary_state transport before adding any state wiring: upstream reconciliation already retains28groups/18repeated families/112excluded repeated refreshes, while the narrative summary counts166raw findings. Those counts are not current state or corroboration. Verify source, entity, clock, whole-context and native calculation bindings, keeping unresolved values explicit. Run only the targeted changed dependency before deciding whether a current ordinary full clinical confirmation is justified. Do not repeat the passing numeric question, add a disease-specific handler, edit therapy_barriers.py, lower thresholds, or promote model agreement. Inspect owned receipts first; no frozen job remains.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "Owned8890PID13534/session19079; no frozen provider/training job; quiet heartbeat active.",
+    "coordination": "Owned8890PID13852/session98541; no frozen provider/training job; quiet heartbeat active.",
     "remaining_blockers": [
-      "The original57patient clinical answer remains partial and its522retained field uncertainties are not globally regraded. The two-note reader check removes the wrong mixed-medication excerpt while retaining unresolved statement judgments; it is not independent clinical qualification. The next verified defect is mismatched source-date/record aggregation. Current whole-product ordinary transfer/release acceptance, independent model/clinical qualification and all-in economics remain open. Prior795row numeric acceptance is versioned at a9e8be8; no historical answer or bottle is restamped under this policy. Deployment prerequisites remain separate."
+      "Both owner-verified construction defects have scoped repairs: complete-statement source boundaries and intact dated-source references. The original57patient clinical answer remains partial and its522field uncertainties are not globally regraded. A source-correct tuple does not establish current clinical meaning. One current affected dependency needs to combine the repairs and pass its unchanged support contract before a broader ordinary confirmation. Current whole-product release/ordinary transfer, independent model/clinical qualification and all-in economics remain open; deployment is separate. Prior795row numeric acceptance remains versioned at a9e8be8, with changed-policy guards invalidated."
     ],
-    "latest_progress": "97regression checks, complete native source coverage, focused existing reader and authored entity/role checks.",
-    "results_report": "docs/agere/SOURCE_STATEMENT_BOUNDARIES_2026-11-03.md",
+    "latest_progress": "111tests and zero-provider retained native composition repair.",
+    "results_report": "docs/agere/SOURCE_REFERENCE_TUPLES_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -522,18 +522,18 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Prior release and ordinary numeric acceptance remain versioned;3fcfad0source-statement repair has scoped engineering evidence.",
+      "current_engineering": "Prior release and ordinary numeric acceptance remain versioned;bc3b256intact-source tuple guard and3fcfad0statement boundaries have scoped workflow evidence.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-source-boundaries-2026-11-03/delivery-receipt.json"
+      "evidence": "artifacts/agere-source-tuples-2026-11-03/delivery-receipt.json"
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "Ordinary numeric fidelity exact but completeness acceptance failed; scoped repaired finalization complete, fresh semantic/ordinary acceptance open.",
-    "at": "2026-11-03T13:20:51.320350+00:00",
-    "workflow_change": "Typed source review now uses complete source statements with exact offsets, preserving full-document context and unknown judgments instead of splitting words or combining unrelated statements in arbitrary 2048character blocks.",
+    "at": "2026-11-03T13:33:44.109311+00:00",
+    "workflow_change": "The shared SQL planner and product investigator reject independently aggregated source clocks and record IDs, with local repair guidance to retain an intact source row and explicit tie/unknown handling.",
     "unsealed_work": null,
     "bottling_assessment": {
       "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
@@ -619,7 +619,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Arbitrary source cuts split words and combined unrelated medication statements.",
+    "measured_failure_removed": "Independent source-date/record extrema formed nonexistent references.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -663,6 +663,13 @@
       "mid_token_cuts": 0,
       "documents": 161,
       "remaining_verified_defect": "source_date_record_tuple"
+    },
+    "source_reference_tuples": {
+      "receipt": "artifacts/agere-source-tuples-2026-11-03/delivery-receipt.json",
+      "invalid_pairs_before": 18,
+      "invalid_pairs_after": 0,
+      "groups": 28,
+      "patients": 57
     }
   },
   "decisions": [
@@ -2911,6 +2918,16 @@
         "artifacts/agere-source-boundaries-2026-11-03/delivery-receipt.json"
       ],
       "scope_impact": "All ten areas retained; no fullcohort replay, threshold reduction, model/clinical qualification or new defaults beyond repaired source boundaries."
+    },
+    {
+      "at": "2026-11-03T13:33:44.109311+00:00",
+      "gate": "G3",
+      "decision": "Select native source-reference guard; combine both verified repairs in one affected dependency next.",
+      "basis": "111tests and exact retained computation remove18invalid source pairs without any provider calls, cohort/count changes, clinical promotion or historical answer overwrite.",
+      "evidence": [
+        "artifacts/agere-source-tuples-2026-11-03/delivery-receipt.json"
+      ],
+      "scope_impact": "All ten areas retained; no fullreader/cohort rerun or new state policy; examine existing state transport before adding wiring."
     }
   ],
   "unsealed_work": null,
@@ -2941,7 +2958,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Repair the owner-verified source-date/record tuple defect in generated agere_result_26 through the existing native assertion/composition path. Independent MAX(date)/MAX(record_id) pairs2030-04-30withWHR-4e50a7fda82428e011af500a dated2026-09-14. Reproduce the retained dependency, preserve one actual source row for each dated reference, and verify other groups, ties, missing dates and joins with native regressions and the affected retained composition. Inspect documentary_state_json usage before any repeated-state/count change; do not infer copy-forward meaning from prefixes. Preserve conflicts and unknowns; no clinical truth claim, threshold reduction, therapy_barriers.py edit, full cohort replay or repeated passing numeric run. Inspect owned terminal receipts first; no frozen provider job remains.",
+  "next_action": "Reconstruct the one affected retained clinical dependency using the selected complete-statement reader and intact dated-source composition, then check whether its independent complete-packet support is resolved at the existing0.8threshold. Reuse exact cached typed judgments where bindings match; preserve original and all candidate rows separately. Inspect existing patient_evidence/documentary_state transport before adding any state wiring: upstream reconciliation already retains28groups/18repeated families/112excluded repeated refreshes, while the narrative summary counts166raw findings. Those counts are not current state or corroboration. Verify source, entity, clock, whole-context and native calculation bindings, keeping unresolved values explicit. Run only the targeted changed dependency before deciding whether a current ordinary full clinical confirmation is justified. Do not repeat the passing numeric question, add a disease-specific handler, edit therapy_barriers.py, lower thresholds, or promote model agreement. Inspect owned receipts first; no frozen job remains.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2950,5 +2967,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T13:20:51.320350+00:00"
+  "latest_checkpoint": "2026-11-03T13:33:44.109311+00:00"
 }
