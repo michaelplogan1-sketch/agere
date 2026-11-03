@@ -259,6 +259,84 @@ def date_arithmetic_issues(db, query):
     return list(dict.fromkeys(issues))
 
 
+def source_tuple_issues(query):
+    """Independent extrema cannot select an intact dated source reference.
+
+    Follow direct native date/record_id projections through SQL scopes. This is
+    a structural provenance contract, not a guess about clinical meaning or a
+    claim that arbitrary SQL has been proven correct. Different source bindings
+    and groups fixed to one of the tuple's members remain valid. A planner must
+    choose a row (with explicit tie handling), or retain all matching rows.
+    """
+    if not re.search(r'\b(?:max|min)\s*\(', query, re.I): return []
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import Scope, traverse_scope
+    try:
+        tree = sqlglot.parse_one(query, read='sqlite')
+        scopes = list(traverse_scope(tree))
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError, sqlglot.errors.OptimizeError):
+        return []  # SQLite remains the syntax authority.
+
+    clocks = {'date', 'source_date', 'event_date', 'available_date', 'recorded_date', 'clinical_date', 'reference_date'}
+
+    def binding(node, scope, seen=frozenset()):
+        if isinstance(node, (exp.Alias, exp.Paren)): return binding(node.this, scope, seen)
+        if not isinstance(node, exp.Column): return None
+        key = (id(scope), node.table.casefold(), node.name.casefold())
+        if key in seen: return None
+        sources = [(alias, source) for alias, (_, source) in scope.selected_sources.items()
+                   if not node.table or alias.casefold() == node.table.casefold()]
+        if len(sources) != 1: return None  # Do not invent ambiguous lineage.
+        alias, source = sources[0]; origin = (id(scope), alias.casefold())
+        if isinstance(source, exp.Table):
+            return ((origin,), node.name.casefold()) if node.name.casefold() in clocks | {'record_id'} else None
+        if isinstance(source, Scope):
+            for index, item in enumerate(source.expression.selects):
+                name = source.outer_columns[index] if index < len(source.outer_columns) else item.alias_or_name
+                if name.casefold() == node.name.casefold():
+                    found = binding(item, source, seen | {key})
+                    return ((origin,) + found[0], found[1]) if found else None
+                if item.is_star:
+                    found = binding(exp.column(node.name, table=item.table if isinstance(item, exp.Column) else None),
+                                    source, seen | {key})
+                    if found: return ((origin,) + found[0], found[1])
+        return None
+
+    issues = []
+    for scope in scopes:
+        selected = scope.expression
+        if not isinstance(selected, exp.Select): continue
+        extrema = []
+        for item in selected.find_all(exp.Max, exp.Min):
+            if item.find_ancestor(exp.Select) is not selected: continue
+            bound = binding(item.this, scope)
+            if bound is None: continue
+            window = item.find_ancestor(exp.Window)
+            if window is None:
+                group = selected.args.get('group')
+                fixed = [binding(x, scope) for x in group.expressions] if group else []
+                window_key = None
+            else:
+                fixed = [binding(x, scope) for x in window.args.get('partition_by') or []]
+                window_key = tuple((name, str(window.args.get(name)))
+                                   for name in ('partition_by', 'order', 'spec', 'alias'))
+            extrema.append((item, bound, fixed, window_key))
+        for date_expr, date_binding, fixed, window_key in extrema:
+            if date_binding[1] not in clocks: continue
+            for record_expr, record_binding, _, other_window in extrema:
+                if (record_binding[1] != 'record_id' or record_binding[0] != date_binding[0]
+                        or window_key != other_window or date_binding in fixed or record_binding in fixed):
+                    continue
+                issues.append('Independent source aggregates ' + date_expr.sql(dialect='sqlite') + ' and ' +
+                              record_expr.sql(dialect='sqlite') + ' do not select the same source row. '
+                              'Keep date, record_id and quote together: use ROW_NUMBER() OVER '
+                              '(PARTITION BY the required keys ORDER BY date DESC, record_id DESC) '
+                              'and select that intact row, or retain every tied source row. '
+                              'Declare tie handling; a NULL source date remains unknown, not missing evidence.')
+    return list(dict.fromkeys(issues))
+
+
 _DEFINITION_VIEW = re.compile(r'(?i)\b(?:living_patient|condition_member|latest_lab|last_12_months|medicare_member)\b')
 
 
@@ -323,6 +401,8 @@ def _execute(path, params, patient_ids=None, target=None, time_limit=None):
         if token is not None: decision_context._SCOPE.reset(token)
     shown = p
     p = {**p, 'query': run_sql}
+    issues = source_tuple_issues(run_sql)
+    if issues: raise ValueError('; '.join(issues))
     from . import duckdb_engine  # DuckDB serving (AGERE_SQL_ENGINE=duckdb) with SQLite fallback; shadow comparison
     engine_receipt = None
     uses_views = uses_definition_views(run_sql)  # the analyst's definition views exist only as temp views on a SQLite connection

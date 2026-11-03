@@ -46,8 +46,8 @@ def _bounded_query(db, sql, params, timeout_s, max_rows, max_chars, *, check_dat
     db.set_progress_handler(lambda: int(time.perf_counter() - start > timeout_s), 10000)
     try:
         if check_date_types:
-            from .sql_query import date_arithmetic_issues
-            issues = date_arithmetic_issues(db, sql)
+            from .sql_query import date_arithmetic_issues, source_tuple_issues
+            issues = source_tuple_issues(sql) + date_arithmetic_issues(db, sql)
             if issues: raise ValueError('; '.join(issues))
         cursor = db.execute(sql, params)
         if cursor.description is None:
