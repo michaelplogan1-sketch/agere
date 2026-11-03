@@ -1,3 +1,19 @@
+# Current Agere checkpoint — 2026-11-03T22:07:35.084261+00:00
+
+G3 ACTIVE. Candidate arithmetic verifier repair has offline workflow evidence; no new sealed release or provider repeat. Last sealed delivery remains `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`. Owned8890 PID47807/session12518 still serves prior code; no frozen/provider job is running.
+
+Actual retained harder payer baseline:1920patients/26880cells exact against independent reconciliation. Recorded source schemas/definitions now resolve joined calendar sums, ratios and missing-value guards. Authored engineering decision dispatch1921→1global review,1920native row checks; every provider packet text unchanged.65regressions pass.0newproviderattempts/all46578rows and sourceexact. Evidence:`artifacts/agere-harder-bottling-2026-11-03/arithmetic-repair/receipt.json`. This is offline dispatch instrumentation with authored decisions, not new live-provider performance or independent semantic/clinical qualification.
+
+Original harder-run failure preserved:`artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json`:723.537s/4655attempts/603Perplexity429+1HTTP503/eightpending,$1.631045282knownAPI-equivalent,612unpriced. Original unsupported reversal query still differs10cells/6patients; native fidelity cannot establish its source meaning. Offline global rejection continues to block acceptance.
+
+Exact next: G3: arithmetic verifier repair is an offline-qualified candidate; do not rerun its passing offline campaign. Next prevent the observed unsupported pharmacy reversal exclusion using source-supported claim identity in the existing shared verification path, preserving the retained harder question and all1920patients. Diagnose repeated provider throughput failures and stop ineffective follow-on dispatch without dropping attempts or imposing new spend/population caps. Use artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json and arithmetic-repair/receipt.json. Only after affected offline checks pass and provider throughput is available, restart the owned candidate runtime with explicit code/source identity, run the affected ordinary confirmation and then a qualified repeat. Original57patient clinical ordinary-routing/economics qualification,55/61supported packets,six unresolved source dependencies, alltenacceptanceareas and G5/customer dependencies remain. No whole-cohort source campaign, architecture rewrite, new weights or clinical qualification claim.
+
+Preserve current principal review/October11baseline, alltenareas and allstanding boundaries. Claude subscription only; no protectedkeys/corpora, generatortruth, Documentsresearch, agents/chats, newservices,mainmerge,publication,contact orrealcare. Existing synthetic/provider/privatepush authorization persists. No newcaps. Deliverablesonlyrequested;OWASP/HHSdeferred. Visual variants saved at`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03`; no publication by this agent.
+
+# Historical checkpoints
+
+## Superseded pre-arithmetic-repair header
+
 # Current Agere checkpoint — 2026-11-03T21:43:50.278164+00:00
 
 G3 ACTIVE. Mike requested a harder bottling question; its first ordinary run failed qualification. No new product release or selected bottle. Last sealed engineering delivery remains `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`. Earlier795-row reuse result retains only its original scope.
@@ -26,7 +42,6 @@ Human requested a stronger engineering visual for the LinkedIn follow-up. Final 
 
 User-requested1970s arcade and1990s computing visual variants completed, inspected and saved beside the engineering schematic at`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03`. All measured facts and validated-library flow retained. Prompts/receipt retained. No product/provider/model changes, publication or gate progress; G3 next action unchanged.
 
-# Historical checkpoints
 
 ## Superseded header before ordinary confirmation seal
 

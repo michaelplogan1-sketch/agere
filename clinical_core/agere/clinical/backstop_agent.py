@@ -1888,38 +1888,101 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     return result
 
 
-def native_numeric_aggregate_shape(query,columns):
+def native_numeric_aggregate_shape(query,columns,*,schema=None,sources=None):
     """Qualify arithmetic projections, not integer-encoded classifications.
 
     SQL lineage must resolve patient identity directly and every value through
     an aggregate. General predicates, clinical flags, unknown functions and
-    unresolved lineage retain typed review. NULL counters are arithmetic.
+    unresolved lineage retain typed review. Calendar partitions, missing-value
+    counters and null-preserving arithmetic do not introduce clinical labels.
+    Schemas/definitions must come from the executed native source contracts.
     """
     import sqlglot
     from sqlglot import exp
     from sqlglot.lineage import lineage
     aggregates=(exp.Count,exp.Sum,exp.Avg,exp.Min,exp.Max)
     ordinary=(exp.Alias,exp.Column,exp.Identifier,exp.Star,exp.Distinct,
-              exp.Add,exp.Sub,exp.Mul,exp.Div,exp.Mod,exp.Neg,exp.Paren)
-    def expression_ok(node,identity=False):
+              exp.Add,exp.Sub,exp.Mul,exp.Div,exp.Mod,exp.Neg,exp.Paren,
+              exp.Coalesce,exp.Round,exp.Null)
+    def number(node,value):
+        return isinstance(node,exp.Literal)and not node.is_string and node.this==str(value)
+    def null_test(node):
+        return isinstance(node,exp.Is)and isinstance(node.this,exp.Column)and isinstance(node.expression,exp.Null)
+    def partition(node):
+        # Only calendar comparisons and missingness, never arbitrary clinical
+        # thresholds. OR is deliberately excluded from missing-count proofs.
+        if isinstance(node,exp.Paren):return partition(node.this)
+        if isinstance(node,exp.And):
+            left,right=partition(node.this),partition(node.expression)
+            return left|right if left and right else None
+        if null_test(node):return {'missing'}
+        if isinstance(node,(exp.EQ,exp.GT,exp.GTE,exp.LT,exp.LTE)):
+            for column,value in ((node.this,node.expression),(node.expression,node.this)):
+                if not isinstance(value,exp.Literal)or not value.is_string:continue
+                if isinstance(column,exp.Column):
+                    from datetime import date
+                    try:
+                        if date.fromisoformat(value.this).isoformat()==value.this:return {'calendar'}
+                    except ValueError:pass
+                if (isinstance(node,exp.EQ)and isinstance(column,exp.Substring)and
+                    isinstance(column.this,exp.Column)and number(column.args.get('start'),1)and
+                    number(column.args.get('length'),4)and re.fullmatch(r'[0-9]{4}',value.this)):
+                    return {'calendar'}
+        return None
+    def missing_counter(node,owner,seen=frozenset()):
+        if isinstance(node,(exp.Alias,exp.Paren)):return missing_counter(node.this,owner,seen)
+        if isinstance(node,exp.Coalesce):
+            return bool(node.expressions)and all(number(x,0)for x in node.expressions)and missing_counter(node.this,owner,seen)
+        if isinstance(node,exp.Column):
+            targets=[n for n in owner.downstream if n.name.casefold()==node.sql(dialect='sqlite').casefold()]
+            if len(targets)!=1 or id(targets[0])in seen:return False
+            child=targets[0]
+            return missing_counter(child.expression,child,seen|{id(child)})
+        if not isinstance(node,exp.Sum):return False
+        value=node.this
+        if null_test(value):return True
+        if not isinstance(value,exp.Case)or value.args.get('this'):return False
+        branches=value.args.get('ifs')or[]
+        if len(branches)!=1:return False
+        kinds=partition(branches[0].this)
+        return bool(kinds and 'missing'in kinds and number(branches[0].args.get('true'),1)and number(value.args.get('default'),0))
+    def expression_ok(node,owner,identity=False,in_aggregate=False):
         if isinstance(node,exp.Table):return True
+        if identity:
+            return isinstance(node,(exp.Alias,exp.Column,exp.Identifier))and all(
+                expression_ok(child,owner,True)for child in node.iter_expressions())
+        if isinstance(node,aggregates):
+            if isinstance(node,exp.Sum)and null_test(node.this):return True
+            return all(expression_ok(child,owner,in_aggregate=True)for child in node.iter_expressions())
         if isinstance(node,exp.Case):
             branches=node.args.get('ifs')or[];default=node.args.get('default')
-            if identity or node.args.get('this')or len(branches)!=1:return False
+            if node.args.get('this')or len(branches)!=1:return False
             condition=branches[0].this;value=branches[0].args.get('true')
-            return (isinstance(condition,exp.Is)and isinstance(condition.this,exp.Column)and
-                    isinstance(condition.expression,exp.Null)and isinstance(value,exp.Literal)and
-                    not value.is_string and value.this=='1'and isinstance(default,exp.Literal)and
-                    not default.is_string and default.this=='0')
-        if isinstance(node,exp.Literal):return not identity and not node.is_string
-        allowed=(exp.Alias,exp.Column,exp.Identifier)if identity else ordinary+aggregates
-        return isinstance(node,allowed)and all(expression_ok(child,identity)for child in node.iter_expressions())
+            if in_aggregate:
+                return bool(partition(condition)and (default is None or isinstance(default,exp.Null)or number(default,0))and
+                            expression_ok(value,owner,in_aggregate=True))
+            def arithmetic(value):
+                return value is not None and expression_ok(value,owner)and any(
+                    isinstance(item,(exp.Column,*aggregates))for item in value.walk())
+            if null_test(condition):
+                return (isinstance(value,exp.Null)or number(value,0))and arithmetic(default)
+            if isinstance(condition,exp.EQ):
+                for counter,zero in ((condition.this,condition.expression),(condition.expression,condition.this)):
+                    if number(zero,0)and missing_counter(counter,owner):
+                        return arithmetic(value)and (default is None or isinstance(default,exp.Null))
+            if isinstance(condition,exp.GT)and number(condition.expression,0)and missing_counter(condition.this,owner):
+                return isinstance(value,exp.Null)and arithmetic(default)
+            return False
+        if isinstance(node,exp.Nullif):
+            return number(node.expression,0)and expression_ok(node.this,owner,in_aggregate=in_aggregate)
+        if isinstance(node,exp.Literal):return not node.is_string
+        return isinstance(node,ordinary)and all(expression_ok(child,owner,in_aggregate=in_aggregate)for child in node.iter_expressions())
     try:
-        graph=lineage(None,query,schema={},dialect='sqlite')
+        graph=lineage(None,query,schema=schema or {},sources=sources or {},dialect='sqlite')
         for column in columns:
             if column not in graph:return False
             nodes=list(graph[column].walk());identity=column=='patient_id'
-            if not all(expression_ok(node.expression,identity)for node in nodes):return False
+            if not all(expression_ok(node.expression,node,identity)for node in nodes):return False
             if not identity and not any(isinstance(item,aggregates)for node in nodes for item in node.expression.walk()):return False
         return 'patient_id'in columns and len(columns)>1
     except (sqlglot.errors.SqlglotError,ValueError,TypeError,KeyError,RecursionError):
@@ -1946,7 +2009,7 @@ def mark_native_numeric_fidelity(packets,answer,calls,document_reviews):
     if not dependencies:return
     selected=[c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')in dependencies]
     if len(selected)!=len(dependencies):return
-    receipts={}
+    receipts={};schema={};sources={};source_digest=None
     for call in selected:
         result=call['result'];source=result.get('source_contracts')
         if(call.get('name')!='query_sql'or result.get('error')or incomplete_reason(result)or
@@ -1954,10 +2017,29 @@ def mark_native_numeric_fidelity(packets,answer,calls,document_reviews):
            not isinstance(result.get('executed_query'),str)or not result['executed_query'].strip()or
            not isinstance(source,dict)or not source.get('source_digest')or
            not packets or source.get('as_of')!=packets[0].get('date')):return
+        if source_digest is not None and source_digest!=source['source_digest']:return
+        source_digest=source['source_digest']
+        for relation in source.get('relations')or[]:
+            if not isinstance(relation,dict)or not isinstance(relation.get('name'),str):return
+            names=relation.get('columns')or[]
+            if not isinstance(names,list)or any(not isinstance(name,str)for name in names):return
+            if names:
+                fields={name:'UNKNOWN'for name in names}
+                if relation['name']in schema and schema[relation['name']]!=fields:return
+                schema[relation['name']]=fields
+        for definition in source.get('definitions')or[]:
+            if (not isinstance(definition,dict)or not isinstance(definition.get('name'),str)or
+                not isinstance(definition.get('query'),str)):return
+            if definition['name']in sources and sources[definition['name']]!=definition['query']:return
+            sources[definition['name']]=definition['query']
+        query=result.get('declared_executed_query')or result['executed_query']
+        if result['result_view']in sources and sources[result['result_view']]!=query:return
+        sources[result['result_view']]=query
         receipts[result['result_view']]=digest(result)
     result=next(c['result']for c in selected if c['result']['result_view']==root)
     columns,rows=output_table(result)
-    if not native_numeric_aggregate_shape(result['executed_query'],columns):return
+    if not native_numeric_aggregate_shape(sources[root],columns,schema=schema,
+                                         sources={name:query for name,query in sources.items()if name!=root}):return
     if table!=[dict(zip(columns,row))for row in rows]:return
     if type(result.get('table_rows'))is int and result['table_rows']!=len(rows):return
     summary=next((p for p in packets if p['id']=='summary'),None)

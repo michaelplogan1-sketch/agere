@@ -180,3 +180,9 @@ Presentation update: Mike requested percentage changes as the lead and no caveat
 ### Engineering schematic redesign
 
 2026-11-03T21:36:49.139801+00:00 — User-requested follow-up visual saved at `/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-bottling-schematic.png`. Exact prior795patient measured savings retained. Distinct new-work/reuse routes converge on verification; validated promotion alone feeds the reusable library. Initial candidate-to-library arrow corrected; both drafts/prompts preserved. No engineering release, new benchmark, weight update, publication or change to G3 next action.
+
+### Harder numeric composition: offline candidate repair
+
+2026-11-03T22:07:35.084261+00:00 — Existing native arithmetic verifier now follows schemas/definitions from complete executed receipts through CTEs/intermediate results. Calendar-conditioned sums, null counters, guarded missing values and zero-denominator ratios qualify for exact native cell fidelity. Clinical thresholds, unresolved lineage, mixed source identities and global contradictions remain ineligible for acceptance.
+
+Actual ordinary native tool execution of the retained baseline reproduces all1920patients/26880cells. With authored semantic decisions, verifier calls fall1921→1, with1920native row checks; provider packet contents are unchanged. The retained wrong reversal query remains10cells wrong and is blocked by global rejection. This demonstrates reduced dispatch, not independently established semantic quality or live-provider cost/latency.65targeted regressions pass; all46578ledgerrows/source exact; no provider calls, weights, activation or sealed release. Evidence:`artifacts/agere-harder-bottling-2026-11-03/arithmetic-repair/receipt.json`. Current8890 app retains old code; rollback basef933ecd. Next: source-supported reversal exclusion and throughput repair, then ordinary confirmation/repeat.
