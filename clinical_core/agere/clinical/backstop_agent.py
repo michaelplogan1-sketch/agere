@@ -2494,6 +2494,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'answer_reviews': reviews, 'review_stopped': run.get('review_stopped'),
                'model_escalations':run.get('model_escalations',[]),
                'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),
+               'prose_repairs':run.get('prose_repairs',[]),
                'guarded_continuations':run.get('guarded_continuations',[]),
                'output_continuation_receipts':run.get('output_continuation_receipts',[]),
                'completed_output_continuations':run.get('completed_output_continuations',0),

@@ -903,6 +903,7 @@ class Cascade:
                                     'document_reviews':run.get('document_reviews') or [],
                                     'model_escalations':run.get('model_escalations') or [],
                                     'actor_prompt_receipts':run.get('actor_prompt_receipts') or [],
+                                    'prose_repairs':run.get('prose_repairs') or [],
                                     'guarded_continuations':run.get('guarded_continuations') or [],
                                     'recursive_improvement':run.get('recursive_improvement')}}
         review = answer.get('investigation_review') or {}

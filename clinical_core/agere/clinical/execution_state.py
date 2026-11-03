@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/8'
+VERSION = 'execution-state/9'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -109,7 +109,68 @@ def draft_state(candidate):
     if isinstance(candidate.get('table'),list):
         state['last_draft_rows']=len(candidate['table'])
         state['last_draft_table_instruction']='The last draft table is preserved natively. Reconstruct it only from the matching executed result_view; do not infer omitted values.'
+    if isinstance(candidate.get('row_prose'),dict):
+        state['localized_prose_repair']={
+            'draft_digest':state['last_draft_digest'],
+            'instruction':'To change only existing patient/entity prose, return {"repair_draft":{"draft_digest":"the exact digest here","rows":[{"key":{original entity keys},"fields":{existing prose field:replacement}}]}}. '
+                'Send only changed fields. Code retains every other row, source and basis, then runs the normal complete compiler and review. '
+                'This cannot change native values, entity keys or source bases. For other changes return the complete answer contract.'}
     return state
+
+
+def apply_prose_repair(proposal,candidate):
+    """Merge an exact-draft prose edit atomically; confer no evidence authority."""
+    import copy
+    if not isinstance(proposal,dict) or set(proposal)!={'repair_draft'}:
+        raise ValueError('A prose repair must contain only repair_draft')
+    repair=proposal['repair_draft']
+    if not isinstance(repair,dict) or set(repair)!={'draft_digest','rows'}:
+        raise ValueError('repair_draft requires draft_digest and rows')
+    if not isinstance(candidate,dict) or repair['draft_digest']!=digest(candidate):
+        raise ValueError('Prose repair does not match the current draft; use its current digest or return a complete answer')
+    spec=candidate.get('row_prose')
+    if not isinstance(spec,dict) or set(spec)!={'keys','rows'} or not isinstance(spec['rows'],list):
+        raise ValueError('Current draft has no keyed prose to repair')
+    keys=spec['keys']
+    if not isinstance(keys,list) or not keys or any(not isinstance(k,str)for k in keys) or len(set(keys))!=len(keys):
+        raise ValueError('Current draft has invalid prose keys; return a complete answer')
+    def identity(key):
+        if (not isinstance(key,dict) or set(key)!=set(keys)
+                or any(type(v)not in(str,int,float,bool)for v in key.values())):
+            raise ValueError('Prose repair must use the exact existing entity keys')
+        return digest(key)
+    existing={}
+    for row in spec['rows']:
+        if not isinstance(row,dict) or not isinstance(row.get('fields'),dict):
+            raise ValueError('Current draft has invalid prose rows; return a complete answer')
+        ident=identity(row.get('key'))
+        if ident in existing:raise ValueError('Current draft has duplicate entity keys; return a complete answer')
+        existing[ident]=row
+    edits=repair['rows']
+    if not isinstance(edits,list) or not edits:raise ValueError('Prose repair needs changed fields')
+    changes={}
+    for edit in edits:
+        if not isinstance(edit,dict) or set(edit)!={'key','fields'}:
+            raise ValueError('Each prose edit requires only key and fields; bases and native values cannot be patched')
+        ident=identity(edit['key']);fields=edit['fields']
+        if ident not in existing:raise ValueError('Prose repair cannot add or rename an entity')
+        if ident in changes:raise ValueError('Prose repair repeats an entity')
+        if not isinstance(fields,dict) or not fields or not set(fields)<=set(existing[ident]['fields']):
+            raise ValueError('Prose repair may replace only existing prose fields')
+        if any(not isinstance(v,(str,dict))for v in fields.values()):
+            raise ValueError('Prose fields require text or a computed template; deletion is not supported')
+        changes[ident]={k:v for k,v in fields.items()if existing[ident]['fields'][k]!=v}
+    if not any(changes.values()):raise ValueError('Prose repair contains no changed fields; inspect the unresolved dependency')
+    merged=copy.deepcopy(candidate)
+    # Restore the existing numeric templates, not their rendered numeric text.
+    # Sources and all complete rows stay in the native candidate, not the patch.
+    editable=draft_state(candidate)['last_draft']
+    merged.update(copy.deepcopy(editable))
+    for name in ('computed_prose','investigation_review','verification'):
+        merged.pop(name,None)
+    for row in merged['row_prose']['rows']:
+        if identity(row['key'])in changes:row['fields'].update(copy.deepcopy(changes[identity(row['key'])]))
+    return merged
 
 
 def recovery_context(replay,tools):

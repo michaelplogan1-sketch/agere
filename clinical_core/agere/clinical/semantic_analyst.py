@@ -559,6 +559,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             return result
         messages += [{'role':'assistant','content':json.dumps(candidate)},
                      {'role':'user','content':'Recheck the retained final draft against the current tool receipts; finish the unresolved work. '+str(assessment.get('feedback') or assessment.get('reason'))}]
+        from .execution_state import draft_state
+        repair_contract=draft_state(candidate).get('localized_prose_repair')
+        if repair_contract:messages[-1]['content']+='\n'+json.dumps(repair_contract)
     try:
         while max_tools is None or turns < max_tools + 1 + format_retries + repairs:
             turns += 1
@@ -713,6 +716,29 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                      'Do not wrap tool requests in an answer object or mix them with other actions. '
                                      'Execute the missing work before returning the final answer.'})
                     continue
+                if isinstance(candidate,dict) and 'repair_draft'in candidate:
+                    from .execution_state import apply_prose_repair,draft_state
+                    patch_proposal=candidate
+                    try:
+                        candidate=apply_prose_repair(patch_proposal,state_candidate)
+                    except ValueError as exc:
+                        signature=digest([patch_proposal,digest(state_candidate)])
+                        if signature in rejected_protocol and not escalate('Repeated invalid prose repair'):
+                            result['review_stopped']='no_progress'
+                            return result
+                        rejected_protocol.add(signature);repairs+=1
+                        state_feedback={'status':'repair','repair_kind':'deterministic_compiler',
+                                        'feedback':str(exc),'progress_state':{'invalid_prose_repair':True}}
+                        messages.append({'role':'assistant','content':blocks})
+                        messages.append({'role':'user','content':str(exc)+'\n'+json.dumps(draft_state(state_candidate))})
+                        continue
+                    old_fields={digest(r['key']):r['fields']for r in state_candidate['row_prose']['rows']}
+                    changed=[sum(v!=old_fields[digest(r['key'])][k]for k,v in r['fields'].items())
+                             for r in patch_proposal['repair_draft']['rows']]
+                    result.setdefault('prose_repairs',[]).append({'base_draft_digest':patch_proposal['repair_draft']['draft_digest'],
+                        'proposal_digest':digest(patch_proposal),'changed_rows':sum(bool(n)for n in changed),
+                        'changed_fields':sum(changed),
+                        'complete_review_required':True})
                 if review is not None:
                     assessment = review(candidate, result['tool_calls'])
                     state_feedback=assessment;state_candidate=candidate
@@ -753,8 +779,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         repairs += 1
                         force_text = False  # the repair may need more evidence, even after a JSON-format repair
                         messages.append({'role': 'assistant', 'content': blocks})
+                        from .execution_state import draft_state
+                        repair_contract=draft_state(candidate).get('localized_prose_repair')
                         messages.append({'role': 'user', 'content': 'Continue the investigation using the evidence already gathered. '
-                                         'Repair the final answer, fetching or computing anything missing. ' + str(feedback)})
+                                         'Repair the final answer, fetching or computing anything missing. ' + str(feedback)
+                                         + ('\n'+json.dumps(repair_contract) if repair_contract else '')})
                         continue
                 result['answer'] = candidate
                 return result
