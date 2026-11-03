@@ -34,12 +34,14 @@ def review_limitation_view(text, feedback, reference):
             'meaning': 'Only embedded JSON in the exact prior machine review is referenced. All limitation prose survives; this is not clinical source evidence.'}
 
 
-def progress_evidence(calls,candidate=None):
+def progress_evidence(calls,candidate=None,*,first_call=0):
     """Native dependency identity, independent of temporary names and retries.
 
     Final tables and bound prose name their actual dependency views. Unused
     follow-up queries are retained in receipts but cannot reset a failed review.
-    Unbound scalar callers retain the complete native evidence set.
+    Unbound scalar callers retain the complete native evidence set. A tool
+    batch may select its own calls while resolving references against all
+    preceding receipts; revisiting a changed observation is still progress.
     """
     from .harness_improvement import semantic_result
     import re
@@ -59,17 +61,21 @@ def progress_evidence(calls,candidate=None):
         if call:todo.extend(refs(call.get('input'))-selected)
     names={};observed=[]
     def stable(value,key=None):
-        if isinstance(value,dict):return{k:stable(v,k)for k,v in value.items()if k not in('result_view','actor_callback_id','owned_run_recovery','request_hash','attempt_id')}
+        if isinstance(value,dict):
+            table=isinstance(value.get('rows'),list)and isinstance(value.get('columns'),list)
+            # Reserved transport names inside business cells are source data.
+            return{k:(v if table and k in('rows','columns')else stable(v,k))for k,v in value.items()
+                   if k not in('result_view','actor_callback_id','owned_run_recovery','request_hash','attempt_id')}
         if isinstance(value,list):return[stable(v)for v in value]
         if isinstance(value,str)and key in('sql','query','executed_query','base','result','candidate_result_view','table_from_tool'):
             return pattern.sub(lambda m:names.get(m.group(),m.group()),value)
         return value
-    for call in calls:
+    for index,call in enumerate(calls):
         value=stable(semantic_result({k:call.get(k)for k in('name','input','result')}))
         ident=digest(value);out=call.get('result')or{}
         name=out.get('result_view')if isinstance(out,dict)else None
         if name:names[name]='native_'+ident
-        if not wanted or name in selected:observed.append(ident)
+        if index>=first_call and (not wanted or name in selected):observed.append(ident)
     return sorted(set(observed))
 
 

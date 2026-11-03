@@ -788,9 +788,12 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                  'content': json.dumps(actor_result(output), allow_nan=False), 'is_error': failure})
                 predecessor_failed=predecessor_failed or failure
             messages.append({'role': 'user', 'content': answers})
-            # Tool IDs are transport identifiers, not new investigative work.
-            state = json.dumps([[u.get('name'), u.get('input')] for u in uses] +
-                               [[a['content'], a['is_error']] for a in answers], sort_keys=True, default=str)
+            # Compare complete native evidence, not preview/transport handles.
+            # Repeated SQL receives a new result_view; that name cannot make
+            # unchanged values count as progress. Prior calls resolve native
+            # references, but only this batch is compared with the preceding one.
+            from .execution_state import progress_evidence
+            state = progress_evidence(result['tool_calls'],first_call=len(result['tool_calls'])-len(uses))
             if max_tools is None and state == last_tools:
                 if isinstance(state_feedback,dict)and state_feedback.get('repair_kind')=='unresolved_verification':
                     result['review_stopped']='no_progress'
