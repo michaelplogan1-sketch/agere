@@ -127,6 +127,27 @@ class NumericFidelity(unittest.TestCase):
             self.assertNotEqual(result['label'],'supported')
             self.assertFalse(any(p.get('decided_by')=='native_numeric_table_fidelity'for p in result['packets']))
 
+    def test_equivalent_null_and_denominator_guards_do_not_fan_out_row_votes(self):
+        sql=self.CALENDAR_SQL.replace('current_paid-prior_paid AS change_cents',
+            'CASE WHEN current_paid IS NULL OR prior_paid IS NULL THEN NULL ELSE current_paid-prior_paid END AS change_cents').replace(
+            'ROUND(100.0*(current_paid-prior_paid)/NULLIF(prior_paid,0),2)',
+            'CASE WHEN current_paid IS NULL OR prior_paid IS NULL OR prior_paid=0 THEN NULL ELSE ROUND(100.0*(current_paid-prior_paid)/prior_paid,2) END')
+        answer,calls=self.calendar_fixture(sql)
+        baseline,_=self.calendar_fixture()
+        self.assertEqual(answer['table'],baseline['table'])
+        result,seen=self.check(self.packets(answer,calls))
+        self.assertEqual(seen,['summary']);self.assertEqual(result['label'],'supported')
+        unresolved,seen=self.check(self.packets(answer,calls),lambda e:{'label':'unknown','decided_by':None,'steps':[]})
+        self.assertEqual(seen,['summary']);self.assertEqual(unresolved['label'],'unknown')
+        self.assertTrue(all(r.get('status')=='awaiting_semantic_dependency'for r in unresolved['packets'][1:]))
+
+    def test_zero_guards_cannot_hide_clinical_thresholds_or_unrelated_classifiers(self):
+        for condition in ['current_paid=0','prior_paid<100','current_paid IS NULL OR prior_paid>0']:
+            sql=self.CALENDAR_SQL.replace('ROUND(100.0*(current_paid-prior_paid)/NULLIF(prior_paid,0),2)',
+                'CASE WHEN '+condition+' THEN NULL ELSE ROUND(100.0*(current_paid-prior_paid)/prior_paid,2) END')
+            answer,calls=self.calendar_fixture(sql)
+            self.assertTrue(all(not p.get('native_numeric_fidelity')for p in self.packets(answer,calls)))
+
     def test_joined_arithmetic_requires_resolved_source_schema(self):
         answer,calls=self.calendar_fixture()
         calls[0]['result']['source_contracts'].pop('relations')

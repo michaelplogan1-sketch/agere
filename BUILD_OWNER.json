@@ -8,8 +8,8 @@
   "active_work": "G3: arithmetic verifier repair is an offline-qualified candidate; do not rerun its passing offline campaign. Next prevent the observed unsupported pharmacy reversal exclusion using source-supported claim identity in the existing shared verification path, preserving the retained harder question and all1920patients. Diagnose repeated provider throughput failures and stop ineffective follow-on dispatch without dropping attempts or imposing new spend/population caps. Use artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json and arithmetic-repair/receipt.json. Only after affected offline checks pass and provider throughput is available, restart the owned candidate runtime with explicit code/source identity, run the affected ordinary confirmation and then a qualified repeat. Original57patient clinical ordinary-routing/economics qualification,55/61supported packets,six unresolved source dependencies, alltenacceptanceareas and G5/customer dependencies remain. No whole-cohort source campaign, architecture rewrite, new weights or clinical qualification claim.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
-  "owned_server_pid": 47807,
-  "owned_server_session": 12518,
+  "owned_server_pid": 57379,
+  "owned_server_session": 77222,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -30,10 +30,10 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "offline_relation_and_throughput_candidate_pending_ordinary_confirmation",
+    "status": "offline_null_guard_candidate_pending_ordinary_confirmation",
     "kind": "harder_composition_verification_and_relation_binding",
-    "receipt": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
-    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/relation-throughput-repair/receipt.json",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired/run-receipt.json",
+    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/receipt.json",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
@@ -137,13 +137,13 @@
     "boundary": "Single integrator: Claude owns product, controls and :8885. Others review only unless Mike reassigns."
   },
   "runtime_observation": {
-    "at": "2026-11-03T20:27:05.288040+00:00",
-    "pid": 47807,
-    "session": 12518,
+    "at": "2026-11-03T22:26:53.367836+00:00",
+    "pid": 57379,
+    "session": 77222,
     "port": 8890,
-    "status": "restored_ready",
-    "receipt": "artifacts/agere-harder-bottling-2026-11-03/recovered-app/http-check.json",
-    "source_code_unchanged": true,
+    "status": "candidate_stopped_after_observed_verifier_fanout",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/repaired-app/http-check.json",
+    "source_commit": "854c356b83b04f5958ebe898c67ab2bce34b1928",
     "no_provider_resubmission": true
   },
   "previous_delivery": "docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md",
@@ -462,7 +462,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T22:25:38.563768+00:00",
+  "updated_at": "2026-11-03T22:34:37.317351+00:00",
   "last_commit": "e7f3ac19643a19c63900ff46096b0d291baa4bd7",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {

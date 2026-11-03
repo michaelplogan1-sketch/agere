@@ -1968,6 +1968,20 @@ def native_numeric_aggregate_shape(query,columns,*,schema=None,sources=None):
                     isinstance(item,(exp.Column,*aggregates))for item in value.walk())
             if null_test(condition):
                 return (isinstance(value,exp.Null)or number(value,0))and arithmetic(default)
+            def null_arithmetic_guard(predicate):
+                if isinstance(predicate,exp.Paren):return null_arithmetic_guard(predicate.this)
+                if isinstance(predicate,exp.Or):
+                    return null_arithmetic_guard(predicate.this)and null_arithmetic_guard(predicate.expression)
+                if null_test(predicate):return True
+                if isinstance(predicate,exp.EQ):
+                    for denominator,zero in ((predicate.this,predicate.expression),(predicate.expression,predicate.this)):
+                        if number(zero,0)and isinstance(denominator,exp.Column)and any(
+                            division.expression==denominator for division in default.find_all(exp.Div)):
+                            return True
+                return False
+            # Equivalent to null-propagating arithmetic / NULLIF(denominator,0).
+            # A zero test on an unrelated clinical value is still a classifier.
+            if isinstance(value,exp.Null)and arithmetic(default)and null_arithmetic_guard(condition):return True
             if isinstance(condition,exp.EQ):
                 for counter,zero in ((condition.this,condition.expression),(condition.expression,condition.this)):
                     if number(zero,0)and missing_counter(counter,owner):
@@ -2240,11 +2254,14 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             return {**identity,'label':'unknown','decided_by':None,
                 'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'},steps
         global_result=observed.get(0,({},[]))[0]
-        if(scheduled and scheduled[0]['id']=='summary'and global_result.get('label')=='supported'and
-           global_result.get('decided_by')and native_numeric_fidelity_valid(packet,by_id.get('summary'))):
-            return {**identity,'label':'supported','decided_by':'native_numeric_table_fidelity',
-                'semantic_dependency_packet_id':'summary',
-                'reason':'All reported numeric cells exactly match complete executed SQL. The separately supported global packet retains every row and establishes source/domain/time/unit/interpretation; no clinical truth is inferred from arithmetic.'},steps
+        if(scheduled and scheduled[0]['id']=='summary'and native_numeric_fidelity_valid(packet,by_id.get('summary'))):
+            if global_result.get('label')=='supported'and global_result.get('decided_by'):
+                return {**identity,'label':'supported','decided_by':'native_numeric_table_fidelity',
+                    'semantic_dependency_packet_id':'summary',
+                    'reason':'All reported numeric cells exactly match complete executed SQL. The separately supported global packet retains every row and establishes source/domain/time/unit/interpretation; no clinical truth is inferred from arithmetic.'},steps
+            return {**identity,'label':'unknown','decided_by':None,'status':'awaiting_semantic_dependency',
+                'semantic_dependency_packet_id':'summary','native_values_match':True,
+                'reason':'Numeric cells match executed SQL, but global source/question meaning remains unresolved. Rechecking each row cannot establish the missing global scope judgment.'},steps
         if(scheduled and scheduled[0]['id']=='summary'and global_result.get('label')=='supported'and
            global_result.get('decided_by')and native_fidelity_valid(packet,by_id.get('summary'),'native_profile_fidelity','native-profile-fidelity/1')):
             return {**identity,'label':'supported','decided_by':'native_profile_cell_fidelity',
