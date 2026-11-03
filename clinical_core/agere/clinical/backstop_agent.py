@@ -920,7 +920,7 @@ def table_value_counts(rows):
     return {'rows':len(rows),'columns':out,'meaning':'Exact row counts by original column/value and arithmetic over numeric, non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums, not inferred distinct patients, events, current use, clinical appropriateness or outcomes; interpret using the source column grain and units.'}
 
 
-def bind_computed_prose(answer,calls,*,verified_quotes=()):
+def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     """Compile quantitative table prose from actual native scalar cells.
 
     Templates and addresses are untrusted model output. Only executed cells
@@ -932,6 +932,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
     formatter=string.Formatter();proofs=[];row_mode=False
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
+    request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
     def numeric(text):
         # Dates/identifiers are addresses or temporal anchors, not row counts.
         # Only independently provenance-checked, explicitly attributed QUOTES
@@ -942,6 +943,22 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
                 for left,right in (("'","'"),('"','"'),('“','”')):
                     text=text.replace(left+quote+right,'')
         text=re.sub(r'\b\d{4}-\d{2}-\d{2}\b','',text)
+        # A requested calendar year is a temporal anchor, not an inferred
+        # patient count. Preserve the text for semantic review; only the
+        # quantitative-literal scanner masks syntactically temporal uses.
+        # Bare values and year-sized counts/amounts still require bindings.
+        year=r'(?:19|20|21)\d{2}'
+        years=rf'{year}(?:\s+(?:and|or|to|through|versus|vs\.?)\s+{year})*'
+        temporal_end=r'(?=$|\s*[,.;:()\[\]]|\s+(?:and|or|than|because|when|where|while|with|without|compared|that|for|in|is|are|was|were|has|had)\b)'
+        dated=(rf'\b(?:in|during|since|before|after|between|from|for|calendar\s+years?|fiscal\s+years?|years?)\s+'
+               +years+temporal_end)
+        def temporal(match):
+            value=match.group()
+            return re.sub(year,'',value)if set(re.findall(year,value))<=request_years else value
+        if request_years and not row_mode:
+            text=re.sub(dated,temporal,text,flags=re.I)
+            text=re.sub(rf'\b{years}(?=\s+(?:total|thresholds?|baseline|comparison)\b{temporal_end})',
+                        temporal,text,flags=re.I)
         text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',
                     lambda m:'' if any(c.isdigit() for c in m.group()) else m.group(),text)
         return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
@@ -1342,7 +1359,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     static_feedback.extend(collection_retention_issues(native,answer.get('table')or[],
         native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view')])))
     try:
-        bind_computed_prose(answer,calls,verified_quotes=kept)
+        bind_computed_prose(answer,calls,verified_quotes=kept,question=question)
     except (ValueError,KeyError,IndexError,TypeError) as exc:
         prose_problem=str(exc);prose_failures=getattr(exc,'progress_failures',[{'code':'invalid_binding','field_group':'prose'}])
         prose_targets=getattr(exc,'repair_targets',[])

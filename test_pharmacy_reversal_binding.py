@@ -53,6 +53,12 @@ class ReversalBinding(unittest.TestCase):
         self.assertTrue(S.pharmacy_reversal_problem(QUESTION,negative))
         self.assertIsNone(S.pharmacy_reversal_problem(QUESTION,negative.replace('p.patient_id NOT IN(SELECT r.patient_id','p.record_id NOT IN(SELECT r.reversal_of_record_id')))
 
+    def test_reversal_status_lists_in_ctes_preserve_identity_requirement(self):
+        prefix="WITH rev AS (SELECT record_id,reversal_of_record_id,rx_claim_id FROM payer_pharmacy_claim WHERE claim_status IN ('reversed','recouped')) "
+        query=prefix+PREFIX+"p.rx_claim_id NOT IN(SELECT r.rx_claim_id FROM rev r) GROUP BY p.patient_id"
+        self.assertTrue(S.pharmacy_reversal_problem(QUESTION,query))
+        self.assertIsNone(S.pharmacy_reversal_problem(QUESTION,query.replace('p.rx_claim_id NOT IN(SELECT r.rx_claim_id','p.record_id NOT IN(SELECT r.reversal_of_record_id')))
+
     def test_exploration_and_unused_ctes_do_not_poison_corrected_results(self):
         self.assertIsNone(S.pharmacy_reversal_problem('Inspect potential same-patient same-drug date collisions.',BAD))
         self.assertIsNone(S.pharmacy_reversal_problem(QUESTION,'WITH unused AS ('+BAD+') '+GOOD))

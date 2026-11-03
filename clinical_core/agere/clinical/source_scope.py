@@ -209,6 +209,14 @@ def pharmacy_reversal_problem(question,sql):
     def markers(scope,seen=frozenset()):
         if id(scope)in seen:return set()
         found=set()
+        for predicate in scope.expression.find_all(exp.In):
+            if predicate.find_ancestor(exp.Select)is not scope.expression:continue
+            src=origin(scope,predicate.this)
+            if src and src[2]=='payer_pharmacy_claim'and any(
+                isinstance(value,exp.Literal)and value.is_string and (
+                    src[3]=='claim_status'and value.this in ('reversed','recouped')or
+                    src[3]=='transaction_code'and value.this=='B2')for value in predicate.expressions):
+                found.add(src[:3])
         for predicate in scope.expression.find_all(exp.EQ):
             if predicate.find_ancestor(exp.Select)is not scope.expression:continue
             for col,value in ((predicate.this,predicate.expression),(predicate.expression,predicate.this)):

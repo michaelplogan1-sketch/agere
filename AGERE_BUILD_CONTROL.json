@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T22:34:37.317351+00:00",
+  "updated_at": "2026-11-03T22:52:04.999221+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -485,11 +485,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "equivalent_null_arithmetic_offline_candidate",
+    "kind": "request_calendar_year_prose_offline_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Recognize OR null propagation and actual denominator-zero guards; mechanically matched rows remain unresolved on a global unknown instead of invoking model row checks.",
-    "measured_failure_reduction": "Observed254.840s/660attempt interrupted campaign exposed unhandled arithmetic form and54extra patients from wrong date scope. Retained scope-corrected1920rows/26880cells exact; authored supported OR unknown now each1global model decision, never1974row votes. All47238attempts/source exact offline.",
+    "user_behavior_delta": "Requested temporal year phrases stay literal; year-sized patient counts/amounts still require native bindings. Actual IN-status reversal exclusion uses the existing claim identity check.",
+    "measured_failure_reduction": "V2 ordinary table1920patients/26880cells exact but compiler rejected requested years. Exact retained seven-field draft now compiles offline, preserving all values; corrected reversal exclusion is also cell-exact and1920native fidelity rows qualify. All47249attempts preserved,0newprovidercalls in repair proof.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -567,10 +567,13 @@
       "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired/run-receipt.json",
       "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired/interruption-decision.json",
       "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/receipt.json",
-      "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/tests.log"
+      "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/tests.log",
+      "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v2/run-receipt.json",
+      "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/receipt.json",
+      "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/connected-tests.log"
     ],
-    "remaining_gap": "Real ordinary semantic/population confirmation and qualified repeat; original clinical routing/economics and wider acceptance remain.",
-    "next_action": "G3: ordinary harder payer confirmation was interrupted after an equivalent CASE null/zero form escaped native fidelity, causing row-vote fanout. Null/denominator equivalence and unresolved-global dependency behavior now pass targeted offline workflow proof. Rebuild the owned8890 candidate at a recorded identity and run one affected ordinary confirmation; require the correct1920patient set (the retained draft incorrectly included54extra patients), all26880cells, semantic review and accounting before any repeat. Preserve both failed campaigns and all47238attempts. Original57patient clinical routing/economics,55/61supported packets,sixunresolveddependencies, alltenareas and G5/customer dependencies remain.",
+    "remaining_gap": "Ordinary complete semantic confirmation/repeat; original clinical routing/economics and alltenarea/G5 dependencies remain.",
+    "next_action": "G3: exact returned1920patient/26880cell v2 table is correct but answer stayed partial because requested bare years were treated as unbound quantities. Actual retained draft now compiles with request-bound temporal scanning; year-sized counts still require bindings. IN-status reversal CTEs now retain record-link checks. Offline proof passes. Restart owned8890 at the new candidate identity; run one affected ordinary confirmation, then one eligible ordinary repeat only after full semantic/result/accounting checks. Preserve all47249attempts and failed/partial results. Then close original57patient clinical ordinary-routing/economics with55/61supported packets andsixunresolved source dependencies. Retain alltenareas and separate G5/customer qualification. Expand the newly authorized question-family learning curriculum only from measured valid workflows; no untargeted thousand-question provider campaign.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All harder-question jobs terminal. Prior owned8890PID41475 stopped; same-code app restored on8890PID47807/session12518, GET/ask200. No active sourcefreeze or provider job.",
     "remaining_blockers": [
@@ -618,13 +621,13 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-03T22:34:37.317351+00:00",
+    "at": "2026-11-03T22:52:04.999221+00:00",
     "workflow_change": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
     "unsealed_work": {
-      "status": "offline_null_guard_candidate_pending_ordinary_confirmation",
+      "status": "offline_request_year_and_reversal_list_candidate_pending_ordinary_confirmation",
       "kind": "harder_composition_verification_and_relation_binding",
-      "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired/run-receipt.json",
-      "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/receipt.json",
+      "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v2/run-receipt.json",
+      "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/receipt.json",
       "all_jobs_terminal": true,
       "source_frozen": false,
       "product_edits": true,
@@ -3326,13 +3329,24 @@
         "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/tests.log"
       ],
       "scope_impact": "No acceptance relaxed. Correct population1920 remains mandatory;54extra patients in retained draft are an observed defect, not accepted result. Alltenareas retained."
+    },
+    {
+      "at": "2026-11-03T22:52:04.999221+00:00",
+      "gate": "G3",
+      "decision": "V2 removed verifier fanout but exposed prose year false positives:508.813s,11Claude calls,$0.99194418API-equivalent; partial answer values exact. Fix the actual compiler failure and IN-status relation binding, preserve counts, qualify exact retained draft before ordinary confirmation.",
+      "evidence": [
+        "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v2/run-receipt.json",
+        "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/receipt.json",
+        "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/connected-tests.log"
+      ],
+      "scope_impact": "No semantic acceptance inferred from numeric equality; no dates/amounts silently changed, no fullMVP claim."
     }
   ],
   "unsealed_work": {
-    "status": "offline_null_guard_candidate_pending_ordinary_confirmation",
+    "status": "offline_request_year_and_reversal_list_candidate_pending_ordinary_confirmation",
     "kind": "harder_composition_verification_and_relation_binding",
-    "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired/run-receipt.json",
-    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/receipt.json",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v2/run-receipt.json",
+    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/receipt.json",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
@@ -3366,7 +3380,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: ordinary harder payer confirmation was interrupted after an equivalent CASE null/zero form escaped native fidelity, causing row-vote fanout. Null/denominator equivalence and unresolved-global dependency behavior now pass targeted offline workflow proof. Rebuild the owned8890 candidate at a recorded identity and run one affected ordinary confirmation; require the correct1920patient set (the retained draft incorrectly included54extra patients), all26880cells, semantic review and accounting before any repeat. Preserve both failed campaigns and all47238attempts. Original57patient clinical routing/economics,55/61supported packets,sixunresolveddependencies, alltenareas and G5/customer dependencies remain.",
+  "next_action": "G3: exact returned1920patient/26880cell v2 table is correct but answer stayed partial because requested bare years were treated as unbound quantities. Actual retained draft now compiles with request-bound temporal scanning; year-sized counts still require bindings. IN-status reversal CTEs now retain record-link checks. Offline proof passes. Restart owned8890 at the new candidate identity; run one affected ordinary confirmation, then one eligible ordinary repeat only after full semantic/result/accounting checks. Preserve all47249attempts and failed/partial results. Then close original57patient clinical ordinary-routing/economics with55/61supported packets andsixunresolved source dependencies. Retain alltenareas and separate G5/customer qualification. Expand the newly authorized question-family learning curriculum only from measured valid workflows; no untargeted thousand-question provider campaign.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3439,5 +3453,20 @@
     "product_edits": false,
     "published": false,
     "new_provider_evaluation": false
+  },
+  "learning_followthrough": {
+    "authority": "Mike asks about thousands of questions and broader chronic-disease/healthcare learning, then explicitly instructs continued work while away without approval questions.",
+    "sequence": "After current ordinary workflow closure, expand tested question families and their counterexamples through existing bottling/learning/verification paths.",
+    "knowledge": "Keep dated cited external knowledge distinct from received patient facts, source observations, model-proposed judgments and model weights.",
+    "families": [
+      "chronic disease management",
+      "pharmaceutical management",
+      "clinical evidence questions",
+      "population health and VBC",
+      "payer/financial analysis"
+    ],
+    "promotion": "Measure correctness, source/date/population scope, latency and all-attempt cost; regression and rollback before activation. New model weights require justified labeled evidence.",
+    "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
+    "standing_boundaries_preserved": true
   }
 }

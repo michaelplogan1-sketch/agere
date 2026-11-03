@@ -52,6 +52,27 @@ class ComputedProse(unittest.TestCase):
         a={'table_binding':{'result_view':'native'},'headline':'SYN-1234 stopped therapy on 2030-01-01. Current tolerance is unknown.',
            'facts':{'note':'A source observation; no clinical eligibility established.'}}
         B.bind_computed_prose(a,self.calls);self.assertIn('2030-01-01',a['headline'])
+
+    def test_requested_year_anchors_compile_without_becoming_computed_quantities(self):
+        question='Compare calendar years 2028 and 2029.'
+        for text in ['In 2029, {n} patients had visits.',
+                     '{n} patients have amounts in 2029 than in 2028.',
+                     '{n} patients have an unknown 2028 or 2029 total (missing source).',
+                     '{n} patients meet the stated 2029 thresholds for claims.',
+                     '{n} patients have an empty 2028 total that cannot serve as a denominator.',
+                     '{n} patients in calendar years 2028 and 2029.']:
+            a={'table_binding':{'result_view':'table'},'headline':{'template':text,'bindings':{'n':{'result_view':'agere_result_0','row':0,'column':'distinct_patients'}}}}
+            B.bind_computed_prose(a,self.calls,question=question)
+            self.assertEqual(a['headline'],text.replace('{n}','12'))
+            with self.assertRaises(ValueError):B.bind_computed_prose(a,self.calls,question='Compare calendar year 2030.')
+
+    def test_year_sized_counts_amounts_and_unrequested_dates_still_need_bindings(self):
+        for text in ['2029 patients','in 2029 patients','for 2029 days','2029 total patients',
+                     '2029 total claims','2028 or 2029 total records','$2029','2029 mg',
+                     'received 2029 dollars','in 2030','2029']:
+            a={'table_binding':{'result_view':'table'},'headline':text}
+            with self.subTest(text=text),self.assertRaises(ValueError):
+                B.bind_computed_prose(a,self.calls,question='Compare calendar years 2028 and 2029.')
     def test_template_failure_does_not_partially_rewrite_the_answer(self):
         a=self.answer();a['facts']['bad']='13 visits';original=copy.deepcopy(a)
         with self.assertRaises(ValueError):B.bind_computed_prose(a,self.calls)
