@@ -59,6 +59,52 @@ class Assembly(unittest.TestCase):
   out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'passages','as':'sources','on':{'patient_id':'patient_id'},'mode':'collect'}]);self.assertEqual(out['rows'][0]['sources'][0]['text'],'Documented source.')
 
 class State(unittest.TestCase):
+ def test_compacted_state_can_recover_the_executed_source_and_period_contract(self):
+  sql="SELECT patient_id,COUNT(*) AS n,SUM(amount) AS total FROM claim WHERE source='provider' AND service_date BETWEEN '2029-01-01' AND '2029-12-31' GROUP BY patient_id"
+  call={'name':'query_sql','input':{'sql':'SELECT * FROM claim'},'result':{
+   'result_view':'agere_result_10','executed_query':sql,**result([{'patient_id':'A','n':1,'total':12}])}}
+  before=copy.deepcopy(call)
+  state=json.loads(E.messages('Provider claims in 2029',[call],recent_results=())[0]['content'])
+  entry=state['executed_results'][0]
+  db=sqlite3.connect(':memory:');self.addCleanup(db.close)
+  db.execute('CREATE TABLE claim(patient_id,source,service_date,amount)')
+  db.executemany('INSERT INTO claim VALUES (?,?,?,?)',[
+   ('A','provider','2029-05-01',12),('A','payer','2029-05-01',100),('A','provider','2028-05-01',50)])
+  self.assertEqual(db.execute(entry['executed_query']).fetchall(),[('A',1,12)])
+  self.assertEqual(entry['executed_query'],sql)
+  self.assertEqual(entry['result_view'],'agere_result_10')
+  self.assertNotIn('computed_rows',entry);self.assertEqual(call,before)
+
+ def test_compaction_never_presents_unexecuted_sql_as_a_successful_contract(self):
+  failed={'name':'query_sql','input':{'sql':'SELECT imaginary FROM claim'},'result':{'error':'No such column'}}
+  legacy={'name':'query_sql','input':{'sql':'SELECT * FROM claim'},'result':{'result_view':'agere_result_2',**result([{'patient_id':'A'}])}}
+  entries=E.catalog([failed,legacy])
+  self.assertNotIn('executed_query',entries[0]);self.assertEqual(entries[0]['failed_input'],failed['input'])
+  self.assertNotIn('executed_query',entries[1])
+
+ def test_reused_view_contracts_remain_distinct_and_untruncated_after_compaction(self):
+  sql="SELECT patient_id FROM claim WHERE source='provider' /* "+'contract detail '*5000+' */'
+  calls=[{'name':'query_sql','input':{'sql':sql},'result':{'result_view':'agere_result_1','executed_query':sql,**result([{'patient_id':'A'}])}},
+   {'name':'query_sql','input':{'sql':'SELECT * FROM agere_result_1'},'result':{'result_view':'agere_result_2','executed_query':'SELECT * FROM agere_result_1',**result([{'patient_id':'A'}])}}]
+  state=json.loads(E.messages('Inspect the final source dependency',calls)[0]['content'])
+  self.assertEqual(state['executed_results'][0]['executed_query'],sql)
+  self.assertEqual(state['executed_results'][1]['executed_query'],'SELECT * FROM agere_result_1')
+
+ def test_portable_inline_rows_do_not_replace_the_exact_executed_query_contract(self):
+  from clinical_core.agere.clinical.sql_query import native_result_source,portable_native_query
+  declared='SELECT SUM(amount) AS total FROM agere_result_1'
+  rows=[['A'+str(i),i]for i in range(2000)]
+  portable=portable_native_query(declared,{'agere_result_1':native_result_source(['patient_id','amount'],rows)},['agere_result_1'])
+  call={'name':'query_sql','input':{'sql':'{{requested_macro}}'},'result':{
+   'result_view':'agere_result_2','executed_query':portable,'declared_executed_query':declared,'read_views':['agere_result_1'],
+   **result([{'total':sum(row[1]for row in rows)}])}}
+  original=copy.deepcopy(call);entry=E.catalog([call])[0]
+  self.assertEqual(entry['executed_query'],declared)
+  self.assertEqual(entry['read_views'],['agere_result_1'])
+  self.assertEqual(entry['portable_executable_provenance']['query_digest'],E.digest(portable))
+  self.assertLess(len(json.dumps(entry)),len(portable)/5)
+  self.assertEqual(call,original)
+
  def test_review_progress_uses_bound_native_values_not_new_views_or_unused_queries(self):
   one={'name':'query_sql','input':{'sql':'SELECT patient_id FROM patient'},'result':{'result_view':'agere_result_1',**result([{'patient_id':'A'}]),'accounting':{'cost_usd':1}}}
   two=copy.deepcopy(one);two['result'].update(result_view='agere_result_2',accounting={'cost_usd':99})

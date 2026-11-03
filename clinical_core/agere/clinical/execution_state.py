@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/5'
+VERSION = 'execution-state/6'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -263,6 +263,21 @@ def catalog(calls):
                 entry.update(result_view=out['result_view'],columns=out.get('columns')or
                     list(dict.fromkeys(k for r in rows if isinstance(r,dict)for k in r)),
                     rows_computed=len(rows),truncated=bool(out.get('truncated')))
+                # The row handle preserves values, but cannot reconstruct the
+                # executed source/filter contract after conversation compaction.
+                # Carry the executor's actual SQL, never infer it from a proposed
+                # input. Portable receipts inline native rows for independent
+                # replay; their declared_executed_query is the exact scoped SQL
+                # that ran before that serialization, not a model summary.
+                if call.get('name')=='query_sql' and isinstance(out.get('executed_query'),str):
+                    declared=out.get('declared_executed_query')
+                    entry['executed_query']=declared if isinstance(declared,str) else out['executed_query']
+                    if isinstance(declared,str) and declared!=out['executed_query']:
+                        entry['portable_executable_provenance']={
+                            'query_digest':digest(out['executed_query']),
+                            'characters':len(out['executed_query']),
+                            'scope':'Complete portable SQL with embedded native rows remains in the execution receipt. '
+                                'executed_query is the exact scoped statement that ran against read_views; no source acceptance is inferred.'}
                 from .semantic_analyst import collection_manifest
                 collections=collection_manifest(rows)
                 if collections:entry['structured_collection_manifest']=collections
@@ -311,6 +326,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
         'latest_results':[recent(c) for c in recent_results],
         'instruction':'This is the current deterministic execution state, not a new question or a clinical summary. '
             'All native receipts are retained. SQL result_views retain every computed row; a reading preview does not limit native membership. '
+            'Each executed_query in executed_results is the exact successful SQL receipt for that view; inspect it for source, filter, period and aggregation scope without rerunning it. '
             'A truncated producer or incomplete_dependencies cannot support an accepted calculation or population scope. '
             'Read any earlier result by query_sql; use compose_table to join already executed results without regenerating SQL. '
             'A missing preview is not missing evidence. Preserve original scope and all requested outputs. '

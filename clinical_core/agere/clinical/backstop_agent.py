@@ -226,6 +226,9 @@ has already declined this question, so it is yours to answer completely and corr
   never count a displayed list of rows mentally. A partial result needs more investigation, not a final success label.
 - Before the final answer, check completeness: list (in grounding) every part the question asks for (each group, rate, count, amount,
   date, comparison, direction) and make sure the headline or facts state each one with its number. Fetch what is missing first.
+- missing names only requested requirements that remain unresolved. Keep method, unit and excluded-alternative explanations in
+  grounding or limitations. An answered result has missing=[]; unresolved requested requirements require partial or unsupported.
+  Never hide an unresolved clinical/source requirement in limitations merely to make an answer complete.
 - For a table, compute the COMPLETE requested table, including changes and comparisons, in query_sql. Earlier tabular tool results are
   available as their result_view names on the same connection. Set table_from_tool to the final result_view and omit table: code copies
   the executed rows into the answer. Never transcribe or calculate a numeric table in your final text.
@@ -260,7 +263,7 @@ Return ONLY one JSON object, no markdown:
 "count":null,"value":null,"unit":null,"table":null,"table_from_tool":null,"patient_ids":null,
 "facts":{{"<short name>":"<value>"}},
 "sources":[{{"record_id":"...","date":"YYYY-MM-DD","source":"...","quote":"exact supporting words from the document"}}],
-"missing":[],"grounding":["what you computed or read, briefly"]}}
+"missing":[],"limitations":[],"grounding":["what you computed or read, briefly"]}}
 When an artifact is requested, also return "workflow":[{{"kind":"deliverable","title":"requested title",
 "template":"command|brief|explore","purpose":"final|inspection|proposal","quote":"the exact requested deliverable clause","unresolved":[]}}].
 Every workflow quote must be a literal clause of the original question. Its content/theme is passed intact to the existing builder.
@@ -1169,6 +1172,11 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     kept, dropped = verified_sources(answer, tools)
     answer['sources'] = kept
     static_feedback=[];prose_problem=None;prose_failures=[];workflow_problem=None;workflow_failure=None
+    if answer.get('status')=='answered' and answer.get('missing'):
+        static_feedback.append('The answered status conflicts with declared missing requirements. '
+            'Resolve those requirements from the retained sources or return partial/unsupported with the genuine gaps preserved. '
+            'Method, unit and excluded-alternative notes belong in grounding or limitations, not missing. '
+            'Do not move an unresolved requested clinical/source requirement into limitations merely to pass this check.')
     from ..deliverables.patient_evidence import clinical_collection_issues
     static_feedback.extend(clinical_collection_issues(answer,native_calls=calls))
     from .document_review import relation_composition_issues,source_scope_limits
