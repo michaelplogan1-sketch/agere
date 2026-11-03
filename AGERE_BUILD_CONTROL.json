@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T17:31:30.582555+00:00",
+  "updated_at": "2026-11-03T17:51:19.003549+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -489,14 +489,14 @@
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md"
     ],
-    "remaining_gap": "Original patient-specific clinical synthesis remains incomplete. Current model view previews and computed SQL prose need evaluation; allten-area latest release,guardedreuse and independentclinical/model qualification remain open.",
-    "next_action": "Inspect owned composition-boundary continuation PID31380/session3846 at artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json first. Runtime source frozen at a747002; no edits or duplicate provider work. On terminal, audit original57patient scope and individual explanations of actual dated findings, named clinicians versus responsibility, specific review steps, compiled row prose and support disposition. Reconcile all attempts and preserve prior partials. Do not call this a fresh whole-stack speed comparison. If completion is demonstrated, seal the scoped change and proceed to guarded reuse/current ten-area release acceptance; clinical qualification remains separate.",
+    "remaining_gap": "Completion/source uncertainty and repeated full-draft repair remain open. The original current workflow, guarded reuse and latest whole-release applicability are unaccepted; independent clinical/model qualification and prediction labels remain separate dependencies.",
+    "next_action": "Inspect owned PID31380/session3846 at artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json first. Source frozen at a747002; no runtime edits or duplicate job. When terminal, audit actual57patient explanations, source/role/date correctness, remaining missing work versus unavailable facts, all attempts and all prior preservation. Inspect completed coverage/provider authority and source dispositions: undecided coverage argmax currently emits repair, and full57patient draft regeneration costs80\u2013100seconds per attempt. Do not launch another unchanged continuation. Use retained reviews to determine whether the next correction is uncertainty handling or localized prose repair; preserve actual incomplete-work detection and every source check. Seal only what the completed workflow evidence supports, then continue guarded reuse and current ten-area acceptance.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "One owned repaired continuation; source frozen. No other provider/training jobs.",
+    "coordination": "OwnedPID31380/session3846 remains the only provider job. Source frozen. Quiet heartbeat verified ACTIVE with failed_runs_only notifications.",
     "remaining_blockers": [
       "The latest owned continuation returned partial after 787.679 seconds: 57 patients and names, seven partial drafts, no individual row prose, 157 new attempts/$0.786483564 API equivalent. Prior full question took 3459.554 seconds/6966 attempts and remained partial. Completion handling conflates unfinished coverage and uncertain verification; no current full-clinical completion, practical end-to-end performance or latest whole-product release acceptance is established. Independent clinical/model qualification and viable prediction labels remain separate dependencies."
     ],
-    "latest_progress": "Candidatea747002 adds exact explicit complete-row readings retained across turns and atomic batch row-prose errors.142targeted tests pass;49reading/state checks rerun after a default-path guard optimization. Actual retained57patient proof shows0preview\u219257complete rows with source/oldattempts unchanged; prior draft exposes19errors in one pass. Clinical continuation now running.",
+    "latest_progress": "a747002 repairs tested and pushed with reportfb8090f. Repaired57patient continuation is still active; actual full-row reading and substantive dated patient prose observed, compiler passed, source review and further revisions continue. No accepted clinical result or speed improvement yet.",
     "results_report": "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -744,7 +744,8 @@
         38
       ],
       "estimate_scope": "Local synthetic engineering only; provisional, no guaranteed deadline; independent clinical/model/customer dependencies explicit."
-    }
+    },
+    "running_observation": "artifacts/agere-completion-routing-2026-11-03/running-observation.json"
   },
   "decisions": [
     {
@@ -3146,7 +3147,7 @@
       "source_commit": "a747002"
     }
   ],
-  "next_action": "Inspect owned composition-boundary continuation PID31380/session3846 at artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json first. Runtime source frozen at a747002; no edits or duplicate provider work. On terminal, audit original57patient scope and individual explanations of actual dated findings, named clinicians versus responsibility, specific review steps, compiled row prose and support disposition. Reconcile all attempts and preserve prior partials. Do not call this a fresh whole-stack speed comparison. If completion is demonstrated, seal the scoped change and proceed to guarded reuse/current ten-area release acceptance; clinical qualification remains separate.",
+  "next_action": "Inspect owned PID31380/session3846 at artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json first. Source frozen at a747002; no runtime edits or duplicate job. When terminal, audit actual57patient explanations, source/role/date correctness, remaining missing work versus unavailable facts, all attempts and all prior preservation. Inspect completed coverage/provider authority and source dispositions: undecided coverage argmax currently emits repair, and full57patient draft regeneration costs80\u2013100seconds per attempt. Do not launch another unchanged continuation. Use retained reviews to determine whether the next correction is uncertainty handling or localized prose repair; preserve actual incomplete-work detection and every source check. Seal only what the completed workflow evidence supports, then continue guarded reuse and current ten-area acceptance.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3155,5 +3156,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T17:31:30.582555+00:00"
+  "latest_checkpoint": "2026-11-03T17:51:19.003549+00:00"
 }
