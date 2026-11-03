@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T00:53:48.363957+00:00",
+  "updated_at": "2026-11-03T01:32:54.080215+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -394,7 +394,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Actual-investigator transfer and observed clinical performance; independent model/clinical qualifications remain separate.",
       "engineering_current_status": "Priorfinite9/9alltenareas plus same-codeb4011fc ordinary57-patient HTTP confirmation, current dashboard/PDF and unchanged prior contexts; original clinical answer partial.",
-      "next_action": "Complete the remaining parameterized-workplan comparison at the actual investigator boundary: reuse the existing automatically generated source-bound plan with fresh executors; compare Haiku-first and fixed Sonnet-only investigators on the same received synthetic source and bindings, retaining all failed attempts and exact independent numeric checks. Keep cross-domain transfer explicitly unqualified where the template cannot bind it. Do not repeat the whole clinical cohort or generate routine deliverables. Use this evidence to select useful reuse before any new training or model activation."
+      "next_action": "Diagnose and repair the observed full-investigator numeric-query loop before more provider comparisons. Reconstruct retained tool/final-answer attempts offline to distinguish repeated compiler feedback, source-support uncertainty and changing native-reference identity. Verify one general progress/routing correction against the original failed trajectory and changed-evidence regressions, without an arbitrary tool/token cap, another whole clinical run or routine export. Keep the interrupted comparison and all1640 attempts; do not restart remaining arms until the failure is understood."
     },
     {
       "id": "G5",
@@ -472,27 +472,27 @@
     }
   ],
   "checkpoint": {
-    "kind": "on_demand_deliverables",
+    "kind": "investigator_native_progress_and_source_scope",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "PDF format selection uses only the current report request; saved-report workflow fulfillment and retry preserve the current quoted request. Ordinary answers continue to create no artifacts.",
-    "measured_failure_reduction": "A current HTML report no longer generates PDF because a previous question/workflow requested one.",
+    "user_behavior_delta": "Candidate investigator recognizes repeated native results despite new temporary names and rejects provider/payer source mismatch before semantic verification. Ready8890 stays at the prior on-demand release pending focused assessment.",
+    "measured_failure_reduction": "Retained controller now reaches escalation after12actions rather than continuing37; wrong-source3172-row candidate now fails deterministically before semantic dispatch, correct795-row source still proceeds. Allfour exact latest final candidates are rejected without providers.",
     "evidence": [
-      "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json",
-      "docs/agere/ON_DEMAND_DELIVERABLES_2026-11-02.md"
+      "artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json",
+      "docs/agere/INVESTIGATOR_ROUTING_REPAIR_2026-11-02.md"
     ],
-    "remaining_gap": "The original57patient clinical analysis remains partial with522 unresolved field judgments; independent clinical/model/source-family qualification remains open.; Latest full-clinical observation remains1273.209s and$2.68483958API equivalent; this export correction does not establish a full-workflow speedup.; Actual-investigator/cross-domain transfer, equal-quality break-even and all-in economics remain unqualified; no whole clinical bottle or new weights activated.; Customer deployment/outcome qualification remain separate; OWASP/HHS deferred.",
-    "next_action": "Complete the remaining parameterized-workplan comparison at the actual investigator boundary: reuse the existing automatically generated source-bound plan with fresh executors; compare Haiku-first and fixed Sonnet-only investigators on the same received synthetic source and bindings, retaining all failed attempts and exact independent numeric checks. Keep cross-domain transfer explicitly unqualified where the template cannot bind it. Do not repeat the whole clinical cohort or generate routine deliverables. Use this evidence to select useful reuse before any new training or model activation.",
+    "remaining_gap": "Original57-patient clinical answer remains partial with522 unresolved field judgments; independent source-family/clinical/model qualification remains open.; Both full-investigator attempts were interrupted; no successful complete investigator comparison, equal-quality break-even, whole-clinical speedup or all-in cost is established.; Owned8890 remains22c8c27; candidate735f1a6 has141distinct affected checks and retained native workflow proof, awaiting focused continuation assessment before runtime selection.; No new weights or partial clinical whole-answer bottle; customer deployment/outcome qualification remains separate; OWASP/HHS deferred.",
+    "next_action": "Use the exact retained provider-only795-patient final dependency and its verifier responses to distinguish native arithmetic/source-contract obligations from unresolved semantic judgments. Prove any proposed task-dependent routing change against wrong-source, changed-amount, changed-date and clinical-claim mutations before more provider work. Then perform one justified focused continuation with both current guards; select it in8890 only on relevant workflow evidence. Do not restart full comparisons, repeat the whole clinical run, regenerate exports, lower thresholds or promote a partial answer.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "Allcheckscomplete;owned8890ready;sourceunfrozen;schedulerpaused.",
+    "coordination": "All comparison and offline jobs terminal. Source unfrozen; no provider/training job. Owned8890 remains89314/session25934 at22c8c27. SchedulerPAUSED.",
     "remaining_blockers": [
-      "The original57patient clinical analysis remains partial with522 unresolved field judgments; independent clinical/model/source-family qualification remains open.",
-      "Latest full-clinical observation remains1273.209s and$2.68483958API equivalent; this export correction does not establish a full-workflow speedup.",
-      "Actual-investigator/cross-domain transfer, equal-quality break-even and all-in economics remain unqualified; no whole clinical bottle or new weights activated.",
-      "Customer deployment/outcome qualification remain separate; OWASP/HHS deferred."
+      "Original57-patient clinical answer remains partial with522 unresolved field judgments; independent source-family/clinical/model qualification remains open.",
+      "Both full-investigator attempts were interrupted; no successful complete investigator comparison, equal-quality break-even, whole-clinical speedup or all-in cost is established.",
+      "Owned8890 remains22c8c27; candidate735f1a6 has141distinct affected checks and retained native workflow proof, awaiting focused continuation assessment before runtime selection.",
+      "No new weights or partial clinical whole-answer bottle; customer deployment/outcome qualification remains separate; OWASP/HHS deferred."
     ],
     "latest_progress": "36affectedchecks,current57patient/12rowanswerreopens,zero newcohortexports/providers.",
-    "results_report": "docs/agere/ON_DEMAND_DELIVERABLES_2026-11-02.md",
+    "results_report": "docs/agere/INVESTIGATOR_ROUTING_REPAIR_2026-11-02.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -529,24 +529,10 @@
       "current_financial_status": "answered",
       "evidence": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json"
     },
-    "latest_human_steering": "Accuracy,cost and useful innovation against strong simple baselines; frontier models for appropriate roles. PDF/deliverables only when requested, not every run. Existing synthetic/private-push authorization continues.",
-    "comparison_status": {
-      "at": "2026-10-29T00:02:03.686914+00:00",
-      "status": "all_three_returned_analytically_partial",
-      "active_arm": null,
-      "active_session": null,
-      "not_started": [],
-      "protocol": "artifacts/agere-app-reports-2026-10-28/comparison/protocol.json",
-      "results": "artifacts/agere-app-reports-2026-10-28/comparison/results.json",
-      "verification": "artifacts/agere-app-reports-2026-10-28/comparison/verification.json",
-      "durable_root": "/Users/mikel/clinical-insights-local/artifacts/agere-workflow-comparison-2026-10-28",
-      "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
-      "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
-    },
-    "at": "2026-11-03T00:53:48.363957+00:00",
-    "workflow_change": [
-      "PDF format selection uses only the current report request; saved-report workflow fulfillment and retry preserve the current quoted request. Ordinary answers continue to create no artifacts."
-    ],
+    "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
+    "comparison_status": "Both live attempts interrupted; all5906newattempts retained. No live comparison pass.",
+    "at": "2026-11-03T01:32:54.080215+00:00",
+    "workflow_change": "Two existing investigator guards now share native identity/source scope with the rest of the stack; all raw receipts and supported unknowns are retained.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -2755,6 +2741,22 @@
       "reason": "A current HTML report no longer generates PDF because a previous question/workflow requested one.",
       "scope_impact": "No scopearea removed; deliverable capability retained. No repeat wholecohort,PDF or fullrecovery.",
       "evidence": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-03T01:08:02.678659+00:00",
+      "gate": "G3",
+      "decision": "Stop the observed non-progressing comparison and diagnose its native/compiler/reviewer loop offline before more paid arms.",
+      "reason": "Native3/3 exact, first investigator repeatedly computes795patient table without finishing; all1640attempts retained,45returnedactorresponses. Continuing remaining arms would repeat an ununderstood failure. This is an interrupted/inconclusive study, not a capped successful baseline.",
+      "scope_impact": "Full10areas and comparison/clinical requirements retained. No remaining arms dispatched; no product/source changes during frozen run; no clinical or model promotion.",
+      "evidence": "artifacts/agere-investigator-transfer-2026-11-02/interruption.json"
+    },
+    {
+      "at": "2026-11-03T01:32:54.080215+00:00",
+      "decision": "Stop repeated full comparisons and repair observed native progress/source-guard wiring before further dispatch.",
+      "evidence": [
+        "artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json"
+      ],
+      "scope_impact": "Alltenareas retained;9/9 prior engineering release remains versioned, G5separate; no routine deliverables or changed clinical thresholds."
     }
   ],
   "unsealed_work": null,
@@ -2785,7 +2787,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Complete the remaining parameterized-workplan comparison at the actual investigator boundary: reuse the existing automatically generated source-bound plan with fresh executors; compare Haiku-first and fixed Sonnet-only investigators on the same received synthetic source and bindings, retaining all failed attempts and exact independent numeric checks. Keep cross-domain transfer explicitly unqualified where the template cannot bind it. Do not repeat the whole clinical cohort or generate routine deliverables. Use this evidence to select useful reuse before any new training or model activation.",
+  "next_action": "Use the exact retained provider-only795-patient final dependency and its verifier responses to distinguish native arithmetic/source-contract obligations from unresolved semantic judgments. Prove any proposed task-dependent routing change against wrong-source, changed-amount, changed-date and clinical-claim mutations before more provider work. Then perform one justified focused continuation with both current guards; select it in8890 only on relevant workflow evidence. Do not restart full comparisons, repeat the whole clinical run, regenerate exports, lower thresholds or promote a partial answer.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2794,5 +2796,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T00:53:48.363957+00:00"
+  "latest_checkpoint": "2026-11-03T01:32:54.080215+00:00"
 }

@@ -29,11 +29,11 @@
   "clinical_qualification": false,
   "model_qualification": false,
   "remaining": [
-    "Clinical result remains partial:57 patients,58 review packets,522 unresolved field judgments. Independent source-family/clinical/model qualification remains open.",
-    "Latest ordinary clinical observation is1273.209 seconds,817 attempts,$2.68483958 known API equivalent; acceptable full-clinical latency and all-in economics remain unqualified.",
-    "Three automatic numeric transfers pass; the full-investigator and cross-domain comparison remains unqualified. No new weights or partial clinical whole-answer bottle is promoted.",
-    "Deliverables are on demand under Mike\u2019s latest instruction; verify ordinary requests do not generate unrequested PDF exports.",
-    "Customer deployment authority and outcome qualification remain separate; OWASP/HHS deferred."
+    "Original57-patient clinical answer remains partial with522 unresolved field judgments; independent source-family/clinical/model qualification remains open.",
+    "Both full-investigator attempts were interrupted; no successful complete investigator comparison, equal-quality break-even, whole-clinical speedup or all-in cost is established.",
+    "Owned8890 remains22c8c27; candidate735f1a6 has141distinct affected checks and retained native workflow proof, awaiting focused continuation assessment before runtime selection.",
+    "No new weights or partial clinical whole-answer bottle; customer deployment/outcome qualification remains separate; OWASP/HHS deferred.",
+    "PDF and other deliverables remain on demand under the latest human instruction."
   ],
   "browser_transport": {
     "historical_e400bb5": {
@@ -59,10 +59,11 @@
     }
   },
   "latest_scoped_followup": {
-    "product_commit": "22c8c2787fdfd6b1d28cc6a75f109e5fc2b5ba65",
-    "receipt": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json",
-    "scope": "On-demand export selection,36affectedchecks andexact current57patient/12rowHTTPread; zero newcohortexports/providers.",
-    "new_full_acceptance": false
+    "product_commit": "735f1a6c3833cb5beefa655afbe8acf091bb3995",
+    "receipt": "artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json",
+    "scope": "Native progress/source guard correction;141distinct affected checks and zero-provider retained workflow proofs. Two interrupted comparisons remain unqualified. Ready8890still22c8c27.",
+    "new_full_acceptance": false,
+    "runtime_selected": false
   },
   "decision_basis": "Current scoped code compatibility plus six real API reopens,fresh changed-path evidence and actual current executable install/restart/rollback/restore/HTTP.",
   "fresh_current_archive_or_recovery_execution_claimed": true

@@ -1,0 +1,27 @@
+# Investigator routing repair — November 2, 2026
+
+Two observed defects were corrected in the existing investigator. This is scoped engineering delivery, not a passed live comparison or a new clinical qualification. Product `735f1a6c3833cb5beefa655afbe8acf091bb3995`; prior progress correction `2df7f26`. The ready application on 8890 remains at `22c8c27` pending focused continuation assessment. No routine deliverables or PDFs were generated.
+
+## What changed and why
+
+Identical SQL results received new temporary result names. The tool loop compared those names and missed its own consecutive no-progress condition. It now uses the existing native evidence identity, compares the current batch with the previous batch, and retains every raw receipt. Business cells named like transport metadata remain evidence. Changed values, source clocks and a return to an earlier value can still make progress. Existing escalation and unresolved-review behavior remain; no tool, token, patient or spending cap was added.
+
+In a zero-provider replay of the retained failed trajectory, the prior controller continued through 37 native actions; the corrected controller reached its existing escalation boundary after 12. The replay stops at that boundary rather than substituting a recorded Haiku response for a new stronger-model decision. This does not measure live savings or a successful answer. Computing the new identities across 29 retained full-clinical native actions added 4.392 seconds in an offline observation; this is not a whole-workflow latency result.
+
+A fresh numeric confirmation exposed a separate source-check gap: the investigator selected `payer_claim` for an explicit provider-claim question and reached per-patient semantic verification. Typed planning already rejected that mismatch. The same source guard now checks the investigator's final table and bound-prose dependency closure before semantic verification. Unused exploratory queries remain in receipts but do not invalidate a correctly sourced final answer.
+
+Using actual retained native observations, the old final-review path sent a 3172-row payer result toward semantic review. The corrected path returns deterministic repair before a provider can run, without changing those rows. A correctly filtered 795-row provider result still proceeds to semantic review. Three exact wrong-source query texts from the fresh run are also rejected. All four exact final candidates from the interrupted confirmation were then reconstructed with its cached first response included; the new guard rejects each before semantic dispatch. No semantic acceptance is inferred from these mechanical checks.
+
+## Verification and accounting
+
+Two affected suites passed 74 and 80 tests, with 141 distinct tests. Regressions cover changed evidence, transport-like business column names, existing escalation, retained partial answers, source-filter bypasses, indirect result references, scalar-prose source leakage and valid explicit payer/combined questions. Initial harness failures are retained: pytest was unavailable; a first fixture omitted tool permissions; assertions initially treated an existing `error: null` as a failure; the retained-proof harness initially expected two rather than three observed wrong-source queries. Corrected checks passed without weakening product guards.
+
+The original full-investigator attempt was interrupted after repeated calculations: 1640 new attempts,45 returned actor responses, 1593 validated Jev calls,one failed Perplexity attempt and one unresolved pending Claude attempt; known API-equivalent subtotal $1.4515019, with two unpriced attempts. The focused confirmation was interrupted on the observed wrong-source verification: 4266 new attempts (11 returned Claude subscription responses, 4254 validated Jev calls and one failed Perplexity attempt), plus one validated Claude cache reuse. Known API-equivalent subtotal $1.262477058; actual total remains unknown. These attempts are engineering/benchmark expenditure and remain in all-attempt accounting. Neither interrupted run qualifies as a successful comparison or a capped baseline.
+
+Allprior ledger rows and the warehouse source remain unchanged. The final offline proof preserved all 34062 current ledger rows. No new weights, lowered verification thresholds or partial clinical whole-answer bottle were promoted. The previous 9/9 ten-area engineering/recovery release remains its own versioned evidence; it is not restamped by this repair.
+
+## Remaining work
+
+Assess one focused continuation with both guards in place before selecting this candidate in8890 or restarting comparison arms. First reconstruct exact retained final dependencies and verifier dispositions offline; the next live call must resolve a named remaining uncertainty, not repeat the full clinical run. Separate native arithmetic/source-contract fidelity from clinical interpretation without suppressing any requested claims. Existing partial 57-patient clinical results and 522 unresolved field judgments remain unqualified. Cross-domain transfer, equal-quality economics, independent clinical/model qualification and customer deployment prerequisites remain open. PDFs and other deliverables remain available only when requested.
+
+Evidence: `artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json`; prior trajectory under `artifacts/agere-investigator-transfer-2026-11-02/`.

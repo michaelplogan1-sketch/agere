@@ -5,9 +5,9 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Complete the remaining parameterized-workplan comparison at the actual investigator boundary: reuse the existing automatically generated source-bound plan with fresh executors; compare Haiku-first and fixed Sonnet-only investigators on the same received synthetic source and bindings, retaining all failed attempts and exact independent numeric checks. Keep cross-domain transfer explicitly unqualified where the template cannot bind it. Do not repeat the whole clinical cohort or generate routine deliverables. Use this evidence to select useful reuse before any new training or model activation.",
-  "latest_delivery": "docs/agere/ON_DEMAND_DELIVERABLES_2026-11-02.md",
-  "latest_receipt": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json",
+  "active_work": "Diagnose and repair the observed full-investigator numeric-query loop before more provider comparisons. Reconstruct retained tool/final-answer attempts offline to distinguish repeated compiler feedback, source-support uncertainty and changing native-reference identity. Verify one general progress/routing correction against the original failed trajectory and changed-evidence regressions, without an arbitrary tool/token cap, another whole clinical run or routine export. Keep the interrupted comparison and all1640 attempts; do not restart remaining arms until the failure is understood.",
+  "latest_delivery": "docs/agere/INVESTIGATOR_ROUTING_REPAIR_2026-11-02.md",
+  "latest_receipt": "artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json",
   "owned_server_pid": 89314,
   "owned_server_session": 25934,
   "full_queue_acceptance": false,
@@ -15,20 +15,20 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "Follow AGERE_BUILD_CONTROL.json current gate/checkpoint",
+  "resume_priority": "Use the exact retained provider-only795-patient final dependency and its verifier responses to distinguish native arithmetic/source-contract obligations from unresolved semantic judgments. Prove any proposed task-dependent routing change against wrong-source, changed-amount, changed-date and clinical-claim mutations before more provider work. Then perform one justified focused continuation with both current guards; select it in8890 only on relevant workflow evidence. Do not restart full comparisons, repeat the whole clinical run, regenerate exports, lower thresholds or promote a partial answer.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "PAUSED",
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-11-03T00:53:48.363957+00:00",
+  "latest_checkpoint": "2026-11-03T01:32:54.080215+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "Owned8890 ready at22c8c27; noproviderjob; routineexportsoff.",
+  "server_status": "Owned8890 PID89314/session25934 ready at22c8c27; no active provider job; candidate735f1a6 not selected in that process. Routine exports remain off.",
   "unsealed_work": null,
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
@@ -396,11 +396,8 @@
   },
   "push_authorization": "Mike: you dont need to turn off Git pushes if that helps you, im not sure if it does but i gave you no such instructions",
   "current_candidate_commits": [
-    "b629e2f",
-    "31bac5f",
-    "b77fd00",
-    "20bfdaa",
-    "f428623"
+    "2df7f26",
+    "735f1a6"
   ],
   "provider_payload_authorization": {
     "at": "2026-10-29T15:18:31.337417+00:00",
@@ -439,16 +436,16 @@
     "acceptance": "Current ordinary57-patient HTTP confirmation and existing finite engineering compatibility; no clinical or whole-product qualification.",
     "product_commit": "b4011fc8377a3f8e9b6ef03ad0e478c4972d493d"
   },
-  "previous_sealed_receipt": "artifacts/agere-current-ten-area-acceptance-2026-11-02/browser-context-correction/delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "dd5a7e52ae0e22f5d0d28f5c68bd4cc5deea062b",
-  "current_delivery_scope": "Scoped patient review response correction:42distinctchecks and actual HTTP; decoded payload90.96%smaller, all57patients/522judgments/PDF exact, zero providers. Prior finite9/9engineering matrix remains separate; independent clinical/model and fullMVP acceptance false.",
+  "last_product_commit": "735f1a6c3833cb5beefa655afbe8acf091bb3995",
+  "current_delivery_scope": "Scoped investigator engineering correction:141distinctchecks plus exact retained controller/source-to-result proof; no successful fresh comparison or clinical/default-model promotion.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
     "deliverable_id": "DLV-83D2EF62FF1A",
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T00:02:07.121943+00:00",
-  "last_commit": "22c8c2787fdfd6b1d28cc6a75f109e5fc2b5ba65"
+  "updated_at": "2026-11-03T01:32:54.080215+00:00",
+  "last_commit": "735f1a6c3833cb5beefa655afbe8acf091bb3995"
 }
