@@ -3,6 +3,7 @@ import copy
 import hashlib
 import json
 import unittest
+from unittest.mock import patch
 
 from clinical_core.contracts import digest
 from clinical_core.agere.clinical import backstop_agent as B, execution_state as E
@@ -115,13 +116,36 @@ class OperationalSupport(unittest.TestCase):
         result=B.check_support_packets([packet],forbidden,as_of='2030-05-27',ledger=None,
             field_decider=forbidden,long_context_decider=long_route)
         self.assertEqual(received[0][0][0]['text'],text)
-        self.assertEqual(received[0][1]['order'],('jev',))
+        self.assertEqual(received[0][1]['order'],('jev','perplexity'))
         self.assertTrue(received[0][1]['long_context'])
         self.assertEqual(result['label'],'supported')
         route=result['packets'][0]['context_route']
         self.assertEqual(route['source_packet_digest'],hashlib.sha256(text.encode()).hexdigest())
         self.assertFalse(route['independent_reading_qualification'])
         self.assertEqual(result['steps'][0]['context_route'],route)
+
+    def test_large_dependency_uses_uncertain_result_fallback_without_changing_text(self):
+        from clinical_core.agere.clinical import system_one as S
+        text='Complete source, including negation and unresolved history. '*5000
+        packet={'id':'large','date':'2030-05-27','text':text,'bytes':len(text.encode()),
+                'dependency_complete':True,'source_context_complete':True}
+        seen=[]
+        def choice(question,options,evidence,**kw):
+            seen.append((kw['provider'],evidence,kw))
+            p=.9 if kw['provider']=='perplexity'else .4
+            return {'label':'supported','probabilities':{'supported':p,'unknown':1-p},
+                    'calibrated_probabilities':{'supported':p,'unknown':1-p},
+                    'cost_usd':0.,'cache_hit':kw['provider']=='jev','request_hash':kw['provider']}
+        def forbidden(*args,**kw):raise AssertionError('No small-context or field route')
+        with patch.object(S,'choice',side_effect=choice),patch('clinical_core.agere.clinical.system_one_student.predict',return_value=None),patch('clinical_core.agere.clinical.system_one_student.record'):
+            result=B.check_support_packets([packet],forbidden,as_of='2030-05-27',ledger=None,
+                field_decider=forbidden,long_context_decider=S.decide)
+        self.assertEqual([p for p,_,_ in seen],['jev','perplexity'])
+        self.assertTrue(all(e[0]['text']==text and kw['long_context']for _,e,kw in seen))
+        self.assertEqual(result['packets'][0]['decided_by'],'perplexity')
+        self.assertEqual(result['label'],'supported')
+        self.assertTrue(result['steps'][0]['cache_hit'])
+        self.assertEqual(result['packets'][0]['context_route']['requested_providers'],['jev','perplexity'])
 
     def test_absent_route_or_real_transport_oversize_makes_no_provider_call(self):
         def forbidden(*args,**kw):raise AssertionError('No provider dispatch allowed')

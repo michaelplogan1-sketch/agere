@@ -2167,23 +2167,30 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
                 'semantic_dependency_packet_id':'summary',
                 'reason':'Every profile cell exactly matches the received profile reader through complete native results. The separately supported global packet retains population/date/request meaning. Identity and demographics do not establish clinical eligibility or current care roles.'},steps
         oversized=packet['bytes']>240000
-        # The configured Jev gateway already supports the documented 262k-token
-        # mode. Its encoder enforces the actual 32MiB request-body boundary;
-        # the provider enforces token fit. Neither is a population/output cap.
-        # https://docs.typesafe.ai/models and /api/errors, verified 2026-11-01.
+        # Keep the task's normal uncertain-result fallback for complete large
+        # dependencies. Both configured services document long-context support;
+        # byte size is not a reason to silently exclude Perplexity. Providers
+        # enforce token fit; no source text is shortened to make a request fit.
+        # https://docs.typesafe.ai/models and /api/errors, verified 2026-11-01;
+        # https://docs.perplexity.ai/docs/decisions/quickstart, 2026-11-03.
         if oversized and (long_context_decider is None or packet['bytes']>32*1024*1024):
             return {**identity,'label':'unknown','decided_by':None,
                 'reason':'Complete dependency exceeds conservative provider context envelope; retain it for explicit partition/repair, never truncate.'},steps
         selected=long_context_decider if oversized else decider
+        long_order=None
+        if oversized:
+            from .system_one_deciders import order_for
+            long_order=order_for('agere_investigation_support_dependency_long_context')
         result=selected('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
             task_key='agere_investigation_support_dependency_long_context' if oversized else 'agere_investigation_support_dependency',
             ledger=worker_ledger,allow_live=True,select_source=False,
-            long_context=packet['bytes']>32768,**({'order':('jev',)} if oversized else {}),
+            long_context=packet['bytes']>32768,**({'order':long_order} if oversized else {}),
             **({'cache_evidence':packet['native_timing_compatibility']}if packet.get('native_timing_compatibility')else{}))
         checked={**identity,**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
         if oversized:
-            route={'requested_provider':'jev','mode':'documented_long_context','declared_context':'262k tokens per request and per question',
+            route={'requested_providers':list(long_order),'mode':'documented_long_context',
+                'declared_context':{'jev':'262k tokens per request and per question','perplexity':'under 256K tokens for state and each question'},
                 'source_packet_bytes':packet['bytes'],'source_packet_digest':hashlib.sha256(packet['text'].encode()).hexdigest(),
                 'token_fit':'provider_enforced','independent_reading_qualification':False}
             checked['context_route']=route
