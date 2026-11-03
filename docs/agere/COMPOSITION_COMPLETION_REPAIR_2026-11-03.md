@@ -238,3 +238,15 @@ On703f5a5 the clarified payer-payment question completed through the ordinary HT
 The identical ordinary repeat re-executed those five steps, rechecked the result and returned identical values in25.887seconds with4calls (0Claude,2Jev,2Perplexity),$0.019622528API-equivalent. Observed reductions:82.158%elapsedtime,64.003%API-equivalentcost and63.636%newproviderattempts. Both runs preserve allpriorattempts/code/source and create noexports. The repeat uses no Claude callbacks and remains selected without observed APIcostregression.123numeric/connected and41reuse/accounting/rollbacktests pass. This is one warm synthetic pair; development, localcompute and clinicalreview are unpriced. All previous failedattempts remain separate evidence, not silently excluded from development accounting.
 
 Scoped delivery: artifacts/agere-harder-bottling-2026-11-03/delivery-receipt.json. Original57patient clinical routing/reuse and six unresolvedsourcechecks remain open; no clinicalanswer or newmodelweights were promoted and no fullMVPacceptance claimed.
+
+## Complete-source field composition
+
+The original clinical workflow had six unresolved patient dependencies despite retaining the full source. The verifier now asks named field questions against one shared state, then composes only complete, deciding judgments with exact patient, manifest, value and source bindings. An unresolved or omitted field, changed source, explicit whole-packet disagreement or undecided global coverage cannot become acceptance.
+
+The current saved result retains all 57 patients and every native value and prose cell. Supported dependencies increased from 55/61 to 57/61. Four patient dependencies remain uncertain, now localized to five prose fields; coverage remains undecided. The result stays partial/unverified. Actual HTTP reopening passed, preserving all 99 prior saved answers and the shared provider ledger.
+
+Qualification: 92 connected tests passed. Sixteen owner-authored source contrasts gave 8/8 positive support and no false support on 8 mutations for both the whole-packet baseline and field composition. Two mutations in the actual largest complete patient packet were withheld as unknown; they were not confidently classified as errors. No clinical qualification is inferred.
+
+The five affected patient checks used 10 new Jev/Perplexity attempts. Including all contrast/control work, 61 attempts cost $0.073345912 API-equivalent; no Claude calls. Local compute/development are unpriced. The first concurrent harness accidentally made three checks cache-only; those unsent checks and the corrected completion are retained. The normal full final review then reused the exact receipts with zero new provider attempts. No source campaign or numerical pair was rerun.
+
+Remaining work is the exact five prose obligations plus global coverage, followed by ordinary reuse of completed native prefixes. All ten product areas and independent qualification/deployment dependencies remain. Current receipt: `artifacts/agere-large-field-diagnosis-2026-11-03/delivery-receipt.json`.
