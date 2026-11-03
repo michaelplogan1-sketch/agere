@@ -129,11 +129,31 @@ function showIntent() {
   }
   updateSelection();
 }
+function patientName(pid) {
+  const profile = data.context.patient_profiles?.patients?.[pid];
+  return profile?.patient_id === pid && typeof profile.display_name === 'string' && profile.display_name.trim()
+    ? profile.display_name : pid;
+}
+function detailValue(value) {
+  if (value == null) return '<span class="muted">Not available</span>';
+  let structured = value;
+  if (typeof value === 'string') {
+    try { const parsed = JSON.parse(value); if (parsed && typeof parsed === 'object') structured = parsed; } catch (_) {}
+  }
+  if (typeof structured === 'object') {
+    const label = Array.isArray(structured) ? 'Inspect '+structured.length+' source record'+(structured.length===1?'':'s') : 'Inspect source details';
+    return '<details><summary>'+label+'</summary><pre>'+esc(JSON.stringify(structured,null,2))+'</pre></details>';
+  }
+  return esc(value);
+}
+function detailFields(entries) {
+  return '<dl class="detail-fields">'+entries.map(([k,v])=>'<div><dt>'+esc(pretty(k))+'</dt><dd>'+detailValue(v)+'</dd></div>').join('')+'</dl>';
+}
 function filteredPatients() {
   const q = $('search').value.trim().toLowerCase(), filter = $('cohort-filter').value;
   const assigned = new Set(data.items.filter(i => i.state !== 'cancelled').map(i => i.patient_id));
   return data.context.patient_rows.filter(p => {
-    if (q && !JSON.stringify(p).toLowerCase().includes(q)) return false;
+    if (q && !(patientName(p.patient_id)+' '+JSON.stringify(p)).toLowerCase().includes(q)) return false;
     if (filter === 'assigned') return assigned.has(p.patient_id);
     if (filter === 'unassigned') return !assigned.has(p.patient_id);
     if (filter === 'details') return p.evidence_rows.length > 0;
@@ -148,7 +168,8 @@ function showPatients() {
   const visible = rows.slice(pageIndex*PAGE_SIZE,(pageIndex+1)*PAGE_SIZE);
   $('patients').innerHTML = visible.map(p => {
     const work = data.items.filter(i => i.patient_id === p.patient_id && i.state !== 'cancelled');
-    return '<tr class="'+(selected.has(p.patient_id)?'is-selected':'')+'"><td class="check-cell"><input type="checkbox" data-patient="'+esc(p.patient_id)+'" aria-label="Select '+esc(p.patient_id)+'" '+(selected.has(p.patient_id)?'checked':'')+'></td><td><button class="patient-button" data-inspect="'+esc(p.patient_id)+'"><span class="patient-avatar">'+icon('people')+'</span>'+esc(p.patient_id)+'</button></td><td><span class="badge '+(p.evidence_rows.length?'':'peach')+'">'+(p.evidence_rows.length ? num(p.evidence_rows.length)+' returned detail'+(p.evidence_rows.length===1?'':'s') : 'Identifier only')+'</span></td><td>'+(work.length ? '<span class="badge">'+work.length+' review'+(work.length===1?'':'s')+'</span>' : '<span class="muted">Not started</span>')+'</td><td><button class="row-arrow" data-inspect="'+esc(p.patient_id)+'" aria-label="Open '+esc(p.patient_id)+' details">'+icon('arrow')+'</button></td></tr>';
+    const name = patientName(p.patient_id), label = name === p.patient_id ? name : name+' · '+p.patient_id;
+    return '<tr class="'+(selected.has(p.patient_id)?'is-selected':'')+'"><td class="check-cell"><input type="checkbox" data-patient="'+esc(p.patient_id)+'" aria-label="Select '+esc(label)+'" '+(selected.has(p.patient_id)?'checked':'')+'></td><td><button class="patient-button" data-inspect="'+esc(p.patient_id)+'"><span class="patient-avatar">'+icon('people')+'</span><span class="patient-label">'+esc(name)+(name===p.patient_id?'':'<small>'+esc(p.patient_id)+'</small>')+'</span></button></td><td><span class="badge '+(p.evidence_rows.length?'':'peach')+'">'+(p.evidence_rows.length ? num(p.evidence_rows.length)+' returned detail'+(p.evidence_rows.length===1?'':'s') : 'Identifier only')+'</span></td><td>'+(work.length ? '<span class="badge">'+work.length+' review'+(work.length===1?'':'s')+'</span>' : '<span class="muted">Not started</span>')+'</td><td><button class="row-arrow" data-inspect="'+esc(p.patient_id)+'" aria-label="Open '+esc(label)+' details">'+icon('arrow')+'</button></td></tr>';
   }).join('') || '<tr><td colspan="5"><div class="empty-state"><h3>No patients in this view.</h3><p>Try a different search or filter. Your selections are preserved.</p></div></td></tr>';
   $('cohort-results').textContent = num(rows.length)+' matching · '+num(data.context.patient_rows.length)+' in saved answer';
   $('page-caption').textContent = rows.length ? (pageIndex*PAGE_SIZE+1)+'–'+Math.min((pageIndex+1)*PAGE_SIZE,rows.length)+' of '+num(rows.length) : '0 patients';
@@ -271,11 +292,16 @@ function patientDetails(pid) {
   const patient = data.context.patient_rows.find(p => p.patient_id === pid);
   if (!patient) return;
   $('detail-kicker').textContent = 'PATIENT / SAVED ANSWER';
-  $('detail-title').textContent = pid;
+  $('detail-title').textContent = patientName(pid);
   const evidenceRows = patient.evidence_rows || [];
-  const details = evidenceRows.length ? evidenceRows.map((row,index) => '<h3 style="font-size:14px;margin-top:25px">Returned detail '+(index+1)+'</h3><dl class="detail-fields">'+Object.entries(row).map(([k,v])=>'<div><dt>'+esc(pretty(k))+'</dt><dd>'+(v==null ? '<span class="muted">Not available</span>' : (typeof v==='object'?'<details><summary>Inspect source evidence</summary><pre>'+esc(JSON.stringify(v,null,2))+'</pre></details>':esc(v)))+'</dd></div>').join('')+'</dl>').join('') : '<div class="patient-empty">This answer returned a patient identifier only. Clinical details and program suitability have not been assessed.<br><br>Ask for those details before making a clinical decision.</div>';
+  const interpreted = new Set(data.context.answer.table_binding?.interpreted_columns || []);
+  const details = evidenceRows.length ? evidenceRows.map((row,index) => {
+    const entries = Object.entries(row), prose = entries.filter(([k])=>interpreted.has(k));
+    return (prose.length ? '<h3 class="detail-section">Proposed interpretation</h3>'+detailFields(prose) : '')+
+      '<h3 class="detail-section">Returned evidence'+(evidenceRows.length>1?' · '+(index+1):'')+'</h3>'+detailFields(entries.filter(([k])=>!interpreted.has(k)));
+  }).join('') : '<div class="patient-empty">This answer returned a patient identifier only. Clinical details and program suitability have not been assessed.<br><br>Ask for those details before making a clinical decision.</div>';
   const tasks = data.items.filter(i=>i.patient_id===pid);
-  $('detail-content').innerHTML = '<p class="muted">From this answer · '+esc(date(data.context.source.as_of))+'</p>'+details+(tasks.length?'<h3 style="font-size:16px;margin-top:25px">Review work</h3>'+tasks.map(taskCard).join(''):'')+'<div class="sheet-actions"><button class="button primary" data-select-detail="'+esc(pid)+'">'+(selected.has(pid)?'Remove from selection':'Add to selection')+'</button></div>';
+  $('detail-content').innerHTML = '<p class="muted">'+esc(pid)+' · Snapshot '+esc(date(data.context.source.as_of))+'</p><p class="muted">Answer status: '+esc(pretty(data.context.answer.status))+(data.context.answer.verification?' · '+esc(pretty(data.context.answer.verification)):'')+'</p>'+details+(tasks.length?'<h3 style="font-size:16px;margin-top:25px">Review work</h3>'+tasks.map(taskCard).join(''):'')+'<div class="sheet-actions"><button class="button primary" data-select-detail="'+esc(pid)+'">'+(selected.has(pid)?'Remove from selection':'Add to selection')+'</button></div>';
   if (!$('detail-dialog').open) openDialog('detail-dialog');
 }
 function editWork(id) {

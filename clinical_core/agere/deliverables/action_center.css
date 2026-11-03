@@ -9,3 +9,5 @@
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 @media print{.sidebar,.topbar,button,.selection-bar,.toast{display:none!important}.app{margin:0}main{max-width:none;padding:0}.view{display:block!important}.view[hidden]{display:none!important}}
 .requested-workflow{margin:28px 0}.requested-workflow .launch-card{cursor:default}.requested-workflow pre{max-height:240px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px}.requested-workflow details{font-size:12px}.requested-workflow .btn{margin-top:12px}.requested-workflow .launch-card p{font-size:13px;line-height:1.6}
+
+.patient-label{text-align:left;line-height:1.4}.patient-label small{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:3px}.detail-section{font-size:14px;margin-top:25px}.detail-fields dt{text-transform:capitalize}.detail-fields dd{line-height:1.6}
