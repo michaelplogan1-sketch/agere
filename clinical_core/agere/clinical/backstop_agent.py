@@ -55,6 +55,9 @@ READ_CHARS = 9000
 JUDGE_CHUNK = 1800       # characters per evidence chunk handed to System One (a whole document is several chunks, not one ranked snippet)
 
 TOOLS = [
+    {'name':'read_patient_profiles','description':'Read received patient display names and profile fields by exact ID, using the same source profiles attached to saved answers. These fields are separate from the semantic patient SQL table. Supply patient_query_sql for an executed cohort, explicit patient_ids, or omit both for the inherited population. Returns every selected patient, source date/fingerprint and an SQL result_view for composition. Missing or future profiles remain unknown. Names do not establish a clinician assignment or clinical eligibility.',
+     'input_schema':{'type':'object','properties':{'patient_ids':{'type':'array','items':{'type':'string'}},
+        'patient_query_sql':{'type':'string'}},'additionalProperties':False}},
     {'name':'list_analyses','description':'Discover the existing analytical engines: trajectories, change detection, survival, forecasts, queueing, allocation, provider comparisons, causal designs and finance. These are native tools, not calculations to reproduce in prose.',
      'input_schema':{'type':'object','properties':{},'additionalProperties':False}},
     {'name':'describe_analysis','description':'Get an existing analytical engine\'s typed parameters, assumptions and population contract before calling it.',
@@ -140,6 +143,8 @@ has already declined this question, so it is yours to answer completely and corr
   from a governed source first: execute_metric when a governed metric fits (list_metrics shows them), else ask_agere (one simple
   sub-question per call); use query_sql for what neither answers or to break a result down further, following the decision context.
 - First settle each requirement with governed metrics, SQL and explicit structured source relationships where available.
+  For patient names and demographic profile fields, use read_patient_profiles and join its result_view by exact patient_id.
+  The semantic patient table does not contain every received profile field. Do not report names unavailable based only on its schema.
   For narrative gaps, call review_documents with the complete population, precise entity/relation bindings and focused source scope.
   Supply field_patient_queries for conditional requirements, using executed native eligibility predicates. Review only relevant
   fields for each patient. Read whole matching source contexts; keep searched and unreviewed coverage distinct. An empty retrieval
@@ -362,6 +367,7 @@ class Tools:
                 'documentation_identity':getattr(getattr(self.semantic,'_local',None),'documentation_identity',None),
                 'documentation_mode':os.environ.get('AGERE_ANALYST_CONTEXT','discover'),
                 'document_field_screen':os.environ.get('AGERE_DOCUMENT_FIELD_SCREEN','off'),
+                'patient_profile_reader':hashlib.sha256((Path(__file__).resolve().parents[1]/'deliverables'/'patient_evidence.py').read_bytes()).hexdigest(),
                 'explicit_tool_quota':MAX_TOOLS, 'native_sql_contract':NATIVE_SQL_CONTRACT,
                 'executor_code':{name:hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
                                  for name in ('backstop_agent.py','analyst_context.py','semantic_docs.py','document_review.py','span_repair.py','typed_document_review.py','harness_improvement.py','sql_query.py','analysis_tools.py','semantic_analyst.py','execution_state.py','result_assembly.py','evidence_projection.py','dose.py','drug_classes.py','note_evidence.py')},
@@ -369,6 +375,7 @@ class Tools:
 
     def _call(self, use):
         name, args = use.get('name'), use.get('input') or {}
+        if name == 'read_patient_profiles':return self.read_patient_profiles(**args)
         if name in ('list_analyses','describe_analysis','execute_analysis'):
             from . import analysis_tools
             if name=='list_analyses':
@@ -461,6 +468,32 @@ class Tools:
         if name == 'read_document': return self.read_document(**args)
         if name == 'judge_documents': return self.judge_documents(**args)
         raise ValueError(f'unknown tool {name}')
+
+    def read_patient_profiles(self,patient_ids=None,patient_query_sql=None):
+        from .analysis_tools import population
+        from ..deliverables.patient_evidence import capture_profiles
+        ids=population(self,patient_ids,patient_query_sql)
+        if ids is None:ids=[r[0]for r in self.db.execute('SELECT patient_id FROM patient ORDER BY patient_id')]
+        source=capture_profiles(self.stack.path,ids)
+        if source is not None and source['as_of']!=self.as_of:
+            raise ValueError('Received profile snapshot differs from the request date')
+        if source is not None and self.semantic is not None and source.get('source_digest')!=self.semantic.meta.get('source_digest'):
+            raise ValueError('Received profile source differs from the active semantic source')
+        fields=('display_name','birth_date','age_reported','age_at_snapshot','sex_reported','preferred_language','interpreter_needed')
+        columns=['patient_id','patient_name',*fields[1:],'profile_source_date','profile_status','profile_source_fingerprint']
+        people=(source or{}).get('patients')or{};rows=[]
+        for pid in ids:
+            profile=people.get(pid)or{}
+            rows.append({'patient_id':pid,'patient_name':profile.get('display_name'),
+                **{f:profile.get(f)for f in fields[1:]},'profile_source_date':profile.get('profile_source_date'),
+                'profile_status':profile.get('identity_status')or'profile_unavailable',
+                'profile_source_fingerprint':profile.get('source_profile_fingerprint')})
+        return {'kind':'received_patient_profiles','columns':columns,'rows':rows,'input_patient_ids':ids,
+            'source':{k:(source or{}).get(k)for k in ('source_digest','release','as_of')},
+            'method':'Exact received patient-ID join; profile dates and snapshot visibility preserved. No narrative extraction or fuzzy identity matching.',
+            'limitations':['Profile names and demographics do not establish a current care-team assignment or clinical eligibility.',
+                           'A missing profile date remains unknown; reported age and age calculated at the snapshot are separate fields.'],
+            'new_paid_api_calls':0}
 
     def list_metrics(self):
         from .request_vocabulary import definitions
@@ -1682,6 +1715,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                 'current_fingerprint':digest(packet),'legacy_fingerprint':digest(legacy),
                 'bindings':timing_bindings,'legacy_text':legacy_text}
     mark_native_numeric_fidelity(result,answer,calls,document_reviews)
+    mark_native_profile_fidelity(result,answer,calls,document_reviews)
     return result
 
 
@@ -1771,11 +1805,91 @@ def mark_native_numeric_fidelity(packets,answer,calls,document_reviews):
             'packet_sha256':hashlib.sha256(packet['text'].encode()).hexdigest()}
 
 
+def mark_native_profile_fidelity(packets,answer,calls,document_reviews):
+    """Exact received identity cells need no repeated per-patient model vote.
+
+    This narrow proof applies only to the profile reader's declared fields and
+    exact native descendants. Clinical text, roles, source interpretations and
+    mixed tables keep their normal checks. Global request meaning is still
+    judged separately, with all source receipts and every output row intact.
+    """
+    from ...contracts import digest
+    from .result_assembly import incomplete_reason
+    root=answer.get('table_from_tool');table=answer.get('table')
+    fields={'patient_id','patient_name','birth_date','age_reported','age_at_snapshot','sex_reported',
+            'preferred_language','interpreter_needed','profile_source_date','profile_status','profile_source_fingerprint'}
+    if document_reviews or not root or not isinstance(table,list)or not table:return
+    if any(not isinstance(r,dict)or not isinstance(r.get('patient_id'),str)or not r['patient_id']or
+           not set(r)<=fields or len(r)<2 for r in table):return
+    if len({r['patient_id']for r in table})!=len(table):return
+    dependencies=native_result_dependencies(calls,[root])
+    if not dependencies:return
+    selected=[c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')in dependencies]
+    if len(selected)!=len(dependencies):return
+    summary=next((p for p in packets if p['id']=='summary'),None)
+    if not summary or summary.get('dependency_complete')is False:return
+    profiles={};receipts={};source_digest=None
+    for call in selected:
+        result=call['result']
+        if result.get('error')or incomplete_reason(result):return
+        receipts[result['result_view']]=digest(result)
+        if call.get('name')=='read_patient_profiles'and result.get('kind')=='received_patient_profiles':
+            source=result.get('source')or{}
+            if not source.get('source_digest')or source.get('as_of')!=summary.get('date'):return
+            if source_digest is not None and source_digest!=source['source_digest']:return
+            source_digest=source['source_digest']
+            columns,rows=output_table(result);ids=[]
+            for values in rows:
+                row=dict(zip(columns,values));pid=row.get('patient_id')
+                if not isinstance(pid,str)or not pid or not set(row)<=fields:return
+                if pid in profiles and profiles[pid]!=row:return
+                profiles[pid]=row;ids.append(pid)
+            if len(set(ids))!=len(ids)or set(ids)!=set(result.get('input_patient_ids')or[]):return
+        elif(call.get('name')!='query_sql'or result.get('native_sql_contract')!=NATIVE_SQL_CONTRACT or
+             not isinstance(result.get('executed_query'),str)or not result['executed_query'].strip()):return
+    if not profiles:return
+    for call in selected:
+        if call['name']=='query_sql':
+            source=call['result'].get('source_contracts')or{}
+            if source.get('source_digest')!=source_digest or source.get('as_of')!=summary.get('date'):return
+    for row in table:
+        source=profiles.get(row['patient_id'])
+        if source is None or any(k not in source or digest(value)!=digest(source[k])for k,value in row.items()):return
+    producer=next(c['result']for c in selected if c['result']['result_view']==root)
+    columns,rows=output_table(producer)
+    if table!=[dict(zip(columns,row))for row in rows]:return
+    # String cells normally remain in required patient packets to keep clinical
+    # meaning local. These proven identity cells must instead be visible to the
+    # global reviewer: a pointer alone cannot establish requested date/scope.
+    from ..deliverables.receipts import uncompact_json,readable_json
+    global_state=uncompact_json(json.loads(summary['text']))
+    global_state.update(all_final_rows=table,required_clinical_dependencies=[],
+        dependency_encoding='All exact native profile cells are shown here. Native copy checks cover each patient; this review still owns requested population, profile dates and meaning.',
+        native_profile_source={'source_digest':source_digest,'as_of':summary['date'],
+            'authority':'Received exact-ID profile values, not clinical interpretation or current care assignment.'})
+    summary['text']=json.dumps(readable_json(global_state),ensure_ascii=False,separators=(',',':'),default=str)
+    summary['bytes']=len(summary['text'].encode());summary['representation']='readable_native_json'
+    summary.pop('native_timing_compatibility',None)  # changed semantic input cannot reuse the old global judgment
+    common={'schema':'native-profile-fidelity/1','root_result_view':root,'rows':len(table),
+            'table_digest':digest(table),'native_receipt_digests':receipts,'source_digest':source_digest,
+            'summary_packet_sha256':hashlib.sha256(summary['text'].encode()).hexdigest(),
+            'scope':'Exact received profile cells only; global review still establishes the requested population, date and meaning. No clinical or care-role inference.'}
+    for packet in packets:
+        if packet['id']=='summary'or not packet.get('patient_dependency_bound'):continue
+        packet['native_profile_fidelity']={**common,'packet_id':packet['id'],
+            'patient_id':packet['source_dependency_patient_id'],'claim_manifest_digest':digest(packet['claim_manifest']),
+            'packet_sha256':hashlib.sha256(packet['text'].encode()).hexdigest()}
+
+
 def native_numeric_fidelity_valid(packet,summary):
+    return native_fidelity_valid(packet,summary,'native_numeric_fidelity','native-numeric-fidelity/1')
+
+
+def native_fidelity_valid(packet,summary,key,schema):
     """Reject changed packet/source/meaning inputs instead of reusing a proof."""
     from ...contracts import digest
-    proof=packet.get('native_numeric_fidelity')
-    return bool(isinstance(proof,dict)and proof.get('schema')=='native-numeric-fidelity/1'and summary and
+    proof=packet.get(key)
+    return bool(isinstance(proof,dict)and proof.get('schema')==schema and summary and
         proof.get('packet_id')==packet.get('id')and proof.get('patient_id')==packet.get('source_dependency_patient_id')and
         proof.get('claim_manifest_digest')==digest(packet.get('claim_manifest'))and
         proof.get('packet_sha256')==hashlib.sha256(packet['text'].encode()).hexdigest()and
@@ -1878,6 +1992,11 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             return {**identity,'label':'supported','decided_by':'native_numeric_table_fidelity',
                 'semantic_dependency_packet_id':'summary',
                 'reason':'All reported numeric cells exactly match complete executed SQL. The separately supported global packet retains every row and establishes source/domain/time/unit/interpretation; no clinical truth is inferred from arithmetic.'},steps
+        if(scheduled and scheduled[0]['id']=='summary'and global_result.get('label')=='supported'and
+           global_result.get('decided_by')and native_fidelity_valid(packet,by_id.get('summary'),'native_profile_fidelity','native-profile-fidelity/1')):
+            return {**identity,'label':'supported','decided_by':'native_profile_cell_fidelity',
+                'semantic_dependency_packet_id':'summary',
+                'reason':'Every profile cell exactly matches the received profile reader through complete native results. The separately supported global packet retains population/date/request meaning. Identity and demographics do not establish clinical eligibility or current care roles.'},steps
         oversized=packet['bytes']>240000
         # The configured Jev gateway already supports the documented 262k-token
         # mode. Its encoder enforces the actual 32MiB request-body boundary;
