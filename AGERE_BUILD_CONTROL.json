@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T10:55:59.589172+00:00",
+  "updated_at": "2026-11-03T11:31:35.117624+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -476,25 +476,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "focused_verifier_comparison_and_candidate_selection",
+    "kind": "executed_contract_and_completeness_repair",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Both typed verifiers receive final-dependency patient evidence; prior exploratory payer calculations no longer pollute provider-only numeric claims. Selected the tested investigator/source/projection candidate in owned8890.",
-    "measured_failure_reduction": "Jev accepted retained positives0/3 before versus3/3 after; Perplexity explicit mutation faults1/4 before versus4/4 after. Both current arms accepted3/3 retained positives and explicitly rejected4/4 authored errors; neither accepted any authored error in either arm.",
+    "user_behavior_delta": "Compiled execution state retains exact compact scoped SQL and native-view dependencies. Answered-plus-missing contradictions trigger repair before paid final review; genuine unknowns stay partial or unsupported.",
+    "measured_failure_reduction": "0 to 12 inspectable native SQL contracts; retained answered/missing contradiction now repaired before paid review; focused finalization preserves 795 rows with no missing requirement.",
     "evidence": [
-      "artifacts/agere-focused-verifier-comparison-2026-11-03/delivery-receipt.json",
-      "docs/agere/FOCUSED_VERIFIER_COMPARISON_2026-11-03.md"
+      "artifacts/agere-executed-contract-context-2026-11-03/delivery-receipt.json",
+      "docs/agere/EXECUTED_CONTRACT_COMPLETENESS_2026-11-03.md"
     ],
-    "remaining_gap": "The focused numeric verifier comparison passes, but no current ordinary whole-question performance confirmation or complete clinical acceptance is established. Historical57-patient and12-row contexts remain exact and inspectable, explicitly invalidated for new work under the changed planner policy; no inference was rebound. Original clinical answer is partial with522 unresolved field judgments. Independent clinical/model qualification and customer-deployment prerequisites remain separate; OWASP/HHS deferred.",
-    "next_action": "Run one normal application request for the original provider-claims numeric question on candidate168ae81, retaining the automatic route, exact provider-only/year scope, native results, all attempts, total cost and latency. If qualified execution reuse answers it, report that actual route; do not mislabel it as investigator evidence or force frontier calls for appearance. If investigation is needed, verify the measured progress/source corrections and stop only on an observed failure or service limit, not an invented call cap. Do not rerun the full clinical cohort or restamp historical answers as fresh inference. Then assess the remaining clinical source-reading uncertainty using retained dependencies and targeted evidence. Preserve all ten areas and active quiet continuation.",
+    "remaining_gap": "Original ordinary numeric request has exact 795 patient/count/amount rows but failed completeness acceptance; 208.519 seconds and 867 provider attempts remain excessive. Its request telemetry owns 853 attempts and leaves 14 ambiguous. The focused post-fix finalization is complete with the same table, but is not fresh semantic or ordinary end-to-end acceptance. The original 57-patient clinical result remains partial with 522 unresolved field judgments, which are not 522 established errors. No new model weights or clinical bottle are promoted. Independent clinical/model qualification, authentic total cost and customer deployment requirements remain separate; OWASP/HHS is deferred.",
+    "next_action": "Diagnose the 14 unowned attempts in the retained ordinary numeric run before another paid campaign. Reproduce the responsible worker boundary with isolated real-ledger fixtures, preserve provider request/model identity, and require two concurrent questions to own their new attempts exactly without stealing cache reuse. spec_verify.verify currently converts the ledger to a plain string and dispatches unwrapped workers; this is a hypothesis until linked to the retained attempts. Do not retrospectively tag old rows or infer ownership from a time window. Then use retained native dependencies to reduce repetitive numeric verification and target the clinical source-reading uncertainties with current Jev/Perplexity. No whole-cohort replay, forced model participation, threshold relaxation or new training campaign.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "No provider/training/frozen job. Owned8890PID5728/session12656 at168ae81; quiet continuation ACTIVE.",
+    "coordination": "No provider/training/frozen job. Owned 8890 PID 8020 at 42ff610; quiet continuation ACTIVE.",
     "remaining_blockers": [
-      "The focused numeric verifier comparison passes, but no current ordinary whole-question performance confirmation or complete clinical acceptance is established. Historical57-patient and12-row contexts remain exact and inspectable, explicitly invalidated for new work under the changed planner policy; no inference was rebound. Original clinical answer is partial with522 unresolved field judgments. Independent clinical/model qualification and customer-deployment prerequisites remain separate; OWASP/HHS deferred.",
-      "No successful complete investigator comparison, broad clinical qualification or measured full-workflow improvement yet."
+      "Original ordinary numeric request has exact 795 patient/count/amount rows but failed completeness acceptance; 208.519 seconds and 867 provider attempts remain excessive. Its request telemetry owns 853 attempts and leaves 14 ambiguous. The focused post-fix finalization is complete with the same table, but is not fresh semantic or ordinary end-to-end acceptance. The original 57-patient clinical result remains partial with 522 unresolved field judgments, which are not 522 established errors. No new model weights or clinical bottle are promoted. Independent clinical/model qualification, authentic total cost and customer deployment requirements remain separate; OWASP/HHS is deferred."
     ],
-    "latest_progress": "28case/provider/projection observations,47validated attempts; both current arms3/3positive and4/4explicit fault. Owned8890candidate168ae81 ready; exact historicalHTTPinspection.",
-    "results_report": "docs/agere/FOCUSED_VERIFIER_COMPARISON_2026-11-03.md",
+    "latest_progress": "85 affected checks; exact 795-row historical HTTP inspection; scoped finalization only.",
+    "results_report": "docs/agere/EXECUTED_CONTRACT_COMPLETENESS_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -523,18 +522,18 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Prior a32a2c5nine-of-nine release remains versioned; scoped168ae81projection/progress/source fixes now locally selected with focused typed-verifier evidence.",
+      "current_engineering": "Prior a32a2c5 nine-of-nine release remains versioned; scoped 42ff610 repair selected with retained-state and HTTP evidence.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-focused-verifier-comparison-2026-11-03/delivery-receipt.json"
+      "evidence": "artifacts/agere-executed-contract-context-2026-11-03/delivery-receipt.json"
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
-    "comparison_status": "Both live attempts interrupted; all5906newattempts retained. No live comparison pass.",
-    "at": "2026-11-03T10:25:19.084808+00:00",
-    "workflow_change": "Remove provably unrelated earlier SQL computations from individual patient reviewer inputs; preserve global audit and final claims.",
+    "comparison_status": "Ordinary numeric fidelity exact but completeness acceptance failed; scoped repaired finalization complete, fresh semantic/ordinary acceptance open.",
+    "at": "2026-11-03T11:31:35.117624+00:00",
+    "workflow_change": "Compiled execution state retains exact compact scoped SQL and native-view dependencies. Answered-plus-missing contradictions trigger repair before paid final review; genuine unknowns stay partial or unsupported.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -621,7 +620,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "A current HTML report no longer generates PDF because a previous question/workflow requested one.",
+    "measured_failure_removed": "Compiled context no longer drops executed SQL; contradictory complete status no longer reaches paid final review.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -633,6 +632,17 @@
       "unpriced_attempts": 4,
       "all_new_attempts_explicitly_owned": true,
       "native_diagnostic": "Explicit29successfulactions15.545s/27comparisons pass; no automatic candidate selected."
+    },
+    "ordinary_numeric_confirmation": {
+      "status": "failed",
+      "context_id": "ANS-340a2d619bd82b70aecad4ae",
+      "rows": 795,
+      "seconds": 208.51851045899093,
+      "new_provider_attempts": 867,
+      "window_known_api_equivalent_usd": 0.5658957740000004,
+      "explicitly_owned_attempts": 853,
+      "ambiguous_attempts": 14,
+      "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-ordinary-numeric-confirmation-2026-11-03/run-receipt.json"
     }
   },
   "decisions": [
@@ -2773,6 +2783,23 @@
         "artifacts/agere-focused-verifier-comparison-2026-11-03/delivery-receipt.json"
       ],
       "scope_impact": "Alltenareas retained; historical interpretations remain invalidated for new work and exact for inspection. No clinical/model qualification, thresholds or whole-cohort rerun."
+    },
+    {
+      "at": "2026-11-03T11:13:00.946248+00:00",
+      "gate": "G3",
+      "decision": "Repair observed executed-contract omission before more whole-question calls.",
+      "basis": "Ordinary HTTP run returns exact795rows/counts/amounts in208.519s and867validated attempts, but final missing entry claims nativeSQL cannot be inspected. Compiled catalog omits every successful executed_query; two regression cases reproduce omission.",
+      "scope_impact": "Existingexecutionstate only; no source, thresholds, clinicalclaims, newmodel or arbitrarycaps."
+    },
+    {
+      "at": "2026-11-03T11:31:35.117624+00:00",
+      "gate": "G3",
+      "decision": "Select compact executed-contract/completeness repair; diagnose newly observed cost ownership gap before further paid campaign.",
+      "basis": "Exact 795-row ordinary result failed completeness; compiled SQL omission reproduced and repaired. Expanded portable-SQL candidate rejected for excessive input/cost. Telemetry leaves 14 of 867 observed attempts without an explicit question owner.",
+      "evidence": [
+        "artifacts/agere-executed-contract-context-2026-11-03/delivery-receipt.json"
+      ],
+      "scope_impact": "All ten areas retained. No answer relabeling, automatic ownership backfill, clinical promotion, threshold change, whole-cohort rerun or source mutation."
     }
   ],
   "unsealed_work": null,
@@ -2803,7 +2830,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Run one normal application request for the original provider-claims numeric question on candidate168ae81, retaining the automatic route, exact provider-only/year scope, native results, all attempts, total cost and latency. If qualified execution reuse answers it, report that actual route; do not mislabel it as investigator evidence or force frontier calls for appearance. If investigation is needed, verify the measured progress/source corrections and stop only on an observed failure or service limit, not an invented call cap. Do not rerun the full clinical cohort or restamp historical answers as fresh inference. Then assess the remaining clinical source-reading uncertainty using retained dependencies and targeted evidence. Preserve all ten areas and active quiet continuation.",
+  "next_action": "Diagnose the 14 unowned attempts in the retained ordinary numeric run before another paid campaign. Reproduce the responsible worker boundary with isolated real-ledger fixtures, preserve provider request/model identity, and require two concurrent questions to own their new attempts exactly without stealing cache reuse. spec_verify.verify currently converts the ledger to a plain string and dispatches unwrapped workers; this is a hypothesis until linked to the retained attempts. Do not retrospectively tag old rows or infer ownership from a time window. Then use retained native dependencies to reduce repetitive numeric verification and target the clinical source-reading uncertainties with current Jev/Perplexity. No whole-cohort replay, forced model participation, threshold relaxation or new training campaign.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2812,5 +2839,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T10:55:59.589172+00:00"
+  "latest_checkpoint": "2026-11-03T11:31:35.117624+00:00"
 }
