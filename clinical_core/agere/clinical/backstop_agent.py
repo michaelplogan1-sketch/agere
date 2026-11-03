@@ -1680,7 +1680,105 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             result[-1]['native_timing_compatibility']={'schema':'native-query-timing-cache/1',
                 'current_fingerprint':digest(packet),'legacy_fingerprint':digest(legacy),
                 'bindings':timing_bindings,'legacy_text':legacy_text}
+    mark_native_numeric_fidelity(result,answer,calls,document_reviews)
     return result
+
+
+def native_numeric_aggregate_shape(query,columns):
+    """Qualify arithmetic projections, not integer-encoded classifications.
+
+    SQL lineage must resolve patient identity directly and every value through
+    an aggregate. General predicates, clinical flags, unknown functions and
+    unresolved lineage retain typed review. NULL counters are arithmetic.
+    """
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.lineage import lineage
+    aggregates=(exp.Count,exp.Sum,exp.Avg,exp.Min,exp.Max)
+    ordinary=(exp.Alias,exp.Column,exp.Identifier,exp.Star,exp.Distinct,
+              exp.Add,exp.Sub,exp.Mul,exp.Div,exp.Mod,exp.Neg,exp.Paren)
+    def expression_ok(node,identity=False):
+        if isinstance(node,exp.Table):return True
+        if isinstance(node,exp.Case):
+            branches=node.args.get('ifs')or[];default=node.args.get('default')
+            if identity or node.args.get('this')or len(branches)!=1:return False
+            condition=branches[0].this;value=branches[0].args.get('true')
+            return (isinstance(condition,exp.Is)and isinstance(condition.this,exp.Column)and
+                    isinstance(condition.expression,exp.Null)and isinstance(value,exp.Literal)and
+                    not value.is_string and value.this=='1'and isinstance(default,exp.Literal)and
+                    not default.is_string and default.this=='0')
+        if isinstance(node,exp.Literal):return not identity and not node.is_string
+        allowed=(exp.Alias,exp.Column,exp.Identifier)if identity else ordinary+aggregates
+        return isinstance(node,allowed)and all(expression_ok(child,identity)for child in node.iter_expressions())
+    try:
+        graph=lineage(None,query,schema={},dialect='sqlite')
+        for column in columns:
+            if column not in graph:return False
+            nodes=list(graph[column].walk());identity=column=='patient_id'
+            if not all(expression_ok(node.expression,identity)for node in nodes):return False
+            if not identity and not any(isinstance(item,aggregates)for node in nodes for item in node.expression.walk()):return False
+        return 'patient_id'in columns and len(columns)>1
+    except (sqlglot.errors.SqlglotError,ValueError,TypeError,KeyError,RecursionError):
+        return False
+
+
+def mark_native_numeric_fidelity(packets,answer,calls,document_reviews):
+    """Attest exact numeric SQL cells; global review still owns their meaning.
+
+    Keep every packet, claim, source contract and model input unchanged. Only
+    native bookkeeping is added outside provider text. Mixed/documentary,
+    boolean, incomplete and unbound tables retain their original review.
+    """
+    from ...contracts import digest
+    from .result_assembly import incomplete_reason
+    table=answer.get('table')
+    root=answer.get('table_from_tool')
+    if document_reviews or not root or not table or not isinstance(table,list):return
+    if any(not isinstance(row,dict)or not isinstance(row.get('patient_id'),str)or not row['patient_id']or
+           not any(k!='patient_id'for k in row)or any(
+               value is not None and (type(value)not in(int,float)or type(value)is float and not math.isfinite(value))
+               for key,value in row.items()if key!='patient_id')for row in table):return
+    dependencies=native_result_dependencies(calls,[root])
+    if not dependencies:return
+    selected=[c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')in dependencies]
+    if len(selected)!=len(dependencies):return
+    receipts={}
+    for call in selected:
+        result=call['result'];source=result.get('source_contracts')
+        if(call.get('name')!='query_sql'or result.get('error')or incomplete_reason(result)or
+           result.get('native_sql_contract')!=NATIVE_SQL_CONTRACT or
+           not isinstance(result.get('executed_query'),str)or not result['executed_query'].strip()or
+           not isinstance(source,dict)or not source.get('source_digest')or
+           not packets or source.get('as_of')!=packets[0].get('date')):return
+        receipts[result['result_view']]=digest(result)
+    result=next(c['result']for c in selected if c['result']['result_view']==root)
+    columns,rows=output_table(result)
+    if not native_numeric_aggregate_shape(result['executed_query'],columns):return
+    if table!=[dict(zip(columns,row))for row in rows]:return
+    if type(result.get('table_rows'))is int and result['table_rows']!=len(rows):return
+    summary=next((p for p in packets if p['id']=='summary'),None)
+    if not summary or summary.get('dependency_complete')is False:return
+    common={'schema':'native-numeric-fidelity/1','root_result_view':root,'rows':len(table),
+            'columns':columns,'table_digest':digest(table),'native_receipt_digests':receipts,
+            'summary_packet_sha256':hashlib.sha256(summary['text'].encode()).hexdigest(),
+            'scope':'Exact native numeric cell fidelity only. Global typed review must establish requested source, period, population, unit, denominator and interpretation.'}
+    for packet in packets:
+        if packet['id']=='summary' or not packet.get('patient_dependency_bound'):continue
+        packet['native_numeric_fidelity']={**common,'packet_id':packet['id'],
+            'patient_id':packet['source_dependency_patient_id'],
+            'claim_manifest_digest':digest(packet['claim_manifest']),
+            'packet_sha256':hashlib.sha256(packet['text'].encode()).hexdigest()}
+
+
+def native_numeric_fidelity_valid(packet,summary):
+    """Reject changed packet/source/meaning inputs instead of reusing a proof."""
+    from ...contracts import digest
+    proof=packet.get('native_numeric_fidelity')
+    return bool(isinstance(proof,dict)and proof.get('schema')=='native-numeric-fidelity/1'and summary and
+        proof.get('packet_id')==packet.get('id')and proof.get('patient_id')==packet.get('source_dependency_patient_id')and
+        proof.get('claim_manifest_digest')==digest(packet.get('claim_manifest'))and
+        proof.get('packet_sha256')==hashlib.sha256(packet['text'].encode()).hexdigest()and
+        proof.get('summary_packet_sha256')==hashlib.sha256(summary['text'].encode()).hexdigest())
 
 
 def source_packet_family(packet,by_id):
@@ -1773,6 +1871,12 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         if packet.get('source_context_complete')is False:
             return {**identity,'label':'unknown','decided_by':None,
                 'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'},steps
+        global_result=observed.get(0,({},[]))[0]
+        if(scheduled and scheduled[0]['id']=='summary'and global_result.get('label')=='supported'and
+           global_result.get('decided_by')and native_numeric_fidelity_valid(packet,by_id.get('summary'))):
+            return {**identity,'label':'supported','decided_by':'native_numeric_table_fidelity',
+                'semantic_dependency_packet_id':'summary',
+                'reason':'All reported numeric cells exactly match complete executed SQL. The separately supported global packet retains every row and establishes source/domain/time/unit/interpretation; no clinical truth is inferred from arithmetic.'},steps
         oversized=packet['bytes']>240000
         # The configured Jev gateway already supports the documented 262k-token
         # mode. Its encoder enforces the actual 32MiB request-body boundary;
