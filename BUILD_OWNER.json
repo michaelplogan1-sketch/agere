@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-11-03T13:42:49.354204+00:00",
+  "latest_checkpoint": "2026-11-03T13:59:13.795767+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
@@ -37,7 +37,9 @@
     "server_pid": 13852,
     "source_frozen": true,
     "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-    "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+    "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
+    "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
+    "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
@@ -58,7 +60,7 @@
     "new_provider_request_not_yet_submitted": true,
     "session": 98541,
     "health": "ready",
-    "source_frozen": false,
+    "source_frozen": true,
     "acceptance_receipt": "artifacts/agere-combined-dependency-2026-11-03/delivery-receipt.json",
     "process_receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-source-tuples-2026-11-03/current-app/server-process.json",
     "acceptance": "111tests, exact native57row composition and HTTP preservation; not full clinical qualification."
@@ -309,7 +311,9 @@
       "server_pid": 13852,
       "source_frozen": true,
       "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
+      "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
+      "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
     }
   ],
   "overnight_completed_jobs": {
@@ -452,7 +456,7 @@
     "schema": "source-reference-tuple-app/1",
     "status": "ready",
     "at": "2026-11-03T13:33:44.109311+00:00",
-    "source_frozen": false,
+    "source_frozen": true,
     "primary_changed": false,
     "scheduler_status": "ACTIVE",
     "acceptance": "Scoped native source-reference engineering; historical ordinary answers remain versioned.",
@@ -468,6 +472,6 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T13:42:49.354204+00:00",
+  "updated_at": "2026-11-03T13:59:13.795767+00:00",
   "last_commit": "bc3b256b4d5fa6c2ccd67e8f99d6cfe517ff7d9d"
 }

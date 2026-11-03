@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T13:42:49.354204+00:00",
+  "updated_at": "2026-11-03T13:59:13.795767+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -488,7 +488,7 @@
     "remaining_gap": "The selected affected dependency is now supported by the unchanged machine verification contract, but the original57patient/522field-uncertainty result remains a historical partial answer. Unaffected prior findings were reused with their original provenance; this was not a fresh whole-cohort reader run. One current ordinary clinical confirmation is now justified. Broader ordinary transfer/current release acceptance, independent clinical/model qualification and complete economics remain open; deployment is separate. All ten areas remain retained.",
     "next_action": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "Source frozen during owned current clinical confirmation PID14100/session47934. No duplicate dispatch.",
+    "coordination": "Owned ordinary clinical confirmation PID14100/session47934 continues; source frozen; no duplicate. Live status in latest-observation.json.",
     "remaining_blockers": [
       "The selected affected dependency is now supported by the unchanged machine verification contract, but the original57patient/522field-uncertainty result remains a historical partial answer. Unaffected prior findings were reused with their original provenance; this was not a fresh whole-cohort reader run. One current ordinary clinical confirmation is now justified. Broader ordinary transfer/current release acceptance, independent clinical/model qualification and complete economics remain open; deployment is separate. All ten areas remain retained."
     ],
@@ -542,7 +542,9 @@
       "server_pid": 13852,
       "source_frozen": true,
       "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
+      "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
+      "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
     },
     "bottling_assessment": {
       "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
@@ -613,7 +615,9 @@
         "server_pid": 13852,
         "source_frozen": true,
         "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-        "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+        "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
+        "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
+        "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
       }
     ],
     "previous_finite_completion": {
@@ -2974,7 +2978,9 @@
     "server_pid": 13852,
     "source_frozen": true,
     "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-    "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+    "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
+    "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
+    "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3011,7 +3017,9 @@
       "server_pid": 13852,
       "source_frozen": true,
       "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
+      "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
+      "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
     }
   ],
   "next_action": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
@@ -3023,5 +3031,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T13:42:49.354204+00:00"
+  "latest_checkpoint": "2026-11-03T13:59:13.795767+00:00"
 }
