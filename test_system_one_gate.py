@@ -114,6 +114,17 @@ class Checker(unittest.TestCase):
         fake.decide=unsettled
         with clean_env(),use(fake):out=G.check('q',GRAPH,RESULT,stack=LIVE)
         self.assertEqual(out['provider'],'jev');self.assertIsNone(out['decided_by'])
+        self.assertFalse(out['reject'])
+
+    def test_unsettled_different_question_vote_cannot_reject(self):
+        mod=FakeS1('answers_a_different_question',.95)
+        original=mod.decide
+        def undecided(*args,**kwargs):
+            value=original(*args,**kwargs);value['decided_by']=None;return value
+        with patch.object(G,'s1',return_value=mod),patch.object(mod,'decide',side_effect=undecided):
+            out=G.check('q',GRAPH,RESULT,stack=LIVE)
+        self.assertEqual(out['label'],'answers_a_different_question')
+        self.assertIsNone(out['decided_by']);self.assertFalse(out['reject'])
 
 
 class CheckHook(unittest.TestCase):

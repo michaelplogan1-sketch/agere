@@ -247,7 +247,7 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     label = out.get('label') or 'unknown'
     p = float(probs.get(label, 0.0))
     calls, usd = cost(out)
-    reject = label == 'answers_a_different_question' and p >= reject_threshold()
+    reject = bool(out.get('decided_by')) and label == 'answers_a_different_question' and p >= reject_threshold()
     provider = out.get('decided_by') or out.get('provider')
     reasons = [f"System One ({provider}) judged the executed plan {label.replace('_', ' ')} (p={p:.2f})"]
     return {'addresses_question': round(float(probs.get('answers_fully', 0.0)) + float(probs.get('answers_partially', 0.0)), 4),
@@ -269,7 +269,7 @@ def apply_check(stack, question, graph, verdict, *, ledger=None):
         verdict['annotations'].append(f'system_one_check failed: {type(exc).__name__}: {exc}'[:300]); return None
     verdict['cost']['new_paid_api_calls'] += out['calls']
     verdict['cost']['usd'] += out['cost_usd']
-    verdict['system_one'] = {k: out[k] for k in ('label', 'p', 'addresses_question', 'provider', 'cost_usd', 'cache_hit', 'version')}
+    verdict['system_one'] = {k: out.get(k) for k in ('label', 'p', 'addresses_question', 'provider', 'decided_by', 'cost_usd', 'cache_hit', 'version')}
     if out['reject']:
         verdict['accept'] = False
         verdict['reasons'].append('System One check: ' + out['reasons'][0] + '; the next proposer tries')

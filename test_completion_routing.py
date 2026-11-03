@@ -50,8 +50,56 @@ class CompletionRouting(unittest.TestCase):
                 out,count,_=self.review(decided=decided,p=p)
                 self.assertEqual(count,1)
                 self.assertNotEqual(out.get('repair_kind'),'incomplete_coverage')
-                self.assertNotEqual(out.get('repair_kind'),'unresolved_verification')
+                self.assertEqual(out.get('repair_kind')=='unresolved_verification',decided is None)
                 self.assertNotEqual(out['status'],'confirmed')
+
+    def test_undecided_coverage_does_not_claim_missing_work_or_complete_acceptance(self):
+        supported={'label':'supported','decided_by':'fixture','steps':[],
+                   'packets':[{'id':'patient_A','label':'supported','decided_by':'fixture'}]}
+        for label in G.CHECK_OPTIONS:
+            with self.subTest(label=label):
+                out,count,_=self.review(label,decided=None,support=supported)
+                self.assertEqual(count,1)
+                self.assertEqual(out['status'],'repair')
+                self.assertEqual(out['repair_kind'],'unresolved_verification')
+                self.assertEqual(out['progress_state'],{'coverage':'unknown','unresolved_verification':[]})
+                self.assertIn('establishes neither',out['feedback'])
+                self.assertNotIn('supply the missing results',out['feedback'])
+
+    def test_undecided_coverage_cannot_hide_a_located_source_fault(self):
+        bad={'label':'contradicted','decided_by':'fixture','steps':[],
+             'failed_packet_ids':['patient_A'],'packets':[{'id':'patient_A','label':'contradicted','decided_by':'fixture'}]}
+        out,count,_=self.review(decided=None,support=bad)
+        self.assertEqual(count,1)
+        self.assertNotEqual(out.get('repair_kind'),'unresolved_verification')
+        self.assertIn('Evidence check: contradicted',out['feedback'])
+
+    def test_uncertain_coverage_and_source_outage_do_not_request_a_rewrite(self):
+        unavailable={'label':'unknown','decided_by':None,'steps':[{'provider':'fixture','status':'error'}],
+                     'packets':[{'id':'patient_A','label':None,'decided_by':None}]}
+        out,count,_=self.review(decided=None,support=unavailable)
+        self.assertEqual(count,1)
+        self.assertEqual(out['status'],'unavailable')
+        self.assertIsNone(out['feedback'])
+        self.assertIn('unavailable',out['reason'])
+
+    def test_coverage_probability_churn_cannot_force_more_rewrites(self):
+        assessments=[self.review(label,decided=None,p=p)[0] for label,p in
+                     [('answers_partially',.68),('answers_a_different_question',.57)]]
+        self.assertEqual(assessments[0]['progress_state'],assessments[1]['progress_state'])
+        sent=[];reviews=iter(assessments)
+        def send(body):
+            sent.append(body)
+            return {'content':[{'type':'text','text':json.dumps({**self.answer,'headline':'Draft '+str(len(sent))})}]},.001,False
+        out=S.tool_loop('Explain each patient.',[],[],lambda use:self.fail('Unexpected new source acquisition'),
+            send=send,model=M.HAIKU,escalation_model=M.SONNET,max_tools=None,initial_calls=self.calls,
+            review=lambda a,c:next(reviews))
+        self.assertEqual(len(sent),2)
+        self.assertEqual(out['review_stopped'],'no_progress')
+        self.assertEqual(out['answer']['status'],'partial')
+        self.assertEqual(out['answer']['verification'],'unverified')
+        self.assertFalse(out.get('model_escalations'))
+        self.assertEqual(out['tool_calls'],self.calls)
 
     def test_complete_unknown_answer_receives_support_and_preserves_uncertainty(self):
         out,count,_=self.review('answers_fully')

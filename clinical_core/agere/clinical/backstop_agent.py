@@ -1471,8 +1471,16 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                           'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked',
                           'blocked_family_ids','global_stop')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
-        if coverage['label'] in ('answers_partially', 'answers_a_different_question'):
+        if coverage.get('decided_by') and coverage['label'] in ('answers_partially', 'answers_a_different_question'):
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
+        elif not coverage.get('decided_by') or coverage['label']=='unknown':
+            if (support.get('decided_by') or support.get('claim_feedback')
+                    or any(s.get('status')in ('answered','partial')for s in support.get('steps',[]))):
+                feedback.append('Coverage verification remains unresolved. The recorded vote establishes neither complete '
+                    'coverage nor missing requested work. Inspect the original request against the retained outputs; repair '
+                    'a concrete omission if found. Rewording the answer alone does not settle this check.')
+            else:
+                assessment['reason']='Coverage and source verification remain unavailable; no rewrite is requested without an observed defect.'
         if support.get('label') in ('contradicted', 'not_established'):
             feedback.append('Evidence check: ' + support['label'].replace('_', ' ') + ' in '+str(support.get('failed_packet_ids',[]))+'. Recheck each claim against its own computed rows or document context; correct unsupported claims and compute numbers in tools.')
         elif support.get('label')!='supported' or not support.get('decided_by'):
@@ -1485,7 +1493,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             feedback.append('Targeted claim/source repairs: '+json.dumps(support['claim_feedback'])+'. Repair only the named field/source dependencies; retain unaffected native work and supported unknowns. Unknown feedback names an unresolved dependency, not a proven source fault.')
         numeric_unknown=any(not r.get('decided_by') for r in numeric.get('judgments',{}).values())
         if numeric_unknown:assessment['reason']='One or more quantitative field-meaning checks remain uncertain or unavailable'
-        confirmed = coverage['label'] == 'answers_fully' and support.get('label') == 'supported' and bool(support.get('decided_by')) and not feedback and not numeric_unknown
+        confirmed = coverage['label'] == 'answers_fully' and bool(coverage.get('decided_by')) and support.get('label') == 'supported' and bool(support.get('decided_by')) and not feedback and not numeric_unknown
         assessment['status'] = 'confirmed' if confirmed else 'repair' if feedback else 'unavailable'
         indeterminate=verification_repair_state(coverage,support)
         if assessment['status']=='repair'and indeterminate is not None and not numeric_unknown:
@@ -1507,12 +1515,21 @@ def unresolved_support_bindings(support,packets):
 
 def verification_repair_state(coverage,support):
     """Uncertain checks without a located fault justify investigation, not a stronger actor by default."""
+    from . import system_one_gate as gate
     packets=support.get('packets')or[]
     pending=[p for p in packets if p.get('label')!='supported'or not p.get('decided_by')]
-    # Missing requested work needs composition repair even when other claims
-    # have uncertain support. Only complete coverage can be uncertainty-only.
-    if(coverage.get('label')!='answers_fully'or support.get('label')!='unknown'
-       or support.get('failed_packet_ids')or not pending
+    # An explicit undecided coverage vote is an unresolved check, not proof of
+    # missing work. Legacy receipts without authority metadata remain strict:
+    # their partial/different labels cannot acquire a new uncertainty exemption.
+    coverage_unknown=('decided_by'in coverage and not coverage['decided_by']
+                      and coverage.get('label')in gate.CHECK_OPTIONS)
+    if(not coverage_unknown and coverage.get('label')!='answers_fully'):
+        return None
+    supported=support.get('label')=='supported'and bool(support.get('decided_by'))
+    if(support.get('label')!='unknown'and not supported
+       or supported and pending
+       or not coverage_unknown and not pending
+       or support.get('failed_packet_ids')
        or any(not isinstance(p.get('id'),str)or p.get('label')not in SUPPORT_OPTIONS
               or p.get('decided_by')and p.get('label')!='supported'for p in packets)):
         return None
@@ -1543,7 +1560,7 @@ def verification_repair_state(coverage,support):
             key=(pid,claim)
             if key in fields and fields[key]!=binding:return None
             fields[key]=binding
-    state={'coverage':coverage['label'],'unresolved_verification':sorted(
+    state={'coverage':'unknown'if coverage_unknown else coverage['label'],'unresolved_verification':sorted(
         [{'id':p['id'],'label':p.get('label')if p.get('decided_by')else'unknown'}for p in pending],key=lambda p:p['id'])}
     if fields:
         from ...contracts import digest
