@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T10:25:19.084808+00:00",
+  "updated_at": "2026-11-03T10:55:59.589172+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -386,6 +386,10 @@
         {
           "path": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
           "sha256": "a0bb83fe7e53ca57f7438ae191f1f37a6eec3e5a3a36c143086bad1ef757d040"
+        },
+        {
+          "path": "artifacts/agere-focused-verifier-comparison-2026-11-03/delivery-receipt.json",
+          "sha256": "8ca3fdddcbf9dfc316d6e57a1fec756bfd8feabbc678dcd76e1f98a1cf5fc3a4"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -472,27 +476,25 @@
     }
   ],
   "checkpoint": {
-    "kind": "verifier_final_native_dependency_scope",
+    "kind": "focused_verifier_comparison_and_candidate_selection",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Candidate patient verification receives the final native dependency closure while retaining documents, source reviews and unknown lineage.",
-    "measured_failure_reduction": "795/795 numeric packets previously included unrelated payer contracts; current final dependency packets remove those contracts and reduce patient bytes by73.56%. All requested fields and original57-patient clinical contexts remain exact.",
+    "user_behavior_delta": "Both typed verifiers receive final-dependency patient evidence; prior exploratory payer calculations no longer pollute provider-only numeric claims. Selected the tested investigator/source/projection candidate in owned8890.",
+    "measured_failure_reduction": "Jev accepted retained positives0/3 before versus3/3 after; Perplexity explicit mutation faults1/4 before versus4/4 after. Both current arms accepted3/3 retained positives and explicitly rejected4/4 authored errors; neither accepted any authored error in either arm.",
     "evidence": [
-      "artifacts/agere-verifier-dependency-scope-2026-11-03/delivery-receipt.json",
-      "docs/agere/VERIFIER_DEPENDENCY_SCOPE_2026-11-03.md"
+      "artifacts/agere-focused-verifier-comparison-2026-11-03/delivery-receipt.json",
+      "docs/agere/FOCUSED_VERIFIER_COMPARISON_2026-11-03.md"
     ],
-    "remaining_gap": "Current packet correction is an engineering candidate; no live verifier quality/cost or whole-workflow speedup is established. Owned8890 remains22c8c27. Original clinical result remains partial with522 unresolved field judgments; independent qualification and full MVP acceptance remain open.",
-    "next_action": "Prepare one focused verifier comparison using retained source-bound numeric packets and authored wrong-source, amount, date and unsupported-clinical-claim mutations. Compare the previous and current packet projections through the existing typed verifier without changing thresholds, using all-attempt accounting. Do not rerun the whole clinical cohort. Only select the candidate in8890 if the targeted evidence supports it; preserve genuine uncertainty and all ten acceptance areas. Inspect active receipts first, avoid duplicate dispatch and keep continuation ACTIVE with routine notifications muted.",
+    "remaining_gap": "The focused numeric verifier comparison passes, but no current ordinary whole-question performance confirmation or complete clinical acceptance is established. Historical57-patient and12-row contexts remain exact and inspectable, explicitly invalidated for new work under the changed planner policy; no inference was rebound. Original clinical answer is partial with522 unresolved field judgments. Independent clinical/model qualification and customer-deployment prerequisites remain separate; OWASP/HHS deferred.",
+    "next_action": "Run one normal application request for the original provider-claims numeric question on candidate168ae81, retaining the automatic route, exact provider-only/year scope, native results, all attempts, total cost and latency. If qualified execution reuse answers it, report that actual route; do not mislabel it as investigator evidence or force frontier calls for appearance. If investigation is needed, verify the measured progress/source corrections and stop only on an observed failure or service limit, not an invented call cap. Do not rerun the full clinical cohort or restamp historical answers as fresh inference. Then assess the remaining clinical source-reading uncertainty using retained dependencies and targeted evidence. Preserve all ten areas and active quiet continuation.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "No provider/training/frozen job. Continuation ACTIVE with routine notifications muted. Owned8890 remains22c8c27.",
+    "coordination": "No provider/training/frozen job. Owned8890PID5728/session12656 at168ae81; quiet continuation ACTIVE.",
     "remaining_blockers": [
-      "Original57-patient clinical answer remains partial with522 unresolved field judgments; independent source-family/clinical/model qualification remains open.",
-      "Both full-investigator attempts were interrupted; no successful complete investigator comparison, equal-quality break-even, whole-clinical speedup or all-in cost is established.",
-      "Owned8890 remains22c8c27; candidate735f1a6 has141distinct affected checks and retained native workflow proof, awaiting focused continuation assessment before runtime selection.",
-      "No new weights or partial clinical whole-answer bottle; customer deployment/outcome qualification remains separate; OWASP/HHS deferred."
+      "The focused numeric verifier comparison passes, but no current ordinary whole-question performance confirmation or complete clinical acceptance is established. Historical57-patient and12-row contexts remain exact and inspectable, explicitly invalidated for new work under the changed planner policy; no inference was rebound. Original clinical answer is partial with522 unresolved field judgments. Independent clinical/model qualification and customer-deployment prerequisites remain separate; OWASP/HHS deferred.",
+      "No successful complete investigator comparison, broad clinical qualification or measured full-workflow improvement yet."
     ],
-    "latest_progress": "36affectedchecks,current57patient/12rowanswerreopens,zero newcohortexports/providers.",
-    "results_report": "docs/agere/VERIFIER_DEPENDENCY_SCOPE_2026-11-03.md",
+    "latest_progress": "28case/provider/projection observations,47validated attempts; both current arms3/3positive and4/4explicit fault. Owned8890candidate168ae81 ready; exact historicalHTTPinspection.",
+    "results_report": "docs/agere/FOCUSED_VERIFIER_COMPARISON_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -521,13 +523,13 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Priorcurrenta32a2c5nine-of-ninealltenareas/recovery; scoped22c8c27on-demandexportcorrection with36checks andexactHTTPanswers.",
+      "current_engineering": "Prior a32a2c5nine-of-nine release remains versioned; scoped168ae81projection/progress/source fixes now locally selected with focused typed-verifier evidence.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json"
+      "evidence": "artifacts/agere-focused-verifier-comparison-2026-11-03/delivery-receipt.json"
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "Both live attempts interrupted; all5906newattempts retained. No live comparison pass.",
@@ -2762,6 +2764,15 @@
       "at": "2026-11-03T10:18:56.706541+00:00",
       "decision": "Restore recurring continuation without routine notifications after Mike reaffirmed uninterrupted work.",
       "scope_impact": "No product scope or provider authorization change; existing owned-job/frozen-source guards remain required."
+    },
+    {
+      "at": "2026-11-03T10:55:59.589172+00:00",
+      "gate": "G3",
+      "decision": "Select candidate168ae81 in owned8890 after the planned source-packet comparison passes; next verify one ordinary numeric question without forcing model participation.",
+      "evidence": [
+        "artifacts/agere-focused-verifier-comparison-2026-11-03/delivery-receipt.json"
+      ],
+      "scope_impact": "Alltenareas retained; historical interpretations remain invalidated for new work and exact for inspection. No clinical/model qualification, thresholds or whole-cohort rerun."
     }
   ],
   "unsealed_work": null,
@@ -2792,7 +2803,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Prepare one focused verifier comparison using retained source-bound numeric packets and authored wrong-source, amount, date and unsupported-clinical-claim mutations. Compare the previous and current packet projections through the existing typed verifier without changing thresholds, using all-attempt accounting. Do not rerun the whole clinical cohort. Only select the candidate in8890 if the targeted evidence supports it; preserve genuine uncertainty and all ten acceptance areas. Inspect active receipts first, avoid duplicate dispatch and keep continuation ACTIVE with routine notifications muted.",
+  "next_action": "Run one normal application request for the original provider-claims numeric question on candidate168ae81, retaining the automatic route, exact provider-only/year scope, native results, all attempts, total cost and latency. If qualified execution reuse answers it, report that actual route; do not mislabel it as investigator evidence or force frontier calls for appearance. If investigation is needed, verify the measured progress/source corrections and stop only on an observed failure or service limit, not an invented call cap. Do not rerun the full clinical cohort or restamp historical answers as fresh inference. Then assess the remaining clinical source-reading uncertainty using retained dependencies and targeted evidence. Preserve all ten areas and active quiet continuation.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2801,5 +2812,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T10:25:19.084808+00:00"
+  "latest_checkpoint": "2026-11-03T10:55:59.589172+00:00"
 }
