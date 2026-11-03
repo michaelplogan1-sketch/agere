@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T21:36:49.139801+00:00",
+  "updated_at": "2026-11-03T21:43:50.278164+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -3366,26 +3366,27 @@
     "post_style": "Percentage-first paired benchmark, followed by the separate rich clinical replay. Raw values retained; caveat paragraphs removed. API-equivalent cost labeled."
   },
   "latest_presentation_update": {
-    "at": "2026-11-03T21:36:49.139801+00:00",
-    "request": "Redesign the follow-up visual as a polished engineering schematic.",
-    "visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-bottling-schematic.png",
-    "prompts": [
-      "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-schematic-prompt.txt",
-      "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-schematic-correction-prompt.txt"
+    "at": "2026-11-03T21:43:50.278164+00:00",
+    "request": "Create one 1970s arcade and one 1990s version of the engineering visual.",
+    "variants": [
+      {
+        "style": "1970s arcade",
+        "visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-bottling-1970s-arcade.png",
+        "prompt": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/1970s-arcade-prompt.txt",
+        "sha256": "f94ae5d4d096719eaf37dd0a30f6efb6c49649bdc89b052df20f60a9a60d6453"
+      },
+      {
+        "style": "1990s computing",
+        "visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-bottling-1990s-computing.png",
+        "prompt": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/1990s-computing-prompt.txt",
+        "sha256": "7b1ef7ca34443635a0c3152d01a91594060e613e33c02082977b4444cb0d7114"
+      }
     ],
     "tool": "built-in image_gen",
-    "sha256": "cd66390cfd1b1ca6d8329ae10b3fa0d268d4649c44c9a6996ff18dc3534855b3",
+    "verification": "Both inspected: measured values and API-equivalent labels exact; qualified/new routes converge on verification; only validated promotion reaches reusable library; repair returns to candidate.",
     "measurement_source": "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json",
-    "scope": "Same verified 795-patient pair; no new performance experiment.",
-    "visual_checks": [
-      "Exact time/cost percentages and values preserved",
-      "API-equivalent cost and synthetic warehouse labeled",
-      "Reuse and new-work routes both reach source-bound verification",
-      "Only validated post-test promotion enters the workflow library",
-      "Repair returns to candidate construction"
-    ],
     "product_edits": false,
     "published": false,
-    "new_model_training": false
+    "new_provider_evaluation": false
   }
 }

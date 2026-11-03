@@ -1,4 +1,4 @@
-# Current Agere checkpoint — 2026-11-03T21:36:49.139801+00:00
+# Current Agere checkpoint — 2026-11-03T21:43:50.278164+00:00
 
 G3 ACTIVE. Mike requested a harder bottling question; its first ordinary run failed qualification. No new product release or selected bottle. Last sealed engineering delivery remains `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`. Earlier795-row reuse result retains only its original scope.
 
@@ -23,6 +23,8 @@ Latest human presentation request: percentage reductions lead the post; remove c
 Latest requested visual now combines the measured795patient paired savings (99.8%lower API-equivalent cost;94.7%less time), native/small-model/frontier routing, bottled executable workflows and the recursive improvement loop (outcomes,candidates,quality/cost tests,promotion/rollback,reuse). Saved at`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/savings-stack-recursive-improvement.png`; prompt/receipt beside it. No productcode, provider evaluation, model activation or publication; G3 exact next action and alltenareas unchanged.
 
 Human requested a stronger engineering visual for the LinkedIn follow-up. Final dark schematic:`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-bottling-schematic.png`. Retains exact795patient benchmark metrics; guarded reuse/new-work paths converge at verification; feedback library activation follows testing/promotion. Initial arrow error corrected and draft preserved. No provider evaluation, model change, productcode change, publication or gate progress. G3 harder-question repair remains exact next action.
+
+User-requested1970s arcade and1990s computing visual variants completed, inspected and saved beside the engineering schematic at`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03`. All measured facts and validated-library flow retained. Prompts/receipt retained. No product/provider/model changes, publication or gate progress; G3 next action unchanged.
 
 # Historical checkpoints
 
