@@ -128,3 +128,9 @@ The checkpoint semantic file has a different raw hash and timestamp. An exhausti
 The clinical answer remains **partial/unverified:55of61 source packets supported, six unresolved, coverage undecided**. Engineering progress has not established clinical accuracy, superiority, useful prediction-model qualification or customer deployment readiness. The remaining engineering focus is repeated clinical planning/source work and a fair simpler-route cost/latency comparison. The canonical control file contains the exact next action.
 
 Evidence: `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`.
+
+## Research highlight requested by Mike — November 3
+
+Preserve the ordinary seven-action numeric execution reuse pair as an important candidate case study. Mike supplied `/Users/mikel/Desktop/bottling.pdf`; its title, authors, version and relevant text match [Sonthalia et al., *Agent in a Bottle*, arXiv:2610.08775v1](https://arxiv.org/abs/2610.08775v1). The [study brief](WOLLSTONECRAFT_BOTTLING_STUDY_BRIEF_2026-11-03.md) links the paper's amortization idea to the measured procedure, preserves the one-pair scope and all-attempt accounting, and specifies the comparison needed for stronger claims. A requested visual quotes the paper and labels our measurements separately. The image and its provenance are at `artifacts/wollstonecraft-bottling-study-2026-11-03/`; [generation record](WOLLSTONECRAFT_BOTTLING_VISUAL_PROMPT_2026-11-03.md).
+
+This is documentation and research communication, with no additional product result, provider evaluation, weight change or clinical promotion. The last sealed delivery, G3 next action and all ten acceptance areas remain unchanged. Future study work is a proposal, not a newly dispatched campaign.

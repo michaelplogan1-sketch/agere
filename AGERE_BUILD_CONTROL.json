@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T19:43:36.988190+00:00",
+  "updated_at": "2026-11-03T20:00:49.428959+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -3253,5 +3253,15 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T19:43:36.988190+00:00"
+  "latest_checkpoint": "2026-11-03T19:43:36.988190+00:00",
+  "research_highlight": {
+    "at": "2026-11-03T20:00:49.428959+00:00",
+    "importance": "User-requested important finding for a case study and visual",
+    "brief": "docs/agere/WOLLSTONECRAFT_BOTTLING_STUDY_BRIEF_2026-11-03.md",
+    "evidence": "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json",
+    "provenance": "artifacts/wollstonecraft-bottling-study-2026-11-03/provenance.json",
+    "durable_visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-bottling-study-2026-11-03/bottling-execution-reuse.png",
+    "research": "https://arxiv.org/abs/2610.08775v1",
+    "scope": "Exact-question guarded execution reuse, one warm pair; follow-up study proposed. Product gate, owner receipt and next action unchanged."
+  }
 }

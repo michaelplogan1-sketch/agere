@@ -14,6 +14,8 @@ Exact next: G3: close the remaining clinical routing/economics gap, using retain
 
 Preserve November2principalreview/October11baseline, alltenareas and source/all-attempt accounting. No agents/chats/protectedkeys/heldoutcorpus/generatortruth/Documents research/employeraccess/newservices/externalAnthropicAPI/mainmerge/publication/contact/realcare. Synthetic/provider/privatepush approvals persist. Deliverablesonlyrequested; OWASP/HHSdeferred.
 
+Requested research highlight: `docs/agere/WOLLSTONECRAFT_BOTTLING_STUDY_BRIEF_2026-11-03.md` records the measured seven-action numeric reuse pair and its specific connection to Mike's supplied *Agent in a Bottle* paper (arXiv:2610.08775v1). A shareable visual and verified quotation are saved under `artifacts/wollstonecraft-bottling-study-2026-11-03/`, with a durable copy in the primary workspace. This is requested research communication, not a new product delivery or study result. The G3 next action above, all ten acceptance areas and the last sealed owner receipt remain unchanged. No provider campaign, new model training or clinical promotion was performed for this deliverable.
+
 # Historical checkpoints
 
 ## Superseded header before ordinary confirmation seal
