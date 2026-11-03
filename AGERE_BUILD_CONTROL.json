@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T16:51:47.453882+00:00",
+  "updated_at": "2026-11-03T17:31:30.582555+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -402,7 +402,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "The row-prose interface is implemented and a targeted 57-patient profile question is confirmed and saved. The original clinical answer remains partial: its clinical narrative is still unfinished, current-role evidence is limited, and its historical 18 unsettled support packets/two unsettled field checks remain historical unresolved results. Current whole-product release compatibility, measured execution reuse and independent clinical/model qualification remain open.",
       "engineering_current_status": "942ff1f selected; owned clinical continuation PID24600/session62760 running. Preserve source freeze and wait for actual result.",
-      "next_action": "Repair the measured completion-state distinction in the existing review and investigator loop before another provider run: incomplete requested composition must not be classified solely as uncertain source verification. Use the retained seven partial drafts/reviews (owner-audit-result.json), preserve supported source unknowns and stop repeated unchanged uncertainty checks, while allowing actual unfinished entity explanations to be completed through existing row_prose/state. First prove the distinction offline, including mixed incomplete-work/unknown-evidence cases and no repeated paid source reading. Then perform only the targeted changed-path clinical continuation with all 57 patients and source values retained. No unchanged whole-cohort rerun, architecture rewrite or broad training. After clinical completion, measure routing/reuse and assess one current ten-area local release with explicit qualification dependencies. Before broader confirmation, compare the changed composition path with the simplest suitable native-plus-model route using identical retained evidence and output requirements; require measured value for added model checks. Do not claim a winner or clinical accuracy without evidence."
+      "next_action": "Inspect owned continuation PID28516/session14833 first at artifacts/agere-completion-routing-2026-11-03/clinical-continuation/run-receipt.json. Source frozen at ba84e0c; no edits or duplicate provider job. On return inspect whether the original 57-patient clinical request now has individual source-bound explanations, dated roles, specific review steps and honest unknowns. Reconcile all attempts and preserve prior partial results. Then compare the composition role with frontier-first synthesis over identical retained native evidence and identical final acceptance checks before broader confirmation; no new whole-cohort source acquisition. Keep clinical qualification and current ten-area release open until evidenced."
     },
     {
       "id": "G5",
@@ -484,19 +484,19 @@
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "The ordinary investigator can add complete keyed patient/entity explanations and proposed review steps beside exact native values, with same-entity source bases and bound quantities. New text is independently reviewed and can be repaired locally; it is never certified as native copied evidence.",
-    "measured_failure_reduction": "None in this audit. The latest continuation still has zero individual prose columns; the completion-state classification weakness was reproduced offline.",
+    "measured_failure_reduction": "Actual retained reading exposes57/57rows rather than0; compiler reports19actual row-field errors together instead ofthe first. End-user clinical completion remains unproven pending current run.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md"
     ],
-    "remaining_gap": "The latest owned continuation returned partial after 787.679 seconds: 57 patients and names, seven partial drafts, no individual row prose, 157 new attempts/$0.786483564 API equivalent. Prior full question took 3459.554 seconds/6966 attempts and remained partial. Completion handling conflates unfinished coverage and uncertain verification; no current full-clinical completion, practical end-to-end performance or latest whole-product release acceptance is established. Independent clinical/model qualification and viable prediction labels remain separate dependencies.",
-    "next_action": "Repair the measured completion-state distinction in the existing review and investigator loop before another provider run: incomplete requested composition must not be classified solely as uncertain source verification. Use the retained seven partial drafts/reviews (owner-audit-result.json), preserve supported source unknowns and stop repeated unchanged uncertainty checks, while allowing actual unfinished entity explanations to be completed through existing row_prose/state. First prove the distinction offline, including mixed incomplete-work/unknown-evidence cases and no repeated paid source reading. Then perform only the targeted changed-path clinical continuation with all 57 patients and source values retained. No unchanged whole-cohort rerun, architecture rewrite or broad training. After clinical completion, measure routing/reuse and assess one current ten-area local release with explicit qualification dependencies. Before broader confirmation, compare the changed composition path with the simplest suitable native-plus-model route using identical retained evidence and output requirements; require measured value for added model checks. Do not claim a winner or clinical accuracy without evidence.",
+    "remaining_gap": "Original patient-specific clinical synthesis remains incomplete. Current model view previews and computed SQL prose need evaluation; allten-area latest release,guardedreuse and independentclinical/model qualification remain open.",
+    "next_action": "Inspect owned composition-boundary continuation PID31380/session3846 at artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json first. Runtime source frozen at a747002; no edits or duplicate provider work. On terminal, audit original57patient scope and individual explanations of actual dated findings, named clinicians versus responsibility, specific review steps, compiled row prose and support disposition. Reconcile all attempts and preserve prior partials. Do not call this a fresh whole-stack speed comparison. If completion is demonstrated, seal the scoped change and proceed to guarded reuse/current ten-area release acceptance; clinical qualification remains separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "Owned continuation PID24600/session62760 terminal. Owned candidate PID23373/session52032 remains running; no provider job or source freeze.",
+    "coordination": "One owned repaired continuation; source frozen. No other provider/training jobs.",
     "remaining_blockers": [
       "The latest owned continuation returned partial after 787.679 seconds: 57 patients and names, seven partial drafts, no individual row prose, 157 new attempts/$0.786483564 API equivalent. Prior full question took 3459.554 seconds/6966 attempts and remained partial. Completion handling conflates unfinished coverage and uncertain verification; no current full-clinical completion, practical end-to-end performance or latest whole-product release acceptance is established. Independent clinical/model qualification and viable prediction labels remain separate dependencies."
     ],
-    "latest_progress": "Owner audit completed with current run accounting, preserved source/answers and a finite effort breakdown; no gate advanced.",
+    "latest_progress": "Candidatea747002 adds exact explicit complete-row readings retained across turns and atomic batch row-prose errors.142targeted tests pass;49reading/state checks rerun after a default-path guard optimization. Actual retained57patient proof shows0preview\u219257complete rows with source/oldattempts unchanged; prior draft exposes19errors in one pass. Clinical continuation now running.",
     "results_report": "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -536,16 +536,15 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-03T16:51:47.453882+00:00",
+    "at": "2026-11-03T17:06:54.153572+00:00",
     "workflow_change": "Audit only: no new product capability accepted. Identified the incomplete-composition versus uncertain-verification distinction and retained the failed continuation.",
     "unsealed_work": {
-      "kind": "clinical_completion_owner_audit",
-      "status": "terminal_partial_audited_not_accepted",
-      "receipt": "artifacts/agere-clinical-interpretation-completion-2026-11-03/continuation/run-receipt.json",
-      "audit": "artifacts/agere-clinical-interpretation-completion-2026-11-03/owner-audit-result.json",
-      "source_frozen": false,
-      "source_edits_allowed": true,
-      "provider_job_running": false
+      "kind": "completion_routing_candidate",
+      "status": "clinical_continuation_running",
+      "receipt": "artifacts/agere-completion-routing-2026-11-03/clinical-continuation/run-receipt.json",
+      "source_frozen": true,
+      "source_edits_allowed": false,
+      "offline_proof": "artifacts/agere-completion-routing-2026-11-03/retained-review-proof.json"
     },
     "bottling_assessment": {
       "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
@@ -601,7 +600,16 @@
       "source_frozen": false
     },
     "provider_dependency": "No current subscription block. One retained Perplexity429 rate-limit attempt; no missing approval.",
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "completion_routing_clinical_continuation",
+        "pid": 28516,
+        "session": 14833,
+        "receipt": "artifacts/agere-completion-routing-2026-11-03/clinical-continuation/run-receipt.json",
+        "source_frozen": true,
+        "source_commit": "ba84e0c"
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -3070,16 +3078,37 @@
       "correction": "Repair the measured completion-state distinction in the existing review and investigator loop before another provider run: incomplete requested composition must not be classified solely as uncertain source verification. Use the retained seven partial drafts/reviews (owner-audit-result.json), preserve supported source unknowns and stop repeated unchanged uncertainty checks, while allowing actual unfinished entity explanations to be completed through existing row_prose/state. First prove the distinction offline, including mixed incomplete-work/unknown-evidence cases and no repeated paid source reading. Then perform only the targeted changed-path clinical continuation with all 57 patients and source values retained. No unchanged whole-cohort rerun, architecture rewrite or broad training. After clinical completion, measure routing/reuse and assess one current ten-area local release with explicit qualification dependencies. Before broader confirmation, compare the changed composition path with the simplest suitable native-plus-model route using identical retained evidence and output requirements; require measured value for added model checks. Do not claim a winner or clinical accuracy without evidence.",
       "scope_impact": "All ten areas and architectural baseline retained. Engineering, model/clinical qualification and customer deployment remain distinct. No new caps or approval gates.",
       "user_architecture_challenge": "Mike explicitly challenged whether Jev/Perplexity or Claude alone could do this more efficiently. No matched full-task superiority is established; the next increment must earn complexity against a competent simpler route."
+    },
+    {
+      "at": "2026-11-03T17:16:25.478773+00:00",
+      "decision": "Do not accept routing repair as clinical completion. Proceed with the already-promised simplest starting-model comparison before another feature increment.",
+      "evidence": [
+        "artifacts/agere-completion-routing-2026-11-03/clinical-continuation/run-receipt.json",
+        "artifacts/agere-completion-routing-2026-11-03/clinical-owner-review.json"
+      ],
+      "reason": "Second retained clinical continuation still has zero individual text explanations despite escalation. Product surface remains partial. Native output copying and previews do not establish synthesis.",
+      "scope_impact": "No charter reduction,source reacquisition,new model training or new approval gate."
+    },
+    {
+      "at": "2026-11-03T17:23:58.783731+00:00",
+      "decision": "Correct the evidenced evidence-reading and row-compilation boundary before any further routing/training work.",
+      "evidence": [
+        "artifacts/agere-completion-routing-2026-11-03/route-comparison.json",
+        "artifacts/agere-completion-routing-2026-11-03/actor-evidence-visibility.json"
+      ],
+      "reason": "Starting Sonnet did not complete the workflow. It produced all57draft row explanations, but serial field validation hid later errors and identical coarse failure counts caused premature no-progress stop. Both review_document tables and the composed57patient table can have zero visible rows in actor previews.",
+      "scope_impact": "Existing modular composer/compiler/state only; all10areas,source obligations,native calculations and unknowns retained."
     }
   ],
   "unsealed_work": {
-    "kind": "clinical_completion_owner_audit",
-    "status": "terminal_partial_audited_not_accepted",
-    "receipt": "artifacts/agere-clinical-interpretation-completion-2026-11-03/continuation/run-receipt.json",
-    "audit": "artifacts/agere-clinical-interpretation-completion-2026-11-03/owner-audit-result.json",
-    "source_frozen": false,
-    "source_edits_allowed": true,
-    "provider_job_running": false
+    "kind": "completion_routing_candidate",
+    "status": "composition_boundary_continuation_running",
+    "source_frozen": true,
+    "source_edits_allowed": false,
+    "receipt": "artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json",
+    "review": "artifacts/agere-completion-routing-2026-11-03/clinical-owner-review.json",
+    "comparison": "artifacts/agere-completion-routing-2026-11-03/route-comparison.json",
+    "proof": "artifacts/agere-completion-routing-2026-11-03/composition-boundary-proof.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3107,8 +3136,17 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [],
-  "next_action": "Repair the measured completion-state distinction in the existing review and investigator loop before another provider run: incomplete requested composition must not be classified solely as uncertain source verification. Use the retained seven partial drafts/reviews (owner-audit-result.json), preserve supported source unknowns and stop repeated unchanged uncertainty checks, while allowing actual unfinished entity explanations to be completed through existing row_prose/state. First prove the distinction offline, including mixed incomplete-work/unknown-evidence cases and no repeated paid source reading. Then perform only the targeted changed-path clinical continuation with all 57 patients and source values retained. No unchanged whole-cohort rerun, architecture rewrite or broad training. After clinical completion, measure routing/reuse and assess one current ten-area local release with explicit qualification dependencies. Before broader confirmation, compare the changed composition path with the simplest suitable native-plus-model route using identical retained evidence and output requirements; require measured value for added model checks. Do not claim a winner or clinical accuracy without evidence.",
+  "active_jobs": [
+    {
+      "kind": "composition_boundary_clinical_continuation",
+      "pid": 31380,
+      "session": 3846,
+      "receipt": "artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json",
+      "source_frozen": true,
+      "source_commit": "a747002"
+    }
+  ],
+  "next_action": "Inspect owned composition-boundary continuation PID31380/session3846 at artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json first. Runtime source frozen at a747002; no edits or duplicate provider work. On terminal, audit original57patient scope and individual explanations of actual dated findings, named clinicians versus responsibility, specific review steps, compiled row prose and support disposition. Reconcile all attempts and preserve prior partials. Do not call this a fresh whole-stack speed comparison. If completion is demonstrated, seal the scoped change and proceed to guarded reuse/current ten-area release acceptance; clinical qualification remains separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3117,5 +3155,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T16:51:47.453882+00:00"
+  "latest_checkpoint": "2026-11-03T17:31:30.582555+00:00"
 }
