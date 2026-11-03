@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/6'
+VERSION = 'execution-state/7'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -191,7 +191,7 @@ def review_reference(feedback,tools):
         'guidance_path':'$.feedback','packets_path':'$.support.packets',
         'guidance':review_guidance(feedback.get('feedback')),
         'instruction':'The complete exact reviewer receipt, repair prose and every claim/source binding are retained here. '
-            'Use query_sql with json_extract/json_each to inspect the relevant packet and claim_feedback entries. '
+            'Use query_sql with json_extract/json_each to inspect the relevant packet, field_review and claim_feedback entries. '
             'Packet IDs are opaque labels; use only explicit patient_id bindings. '
             'This is unverified reviewer feedback, not patient evidence or a clinical truth label. '
             'Unknown feedback is an unresolved dependency, not a proven source fault. '
@@ -365,6 +365,11 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
                     item['label']='unknown'
                     if packet.get('label')!='unknown':item['observed_label']=packet.get('label')
                 if feedback_native is not None:item['claim_feedback_entries']=len(packet.get('claim_feedback')or[])
+                if isinstance(packet.get('field_review'),dict):
+                    item['field_review']={k:packet['field_review'][k]for k in (
+                        'schema','authority','packet_digest','manifest_digest','expected_count','supported_count',
+                        'unresolved_count','fault_count','all_fields_supported','remaining_obligation',
+                        'complete_dependency_accepted','clinical_qualification')if k in packet['field_review']}
                 pending.append(item)
             if pending:state['current_review_feedback']['unresolved_dependencies']=pending
             if support.get('failed_packet_ids'):

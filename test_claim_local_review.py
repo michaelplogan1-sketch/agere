@@ -159,6 +159,41 @@ class LocalReview(unittest.TestCase):
             self.assertEqual(out['label'],'unknown');self.assertIsNone(out['decided_by'])
             self.assertEqual(out['claim_feedback'],[])
 
+    def test_supported_field_receipts_survive_without_promoting_complete_support(self):
+        from clinical_core.contracts import digest
+        answer,calls=self.fixture();packet=self.packets(answer,calls)['patient_A']
+        def fields(task,questions,evidence,**kw):
+            return {'judgments':{key:{'label':'supported','decided_by':'fixture','probability':.93,'threshold':.8}
+                for key in questions},'steps':[{'provider':'fixture','status':'answered','request_hash':'retained-input','fields':list(questions)}]}
+        broad={'label':'supported','decided_by':None,'probabilities':{'supported':.79},'steps':[]}
+        out=B.check_support_packets([packet],lambda *a,**kw:broad,as_of='2030-05-27',ledger=None,field_decider=fields)
+        self.assertEqual(out['label'],'unknown');self.assertIsNone(out['decided_by'])
+        review=out['packets'][0]['field_review']
+        self.assertEqual(review['supported_count'],2);self.assertEqual(review['unresolved_count'],0)
+        self.assertEqual(review['remaining_obligation'],'complete_dependency_support')
+        self.assertEqual(review['packet_digest'],digest(packet['text']))
+        self.assertEqual(review['manifest_digest'],digest(packet['claim_manifest']))
+        self.assertEqual({r['field']for r in review['supported_claims']},{'rasi_reason','current_assignment'})
+        for row in review['supported_claims']:
+            self.assertEqual(row['verification_observation']['state'],'supported')
+            self.assertEqual(row['verification_observation']['model_judgment']['threshold'],.8)
+            self.assertEqual(row['value_digest'],digest(B._claim_value(uncompact_json(json.loads(packet['text'])),row['path'])))
+        state=json.loads(E.messages('q',calls,feedback={'status':'repair','support':out})[0]['content'])
+        observed=state['current_review_feedback']['unresolved_dependencies'][0]['field_review']
+        self.assertEqual(observed['supported_count'],2)
+        self.assertEqual(observed['remaining_obligation'],'complete_dependency_support')
+        self.assertNotIn('supported_claims',observed)  # full bindings remain in the native receipt
+
+    def test_missing_or_unsettled_fields_never_receive_supported_receipts(self):
+        answer,calls=self.fixture();packet=self.packets(answer,calls)['patient_A']
+        def fields(task,questions,evidence,**kw):
+            first=next(iter(questions))
+            return {'judgments':{first:{'label':'supported','decided_by':None,'probability':.79,'threshold':.8}},'steps':[]}
+        out=B.localize_support_failure(packet,fields,as_of='2030-05-27',ledger=None)
+        self.assertEqual(out['field_review']['supported_count'],0)
+        self.assertEqual(out['field_review']['unresolved_count'],2)
+        self.assertEqual(len(out['feedback']),2)
+
     def test_verifier_outage_does_not_purchase_a_second_diagnostic(self):
         answer,calls=self.fixture();judge=Mock(side_effect=AssertionError('Outage is not a source fault'))
         out=B.check_support_packets([self.packets(answer,calls)['patient_A']],

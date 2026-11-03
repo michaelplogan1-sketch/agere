@@ -1910,6 +1910,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         if needs_diagnosis:
             localized=localize_support_failure(packet,field_decider,as_of=as_of,ledger=worker_ledger)
             checked['claim_feedback']=localized['feedback'];steps.extend(localized['steps'])
+            checked['field_review']=localized['field_review']
             faults=[f for f in localized['feedback']if f.get('decided_by') and f['label']!='unknown']
             if source_observation_path is not None:
                 from .span_repair import quarantine_assertions
@@ -1935,6 +1936,14 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
                 checked.update(label='unknown',decided_by=None,reason='Local checks did not identify a fault, but the complete source check remains unresolved; no support is inferred.')
             elif not localized['feedback']:
                 checked.update(label='unknown',decided_by=None,reason='Packet and claim checks disagree; retain unresolved support and inspect this dependency.')
+            review=checked['field_review']
+            review['remaining_obligation']=('located_field_faults' if faults else
+                'unresolved_fields_and_complete_dependency_support' if localized['feedback'] else 'complete_dependency_support')
+            if review['all_fields_supported'] and not checked.get('decided_by'):
+                checked['reason']=(str(review['supported_count'])+' of '+str(review['expected_count'])+
+                    ' named fields have supported typed judgments at the existing thresholds. The independent complete-dependency '
+                    'check remains unresolved; field support does not establish packet acceptance or clinical qualification. '
+                    'Inspect the remaining dependency-level uncertainty; retain these exact field/input-bound observations.')
         steps.extend(result.get('steps')or[])
         return checked,steps
     def fault(result):
@@ -2008,7 +2017,9 @@ def field_review_observation(reading,steps,claim_id):
         for s in steps if not s.get('fields')or claim_id in s['fields']]
     p=reading.get('probability');threshold=reading.get('threshold')
     numeric=lambda x:type(x)in(int,float)and math.isfinite(x)
-    if reading.get('decided_by')and reading.get('label')!='unknown':
+    if reading.get('decided_by')and reading.get('label')=='supported':
+        state='supported';reason=None
+    elif reading.get('decided_by')and reading.get('label')!='unknown':
         state='decided_fault';reason=None
     elif reading.get('probabilities')and reading.get('label')=='unknown':
         state='model_abstained';reason='The model returned an unknown judgment; this does not establish missing or incorrect source evidence.'
@@ -2067,7 +2078,8 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
         'wrong_role':'The field conflates authorship, addressee, referral, assignment or actual attendance.',
         'missing_evidence':'The field asserts a fact that is not established by its sources; an explicit supported unknown is not this error.',
         'unknown':'The source does not settle whether this field is supported.'}
-    feedback=[];steps=[];claims=packet['claim_manifest']
+    from ...contracts import digest
+    feedback=[];steps=[];supported=[];claims=packet['claim_manifest']
     for start in range(0,len(claims),64):
         chunk=claims[start:start+64]
         named={c['id']:{'type':'choice','instructions':{'claim':c,
@@ -2086,8 +2098,12 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
         steps.extend(result.get('steps')or[])
         for claim in chunk:
             reading=result.get('judgments',{}).get(claim['id'],{})
-            if reading.get('label')=='supported' and reading.get('decided_by'):continue
             observation,review_reason=field_review_observation(reading,result.get('steps')or[],claim['id'])
+            if reading.get('label')=='supported' and reading.get('decided_by'):
+                supported.append({'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
+                    'value_digest':digest(_claim_value(state,claim['path'])),
+                    'verification_observation':observation})
+                continue
             label=reading.get('label') if reading.get('decided_by') else 'unknown'
             value=_claim_value(state,claim['path'])
             source_assertion=(value.get('assertion')if isinstance(value.get('assertion'),dict)else
@@ -2099,7 +2115,15 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
                 'verification_observation':observation,
                 **({'source_assertion_id':source_assertion['id']}if isinstance(source_assertion.get('id'),str)else {}),
                 'source_record_ids':sorted(source_ids(value) or cited_ids or source_ids(state.get('evidence',[]))),'result_view':packet.get('result_view')})
-    return {'feedback':feedback,'steps':steps}
+    return {'feedback':feedback,'steps':steps,'field_review':{
+        'schema':'localized-field-review/1','authority':'machine_review',
+        'packet_digest':digest(packet['text']),'manifest_digest':digest(claims),
+        'expected_count':len(claims),'supported_count':len(supported),
+        'unresolved_count':sum(not f.get('decided_by')for f in feedback),
+        'fault_count':sum(bool(f.get('decided_by'))for f in feedback),
+        'all_fields_supported':bool(claims)and len(supported)==len(claims),
+        'supported_claims':supported,'complete_dependency_accepted':False,
+        'clinical_qualification':False}}
 
 
 def _claim_value(state,path):
