@@ -1602,7 +1602,18 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         if relevant:global_patient_evidence.append({'patient_id':pid,'native_observations':relevant})
     if global_patient_evidence:packets[0]['global_patient_evidence']=global_patient_evidence
     for pid in sorted(final_patients):
-        bindings=[{'row_digest':ident,'origins':list(sources.values())}for ident,sources in origins.get(pid,{}).items()]
+        patient_evidence={};bindings=[]
+        for ident,row in by.get(pid,{}).items():
+            observed=list(origins.get(pid,{}).get(ident,{}).values())
+            # Match the existing shared-evidence closure. A superseded SQL
+            # calculation is not a dependency of this patient's final claims.
+            # Documents, source reviews and unknown lineage remain available;
+            # every original calculation still survives in the global receipt.
+            required=[o for o in observed if local_dependencies is None or o.get('tool')!='query_sql'
+                      or not o.get('result_view')or o['result_view']in local_dependencies]
+            if observed and not required:continue
+            patient_evidence[ident]=row
+            if required:bindings.append({'row_digest':ident,'origins':required})
         views={o.get('result_view')for b in bindings for o in b['origins']if o.get('result_view')}
         view_dependencies=native_result_dependencies(calls,list(views))if views else set()
         contracts=contracts_for(view_dependencies or views)
@@ -1612,7 +1623,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             'source_context_gaps':context_gaps.get(pid,[]),
             'shared_evidence':local_shared,
             'global_claims_scope':'Global/headline/fact claims are checked in the separate summary packet. Check only this patient\'s actual final row fields here. A global edit is not a change to these local claims.',
-            'evidence':list(by.get(pid,{}).values()),
+            'evidence':list(patient_evidence.values()),
             'evidence_provenance':bindings,'native_calculation_contracts':contracts['executions'],
             'executed_source_definitions':contracts['source_definitions'],
             'review_scope':[{'questions':m['questions'],'manifest':[x for x in m['manifest']if x['patient_id']==pid],
