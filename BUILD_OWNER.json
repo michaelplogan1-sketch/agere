@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
+  "active_work": "Inspect the ONE owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, apply the retained acceptance protocol: original patient/name/clinical/medication/role/recommendation scope, supported unknowns, source/entity/date integrity, complete per-question all-attempt cost, and actual bottle/learning decisions. Inspect the terminal feedback behind the second no-dose-row document task and the actual reader workload. Read-only diagnosis found411oldblocks versus3161currentstatements on the same161retained documents (7.69xdecision units, not a provider-call/latency ratio); evaluate a localized scheduling correction that retains complete source context and exact statement evidence. Preserve all partial/failed attempts. Do not repeat passing numeric runs, add architecture/training campaigns, lower thresholds, create automatic exports or claim clinical qualification. Then assess the existing ten-area release using compatible evidence; qualification/deployment remain separate.",
   "latest_delivery": "docs/agere/COMBINED_DEPENDENCY_CHECK_2026-11-03.md",
   "latest_receipt": "artifacts/agere-combined-dependency-2026-11-03/delivery-receipt.json",
   "owned_server_pid": 13852,
@@ -15,14 +15,14 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
+  "resume_priority": "Inspect the ONE owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, apply the retained acceptance protocol: original patient/name/clinical/medication/role/recommendation scope, supported unknowns, source/entity/date integrity, complete per-question all-attempt cost, and actual bottle/learning decisions. Inspect the terminal feedback behind the second no-dose-row document task and the actual reader workload. Read-only diagnosis found411oldblocks versus3161currentstatements on the same161retained documents (7.69xdecision units, not a provider-call/latency ratio); evaluate a localized scheduling correction that retains complete source context and exact statement evidence. Preserve all partial/failed attempts. Do not repeat passing numeric runs, add architecture/training campaigns, lower thresholds, create automatic exports or claim clinical qualification. Then assess the existing ten-area release using compatible evidence; qualification/deployment remain separate.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-11-03T13:59:13.795767+00:00",
+  "latest_checkpoint": "2026-11-03T14:36:33.454476+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
@@ -38,11 +38,13 @@
     "source_frozen": true,
     "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
     "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
-    "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
-    "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
+    "last_observed_at": "2026-11-03T14:35:10.497716+00:00",
+    "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json",
+    "reader_workload_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/reader-fanout-observation.json",
+    "planning_scope_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/live-scope-observation.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
+  "latest_continuity_checkpoint": "2026-11-03T14:36:33.454476+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "active_turns_and_quiet_thread_heartbeat",
   "mvp_server": {
@@ -312,8 +314,10 @@
       "source_frozen": true,
       "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
       "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
-      "last_observed_at": "2026-11-03T13:59:13.795767+00:00",
-      "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
+      "last_observed_at": "2026-11-03T14:35:10.497716+00:00",
+      "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json",
+      "reader_workload_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/reader-fanout-observation.json",
+      "planning_scope_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/live-scope-observation.json"
     }
   ],
   "overnight_completed_jobs": {
@@ -472,6 +476,6 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T13:59:13.795767+00:00",
+  "updated_at": "2026-11-03T14:36:33.454476+00:00",
   "last_commit": "bc3b256b4d5fa6c2ccd67e8f99d6cfe517ff7d9d"
 }
