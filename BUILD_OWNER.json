@@ -462,5 +462,15 @@
   },
   "updated_at": "2026-11-03T20:27:05.288040+00:00",
   "last_commit": "e7f3ac19643a19c63900ff46096b0d291baa4bd7",
-  "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json"
+  "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
+  "latest_bottling_check": {
+    "at": "2026-11-03T20:36:08.825946+00:00",
+    "receipt": "artifacts/agere-financial-bottle-current-2026-11-03/receipt.json",
+    "status": "offline_native_reexecution_passed",
+    "automatic_reuse_eligible": false,
+    "product_edits": false,
+    "all_jobs_terminal": true,
+    "source_frozen": false,
+    "next_requirement": "Current guarded selection and ordinary workflow requalification before calling this automatically reusable in the current release. Do not bypass guard or relabel manual component replay as ordinary routing."
+  }
 }

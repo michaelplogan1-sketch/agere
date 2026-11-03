@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T20:27:05.288040+00:00",
+  "updated_at": "2026-11-03T20:36:08.825946+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -481,11 +481,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "harder_question_failed_qualification",
+    "kind": "harder_failure_retained_and_alternative_bottle_checked",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "No new product capability accepted. A harder ordinary two-year payer analysis was attempted, stopped after model verification fanout/rate failures, and its source-relation discrepancies were independently located.",
-    "measured_failure_reduction": "No failure removed yet. Native shape rejection reproduced; retained candidate differs in10cells across6patients; all4655new attempts retained; app restored unchanged.",
+    "user_behavior_delta": "The user-requested alternative bottling example was checked offline: the retained LLM-generated financial program reexecuted all22operations with12financial rows independently reconciled and no provider calls. No new ordinary product capability or candidate activation is claimed.",
+    "measured_failure_reduction": "No harder-question failure repaired. Alternative financial native artifact passes on current source/code in9.890seconds total (8.546program); all22semantic receipts exact,0newproviders/all46578ledgerrows exact. Current automatic reuse guard finds no eligible candidate; ordinary requalification remains separate.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -543,7 +543,10 @@
       "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
       "artifacts/agere-harder-bottling-2026-11-03/offline-diagnosis.json",
       "artifacts/agere-harder-bottling-2026-11-03/reversal-link-audit.json",
-      "artifacts/agere-harder-bottling-2026-11-03/learning-state-check.json"
+      "artifacts/agere-harder-bottling-2026-11-03/learning-state-check.json",
+      "artifacts/agere-financial-bottle-current-2026-11-03/receipt.json",
+      "artifacts/agere-financial-bottle-current-2026-11-03/independent-reconciliation.json",
+      "artifacts/agere-financial-bottle-current-2026-11-03/action-checks.json"
     ],
     "remaining_gap": "Harder numerical composition lacks qualified native verification and attempted unsupported reversal exclusions. Original57-patient clinical answer remains partial with55/61supported source packets and6unresolved. Complete clinical/model/total-economics/customer qualification remains separate.",
     "next_action": "G3: repair the user-requested harder payer-analysis failure offline before another provider run. Use artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json and retained SQL/results. Qualify conditional multi-year arithmetic, ratios and missing-value handling in the shared native verifier while preserving global semantic review and rejection of clinical-classification shortcuts; require source-supported claim identity for reversal exclusions. Diagnose repeated provider throughput failures in the same verification path. Preserve all attempts, failed work and unknown costs. Only after affected offline checks pass and provider throughput is available, run the affected ordinary confirmation and then a qualified repeat. Retain the prior clinical routing/economics next action in the harder-run protocol, all57clinicalpatients,55/61supported packets,six unresolved source dependencies and alltenareas. No whole-cohort source campaign, architecture rewrite, new weights or clinical qualification claim.",
@@ -3241,6 +3244,15 @@
       "decision": "Stop the harder run on demonstrated verification fanout and provider rate failure; preserve failure and prioritize offline shared-path repair.",
       "evidence": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
       "scope_impact": "No narrowing, new cap or clinical promotion. Earlier795-row success remains valid only in its declared scope. Alltenareas retained."
+    },
+    {
+      "at": "2026-11-03T20:36:08.825946+00:00",
+      "gate": "G3",
+      "decision": "Honor Mike\u2019s latest request for another use of bottling by inspecting a previously completed financial task and running an offline component check before returning to harder-question repair.",
+      "evidence": [
+        "artifacts/agere-financial-bottle-current-2026-11-03/receipt.json"
+      ],
+      "scope_impact": "No source/product/model activation, no provider calls, alltenareas and harder failure retained. This checks executable reuse, not full current ordinary acceptance."
     }
   ],
   "unsealed_work": {
@@ -3298,5 +3310,15 @@
     "durable_visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-bottling-study-2026-11-03/bottling-execution-reuse.png",
     "research": "https://arxiv.org/abs/2610.08775v1",
     "scope": "Exact-question guarded execution reuse, one warm pair; follow-up study proposed. Product gate, owner receipt and next action unchanged."
+  },
+  "alternative_bottling_check": {
+    "at": "2026-11-03T20:36:08.825946+00:00",
+    "receipt": "artifacts/agere-financial-bottle-current-2026-11-03/receipt.json",
+    "status": "offline_native_reexecution_passed",
+    "automatic_reuse_eligible": false,
+    "product_edits": false,
+    "all_jobs_terminal": true,
+    "source_frozen": false,
+    "next_requirement": "Current guarded selection and ordinary workflow requalification before calling this automatically reusable in the current release. Do not bypass guard or relabel manual component replay as ordinary routing."
   }
 }

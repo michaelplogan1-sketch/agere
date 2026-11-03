@@ -1,4 +1,4 @@
-# Current Agere checkpoint — 2026-11-03T20:27:05.288040+00:00
+# Current Agere checkpoint — 2026-11-03T20:36:08.825946+00:00
 
 G3 ACTIVE. Mike requested a harder bottling question; its first ordinary run failed qualification. No new product release or selected bottle. Last sealed engineering delivery remains `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`. Earlier795-row reuse result retains only its original scope.
 
@@ -11,6 +11,8 @@ Original clinical57patients remains partial:55/61sourcepackets supported,sixunre
 Exact next: G3: repair the user-requested harder payer-analysis failure offline before another provider run. Use artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json and retained SQL/results. Qualify conditional multi-year arithmetic, ratios and missing-value handling in the shared native verifier while preserving global semantic review and rejection of clinical-classification shortcuts; require source-supported claim identity for reversal exclusions. Diagnose repeated provider throughput failures in the same verification path. Preserve all attempts, failed work and unknown costs. Only after affected offline checks pass and provider throughput is available, run the affected ordinary confirmation and then a qualified repeat. Retain the prior clinical routing/economics next action in the harder-run protocol, all57clinicalpatients,55/61supported packets,six unresolved source dependencies and alltenareas. No whole-cohort source campaign, architecture rewrite, new weights or clinical qualification claim.
 
 Preserve latestprincipalreview/October11baseline and allstanding boundaries. No agents/chats,protectedkeys,heldoutcorpus,generatortruth,Documentsresearch,employeraccess,newservices,externalAnthropicAPI,mainmerge,publication,contact orrealcare. Approvedsynthetic/provider/privatepush authority persists. No newcaps. Deliverablesonlyrequested;OWASP/HHSdeferred.
+
+Latest human steering: find another previously LLM-completed task for bottling. Financial claims-by-service-year versus cash-by-payment-year artifact checked offline:22native operations/15historical actorcallbacks,12rows independently reconciled,8.546sprogram/9.890stotal,0providerattempts/all46578ledgerrows exact. Allsemanticreceipts exact; currentguard has noeligiblecandidate, so this is component evidence, not current automatic ordinary reuse. No candidate/events/source/product changes. Evidence:`artifacts/agere-financial-bottle-current-2026-11-03/receipt.json`. All jobs terminal; harder-question offline repair above remains next.
 
 # Historical checkpoints
 
