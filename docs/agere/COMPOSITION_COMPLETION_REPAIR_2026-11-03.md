@@ -1,6 +1,6 @@
 # Composition repair and retained-evidence comparison
 
-The original clinical workflow is still under verification. These changes are candidates; the last sealed delivery remains product `942ff1f`. No clinical qualification, model superiority or complete MVP acceptance is claimed.
+The original clinical workflow remains unaccepted. The repeated continuation was deliberately interrupted after preserving its completed responses; the build remains active. These changes are candidates; the last sealed delivery remains product `942ff1f`. No clinical qualification, model superiority or complete MVP acceptance is claimed.
 
 ## What the comparison showed
 
@@ -32,4 +32,30 @@ The first proof attempt incorrectly required list values and their SQL JSON-stri
 
 Evidence is under `artifacts/agere-completion-routing-2026-11-03/`: `route-comparison.json`, `clinical-owner-review.json`, `actor-evidence-visibility.json`, `composition-boundary-proof.json`, the test logs, and each run's isolated receipt, response and provider ledger.
 
-One repaired continuation is running from the retained evidence at `composition-boundary-continuation/run-receipt.json`. Its investigator starts on Sonnet for this probe; no default model route or learned clinical configuration has been promoted. The canonical next action and process ownership are in `AGERE_BUILD_CONTROL.json`. All ten acceptance areas remain in scope.
+## Repeated verification and controlled interruption
+
+The repaired continuation produced complete individual prose for all 57 patients. Twelve complete JSON drafts were retained, of which six passed the compiler. It still did not finish: every completed pair of coverage votes remained undecided. Jev's selected probabilities ranged from 0.63 to 0.70; the fallback did not settle them. All six compiled drafts retained the same native dependency identity. The prior review path nevertheless treated the undecided partial label as a missing-work finding, requested another rewrite, and excluded it from stable uncertainty handling.
+
+The owner interrupted only this experiment, at a boundary with no pending Claude generation. Its terminal receipt records 1,638.091 seconds and 392 new attempts: 17 validated Claude, 210 validated Jev, 164 validated Perplexity and one pending Perplexity. Known API-equivalent cost is $10.217555 plus the unpriced pending attempt. That pending outcome remains unknown; it has not been rewritten as free, failed or completed. All frozen code, source, original cache attempts, shared ledger rows, prior saved answers and prior exports remained exact. No complete response or accepted answer was produced by this interrupted run.
+
+`composition-boundary-continuation/` retains the interruption decision, terminal receipt, every raw response and attempt, and a separate ledger snapshot. The build and quiet continuation automation remain active. No spending, time, patient or output cap was introduced.
+
+Product `430c92c` makes coverage decision authority explicit in both directions. An undecided vote cannot reject a proposal or confirm complete coverage. Stable uncertainty can stop repeated rewriting without hiding a located source fault or known missing work. A source-verifier outage does not request another rewrite merely because coverage is also unavailable. Thresholds and source checks are unchanged.
+
+The offline coverage proof replays the actual six vote pairs through the existing decision rule and compares the six actual compiled drafts' native dependencies. Its source-uncertainty fixture is explicitly authored; it does **not** reconstruct the interrupted run's complete clinical verdict. A separate cache-only reconstruction encountered unmatched source request identities. Those checks remain unavailable; no new provider calls or acceptance were inferred from cache misses.
+
+## Localized prose repair candidate
+
+The existing draft state and tool loop now accept a patch bound to the exact current draft digest. A patch replaces existing prose fields; it cannot remove patients, overwrite native columns, invent entity keys or change source bases. Every merged candidate passes the complete compiler and ordinary review. Stale, empty, malformed or repeated invalid patches remain rejected, and partial answers survive. Current repair counts distinguish actually changed fields from unchanged fields submitted again.
+
+An offline replay applied the nine actual row-field changes between drafts 42303 and 42304. It removed eight compiler failures while preserving the other 105 prose fields, all 57 native rows, sources and bases. The patch was 4,012 bytes versus 36,312 bytes for the full target draft. Unrelated changes to top-level prose were deliberately excluded. This is an output-size and compiler proof, not a measured full-workflow speed or clinical-quality improvement.
+
+The focused live probe has **not** qualified this repair path:
+
+- The first attempt failed after 204.648 seconds because DNS was unavailable inside the restricted execution environment. A paired check resolved the provider hostname outside that environment. The original failed ledger entry was preserved and an explicit retry authorization recorded.
+- The identical subscription request outside the sandbox returned in 33.055 seconds, with $1.163096 reported API-equivalent usage and 4,184 aggregate output tokens. Its input was roughly 594 KB and 280,315 reported prompt tokens including cache creation. Input selection remains inefficient.
+- The model returned a small patch, but added unsupported `basis_extra` fields for new scalar bindings. The merge rejected it before mutation. Several original numerical details were also removed. No automatic schema relaxation, clinical acceptance or promotion follows from this output.
+
+The final selected suite ran 204 tests: 203 passed and one optional live test was skipped. It covers exact-draft edits, native/entity/quantity guards, full review after merging, stale/no-op/repeated failures, uncertainty routing and existing source/state behavior. The first test run's missing import was corrected; no failing result was relabeled a pass.
+
+Next: retain the measured authority fix, make compiler repair targets machine-readable, and supply only their relevant existing draft/source dependencies to a repair call. Where a repair requires an additional native scalar basis, add it through a checked same-entity contract or use the existing full-answer path; never guess or silently discard measurements. Preserve complete per-review context in the next continuation so a failed experiment can be inspected without recreating a whole campaign. Then verify the changed path before any ordinary clinical rerun or default promotion. The canonical next action and process ownership remain in `AGERE_BUILD_CONTROL.json`; all ten acceptance areas remain in scope.
