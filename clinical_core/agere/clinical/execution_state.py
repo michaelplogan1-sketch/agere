@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/7'
+VERSION = 'execution-state/8'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -278,7 +278,12 @@ def catalog(calls):
                             'characters':len(out['executed_query']),
                             'scope':'Complete portable SQL with embedded native rows remains in the execution receipt. '
                                 'executed_query is the exact scoped statement that ran against read_views; no source acceptance is inferred.'}
-                from .semantic_analyst import collection_manifest
+                from .semantic_analyst import collection_manifest,complete_actor_reading,actor_result
+                if complete_actor_reading(out):
+                    # These are explicitly requested readings, not previews or
+                    # model summaries. Retain them after later tools/feedback so
+                    # interpretation does not require rereading the same rows.
+                    entry['complete_reading']=actor_result(out)
                 collections=collection_manifest(rows)
                 if collections:entry['structured_collection_manifest']=collections
                 # Small scalar/aggregate results are useful exact observations;
@@ -315,9 +320,13 @@ def catalog(calls):
 
 
 def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False,feedback_native=None):
-    from .semantic_analyst import actor_result
+    from .semantic_analyst import actor_result,complete_actor_reading
     def recent(call):
         out = call.get('result')
+        if complete_actor_reading(out):
+            return {'name':call.get('name'),'input':call.get('input'),
+                    'result':{'result_view':out.get('result_view'),
+                              'complete_reading_in':'executed_results; exact rows retained there once'}}
         if isinstance(out, dict) and out.get('loaded_documentation'):
             out = {k: v for k, v in out.items() if k not in ('rows', 'loaded_documentation')}
             out['documentation_sections'] = documentation_references(call['result'])
@@ -328,7 +337,9 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             'All native receipts are retained. SQL result_views retain every computed row; a reading preview does not limit native membership. '
             'Each executed_query in executed_results is the exact successful SQL receipt for that view; inspect it for source, filter, period and aggregation scope without rerunning it. '
             'A truncated producer or incomplete_dependencies cannot support an accepted calculation or population scope. '
-            'Read any earlier result by query_sql; use compose_table to join already executed results without regenerating SQL. '
+            'Read any earlier result by query_sql; read_all_rows=true supplies the complete selected rows for interpretation. '
+            'Explicit complete_reading entries remain here across turns; do not query them again merely to see their values. '
+            'Use compose_table to join already executed results without regenerating SQL. '
             'A missing preview is not missing evidence. Preserve original scope and all requested outputs. '
             'Avoid repeating successful work; correct unresolved errors and current review feedback. '
             'Return table_from_tool naming the complete composed result; never transcribe patient tables.'}

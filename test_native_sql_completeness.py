@@ -2,6 +2,7 @@
 
 Authored financial/event data; no warehouse answer keys or model calls.
 """
+import copy
 import json
 import sqlite3
 import tempfile
@@ -41,6 +42,38 @@ class NativeCompleteness(unittest.TestCase):
 
     def query(self, sql, **options):
         return self.tools({'name': 'query_sql', 'input': {'sql': sql, **options}})
+
+    def test_explicit_complete_reading_retains_every_row_through_later_turns(self):
+        from clinical_core.agere.clinical import execution_state as E
+        result=self.query('SELECT * FROM financial_event ORDER BY event_id',read_all_rows=True)
+        original=copy.deepcopy(result);shown=actor_result(result)
+        self.assertEqual(shown['rows'],result['rows']);self.assertEqual(shown['rows_computed'],5001)
+        self.assertFalse(shown['preview_only'])
+        call=self.tools.native_calls[-1]
+        current=json.loads(E.messages('Explain each received account.',[call],recent_results=[call])[0]['content'])
+        later=json.loads(E.messages('Explain each received account.',[call],feedback={'status':'repair','feedback':'Explain the observations.'})[0]['content'])
+        for state in [current,later]:
+            self.assertEqual(state['executed_results'][0]['complete_reading']['rows'],result['rows'])
+        self.assertNotIn('rows',current['latest_results'][0]['result'])
+        self.assertEqual(result,original)
+
+    def test_stale_or_changed_reading_marker_cannot_silently_bypass_preview(self):
+        result=self.query('SELECT * FROM financial_event ORDER BY event_id',read_all_rows=True)
+        for change in ['row','columns','marker']:
+            candidate=copy.deepcopy(result)
+            if change=='row':candidate['rows'][0]['amount']=999
+            if change=='columns':candidate['columns'].append('unobserved')
+            if change=='marker':candidate['actor_reading']['rows_digest']='forged'
+            self.assertTrue(actor_result(candidate)['preview_only'])
+        for value in ['true',1,None]:
+            with self.assertRaises(ValueError):self.query('SELECT 1 AS amount',read_all_rows=value)
+
+    def test_default_preview_and_legacy_complete_do_not_opt_into_full_model_reading(self):
+        for options in [{},{'complete':True},{'read_all_rows':False}]:
+            result=self.query('SELECT * FROM financial_event ORDER BY event_id',**options)
+            self.assertEqual(len(result['rows']),5001)
+            self.assertNotIn('actor_reading',result)
+            self.assertTrue(actor_result(result)['preview_only'])
 
     def legacy(self):
         return self.tools.retain_result({'columns': ['event_id', 'amount'],

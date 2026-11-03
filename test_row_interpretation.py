@@ -111,6 +111,42 @@ class RowInterpretation(unittest.TestCase):
         self.assertEqual(review['status'],'repair');self.assertEqual(review['calls'],0)
         self.assertIn('99',review['feedback'])
 
+    def test_all_row_field_errors_are_reported_together_without_partial_commit(self):
+        answer=self.answer()
+        answer['row_prose']['rows'][0]['fields']['explanation']='There are two observations.'
+        answer['row_prose']['rows'][0]['fields']['proposed_review_steps']='Review three issues.'
+        answer['row_prose']['rows'][1]['fields']['explanation']='There are four observations.'
+        before=copy.deepcopy(answer);native=copy.deepcopy(self.calls)
+        with self.assertRaises(B.ComputedProseError) as caught:
+            B.bind_computed_prose(answer,self.calls)
+        error=caught.exception
+        for field in ['table.0.explanation','table.0.proposed_review_steps','table.1.explanation']:
+            self.assertIn(field,str(error))
+        self.assertEqual(len(error.progress_failures),3)
+        self.assertEqual(answer,before);self.assertEqual(self.calls,native)
+        for field in ['explanation','proposed_review_steps']:
+            answer['row_prose']['rows'][0]['fields'][field]='Confirm the received observation.'
+        with self.assertRaises(B.ComputedProseError) as remaining:
+            B.bind_computed_prose(answer,self.calls)
+        self.assertEqual(len(remaining.exception.progress_failures),1)
+        answer['row_prose']['rows'][1]['fields']['explanation']='The received observation is unresolved.'
+        B.bind_computed_prose(answer,self.calls)
+        self.assertEqual(len(answer['table']),2)
+        self.assertEqual(answer['table'][0]['events'],2)
+        self.assertIsNone(answer['table'][1]['events'])
+
+    def test_wrong_entity_scalar_and_later_field_error_are_both_reported(self):
+        answer=self.answer();before=copy.deepcopy(answer)
+        answer['row_prose']['rows'][0]['fields']['explanation']['bindings']['events']['row']=1
+        answer['row_prose']['rows'][1]['fields']['proposed_review_steps']='Review 99 events.'
+        mutated=copy.deepcopy(answer)
+        with self.assertRaises(B.ComputedProseError) as caught:
+            B.bind_computed_prose(answer,self.calls)
+        self.assertIn('declared evidence bases at table.0.explanation',str(caught.exception))
+        self.assertIn('table.1.proposed_review_steps',str(caught.exception))
+        self.assertEqual(len(caught.exception.progress_failures),2)
+        self.assertEqual(answer,mutated)
+
     def test_row_quantities_cannot_borrow_a_global_quote_exception(self):
         answer=self.answer();answer['row_prose']['rows'][0]['fields']['explanation']="R1: 'Received 99 events.'"
         with self.assertRaises(ValueError):B.bind_computed_prose(answer,self.calls,verified_quotes=[{'record_id':'R1','quote':'Received 99 events.'}])

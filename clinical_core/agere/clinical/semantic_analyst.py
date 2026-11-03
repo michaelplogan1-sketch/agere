@@ -417,6 +417,16 @@ def collection_manifest(rows):
     return columns
 
 
+def complete_actor_reading(value):
+    """Only an exact executor-bound reading changes the model projection."""
+    from ...contracts import digest
+    if not isinstance(value,dict) or not isinstance(value.get('rows'),list):return False
+    marker=value.get('actor_reading')
+    if not isinstance(marker,dict) or marker.get('mode')!='complete_rows':return False
+    return marker=={'mode':'complete_rows','rows_digest':digest(value['rows']),
+                    'columns_digest':digest(value.get('columns'))}
+
+
 def actor_result(value):
     """A model preview, while native receipts and SQL result views retain ALL rows."""
     if not isinstance(value,dict):return value
@@ -425,6 +435,10 @@ def actor_result(value):
         from ...contracts import digest
         shown['executed_query_digest']=digest(value['executed_query'])
     rows=shown.get('rows')
+    if complete_actor_reading(value):
+        shown.update(rows_computed=len(rows),preview_only=False,
+            reading_instruction='Every row of this explicitly requested native reading is supplied intact. Interpret the actual values and source observations; this does not establish source completeness, clinical truth or current responsibility.')
+        return shown
     if isinstance(rows,list):
         collections=collection_manifest(rows)
         if collections:

@@ -89,7 +89,8 @@ TOOLS = [
     {'name': 'query_sql', 'description': "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
      "earlier results and compute comparisons/deltas without repeating source scans. Keep dated source references intact: select date, record_id and quote from the same row, using ROW_NUMBER with explicit tie handling or retaining all tied rows; independent MAX(date)/MAX(record_id) cannot select a latest source. NULL dates remain unknown. Every executed SQL result is stored completely; the actor receives a reading preview. Incomplete input dependencies remain explicit and cannot support accepted calculations. drug_group_member(medicine_text, registered_group) selects registered medication groups, not an observed-key list; unclassifiable names return NULL. For normalized drug_key values use replace(drug_key,'_',' ').",
-     'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'},'complete':{'type':'boolean','description':'Compatibility option. SQL storage is always complete; only the actor reading projection is previewed.'}}, 'required': ['sql'], 'additionalProperties': False}},
+     'input_schema': {'type': 'object', 'properties': {'sql': {'type': 'string'},'complete':{'type':'boolean','description':'Compatibility option. SQL storage is always complete; only the actor reading projection is previewed.'},
+        'read_all_rows':{'type':'boolean','description':'Read every returned row in model context, retaining the exact reading across investigation turns. Use when interpreting individual entities: select the relevant native values and dated findings rather than only counts. This changes the reading projection, never native storage, population or source completeness. Keep the final native evidence intact. If an actual service context boundary is reached, read explicit ordered partitions and account for every entity.'}}, 'required': ['sql'], 'additionalProperties': False}},
     {'name': 'review_documents', 'description': 'Retrieve source candidates for each requested entity/relation, then review their whole document contexts. '
      'Use for population note review, open clinical reasons, medication reconciliation or other multi-field narrative questions. '
      'Supply the complete received patient IDs and a map of field names to precise questions. No patient or document sampling. '
@@ -238,6 +239,9 @@ has already declined this question, so it is yours to answer completely and corr
   available as their result_view names on the same connection. Set table_from_tool to the final result_view and omit table: code copies
   the executed rows into the answer. Never transcribe or calculate a numeric table in your final text.
 - To explain individual rows, add row_prose alongside table_from_tool. It adds new text columns without overwriting native evidence.
+  First read the evidence needed for the interpretation using query_sql with read_all_rows=true. Select the relevant values,
+  source findings, dates and record IDs from existing result_views. A preview, finding count or collection manifest cannot
+  supply the substance of an unread finding. Explain those observations; do not replace that work with an instruction to read them.
   Use {{"keys":["patient_id"],"rows":[{{"key":{{"patient_id":"the exact ID"}},
     "basis":[{{"result_view":"agere_result_9","row":0}}],
     "fields":{{"patient_explanation":"Source-bound interpretation; current responsibility remains unknown.",
@@ -400,8 +404,8 @@ class Tools:
             from .result_assembly import compose
             return compose(self.executed_results,**args)
         if name == 'query_sql':
-            if set(args)-{'sql','complete'} or 'sql' not in args or type(args.get('complete',False)) is not bool:
-                raise ValueError('query_sql takes sql and optional complete boolean')
+            if set(args)-{'sql','complete','read_all_rows'} or 'sql' not in args or any(type(args.get(k,False)) is not bool for k in ('complete','read_all_rows')):
+                raise ValueError('query_sql takes sql and optional complete/read_all_rows booleans')
             sql = args['sql']
             if '{{' in sql:
                 from .general_analysis import _expand
@@ -421,6 +425,10 @@ class Tools:
                        'executed_query': portable_native_query(sql, sources, used)}
             from .analyst_context import bind_loaded
             out = bind_loaded(self.semantic, args['sql'], out)
+            if args.get('read_all_rows') and isinstance(out.get('rows'),list):
+                from ...contracts import digest
+                out['actor_reading']={'mode':'complete_rows','rows_digest':digest(out['rows']),
+                                      'columns_digest':digest(out.get('columns'))}
             return out
         if name == 'review_documents':
             from .document_review import review, validate_questions
@@ -1042,19 +1050,27 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
             for i,(row,ident) in enumerate(zip(table,identities)):
                 entry,bases,addresses=entries[ident]
                 for column,value in entry['fields'].items():
-                    if not isinstance(value,(str,dict)):raise ValueError('row_prose fields must be text or scalar template/bindings')
                     start=len(proofs);field='table.'+str(i)+'.'+column
-                    rendered=compile_value(field,value)
-                    if not isinstance(rendered,str):raise ValueError('row_prose field did not compile to text')
-                    if len(proofs)==start:
-                        proofs.append({'field':field,'template':value,'bindings':{},'rendered':rendered,'sources':{}})
-                    proof=proofs[-1]
-                    for source in proof['sources'].values():
-                        binding=source['binding']
-                        if set(binding)!={'result_view','row','column'} or (binding['result_view'],binding['row']) not in addresses:
-                            raise ValueError('row_prose scalar bindings must use this entity\'s declared evidence bases')
-                    proof.update(entity_key=entry['key'],basis=bases,authority='model_proposed_interpretation_requires_source_review')
-                    row[column]=rendered
+                    try:
+                        if not isinstance(value,(str,dict)):raise ValueError('row_prose fields must be text or scalar template/bindings at '+field)
+                        rendered=compile_value(field,value)
+                        if not isinstance(rendered,str):raise ValueError('row_prose field did not compile to text at '+field)
+                        if len(proofs)==start:
+                            proofs.append({'field':field,'template':value,'bindings':{},'rendered':rendered,'sources':{}})
+                        proof=proofs[-1]
+                        for source in proof['sources'].values():
+                            binding=source['binding']
+                            if set(binding)!={'result_view','row','column'} or (binding['result_view'],binding['row']) not in addresses:
+                                raise ValueError('row_prose scalar bindings must use this entity\'s declared evidence bases at '+field)
+                        proof.update(entity_key=entry['key'],basis=bases,authority='model_proposed_interpretation_requires_source_review')
+                        row[column]=rendered
+                    except (ValueError,KeyError,IndexError,TypeError) as exc:
+                        # Report every field error in this draft together. Nothing
+                        # is committed unless the entire batch compiles. Otherwise
+                        # a later row's first error can masquerade as no progress.
+                        del proofs[start:]
+                        errors.append(str(exc))
+                        failures.append(getattr(exc,'failure',{'code':'invalid_row_prose','field_group':'row_prose'}))
             updates['table']=table
             updates['table_binding']={**(answer.get('table_binding')or{}),'result_view':root,'rows':len(table),
                 'columns':columns+(field_names or[]),'native_columns':columns,'interpreted_columns':field_names or[],
