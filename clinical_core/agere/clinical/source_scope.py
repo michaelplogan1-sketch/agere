@@ -11,7 +11,88 @@ SOURCE_CUE=re.compile(r'\b(?:segments?|strata|stratum|partitions?|sampling|sampl
 IGNORE_SOURCE=re.compile(r'\b(?:regardless|irrespective)\s+of\s+(?:the\s+)?(?:data\s+|source\s+)?(?:segment|partition|stratum)\b',re.I)
 
 
+def provider_claim_problem(question, sql):
+    """Keep an explicit provider-claim reading out of the merged claim feed.
+
+    This checks the received source restriction, not general SQL meaning. A
+    source predicate must constrain every read, before aggregation. Literals,
+    comments, an unrelated CTE or one side of an OR are not source authority.
+    """
+    from .claim_count_policy import PROVIDER, PAYER, ALL
+    if not PROVIDER.search(question) or PAYER.search(question) or ALL.search(question):
+        return None
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import Scope, traverse_scope
+    try:
+        tree = sqlglot.parse_one(sql, read='sqlite')
+    except (sqlglot.errors.ParseError, sqlglot.errors.TokenError):
+        return None  # The SQL compiler reports malformed statements.
+    if tree is None: return None
+    scopes = list(traverse_scope(tree))
+    consumers = {}
+    for scope in scopes:
+        for alias, (_, source) in scope.selected_sources.items():
+            if isinstance(source, Scope):
+                consumers.setdefault(id(source), []).append((scope, alias))
+
+    def column_matches(node, scope, alias, name):
+        return (isinstance(node, exp.Column) and node.name.lower() == name.lower()
+                and (node.table.lower() == alias.lower()
+                     or not node.table and len(scope.selected_sources) == 1))
+
+    def constrains(node, scope, alias, name):
+        if isinstance(node, (exp.Where, exp.Paren)):
+            return constrains(node.this, scope, alias, name)
+        if isinstance(node, exp.And):
+            return constrains(node.this, scope, alias, name) or constrains(node.expression, scope, alias, name)
+        def provider(value):
+            return isinstance(value, exp.Literal) and value.is_string and value.this == 'medical_claims'
+        if isinstance(node, exp.EQ):
+            return ((column_matches(node.this, scope, alias, name) and provider(node.expression))
+                    or (provider(node.this) and column_matches(node.expression, scope, alias, name)))
+        return (isinstance(node, exp.In) and not node.args.get('query') and len(node.expressions) == 1
+                and column_matches(node.this, scope, alias, name) and provider(node.expressions[0]))
+
+    def confined(scope, alias, name, visited):
+        key = (id(scope), alias, name)
+        if key in visited: return False
+        visited = visited | {key}
+        query = scope.expression
+        if not isinstance(query, exp.Select): return False
+        if constrains(query.args.get('where'), scope, alias, name): return True
+        # A simple projection may carry its source field to an outer WHERE.
+        # A filter after an aggregate cannot repair the aggregate's input.
+        if any(query.args.get(k) for k in ('group', 'having', 'distinct', 'limit', 'offset')):
+            return False
+        if any(node.find(exp.AggFunc, exp.Window) for node in query.selects): return False
+        projected = []
+        for i, node in enumerate(query.selects):
+            value = node.this if isinstance(node, exp.Alias) else node
+            if column_matches(value, scope, alias, name):
+                projected.append(scope.outer_columns[i] if scope.outer_columns else node.alias_or_name)
+            elif isinstance(value, exp.Star) and len(scope.selected_sources) == 1:
+                projected.append(name)
+            elif isinstance(value, exp.Column) and value.is_star and value.table.lower() == alias.lower():
+                projected.append(name)
+        readers = consumers.get(id(scope), [])
+        return bool(readers) and any(all(confined(parent, binding, output, visited)
+                                        for parent, binding in readers) for output in projected)
+
+    for scope in scopes:
+        for alias, (_, source) in scope.selected_sources.items():
+            if not isinstance(source, exp.Table): continue
+            if source.name.lower() == 'payer_claim' or (source.name.lower() == 'claim'
+                    and not confined(scope, alias, 'claim_source', set())):
+                return ("The question explicitly requests provider claims. The merged claim relation also contains payer-feed claims. "
+                        "Restrict each claim read to claim_source = 'medical_claims' before aggregation; a payer or merged total "
+                        "cannot substitute for this source. If that source cannot be established, leave the requirement unresolved.")
+    return None
+
+
 def problem(question,sql):
+    claim_gap = provider_claim_problem(question, sql)
+    if claim_gap: return claim_gap
     import sqlglot
     from sqlglot import exp
     from sqlglot.optimizer.scope import Scope,traverse_scope

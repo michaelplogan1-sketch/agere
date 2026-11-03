@@ -41,6 +41,29 @@ class GeneralAnalysis(unittest.TestCase):
         with self.assertRaises(R.PlanError):
             G.sealed(tampered)
 
+    def test_explicit_provider_claim_source_is_compiled_not_left_to_reviewer_agreement(self):
+        import sqlite3
+        from clinical_core.agere.clinical import request_language as L
+        with sqlite3.connect(self.path/'semantic.sqlite3') as db:
+            db.execute("ALTER TABLE claim ADD COLUMN claim_source TEXT DEFAULT 'medical_claims'")
+            db.execute("INSERT INTO claim(claim_id,patient_id,service_date,allowed_cents,claim_source) VALUES('PAYER','A','2029-03-01',999999,'payer_medical_claims')")
+        self.catalog = R.Catalog.load(self.path)
+        question = 'List patients with at least 2 provider claims in 2029 and their total allowed_cents.'
+        bad = {'steps':[{'name':'totals','purpose':'Received claims','sql':
+              "SELECT patient_id,SUM(allowed_cents) AS total_allowed_cents FROM claim WHERE service_date BETWEEN '2029-01-01' AND '2029-12-31' GROUP BY patient_id HAVING COUNT(*)>=2"}],
+               'returns':'table','requirements':[{'quote':question,'applied_in':['totals'],'how':'Grouped source amounts'}],'unresolved':[]}
+        with self.assertRaisesRegex(R.PlanError,'explicitly requests provider claims'):
+            G.prepare(self.catalog,question,bad)
+        bad['steps'][0]['sql']=bad['steps'][0]['sql'].replace('GROUP BY',"AND claim_source='medical_claims' GROUP BY")
+        raw,_=G.preview(self.catalog,G.prepare(self.catalog,question,bad))
+        self.assertEqual(raw['rows'],[{'patient_id':'A','total_allowed_cents':30000}])
+        # Both phrases use the existing source adapter and bind the same feed.
+        for wording in ('provider claims','provider medical claims'):
+            q='How many '+wording+' in 2029?'
+            contract=R.compile_request(self.catalog,q,L.parse(self.catalog,q))
+            self.assertIn('claim_source',contract['query'])
+            self.assertIn('medical_claims',contract['query'])
+
     def test_every_question_word_must_be_mapped_or_explicitly_unresolved(self):
         s = spec()
         s['requirements'] = [r for r in s['requirements'] if r['quote'] != 'with diabetes']

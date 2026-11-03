@@ -45,4 +45,44 @@ class ExtraPartition(unittest.TestCase):
  def test_partition_transform_is_not_the_owner_duplicate_rule(self):
   self.assertIsNotNone(S.problem('How many patients?',"SELECT COUNT(*)FROM patient WHERE data_segment||'x'<>'duplicate_chart'"))
 
+class ProviderClaims(unittest.TestCase):
+ q = 'List patients with at least 3 provider claims in 2029 and their total allowed_cents.'
+
+ def test_merged_or_payer_only_read_cannot_answer_provider_question(self):
+  for sql in ["SELECT patient_id,SUM(allowed_cents) FROM claim GROUP BY patient_id",
+              "SELECT COUNT(*) FROM payer_claim WHERE counts_in_metrics=1"]:
+   with self.subTest(sql=sql):
+    self.assertIn('provider claims',S.problem(self.q,sql))
+    self.assertTrue(any('provider claims' in x for x in L.missing(self.q,sql)))
+
+ def test_correct_source_predicates_and_cte_projection_survive(self):
+  for sql in ["SELECT SUM(allowed_cents) FROM claim WHERE claim_source='medical_claims'",
+              "SELECT SUM(c.allowed_cents) FROM claim c WHERE ('medical_claims'=c.claim_source) AND service_date>'2029-01-01'",
+              "SELECT SUM(allowed_cents) FROM claim WHERE claim_source IN ('medical_claims')",
+              "WITH p AS (SELECT * FROM claim WHERE claim_source='medical_claims') SELECT SUM(allowed_cents) FROM p",
+              "WITH p AS (SELECT claim_source AS feed,allowed_cents FROM claim) SELECT SUM(allowed_cents) FROM p WHERE feed='medical_claims'",
+              "WITH p(feed,cents) AS (SELECT claim_source,allowed_cents FROM claim) SELECT SUM(cents) FROM p WHERE feed='medical_claims'"]:
+   with self.subTest(sql=sql):self.assertIsNone(S.problem(self.q,sql))
+
+ def test_literals_comments_or_unrelated_predicates_cannot_authorize_source(self):
+  for sql in ["SELECT SUM(allowed_cents),'medical_claims' FROM claim -- claim_source='medical_claims'",
+              "SELECT SUM(allowed_cents) FROM claim WHERE claim_source='medical_claims' OR allowed_cents>0",
+              "SELECT SUM(allowed_cents) FROM claim WHERE NOT(claim_source='medical_claims')",
+              "SELECT SUM(allowed_cents) FROM claim WHERE claim_source IN ('medical_claims','payer_medical_claims')",
+              "WITH p AS (SELECT * FROM claim WHERE claim_source='medical_claims') SELECT SUM(allowed_cents) FROM claim",
+              "WITH p AS (SELECT 'medical_claims' AS claim_source,allowed_cents FROM claim) SELECT SUM(allowed_cents) FROM p WHERE claim_source='medical_claims'",
+              "SELECT SUM(c.allowed_cents) FROM claim c JOIN patient p ON p.patient_id=c.patient_id WHERE p.claim_source='medical_claims'"]:
+   with self.subTest(sql=sql):self.assertIsNotNone(S.problem(self.q,sql))
+
+ def test_every_reuse_and_union_branch_keeps_its_source(self):
+  for sql in ["WITH p AS (SELECT * FROM claim) SELECT SUM(allowed_cents) FROM p WHERE claim_source='medical_claims' UNION ALL SELECT SUM(allowed_cents) FROM p",
+              "SELECT SUM(allowed_cents) FROM claim WHERE claim_source='medical_claims' UNION ALL SELECT SUM(allowed_cents) FROM claim",
+              "WITH p AS (SELECT MAX(claim_source) AS feed,SUM(allowed_cents) AS amount FROM claim) SELECT amount FROM p WHERE feed='medical_claims'"]:
+   with self.subTest(sql=sql):self.assertIsNotNone(S.problem(self.q,sql))
+
+ def test_explicit_source_comparison_and_unrelated_provider_wording_are_unchanged(self):
+  for q in ['Compare provider claims with payer claims', 'Compare provider claims with all received claims',
+            'List providers with claims', 'Total allowed_cents on claims']:
+   with self.subTest(question=q):self.assertIsNone(S.problem(q,'SELECT SUM(allowed_cents) FROM claim'))
+
 if __name__=='__main__':unittest.main()

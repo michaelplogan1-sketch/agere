@@ -43,6 +43,7 @@ SOURCES = {
     'payer-feed medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'payer medical claims': ('payer_claim', ('counts_in_metrics', 1)),
     'provider medical claims': ('claim', ('claim_source', 'medical_claims')),
+    'provider claims': ('claim', ('claim_source', 'medical_claims')),
     'diabetics': ('patient', ('condition', 'diabetes')),
     'cardiologists': ('clinician', ('specialty', 'Cardiology')), 'nephrologists': ('clinician', ('specialty', 'Nephrology')),
     'endocrinologists': ('clinician', ('specialty', 'Endocrinology')), 'oncologists': ('clinician', ('specialty', 'Oncology')),
