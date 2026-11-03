@@ -100,3 +100,31 @@ Browser verification then exposed IDs-only cohort labels and expanded JSON-strin
 All live checks are terminal. This increment adds$0.02999816knownAPI-equivalent usage; actual compute/review costs and preceding attempts remain outside that subtotal. All source and original attempt records remain preserved. No new model weights or clinical final-answer bottle was promoted.
 
 Next: use the existing release scorecard to assess current applicability and guarded reuse; preserve the six unresolved checks and undecided coverage as explicit dependencies. The change inventory identifies20backend modules and2presentation assets since the prior finite engineering decision. Do not rerun supported checks or rewrite the entire answer merely to obtain a stronger verifier vote. FullMVP/independent clinical/model qualification remain false; alltencharterareas remain in scope.
+
+## Current release decision and actual execution reuse — 2026-11-03T19:43:36.988190+00:00
+
+The finite local engineering decision is current at `e7a0d1c`: **nine requirements pass across all ten acceptance areas**. All six original saved workflows reopen through the normal current HTTP service with exact answers, decisions, work and follow-up. Source interpretation was not repeated. This is a functional applicability decision; it does not close the clinical performance or independent qualification gaps.
+
+The latest preceding finite release was `a32a2c5`, which already contained an executed installation/restore proof. The inventory compared 22 changed files against `aec778d`; 15 differ from that newer finite release. The current decision explicitly maps the changes to sealed workflow evidence. Installation/recovery mechanisms are unchanged; no new current installation drill is claimed.
+
+Two ordinary HTTP requests for the same provider-claims question returned all **795 exact patients, claim counts and integer amounts**. The first correctly declined the older execution candidate after code/policy changes and qualified a current seven-action candidate. The second selected that candidate automatically, reexecuted each native action, retained final verification and used **zero Claude callbacks**.
+
+| Current numeric observation | Qualification request | Ordinary repeat |
+| --- | ---: | ---: |
+| Wall time | 128.053 seconds | 6.733 seconds |
+| New Claude subscription calls | 10 | 0 |
+| New Jev / Perplexity calls | 2 / 1 | 2 / 1 |
+| Known API-equivalent cost | $1.809232 | $0.004186 |
+| Exact patient rows | 795 | 795 |
+
+This one same-question pair observed a 94.7% wall-time reduction and 99.8% API-equivalent reduction. It is exact execution reuse, with warm caches, not a cold comparison, changed-question transfer, clinical accuracy gain or all-in cost claim. The 21 selected reuse/feedback/rollback tests pass. No new weights or unverified clinical answer were promoted. All 16 new attempts and earlier attempts remain accounted for.
+
+The original 57-patient clinical context now has six internal evidence-review items attached to its six unresolved packets. Idempotent creation and persisted blocked-review state passed; the other items remained exact. The app rejected PharmD program work from the incomplete answer. A saved-cohort follow-up counted all57 while retaining partial status. All96 preceding saved answers remained byte exact; no provider call or export was needed for this follow-up check.
+
+Verification setup failures are retained. The older temporary six-case runtime lacked its semantic file; an isolated sealed checkpoint supplied the reference runtime. Its declared internal links needed relocation, and a standalone diagnostic omitted service registration for reference contexts. The corrected check used the normal service, where that registration already exists; all six passed in223.942seconds. This did not require a product patch. Thirty-one absent evidence files were restored from sealed copies only after exact hash checks; the cause of their prior absence is unknown.
+
+The checkpoint semantic file has a different raw hash and timestamp. An exhaustive byte comparison found differences only at offsets27,43,95—the [SQLite header revision fields](https://www.sqlite.org/fileformat.html). SQL schema rows and all source/schema payload bytes match; full raw hashes and all differences are retained. This is offline evidence applicability, not a relaxation of runtime identity guards.
+
+The clinical answer remains **partial/unverified:55of61 source packets supported, six unresolved, coverage undecided**. Engineering progress has not established clinical accuracy, superiority, useful prediction-model qualification or customer deployment readiness. The remaining engineering focus is repeated clinical planning/source work and a fair simpler-route cost/latency comparison. The canonical control file contains the exact next action.
+
+Evidence: `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`.

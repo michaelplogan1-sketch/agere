@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T19:19:03.044752+00:00",
+  "updated_at": "2026-11-03T19:43:36.988190+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -402,7 +402,8 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Original repaired57patient draft has50supported dependency packets and11unresolved, with undecided coverage; all dependencies checked. Ten unresolved packets take long-context after non-source parent partition failure; one rationale field remains below threshold. Product result/reuse/current ten-area closure and independent clinical/model qualification remain separate.",
       "engineering_current_status": "ee4f9b7 targeted repair qualified; source partition gap10packets and1field/coverage unresolved; no activejob. Owned8890 remains942ff1f.",
-      "next_action": "G3: inspect the ten unresolved source packets diagnosed in focused-draft-source-review/unresolved-partition-diagnosis.json. In the existing evidence_projection source_dependency_packets path, their non-source parent exceeds the transport envelope even after complete source separation; parent-size-diagnosis.json identifies evidence as the largest retained field. Prove exact dependency selection/deduplication or further partition closure offline on these actual packets, preserving every source/claim/native value and uncertainty, then check only a changed unresolved dependency through existing providers. Do not rerun the50supported packets, lower thresholds, truncate sources or request another whole-answer rewrite. Keep the separate below-threshold rationale field and undecided coverage explicit. Then finish original-question product result, guarded reuse and current ten-area applicability. No source freeze or active job; owned8890 remains lastsealed942ff1f."
+      "next_action": "G3: close the remaining clinical routing/economics gap, using retained original-question traces before any provider work. Locate repeated native planning and source-field contract work that is discarded when the final clinical answer remains partial; compare the existing owned-recovery path with ordinary execution. Qualify reuse of completed, source-bound work only where current guards and exact results permit it, without selecting an unverified clinical final answer. Use a minimal equal-information baseline for any changed path and run only the affected check. No repeat of the55supported packets, full-cohort source-reading campaign, wholesale rewrite or untargeted training. Preserve all57patients, six unresolved source checks, undecided coverage, alltenareas, feedback/quarantine/rollback and separate G5 qualification/customer dependencies.",
+      "latest_current_release_decision": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json"
     },
     {
       "id": "G5",
@@ -480,11 +481,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "original_question_completion_delivery",
+    "kind": "current_release_and_guarded_reuse_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The original57patient draft now reaches the saved product with114patient-specific prose fields, exact native values and honest partial status. Large complete packets retain configured Jev-to-Perplexity fallback. Cohort names/IDs and prose-first details make the result reviewable; JSON-string records stay intact and expandable.",
-    "measured_failure_reduction": "Ten unchanged unresolved packets used10newPerplexitycalls/$0.02999816API-equivalent,0newClaude/Jevcalls. Five cleared existing thresholds; total50to55supported/11to6unresolved.62selectedtests pass. Cached final review25.764s/0providers preserves all50prior supported verdicts. RealHTTP preserves57patients/114prosefields/all93prioranswers; browser verifies names/prose-first/partialstatus.",
+    "user_behavior_delta": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
+    "measured_failure_reduction": "795exact numeric patient rows/counts/integer amounts in both ordinary requests.128.052538s/13newcalls/$1.809231572API-equivalent on current-policy qualification;6.732681s/3newcalls/$0.004185682on ordinary reuse,0Claude callbacks. Six original workflows reopen through current HTTP with exact answers/work/follow-ups in223.941802s.21reuse/rollback tests pass. Original57patient follow-up preserves96prior saved answers and0providerattempts/0exports.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -518,16 +519,36 @@
       "artifacts/agere-packet-representation-2026-11-03/presentation-applicability.json",
       "artifacts/agere-packet-representation-2026-11-03/connected-tests.log",
       "artifacts/agere-packet-representation-2026-11-03/rollback.json",
-      "artifacts/agere-packet-representation-2026-11-03/release-change-inventory.json"
+      "artifacts/agere-packet-representation-2026-11-03/release-change-inventory.json",
+      "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
+      "artifacts/agere-current-release-closure-2026-11-03/acceptance/receipt.json",
+      "artifacts/agere-current-release-closure-2026-11-03/acceptance/scorecard.json",
+      "artifacts/agere-current-release-closure-2026-11-03/acceptance/capability-map.json",
+      "artifacts/agere-current-release-closure-2026-11-03/code-applicability.json",
+      "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json",
+      "artifacts/agere-current-release-closure-2026-11-03/ordinary-current/run-receipt.json",
+      "artifacts/agere-current-release-closure-2026-11-03/ordinary-reuse/run-receipt.json",
+      "artifacts/agere-current-release-closure-2026-11-03/reuse-candidate-events.json",
+      "artifacts/agere-current-release-closure-2026-11-03/reuse-guard-tests.log",
+      "artifacts/agere-current-release-closure-2026-11-03/review-followup/receipt.json",
+      "artifacts/agere-current-release-closure-2026-11-03/review-followup/scope-check.json",
+      "artifacts/agere-current-release-closure-2026-11-03/six-case-http/receipt.json",
+      "artifacts/agere-current-release-closure-2026-11-03/scope-preservation.json",
+      "artifacts/agere-current-release-closure-2026-11-03/evidence-restoration.json",
+      "artifacts/agere-current-release-closure-2026-11-03/isolated-checkpoint-rebinding.json",
+      "artifacts/agere-current-release-closure-2026-11-03/semantic-snapshot-byte-proof.json",
+      "artifacts/agere-current-release-closure-2026-11-03/semantic-snapshot-page-comparison.json",
+      "artifacts/agere-current-release-closure-2026-11-03/semantic-snapshot-compatibility.json",
+      "artifacts/agere-current-release-closure-2026-11-03/verification-server-stopped.json"
     ],
-    "remaining_gap": "Original57patient result is now saved and readable, but remains partial/unverified:55of61scheduled source packets supported,6unresolved and coverage undecided. No located source fault or confirmed missing output in this review. Independent source/clinical/model/outcome qualification remains open. Current ten-area applicability, original-question evidence-review follow-up and guarded reuse under current policy still need their scoped release checks; previous9/9is historical.",
-    "next_action": "G3: finish the current release decision using existing scorecard and artifacts/agere-packet-representation-2026-11-03/release-change-inventory.json. Map20changed backend modules plus2presentation assets sinceaec778d to their sealed workflow evidence; run only materially affected missing checks. Verify original-question evidence-review follow-up and existing qualified execution reuse under current policy; keep unverified clinical final answers ineligible for promotion. Preserve six unresolved source checks/undecided coverage as explicit dependencies. Do not rerun the55supported packets, whole-cohort source campaign or another wholesale frontier rewrite. Retain alltenareas and separate G5clinical/model qualification/customer prerequisites.",
+    "remaining_gap": "The current finite functional matrix passes9/9 across alltenareas. The original57patient answer is saved and usable for evidence review, but remains partial/unverified with55of61source packets supported,6unresolved and undecided coverage. Current numeric exact-question reuse is measured; current full-clinical cost/latency and a suitable simpler-route comparison remain open. Independent clinical/model/outcome qualification and customer deployment remain separate. No fullMVP or superiority claim.",
+    "next_action": "G3: close the remaining clinical routing/economics gap, using retained original-question traces before any provider work. Locate repeated native planning and source-field contract work that is discarded when the final clinical answer remains partial; compare the existing owned-recovery path with ordinary execution. Qualify reuse of completed, source-bound work only where current guards and exact results permit it, without selecting an unverified clinical final answer. Use a minimal equal-information baseline for any changed path and run only the affected check. No repeat of the55supported packets, full-cohort source-reading campaign, wholesale rewrite or untargeted training. Preserve all57patients, six unresolved source checks, undecided coverage, alltenareas, feedback/quarantine/rollback and separate G5 qualification/customer dependencies.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "Owned8890PID41475/session12425; backend4c5832b/currentassets e7a0d1c. Allcheckjobs terminal; no sourcefreeze.",
+    "coordination": "Owned8890PID41475/session12425 remains selected; isolated55521PID43781 stopped after allsixHTTPchecks. Alljobs terminal; no sourcefreeze.",
     "remaining_blockers": [
-      "Original57patient result is now saved and readable, but remains partial/unverified:55of61scheduled source packets supported,6unresolved and coverage undecided. No located source fault or confirmed missing output in this review. Independent source/clinical/model/outcome qualification remains open. Current ten-area applicability, original-question evidence-review follow-up and guarded reuse under current policy still need their scoped release checks; previous9/9is historical."
+      "The current finite functional matrix passes9/9 across alltenareas. The original57patient answer is saved and usable for evidence review, but remains partial/unverified with55of61source packets supported,6unresolved and undecided coverage. Current numeric exact-question reuse is measured; current full-clinical cost/latency and a suitable simpler-route comparison remain open. Independent clinical/model/outcome qualification and customer deployment remain separate. No fullMVP or superiority claim."
     ],
-    "latest_progress": "Ten unchanged unresolved packets used10newPerplexitycalls/$0.02999816API-equivalent,0newClaude/Jevcalls. Five cleared existing thresholds; total50to55supported/11to6unresolved.62selectedtests pass. Cached final review25.764s/0providers preserves all50prior supported verdicts. RealHTTP preserves57patients/114prosefields/all93prioranswers; browser verifies names/prose-first/partialstatus.",
+    "latest_progress": "795exact numeric patient rows/counts/integer amounts in both ordinary requests.128.052538s/13newcalls/$1.809231572API-equivalent on current-policy qualification;6.732681s/3newcalls/$0.004185682on ordinary reuse,0Claude callbacks. Six original workflows reopen through current HTTP with exact answers/work/follow-ups in223.941802s.21reuse/rollback tests pass. Original57patient follow-up preserves96prior saved answers and0providerattempts/0exports.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -557,38 +578,30 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "ee4f9b7 targeted repair qualified; full original clinical review returned unresolved_verification.942ff1f remains active.",
+      "current_engineering": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial_unresolved_verification",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json"
+      "evidence": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
+      "engineering_passed": 9,
+      "engineering_total": 9
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-03T18:23:50.223017+00:00",
-    "workflow_change": "Undecided coverage cannot reject or confirm. Exact-draft localized prose changes preserve the whole native answer and receive full validation; live malformed patch was rejected without mutation.",
-    "unsealed_work": {
-      "kind": "completion_routing_and_localized_prose_candidate",
-      "status": "offline_proofs_passed_live_contract_rejected",
-      "source_frozen": false,
-      "source_edits_allowed": true,
-      "candidate_commits": [
-        "430c92c",
-        "81996ed"
-      ],
-      "receipt": "artifacts/agere-completion-routing-2026-11-03/localized-prose-live-retry/run-receipt.json",
-      "interrupted_run": "artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json",
-      "proof": "artifacts/agere-completion-routing-2026-11-03/interrupted-offline-audit/localized-prose-repair-proof.json",
-      "report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md"
-    },
+    "at": "2026-11-03T19:43:36.988190+00:00",
+    "workflow_change": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
+    "unsealed_work": null,
     "bottling_assessment": {
-      "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
-      "selected_event": 88,
-      "actions": 6,
-      "later_ordinary_reuse_measured": false,
-      "receipt": "artifacts/agere-numeric-native-confirmation-2026-11-03/learning-diagnosis.json"
+      "candidate": "d9f9ae8cd0bcdd7b32fd874203f578ee6db1e41751e364c2561cc45ebf297570",
+      "selected_event": 100,
+      "reuse_outcome_event": 101,
+      "actions": 7,
+      "later_ordinary_reuse_measured": true,
+      "receipt": "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json",
+      "clinical_answer_promoted": false,
+      "parameter_transfer_scope": "Earlier a32a2c5 analysis-shape evidence remains separate; this pair proves exact-question execution reuse."
     },
     "owner_review": {
       "at": "2026-10-29T11:48:18.601324+00:00",
@@ -3192,6 +3205,15 @@
         "artifacts/agere-completion-routing-2026-11-03/focused-draft-source-review/parent-size-diagnosis.json"
       ],
       "scope_impact": "Alltenareas retained; no clinical qualification, threshold weakening, new caps or deployment."
+    },
+    {
+      "at": "2026-11-03T19:43:36.988190+00:00",
+      "decision": "Seal the current nine-requirement/ten-area functional decision and observed ordinary numeric reuse. Retain clinical partial status and explicit qualification dependencies. Use actual repeated clinical work to choose the next cost/latency correction; do not add a model catalog, repeat passing campaigns or promote uncertain clinical answers.",
+      "evidence": [
+        "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
+        "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json"
+      ],
+      "scope_impact": "Alltenareas preserved. Functional engineering, practical clinical performance and clinical/model/customer qualification remain distinct."
     }
   ],
   "unsealed_work": null,
@@ -3222,7 +3244,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: finish the current release decision using existing scorecard and artifacts/agere-packet-representation-2026-11-03/release-change-inventory.json. Map20changed backend modules plus2presentation assets sinceaec778d to their sealed workflow evidence; run only materially affected missing checks. Verify original-question evidence-review follow-up and existing qualified execution reuse under current policy; keep unverified clinical final answers ineligible for promotion. Preserve six unresolved source checks/undecided coverage as explicit dependencies. Do not rerun the55supported packets, whole-cohort source campaign or another wholesale frontier rewrite. Retain alltenareas and separate G5clinical/model qualification/customer prerequisites.",
+  "next_action": "G3: close the remaining clinical routing/economics gap, using retained original-question traces before any provider work. Locate repeated native planning and source-field contract work that is discarded when the final clinical answer remains partial; compare the existing owned-recovery path with ordinary execution. Qualify reuse of completed, source-bound work only where current guards and exact results permit it, without selecting an unverified clinical final answer. Use a minimal equal-information baseline for any changed path and run only the affected check. No repeat of the55supported packets, full-cohort source-reading campaign, wholesale rewrite or untargeted training. Preserve all57patients, six unresolved source checks, undecided coverage, alltenareas, feedback/quarantine/rollback and separate G5 qualification/customer dependencies.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3231,5 +3253,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T19:19:03.044752+00:00"
+  "latest_checkpoint": "2026-11-03T19:43:36.988190+00:00"
 }
