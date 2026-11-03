@@ -1188,6 +1188,21 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     except (ValueError,KeyError,IndexError,TypeError) as exc:
         prose_problem=str(exc);prose_failures=getattr(exc,'progress_failures',[{'code':'invalid_binding','field_group':'prose'}])
         static_feedback.append(prose_problem)
+    # The investigator must obey the same received-source rule as typed plans.
+    # Check only dependencies of final rows/bound prose, so an exploratory
+    # payer query cannot poison a later correction to provider-only evidence.
+    from .source_scope import provider_claim_problem
+    roots=[answer.get('table_from_tool')]
+    prose=json.dumps(answer.get('computed_prose')or[],default=str)
+    roots.extend(view for view in native if re.search(r'(?<![A-Za-z0-9_])'+re.escape(view)+r'(?![A-Za-z0-9_])',prose))
+    dependencies=native_result_dependencies(calls,[root for root in roots if root])
+    for call in calls:
+        result=call.get('result')or{}
+        if call.get('name')!='query_sql' or not isinstance(result,dict) or result.get('error'):continue
+        if dependencies is not None and result.get('result_view')not in dependencies:continue
+        sql=result.get('executed_query')or(call.get('input')or{}).get('sql')
+        issue=provider_claim_problem(question,sql)if isinstance(sql,str)else None
+        if issue and issue not in static_feedback:static_feedback.append(issue)
     from .drug_classes import group_query_issues
     scope_issues=group_query_issues(question,calls,answer.get('table_from_tool'))
     static_feedback.extend(scope_issues)
