@@ -59,9 +59,9 @@
     }
   },
   "latest_scoped_followup": {
-    "product_commit": "735f1a6c3833cb5beefa655afbe8acf091bb3995",
-    "receipt": "artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json",
-    "scope": "Native progress/source guard correction;141distinct affected checks and zero-provider retained workflow proofs. Two interrupted comparisons remain unqualified. Ready8890still22c8c27.",
+    "product_commit": "168ae81624cb381cb7a41a4763370ff9baca9abc",
+    "receipt": "artifacts/agere-verifier-dependency-scope-2026-11-03/delivery-receipt.json",
+    "scope": "Final native dependency packet projection;90targeted checks and exact retained numeric/clinical comparison. Runtime selection and focused live verification remain pending.",
     "new_full_acceptance": false,
     "runtime_selected": false
   },

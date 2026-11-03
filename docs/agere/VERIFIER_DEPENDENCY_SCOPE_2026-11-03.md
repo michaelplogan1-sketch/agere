@@ -1,0 +1,15 @@
+# Verifier dependency scope — November 3, 2026
+
+Product candidate `168ae81624cb381cb7a41a4763370ff9baca9abc` connects patient verification to the existing final native dependency closure. Previously all 795 patient packets for a provider-only result included earlier payer-feed calculations that were not dependencies of that result. New temporary results, all raw calls and the complete global receipt remain available for auditing; document observations, machine source reviews and unknown lineage remain conservatively retained.
+
+The correction excludes only SQL observations whose known origins are outside the final dependency closure. Required origins of identical values are retained without importing irrelevant origins. No model thresholds, source facts, final field claims or clinical acceptance rules changed.
+
+Ninety affected checks pass. In the exact retained numeric comparison, patient packet content fell from 29,977,097 to 7,927,331 bytes (73.56%), preserving all 795 patients and 2,385 field claims. The global packet is byte-identical. In the retained original clinical case, all 57 patients, 1,254 field claims, document contexts, clocks, review scopes and final rows remain exact; patient packet content fell from 7,866,871 to 7,640,947 bytes. Both comparisons preserve every raw native receipt and all 34,062 provider ledger rows. They use no providers and create no deliverables. These are engineering projection results, not measured live cost, latency or clinical-quality improvements. Initial authored-fixture errors and baseline failures remain in the logs.
+
+Mike reaffirmed that the build must continue. The existing thread continuation was reactivated through the automation tool and read back as ACTIVE at a 30-minute interval, with routine notifications muted. This corrects the previous continuation failure; the running application alone was not performing build work. Owned-job checks and frozen-source protections remain mandatory on every wakeup.
+
+Current packet correction is an engineering candidate; no live verifier quality/cost or whole-workflow speedup is established. Owned8890 remains22c8c27. Original clinical result remains partial with522 unresolved field judgments; independent qualification and full MVP acceptance remain open.
+
+Next: Prepare one focused verifier comparison using retained source-bound numeric packets and authored wrong-source, amount, date and unsupported-clinical-claim mutations. Compare the previous and current packet projections through the existing typed verifier without changing thresholds, using all-attempt accounting. Do not rerun the whole clinical cohort. Only select the candidate in8890 if the targeted evidence supports it; preserve genuine uncertainty and all ten acceptance areas. Inspect active receipts first, avoid duplicate dispatch and keep continuation ACTIVE with routine notifications muted.
+
+Evidence: `artifacts/agere-verifier-dependency-scope-2026-11-03/delivery-receipt.json`. No new full-release or recovery acceptance is claimed; the earlier versioned engineering release remains separate.

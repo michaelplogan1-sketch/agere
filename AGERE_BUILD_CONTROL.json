@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T01:32:54.080215+00:00",
+  "updated_at": "2026-11-03T10:25:19.084808+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -472,19 +472,19 @@
     }
   ],
   "checkpoint": {
-    "kind": "investigator_native_progress_and_source_scope",
+    "kind": "verifier_final_native_dependency_scope",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Candidate investigator recognizes repeated native results despite new temporary names and rejects provider/payer source mismatch before semantic verification. Ready8890 stays at the prior on-demand release pending focused assessment.",
-    "measured_failure_reduction": "Retained controller now reaches escalation after12actions rather than continuing37; wrong-source3172-row candidate now fails deterministically before semantic dispatch, correct795-row source still proceeds. Allfour exact latest final candidates are rejected without providers.",
+    "user_behavior_delta": "Candidate patient verification receives the final native dependency closure while retaining documents, source reviews and unknown lineage.",
+    "measured_failure_reduction": "795/795 numeric packets previously included unrelated payer contracts; current final dependency packets remove those contracts and reduce patient bytes by73.56%. All requested fields and original57-patient clinical contexts remain exact.",
     "evidence": [
-      "artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json",
-      "docs/agere/INVESTIGATOR_ROUTING_REPAIR_2026-11-02.md"
+      "artifacts/agere-verifier-dependency-scope-2026-11-03/delivery-receipt.json",
+      "docs/agere/VERIFIER_DEPENDENCY_SCOPE_2026-11-03.md"
     ],
-    "remaining_gap": "Original57-patient clinical answer remains partial with522 unresolved field judgments; independent source-family/clinical/model qualification remains open.; Both full-investigator attempts were interrupted; no successful complete investigator comparison, equal-quality break-even, whole-clinical speedup or all-in cost is established.; Owned8890 remains22c8c27; candidate735f1a6 has141distinct affected checks and retained native workflow proof, awaiting focused continuation assessment before runtime selection.; No new weights or partial clinical whole-answer bottle; customer deployment/outcome qualification remains separate; OWASP/HHS deferred.",
-    "next_action": "Use the exact retained provider-only795-patient final dependency and its verifier responses to distinguish native arithmetic/source-contract obligations from unresolved semantic judgments. Prove any proposed task-dependent routing change against wrong-source, changed-amount, changed-date and clinical-claim mutations before more provider work. Then perform one justified focused continuation with both current guards; select it in8890 only on relevant workflow evidence. Do not restart full comparisons, repeat the whole clinical run, regenerate exports, lower thresholds or promote a partial answer.",
+    "remaining_gap": "Current packet correction is an engineering candidate; no live verifier quality/cost or whole-workflow speedup is established. Owned8890 remains22c8c27. Original clinical result remains partial with522 unresolved field judgments; independent qualification and full MVP acceptance remain open.",
+    "next_action": "Prepare one focused verifier comparison using retained source-bound numeric packets and authored wrong-source, amount, date and unsupported-clinical-claim mutations. Compare the previous and current packet projections through the existing typed verifier without changing thresholds, using all-attempt accounting. Do not rerun the whole clinical cohort. Only select the candidate in8890 if the targeted evidence supports it; preserve genuine uncertainty and all ten acceptance areas. Inspect active receipts first, avoid duplicate dispatch and keep continuation ACTIVE with routine notifications muted.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "All comparison and offline jobs terminal. Source unfrozen; no provider/training job. Owned8890 remains89314/session25934 at22c8c27. SchedulerPAUSED.",
+    "coordination": "No provider/training/frozen job. Continuation ACTIVE with routine notifications muted. Owned8890 remains22c8c27.",
     "remaining_blockers": [
       "Original57-patient clinical answer remains partial with522 unresolved field judgments; independent source-family/clinical/model qualification remains open.",
       "Both full-investigator attempts were interrupted; no successful complete investigator comparison, equal-quality break-even, whole-clinical speedup or all-in cost is established.",
@@ -492,7 +492,7 @@
       "No new weights or partial clinical whole-answer bottle; customer deployment/outcome qualification remains separate; OWASP/HHS deferred."
     ],
     "latest_progress": "36affectedchecks,current57patient/12rowanswerreopens,zero newcohortexports/providers.",
-    "results_report": "docs/agere/INVESTIGATOR_ROUTING_REPAIR_2026-11-02.md",
+    "results_report": "docs/agere/VERIFIER_DEPENDENCY_SCOPE_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -531,8 +531,8 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "Both live attempts interrupted; all5906newattempts retained. No live comparison pass.",
-    "at": "2026-11-03T01:32:54.080215+00:00",
-    "workflow_change": "Two existing investigator guards now share native identity/source scope with the rest of the stack; all raw receipts and supported unknowns are retained.",
+    "at": "2026-11-03T10:25:19.084808+00:00",
+    "workflow_change": "Remove provably unrelated earlier SQL computations from individual patient reviewer inputs; preserve global audit and final claims.",
     "unsealed_work": null,
     "bottling_assessment": {
       "financial_selected": "b0f800790ec3d701b03d784bbd88b0e5d84d5768d3885240365ae279c4e98e01",
@@ -574,12 +574,12 @@
       "52284fe"
     ],
     "continuation_scheduler": {
-      "status": "PAUSED",
+      "status": "ACTIVE",
       "id": "finish-agere-overnight-mvp-candidate",
-      "observed_at": "2026-10-29T20:50:27.829000+00:00",
-      "reactivation_attempt": "rejected_by_automatic_approval_review",
-      "reason": "Earlier explicit automatic-prompt pause; the request to continue while away did not clearly authorize recurring prompts.",
-      "unaffected_work": "Continue the active authorized build directly in this chat."
+      "observed_at": "2026-11-03T10:18:56.706541+00:00",
+      "interval_minutes": 30,
+      "notification_policy": "failed_runs_only",
+      "reason": "Mike reaffirmed continued work on November3. Existing continuation reactivated through the automation tool; configuration read-back confirms ACTIVE. Routine notifications remain muted."
     },
     "owned_recovery_run": {
       "kind": "actual_installed_local_operations",
@@ -2757,6 +2757,11 @@
         "artifacts/agere-investigator-progress-confirmation-2026-11-02/delivery-receipt.json"
       ],
       "scope_impact": "Alltenareas retained;9/9 prior engineering release remains versioned, G5separate; no routine deliverables or changed clinical thresholds."
+    },
+    {
+      "at": "2026-11-03T10:18:56.706541+00:00",
+      "decision": "Restore recurring continuation without routine notifications after Mike reaffirmed uninterrupted work.",
+      "scope_impact": "No product scope or provider authorization change; existing owned-job/frozen-source guards remain required."
     }
   ],
   "unsealed_work": null,
@@ -2787,7 +2792,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Use the exact retained provider-only795-patient final dependency and its verifier responses to distinguish native arithmetic/source-contract obligations from unresolved semantic judgments. Prove any proposed task-dependent routing change against wrong-source, changed-amount, changed-date and clinical-claim mutations before more provider work. Then perform one justified focused continuation with both current guards; select it in8890 only on relevant workflow evidence. Do not restart full comparisons, repeat the whole clinical run, regenerate exports, lower thresholds or promote a partial answer.",
+  "next_action": "Prepare one focused verifier comparison using retained source-bound numeric packets and authored wrong-source, amount, date and unsupported-clinical-claim mutations. Compare the previous and current packet projections through the existing typed verifier without changing thresholds, using all-attempt accounting. Do not rerun the whole clinical cohort. Only select the candidate in8890 if the targeted evidence supports it; preserve genuine uncertainty and all ten acceptance areas. Inspect active receipts first, avoid duplicate dispatch and keep continuation ACTIVE with routine notifications muted.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2796,5 +2801,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T01:32:54.080215+00:00"
+  "latest_checkpoint": "2026-11-03T10:25:19.084808+00:00"
 }
