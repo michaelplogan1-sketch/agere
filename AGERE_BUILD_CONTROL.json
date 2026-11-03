@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T20:00:49.428959+00:00",
+  "updated_at": "2026-11-03T20:27:05.288040+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -481,11 +481,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_release_and_guarded_reuse_delivery",
+    "kind": "harder_question_failed_qualification",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
-    "measured_failure_reduction": "795exact numeric patient rows/counts/integer amounts in both ordinary requests.128.052538s/13newcalls/$1.809231572API-equivalent on current-policy qualification;6.732681s/3newcalls/$0.004185682on ordinary reuse,0Claude callbacks. Six original workflows reopen through current HTTP with exact answers/work/follow-ups in223.941802s.21reuse/rollback tests pass. Original57patient follow-up preserves96prior saved answers and0providerattempts/0exports.",
+    "user_behavior_delta": "No new product capability accepted. A harder ordinary two-year payer analysis was attempted, stopped after model verification fanout/rate failures, and its source-relation discrepancies were independently located.",
+    "measured_failure_reduction": "No failure removed yet. Native shape rejection reproduced; retained candidate differs in10cells across6patients; all4655new attempts retained; app restored unchanged.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -539,16 +539,20 @@
       "artifacts/agere-current-release-closure-2026-11-03/semantic-snapshot-byte-proof.json",
       "artifacts/agere-current-release-closure-2026-11-03/semantic-snapshot-page-comparison.json",
       "artifacts/agere-current-release-closure-2026-11-03/semantic-snapshot-compatibility.json",
-      "artifacts/agere-current-release-closure-2026-11-03/verification-server-stopped.json"
+      "artifacts/agere-current-release-closure-2026-11-03/verification-server-stopped.json",
+      "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
+      "artifacts/agere-harder-bottling-2026-11-03/offline-diagnosis.json",
+      "artifacts/agere-harder-bottling-2026-11-03/reversal-link-audit.json",
+      "artifacts/agere-harder-bottling-2026-11-03/learning-state-check.json"
     ],
-    "remaining_gap": "The current finite functional matrix passes9/9 across alltenareas. The original57patient answer is saved and usable for evidence review, but remains partial/unverified with55of61source packets supported,6unresolved and undecided coverage. Current numeric exact-question reuse is measured; current full-clinical cost/latency and a suitable simpler-route comparison remain open. Independent clinical/model/outcome qualification and customer deployment remain separate. No fullMVP or superiority claim.",
-    "next_action": "G3: close the remaining clinical routing/economics gap, using retained original-question traces before any provider work. Locate repeated native planning and source-field contract work that is discarded when the final clinical answer remains partial; compare the existing owned-recovery path with ordinary execution. Qualify reuse of completed, source-bound work only where current guards and exact results permit it, without selecting an unverified clinical final answer. Use a minimal equal-information baseline for any changed path and run only the affected check. No repeat of the55supported packets, full-cohort source-reading campaign, wholesale rewrite or untargeted training. Preserve all57patients, six unresolved source checks, undecided coverage, alltenareas, feedback/quarantine/rollback and separate G5 qualification/customer dependencies.",
+    "remaining_gap": "Harder numerical composition lacks qualified native verification and attempted unsupported reversal exclusions. Original57-patient clinical answer remains partial with55/61supported source packets and6unresolved. Complete clinical/model/total-economics/customer qualification remains separate.",
+    "next_action": "G3: repair the user-requested harder payer-analysis failure offline before another provider run. Use artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json and retained SQL/results. Qualify conditional multi-year arithmetic, ratios and missing-value handling in the shared native verifier while preserving global semantic review and rejection of clinical-classification shortcuts; require source-supported claim identity for reversal exclusions. Diagnose repeated provider throughput failures in the same verification path. Preserve all attempts, failed work and unknown costs. Only after affected offline checks pass and provider throughput is available, run the affected ordinary confirmation and then a qualified repeat. Retain the prior clinical routing/economics next action in the harder-run protocol, all57clinicalpatients,55/61supported packets,six unresolved source dependencies and alltenareas. No whole-cohort source campaign, architecture rewrite, new weights or clinical qualification claim.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "Owned8890PID41475/session12425 remains selected; isolated55521PID43781 stopped after allsixHTTPchecks. Alljobs terminal; no sourcefreeze.",
+    "coordination": "All harder-question jobs terminal. Prior owned8890PID41475 stopped; same-code app restored on8890PID47807/session12518, GET/ask200. No active sourcefreeze or provider job.",
     "remaining_blockers": [
       "The current finite functional matrix passes9/9 across alltenareas. The original57patient answer is saved and usable for evidence review, but remains partial/unverified with55of61source packets supported,6unresolved and undecided coverage. Current numeric exact-question reuse is measured; current full-clinical cost/latency and a suitable simpler-route comparison remain open. Independent clinical/model/outcome qualification and customer deployment remain separate. No fullMVP or superiority claim."
     ],
-    "latest_progress": "795exact numeric patient rows/counts/integer amounts in both ordinary requests.128.052538s/13newcalls/$1.809231572API-equivalent on current-policy qualification;6.732681s/3newcalls/$0.004185682on ordinary reuse,0Claude callbacks. Six original workflows reopen through current HTTP with exact answers/work/follow-ups in223.941802s.21reuse/rollback tests pass. Original57patient follow-up preserves96prior saved answers and0providerattempts/0exports.",
+    "latest_progress": "User-requested harder test failed and is fully preserved; no bottle validation/selection or repeat. Offline repair is next.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -590,9 +594,17 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-03T19:43:36.988190+00:00",
+    "at": "2026-11-03T20:27:05.288040+00:00",
     "workflow_change": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
-    "unsealed_work": null,
+    "unsealed_work": {
+      "status": "failed_qualification_pending_offline_repair",
+      "kind": "harder_composition_verification_and_relation_binding",
+      "receipt": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
+      "all_jobs_terminal": true,
+      "source_frozen": false,
+      "product_edits": false,
+      "provider_repeat_performed": false
+    },
     "bottling_assessment": {
       "candidate": "d9f9ae8cd0bcdd7b32fd874203f578ee6db1e41751e364c2561cc45ebf297570",
       "selected_event": 100,
@@ -3214,9 +3226,32 @@
         "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json"
       ],
       "scope_impact": "Alltenareas preserved. Functional engineering, practical clinical performance and clinical/model/customer qualification remain distinct."
+    },
+    {
+      "at": "2026-11-03T20:06:29.550573+00:00",
+      "gate": "G3",
+      "decision": "Execute Mike's requested harder bottling check before returning to retained clinical routing diagnosis.",
+      "reason": "The current exact-question numeric pair motivates a harder unfamiliar multi-source, multi-year calculation. This is a new workflow composition, not a rerun of the passing 795-patient case.",
+      "evidence": "artifacts/agere-harder-bottling-2026-11-03/run-protocol.json",
+      "scope_impact": "All ten areas and independent qualification retained. No product rewrite, clinical source campaign or model-weight promotion."
+    },
+    {
+      "at": "2026-11-03T20:27:05.288040+00:00",
+      "gate": "G3",
+      "decision": "Stop the harder run on demonstrated verification fanout and provider rate failure; preserve failure and prioritize offline shared-path repair.",
+      "evidence": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
+      "scope_impact": "No narrowing, new cap or clinical promotion. Earlier795-row success remains valid only in its declared scope. Alltenareas retained."
     }
   ],
-  "unsealed_work": null,
+  "unsealed_work": {
+    "status": "failed_qualification_pending_offline_repair",
+    "kind": "harder_composition_verification_and_relation_binding",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
+    "product_edits": false,
+    "provider_repeat_performed": false
+  },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
     "publication": "Local assets and copy only; no publication or contact authorized/performed.",
@@ -3244,7 +3279,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: close the remaining clinical routing/economics gap, using retained original-question traces before any provider work. Locate repeated native planning and source-field contract work that is discarded when the final clinical answer remains partial; compare the existing owned-recovery path with ordinary execution. Qualify reuse of completed, source-bound work only where current guards and exact results permit it, without selecting an unverified clinical final answer. Use a minimal equal-information baseline for any changed path and run only the affected check. No repeat of the55supported packets, full-cohort source-reading campaign, wholesale rewrite or untargeted training. Preserve all57patients, six unresolved source checks, undecided coverage, alltenareas, feedback/quarantine/rollback and separate G5 qualification/customer dependencies.",
+  "next_action": "G3: repair the user-requested harder payer-analysis failure offline before another provider run. Use artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json and retained SQL/results. Qualify conditional multi-year arithmetic, ratios and missing-value handling in the shared native verifier while preserving global semantic review and rejection of clinical-classification shortcuts; require source-supported claim identity for reversal exclusions. Diagnose repeated provider throughput failures in the same verification path. Preserve all attempts, failed work and unknown costs. Only after affected offline checks pass and provider throughput is available, run the affected ordinary confirmation and then a qualified repeat. Retain the prior clinical routing/economics next action in the harder-run protocol, all57clinicalpatients,55/61supported packets,six unresolved source dependencies and alltenareas. No whole-cohort source campaign, architecture rewrite, new weights or clinical qualification claim.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3253,7 +3288,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T19:43:36.988190+00:00",
+  "latest_checkpoint": "2026-11-03T20:27:05.288040+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",

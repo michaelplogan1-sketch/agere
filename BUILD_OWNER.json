@@ -5,11 +5,11 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: close the remaining clinical routing/economics gap, using retained original-question traces before any provider work. Locate repeated native planning and source-field contract work that is discarded when the final clinical answer remains partial; compare the existing owned-recovery path with ordinary execution. Qualify reuse of completed, source-bound work only where current guards and exact results permit it, without selecting an unverified clinical final answer. Use a minimal equal-information baseline for any changed path and run only the affected check. No repeat of the55supported packets, full-cohort source-reading campaign, wholesale rewrite or untargeted training. Preserve all57patients, six unresolved source checks, undecided coverage, alltenareas, feedback/quarantine/rollback and separate G5 qualification/customer dependencies.",
+  "active_work": "G3: repair the user-requested harder payer-analysis failure offline before another provider run. Use artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json and retained SQL/results. Qualify conditional multi-year arithmetic, ratios and missing-value handling in the shared native verifier while preserving global semantic review and rejection of clinical-classification shortcuts; require source-supported claim identity for reversal exclusions. Diagnose repeated provider throughput failures in the same verification path. Preserve all attempts, failed work and unknown costs. Only after affected offline checks pass and provider throughput is available, run the affected ordinary confirmation and then a qualified repeat. Retain the prior clinical routing/economics next action in the harder-run protocol, all57clinicalpatients,55/61supported packets,six unresolved source dependencies and alltenareas. No whole-cohort source campaign, architecture rewrite, new weights or clinical qualification claim.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
-  "owned_server_pid": 41475,
-  "owned_server_session": 12425,
+  "owned_server_pid": 47807,
+  "owned_server_session": 12518,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -22,14 +22,22 @@
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-11-03T19:43:36.988190+00:00",
+  "latest_checkpoint": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "Owned8890PID41475/session12425 selected e7a0d1c; current numeric reuse and six clinical evidence follow-ups verified; no provider/proofjob or sourcefreeze.",
-  "unsealed_work": null,
+  "server_status": "ready",
+  "unsealed_work": {
+    "status": "failed_qualification_pending_offline_repair",
+    "kind": "harder_composition_verification_and_relation_binding",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
+    "product_edits": false,
+    "provider_repeat_performed": false
+  },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-03T19:43:36.988190+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
@@ -127,12 +135,14 @@
     "boundary": "Single integrator: Claude owns product, controls and :8885. Others review only unless Mike reassigns."
   },
   "runtime_observation": {
-    "at": "2026-10-21T02:25:18.143040+00:00",
-    "checkout_commit": "60aab29c08ad534c1a89b593c934051aa8d56c9c",
-    "pid": 99155,
-    "url": "http://127.0.0.1:8885/ask",
-    "health": "ready/synthetic",
-    "scope": "Presentation-only assets; state history and source/config unchanged; zero calls."
+    "at": "2026-11-03T20:27:05.288040+00:00",
+    "pid": 47807,
+    "session": 12518,
+    "port": 8890,
+    "status": "restored_ready",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/recovered-app/http-check.json",
+    "source_code_unchanged": true,
+    "no_provider_resubmission": true
   },
   "previous_delivery": "docs/agere/REQUEST_ADMISSION_RELEASE_2026-10-20.md",
   "coordinated_learning_candidate": {
@@ -450,7 +460,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T15:42:51.146054+00:00",
+  "updated_at": "2026-11-03T20:27:05.288040+00:00",
   "last_commit": "e7f3ac19643a19c63900ff46096b0d291baa4bd7",
-  "latest_owner_audit": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md"
+  "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json"
 }

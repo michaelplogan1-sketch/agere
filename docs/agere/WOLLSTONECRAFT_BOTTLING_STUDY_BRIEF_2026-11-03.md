@@ -73,6 +73,18 @@ The immediate build priority remains the existing G3 clinical routing/economics 
 
 ## Evidence and attribution
 
+### Subsequent harder-question check — November 3
+
+Mike requested a harder question after the visual was prepared. A new ordinary request combined two years of payer medical and pharmacy payments, current/nonduplicate paid claims, unreversed fills, patient joins, deltas, percentages and ranking. Separate Python and prewritten SQL calculations agreed on all 26,880 cells for 1,920 patients; the SQL query and fetch took 0.077 seconds, excluding query authoring, language interpretation, final review and product persistence.
+
+**This harder case failed qualification.** The first run was stopped after 723.537 seconds when verification expanded to thousands of model calls and Perplexity returned throughput errors. Final accounting preserves 4,655 new attempts: 16 Claude, 2,324 Jev and 2,315 Perplexity. There were 603 HTTP 429 failures, one HTTP 503 failure and eight unresolved pending attempts. Known API-equivalent usage is $1.631045282; 612 attempts lack priced usage, so the complete cost is unknown.
+
+The retained candidate SQL returned the full patient set but differed in ten cells across six patients. Its additional same-patient/drug/date exclusion matched eight paid records; none had an exact reversal-record link or matching claim ID. The existing native arithmetic qualifier also rejected the conditional multi-year query shape, leading to packet and field model review. No new candidate was validated or selected, and no repeat was dispatched. The owned app was restored on unchanged product code. This failure narrows what the earlier successful pair supports and identifies concrete routing and source-relation work for the next increment.
+
+Evidence: `artifacts/agere-harder-bottling-2026-11-03/`, including the original protocol, interrupted run receipt, native baseline, retained candidate query/rows, source-link audit and offline diagnosis. The original visual remains explicitly scoped to its earlier successful pair; it is not evidence that this harder case passed.
+
+### References
+
 - **Primary research:** [Sonthalia et al., *Agent in a Bottle*, arXiv:2610.08775v1](https://arxiv.org/abs/2610.08775v1); [authors' code repository](https://github.com/aktsonthalia/bottled). Credit all five authors when describing the research inspiration. The authors have not reviewed or endorsed this implementation.
 - **Supplied paper:** `/Users/mikel/Desktop/bottling.pdf`, 22 pages; abstract, introduction and methodology read, with pages 1 and 4 visually inspected. No paper prompts were treated as operating instructions.
 - **Measured result:** `artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json`, plus the `ordinary-current/` and `ordinary-reuse/` request, response and attempt records. Durable evidence copy: `/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-current-release-e7a0d1c-2026-11-03/`.
