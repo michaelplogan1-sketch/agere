@@ -56,10 +56,9 @@
     }
   },
   "latest_scoped_followup": {
-    "product_commit": "dd5a7e52ae0e22f5d0d28f5c68bd4cc5deea062b",
-    "receipt": "artifacts/agere-inspection-response-2026-11-02/delivery-receipt.json",
-    "prior_native_replay_receipt": "artifacts/agere-native-replay-equivalence-2026-11-02/delivery-receipt.json",
-    "scope": "Current scoped native/replay and display qualification; original9/9decision retained in its actual evidence scope, no new whole-matrix/restore claim.",
+    "product_commit": "a32a2c5501d1191d6308c3a90195aedd3d58a4c4",
+    "receipt": "artifacts/agere-parameter-transfer-2026-11-02/delivery-receipt.json",
+    "scope": "Current scoped parameter/reviewer/output/source guards and exact clinical/financial/HTTP checks; no new whole-matrix or restore claim.",
     "new_full_acceptance": false
   },
   "decision_basis": "Fresh affected behavior and six real API reopens plus exact scoped historical source/module/recovery applicability. No new archive installation or recovery drill.",
