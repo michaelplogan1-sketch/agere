@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T18:53:11.985619+00:00",
+  "updated_at": "2026-11-03T19:19:03.044752+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -480,11 +480,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "focused_compiler_repair_candidate",
+    "kind": "original_question_completion_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Exact-draft targeted repair now preserves full57patient data and all106untouched fields, adds checked same-entity bases, refuses numerical deletion and source-free SQL constants. Existing final review identifies supported and unresolved dependencies without triggering another wholesale rewrite.",
-    "measured_failure_reduction": "Actual8compiler failures removed with69.643s/4Claude/$1.1505657 API-equivalent; messageinput43.45%smaller. Subsequent81.100s/63Jev+53Perplexity/$0.267981572 review:50supported/11unresolved packets, coverage undecided; not clinical accuracy or whole-workflow benchmark.",
+    "user_behavior_delta": "The original57patient draft now reaches the saved product with114patient-specific prose fields, exact native values and honest partial status. Large complete packets retain configured Jev-to-Perplexity fallback. Cohort names/IDs and prose-first details make the result reviewable; JSON-string records stay intact and expandable.",
+    "measured_failure_reduction": "Ten unchanged unresolved packets used10newPerplexitycalls/$0.02999816API-equivalent,0newClaude/Jevcalls. Five cleared existing thresholds; total50to55supported/11to6unresolved.62selectedtests pass. Cached final review25.764s/0providers preserves all50prior supported verdicts. RealHTTP preserves57patients/114prosefields/all93prioranswers; browser verifies names/prose-first/partialstatus.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -506,16 +506,28 @@
       "artifacts/agere-completion-routing-2026-11-03/focused-prose-live-v3/run-receipt.json",
       "artifacts/agere-completion-routing-2026-11-03/focused-prose-source-tests.log",
       "artifacts/agere-completion-routing-2026-11-03/focused-draft-source-review/unresolved-partition-diagnosis.json",
-      "artifacts/agere-completion-routing-2026-11-03/focused-draft-source-review/parent-size-diagnosis.json"
+      "artifacts/agere-completion-routing-2026-11-03/focused-draft-source-review/parent-size-diagnosis.json",
+      "artifacts/agere-packet-representation-2026-11-03/delivery-receipt.json",
+      "artifacts/agere-packet-representation-2026-11-03/encoding-diagnosis.json",
+      "artifacts/agere-packet-representation-2026-11-03/single-use-dictionary-proof.json",
+      "artifacts/agere-packet-representation-2026-11-03/probe-largest/run-receipt.json",
+      "artifacts/agere-packet-representation-2026-11-03/remaining-nine/run-receipt.json",
+      "artifacts/agere-packet-representation-2026-11-03/cached-final-review/run-receipt.json",
+      "artifacts/agere-packet-representation-2026-11-03/saved-context-HTTP.json",
+      "artifacts/agere-packet-representation-2026-11-03/browser-verification.json",
+      "artifacts/agere-packet-representation-2026-11-03/presentation-applicability.json",
+      "artifacts/agere-packet-representation-2026-11-03/connected-tests.log",
+      "artifacts/agere-packet-representation-2026-11-03/rollback.json",
+      "artifacts/agere-packet-representation-2026-11-03/release-change-inventory.json"
     ],
-    "remaining_gap": "Original repaired57patient draft has50supported dependency packets and11unresolved, with undecided coverage; all dependencies checked. Ten unresolved packets take long-context after non-source parent partition failure; one rationale field remains below threshold. Product result/reuse/current ten-area closure and independent clinical/model qualification remain separate.",
-    "next_action": "G3: inspect the ten unresolved source packets diagnosed in focused-draft-source-review/unresolved-partition-diagnosis.json. In the existing evidence_projection source_dependency_packets path, their non-source parent exceeds the transport envelope even after complete source separation; parent-size-diagnosis.json identifies evidence as the largest retained field. Prove exact dependency selection/deduplication or further partition closure offline on these actual packets, preserving every source/claim/native value and uncertainty, then check only a changed unresolved dependency through existing providers. Do not rerun the50supported packets, lower thresholds, truncate sources or request another whole-answer rewrite. Keep the separate below-threshold rationale field and undecided coverage explicit. Then finish original-question product result, guarded reuse and current ten-area applicability. No source freeze or active job; owned8890 remains lastsealed942ff1f.",
+    "remaining_gap": "Original57patient result is now saved and readable, but remains partial/unverified:55of61scheduled source packets supported,6unresolved and coverage undecided. No located source fault or confirmed missing output in this review. Independent source/clinical/model/outcome qualification remains open. Current ten-area applicability, original-question evidence-review follow-up and guarded reuse under current policy still need their scoped release checks; previous9/9is historical.",
+    "next_action": "G3: finish the current release decision using existing scorecard and artifacts/agere-packet-representation-2026-11-03/release-change-inventory.json. Map20changed backend modules plus2presentation assets sinceaec778d to their sealed workflow evidence; run only materially affected missing checks. Verify original-question evidence-review follow-up and existing qualified execution reuse under current policy; keep unverified clinical final answers ineligible for promotion. Preserve six unresolved source checks/undecided coverage as explicit dependencies. Do not rerun the55supported packets, whole-cohort source campaign or another wholesale frontier rewrite. Retain alltenareas and separate G5clinical/model qualification/customer prerequisites.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "No active jobs/sourcefreeze. Owned8890PID23373/session52032 remains942ff1f; candidates49a07be/ee4f9b7 unpromoted.",
+    "coordination": "Owned8890PID41475/session12425; backend4c5832b/currentassets e7a0d1c. Allcheckjobs terminal; no sourcefreeze.",
     "remaining_blockers": [
-      "Original repaired57patient draft has50supported dependency packets and11unresolved, with undecided coverage; all dependencies checked. Ten unresolved packets take long-context after non-source parent partition failure; one rationale field remains below threshold. Product result/reuse/current ten-area closure and independent clinical/model qualification remain separate."
+      "Original57patient result is now saved and readable, but remains partial/unverified:55of61scheduled source packets supported,6unresolved and coverage undecided. No located source fault or confirmed missing output in this review. Independent source/clinical/model/outcome qualification remains open. Current ten-area applicability, original-question evidence-review follow-up and guarded reuse under current policy still need their scoped release checks; previous9/9is historical."
     ],
-    "latest_progress": "All jobs terminal;183selectedtests run182passed1optionalskip. Actual new source projection gap identified offline on10packets; no new broad campaign.",
+    "latest_progress": "Ten unchanged unresolved packets used10newPerplexitycalls/$0.02999816API-equivalent,0newClaude/Jevcalls. Five cleared existing thresholds; total50to55supported/11to6unresolved.62selectedtests pass. Cached final review25.764s/0providers preserves all50prior supported verdicts. RealHTTP preserves57patients/114prosefields/all93prioranswers; browser verifies names/prose-first/partialstatus.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -1519,6 +1531,33 @@
       "at": "2026-11-02T14:55:45.941137+00:00",
       "decision": "Current engineering acceptance9/9 is distinct from G3clinical and G5independent qualification. Preserve incomplete broad-rerun and concurrent-copy refusal; do not count them as passes. Explicit module/function/source applicability and current source/interface/recovery evidence support the engineering release.",
       "scope_impact": "All ten areas and standing restrictions retained; no clinical or model promotion, no new provider calls."
+    },
+    {
+      "at": "2026-11-03T19:05:33.574003+00:00",
+      "decision": "Offline exact roundtrip experiments disprove layout-metadata overhead as the primary size cause; pruning single-use dictionary entries saves only14KB and cannot fit. Existing >240KB route forces Jev only, unlike the configured ordinary fallback. Verified current Perplexity Decisions docs permit under256K tokens and32MiB and the existing v1.1 alias maps to v1.2. Test one unchanged unresolved packet with existing fallback rather than extend speculative compression. Model version alias caveat remains explicit; no qualification claim.",
+      "evidence": [
+        "artifacts/agere-packet-representation-2026-11-03/encoding-diagnosis.json",
+        "artifacts/agere-packet-representation-2026-11-03/single-use-dictionary-proof.json",
+        "https://docs.perplexity.ai/docs/decisions/quickstart"
+      ],
+      "scope_impact": "No source/claim/cohort/threshold change; all ten areas retained. Actual provider fit enforced; old receipts retained."
+    },
+    {
+      "at": "2026-11-03T19:16:20.460922+00:00",
+      "decision": "Original-question cached review is now55supported/6unresolved at unchanged thresholds; saved57patient result and prior93answers pass realHTTP. Browser check then reproduced a presentation defect: patient IDs shown despite native bound names, and JSON-string review records rendered expanded ahead of per-patient prose. Fix only presentation using existing profile and interpreted-column contracts; retain every field/source and partial verdict.",
+      "evidence": [
+        "artifacts/agere-packet-representation-2026-11-03/cached-final-review/run-receipt.json",
+        "artifacts/agere-packet-representation-2026-11-03/saved-context-HTTP.json"
+      ],
+      "scope_impact": "General cohort/detail renderer only; no disease-specific logic, inference, new export or clinical acceptance."
+    },
+    {
+      "at": "2026-11-03T19:19:03.044752+00:00",
+      "decision": "Seal the original-question saved partial result and measured fallback/presentation repairs; move to current release applicability and reuse rather than repeat unchanged uncertain provider judgments.",
+      "evidence": [
+        "artifacts/agere-packet-representation-2026-11-03/delivery-receipt.json"
+      ],
+      "scope_impact": "Alltenareas retained; no clinical/model qualification or fullMVP acceptance. G3 remainsactive; G5independent requirements separate."
     }
   ],
   "decision_log": [
@@ -3155,21 +3194,7 @@
       "scope_impact": "Alltenareas retained; no clinical qualification, threshold weakening, new caps or deployment."
     }
   ],
-  "unsealed_work": {
-    "kind": "focused_compiler_repair_candidate",
-    "status": "focused_repair_passed_source_partition_gap_identified",
-    "source_frozen": false,
-    "source_edits_allowed": true,
-    "candidate_commits": [
-      "430c92c",
-      "81996ed",
-      "49a07be",
-      "ee4f9b7"
-    ],
-    "receipt": "artifacts/agere-completion-routing-2026-11-03/focused-draft-source-review/run-receipt.json",
-    "proof": "artifacts/agere-completion-routing-2026-11-03/focused-prose-live-v3/run-receipt.json",
-    "report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md"
-  },
+  "unsealed_work": null,
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
     "publication": "Local assets and copy only; no publication or contact authorized/performed.",
@@ -3197,7 +3222,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: inspect the ten unresolved source packets diagnosed in focused-draft-source-review/unresolved-partition-diagnosis.json. In the existing evidence_projection source_dependency_packets path, their non-source parent exceeds the transport envelope even after complete source separation; parent-size-diagnosis.json identifies evidence as the largest retained field. Prove exact dependency selection/deduplication or further partition closure offline on these actual packets, preserving every source/claim/native value and uncertainty, then check only a changed unresolved dependency through existing providers. Do not rerun the50supported packets, lower thresholds, truncate sources or request another whole-answer rewrite. Keep the separate below-threshold rationale field and undecided coverage explicit. Then finish original-question product result, guarded reuse and current ten-area applicability. No source freeze or active job; owned8890 remains lastsealed942ff1f.",
+  "next_action": "G3: finish the current release decision using existing scorecard and artifacts/agere-packet-representation-2026-11-03/release-change-inventory.json. Map20changed backend modules plus2presentation assets sinceaec778d to their sealed workflow evidence; run only materially affected missing checks. Verify original-question evidence-review follow-up and existing qualified execution reuse under current policy; keep unverified clinical final answers ineligible for promotion. Preserve six unresolved source checks/undecided coverage as explicit dependencies. Do not rerun the55supported packets, whole-cohort source campaign or another wholesale frontier rewrite. Retain alltenareas and separate G5clinical/model qualification/customer prerequisites.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3206,5 +3231,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T18:53:11.985619+00:00"
+  "latest_checkpoint": "2026-11-03T19:19:03.044752+00:00"
 }

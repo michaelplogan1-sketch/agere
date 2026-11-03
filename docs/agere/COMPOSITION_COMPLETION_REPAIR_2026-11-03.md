@@ -1,6 +1,6 @@
 # Composition repair and retained-evidence comparison
 
-The original clinical workflow remains unaccepted. The repeated continuation was deliberately interrupted after preserving its completed responses; the build remains active. These changes are candidates; the last sealed delivery remains product `942ff1f`. No clinical qualification, model superiority or complete MVP acceptance is claimed.
+The original clinical workflow remains unaccepted. The repeated continuation was deliberately interrupted after preserving its completed responses; the build remains active. The described repairs are now selected on the owned candidate as `e7a0d1c`; its backend was started at `4c5832b`, followed only by verified presentation-asset changes. No clinical qualification, model superiority or complete MVP acceptance is claimed.
 
 ## What the comparison showed
 
@@ -82,4 +82,21 @@ Offline diagnosis identifies the remaining routing failure precisely: ten unreso
 
 All live jobs are terminal. No current candidate is activated on the owned server. The two focused runs and final review together produced 124 new validated attempts and **$2.515102272 known API-equivalent usage**; actual subscription allocation and local costs remain outside that subtotal. Earlier failed and interrupted attempts remain separately accounted, not discarded.
 
-Next: inspect and repair the ten oversized non-source parent dependencies in the existing projection/partition path, using exact retained packets and complete reconstruction checks before any changed provider check. Preserve the 50 supported packets and the below-threshold field as distinct observations; do not rerun passing checks, truncate sources, weaken thresholds or rewrite the whole answer. Original-question product completion, guarded reuse and current ten-area release applicability remain open. `AGERE_BUILD_CONTROL.json` owns the exact next action and process state; all ten acceptance areas remain in scope.
+The subsequent measured correction is described below. Earlier receipts retain their exact historical results.
+
+
+## Complete-packet fallback and saved original answer
+
+The compression hypothesis did not hold: layout metadata accounted for only5,403bytes of a316,712byte parent. Exact dictionary pruning saved about14KB and still could not fit. Neither experiment was promoted. Inspection instead found that the oversized route forced Jev alone, excluding the configured fallback. [Current Perplexity documentation](https://docs.perplexity.ai/docs/decisions/quickstart) permits under256Kinputtokens and32MiB requests. It also states that the configured v1.1name now routes to v1.2 while responses echo the requested alias. These observations do not establish independent model qualification; the alias caveat is recorded in both live receipts.
+
+`4c5832b` preserves the task's configured fallback for complete large packets, unchanged source text, existing thresholds, provider limit handling and failed-key protections. The largest unresolved packet cleared through Perplexity in9.432seconds/$0.00352194; the other nine took51.757seconds/$0.02647622. These are two targeted review measurements, not end-to-end question latency. Exactly10newPerplexityattempts validated, no newJev orClaude calls; oldJev results were reused. Five additional packets cleared the0.8bar. Five remained below it (0.77005–0.79955); no threshold was lowered.
+
+A normal final review with gateway dispatch disabled reassembled all exact receipts in25.764seconds, with0newattempts. All50previously supported packet verdicts and native calls stayed exact. The result is55supported and6unresolved scheduled packets, including the separate below-threshold rationale field; coverage remains undecided. No source fault or concrete omission was established by those uncertain votes.
+
+The original question now has saved current context `ANS-39a99a79fc18fc9a250d80d8` on owned8890. The API preserves all57patients,114proposed explanation/review fields and all93older saved answers; current policy is valid and older-policy answers remain inspectable without gaining new action authority. The103.501second save/HTTP proof includes preservation reads and two API inspections; it is not a one-question or one-page latency measurement. No inference or export occurred.
+
+Browser verification then exposed IDs-only cohort labels and expanded JSON-string receipts ahead of the explanation. `e7a0d1c` uses the existing source-bound profile and declared interpreted-column contracts: names beside IDs, proposed interpretations first, native evidence retained below, complete structured records expandable. Partial/unverified status stays visible. The real browser showed the57patient cohort and Patricia Moore's explanation, next review and preserved records. No disease-specific handler or new clinical assertion was added.62selected backend checks and JavaScript syntax verification pass.
+
+All live checks are terminal. This increment adds$0.02999816knownAPI-equivalent usage; actual compute/review costs and preceding attempts remain outside that subtotal. All source and original attempt records remain preserved. No new model weights or clinical final-answer bottle was promoted.
+
+Next: use the existing release scorecard to assess current applicability and guarded reuse; preserve the six unresolved checks and undecided coverage as explicit dependencies. The change inventory identifies20backend modules and2presentation assets since the prior finite engineering decision. Do not rerun supported checks or rewrite the entire answer merely to obtain a stronger verifier vote. FullMVP/independent clinical/model qualification remain false; alltencharterareas remain in scope.
