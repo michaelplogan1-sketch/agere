@@ -172,5 +172,51 @@ class OperationalSupport(unittest.TestCase):
                 self.assertIsNone(result['decided_by'])
                 self.assertEqual(result['packets'][0]['routed_judgment']['label'],label)
 
+    def test_declared_large_field_adapter_localizes_once_with_complete_context(self):
+        from clinical_core.agere.deliverables.receipts import readable_json
+        row={'patient_id':'A',**{'field_'+str(i):'A source-bound value'for i in range(30)}}
+        claims=[{'id':'c'+str(i),'field':name,'path':['answer_rows',0,name]}
+                for i,name in enumerate(row)if name!='patient_id']
+        state={'patient_id':'A','answer_rows':[row],'claim_manifest':claims,
+            'source_contexts':[{'patient_id':'A','record_id':'source','text':' '.join('source'+str(i)for i in range(30000))}]}
+        text=json.dumps(readable_json(state),separators=(',',':'))
+        packet={'id':'patient_A','date':'2030-05-27','text':text,'bytes':len(text.encode()),
+            'dependency_complete':True,'source_context_complete':True,'claim_manifest':claims}
+        self.assertGreater(packet['bytes'],240000)
+        def forbidden(*a,**kw):raise AssertionError('Unqualified short-context adapter')
+        def whole(*a,**kw):return {'label':'supported','decided_by':None,
+            'probabilities':{'supported':.79,'unknown':.21},'steps':[]}
+        for field_outcome in ['supported','unknown','wrong_role']:
+            seen=[]
+            def fields(task,named,evidence,**kw):
+                seen.append((named,evidence,kw))
+                return {'steps':[],'judgments':{k:{'label':field_outcome if k=='c30'else'supported',
+                    'decided_by':None if k=='c30'and field_outcome=='unknown'else'fixture',
+                    'threshold':.8,'probability':.9}for k in named}}
+            result=B.check_support_packets([packet],forbidden,as_of=packet['date'],ledger=None,
+                field_decider=forbidden,long_context_decider=whole,long_context_field_decider=fields)
+            self.assertEqual(len(seen),1)
+            self.assertEqual(list(seen[0][0]),[c['id']for c in claims])
+            self.assertEqual(seen[0][1][0]['text'],text)
+            self.assertTrue(seen[0][2]['long_context'])
+            self.assertEqual(seen[0][2]['order'],('jev','perplexity'))
+            self.assertEqual(result['label'],'contradicted'if field_outcome=='wrong_role'else'unknown')
+            review=result['packets'][0]['field_review']
+            self.assertEqual(review['expected_count'],30)
+            self.assertFalse(review['complete_dependency_accepted'])
+            self.assertEqual(review['supported_count'],30 if field_outcome=='supported' else 29)
+
+    def test_large_field_adapter_does_not_retry_an_outage_or_missing_source(self):
+        def forbidden(*a,**kw):raise AssertionError('No diagnostic for absent source/provider response')
+        for source_complete in [True,False]:
+            packet={'id':'patient_A','date':'2030-05-27','text':'Retained source','bytes':250000,
+                'source_context_complete':source_complete,'dependency_complete':True,
+                'claim_manifest':[{'id':'c','field':'reason','path':['answer','reason']}]}
+            result=B.check_support_packets([packet],forbidden,as_of=packet['date'],ledger=None,
+                field_decider=forbidden,long_context_field_decider=forbidden,
+                long_context_decider=lambda *a,**kw:{'label':'unknown','decided_by':None,
+                    'steps':[{'provider':'fixture','status':'error'}]})
+            self.assertEqual(result['label'],'unknown')
+
 
 if __name__=='__main__':unittest.main()

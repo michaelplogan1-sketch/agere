@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T23:30:27.914642+00:00",
+  "updated_at": "2026-11-03T23:35:17.217137+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -3370,15 +3370,21 @@
       "decision": "Replace arithmetic syntax coverage whack-a-mole with an explicit program verification failure path. Unsupported numeric programs cannot trigger row-by-row model votes. Qualify actual scalar aggregate lineage and retain source-bound interpretation paths.",
       "evidence": "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/interruption-decision.json",
       "scope_impact": "No population/output caps or acceptance areas removed; unresolved programs remain repair obligations, not accepted unknown calculations. Both benchmark eligibility dates remain explicit."
+    },
+    {
+      "at": "2026-11-03T23:35:17.217137+00:00",
+      "gate": "G3",
+      "decision": "Five retained complete large packets bypass field localization solely because the short-context adapter was not applicable. Add an explicitly declared long-context named-field adapter using the same provider order and unchanged complete evidence. Named choices share a state; supported packets and outages do not invoke it. Preserve independent whole-dependency acceptance and thresholds.",
+      "qualification": "70focused tests pass. Run one largest retained unresolved packet with cache-only whole judgment and live shared-state field diagnostics, then decide whether any named obligation becomes actionable.",
+      "scope_impact": "No cohort reread, clinical answer promotion, threshold change, new model or whole-dependency acceptance relaxation."
     }
   ],
   "unsealed_work": {
-    "status": "clinical_dependency_diagnosis_only",
-    "receipt": "artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json",
+    "status": "large_field_localization_offline_candidate",
     "all_jobs_terminal": true,
     "source_frozen": false,
-    "product_edits": false,
-    "new_provider_attempts": 0
+    "product_edits": true,
+    "receipt": "artifacts/agere-large-field-diagnosis-2026-11-03/input-packet.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",

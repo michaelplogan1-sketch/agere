@@ -30,12 +30,11 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "clinical_dependency_diagnosis_only",
-    "receipt": "artifacts/agere-clinical-bottling-usecase-2026-11-03/current-unresolved-diagnosis.json",
+    "status": "large_field_localization_offline_candidate",
     "all_jobs_terminal": true,
     "source_frozen": false,
-    "product_edits": false,
-    "new_provider_attempts": 0
+    "product_edits": true,
+    "receipt": "artifacts/agere-large-field-diagnosis-2026-11-03/input-packet.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-03T23:27:47.511956+00:00",
@@ -301,16 +300,7 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [
-    {
-      "kind": "clarified_harder_payer_ordinary_confirmation",
-      "status": "starting",
-      "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/run-receipt.json",
-      "source_frozen": true,
-      "server_pid": 60281,
-      "candidate_commit": "9758b856ead06d62085a263fcf6a50138177a08e"
-    }
-  ],
+  "active_jobs": [],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,

@@ -1522,7 +1522,8 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             operational_receipts='Retained by native digest; excluded from clinical model context')
         support=check_support_packets(packets,gate.s1().decide,as_of=as_of,ledger=ledger,field_decider=getattr(gate.s1(),'judge_fields',None),
                                       source_observation_path=getattr(stack,'path',None),
-                                      long_context_decider=gate.s1().decide)
+                                      long_context_decider=gate.s1().decide,
+                                      long_context_field_decider=getattr(gate.s1(),'judge_fields',None))
         n, usd = gate.cost(support)
         assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback','field_review_states',
                           'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked',
@@ -2265,7 +2266,7 @@ def source_fault_family(packet,result,by_id):
     return parent
 
 
-def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None,long_context_decider=None):
+def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None,long_context_decider=None,long_context_field_decider=None):
     """Repair a local source family while continuing proven independent families.
 
     The first packet normally owns the global summary. Once it clears that
@@ -2369,11 +2370,16 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             for step in result.get('steps',[]):step['context_route']=route
         if result.get('label')!='supported':checked['reason']='Source support '+str(result.get('label'))+' for this exact dependency; no successful check is inferred.'
         responded=bool(result.get('decided_by') or result.get('probabilities') or any(s.get('status')in ('answered','partial') for s in result.get('steps',[])))
+        diagnostic=long_context_field_decider if oversized else field_decider
         if result.get('label')!='supported' or not result.get('decided_by'):
-            needs_diagnosis=not oversized and responded and field_decider and packet.get('claim_manifest')
+            # Large complete contexts use the declared long-context field
+            # adapter. Named choices share one unchanged evidence state;
+            # do not fan out one full request per field or repeat extraction.
+            needs_diagnosis=responded and diagnostic and packet.get('claim_manifest')
         else:needs_diagnosis=False
         if needs_diagnosis:
-            localized=localize_support_failure(packet,field_decider,as_of=as_of,ledger=worker_ledger)
+            localized=localize_support_failure(packet,diagnostic,as_of=as_of,ledger=worker_ledger,
+                                              **({'order':long_order}if oversized else{}))
             checked['claim_feedback']=localized['feedback'];steps.extend(localized['steps'])
             checked['field_review']=localized['field_review']
             faults=[f for f in localized['feedback']if f.get('decided_by') and f['label']!='unknown']
@@ -2503,7 +2509,7 @@ def field_review_observation(reading,steps,claim_id):
     return {'schema':'typed-field-review-observation/1','state':state,'model_judgment':judgment,'attempts':attempts},reason
 
 
-def localize_support_failure(packet,judge,*,as_of,ledger):
+def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
     """Name the failing field and source meaning after a failed packet check."""
     from ..request_lineage import component
     from ..deliverables.receipts import uncompact_json
@@ -2559,6 +2565,7 @@ def localize_support_failure(packet,judge,*,as_of,ledger):
         with component('claim_local_source_review',packet_id=packet['id'],fields=len(named)):
             result=judge('Localize the source-supported failure in each named answer field',named,
                 [{'id':packet['id'],'date':packet['date'],'text':source_text}],as_of=as_of,ledger=ledger,allow_live=True,long_context=len(source_text.encode())>32768,
+                **({'order':order}if order is not None else{}),
                 **({'cache_evidence':compatibility}if compatibility else{}))
         steps.extend(result.get('steps')or[])
         for claim in chunk:
