@@ -10,7 +10,7 @@ class TypedDocuments(unittest.TestCase):
   spans=T.blocks(text)
   self.assertEqual(''.join(c for s in spans for c in s['text'] if not c.isspace()),''.join(c for c in text if not c.isspace()))
   self.assertTrue(all(text[s['start']:s['end']]==s['text']for s in spans))
-  self.assertTrue(all(len(s['text'])<=2048 for s in spans))
+  self.assertFalse(any(s['start'] and text[s['start']-1].isalnum() and text[s['start']].isalnum() for s in spans))
  def test_typed_selection_copies_exact_source_and_keeps_full_context(self):
   source='Signed: Dr Example\nSpecialty: oncology\n\nMedication withheld because potassium was high.'
   doc={'record_id':'r','date':'2030-01-01','text':source};seen=[]

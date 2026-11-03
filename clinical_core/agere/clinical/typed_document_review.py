@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED, Cancel
 from ...contracts import digest
 from ..request_lineage import component
 
-VERSION='typed-whole-document-review/5'
+VERSION='typed-whole-document-review/6'
 _RANK_LOCK=threading.Lock()
 _READER_LOCK=threading.Lock()
 OBSERVATION_VERSION='source-field-observation/3'
@@ -181,16 +181,24 @@ OPTIONS={'finding':'This exact source block contains a documented finding answer
 
 
 def blocks(text):
-    """Non-overlapping source paragraphs, retaining all non-whitespace bytes."""
+    """Exact source statements; whole documents supply their surrounding context.
+
+    Do not pack unrelated statements into one asserted entity/relation value or
+    split a statement to satisfy an arbitrary character count. The existing
+    provider batcher owns transport fit; oversized units remain explicit.
+    """
+    from .evidence_packets import sentences
     out=[]
-    for match in re.finditer(r'[^\n]+(?:\n(?![ \t]*\n)[^\n]+)*',text):
-        a,b=match.span()
-        while a<b and text[a].isspace():a+=1
-        while b>a and text[b-1].isspace():b-=1
-        # Segment long flattened lines without dropping their continuation.
-        for start in range(a,b,2048):
-            end=min(b,start+2048)
-            out.append({'start':start,'end':end,'text':text[start:end]})
+    for a,b,_ in sentences(text):
+        # The shared splitter is deliberately lexical. Rejoin title/initial
+        # fragments so a clinician name is not turned into a detached claim.
+        previous=out[-1]['text']if out else ''
+        abbreviation=(re.search(r'\b(?:Dr|Mr|Mrs|Ms|Prof|Sr|Jr|St|vs|etc|e\.g|i\.e)\.$',previous)or
+            re.fullmatch(r'(?:[A-Z]\.\s*)+',previous)or
+            re.search(r'\b(?:Dr|Mr|Mrs|Ms|Prof|Sr|Jr)\.(?:\s+[A-Z]\.)+$',previous))
+        if out and '\n'not in text[out[-1]['end']:a] and abbreviation:
+            out[-1].update(end=b,text=text[out[-1]['start']:b])
+        else:out.append({'start':a,'end':b,'text':text[a:b]})
     return out
 
 
