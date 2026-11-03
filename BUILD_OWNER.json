@@ -30,10 +30,10 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "offline_arithmetic_candidate_pending_semantic_and_throughput_repair",
+    "status": "offline_relation_and_throughput_candidate_pending_ordinary_confirmation",
     "kind": "harder_composition_verification_and_relation_binding",
     "receipt": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
-    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/arithmetic-repair/receipt.json",
+    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/relation-throughput-repair/receipt.json",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
@@ -462,7 +462,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T20:27:05.288040+00:00",
+  "updated_at": "2026-11-03T22:25:38.563768+00:00",
   "last_commit": "e7f3ac19643a19c63900ff46096b0d291baa4bd7",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {

@@ -1350,7 +1350,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     # The investigator must obey the same received-source rule as typed plans.
     # Check only dependencies of final rows/bound prose, so an exploratory
     # payer query cannot poison a later correction to provider-only evidence.
-    from .source_scope import provider_claim_problem
+    from .source_scope import provider_claim_problem,pharmacy_reversal_problem
     roots=[answer.get('table_from_tool')]
     prose=json.dumps(answer.get('computed_prose')or[],default=str)
     roots.extend(view for view in native if re.search(r'(?<![A-Za-z0-9_])'+re.escape(view)+r'(?![A-Za-z0-9_])',prose))
@@ -1360,8 +1360,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         if call.get('name')!='query_sql' or not isinstance(result,dict) or result.get('error'):continue
         if dependencies is not None and result.get('result_view')not in dependencies:continue
         sql=result.get('executed_query')or(call.get('input')or{}).get('sql')
-        issue=provider_claim_problem(question,sql)if isinstance(sql,str)else None
-        if issue and issue not in static_feedback:static_feedback.append(issue)
+        if isinstance(sql,str):
+            for check in (provider_claim_problem,pharmacy_reversal_problem):
+                issue=check(question,sql)
+                if issue and issue not in static_feedback:static_feedback.append(issue)
     from .drug_classes import group_query_issues
     scope_issues=group_query_issues(question,calls,answer.get('table_from_tool'))
     static_feedback.extend(scope_issues)

@@ -13,6 +13,64 @@ _DEFAULT_LEDGER=Path(__file__).resolve().parents[2]/'artifacts'/'agere-full'/'pr
 # probe restored service; this never changes provider configuration or budgets.
 _BILLING_FAILURES={}
 _BILLING_LOCK=threading.Lock()
+_THROUGHPUT_FAILURES={}
+_THROUGHPUT_LOCK=threading.Lock()
+
+
+def _throughput_admit(credential,provider,model,key):
+    """Share observed backpressure across requests; allow one recovery probe.
+
+    This is transport pacing, not a request, population or spending allowance.
+    Exact validated cache reads occur before this check.
+    """
+    with _THROUGHPUT_LOCK:
+        state=_THROUGHPUT_FAILURES.get(credential)
+        if state is None:return None
+        remaining=max(0.,state['until']-time.monotonic())
+        if remaining or state['probing']:
+            error=ProviderUnavailable(provider+' is cooling down after an observed rate limit; configured alternatives remain available.',kind='rate_limit')
+            error.provider_receipt={'provider':provider,'request_hash':key,'attempted':False,
+                'blocked_by_request_hash':state['request_hash'],'reason':'throughput_backpressure',
+                'retry_after_seconds':remaining,'recovery_probe_in_flight':state['probing'],
+                'model':model,'cost_usd':None,'usage':None}
+            raise error
+        state['probing']=True
+        return state
+
+
+def _throughput_rejected(credential,key,headers,probe):
+    from email.utils import parsedate_to_datetime
+    from datetime import timezone
+    supplied=headers.get('Retry-After')if headers else None
+    delay=None
+    if supplied is not None:
+        try:delay=float(supplied)
+        except (TypeError,ValueError):
+            try:
+                at=parsedate_to_datetime(supplied)
+                if at.tzinfo is None:at=at.replace(tzinfo=timezone.utc)
+                delay=at.timestamp()-time.time()
+            except (TypeError,ValueError,OverflowError):pass
+        if delay is not None and (not math.isfinite(delay)or delay<=0):delay=None
+    with _THROUGHPUT_LOCK:
+        current=_THROUGHPUT_FAILURES.get(credential)
+        # Other requests already in flight may fail too. They do not multiply
+        # the cooldown; only a failed recovery probe increases it.
+        if current is not None and current is not probe:return
+        try:base=float(os.environ.get('AGERE_PROVIDER_BACKOFF_SECONDS','2'))
+        except ValueError:base=2.
+        if not math.isfinite(base)or base<=0:base=2.
+        if delay is None:delay=max(base,probe['delay']*2 if probe else base)
+        _THROUGHPUT_FAILURES[credential]={'request_hash':key,'until':time.monotonic()+delay,
+            'delay':delay,'probing':False}
+
+
+def _throughput_release(credential,probe,success):
+    if probe is None:return
+    with _THROUGHPUT_LOCK:
+        if _THROUGHPUT_FAILURES.get(credential)is probe:
+            if success:del _THROUGHPUT_FAILURES[credential]
+            else:probe['probing']=False
 
 
 def default_ledger_path():
@@ -281,19 +339,26 @@ class PersistentGateway:
         # https://docs.typesafe.ai/api/errors (verified 2026-10-26)
         if provider=='jev' and len(encoded)>32*1024*1024:
             raise ValueError('TypeSafe request exceeds its 32 MiB transport limit; partition the evidence explicitly')
-        cached=self.ledger.reserve(key,provider,body['model'])
-        if cached is not None:return {**self._parse(parser,task,cached),'request_hash':key,'cache_hit':True,'new_paid_api_usd':0,'usage':cached.get('usage')}
+        probe=_throughput_admit(credential,provider,body['model'],key)
+        try:cached=self.ledger.reserve(key,provider,body['model'])
+        except Exception:
+            _throughput_release(credential,probe,False)
+            raise
+        if cached is not None:
+            _throughput_release(credential,probe,False)
+            return {**self._parse(parser,task,cached),'request_hash':key,'cache_hit':True,'new_paid_api_usd':0,'usage':cached.get('usage')}
         headers={'Content-Type':'application/json'}
         if long_context:headers['TypeSafe-Danger-Zone-Long-Context']='true'
         if provider=='claude':headers.update({'x-api-key':secret,'anthropic-version':'2023-06-01'})
         else:headers['Authorization']='Bearer '+secret
         start=time.perf_counter()
-        raw=None
+        raw=None;success=False
         try:
             with self.transport(urllib.request.Request(endpoint,data=encoded,headers=headers),timeout=45) as response:raw=json.loads(response.read())
             if raw.get('model')!=body['model']:raise ValueError('Unexpected actual model revision')
             parsed=self._parse(parser,task,raw)
             self.ledger.finish(key,response=raw,seconds=time.perf_counter()-start)
+            success=True
             from .economics import usage_cost
             return {**parsed,'request_hash':key,'usage':raw.get('usage'),'cost_estimate':usage_cost(body['model'],raw.get('usage'))}
         except Exception as e:
@@ -303,7 +368,10 @@ class PersistentGateway:
                 try:detail=e.read().decode('utf-8',errors='replace')
                 except Exception:detail='Error body unavailable'
                 raw={'provider_error':{'http_status':e.code,'body':detail}}
+                if e.headers and e.headers.get('Retry-After')is not None:
+                    raw['provider_error']['retry_after']=e.headers.get('Retry-After')
                 error='HTTP '+str(e.code)+': '+detail
+                if e.code==429:_throughput_rejected(credential,key,e.headers,probe)
             self.ledger.finish(key,response=raw,error=error,seconds=time.perf_counter()-start)
             quota=isinstance(e,urllib.error.HTTPError)and e.code==402
             if isinstance(e,urllib.error.HTTPError)and e.code==401:
@@ -317,6 +385,7 @@ class PersistentGateway:
             e.provider_receipt={'attempt_id':key,'request_hash':key,'attempted':True,'model':body['model'],
                                 'cost_usd':(price or {}).get('estimated_usd'),'usage':raw.get('usage') if isinstance(raw,dict) else None}
             raise
+        finally:_throughput_release(credential,probe,success)
     def cascade(self,task,*,primary='jev',acceptance_threshold=None):
         first=self.classify(primary,task)
         if first.get('status')=='prepared':return {'status':'prepared_cascade','primary':first,'frontier':self.classify('claude',task)}

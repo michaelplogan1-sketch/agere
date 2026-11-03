@@ -93,6 +93,8 @@ def provider_claim_problem(question, sql):
 def problem(question,sql):
     claim_gap = provider_claim_problem(question, sql)
     if claim_gap: return claim_gap
+    reversal_gap = pharmacy_reversal_problem(question, sql)
+    if reversal_gap:return reversal_gap
     import sqlglot
     from sqlglot import exp
     from sqlglot.optimizer.scope import Scope,traverse_scope
@@ -149,4 +151,115 @@ def problem(question,sql):
                 return ('The plan restricts a technical source/sampling partition that the question did not request. '
                     'A source data segment is not a calendar year or clinical cohort. Remove the unasked partition predicate; '
                     'apply dates and eligibility to their documented fields. Requested source-partition analyses remain supported.')
+    return None
+
+
+def pharmacy_reversal_problem(question,sql):
+    """A broad event collision is not a received claim-reversal relationship.
+
+    For an unreversed-fill request, exclusion against reversal rows must use
+    the normalized record links. The source adapter already resolves explicit
+    links/prescription chains into counts_as_fill. Inspecting potential matches
+    remains available; this checks final analytical dependencies, not all SQL.
+    """
+    if not re.search(r'\bunreversed\b|\bnot\s+(?:been\s+)?reversed\b|\breversal\s+handling\b|'
+                     r'\b(?:exclud\w*|omit\w*|remov\w*)\s+(?:(?:all|any|the|pharmacy|claim)\s+)*reversals?\b',question,re.I):return None
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import Scope,traverse_scope
+    try:
+        tree=sqlglot.parse_one(sql,read='sqlite')
+        scopes=list(traverse_scope(tree))
+    except (sqlglot.errors.SqlglotError,ValueError,TypeError):return None
+    if not scopes:return None
+    by_select={id(s.expression):s for s in scopes}
+    reachable={};pending=[scopes[-1]]
+    while pending:
+        scope=pending.pop()
+        if id(scope)in reachable:continue
+        reachable[id(scope)]=scope
+        pending.extend(source for _,source in scope.selected_sources.values()if isinstance(source,Scope))
+        pending.extend(scope.subquery_scopes);pending.extend(scope.set_operation_scopes)
+
+    def origin(scope,column,seen=frozenset()):
+        if not isinstance(column,exp.Column)or column.is_star:return None
+        key=(id(scope),column.table.casefold(),column.name.casefold())
+        if key in seen:return None
+        sources={a.casefold():s for a,(_,s)in scope.selected_sources.items()}
+        alias=column.table.casefold()
+        if alias and alias not in sources:
+            return origin(scope.parent,column,seen|{key})if scope.parent else None
+        if not alias:
+            if len(sources)!=1:return None
+            alias=next(iter(sources))
+        source=sources[alias]
+        if isinstance(source,exp.Table):return (id(scope),alias,source.name.casefold(),column.name.casefold())
+        if not isinstance(source,Scope):return None
+        selected=list(source.expression.selects)
+        names=source.outer_columns or [p.alias_or_name for p in selected]
+        for name,value in zip(names,selected):
+            if name.casefold()==column.name.casefold():
+                value=value.this if isinstance(value,exp.Alias)else value
+                return origin(source,value,seen|{key})
+        stars=[p for p in selected if isinstance(p,exp.Star)or isinstance(p,exp.Column)and p.is_star]
+        if len(stars)==1:
+            return origin(source,exp.column(column.name,table=stars[0].table if isinstance(stars[0],exp.Column)else None),seen|{key})
+        return None
+
+    def markers(scope,seen=frozenset()):
+        if id(scope)in seen:return set()
+        found=set()
+        for predicate in scope.expression.find_all(exp.EQ):
+            if predicate.find_ancestor(exp.Select)is not scope.expression:continue
+            for col,value in ((predicate.this,predicate.expression),(predicate.expression,predicate.this)):
+                src=origin(scope,col)
+                if src and src[2]=='payer_pharmacy_claim'and isinstance(value,exp.Literal)and value.is_string and (
+                    src[3]=='claim_status'and value.this in ('reversed','recouped')or src[3]=='transaction_code'and value.this=='B2'):
+                    found.add(src[:3])
+        for _,source in scope.selected_sources.values():
+            if isinstance(source,Scope):found.update(markers(source,seen|{id(scope)}))
+        return found
+
+    def record_link(left,right,reverse):
+        if not left or not right or left[:3]==right[:3]or left[2]!='payer_pharmacy_claim'or right[2]!='payer_pharmacy_claim':return False
+        return ((left[:3]==reverse and left[3]=='reversal_of_record_id'and right[3]=='record_id')or
+                (right[:3]==reverse and right[3]=='reversal_of_record_id'and left[3]=='record_id')or
+                (left[:3]==reverse and left[3]=='record_id'and right[3]=='reversed_by_record_id')or
+                (right[:3]==reverse and right[3]=='record_id'and left[3]=='reversed_by_record_id'))
+
+    def linked(condition,scope,reverse):
+        if isinstance(condition,(exp.Where,exp.Paren)):return linked(condition.this,scope,reverse)
+        if isinstance(condition,exp.And):return linked(condition.this,scope,reverse)or linked(condition.expression,scope,reverse)
+        if isinstance(condition,exp.Or):return linked(condition.this,scope,reverse)and linked(condition.expression,scope,reverse)
+        return isinstance(condition,exp.EQ)and record_link(origin(scope,condition.this),origin(scope,condition.expression),reverse)
+
+    issue=('The unreversed pharmacy-fill calculation excludes records using an unproven reversal relationship. '
+           'Same patient, drug/NDC or fill date does not identify the claim being reversed. Use the received '
+           'counts_as_fill = 1 contract, which already applies the registered reversal handling, or bind '
+           'reversal.reversal_of_record_id = paid.record_id / paid.reversed_by_record_id = reversal.record_id. '
+           'Do not add a broad-match reversal exclusion; recompute the affected totals with claim identity preserved.')
+    for scope in reachable.values():
+        for negative in scope.expression.find_all(exp.Not):
+            if negative.find_ancestor(exp.Select)is not scope.expression:continue
+            value=negative.this
+            if isinstance(value,exp.Exists):
+                inner=by_select.get(id(value.this))
+                if inner and any(not linked(inner.expression.args.get('where'),inner,r)for r in markers(inner)):return issue
+            if isinstance(value,exp.In)and value.args.get('query'):
+                query=value.args['query'];query=query.this if isinstance(query,exp.Subquery)else query
+                inner=by_select.get(id(query))
+                if inner and len(query.selects)==1:
+                    selected=query.selects[0];selected=selected.this if isinstance(selected,exp.Alias)else selected
+                    if any(not record_link(origin(scope,value.this),origin(inner,selected),r)for r in markers(inner)):return issue
+        for join in scope.expression.args.get('joins')or[]:
+            if join.side!='LEFT':continue
+            alias=join.this.alias_or_name.casefold()
+            reverse=markers(scope)
+            where=scope.expression.args.get('where')
+            if where is None:continue
+            for missing in where.find_all(exp.Is):
+                col=missing.this
+                if not isinstance(col,exp.Column)or col.table.casefold()!=alias or not isinstance(missing.expression,exp.Null):continue
+                src=origin(scope,col)
+                if src and src[:3]in reverse and not linked(join.args.get('on'),scope,src[:3]):return issue
     return None
