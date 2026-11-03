@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T21:03:43.761424+00:00",
+  "updated_at": "2026-11-03T21:18:09.146345+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -3366,15 +3366,19 @@
     "post_style": "Percentage-first paired benchmark, followed by the separate rich clinical replay. Raw values retained; caveat paragraphs removed. API-equivalent cost labeled."
   },
   "latest_presentation_update": {
-    "at": "2026-11-03T21:02:43.799399+00:00",
-    "request": "Lead the deliverable with percentage changes and remove caveat paragraphs.",
-    "post": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/linkedin-post-with-comparison.md",
-    "headline": "99.8% lower API-equivalent cost. 94.7% less execution time. The same795patient result.",
+    "at": "2026-11-03T21:18:09.146345+00:00",
+    "request": "Show measured cost/time savings, contribution to the stack, and recursive improvement in one visual.",
+    "visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/savings-stack-recursive-improvement.png",
+    "prompt": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/savings-stack-learning-prompt.txt",
+    "image_tool": "built-in image_gen",
+    "sha256": "dd2260974dfe006e1fbb64e3453b8855de04788ae4d060478d5edef04388e310",
     "percentage_source": "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json",
-    "provider_call_reduction_pct": 76.9,
-    "scope": "Paired795patient benchmark percentages remain separate from57patient clinical replay. No new product/model performance claim or provider run.",
-    "image_edit": "completed",
-    "clinical_visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/clinical-workflow-replay-v2.png",
-    "image_tool": "built-in image_gen"
+    "result_scope": "795-patient ordinary claims request pair; API-equivalent cost and elapsed time. Native work reruns; exact IDs, counts and amounts.",
+    "cost_reduction_pct": 99.76864863156389,
+    "time_reduction_pct": 94.74225090984983,
+    "learning_scope": "Outcome capture, candidate evaluation, promotion/rollback and guarded reuse. No new weight update or measured clinical accuracy gain claimed.",
+    "product_edits": false,
+    "provider_evaluation_performed": false,
+    "published": false
   }
 }

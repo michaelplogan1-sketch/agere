@@ -1,4 +1,4 @@
-# Current Agere checkpoint — 2026-11-03T21:02:43.799399+00:00
+# Current Agere checkpoint — 2026-11-03T21:18:09.146345+00:00
 
 G3 ACTIVE. Mike requested a harder bottling question; its first ordinary run failed qualification. No new product release or selected bottle. Last sealed engineering delivery remains `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`. Earlier795-row reuse result retains only its original scope.
 
@@ -19,6 +19,8 @@ More compelling human-requested bottling experiment completed: original57patient
 Latest human preference: retain before/after time and cost. The verified795patient pair is128.0525→6.7327s and$1.809231572→$0.004185682API-equivalent. These numbers DO NOT apply to the57patient clinical replay, which lacks a matched current ordinary first/reuse pair. Current source-bound partial clinical reuse/ordinary-routing qualification must provide that evidence; do not repeat a large source-reading campaign or claim equality from historical outputs that differ. Updated two-experiment post draft and visuals are saved at`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03`; nothing published.
 
 Latest human presentation request: percentage reductions lead the post; remove caveat paragraphs. Updated hook:99.8%lower API-equivalent cost/94.7%less time for the same795patient paired result;76.9%fewerprovidercalls. Raw numbers remain. Separate57patientclinicalreplay is not assigned those percentages. No productcode/providerwork in this presentation change.
+
+Latest requested visual now combines the measured795patient paired savings (99.8%lower API-equivalent cost;94.7%less time), native/small-model/frontier routing, bottled executable workflows and the recursive improvement loop (outcomes,candidates,quality/cost tests,promotion/rollback,reuse). Saved at`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/savings-stack-recursive-improvement.png`; prompt/receipt beside it. No productcode, provider evaluation, model activation or publication; G3 exact next action and alltenareas unchanged.
 
 # Historical checkpoints
 
