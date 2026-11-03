@@ -1927,25 +1927,40 @@ def native_numeric_aggregate_shape(query,columns,*,schema=None,sources=None):
         return isinstance(node,exp.Literal)and not node.is_string and node.this==str(value)
     def null_test(node):
         return isinstance(node,exp.Is)and isinstance(node.this,exp.Column)and isinstance(node.expression,exp.Null)
-    def partition(node):
+    def column_origin(node,owner):
+        targets=[n for n in owner.downstream if n.name.casefold()==node.sql(dialect='sqlite').casefold()]
+        return targets[0]if len(targets)==1 else None
+    def calendar_component(node,owner,seen=frozenset()):
+        if isinstance(node,(exp.Alias,exp.Paren)):return calendar_component(node.this,owner,seen)
+        if isinstance(node,exp.Cast):
+            return node.args['to'].sql()in ('INT','BIGINT','SMALLINT')and calendar_component(node.this,owner,seen)
+        if isinstance(node,exp.Column):
+            child=column_origin(node,owner)
+            return bool(child and id(child)not in seen and calendar_component(child.expression,child,seen|{id(child)}))
+        if isinstance(node,exp.Substring):
+            return isinstance(node.this,exp.Column)and number(node.args.get('start'),1)and number(node.args.get('length'),4)
+        if isinstance(node,exp.TimeToStr):
+            value=node.this.this if isinstance(node.this,exp.TsOrDsToTimestamp)else node.this
+            fmt=node.args.get('format')
+            return isinstance(value,exp.Column)and isinstance(fmt,exp.Literal)and fmt.this=='%Y'
+        return isinstance(node,exp.Extract)and node.this.name.upper()=='YEAR'and isinstance(node.expression,exp.Column)
+    def partition(node,owner):
         # Only calendar comparisons and missingness, never arbitrary clinical
         # thresholds. OR is deliberately excluded from missing-count proofs.
-        if isinstance(node,exp.Paren):return partition(node.this)
+        if isinstance(node,exp.Paren):return partition(node.this,owner)
         if isinstance(node,exp.And):
-            left,right=partition(node.this),partition(node.expression)
+            left,right=partition(node.this,owner),partition(node.expression,owner)
             return left|right if left and right else None
         if null_test(node):return {'missing'}
         if isinstance(node,(exp.EQ,exp.GT,exp.GTE,exp.LT,exp.LTE)):
             for column,value in ((node.this,node.expression),(node.expression,node.this)):
-                if not isinstance(value,exp.Literal)or not value.is_string:continue
-                if isinstance(column,exp.Column):
+                if not isinstance(value,exp.Literal):continue
+                if isinstance(column,exp.Column)and value.is_string:
                     from datetime import date
                     try:
                         if date.fromisoformat(value.this).isoformat()==value.this:return {'calendar'}
                     except ValueError:pass
-                if (isinstance(node,exp.EQ)and isinstance(column,exp.Substring)and
-                    isinstance(column.this,exp.Column)and number(column.args.get('start'),1)and
-                    number(column.args.get('length'),4)and re.fullmatch(r'[0-9]{4}',value.this)):
+                if (isinstance(node,exp.EQ)and re.fullmatch(r'[0-9]{4}',value.this)and calendar_component(column,owner)):
                     return {'calendar'}
         return None
     def missing_counter(node,owner,seen=frozenset()):
@@ -1953,23 +1968,25 @@ def native_numeric_aggregate_shape(query,columns,*,schema=None,sources=None):
         if isinstance(node,exp.Coalesce):
             return bool(node.expressions)and all(number(x,0)for x in node.expressions)and missing_counter(node.this,owner,seen)
         if isinstance(node,exp.Column):
-            targets=[n for n in owner.downstream if n.name.casefold()==node.sql(dialect='sqlite').casefold()]
-            if len(targets)!=1 or id(targets[0])in seen:return False
-            child=targets[0]
+            child=column_origin(node,owner)
+            if child is None or id(child)in seen:return False
             return missing_counter(child.expression,child,seen|{id(child)})
         if not isinstance(node,exp.Sum):return False
         value=node.this
         if null_test(value):return True
+        if isinstance(value,exp.Column):return missing_counter(value,owner,seen)
         if not isinstance(value,exp.Case)or value.args.get('this'):return False
         branches=value.args.get('ifs')or[]
         if len(branches)!=1:return False
-        kinds=partition(branches[0].this)
-        return bool(kinds and 'missing'in kinds and number(branches[0].args.get('true'),1)and number(value.args.get('default'),0))
+        kinds=partition(branches[0].this,owner);included=branches[0].args.get('true')
+        return bool(kinds and number(value.args.get('default'),0)and (
+            'missing'in kinds and number(included,1)or kinds=={'calendar'}and missing_counter(included,owner,seen)))
     def expression_ok(node,owner,identity=False,in_aggregate=False):
         if isinstance(node,exp.Table):return True
         if identity:
             return isinstance(node,(exp.Alias,exp.Column,exp.Identifier))and all(
                 expression_ok(child,owner,True)for child in node.iter_expressions())
+        if isinstance(node,(exp.Substring,exp.TimeToStr,exp.Extract,exp.Cast))and calendar_component(node,owner):return True
         if isinstance(node,aggregates):
             if isinstance(node,exp.Sum)and null_test(node.this):return True
             return all(expression_ok(child,owner,in_aggregate=True)for child in node.iter_expressions())
@@ -1978,7 +1995,7 @@ def native_numeric_aggregate_shape(query,columns,*,schema=None,sources=None):
             if node.args.get('this')or len(branches)!=1:return False
             condition=branches[0].this;value=branches[0].args.get('true')
             if in_aggregate:
-                return bool(partition(condition)and (default is None or isinstance(default,exp.Null)or number(default,0))and
+                return bool(partition(condition,owner)and (default is None or isinstance(default,exp.Null)or number(default,0))and
                             expression_ok(value,owner,in_aggregate=True))
             def arithmetic(value):
                 return value is not None and expression_ok(value,owner)and any(

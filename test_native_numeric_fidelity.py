@@ -9,6 +9,18 @@ from clinical_core.agere.deliverables.receipts import uncompact_json
 
 
 class NumericFidelity(unittest.TestCase):
+    PIVOT_SQL='''WITH yearly AS (
+        SELECT patient_id,{year_expression} AS yr,SUM(paid_cents) AS paid,{missing_expression} AS absent
+        FROM claim GROUP BY patient_id,yr
+      ), pivoted AS (
+        SELECT patient_id,SUM(CASE WHEN yr={year_literal} THEN paid ELSE 0 END) AS current_paid,
+          SUM(CASE WHEN yr={year_literal} THEN absent ELSE 0 END) AS missing
+        FROM yearly GROUP BY patient_id
+      ), combined AS (
+        SELECT patient_id,SUM(current_paid) AS current_paid,SUM(missing) AS missing
+        FROM pivoted GROUP BY patient_id
+      ) SELECT patient_id,CASE WHEN COALESCE(missing,0)>0 THEN NULL ELSE COALESCE(current_paid,0) END AS current_paid
+        FROM {final_relation} ORDER BY patient_id'''
     CALENDAR_SQL = '''WITH base AS (SELECT patient_id FROM population), amounts AS (
       SELECT patient_id,
         SUM(CASE WHEN substr(service_from,1,4)='2028' THEN paid_cents ELSE 0 END) AS prior_paid,
@@ -147,6 +159,29 @@ class NumericFidelity(unittest.TestCase):
                 'CASE WHEN '+condition+' THEN NULL ELSE ROUND(100.0*(current_paid-prior_paid)/prior_paid,2) END')
             answer,calls=self.calendar_fixture(sql)
             self.assertTrue(all(not p.get('native_numeric_fidelity')for p in self.packets(answer,calls)))
+
+    def test_calendar_projections_and_nested_missing_counters_compose(self):
+        for year,literal in [("substr(service_from,1,4)","'2029'"),("strftime('%Y',service_from)","'2029'"),
+                             ("CAST(strftime('%Y',service_from) AS INTEGER)",'2029')]:
+            for missing in ['SUM(CASE WHEN paid_cents IS NULL THEN 1 ELSE 0 END)','SUM(paid_cents IS NULL)']:
+                for final in ['pivoted','combined']:
+                    with self.subTest(year=year,missing=missing,final=final):
+                        sql=self.PIVOT_SQL.format(year_expression=year,year_literal=literal,missing_expression=missing,final_relation=final)
+                        answer,calls=self.calendar_fixture(sql)
+                        self.assertEqual(answer['table'],[{'patient_id':'A','current_paid':None},{'patient_id':'B','current_paid':200},
+                                                         {'patient_id':'C','current_paid':50},{'patient_id':'D','current_paid':80}])
+                        result,seen=self.check(self.packets(answer,calls))
+                        self.assertEqual(seen,['summary']);self.assertEqual(result['label'],'supported')
+
+    def test_composed_calendar_proof_cannot_launder_clinical_or_amount_counters(self):
+        for year,missing in [('paid_cents','SUM(paid_cents IS NULL)'),
+                             ('CAST(paid_cents>100 AS INTEGER)','SUM(paid_cents IS NULL)'),
+                             ('substr(service_from,1,4)','SUM(paid_cents)'),
+                             ('substr(service_from,1,4)','SUM(CASE WHEN paid_cents<100 THEN 1 ELSE 0 END)')]:
+            sql=self.PIVOT_SQL.format(year_expression=year,year_literal="'2029'",missing_expression=missing,final_relation='combined')
+            answer,calls=self.calendar_fixture(sql)
+            with self.subTest(year=year,missing=missing):
+                self.assertTrue(all(not p.get('native_numeric_fidelity')for p in self.packets(answer,calls)))
 
     def test_joined_arithmetic_requires_resolved_source_schema(self):
         answer,calls=self.calendar_fixture()

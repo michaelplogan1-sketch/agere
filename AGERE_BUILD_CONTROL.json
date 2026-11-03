@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T22:52:04.999221+00:00",
+  "updated_at": "2026-11-03T23:03:41.552639+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -485,11 +485,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "request_calendar_year_prose_offline_candidate",
+    "kind": "compositional_calendar_lineage_offline_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Requested temporal year phrases stay literal; year-sized patient counts/amounts still require native bindings. Actual IN-status reversal exclusion uses the existing claim identity check.",
-    "measured_failure_reduction": "V2 ordinary table1920patients/26880cells exact but compiler rejected requested years. Exact retained seven-field draft now compiles offline, preserving all values; corrected reversal exclusion is also cell-exact and1920native fidelity rows qualify. All47249attempts preserved,0newprovidercalls in repair proof.",
+    "user_behavior_delta": "Calendar projections and nested missing counters follow actual column lineage across aggregation stages. Equivalent computation forms retain native cell checks; unknown global semantics remains unknown without row votes.",
+    "measured_failure_reduction": "Allfouractual retained forms produce exact1920patients/26880cells. Previously unqualified calendar pivot now has1920native fidelity rows; each authored supported/unknown/contradicted state dispatches1global check.12compositions/4adversarial cases tested; no provider calls, all48299attempts/source exact.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -570,10 +570,16 @@
       "artifacts/agere-harder-bottling-2026-11-03/null-guard-repair/tests.log",
       "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v2/run-receipt.json",
       "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/receipt.json",
-      "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/connected-tests.log"
+      "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/connected-tests.log",
+      "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v3/run-receipt.json",
+      "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v3/interruption-decision.json",
+      "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/receipt.json",
+      "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/tests.log",
+      "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/question-scope-audit.json",
+      "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/clarified-request.json"
     ],
-    "remaining_gap": "Ordinary complete semantic confirmation/repeat; original clinical routing/economics and alltenarea/G5 dependencies remain.",
-    "next_action": "G3: exact returned1920patient/26880cell v2 table is correct but answer stayed partial because requested bare years were treated as unbound quantities. Actual retained draft now compiles with request-bound temporal scanning; year-sized counts still require bindings. IN-status reversal CTEs now retain record-link checks. Offline proof passes. Restart owned8890 at the new candidate identity; run one affected ordinary confirmation, then one eligible ordinary repeat only after full semantic/result/accounting checks. Preserve all47249attempts and failed/partial results. Then close original57patient clinical ordinary-routing/economics with55/61supported packets andsixunresolved source dependencies. Retain alltenareas and separate G5/customer qualification. Expand the newly authorized question-family learning curriculum only from measured valid workflows; no untargeted thousand-question provider campaign.",
+    "remaining_gap": "Clarified ordinary full verification and qualified repeat; clinical routing/economics and G5/customer dependencies remain.",
+    "next_action": "G3: compositional calendar lineage now passes allfourretained SQL forms and12generated composition/4negative fixtures with exact1920patients/26880cells; all48299attempts/source preserved. Restart owned8890 at this recorded candidate and run one ordinary question from artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/clarified-request.json. Both2029eligibility dates are explicit; this preserves intended1920population but is a clarified question, so never compare it to older wording as an identical pair. If complete semantic/result/accounting checks pass, run one identical-wording ordinary repeat and inspect actual automatic bottling benefit/rollback. If a new failure appears, preserve it and repair the named cause offline. Then original57patient clinical routing/economics and targeted question-family knowledge/workflow learning; alltenareas and separate G5/customer dependencies remain.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All harder-question jobs terminal. Prior owned8890PID41475 stopped; same-code app restored on8890PID47807/session12518, GET/ask200. No active sourcefreeze or provider job.",
     "remaining_blockers": [
@@ -621,13 +627,13 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-03T22:52:04.999221+00:00",
+    "at": "2026-11-03T23:03:41.552639+00:00",
     "workflow_change": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
     "unsealed_work": {
-      "status": "offline_request_year_and_reversal_list_candidate_pending_ordinary_confirmation",
+      "status": "offline_compositional_calendar_candidate_pending_clarified_ordinary_confirmation",
       "kind": "harder_composition_verification_and_relation_binding",
-      "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v2/run-receipt.json",
-      "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/receipt.json",
+      "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v3/run-receipt.json",
+      "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/receipt.json",
       "all_jobs_terminal": true,
       "source_frozen": false,
       "product_edits": true,
@@ -3340,13 +3346,32 @@
         "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/connected-tests.log"
       ],
       "scope_impact": "No semantic acceptance inferred from numeric equality; no dates/amounts silently changed, no fullMVP claim."
+    },
+    {
+      "at": "2026-11-03T22:59:02.485587+00:00",
+      "gate": "G3",
+      "decision": "Reassessment: individual baseline/variant fixes have not established reliable ordinary completion. Preserve observed improvements but replace one-shape testing with compositional SQL lineage proof across every produced variant. Audit owner-authored question ambiguity separately from product errors; do not silently change expected population or compare different questions as an identical pair.",
+      "evidence": [
+        "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v3/run-receipt.json"
+      ],
+      "scope_impact": "No new provider campaign until offline matrix passes; existing source/model acceptances untouched; alltenareas and user-authorized learning scope retained."
+    },
+    {
+      "at": "2026-11-03T23:03:41.552639+00:00",
+      "gate": "G3",
+      "decision": "Replace single-SQL-form qualification with compositional lineage resolution and a matrix across all retained actual forms plus calendar/missing-counter variations. Clarify owner-authored benchmark temporal scope separately; previous all-years interpretation was not unambiguously a model error. Intended target1920unchanged, older measurements are not paired with clarified wording.",
+      "evidence": [
+        "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/receipt.json",
+        "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/question-scope-audit.json"
+      ],
+      "scope_impact": "No clinical classifications qualified by numeric storage. Global semantics still required. Alltenareas/source/attempt restrictions retained."
     }
   ],
   "unsealed_work": {
-    "status": "offline_request_year_and_reversal_list_candidate_pending_ordinary_confirmation",
+    "status": "offline_compositional_calendar_candidate_pending_clarified_ordinary_confirmation",
     "kind": "harder_composition_verification_and_relation_binding",
-    "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v2/run-receipt.json",
-    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/request-year-repair/receipt.json",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v3/run-receipt.json",
+    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/receipt.json",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
@@ -3380,7 +3405,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: exact returned1920patient/26880cell v2 table is correct but answer stayed partial because requested bare years were treated as unbound quantities. Actual retained draft now compiles with request-bound temporal scanning; year-sized counts still require bindings. IN-status reversal CTEs now retain record-link checks. Offline proof passes. Restart owned8890 at the new candidate identity; run one affected ordinary confirmation, then one eligible ordinary repeat only after full semantic/result/accounting checks. Preserve all47249attempts and failed/partial results. Then close original57patient clinical ordinary-routing/economics with55/61supported packets andsixunresolved source dependencies. Retain alltenareas and separate G5/customer qualification. Expand the newly authorized question-family learning curriculum only from measured valid workflows; no untargeted thousand-question provider campaign.",
+  "next_action": "G3: compositional calendar lineage now passes allfourretained SQL forms and12generated composition/4negative fixtures with exact1920patients/26880cells; all48299attempts/source preserved. Restart owned8890 at this recorded candidate and run one ordinary question from artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/clarified-request.json. Both2029eligibility dates are explicit; this preserves intended1920population but is a clarified question, so never compare it to older wording as an identical pair. If complete semantic/result/accounting checks pass, run one identical-wording ordinary repeat and inspect actual automatic bottling benefit/rollback. If a new failure appears, preserve it and repair the named cause offline. Then original57patient clinical routing/economics and targeted question-family knowledge/workflow learning; alltenareas and separate G5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
