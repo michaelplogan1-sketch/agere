@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T23:35:17.217137+00:00",
+  "updated_at": "2026-11-03T23:38:09.198799+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -3377,14 +3377,28 @@
       "decision": "Five retained complete large packets bypass field localization solely because the short-context adapter was not applicable. Add an explicitly declared long-context named-field adapter using the same provider order and unchanged complete evidence. Named choices share a state; supported packets and outages do not invoke it. Preserve independent whole-dependency acceptance and thresholds.",
       "qualification": "70focused tests pass. Run one largest retained unresolved packet with cache-only whole judgment and live shared-state field diagnostics, then decide whether any named obligation becomes actionable.",
       "scope_impact": "No cohort reread, clinical answer promotion, threshold change, new model or whole-dependency acceptance relaxation."
+    },
+    {
+      "at": "2026-11-03T23:38:09.198799+00:00",
+      "gate": "G3",
+      "decision": "The largest unresolved packet produced30/30supported named field judgments on identical complete evidence in12.729s with2calls/$0.011466416APIequivalent. The independent whole vote remains undecided. Reassess duplicate whole-vote acceptance versus a strictly bound conjunction of every claim; evaluate explicit counterexamples before enabling any new aggregation. Global coverage and independent clinical qualification remain separate.",
+      "evidence": "artifacts/agere-large-field-diagnosis-2026-11-03/largest/run-receipt.json",
+      "scope_impact": "No threshold lowering or clinical truth inferred. No further large-packet campaign until the aggregation method has qualified evidence."
+    },
+    {
+      "at": "2026-11-03T23:40:48.298049+00:00",
+      "gate": "G3",
+      "decision": "Candidate claim composition can resolve a patient packet only when native validation proves its entire final-field manifest is covered by deciding, threshold-passing typed checks against the same complete source context. Global coverage stays separate; explicit whole-vote disagreement, partial source, omitted fields and stale/value-mutated receipts remain unaccepted. Qualify against16owner-authored source/role/entity/time/quantity/negation counterexamples before activation.",
+      "evidence": "artifacts/agere-large-field-diagnosis-2026-11-03/composition-tests.log",
+      "scope_impact": "No threshold changes, source omission or independent clinical qualification. Existing runtime remains703f5a5 until qualification succeeds."
     }
   ],
   "unsealed_work": {
-    "status": "large_field_localization_offline_candidate",
+    "status": "large_field_localization_completed_candidate",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
-    "receipt": "artifacts/agere-large-field-diagnosis-2026-11-03/input-packet.json"
+    "receipt": "artifacts/agere-large-field-diagnosis-2026-11-03/largest/run-receipt.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",

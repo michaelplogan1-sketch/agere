@@ -2415,6 +2415,12 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
                     ' named fields have supported typed judgments at the existing thresholds. The independent complete-dependency '
                     'check remains unresolved; field support does not establish packet acceptance or clinical qualification. '
                     'Inspect the remaining dependency-level uncertainty; retain these exact field/input-bound observations.')
+                composition=complete_claim_composition(packet,review)
+                if composition and not result.get('decided_by'):
+                    checked.update(label='supported',decided_by='complete_typed_claim_composition',
+                        claim_composition=composition,
+                        reason='Every final field in this patient packet has a deciding typed judgment against the identical complete source context. Native checks establish exact claim coverage and binding; the global question/coverage review remains separate. This is composed machine verification, not independent clinical qualification.')
+                    review.update(complete_dependency_accepted=True,remaining_obligation=None)
         steps.extend(result.get('steps')or[])
         return checked,steps
     def fault(result):
@@ -2596,6 +2602,48 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
         'all_fields_supported':bool(claims)and len(supported)==len(claims),
         'supported_claims':supported,'complete_dependency_accepted':False,
         'clinical_qualification':False}}
+
+
+def complete_claim_composition(packet,review):
+    """Conjoin exact source-complete patient claims; never infer omitted claims.
+
+    This applies only to an entire, unpartitioned patient row scope with actual
+    complete source contexts. A global summary, source child, incomplete source,
+    missing field or unbound/undecided judgment cannot acquire this proof.
+    """
+    from ...contracts import digest
+    from ..deliverables.receipts import uncompact_json
+    if (packet.get('patient_dependency_bound')is not True or packet.get('source_context_complete')is not True or
+        packet.get('dependency_complete')is not True or packet.get('parent_packet_id')or
+        packet.get('required_source_packet_ids')or packet.get('source_dependency_parent_id')):return None
+    try:
+        state=uncompact_json(json.loads(packet['text']));pid=packet['source_dependency_patient_id']
+        rows=state.get('answer_rows');contexts=state.get('source_contexts');claims=packet.get('claim_manifest')
+        if (state.get('patient_id')!=pid or not rows or not contexts or state.get('source_context_gaps')or
+            state.get('claim_manifest')!=claims or not all(isinstance(r,dict)and r.get('patient_id')==pid for r in rows)or
+            not all(isinstance(c,dict)and c.get('patient_id')==pid and isinstance(c.get('text'),str)and
+                    c.get('record_id')and c.get('date')for c in contexts)):return None
+        expected=[{'id':'claim_'+str(n),'field':str(k),'path':['answer_rows',i,k]}
+                  for n,(i,k)in enumerate((i,k)for i,row in enumerate(rows)for k in row if k!='patient_id')]
+        if claims!=expected or not claims:return None
+        supported=review.get('supported_claims')
+        if (review.get('packet_digest')!=digest(packet['text'])or review.get('manifest_digest')!=digest(claims)or
+            review.get('expected_count')!=len(claims)or review.get('supported_count')!=len(claims)or
+            review.get('unresolved_count')!=0 or review.get('fault_count')!=0 or
+            not isinstance(supported,list)or len(supported)!=len(claims)):return None
+        for claim,reading in zip(claims,supported):
+            if any(reading.get(k)!=claim[k]for k in ('field','path'))or reading.get('claim_id')!=claim['id']:return None
+            if reading.get('value_digest')!=digest(_claim_value(state,claim['path'])):return None
+            observed=reading.get('verification_observation')or{};judgment=observed.get('model_judgment')or{}
+            p,threshold=judgment.get('probability'),judgment.get('threshold')
+            if (observed.get('state')!='supported'or judgment.get('label')!='supported'or not judgment.get('decided_by')or
+                type(p)not in(int,float)or type(threshold)not in(int,float)or
+                not math.isfinite(p)or not math.isfinite(threshold)or not 0<threshold<=p<=1):return None
+        return {'schema':'complete-source-claim-composition/1','packet_digest':review['packet_digest'],
+            'manifest_digest':review['manifest_digest'],'claims':len(claims),'source_contexts':len(contexts),
+            'supported_judgments_digest':digest(supported),'global_question_review_still_required':True,
+            'clinical_qualification':False}
+    except (ValueError,KeyError,TypeError,IndexError):return None
 
 
 def _claim_value(state,path):
