@@ -1,4 +1,4 @@
-# Current Agere checkpoint — 2026-11-03T20:36:08.825946+00:00
+# Current Agere checkpoint — 2026-11-03T20:50:24.119606+00:00
 
 G3 ACTIVE. Mike requested a harder bottling question; its first ordinary run failed qualification. No new product release or selected bottle. Last sealed engineering delivery remains `artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json`. Earlier795-row reuse result retains only its original scope.
 
@@ -13,6 +13,10 @@ Exact next: G3: repair the user-requested harder payer-analysis failure offline 
 Preserve latestprincipalreview/October11baseline and allstanding boundaries. No agents/chats,protectedkeys,heldoutcorpus,generatortruth,Documentsresearch,employeraccess,newservices,externalAnthropicAPI,mainmerge,publication,contact orrealcare. Approvedsynthetic/provider/privatepush authority persists. No newcaps. Deliverablesonlyrequested;OWASP/HHSdeferred.
 
 Latest human steering: find another previously LLM-completed task for bottling. Financial claims-by-service-year versus cash-by-payment-year artifact checked offline:22native operations/15historical actorcallbacks,12rows independently reconciled,8.546sprogram/9.890stotal,0providerattempts/all46578ledgerrows exact. Allsemanticreceipts exact; currentguard has noeligiblecandidate, so this is component evidence, not current automatic ordinary reuse. No candidate/events/source/product changes. Evidence:`artifacts/agere-financial-bottle-current-2026-11-03/receipt.json`. All jobs terminal; harder-question offline repair above remains next.
+
+More compelling human-requested bottling experiment completed: original57patient HFrEF/GDMT review reproduced through28native operations in34.855s,0newLLMcalls/attempts; all57patientrows exact, sixunresolved checks preserved. Two strict-check failures retained: omitted authentic recovery feedback state shifted temporary views; four old receipts lacked new source-contract metadata. Corrected existing recovery boundary and explicit metadata reconciliation pass, no productcodechange or automaticactivation. Evidence:`artifacts/agere-clinical-bottling-usecase-2026-11-03/qualification.json`. LinkedIn draft/visual requested; no external publication. Alljobs terminal/sourceunfrozen; harder payer-analysis offline repair and clinical ordinary-routing qualification remain open.
+
+Latest human preference: retain before/after time and cost. The verified795patient pair is128.0525→6.7327s and$1.809231572→$0.004185682API-equivalent. These numbers DO NOT apply to the57patient clinical replay, which lacks a matched current ordinary first/reuse pair. Current source-bound partial clinical reuse/ordinary-routing qualification must provide that evidence; do not repeat a large source-reading campaign or claim equality from historical outputs that differ. Updated two-experiment post draft and visuals are saved at`/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03`; nothing published.
 
 # Historical checkpoints
 

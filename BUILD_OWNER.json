@@ -472,5 +472,24 @@
     "all_jobs_terminal": true,
     "source_frozen": false,
     "next_requirement": "Current guarded selection and ordinary workflow requalification before calling this automatically reusable in the current release. Do not bypass guard or relabel manual component replay as ordinary routing."
+  },
+  "latest_clinical_bottling_experiment": {
+    "at": "2026-11-03T20:50:24.119606+00:00",
+    "receipt": "artifacts/agere-clinical-bottling-usecase-2026-11-03/qualification.json",
+    "status": "native_reconstruction_passed",
+    "scope": "Explicit existing owned recovery with retained observations; not automatic default selection, new-question generalization or independent clinical validation",
+    "patient_count": 57,
+    "native_operations": 28,
+    "program_seconds": 34.8552503749961,
+    "new_provider_attempts": 0,
+    "unresolved_source_checks": 6,
+    "automatic_default_route": false,
+    "product_edits": false,
+    "all_jobs_terminal": true,
+    "source_frozen": false,
+    "durable_artifacts": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03",
+    "visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/clinical-workflow-replay.png",
+    "paired_comparison_status": "Required by latest human preference; no matched clinical before/after exists. Existing795patient paired benchmark remains separately scoped; never attach its costs or speedup to57patient clinical replay.",
+    "post_draft": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/linkedin-post-with-comparison.md"
   }
 }
