@@ -252,7 +252,8 @@ def check(question, graph, result, *, stack, ledger=None, as_of_date=None):
     reasons = [f"System One ({provider}) judged the executed plan {label.replace('_', ' ')} (p={p:.2f})"]
     return {'addresses_question': round(float(probs.get('answers_fully', 0.0)) + float(probs.get('answers_partially', 0.0)), 4),
             'label': label, 'p': round(p, 4), 'probabilities': probs, 'reasons': reasons, 'reject': reject,
-            'cost_usd': usd, 'calls': calls, 'provider': provider, 'cache_hit': bool(out.get('cache_hit')), 'version': VERSION}
+            'cost_usd': usd, 'calls': calls, 'provider': provider, 'decided_by': out.get('decided_by'),
+            'cache_hit': bool(out.get('cache_hit')), 'version': VERSION}
 
 
 def apply_check(stack, question, graph, verdict, *, ledger=None):

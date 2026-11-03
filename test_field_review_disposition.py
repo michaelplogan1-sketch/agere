@@ -90,7 +90,7 @@ class FieldReviewDisposition(unittest.TestCase):
         for feedback in legacy['claim_feedback']+legacy['packets'][0]['claim_feedback']:
             feedback.pop('verification_observation',None)
             feedback['reason']='The source does not settle whether this field is supported.'
-        coverage={'label':'answers_partially'}
+        coverage={'label':'answers_fully'}
         self.assertIsNotNone(B.verification_repair_state(coverage,result))
         self.assertEqual(B.verification_repair_state(coverage,result),B.verification_repair_state(coverage,legacy))
 

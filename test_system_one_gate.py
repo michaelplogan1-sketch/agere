@@ -90,6 +90,7 @@ class Checker(unittest.TestCase):
             out = G.check('How many patients have CKD?', GRAPH, RESULT, stack=LIVE)
         self.assertTrue(out['reject']); self.assertEqual(out['label'], 'answers_a_different_question')
         self.assertEqual((out['calls'], out['cost_usd'], out['provider']), (1, 0.0002, 'jev'))
+        self.assertEqual(out['decided_by'],'jev')
         self.assertIn('How many patients have CKD?', fake.calls[0]['question'])
         self.assertIn('42 patients', fake.calls[0]['evidence'][0]['text'])
         self.assertEqual(fake.calls[0]['task_key'], 's1_answer_check')
@@ -104,6 +105,15 @@ class Checker(unittest.TestCase):
         with clean_env(), use(FakeS1('answers_fully', 0.7)):
             out = G.check('q', GRAPH, RESULT, stack=LIVE)
         self.assertAlmostEqual(out['addresses_question'], 0.8, places=3); self.assertFalse(out['reject'])
+
+    def test_reporting_provider_is_not_decision_authority(self):
+        fake=FakeS1('answers_partially',.95)
+        original=fake.decide
+        def unsettled(*args,**kwargs):
+            value=original(*args,**kwargs);value['decided_by']=None;return value
+        fake.decide=unsettled
+        with clean_env(),use(fake):out=G.check('q',GRAPH,RESULT,stack=LIVE)
+        self.assertEqual(out['provider'],'jev');self.assertIsNone(out['decided_by'])
 
 
 class CheckHook(unittest.TestCase):

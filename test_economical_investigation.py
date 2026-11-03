@@ -109,7 +109,9 @@ class Investigator(unittest.TestCase):
         def execute(use):
             executed.append(use);return {'result_view':'agere_result_'+str(len(executed)),'rows':[{'patient_id':'A'}],'columns':['patient_id'],'accounting':{'cost_usd':len(executed)}}
         r=S.tool_loop('Inspect this evidence',[],[{'name':'query_sql'}],execute,send=send,model=M.HAIKU,escalation_model=M.SONNET,max_tools=None,review=lambda a,c:{'status':'repair','feedback':'Current treatment unknown'})
-        self.assertEqual(len(sent),4);self.assertEqual(r['review_stopped'],'no_progress')
+        # The repeated native tool result is already enough to stop; it does
+        # not need a fourth model callback to repeat the partial final answer.
+        self.assertEqual(len(sent),3);self.assertIn('made no progress',r['error'])
         self.assertEqual(r['answer']['status'],'partial');self.assertEqual(len(r['tool_calls']),2)
 
     def test_verifier_outage_with_no_repairable_feedback_does_not_call_sonnet(self):
@@ -120,7 +122,7 @@ class Investigator(unittest.TestCase):
     def test_uncertain_source_check_without_a_fault_does_not_promote_actor_or_pass_answer(self):
         support={'label':'unknown','failed_packet_ids':[],'claim_feedback':[],
                  'packets':[{'id':'patient_A','label':'unknown','decided_by':None}]}
-        state=B.verification_repair_state({'label':'answers_partially'},support)
+        state=B.verification_repair_state({'label':'answers_fully'},support)
         r=self.run_loop([TOOL_REPLY,reply({'status':'answered','count':7}),reply({'status':'answered','count':7})],
             lambda a,c:{'status':'repair','repair_kind':'unresolved_verification','feedback':'Source check remains unresolved',
                         'progress_state':state})
@@ -142,8 +144,8 @@ class Investigator(unittest.TestCase):
                  'packets':[{'id':'patient_A','label':'unknown','decided_by':None,'claim_feedback':[field]}]}
         def check(answer,calls):
             return {'status':'repair','repair_kind':'unresolved_verification','feedback':'Reason remains unknown',
-                    'progress_state':B.verification_repair_state({'label':'answers_partially'},support)}
-        state=B.verification_repair_state({'label':'answers_partially'},support)
+                    'progress_state':B.verification_repair_state({'label':'answers_fully'},support)}
+        state=B.verification_repair_state({'label':'answers_fully'},support)
         self.assertEqual(state['unresolved_field_checks']['count'],1)
         r=self.run_loop([TOOL_REPLY,reply({'status':'answered','count':7}),reply({'status':'answered','count':7})],check)
         self.assertEqual([b['model']for b in self.sent],[M.HAIKU]*3)
@@ -154,7 +156,7 @@ class Investigator(unittest.TestCase):
         field={'packet_id':'patient_A','claim_id':'c','field':'reason','path':['answer_rows',0,'reason'],
                'label':'unknown','decided_by':None,'source_record_ids':['r2','r1']}
         def state(fields):
-            return B.verification_repair_state({'label':'answers_partially'},
+            return B.verification_repair_state({'label':'answers_fully'},
                 {'label':'unknown','claim_feedback':fields,'packets':[{'id':'patient_A','label':'unknown'}]})
         first=state([field]);same={**field,'source_record_ids':['r1','r2'],'reason':'Rephrased uncertainty','result_view':'new_alias'}
         self.assertEqual(first,state([same]))
@@ -170,15 +172,15 @@ class Investigator(unittest.TestCase):
                        {'source_record_ids':'r1'},{'source_assertion_id':[]}):
             support={'label':'unknown','claim_feedback':[{**field,**change}],
                      'packets':[{'id':'patient_A','label':'unknown'}]}
-            with self.subTest(change=change):self.assertIsNone(B.verification_repair_state({'label':'answers_partially'},support))
+            with self.subTest(change=change):self.assertIsNone(B.verification_repair_state({'label':'answers_fully'},support))
         conflict={**field,'source_record_ids':['other']}
         support={'label':'unknown','claim_feedback':[field],
                  'packets':[{'id':'patient_A','label':'unknown','claim_feedback':[conflict]}]}
-        self.assertIsNone(B.verification_repair_state({'label':'answers_partially'},support))
+        self.assertIsNone(B.verification_repair_state({'label':'answers_fully'},support))
 
     def test_undecided_packet_argmax_is_not_a_confirmed_fault_or_new_progress(self):
         def state(label,decided=None):
-            return B.verification_repair_state({'label':'answers_partially'},
+            return B.verification_repair_state({'label':'answers_fully'},
                 {'label':'unknown','packets':[{'id':'patient_A','label':label,'decided_by':decided}]})
         expected=state('unknown')
         for label in ('supported','contradicted','not_established'):
@@ -194,11 +196,11 @@ class Investigator(unittest.TestCase):
 
     def test_located_fault_or_different_question_is_not_an_indeterminate_check(self):
         clean={'label':'unknown','packets':[{'id':'patient_A','label':'unknown','decided_by':None}]}
-        self.assertIsNotNone(B.verification_repair_state({'label':'answers_partially'},clean))
+        self.assertIsNotNone(B.verification_repair_state({'label':'answers_fully'},clean))
         for bad in [{**clean,'claim_feedback':[{'field':'dose','label':'contradicted'}]},
                     {**clean,'failed_packet_ids':['patient_A']},
                     {**clean,'packets':[{'id':'patient_A','label':'contradicted','decided_by':'jev'}]}]:
-            self.assertIsNone(B.verification_repair_state({'label':'answers_partially'},bad))
+            self.assertIsNone(B.verification_repair_state({'label':'answers_fully'},bad))
         self.assertIsNone(B.verification_repair_state({'label':'answers_a_different_question'},clean))
 
     def test_provider_outage_is_not_a_reason_for_paid_model_retry(self):

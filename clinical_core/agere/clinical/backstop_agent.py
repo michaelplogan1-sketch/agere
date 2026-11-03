@@ -1398,8 +1398,26 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         if isinstance(coverage_view.get('limitations'),list) and prior_reference is not None:
             coverage_view['limitations']=[review_limitation_view(text,prior_review,prior_reference)
                 for text in coverage_view['limitations']]
-        coverage = gate.check(request, graph, {'answer': coverage_view}, stack=stack, ledger=ledger, as_of_date=as_of)
+        coverage_request = request + ('\nCoverage concerns whether the requested analytical work and outputs are present. '
+            'A source-scoped unknown with its reason and the evidence needed to resolve it can address an unavailable fact. '
+            'Saying that evidence has not been read, a calculation has not been performed, or individual explanations '
+            'have not been written describes unfinished work. Do not treat those omissions as completed unknown answers. '
+            'Source support is checked separately after composition; coverage alone does not certify any interpretation.')
+        coverage = gate.check(coverage_request, graph, {'answer': coverage_view}, stack=stack, ledger=ledger, as_of_date=as_of)
         assessment.update(coverage=coverage, calls=assessment['calls']+coverage['calls'], cost_usd=assessment['cost_usd']+coverage['cost_usd'])
+        if (coverage.get('decided_by') and coverage.get('label') in ('answers_partially','answers_a_different_question')
+                and coverage.get('p',0) >= gate.reject_threshold()):
+            # An unfinished draft must be composed before paying to review all
+            # its patient dependencies. This is neither a source judgment nor
+            # acceptance: the completed proposal still receives every check.
+            return {**assessment, 'status':'repair', 'repair_kind':'incomplete_coverage',
+                'progress_state':{'coverage':coverage['label']},
+                'support':{'label':'not_run','decided_by':None,'packets':[],
+                           'all_dependencies_checked':False,'reason':'Compose the requested outputs before source review.'},
+                'feedback':'Coverage check: '+coverage['label'].replace('_',' ')+'. Complete the requested outputs '
+                    'from the retained native results and source observations, including individual explanations where requested. '
+                    'Keep genuine missing source facts explicit; do not replace unfinished reading or composition with an unknown. '
+                    'Reuse unchanged evidence and repair the missing work. Full source support review will run on the completed proposal.'}
         # All tool results and the cited documents' context, rather than numeric-token overlap or the quote alone.
         bound = (answer.get('table_binding') or {}).get('result_view')
         evidence = []
@@ -1475,7 +1493,9 @@ def verification_repair_state(coverage,support):
     """Uncertain checks without a located fault justify investigation, not a stronger actor by default."""
     packets=support.get('packets')or[]
     pending=[p for p in packets if p.get('label')!='supported'or not p.get('decided_by')]
-    if(coverage.get('label')not in ('answers_fully','answers_partially')or support.get('label')!='unknown'
+    # Missing requested work needs composition repair even when other claims
+    # have uncertain support. Only complete coverage can be uncertainty-only.
+    if(coverage.get('label')!='answers_fully'or support.get('label')!='unknown'
        or support.get('failed_packet_ids')or not pending
        or any(not isinstance(p.get('id'),str)or p.get('label')not in SUPPORT_OPTIONS
               or p.get('decided_by')and p.get('label')!='supported'for p in packets)):
