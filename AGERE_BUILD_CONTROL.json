@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T12:26:56.815389+00:00",
+  "updated_at": "2026-11-03T12:51:40.260893+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -476,24 +476,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "ordinary_numeric_workflow_confirmed",
+    "kind": "localized_field_receipts_and_verified_source_defects",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The original ordinary numeric question now returns all795 exact patient/count/amount rows, no unresolved requirements, checked support and fully attributed cost; six native actions are automatically selected for guarded reuse.",
-    "measured_failure_reduction": "Ordinary completeness failure removed;867\u219212new provider attempts,208.519\u2192100.144s,14\u21920ambiguous ownership;795 exact rows retained.",
+    "user_behavior_delta": "Retain successful source/input-bound field judgments and expose remaining whole-dependency uncertainty in native receipts and compact repair state.",
+    "measured_failure_reduction": "0\u219222retained supported field receipts on identical cached judgments; targeted17field uncertainties\u21920without global promotion. Two concrete next source/construction defects verified.",
     "evidence": [
-      "artifacts/agere-numeric-native-confirmation-2026-11-03/delivery-receipt.json",
-      "docs/agere/NUMERIC_WORKFLOW_CONFIRMATION_2026-11-03.md"
+      "artifacts/agere-clinical-dependency-diagnosis-2026-11-03/delivery-receipt.json",
+      "docs/agere/CLINICAL_DEPENDENCY_REPAIR_2026-11-03.md"
     ],
-    "remaining_gap": "The original 57-patient clinical result remains partial with 522 unresolved field judgments; these are uncertainties, not 522 established errors. Numeric execution/completeness/accounting now pass an ordinary request, but its newly selected bottle has not yet been measured on a later ordinary invocation. Legacy learning.verified=false is an untouched default in component-learning mode, not evidence that the answer failed. Observation32 is eligible machine review, with no training plan or new weight promotion. Broad ordinary transfer, independent clinical/model qualification and actual all-in economics remain open. Customer deployment is separate and OWASP/HHS remains deferred.",
-    "next_action": "Diagnose the original retained 57-patient clinical result at its unresolved source-reading dependencies. Start with the existing 522 field-level support judgments, group by shared evidence dependency, and inspect the highest-impact documentary/dated-role failures. Distinguish source absence, ambiguous claims, representation loss and provider uncertainty; use targeted current Jev/Perplexity checks on the existing approved evidence where needed. Repair the shared assertion/state/composition path only for an observed defect and demonstrate progress on retained workflow evidence. Do not rerun the full clinical cohort or the now-passing numeric question, launch untargeted training, lower acceptance thresholds, or promote model-generated labels. The selected numeric six-action bottle is already validated and selected; its final response snapshot still says pending, while immutable event88 records selection. Keep that observability discrepancy explicit.",
+    "remaining_gap": "The original57patient clinical result remains partial. Its retained522field uncertainties were not globally regraded or erased. One targeted dependency now has22supported field observations and0localized unknowns, but its complete-packet judgment remains below0.8. Verified source segmentation and date/record pairing defects are the next concrete work. New field receipts preserve successes without bypassing that independent acceptance guard. Current policy changes invalidate historical answer/bottle guards; the795row ordinary numeric acceptance remains versioned at a9e8be8, not restamped as a fresh b03e847 inference. Broad ordinary transfer, current whole-product release acceptance, independent clinical/model qualification and all-in economics remain open; deployment is separate.",
+    "next_action": "Repair the demonstrated mid-token2048-character splitting in typed_document_review.blocks using source-faithful sentence/line/word boundaries with exact offsets and coverage. Preserve whole-source context and entity/relation binding; do not edit therapy_barriers.py. Reproduce the2492cut in WHL-R-5eb22bcf381cbe3a26eff3 and the retained WHL-R-d8dfd887d37449bc88109c split; add authored boundary/entity regressions, then test only the affected existing typed-reader dependencies using the approved synthetic sources. Preserve unresolved and conflicting use reports. After that, repair and verify the source-date/record tuple defect in generated agere_result_26 through the existing native assertion/composition path; independent MAX(date)/MAX(record_id) cannot establish a latest source reference. Do not repeat the full cohort or now-passing numeric question, lower thresholds, promote model agreement, or infer clinical truth. Inspect terminal receipts first; source is currently unfrozen and no provider job remains.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "No provider/training/frozen job. Owned8890 PID10865/session66103 at a9e8be8; quiet continuation ACTIVE.",
+    "coordination": "No provider/training/frozen job. Owned8890 PID12688/session67309 atb03e847; quiet continuation ACTIVE.",
     "remaining_blockers": [
-      "The original 57-patient clinical result remains partial with 522 unresolved field judgments; these are uncertainties, not 522 established errors. Numeric execution/completeness/accounting now pass an ordinary request, but its newly selected bottle has not yet been measured on a later ordinary invocation. Legacy learning.verified=false is an untouched default in component-learning mode, not evidence that the answer failed. Observation32 is eligible machine review, with no training plan or new weight promotion. Broad ordinary transfer, independent clinical/model qualification and actual all-in economics remain open. Customer deployment is separate and OWASP/HHS remains deferred."
+      "The original57patient clinical result remains partial. Its retained522field uncertainties were not globally regraded or erased. One targeted dependency now has22supported field observations and0localized unknowns, but its complete-packet judgment remains below0.8. Verified source segmentation and date/record pairing defects are the next concrete work. New field receipts preserve successes without bypassing that independent acceptance guard. Current policy changes invalidate historical answer/bottle guards; the795row ordinary numeric acceptance remains versioned at a9e8be8, not restamped as a fresh b03e847 inference. Broad ordinary transfer, current whole-product release acceptance, independent clinical/model qualification and all-in economics remain open; deployment is separate."
     ],
-    "latest_progress": "Original ordinary numeric question passes and saved context valid; six-action bottle automatically selected.",
-    "results_report": "docs/agere/NUMERIC_WORKFLOW_CONFIRMATION_2026-11-03.md",
+    "latest_progress": "129checks; exact cached field-receipt replay; verified mid-token split and source-date/record pairing defects.",
+    "results_report": "docs/agere/CLINICAL_DEPENDENCY_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -522,18 +522,18 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Prior a32a2c5 nine-of-nine release retained; selected a9e8be8 now passes ordinary795row numeric workflow with complete accounting.",
+      "current_engineering": "Prior a32a2c5 nine-of-nine release and a9e8be8 ordinary numeric acceptance remain versioned; b03e847 scoped clinical field receipts selected.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-numeric-native-confirmation-2026-11-03/delivery-receipt.json"
+      "evidence": "artifacts/agere-clinical-dependency-diagnosis-2026-11-03/delivery-receipt.json"
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "Ordinary numeric fidelity exact but completeness acceptance failed; scoped repaired finalization complete, fresh semantic/ordinary acceptance open.",
-    "at": "2026-11-03T12:26:56.815389+00:00",
-    "workflow_change": "The original ordinary numeric question now returns all795 exact patient/count/amount rows, no unresolved requirements, checked support and fully attributed cost; six native actions are automatically selected for guarded reuse.",
+    "at": "2026-11-03T12:51:40.260893+00:00",
+    "workflow_change": "Retain successful source/input-bound field judgments and expose remaining whole-dependency uncertainty in native receipts and compact repair state.",
     "unsealed_work": null,
     "bottling_assessment": {
       "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
@@ -619,7 +619,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "False answered-with-missing state, redundant numeric patient reviews and unowned spec-worker requests.",
+    "measured_failure_removed": "Successful localized source judgments were discarded and repair state could not distinguish them from remaining dependency-level uncertainty.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -651,6 +651,12 @@
       "before_evaluations": 829,
       "after_evaluations": 2,
       "fresh_ordinary_confirmation_pending": false
+    },
+    "clinical_dependency_diagnosis": {
+      "receipt": "artifacts/agere-clinical-dependency-diagnosis-2026-11-03/delivery-receipt.json",
+      "field_receipts": 22,
+      "complete_packet": "unknown",
+      "verified_next_defects": 2
     }
   },
   "decisions": [
@@ -2857,6 +2863,28 @@
         "artifacts/agere-numeric-native-confirmation-2026-11-03/delivery-receipt.json"
       ],
       "scope_impact": "All ten areas retained. No clinical/model promotion, no source mutation, no full clinical rerun or untargeted training."
+    },
+    {
+      "at": "2026-11-03T12:37:22.684168+00:00",
+      "gate": "G3",
+      "decision": "Preserve successful localized field decisions and expose the remaining whole-dependency obligation; retain the independent whole-packet acceptance guard.",
+      "basis": "One current targeted22field/22source-document check settles all fields at the existing thresholds, but the broader packet remains below threshold. Current code drops all supported field outcomes. Existing regression explicitly forbids automatic global promotion from local support, so do not weaken that policy.",
+      "workflow_check": "Replay the same retained targeted requests from cache: unchanged global unknown and field judgments, but22bound supported receipts visible to repair state. Missing/unknown/fault/mismatched receipts must not claim support or bypass packet acceptance.",
+      "evidence": [
+        "artifacts/agere-clinical-dependency-diagnosis-2026-11-03/targeted-current-provider/run-receipt.json"
+      ],
+      "scope_impact": "One shared receipt/repair-state correction; no provider threshold, source, model activation, full cohort run or clinical qualification change."
+    },
+    {
+      "at": "2026-11-03T12:51:40.260893+00:00",
+      "gate": "G3",
+      "decision": "Select source-bound field receipt preservation; repair verified boundary splitting next, then dated-source tuple construction.",
+      "basis": "129checks and identical4cached request judgments preserve acceptance safeguards. Focused independent review led to two owner-reproduced source/construction defects, not merely low confidence.",
+      "evidence": [
+        "artifacts/agere-clinical-dependency-diagnosis-2026-11-03/delivery-receipt.json",
+        "artifacts/agere-clinical-dependency-diagnosis-2026-11-03/owner-review-assessment.json"
+      ],
+      "scope_impact": "All ten areas retained; no full cohort replay, threshold reduction, clinical authority or new model promotion."
     }
   ],
   "unsealed_work": null,
@@ -2887,7 +2915,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Diagnose the original retained 57-patient clinical result at its unresolved source-reading dependencies. Start with the existing 522 field-level support judgments, group by shared evidence dependency, and inspect the highest-impact documentary/dated-role failures. Distinguish source absence, ambiguous claims, representation loss and provider uncertainty; use targeted current Jev/Perplexity checks on the existing approved evidence where needed. Repair the shared assertion/state/composition path only for an observed defect and demonstrate progress on retained workflow evidence. Do not rerun the full clinical cohort or the now-passing numeric question, launch untargeted training, lower acceptance thresholds, or promote model-generated labels. The selected numeric six-action bottle is already validated and selected; its final response snapshot still says pending, while immutable event88 records selection. Keep that observability discrepancy explicit.",
+  "next_action": "Repair the demonstrated mid-token2048-character splitting in typed_document_review.blocks using source-faithful sentence/line/word boundaries with exact offsets and coverage. Preserve whole-source context and entity/relation binding; do not edit therapy_barriers.py. Reproduce the2492cut in WHL-R-5eb22bcf381cbe3a26eff3 and the retained WHL-R-d8dfd887d37449bc88109c split; add authored boundary/entity regressions, then test only the affected existing typed-reader dependencies using the approved synthetic sources. Preserve unresolved and conflicting use reports. After that, repair and verify the source-date/record tuple defect in generated agere_result_26 through the existing native assertion/composition path; independent MAX(date)/MAX(record_id) cannot establish a latest source reference. Do not repeat the full cohort or now-passing numeric question, lower thresholds, promote model agreement, or infer clinical truth. Inspect terminal receipts first; source is currently unfrozen and no provider job remains.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2896,5 +2924,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T12:26:56.815389+00:00"
+  "latest_checkpoint": "2026-11-03T12:51:40.260893+00:00"
 }
