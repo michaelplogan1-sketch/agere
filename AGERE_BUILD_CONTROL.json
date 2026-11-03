@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T14:36:33.454476+00:00",
+  "updated_at": "2026-11-03T15:16:39.383879+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -476,24 +476,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "ordinary_clinical_run_live_diagnosis",
+    "kind": "whole_source_field_screen_scoped_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "No new product behavior delivered while the one ordinary clinical run remains frozen and active.",
-    "measured_failure_reduction": "None in this checkpoint;161retained documents expose411baselineblocks versus3161currentstatementunits,7.69xpotential reading granularity before scopes/native checks/caches. Two actual document dispatches show initial nonempty-dose scope followed by an empty-dose-row complement.",
+    "user_behavior_delta": "Whole-source/field relevance can avoid detailed statement checks for decided irrelevant sources; uncertain, failed, quarantined and previously read source fields preserve detailed reading. Exact full context and source-bound machine screening receipts remain available.",
+    "measured_failure_reduction": "One complete23document dependency:52to46attempts,49.061to34.104s,$0.022997782to$0.019564920;9priorfindings retained. Both warm dependencies exact with0newcalls. Not a whole-workflow or accuracy result.",
     "evidence": [
-      "artifacts/agere-combined-dependency-2026-11-03/delivery-receipt.json",
-      "docs/agere/COMBINED_DEPENDENCY_CHECK_2026-11-03.md"
+      "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json",
+      "docs/agere/DOCUMENT_FIELD_SCREEN_2026-11-03.md"
     ],
-    "remaining_gap": "G3 ordinary clinical acceptance and practical end-to-end performance remain open. The current run has a second reading phase for patients excluded by the initial dose-row scope, and the complete-statement repair increased potential source-reading decisions. The exact terminal defects and cost are pending. Current whole-product compatibility/transfer and release assessment remain; independent model/clinical qualification and customer deployment are separate. All ten areas remain retained.",
-    "next_action": "Inspect the ONE owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, apply the retained acceptance protocol: original patient/name/clinical/medication/role/recommendation scope, supported unknowns, source/entity/date integrity, complete per-question all-attempt cost, and actual bottle/learning decisions. Inspect the terminal feedback behind the second no-dose-row document task and the actual reader workload. Read-only diagnosis found411oldblocks versus3161currentstatements on the same161retained documents (7.69xdecision units, not a provider-call/latency ratio); evaluate a localized scheduling correction that retains complete source context and exact statement evidence. Preserve all partial/failed attempts. Do not repeat passing numeric runs, add architecture/training campaigns, lower thresholds, create automatic exports or claim clinical qualification. Then assess the existing ten-area release using compatible evidence; qualification/deployment remain separate.",
+    "remaining_gap": "Ordinary clinical response remains partial: patient-specific narrative unfinished, profile names available downstream but missing to planner, current clinician-role support limited,18unsettled machine support packets and2unsettled field checks. Full-workflow latency remains57.7minutes at priorbc3code; the scoped reader study does not replace that benchmark. Current ten-area engineering release/learning reuse assessment and independent qualification remain open.",
+    "next_action": "Finish the ordinary patient answer through existing planner/native tools and patient_evidence composition. The retained current context already has57received display names and57review cards; the planner nonetheless says names unavailable. Expose the existing exact-ID/profile/clock evidence to the ordinary planning path, and compose patient-specific rationale and dated roles from existing assertions/state instead of returning raw findings collections. First reproduce on retained context, then verify exact57membership, source references, unresolved distinctions, names, clinical facts and recommendations without another full-cohort provider run or automatic PDF. Keep the reader screen selected only on owned8890; default off and rollback retained. Reassess the current ten-area release after this missing behavior is corrected; independent qualification stays separate.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "One owned frozen clinical workflow, no duplicated provider job or product edits.",
+    "coordination": "Owned8890PID21269/session67922 selected candidate; no provider/training job or source freeze.",
     "remaining_blockers": [
-      "G3 ordinary clinical acceptance and practical end-to-end performance remain open. The current run has a second reading phase for patients excluded by the initial dose-row scope, and the complete-statement repair increased potential source-reading decisions. The exact terminal defects and cost are pending. Current whole-product compatibility/transfer and release assessment remain; independent model/clinical qualification and customer deployment are separate. All ten areas remain retained."
+      "Ordinary clinical response remains partial: patient-specific narrative unfinished, profile names available downstream but missing to planner, current clinician-role support limited,18unsettled machine support packets and2unsettled field checks. Full-workflow latency remains57.7minutes at priorbc3code; the scoped reader study does not replace that benchmark. Current ten-area engineering release/learning reuse assessment and independent qualification remain open."
     ],
-    "latest_progress": "The one current ordinary clinical run remains active. Live observation at2026-11-03T14:35:10.497716+00:00 has6700attempts after52.79minutes; terminal attribution/cost/acceptance pending.",
-    "results_report": "docs/agere/COMBINED_DEPENDENCY_CHECK_2026-11-03.md",
+    "latest_progress": "Reader scheduling selected locally with rollback;141tests/offline replay/HTTP preservation. Existing57names expose next planner-to-answer gap.",
+    "results_report": "docs/agere/DOCUMENT_FIELD_SCREEN_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -522,32 +522,19 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "bc3b256scoped repairs passed; one ordinary clinical confirmation running, with planning/workload limitations observed.",
+      "current_engineering": "ebff3c3 scoped source-screen engineering selected on owned candidate. Original clinical still partial; existing profiles not exposed to planner and narrative unfinished.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-combined-dependency-2026-11-03/delivery-receipt.json"
+      "evidence": "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json"
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
-    "comparison_status": "Prior ordinary numeric acceptance is versioned at a9e8be8. Current full clinical run is not terminal; no fresh whole-product acceptance or cost/performance advantage claimed.",
-    "at": "2026-11-03T14:36:33.454476+00:00",
-    "workflow_change": "No new product behavior delivered during the frozen run. Read-only diagnosis identifies source-reading workload amplification and a later complement scope.",
-    "unsealed_work": {
-      "status": "running",
-      "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
-      "pid": 14100,
-      "session": 47934,
-      "server_pid": 13852,
-      "source_frozen": true,
-      "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
-      "last_observed_at": "2026-11-03T14:35:10.497716+00:00",
-      "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json",
-      "reader_workload_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/reader-fanout-observation.json",
-      "planning_scope_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/live-scope-observation.json"
-    },
+    "comparison_status": "Scoped comparison only. Ordinary clinical57patient run terminal partial at bc3b256; no full-workflow speed or clinical accuracy claim.",
+    "at": "2026-11-03T15:16:39.383879+00:00",
+    "workflow_change": "Whole-source/field relevance can avoid detailed statement checks for decided irrelevant sources; uncertain, failed, quarantined and previously read source fields preserve detailed reading. Exact full context and source-bound machine screening receipts remain available.",
+    "unsealed_work": null,
     "bottling_assessment": {
       "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
       "selected_event": 88,
@@ -608,22 +595,7 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [
-      {
-        "status": "running",
-        "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
-        "pid": 14100,
-        "session": 47934,
-        "server_pid": 13852,
-        "source_frozen": true,
-        "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-        "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
-        "last_observed_at": "2026-11-03T14:35:10.497716+00:00",
-        "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json",
-        "reader_workload_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/reader-fanout-observation.json",
-        "planning_scope_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/live-scope-observation.json"
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -647,7 +619,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "The repaired affected dependency could not previously satisfy complete-packet support.",
+    "measured_failure_removed": "Unnecessary statement expansion on machine-decided irrelevant source fields; repeated screening of prior source readings prevented.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -672,7 +644,8 @@
       "receipt": "artifacts/agere-spec-cost-ownership-2026-11-03/delivery-receipt.json",
       "historical_rows_retagged": false,
       "future_worker_boundary_repaired": true,
-      "fresh_ordinary_request_not_yet_checked": true
+      "fresh_ordinary_request_not_yet_checked": false,
+      "ordinary_check": "6966newattempts exactly owned; one unpriced context failure retained."
     },
     "native_numeric_review": {
       "receipt": "artifacts/agere-native-numeric-support-2026-11-03/delivery-receipt.json",
@@ -712,6 +685,22 @@
       "new_provider_jobs": 0,
       "product_edits": 0,
       "full_mvp_acceptance": false
+    },
+    "terminal_clinical_confirmation": {
+      "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
+      "acceptance": "artifacts/agere-clinical-current-confirmation-2026-11-03/acceptance-review.json",
+      "context_id": "ANS-881d8683b39b35cc7e343cde",
+      "accepted": false,
+      "new_provider_attempts": 6966,
+      "runtime_seconds": 3459.554309417028
+    },
+    "document_field_screen": {
+      "receipt": "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json",
+      "default": "off",
+      "owned_candidate": "selected",
+      "fresh_attempts_before": 52,
+      "fresh_attempts_after": 46,
+      "new_weights": 0
     }
   },
   "decisions": [
@@ -2992,22 +2981,31 @@
         "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json"
       ],
       "scope_impact": "No narrowed population/source/acceptance scope, no new spend/token caps, no model activation, no new architecture or broad training. One terminal trace must choose the localized correction. All ten areas retained."
+    },
+    {
+      "at": "2026-11-03T14:45:49.261499+00:00",
+      "gate": "G3",
+      "decision": "Reject whole-workflow acceptance; use the retained terminal trace for localized source-reading correction before any repeat cohort run.",
+      "basis": "57patients preserved,324sources/453quotes native exact; clinical narrative still unfinished and63packet review has18unsettled packets.108062source model decisions generated57.66minute runtime/6966attempts. Lowering acceptance thresholds or dropping source coverage would not fix the product.",
+      "evidence": [
+        "artifacts/agere-clinical-current-confirmation-2026-11-03/acceptance-review.json",
+        "artifacts/agere-clinical-current-confirmation-2026-11-03/reader-fanout-observation.json"
+      ],
+      "scope_impact": "All ten areas retained. Current source freeze ends because the owned run is terminal. No duplicate run, new model activation or independent clinical claim."
+    },
+    {
+      "at": "2026-11-03T15:16:39.383879+00:00",
+      "gate": "G3",
+      "decision": "Select source-field screen only on owned candidate after scoped comparison, final edge-guard replay and HTTP preservation; proceed to existing profile/interpretation composition.",
+      "basis": "The full clinical run remains partial and costly. Scoped reader work reduced actual calls/cost without losing retained findings; explicit uncertain inputs and all warm readings remain. The next defect is existing57names unavailable to planner, not missing data.",
+      "evidence": [
+        "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json",
+        "artifacts/agere-document-field-screen-2026-11-03/composition-inspection.json"
+      ],
+      "scope_impact": "All ten areas retained; no global default or clinical/model promotion, full-cohort repeat, automatic PDF or architecture rewrite."
     }
   ],
-  "unsealed_work": {
-    "status": "running",
-    "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
-    "pid": 14100,
-    "session": 47934,
-    "server_pid": 13852,
-    "source_frozen": true,
-    "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-    "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
-    "last_observed_at": "2026-11-03T14:35:10.497716+00:00",
-    "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json",
-    "reader_workload_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/reader-fanout-observation.json",
-    "planning_scope_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/live-scope-observation.json"
-  },
+  "unsealed_work": null,
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
     "publication": "Local assets and copy only; no publication or contact authorized/performed.",
@@ -3034,23 +3032,8 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "status": "running",
-      "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
-      "pid": 14100,
-      "session": 47934,
-      "server_pid": 13852,
-      "source_frozen": true,
-      "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested.",
-      "last_observed_at": "2026-11-03T14:35:10.497716+00:00",
-      "latest_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/latest-observation.json",
-      "reader_workload_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/reader-fanout-observation.json",
-      "planning_scope_observation": "artifacts/agere-clinical-current-confirmation-2026-11-03/live-scope-observation.json"
-    }
-  ],
-  "next_action": "Inspect the ONE owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, apply the retained acceptance protocol: original patient/name/clinical/medication/role/recommendation scope, supported unknowns, source/entity/date integrity, complete per-question all-attempt cost, and actual bottle/learning decisions. Inspect the terminal feedback behind the second no-dose-row document task and the actual reader workload. Read-only diagnosis found411oldblocks versus3161currentstatements on the same161retained documents (7.69xdecision units, not a provider-call/latency ratio); evaluate a localized scheduling correction that retains complete source context and exact statement evidence. Preserve all partial/failed attempts. Do not repeat passing numeric runs, add architecture/training campaigns, lower thresholds, create automatic exports or claim clinical qualification. Then assess the existing ten-area release using compatible evidence; qualification/deployment remain separate.",
+  "active_jobs": [],
+  "next_action": "Finish the ordinary patient answer through existing planner/native tools and patient_evidence composition. The retained current context already has57received display names and57review cards; the planner nonetheless says names unavailable. Expose the existing exact-ID/profile/clock evidence to the ordinary planning path, and compose patient-specific rationale and dated roles from existing assertions/state instead of returning raw findings collections. First reproduce on retained context, then verify exact57membership, source references, unresolved distinctions, names, clinical facts and recommendations without another full-cohort provider run or automatic PDF. Keep the reader screen selected only on owned8890; default off and rollback retained. Reassess the current ten-area release after this missing behavior is corrected; independent qualification stays separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3059,5 +3042,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T14:36:33.454476+00:00"
+  "latest_checkpoint": "2026-11-03T15:16:39.383879+00:00"
 }
