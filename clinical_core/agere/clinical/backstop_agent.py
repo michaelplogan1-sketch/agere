@@ -237,6 +237,16 @@ has already declined this question, so it is yours to answer completely and corr
 - For a table, compute the COMPLETE requested table, including changes and comparisons, in query_sql. Earlier tabular tool results are
   available as their result_view names on the same connection. Set table_from_tool to the final result_view and omit table: code copies
   the executed rows into the answer. Never transcribe or calculate a numeric table in your final text.
+- To explain individual rows, add row_prose alongside table_from_tool. It adds new text columns without overwriting native evidence.
+  Use {{"keys":["patient_id"],"rows":[{{"key":{{"patient_id":"the exact ID"}},
+    "basis":[{{"result_view":"agere_result_9","row":0}}],
+    "fields":{{"patient_explanation":"Source-bound interpretation; current responsibility remains unknown.",
+      "proposed_review_steps":"A specific proposed review tied to this patient's retained evidence."}}}}]}}.
+  Supply exactly one entry for every native row, with the same new field names. Keys may name other entity grains too.
+  Every basis must be a complete executed row with the exact same key values. For numbers use the scalar template/bindings
+  below; each bound row must also be in that entity's basis. Bind received values rather than copying them into text.
+  Keep original findings and dates in the native table. Prose adds interpretation, not new observations or accepted facts;
+  it undergoes the existing source-support review. Missing evidence and proposed actions remain explicit.
 - For a table answer, numeric claims in headline and facts must also be copied by code, not transcribed into prose.
   Use a template object instead of a numeric string, for example:
   {{"template":"{{stays}} hospital stays among {{people}} patients",
@@ -906,14 +916,14 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
     """
     import string
     import math
-    formatter=string.Formatter();proofs=[]
+    formatter=string.Formatter();proofs=[];row_mode=False
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     def numeric(text):
         # Dates/identifiers are addresses or temporal anchors, not row counts.
         # Only independently provenance-checked, explicitly attributed QUOTES
         # are observations rather than newly computed quantitative claims.
-        for source in verified_quotes:
+        for source in (() if row_mode else verified_quotes):
             quote=source.get('quote') or ''
             if isinstance(source.get('record_id'),str) and source['record_id'] in text and len(re.findall(r'\w+',quote))>=3:
                 for left,right in (("'","'"),('"','"'),('“','”')):
@@ -927,9 +937,9 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
             prior=old[field]
             # A mutated field must supply a new explicit template, not silently
             # inherit old bindings attached to a different sentence.
-            if value==prior.get('rendered'):value={k:prior[k] for k in ('template','bindings')}
+            if value==prior.get('rendered') and prior.get('bindings'):value={k:prior[k] for k in ('template','bindings')}
         if not isinstance(value,dict) or 'template' not in value:
-            if answer.get('table_binding') and ((isinstance(value,str) and numeric(value)) or type(value) in (int,float)):
+            if (row_mode or answer.get('table_binding')) and ((isinstance(value,str) and numeric(value)) or type(value) in (int,float)):
                 raise ProseIssue('unbound_literal',field,'Quantitative '+field+' needs a template with bindings to actual executed scalar cells; unbound literals: '+json.dumps(numeric(value) if isinstance(value,str) else [value]))
             return value
         if set(value)!={'template','bindings'} or not isinstance(value['template'],str) or not isinstance(value['bindings'],dict):
@@ -984,6 +994,74 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
     if 'headline' in answer:updates['headline']=checked('headline',answer['headline'])
     if isinstance(answer.get('facts'),dict):
         updates['facts']={key:checked('facts.'+key,value) for key,value in answer['facts'].items()}
+    if 'row_prose' in answer:
+        # Rebuild from actual native rows on every review; model-provided proof
+        # metadata and a previously rendered table never establish evidence.
+        from .result_assembly import _rows
+        from ...contracts import digest
+        spec=answer['row_prose'];row_mode=True
+        try:
+            if not isinstance(spec,dict) or set(spec)!={'keys','rows'}:
+                raise ValueError('row_prose requires keys and complete keyed rows')
+            root=answer.get('table_from_tool')
+            if root not in native:raise ValueError('row_prose requires an executed table_from_tool')
+            columns,table=_rows(native[root]);keys=spec['keys']
+            if not isinstance(keys,list) or not keys or any(not isinstance(k,str) for k in keys) or len(set(keys))!=len(keys) or not set(keys)<=set(columns):
+                raise ValueError('row_prose keys must name distinct native columns')
+            def identity(row):
+                if not isinstance(row,dict) or any(k not in row or row[k] is None or type(row[k]) not in (str,int,float,bool) for k in keys):
+                    raise ValueError('row_prose needs complete scalar entity keys')
+                return digest({k:row[k] for k in keys})
+            identities=[identity(row) for row in table]
+            if len(set(identities))!=len(identities):raise ValueError('row_prose native keys are not unique')
+            if not isinstance(spec['rows'],list):raise ValueError('row_prose rows must be a list')
+            entries={};field_names=None
+            for entry in spec['rows']:
+                if not isinstance(entry,dict) or set(entry)!={'key','basis','fields'} or not isinstance(entry['key'],dict) or set(entry['key'])!=set(keys):
+                    raise ValueError('row_prose entries require exact key, basis and fields')
+                ident=identity(entry['key'])
+                if ident not in identities or ident in entries:raise ValueError('row_prose has an unknown or duplicate entity')
+                fields=entry['fields']
+                if not isinstance(fields,dict) or not fields or any(not isinstance(k,str) or not k for k in fields) or set(fields)&set(columns):
+                    raise ValueError('row_prose needs new named text fields; native columns cannot be overwritten')
+                if field_names is None:field_names=list(fields)
+                if set(fields)!=set(field_names):raise ValueError('row_prose must supply the same fields for every entity; keep unknowns explicit')
+                if not isinstance(entry['basis'],list) or not entry['basis']:raise ValueError('row_prose needs same-entity native evidence bases')
+                bases=[];addresses=set()
+                for address in entry['basis']:
+                    if not isinstance(address,dict) or set(address)!={'result_view','row'} or type(address['row']) is not int or address['row']<0 or not isinstance(address['result_view'],str) or address['result_view'] not in native:
+                        raise ValueError('row_prose basis must address an executed native row')
+                    _,rows=_rows(native[address['result_view']])
+                    if address['row']>=len(rows) or identity(rows[address['row']])!=ident:
+                        raise ValueError('row_prose basis belongs to another entity or is unavailable')
+                    pair=(address['result_view'],address['row'])
+                    if pair in addresses:raise ValueError('row_prose basis contains duplicate addresses')
+                    addresses.add(pair);bases.append({**address,'source_row_digest':digest(rows[address['row']])})
+                entries[ident]=(entry,bases,addresses)
+            if set(entries)!=set(identities):raise ValueError('row_prose must preserve every native entity, including unknowns')
+            for i,(row,ident) in enumerate(zip(table,identities)):
+                entry,bases,addresses=entries[ident]
+                for column,value in entry['fields'].items():
+                    if not isinstance(value,(str,dict)):raise ValueError('row_prose fields must be text or scalar template/bindings')
+                    start=len(proofs);field='table.'+str(i)+'.'+column
+                    rendered=compile_value(field,value)
+                    if not isinstance(rendered,str):raise ValueError('row_prose field did not compile to text')
+                    if len(proofs)==start:
+                        proofs.append({'field':field,'template':value,'bindings':{},'rendered':rendered,'sources':{}})
+                    proof=proofs[-1]
+                    for source in proof['sources'].values():
+                        binding=source['binding']
+                        if set(binding)!={'result_view','row','column'} or (binding['result_view'],binding['row']) not in addresses:
+                            raise ValueError('row_prose scalar bindings must use this entity\'s declared evidence bases')
+                    proof.update(entity_key=entry['key'],basis=bases,authority='model_proposed_interpretation_requires_source_review')
+                    row[column]=rendered
+            updates['table']=table
+            updates['table_binding']={**(answer.get('table_binding')or{}),'result_view':root,'rows':len(table),
+                'columns':columns+(field_names or[]),'native_columns':columns,'interpreted_columns':field_names or[],
+                'copied_from_executed_result':False,'native_columns_copied':True,
+                'row_prose':{'schema':'source-bound-row-prose/1','keys':keys,'proposal_digest':digest(spec)}}
+        except (ValueError,KeyError,IndexError,TypeError) as exc:
+            errors.append(str(exc));failures.append({'code':'invalid_row_prose','field_group':'row_prose'})
     if errors:raise ComputedProseError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal. An attributed exact passage in verified sources may remain quoted. Do not guess a value or reword a failed quantity to avoid its binding.',failures)
     answer.update(updates);answer.pop('computed_prose',None)
     if proofs:answer['computed_prose']=proofs
@@ -1494,7 +1572,6 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     from ..deliverables.receipts import compact_json,readable_json
     from .execution_state import OPERATIONAL_FEEDBACK_AUTHORITIES,operational_feedback_result,review_limitation_view
     by={};shared={};shared_views={};native=[];legacy_native=[];timing_bindings=[];origins={};shared_origins={}
-    local_dependencies=native_result_dependencies(calls,[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')])
     operational_views={c['result']['result_view'] for c in calls
         if isinstance(c.get('result'),dict) and c['result'].get('result_view') and operational_feedback_result(c['result'])}
     tainted_views={c['result']['result_view'] for c in calls
@@ -1510,6 +1587,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             for item in value:prose_roots(item)
     prose_roots(answer.get('computed_prose',[]))
     claim_dependencies=native_result_dependencies(calls,list(dict.fromkeys(claim_roots)))
+    local_dependencies=claim_dependencies
     known_dependencies=set(claim_roots)
     for root in claim_roots:known_dependencies.update(native_result_dependencies(calls,[root])or[])
     unsafe_operational=tainted_views & known_dependencies
@@ -1566,7 +1644,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             'native_receipt_digest':digest(review),'rows':review['rows'],'operational_receipts_retained_in_native':True})
         for row in review['rows']:add(row,origin={'kind':'machine_document_observation','question_digest':digest(review['questions'])})
     table=answer.get('table')or[]
-    summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
+    summary={k:v for k,v in answer.items()if k not in ('table','sources','computed_prose','row_prose','system_one_judgments','investigation_review','evidence_text','table_binding')}
     if isinstance(summary.get('limitations'),list) and prior_review_reference is not None:
         summary['limitations']=[review_limitation_view(text,answer.get('investigation_review'),prior_review_reference)
             for text in summary['limitations']]
@@ -1598,8 +1676,16 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     cited_sources=[]
     read_documents=[{**doc,'record_id':rid}for rid,doc in (source_documents or{}).items()if isinstance(doc,dict)]+[
         c['result']for c in calls if c.get('name')=='read_document'and isinstance(c.get('result'),dict)]
-    contexts={};context_gaps={}
-    for dependency in documentary_sources(table):
+    contexts={};context_gaps={};prose_basis=[]
+    by_view={c['result'].get('result_view'):c['result'] for c in calls if isinstance(c.get('result'),dict)}
+    for proof in answer.get('computed_prose',[]):
+        for address in proof.get('basis',[]):
+            result=by_view.get(address.get('result_view'))
+            if result is not None:
+                columns,rows=output_table(result)
+                index=address.get('row')
+                if type(index)is int and 0<=index<len(rows):prose_basis.append(dict(zip(columns,rows[index])))
+    for dependency in documentary_sources([table,prose_basis]):
         pid=dependency['patient_id'];rid=dependency['record_id']
         document=next((doc for doc in read_documents if doc.get('record_id')==rid and doc.get('patient_id')==pid and
             str(doc.get('date')or'')[:10]==dependency['date'] and isinstance(doc.get('text'),str)and
@@ -1628,8 +1714,9 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         'answer':summary,'all_final_rows':summary_rows,'required_clinical_dependencies':dependencies,
         'dependency_encoding':'Each integer clinical_evidence_dependency indexes required_clinical_dependencies (zero based). That entry names the exact unchanged cell in its separate required patient packet. This avoids duplicating the same binding; no source content is sampled or certified by a reference.',
         'computed_claims':[{'field':p['field'],'template':p['template'],'rendered':p['rendered'],
+            **{k:p[k] for k in ('entity_key','basis','authority') if k in p},
             'sources':{k:{kk:v[kk] for kk in ('binding','value','measure','source_row') if kk in v} for k,v in p['sources'].items()}}
-            for p in answer.get('computed_prose',[])]}]
+            for p in answer.get('computed_prose',[]) if not (p.get('entity_key')or{}).get('patient_id')]}]
     local_shared=[row for ident,row in shared.items() if local_dependencies is None or
                   None in shared_views[ident] or bool(shared_views[ident]&local_dependencies)]
     final_patients={r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')and any(k!='patient_id'for k in r)}
@@ -1661,6 +1748,8 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         contracts=contracts_for(view_dependencies or views)
         packets.append({'id':'patient_'+pid,'scope':'All final claims for this patient only',**common,
             'patient_id':pid,'answer_rows':[r for r in table if isinstance(r,dict)and r.get('patient_id')==pid],
+            **({'computed_claims':[p for p in answer.get('computed_prose',[]) if (p.get('entity_key')or{}).get('patient_id')==pid]}
+               if any((p.get('entity_key')or{}).get('patient_id')==pid for p in answer.get('computed_prose',[])) else {}),
             'source_contexts':list(contexts.get(pid,{}).values()),
             'source_context_gaps':context_gaps.get(pid,[]),
             'shared_evidence':local_shared,

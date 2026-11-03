@@ -52,7 +52,7 @@ def progress_evidence(calls,candidate=None,*,first_call=0):
         if isinstance(value,list):return set().union(*(refs(v)for v in value))if value else set()
         return set()
     by_view={(c.get('result')or{}).get('result_view'):c for c in calls if isinstance(c.get('result'),dict)}
-    wanted=refs({k:(candidate or{}).get(k)for k in('table_from_tool','computed_prose','headline','facts','value')})if isinstance(candidate,dict)else set()
+    wanted=refs({k:(candidate or{}).get(k)for k in('table_from_tool','computed_prose','row_prose','headline','facts','value')})if isinstance(candidate,dict)else set()
     selected=set();todo=list(wanted)
     while todo:
         name=todo.pop()

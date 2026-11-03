@@ -109,6 +109,16 @@ def coverage_answer(answer):
     """Coverage-only projection; support receives every complete native value."""
     out=copy.deepcopy(answer);rows=answer.get('table')or[]
     view,edges=table_view(rows,defer_native_cells=True);out['table']=view
+    if 'row_prose' in out:
+        # Coverage needs the actual proposed explanation, not the compiler input
+        # duplicated alongside it. Source support still checks each full row.
+        interpreted=set((answer.get('table_binding')or{}).get('interpreted_columns')or[])
+        for actual,projected in zip(rows,view):
+            for field in interpreted:
+                if field in actual:projected[field]=copy.deepcopy(actual[field])
+        edges=[edge for edge in edges if edge.get('field') not in interpreted]
+        out.pop('row_prose',None)
+        out['computed_prose']=[proof for proof in out.get('computed_prose',[]) if not proof.get('entity_key')]
     binding=out.get('table_binding')
     if isinstance(binding,dict)and isinstance(binding.get('query'),str):
         query=binding.pop('query')
