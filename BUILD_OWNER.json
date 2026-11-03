@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "Run one ordinary current-version full HFrEF/GDMT question through owned8890normalcompose with warehouse scope and no injected plan, patient set, findings or saved answer. Preserve the original clinical scope, include patient names/clinical info and proposed review recommendations, and omit dashboard/PDF generation under Mike's later on-request-only instruction. Current source boundaries and native tuple guard now have targeted integrated evidence; this permits one broader confirmation, not repeated passing campaigns. Freeze source during the run, preserve partial output/every attempt and inspect the owned receipt before any further dispatch. Verify cohort, required fields and supported unknowns, source/entity/date/role integrity, active component route, full attempt accounting, learning/bottle decisions and remaining dependencies. Do not repeat the now-passing numeric question or promote clinical/model qualification from this test.",
+  "active_work": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
   "latest_delivery": "docs/agere/COMBINED_DEPENDENCY_CHECK_2026-11-03.md",
   "latest_receipt": "artifacts/agere-combined-dependency-2026-11-03/delivery-receipt.json",
   "owned_server_pid": 13852,
@@ -15,21 +15,30 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "Run one ordinary current-version full HFrEF/GDMT question through owned8890normalcompose with warehouse scope and no injected plan, patient set, findings or saved answer. Preserve the original clinical scope, include patient names/clinical info and proposed review recommendations, and omit dashboard/PDF generation under Mike's later on-request-only instruction. Current source boundaries and native tuple guard now have targeted integrated evidence; this permits one broader confirmation, not repeated passing campaigns. Freeze source during the run, preserve partial output/every attempt and inspect the owned receipt before any further dispatch. Verify cohort, required fields and supported unknowns, source/entity/date/role integrity, active component route, full attempt accounting, learning/bottle decisions and remaining dependencies. Do not repeat the now-passing numeric question or promote clinical/model qualification from this test.",
+  "resume_priority": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "2026-11-03T13:41:10.037118+00:00",
+  "latest_checkpoint": "2026-11-03T13:42:49.354204+00:00",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "Owned8890PID13852/session98541ready atbc3b256; no provider job.",
-  "unsealed_work": null,
+  "server_status": "Owned8890PID13852/session98541; ordinary clinical request PID14100/session47934 running; source frozen.",
+  "unsealed_work": {
+    "status": "running",
+    "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
+    "pid": 14100,
+    "session": 47934,
+    "server_pid": 13852,
+    "source_frozen": true,
+    "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
+    "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+  },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-10-28T14:46:24.457787+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
@@ -291,7 +300,18 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [],
+  "active_jobs": [
+    {
+      "status": "running",
+      "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
+      "pid": 14100,
+      "session": 47934,
+      "server_pid": 13852,
+      "source_frozen": true,
+      "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
+      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+    }
+  ],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
@@ -448,6 +468,6 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T13:41:10.037118+00:00",
+  "updated_at": "2026-11-03T13:42:49.354204+00:00",
   "last_commit": "bc3b256b4d5fa6c2ccd67e8f99d6cfe517ff7d9d"
 }

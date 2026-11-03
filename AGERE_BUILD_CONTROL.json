@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T13:41:10.037118+00:00",
+  "updated_at": "2026-11-03T13:42:49.354204+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -397,8 +397,8 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Actual-investigator transfer and observed clinical performance; independent model/clinical qualifications remain separate.",
-      "engineering_current_status": "Priorfinite9/9alltenareas plus same-codeb4011fc ordinary57-patient HTTP confirmation, current dashboard/PDF and unchanged prior contexts; original clinical answer partial.",
-      "next_action": "Diagnose and repair the observed full-investigator numeric-query loop before more provider comparisons. Reconstruct retained tool/final-answer attempts offline to distinguish repeated compiler feedback, source-support uncertainty and changing native-reference identity. Verify one general progress/routing correction against the original failed trajectory and changed-evidence regressions, without an arbitrary tool/token cap, another whole clinical run or routine export. Keep the interrupted comparison and all1640 attempts; do not restart remaining arms until the failure is understood."
+      "engineering_current_status": "Priorfinite9/9and retained all-ten-area release remain versioned. Current numeric ordinary answer is exact795rows; source-boundary/tuple repairs and combined clinical dependency support are verified. One ordinary current clinical confirmation runs atbc3b256; acceptance pending.",
+      "next_action": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction."
     },
     {
       "id": "G5",
@@ -486,13 +486,13 @@
       "docs/agere/COMBINED_DEPENDENCY_CHECK_2026-11-03.md"
     ],
     "remaining_gap": "The selected affected dependency is now supported by the unchanged machine verification contract, but the original57patient/522field-uncertainty result remains a historical partial answer. Unaffected prior findings were reused with their original provenance; this was not a fresh whole-cohort reader run. One current ordinary clinical confirmation is now justified. Broader ordinary transfer/current release acceptance, independent clinical/model qualification and complete economics remain open; deployment is separate. All ten areas remain retained.",
-    "next_action": "Run one ordinary current-version full HFrEF/GDMT question through owned8890normalcompose with warehouse scope and no injected plan, patient set, findings or saved answer. Preserve the original clinical scope, include patient names/clinical info and proposed review recommendations, and omit dashboard/PDF generation under Mike's later on-request-only instruction. Current source boundaries and native tuple guard now have targeted integrated evidence; this permits one broader confirmation, not repeated passing campaigns. Freeze source during the run, preserve partial output/every attempt and inspect the owned receipt before any further dispatch. Verify cohort, required fields and supported unknowns, source/entity/date/role integrity, active component route, full attempt accounting, learning/bottle decisions and remaining dependencies. Do not repeat the now-passing numeric question or promote clinical/model qualification from this test.",
+    "next_action": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "Owned8890PID13852/session98541; no frozen provider/training job. One ordinary clinical confirmation next.",
+    "coordination": "Source frozen during owned current clinical confirmation PID14100/session47934. No duplicate dispatch.",
     "remaining_blockers": [
       "The selected affected dependency is now supported by the unchanged machine verification contract, but the original57patient/522field-uncertainty result remains a historical partial answer. Unaffected prior findings were reused with their original provenance; this was not a fresh whole-cohort reader run. One current ordinary clinical confirmation is now justified. Broader ordinary transfer/current release acceptance, independent clinical/model qualification and complete economics remain open; deployment is separate. All ten areas remain retained."
     ],
-    "latest_progress": "Combined affected dependency supported;2typed calls/$0.006070956/11.429s; existing state transport confirmed.",
+    "latest_progress": "Ordinary current clinical confirmation submitted after combined affected dependency support passed.",
     "results_report": "docs/agere/COMBINED_DEPENDENCY_CHECK_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -534,7 +534,16 @@
     "comparison_status": "Ordinary numeric fidelity exact but completeness acceptance failed; scoped repaired finalization complete, fresh semantic/ordinary acceptance open.",
     "at": "2026-11-03T13:41:10.037118+00:00",
     "workflow_change": "The affected patient dependency now combines complete-statement source reading and intact dated-reference composition through existing native tools and the existing support checker.",
-    "unsealed_work": null,
+    "unsealed_work": {
+      "status": "running",
+      "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
+      "pid": 14100,
+      "session": 47934,
+      "server_pid": 13852,
+      "source_frozen": true,
+      "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
+      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+    },
     "bottling_assessment": {
       "candidate": "93e97814bdd33f5c3b1c00d15bcf4855ba6028e762090cf7e003a254b1602907",
       "selected_event": 88,
@@ -595,7 +604,18 @@
       "observed_model": "jev-1.13.0",
       "automatic_purchase": false
     },
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "status": "running",
+        "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
+        "pid": 14100,
+        "session": 47934,
+        "server_pid": 13852,
+        "source_frozen": true,
+        "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
+        "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -2946,7 +2966,16 @@
       "scope_impact": "All ten areas retained. Preserve clinical scope/names and review recommendations, omit automatic dashboard/PDF under later user instruction. No inferred clinical/model qualification."
     }
   ],
-  "unsealed_work": null,
+  "unsealed_work": {
+    "status": "running",
+    "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
+    "pid": 14100,
+    "session": 47934,
+    "server_pid": 13852,
+    "source_frozen": true,
+    "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
+    "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+  },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
     "publication": "Local assets and copy only; no publication or contact authorized/performed.",
@@ -2973,8 +3002,19 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [],
-  "next_action": "Run one ordinary current-version full HFrEF/GDMT question through owned8890normalcompose with warehouse scope and no injected plan, patient set, findings or saved answer. Preserve the original clinical scope, include patient names/clinical info and proposed review recommendations, and omit dashboard/PDF generation under Mike's later on-request-only instruction. Current source boundaries and native tuple guard now have targeted integrated evidence; this permits one broader confirmation, not repeated passing campaigns. Freeze source during the run, preserve partial output/every attempt and inspect the owned receipt before any further dispatch. Verify cohort, required fields and supported unknowns, source/entity/date/role integrity, active component route, full attempt accounting, learning/bottle decisions and remaining dependencies. Do not repeat the now-passing numeric question or promote clinical/model qualification from this test.",
+  "active_jobs": [
+    {
+      "status": "running",
+      "path": "artifacts/agere-clinical-current-confirmation-2026-11-03",
+      "pid": 14100,
+      "session": 47934,
+      "server_pid": 13852,
+      "source_frozen": true,
+      "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
+      "purpose": "One ordinary full current clinical confirmation; normal warehouse request, no injected plan/cohort/findings, no exports requested."
+    }
+  ],
+  "next_action": "Inspect the owned ordinary clinical confirmation first: artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json, PID14100/session47934, server13852/session98541 on8890. Never duplicate it or edit source while it runs. On return, verify required patient/name/clinical/medication/role/recommendation fields and supported unknowns, exact cohort/scope/source/entity/date integrity, native and small-model/frontier component roles, complete all-attempt costs, learning/bottle decisions, and remaining dependencies. Preserve every partial/failed result. Use only a measured localized repair if needed; no repeated passing numeric run, automatic exports, threshold reduction or clinical qualification claim. The original question clinical scope is retained; dashboard/PDF omitted under Mike's later on-request-only instruction.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2983,5 +3023,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T13:41:10.037118+00:00"
+  "latest_checkpoint": "2026-11-03T13:42:49.354204+00:00"
 }
