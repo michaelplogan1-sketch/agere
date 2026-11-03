@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T23:03:41.552639+00:00",
+  "updated_at": "2026-11-03T23:20:55.269461+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -485,11 +485,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "compositional_calendar_lineage_offline_candidate",
+    "kind": "native_program_verification_offline_candidate",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Calendar projections and nested missing counters follow actual column lineage across aggregation stages. Equivalent computation forms retain native cell checks; unknown global semantics remains unknown without row votes.",
-    "measured_failure_reduction": "Allfouractual retained forms produce exact1920patients/26880cells. Previously unqualified calendar pivot now has1920native fidelity rows; each authored supported/unknown/contradicted state dispatches1global check.12compositions/4adversarial cases tested; no provider calls, all48299attempts/source exact.",
+    "user_behavior_delta": "Exact numeric programs without qualified calculation lineage request one localized program repair; they no longer silently fan out to patient model votes. Correlated scalar aggregates now use native numeric fidelity with separate global semantic judgment.",
+    "measured_failure_reduction": "All five retained forms produce exact1920patients/26880cells. Scalar form changes from0 to1920native fidelity rows. Unknown/clinical-coded/unaggregated expressions remain unaccepted and request program/source repair. 123tests pass;0new providers and all48425attempts/source unchanged.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -576,10 +576,14 @@
       "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/receipt.json",
       "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/tests.log",
       "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/question-scope-audit.json",
-      "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/clarified-request.json"
+      "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/clarified-request.json",
+      "artifacts/agere-harder-bottling-2026-11-03/program-verifier-repair/receipt.json",
+      "artifacts/agere-harder-bottling-2026-11-03/program-verifier-repair/tests.log",
+      "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/run-receipt.json",
+      "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/ledger-recovery.json"
     ],
-    "remaining_gap": "Clarified ordinary full verification and qualified repeat; clinical routing/economics and G5/customer dependencies remain.",
-    "next_action": "G3: compositional calendar lineage now passes allfourretained SQL forms and12generated composition/4negative fixtures with exact1920patients/26880cells; all48299attempts/source preserved. Restart owned8890 at this recorded candidate and run one ordinary question from artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/clarified-request.json. Both2029eligibility dates are explicit; this preserves intended1920population but is a clarified question, so never compare it to older wording as an identical pair. If complete semantic/result/accounting checks pass, run one identical-wording ordinary repeat and inspect actual automatic bottling benefit/rollback. If a new failure appears, preserve it and repair the named cause offline. Then original57patient clinical routing/economics and targeted question-family knowledge/workflow learning; alltenareas and separate G5/customer dependencies remain.",
+    "remaining_gap": "No complete ordinary hard-question answer or repeat accepted. Original57patient clinical ordinary routing/economics and independent G5/customer qualification remain.",
+    "next_action": "G3: native program verification candidate passes all five retained forms with exact 1920 patients/26880 cells and 123 focused regressions. Unsupported exact numeric programs now request localized program repair instead of row votes. Restart owned8890 at the committed candidate and run one ordinary clarified question; if complete semantic/result/accounting checks pass, run one identical-wording ordinary repeat and inspect automatic bottling benefit/rollback. Retain original57patient clinical routing/economics, targeted learning, alltenareas and G5/customer dependencies.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All harder-question jobs terminal. Prior owned8890PID41475 stopped; same-code app restored on8890PID47807/session12518, GET/ask200. No active sourcefreeze or provider job.",
     "remaining_blockers": [
@@ -630,15 +634,15 @@
     "at": "2026-11-03T23:03:41.552639+00:00",
     "workflow_change": "Current original-question evidence review now persists six source-bound internal follow-ups, preserves the full57patient cohort and blocks clinical program work. Ordinary numeric execution qualifies and reuses seven native actions under current policy; no new Claude call is needed on that repeat. The existing ten-area scorecard now has an explicit current release decision.",
     "unsealed_work": {
-      "status": "offline_compositional_calendar_candidate_pending_clarified_ordinary_confirmation",
+      "status": "ordinary_clarified_payer_confirmation_in_progress",
       "kind": "harder_composition_verification_and_relation_binding",
       "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v3/run-receipt.json",
       "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/receipt.json",
-      "all_jobs_terminal": true,
-      "source_frozen": false,
+      "all_jobs_terminal": false,
+      "source_frozen": true,
       "product_edits": true,
       "provider_repeat_performed": false,
-      "runtime_updated": false
+      "runtime_updated": true
     },
     "bottling_assessment": {
       "candidate": "d9f9ae8cd0bcdd7b32fd874203f578ee6db1e41751e364c2561cc45ebf297570",
@@ -3365,13 +3369,20 @@
         "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/question-scope-audit.json"
       ],
       "scope_impact": "No clinical classifications qualified by numeric storage. Global semantics still required. Alltenareas/source/attempt restrictions retained."
+    },
+    {
+      "at": "2026-11-03T23:20:55.269461+00:00",
+      "gate": "G3",
+      "decision": "Replace arithmetic syntax coverage whack-a-mole with an explicit program verification failure path. Unsupported numeric programs cannot trigger row-by-row model votes. Qualify actual scalar aggregate lineage and retain source-bound interpretation paths.",
+      "evidence": "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/interruption-decision.json",
+      "scope_impact": "No population/output caps or acceptance areas removed; unresolved programs remain repair obligations, not accepted unknown calculations. Both benchmark eligibility dates remain explicit."
     }
   ],
   "unsealed_work": {
-    "status": "offline_compositional_calendar_candidate_pending_clarified_ordinary_confirmation",
+    "status": "native_program_verifier_offline_candidate_ready",
     "kind": "harder_composition_verification_and_relation_binding",
-    "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-repaired-v3/run-receipt.json",
-    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/receipt.json",
+    "receipt": "artifacts/agere-harder-bottling-2026-11-03/ordinary-clarified/run-receipt.json",
+    "candidate_receipt": "artifacts/agere-harder-bottling-2026-11-03/program-verifier-repair/receipt.json",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
@@ -3405,7 +3416,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: compositional calendar lineage now passes allfourretained SQL forms and12generated composition/4negative fixtures with exact1920patients/26880cells; all48299attempts/source preserved. Restart owned8890 at this recorded candidate and run one ordinary question from artifacts/agere-harder-bottling-2026-11-03/compositional-lineage-repair/clarified-request.json. Both2029eligibility dates are explicit; this preserves intended1920population but is a clarified question, so never compare it to older wording as an identical pair. If complete semantic/result/accounting checks pass, run one identical-wording ordinary repeat and inspect actual automatic bottling benefit/rollback. If a new failure appears, preserve it and repair the named cause offline. Then original57patient clinical routing/economics and targeted question-family knowledge/workflow learning; alltenareas and separate G5/customer dependencies remain.",
+  "next_action": "G3: native program verification candidate passes all five retained forms with exact 1920 patients/26880 cells and 123 focused regressions. Unsupported exact numeric programs now request localized program repair instead of row votes. Restart owned8890 at the committed candidate and run one ordinary clarified question; if complete semantic/result/accounting checks pass, run one identical-wording ordinary repeat and inspect automatic bottling benefit/rollback. Retain original57patient clinical routing/economics, targeted learning, alltenareas and G5/customer dependencies.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3493,5 +3504,7 @@
     "promotion": "Measure correctness, source/date/population scope, latency and all-attempt cost; regression and rollback before activation. New model weights require justified labeled evidence.",
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
-  }
+  },
+  "owned_server_pid": null,
+  "owned_server_session": null
 }

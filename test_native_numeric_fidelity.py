@@ -3,12 +3,20 @@ import copy
 import json
 import sqlite3
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from clinical_core.agere.clinical import backstop_agent as B
 from clinical_core.agere.deliverables.receipts import uncompact_json
 
 
 class NumericFidelity(unittest.TestCase):
+    SCALAR_SQL='''SELECT p.patient_id,
+        (SELECT COUNT(*) FROM claim c WHERE c.patient_id=p.patient_id AND c.service_from>='2029-01-01') AS claims,
+        (SELECT CASE WHEN SUM(CASE WHEN c.paid_cents IS NULL THEN 1 ELSE 0 END)>0 THEN NULL
+            ELSE COALESCE(SUM(c.paid_cents),0) END FROM claim c
+            WHERE c.patient_id=p.patient_id AND c.service_from>='2029-01-01') AS current_paid
+        FROM population p ORDER BY p.patient_id'''
     PIVOT_SQL='''WITH yearly AS (
         SELECT patient_id,{year_expression} AS yr,SUM(paid_cents) AS paid,{missing_expression} AS absent
         FROM claim GROUP BY patient_id,yr
@@ -111,7 +119,58 @@ class NumericFidelity(unittest.TestCase):
 
     def test_integer_classification_is_not_qualified_by_numeric_storage_type(self):
         answer, calls = self.fixture('SELECT patient_id, CASE WHEN SUM(allowed_cents)>200 THEN 1 ELSE 0 END AS eligible FROM claim GROUP BY patient_id')
-        self.assertTrue(all(not p.get('native_numeric_fidelity') for p in self.packets(answer,calls)))
+        packets=self.packets(answer,calls)
+        self.assertTrue(all(not p.get('native_numeric_fidelity') for p in packets))
+        self.assertEqual(B.native_program_repairs(packets),['native_1'])
+        result,seen=self.check(packets)
+        self.assertEqual(seen,['summary'])
+        self.assertEqual(result['label'],'unknown')
+        self.assertTrue(all(p.get('status')=='requires_native_program_repair'for p in result['packets'][1:]))
+
+    def test_correlated_scalar_aggregates_preserve_nulls_and_global_semantics(self):
+        answer,calls=self.calendar_fixture(self.SCALAR_SQL)
+        self.assertEqual(answer['table'],[{'patient_id':'A','claims':2,'current_paid':None},
+            {'patient_id':'B','claims':1,'current_paid':200},{'patient_id':'C','claims':1,'current_paid':50},
+            {'patient_id':'D','claims':1,'current_paid':80}])
+        for label in ['supported','unknown','contradicted']:
+            packets=self.packets(answer,calls)
+            self.assertEqual(B.native_program_repairs(packets),[])
+            result,seen=self.check(packets,lambda e:{'label':label,'decided_by':'fixture'if label!='unknown'else None,'steps':[]})
+            self.assertEqual(seen,['summary']);self.assertEqual(result['label'],label)
+
+    def test_unsupported_numeric_program_does_not_fan_out_or_become_accepted(self):
+        for sql in [self.SCALAR_SQL.replace('COUNT(*)','MAX(CASE WHEN paid_cents>100 THEN 1 ELSE 0 END)'),
+                    self.SCALAR_SQL.replace('COUNT(*)','paid_cents'),
+                    self.SCALAR_SQL.replace('COUNT(*)','ABS(SUM(paid_cents))')]:
+            answer,calls=self.calendar_fixture(sql)
+            packets=self.packets(answer,calls)
+            self.assertEqual(B.native_program_repairs(packets),['native_1'])
+            result,seen=self.check(packets)
+            self.assertEqual(seen,['summary']);self.assertEqual(result['label'],'unknown')
+            self.assertEqual(answer['table'],calls[0]['result']['rows'])
+
+    def test_numeric_repair_marker_is_bound_to_exact_packet_and_summary(self):
+        answer,calls=self.calendar_fixture(self.SCALAR_SQL.replace('COUNT(*)','paid_cents'))
+        for index in [0,1]:
+            packets=self.packets(answer,calls)
+            packets[index]['text']+=' '
+            self.assertFalse(B.native_fidelity_valid(packets[1],packets[0],
+                'native_program_repair','native-program-repair/1'))
+
+    def test_final_review_repairs_one_program_without_dispatching_patient_votes(self):
+        from clinical_core.agere.clinical import system_one_gate as G
+        answer,calls=self.calendar_fixture(self.SCALAR_SQL.replace('COUNT(*)','ABS(SUM(paid_cents))'))
+        before=copy.deepcopy(answer['table'])
+        coverage={'label':'answers_fully','p':1,'decided_by':'fixture','calls':1,'cost_usd':0}
+        with patch.dict('os.environ',{'AGERE_QUANTITATIVE_ROLE_CHECK':'off'}), \
+                patch.object(G,'ready',return_value=True),patch.object(G,'check',return_value=coverage), \
+                patch.object(B,'check_support_packets',side_effect=AssertionError('No patient votes')):
+            result=B.review_final(SimpleNamespace(),'List patients and their claim totals',answer,calls,
+                SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+        self.assertEqual(result['repair_kind'],'native_program_verification')
+        self.assertEqual(result['progress_state'],{'native_program_repairs':['native_1']})
+        self.assertEqual(result['support']['label'],'not_run')
+        self.assertEqual(answer['table'],before)
 
     def test_native_missing_value_count_is_arithmetic(self):
         answer, calls = self.fixture('SELECT patient_id, SUM(CASE WHEN allowed_cents IS NULL THEN 1 ELSE 0 END) AS missing_values FROM claim GROUP BY patient_id')

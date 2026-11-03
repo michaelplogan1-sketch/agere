@@ -1505,6 +1505,17 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         assessment['evidence_coverage'].update(original_fingerprint=fingerprint(original))
         packets=support_packets(request,answer,calls,getattr(tools,'document_reviews',[]),as_of,
                                 source_documents=getattr(tools,'read',{}),prior_review_reference=prior_reference)
+        program_repairs=native_program_repairs(packets)
+        if program_repairs:
+            return {**assessment,'status':'repair','repair_kind':'native_program_verification',
+                'progress_state':{'native_program_repairs':program_repairs},
+                'support':{'label':'not_run','decided_by':None,'packets':[],
+                    'all_dependencies_checked':False,'native_program_repairs':program_repairs},
+                'feedback':'The numeric table exactly matches its executed SQL, but its calculation lineage is not qualified for native verification. '
+                    'Repair only these retained programs: '+json.dumps(program_repairs)+'. Preserve the full population, requested fields, source/date scope and missing-value semantics. '
+                    'Express calculations with explicit aggregate stages and arithmetic projections. If a numeric value encodes a clinical interpretation, '
+                    'bind that interpretation to its actual source review instead of treating an integer as arithmetic proof. '
+                    'Do not re-read every patient or ask for repeated model votes on copies of the same SQL result. The repaired program still requires source/question verification.'}
         assessment['evidence_coverage'].update(model_view='patient-dependency-packets/1',
             complete_dependency_packets=len(packets),max_dependency_bytes=max((p['bytes']for p in packets),default=0),
             total_dependency_bytes=sum(p['bytes']for p in packets),
@@ -1986,6 +1997,16 @@ def native_numeric_aggregate_shape(query,columns,*,schema=None,sources=None):
         if identity:
             return isinstance(node,(exp.Alias,exp.Column,exp.Identifier))and all(
                 expression_ok(child,owner,True)for child in node.iter_expressions())
+        if isinstance(node,exp.Subquery):
+            # Scalar aggregates use the same projection proof as grouped ones.
+            # Their WHERE/entity/date meaning remains in the global review.
+            select=node.this
+            if (not isinstance(select,exp.Select)or len(select.expressions)!=1 or
+                any(select.args.get(key)for key in ('group','having','qualify','limit','offset','windows'))):return False
+            projected=select.expressions[0]
+            children=[child for child in owner.downstream if child.expression==projected]
+            return (len(children)==1 and any(isinstance(item,aggregates)for item in projected.walk())and
+                    expression_ok(projected,children[0]))
         if isinstance(node,(exp.Substring,exp.TimeToStr,exp.Extract,exp.Cast))and calendar_component(node,owner):return True
         if isinstance(node,aggregates):
             if isinstance(node,exp.Sum)and null_test(node.this):return True
@@ -2088,19 +2109,21 @@ def mark_native_numeric_fidelity(packets,answer,calls,document_reviews):
         receipts[result['result_view']]=digest(result)
     result=next(c['result']for c in selected if c['result']['result_view']==root)
     columns,rows=output_table(result)
-    if not native_numeric_aggregate_shape(sources[root],columns,schema=schema,
-                                         sources={name:query for name,query in sources.items()if name!=root}):return
     if table!=[dict(zip(columns,row))for row in rows]:return
     if type(result.get('table_rows'))is int and result['table_rows']!=len(rows):return
     summary=next((p for p in packets if p['id']=='summary'),None)
     if not summary or summary.get('dependency_complete')is False:return
-    common={'schema':'native-numeric-fidelity/1','root_result_view':root,'rows':len(table),
+    qualified=native_numeric_aggregate_shape(sources[root],columns,schema=schema,
+                                           sources={name:query for name,query in sources.items()if name!=root})
+    key='native_numeric_fidelity'if qualified else 'native_program_repair'
+    common={'schema':'native-numeric-fidelity/1'if qualified else 'native-program-repair/1',
+            'root_result_view':root,'rows':len(table),
             'columns':columns,'table_digest':digest(table),'native_receipt_digests':receipts,
             'summary_packet_sha256':hashlib.sha256(summary['text'].encode()).hexdigest(),
             'scope':'Exact native numeric cell fidelity only. Global typed review must establish requested source, period, population, unit, denominator and interpretation.'}
     for packet in packets:
         if packet['id']=='summary' or not packet.get('patient_dependency_bound'):continue
-        packet['native_numeric_fidelity']={**common,'packet_id':packet['id'],
+        packet[key]={**common,'packet_id':packet['id'],
             'patient_id':packet['source_dependency_patient_id'],
             'claim_manifest_digest':digest(packet['claim_manifest']),
             'packet_sha256':hashlib.sha256(packet['text'].encode()).hexdigest()}
@@ -2184,6 +2207,13 @@ def mark_native_profile_fidelity(packets,answer,calls,document_reviews):
 
 def native_numeric_fidelity_valid(packet,summary):
     return native_fidelity_valid(packet,summary,'native_numeric_fidelity','native-numeric-fidelity/1')
+
+
+def native_program_repairs(packets):
+    """One program obligation, not a model vote for every numeric output row."""
+    summary=next((p for p in packets if p['id']=='summary'),None)
+    return sorted({p['native_program_repair']['root_result_view']for p in packets
+        if native_fidelity_valid(p,summary,'native_program_repair','native-program-repair/1')})
 
 
 def native_fidelity_valid(packet,summary,key,schema):
@@ -2288,6 +2318,10 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             return {**identity,'label':'unknown','decided_by':None,
                 'reason':'A represented documentary assertion lacks its complete matching source context. Local source retrieval or source-version repair is required; no model vote can replace it.'},steps
         global_result=observed.get(0,({},[]))[0]
+        if native_fidelity_valid(packet,by_id.get('summary'),'native_program_repair','native-program-repair/1'):
+            return {**identity,'label':'unknown','decided_by':None,'status':'requires_native_program_repair',
+                'root_result_view':packet['native_program_repair']['root_result_view'],
+                'reason':'Exact numeric SQL output has no qualified calculation proof. Repair the shared program or bind its interpretations to actual source review; repeated row votes cannot establish that proof.'},steps
         if(scheduled and scheduled[0]['id']=='summary'and native_numeric_fidelity_valid(packet,by_id.get('summary'))):
             if global_result.get('label')=='supported'and global_result.get('decided_by'):
                 return {**identity,'label':'supported','decided_by':'native_numeric_table_fidelity',
