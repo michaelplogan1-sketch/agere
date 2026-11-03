@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T20:58:55.720489+00:00",
+  "updated_at": "2026-11-03T21:03:43.761424+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -3360,8 +3360,21 @@
     "all_jobs_terminal": true,
     "source_frozen": false,
     "durable_artifacts": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03",
-    "visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/clinical-workflow-replay.png",
+    "visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/clinical-workflow-replay-v2.png",
     "paired_comparison_status": "Required by latest human preference; no matched clinical before/after exists. Existing795patient paired benchmark remains separately scoped; never attach its costs or speedup to57patient clinical replay.",
-    "post_draft": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/linkedin-post-with-comparison.md"
+    "post_draft": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/linkedin-post-with-comparison.md",
+    "post_style": "Percentage-first paired benchmark, followed by the separate rich clinical replay. Raw values retained; caveat paragraphs removed. API-equivalent cost labeled."
+  },
+  "latest_presentation_update": {
+    "at": "2026-11-03T21:02:43.799399+00:00",
+    "request": "Lead the deliverable with percentage changes and remove caveat paragraphs.",
+    "post": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/linkedin-post-with-comparison.md",
+    "headline": "99.8% lower API-equivalent cost. 94.7% less execution time. The same795patient result.",
+    "percentage_source": "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json",
+    "provider_call_reduction_pct": 76.9,
+    "scope": "Paired795patient benchmark percentages remain separate from57patient clinical replay. No new product/model performance claim or provider run.",
+    "image_edit": "completed",
+    "clinical_visual": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/clinical-workflow-replay-v2.png",
+    "image_tool": "built-in image_gen"
   }
 }
