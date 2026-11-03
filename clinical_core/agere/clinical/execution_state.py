@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/9'
+VERSION = 'execution-state/10'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -113,12 +113,15 @@ def draft_state(candidate):
         state['localized_prose_repair']={
             'draft_digest':state['last_draft_digest'],
             'instruction':'To change only existing patient/entity prose, return {"repair_draft":{"draft_digest":"the exact digest here","rows":[{"key":{original entity keys},"fields":{existing prose field:replacement}}]}}. '
-                'Send only changed fields. Code retains every other row, source and basis, then runs the normal complete compiler and review. '
-                'This cannot change native values, entity keys or source bases. For other changes return the complete answer contract.'}
+                'Send only changed fields. An edit may also include basis_additions:[{"result_view":"an executed view","row":zero_based_row}]. '
+                'Each additional native row must have the same entity keys; code checks it before merging and the complete compiler checks it again. '
+                'Existing bases, other rows and sources are retained. No native value or entity key can be changed. '
+                'For a located unbound-literal repair preserve the original sentence, quantities, units and dates using native bindings; '
+                'do not remove details to make compilation pass. For other structural changes return the complete answer contract.'}
     return state
 
 
-def apply_prose_repair(proposal,candidate):
+def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
     """Merge an exact-draft prose edit atomically; confer no evidence authority."""
     import copy
     if not isinstance(proposal,dict) or set(proposal)!={'repair_draft'}:
@@ -148,10 +151,15 @@ def apply_prose_repair(proposal,candidate):
         existing[ident]=row
     edits=repair['rows']
     if not isinstance(edits,list) or not edits:raise ValueError('Prose repair needs changed fields')
-    changes={}
+    from .result_assembly import _rows
+    native={c['result']['result_view']:c['result']for c in calls if isinstance(c.get('result'),dict)
+            and c['result'].get('result_view')and not c['result'].get('error')}
+    targets=prose_repair_targets(candidate,feedback)
+    located={(digest(t['key']),t['field']):t for t in targets or[]}
+    changes={};additions={}
     for edit in edits:
-        if not isinstance(edit,dict) or set(edit)!={'key','fields'}:
-            raise ValueError('Each prose edit requires only key and fields; bases and native values cannot be patched')
+        if not isinstance(edit,dict) or not {'key','fields'}<=set(edit) or set(edit)-{'key','fields','basis_additions'}:
+            raise ValueError('Each prose edit requires key and fields, with optional checked basis_additions; native values cannot be patched')
         ident=identity(edit['key']);fields=edit['fields']
         if ident not in existing:raise ValueError('Prose repair cannot add or rename an entity')
         if ident in changes:raise ValueError('Prose repair repeats an entity')
@@ -159,8 +167,34 @@ def apply_prose_repair(proposal,candidate):
             raise ValueError('Prose repair may replace only existing prose fields')
         if any(not isinstance(v,(str,dict))for v in fields.values()):
             raise ValueError('Prose fields require text or a computed template; deletion is not supported')
+        extra=edit.get('basis_additions',[])
+        if not isinstance(extra,list):raise ValueError('basis_additions must be native row addresses')
+        addresses={(a['result_view'],a['row'])for a in existing[ident].get('basis',[])}
+        for address in extra:
+            if (not isinstance(address,dict)or set(address)!={'result_view','row'}or type(address['row'])is not int
+                    or address['row']<0 or not isinstance(address['result_view'],str)or address['result_view']not in native):
+                raise ValueError('Additional prose basis must address an executed native row')
+            result=native[address['result_view']]
+            from .result_assembly import incomplete_reason
+            if incomplete_reason(result):raise ValueError('Additional prose basis has incomplete source dependencies')
+            _,rows=_rows(result)
+            if address['row']>=len(rows)or identity({k:rows[address['row']].get(k)for k in keys})!=ident:
+                raise ValueError('Additional prose basis belongs to another entity or is unavailable')
+            pair=(address['result_view'],address['row'])
+            if pair in addresses:raise ValueError('Additional prose basis duplicates a retained address')
+            addresses.add(pair)
+        for field,value in fields.items():
+            target=located.get((ident,field))
+            if targets and target is None:
+                raise ValueError('A focused binding repair may edit only the compiler-located fields')
+            if target and target['code']=='unbound_literal':
+                original=existing[ident]['fields'][field]
+                rendered=repair_rendered_value(value,native)
+                if canonical_repair_prose(rendered)!=canonical_repair_prose(repair_rendered_value(original,native)):
+                    raise ValueError('A binding repair must preserve the original sentence, quantities, units and dates at '+field+'. Use a full answer for a source-meaning correction.')
         changes[ident]={k:v for k,v in fields.items()if existing[ident]['fields'][k]!=v}
-    if not any(changes.values()):raise ValueError('Prose repair contains no changed fields; inspect the unresolved dependency')
+        additions[ident]=extra
+    if not any(changes.values())and not any(additions.values()):raise ValueError('Prose repair contains no changed fields; inspect the unresolved dependency')
     merged=copy.deepcopy(candidate)
     # Restore the existing numeric templates, not their rendered numeric text.
     # Sources and all complete rows stay in the native candidate, not the patch.
@@ -169,8 +203,119 @@ def apply_prose_repair(proposal,candidate):
     for name in ('computed_prose','investigation_review','verification'):
         merged.pop(name,None)
     for row in merged['row_prose']['rows']:
-        if identity(row['key'])in changes:row['fields'].update(copy.deepcopy(changes[identity(row['key'])]))
+        ident=identity(row['key'])
+        if ident in changes:
+            row['fields'].update(copy.deepcopy(changes[ident]));row['basis'].extend(copy.deepcopy(additions[ident]))
     return merged
+
+
+def canonical_repair_prose(text):
+    """Allow number spelling/format changes, but no lost sentence content."""
+    import re
+    from decimal import Decimal
+    words=('zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty').split()
+    numbers={w:str(i)for i,w in enumerate(words)}
+    def replace(match):
+        value=match.group()
+        return numbers[value.lower()]if value.lower()in numbers else format(Decimal(value.replace(',','')).normalize(),'f')
+    normalized=re.sub(r'(?<![\w.-])\d+(?:,\d{3})*(?:\.\d+)?(?![\w.-])|\b(?:'+ '|'.join(words)+r')\b',replace,text,flags=re.I)
+    return re.sub(r'\s+',' ',normalized).strip()
+
+
+def repair_rendered_value(value,native):
+    """Preview exact scalar insertion for preservation only; compiler still runs."""
+    from .result_assembly import _rows
+    if isinstance(value,str):return value
+    if not isinstance(value,dict)or set(value)!={'template','bindings'}or not isinstance(value['template'],str)or not isinstance(value['bindings'],dict):
+        raise ValueError('Binding repair requires a scalar template')
+    values={}
+    for name,address in value['bindings'].items():
+        if (not isinstance(address,dict)or set(address)!={'result_view','row','column'}
+                or type(address['row'])is not int or address['row']<0 or not isinstance(address['result_view'],str)
+                or not isinstance(address['column'],str)or address['result_view']not in native):
+            raise ValueError('Binding repair must use available executed scalar addresses')
+        _,rows=_rows(native[address['result_view']])
+        if address['row']>=len(rows)or address['column']not in rows[address['row']]:raise ValueError('Binding repair scalar is unavailable')
+        scalar=rows[address['row']][address['column']]
+        if scalar is not None and type(scalar)not in(str,int,float,bool):raise ValueError('Binding repair cell is not scalar')
+        values[name]='unknown'if scalar is None else str(scalar)
+    try:return value['template'].format_map(values)
+    except (ValueError,KeyError,IndexError,AttributeError)as exc:raise ValueError('Binding repair template is invalid')from exc
+
+
+def prose_repair_targets(candidate,feedback):
+    """Only exact producer-bound row failures permit a narrower repair view."""
+    if not isinstance(candidate,dict)or not isinstance(feedback,dict):return None
+    receipt=feedback.get('prose_repair')
+    if not isinstance(receipt,dict)or receipt.get('schema')!='native-prose-repair-targets/1':return None
+    if receipt.get('draft_digest')!=digest(candidate):return None
+    spec=candidate.get('row_prose')or{};rows=spec.get('rows');keys=spec.get('keys')
+    if not isinstance(rows,list)or not isinstance(keys,list):return None
+    entries={digest(r.get('key')):r for r in rows if isinstance(r,dict)}
+    targets=receipt.get('targets')
+    if not isinstance(targets,list)or not targets:return None
+    found=set()
+    for target in targets:
+        if not isinstance(target,dict)or not isinstance(target.get('key'),dict)or set(target['key'])!=set(keys):return None
+        ident=digest(target['key']);entry=entries.get(ident);field=target.get('field')
+        if not isinstance(field,str)or not entry or field not in(entry.get('fields')or{}):return None
+        if target.get('value_digest')!=digest(entry['fields'][field])or target.get('basis')!=entry.get('basis'):return None
+        if (ident,field)in found:return None
+        found.add((ident,field))
+    return targets
+
+
+def focused_prose_state(candidate,feedback,calls):
+    """A compiler-selected repair view; the full native answer stays intact."""
+    from .result_assembly import _rows
+    targets=prose_repair_targets(candidate,feedback)
+    if targets is None:return None
+    keys=candidate['row_prose']['keys'];wanted={digest(t['key'])for t in targets}
+    entries={digest(r['key']):r for r in candidate['row_prose']['rows']}
+    def selected(row):
+        return all(k in row for k in keys)and digest({k:row[k]for k in keys})in wanted
+    bases={(b['result_view'],b['row'])for t in targets for b in t['basis']}
+    native_rows=[];record_ids=set()
+    def is_collection(value):
+        if isinstance(value,(dict,list)):return True
+        if isinstance(value,str)and value.lstrip().startswith(('{','[')):
+            try:return isinstance(json.loads(value),(dict,list))
+            except ValueError:pass
+        return False
+    def collect_ids(value):
+        if isinstance(value,str)and is_collection(value):value=json.loads(value)
+        if isinstance(value,list):
+            for item in value:collect_ids(item)
+        elif isinstance(value,dict):
+            if isinstance(value.get('record_id'),str):record_ids.add(value['record_id'])
+            for item in value.values():collect_ids(item)
+    for call in calls:
+        result=call.get('result')or{}
+        if not isinstance(result,dict)or result.get('error')or not result.get('result_view'):continue
+        name=result['result_view']
+        if name not in {view for view,_ in bases}:continue
+        columns,rows=_rows(result)
+        for index,row in enumerate(rows):
+            if not selected(row):continue
+            if (name,index)not in bases:continue
+            scalars={k:v for k,v in row.items()if not is_collection(v)}
+            native_rows.append({'result_view':name,'row':index,'values':scalars,
+                'nested_columns_available_by_query':[k for k,v in row.items()if is_collection(v)],'row_digest':digest(row)})
+            collect_ids(row)
+    fields=[{**target,'value':entries[digest(target['key'])]['fields'][target['field']]}for target in targets]
+    return {'schema':'focused-native-prose-repair/1','draft_digest':digest(candidate),
+        'keys':keys,'targets':fields,'native_scalar_rows':native_rows,
+        'cited_sources':[s for s in candidate.get('sources',[])if s.get('record_id')in record_ids],
+        'native_answer_rows':len(candidate.get('table')or[]),'repair_entities':len(wanted),
+        'complete_row_prose_rows':len(candidate['row_prose']['rows']),
+        'patch_contract':draft_state(candidate)['localized_prose_repair'],
+        'instruction':'These are all located compiler failures, not a reduced patient cohort or a clinical conclusion. '
+            'Repair only the named fields. Preserve each original sentence, numerical details, units, dates and uncertainty; '
+            'use scalar bindings rather than deleting facts. Number words may become the equivalent numeral. '
+            'Every other native row, original prose field and source remains retained and receives the complete review. '
+            'Additional basis rows must carry the same entity keys. For a source value inside a nested column, use query_sql '
+            'to select its complete exact value with the entity keys and source record/date; do not truncate quotes. '
+            'All original results and their scope remain available in executed_results. Nothing here establishes source support.'}
 
 
 def recovery_context(replay,tools):
@@ -382,12 +527,14 @@ def catalog(calls):
 
 def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False,feedback_native=None):
     from .semantic_analyst import actor_result,complete_actor_reading
+    focus=focused_prose_state(candidate,feedback,calls)
+    selected_keys={digest(t['key'])for t in focus['targets']}if focus else set()
     def recent(call):
         out = call.get('result')
         if complete_actor_reading(out):
             return {'name':call.get('name'),'input':call.get('input'),
                     'result':{'result_view':out.get('result_view'),
-                              'complete_reading_in':'executed_results; exact rows retained there once'}}
+                              'complete_reading_in':('executed_results; exact repair-entity rows in repair_reading when keyed'if focus else'executed_results; exact rows retained there once')}}
         if isinstance(out, dict) and out.get('loaded_documentation'):
             out = {k: v for k, v in out.items() if k not in ('rows', 'loaded_documentation')}
             out['documentation_sections'] = documentation_references(call['result'])
@@ -447,6 +594,22 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             if support.get('failed_packet_ids'):
                 state['current_review_feedback']['failed_dependency_ids']=support['failed_packet_ids']
         else:state['current_review_feedback']=feedback
-    if candidate is not None:
+    if focus:
+        # This subset is a repair view, never complete population evidence.
+        from .result_assembly import _rows
+        for entry in state['executed_results']:
+            reading=entry.get('complete_reading')
+            if not isinstance(reading,dict):continue
+            try:columns,rows=_rows(reading)
+            except ValueError:continue  # Preserve incomplete readings and their warnings in full.
+            if not set(focus['keys'])<=set(columns):continue
+            indices=[i for i,row in enumerate(rows)if digest({k:row[k]for k in focus['keys']})in selected_keys]
+            entry.pop('complete_reading')
+            entry['repair_reading']={'columns':columns,'rows':[rows[i]for i in indices],'native_row_indices':indices,
+                'native_total_rows':len(rows),'complete_native_result_retained':True,
+                'scope':'Exact rows for the located repair entities only; all other rows remain queryable and in the final answer.'}
+        state['focused_prose_repair']=focus
+        state['instruction']+=' A focused_prose_repair replaces full draft repetition only for the bound compiler failures; it never narrows the requested output or source obligations.'
+    elif candidate is not None:
         state.update(draft_state(candidate))
     return [{'role':'user','content':json.dumps(state,default=str,allow_nan=False)}]

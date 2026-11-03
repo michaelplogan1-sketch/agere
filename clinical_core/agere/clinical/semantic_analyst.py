@@ -720,15 +720,17 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     from .execution_state import apply_prose_repair,draft_state
                     patch_proposal=candidate
                     try:
-                        candidate=apply_prose_repair(patch_proposal,state_candidate)
+                        candidate=apply_prose_repair(patch_proposal,state_candidate,calls=result['tool_calls'],feedback=state_feedback)
                     except ValueError as exc:
                         signature=digest([patch_proposal,digest(state_candidate)])
                         if signature in rejected_protocol and not escalate('Repeated invalid prose repair'):
                             result['review_stopped']='no_progress'
                             return result
                         rejected_protocol.add(signature);repairs+=1
+                        retained_targets=state_feedback.get('prose_repair')if isinstance(state_feedback,dict)else None
                         state_feedback={'status':'repair','repair_kind':'deterministic_compiler',
-                                        'feedback':str(exc),'progress_state':{'invalid_prose_repair':True}}
+                                        'feedback':str(exc),'progress_state':{'invalid_prose_repair':True},
+                                        **({'prose_repair':retained_targets}if retained_targets else{})}
                         messages.append({'role':'assistant','content':blocks})
                         messages.append({'role':'user','content':str(exc)+'\n'+json.dumps(draft_state(state_candidate))})
                         continue
@@ -738,6 +740,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     result.setdefault('prose_repairs',[]).append({'base_draft_digest':patch_proposal['repair_draft']['draft_digest'],
                         'proposal_digest':digest(patch_proposal),'changed_rows':sum(bool(n)for n in changed),
                         'changed_fields':sum(changed),
+                        'added_basis_rows':sum(len(r.get('basis_additions',[]))for r in patch_proposal['repair_draft']['rows']),
                         'complete_review_required':True})
                 if review is not None:
                     assessment = review(candidate, result['tool_calls'])

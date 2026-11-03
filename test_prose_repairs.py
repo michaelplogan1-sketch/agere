@@ -1,5 +1,7 @@
 """Localized edits retain the entire candidate and receive complete validation."""
 import copy,json,unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 from clinical_core.agere.clinical import execution_state as E,backstop_agent as B,semantic_analyst as S
 from clinical_core.agere import model_policy as M
 from clinical_core.contracts import digest
@@ -112,6 +114,110 @@ class ProseRepairs(unittest.TestCase):
         self.assertEqual(out['review_stopped'],'no_progress')
         self.assertEqual(out['answer']['status'],'partial')
         self.assertEqual(out['answer']['verification'],'unverified')
+
+    def located_failure(self):
+        self.base['status']='partial'
+        self.base['row_prose']['rows'][0]['fields']['review']='Review two events on 2030-01-01; preserve the uncertainty.'
+        # Restore quantitative headline templates, as the real draft state does.
+        self.base['headline']=E.draft_state(self.base)['last_draft']['headline']
+        return B.review_final(SimpleNamespace(),'Explain each entity',self.base,self.calls,
+            SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+
+    def bound_review(self,view='agere_result_1',row=0):
+        return {'template':'Review {n} events on 2030-01-01; preserve the uncertainty.',
+            'bindings':{'n':{'result_view':view,'row':row,'column':'events'}}}
+
+    def test_compiler_targets_bind_exact_field_and_mixed_global_failures_disable_focus(self):
+        feedback=self.located_failure();targets=E.prose_repair_targets(self.base,feedback)
+        self.assertEqual(len(targets),1);self.assertEqual(targets[0]['field'],'review')
+        self.assertEqual(targets[0]['key'],{'patient_id':'A'})
+        self.assertEqual(targets[0]['code'],'unbound_literal')
+        self.base['headline']='There are 99 events.'
+        mixed=B.review_final(SimpleNamespace(),'Explain each entity',self.base,self.calls,
+            SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+        self.assertNotIn('prose_repair',mixed)
+        self.assertIsNone(E.focused_prose_state(self.base,mixed,self.calls))
+
+    def test_same_entity_basis_addition_keeps_prior_bases_and_requires_complete_compilation(self):
+        feedback=self.located_failure()
+        self.calls.append({'name':'query_sql','input':{'sql':'SELECT patient_id,events FROM source'},
+            'result':{'result_view':'agere_result_2','columns':['patient_id','events'],
+                'rows':[['A',2],['B',7]],'truncated':False}})
+        p=self.patch(review=self.bound_review('agere_result_2'))
+        p['repair_draft']['rows'][0]['basis_additions']=[{'result_view':'agere_result_2','row':0}]
+        before=copy.deepcopy(self.base)
+        merged=E.apply_prose_repair(p,self.base,calls=self.calls,feedback=feedback);self.compile(merged)
+        self.assertEqual(merged['row_prose']['rows'][0]['basis'],before['row_prose']['rows'][0]['basis']+[{'result_view':'agere_result_2','row':0}])
+        self.assertEqual(merged['table'][0]['review'],'Review 2 events on 2030-01-01; preserve the uncertainty.')
+        self.assertEqual(self.base,before)
+        for kind in ('foreign','missing','duplicate','incomplete','unsupported'):
+            q=copy.deepcopy(p);calls=copy.deepcopy(self.calls);edit=q['repair_draft']['rows'][0]
+            if kind=='foreign':edit['basis_additions'][0]['row']=1
+            if kind=='missing':edit['basis_additions'][0]['row']=8
+            if kind=='duplicate':edit['basis_additions']=[{'result_view':'agere_result_1','row':0}]
+            if kind=='incomplete':calls[-1]['result']['truncated']=True
+            if kind=='unsupported':edit['basis_extra']=edit.pop('basis_additions')
+            with self.subTest(kind=kind),self.assertRaises(ValueError):
+                E.apply_prose_repair(q,self.base,calls=calls,feedback=feedback)
+            self.assertEqual(self.base,before)
+
+    def test_binding_repair_cannot_delete_or_change_sentence_values_units_or_dates(self):
+        feedback=self.located_failure()
+        good=self.bound_review()
+        for kind in ('quantity','date','meaning','unit','wrong_scalar'):
+            value=copy.deepcopy(good)
+            if kind=='quantity':value='Review the events on 2030-01-01; preserve the uncertainty.'
+            if kind=='date':value['template']=value['template'].replace('2030-01-01','2030-01-02')
+            if kind=='meaning':value['template']=value['template'].replace('; preserve the uncertainty','')
+            if kind=='unit':value['template']=value['template'].replace('events','mg')
+            if kind=='wrong_scalar':value['bindings']['n']['row']=1
+            with self.subTest(kind=kind),self.assertRaisesRegex(ValueError,'preserve the original'):
+                E.apply_prose_repair(self.patch(review=value),self.base,calls=self.calls,feedback=feedback)
+        self.compile(E.apply_prose_repair(self.patch(review=good),self.base,calls=self.calls,feedback=feedback))
+        self.assertEqual(E.canonical_repair_prose('Dose 10.0 mg; three events.'),E.canonical_repair_prose('Dose ten mg; 3 events.'))
+
+    def test_scoped_state_keeps_all_native_handles_and_exact_selected_readings(self):
+        feedback=self.located_failure()
+        reading=copy.deepcopy(self.calls[0]);reading['result']['result_view']='agere_result_2'
+        reading['result']['actor_reading']={'mode':'complete_rows','rows_digest':digest(reading['result']['rows']),
+            'columns_digest':digest(reading['result']['columns'])}
+        calls=self.calls+[reading,{'name':'metadata','input':{},'result':{'result_view':'metadata','kind':'non_table'}}]
+        before=copy.deepcopy(calls)
+        state=json.loads(E.messages('Both entities remain requested',calls,candidate=self.base,feedback=feedback)[0]['content'])
+        focus=state['focused_prose_repair']
+        self.assertEqual(focus['repair_entities'],1);self.assertEqual(focus['native_answer_rows'],2)
+        self.assertEqual(focus['complete_row_prose_rows'],2);self.assertNotIn('last_draft',state)
+        self.assertEqual(focus['native_scalar_rows'][0]['values'],{'patient_id':'A','events':2})
+        self.assertEqual(len(state['executed_results']),len(calls));self.assertEqual(calls,before)
+        selected=state['executed_results'][1]['repair_reading']
+        self.assertEqual(selected['rows'],[{'patient_id':'A','events':2}])
+        self.assertEqual(selected['native_total_rows'],2);self.assertEqual(selected['native_row_indices'],[0])
+        for mutation in ('digest','field','basis','key','duplicate'):
+            changed=copy.deepcopy(feedback);target=changed['prose_repair']['targets'][0]
+            if mutation=='digest':changed['prose_repair']['draft_digest']='stale'
+            if mutation=='field':target['field']='missing'
+            if mutation=='basis':target['basis']=[]
+            if mutation=='key':target['key']={'patient_id':'B'}
+            if mutation=='duplicate':changed['prose_repair']['targets'].append(copy.deepcopy(target))
+            with self.subTest(mutation=mutation):
+                full=json.loads(E.messages('Both entities',calls,candidate=self.base,feedback=changed)[0]['content'])
+                self.assertIn('last_draft',full);self.assertNotIn('focused_prose_repair',full)
+
+    def test_invalid_patch_keeps_preservation_guard_on_the_next_attempt(self):
+        feedback=self.located_failure();sent=[];reviews=[]
+        def send(body):
+            sent.append(body)
+            p=self.patch(review='Review the events; omit the numeric detail.')
+            if len(sent)==1:p['repair_draft']['rows'][0]['basis_extra']=[]
+            return {'content':[{'type':'text','text':json.dumps(p)}]},0,False
+        def review(a,c):reviews.append(copy.deepcopy(a));return feedback
+        out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('Unexpected source execution'),send=send,
+            model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+            review=review,compact_execution_state=True)
+        self.assertEqual(len(reviews),1);self.assertNotIn('prose_repairs',out)
+        self.assertEqual(out['review_stopped'],'no_progress')
+        self.assertTrue(all('focused_prose_repair'in json.loads(b['messages'][0]['content'])for b in sent))
+        self.assertIn('preserve the original',sent[-1]['messages'][0]['content'])
 
 
 if __name__=='__main__':unittest.main()

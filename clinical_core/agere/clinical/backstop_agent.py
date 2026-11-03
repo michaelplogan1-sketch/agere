@@ -41,12 +41,14 @@ class ProseIssue(ValueError):
     def __init__(self, code, field, message):
         super().__init__(message)
         self.failure = {'code': code, 'field_group': field.split('.')[0]}
+        self.field = field
 
 
 class ComputedProseError(ValueError):
-    def __init__(self, message, failures):
+    def __init__(self, message, failures, targets=()):
         super().__init__(message)
         self.progress_failures = failures
+        self.repair_targets = list(targets)
 
 
 MAX_TOOLS = int(os.environ['AGERE_BACKSTOP_TOOLS']) if os.environ.get('AGERE_BACKSTOP_TOOLS') else None
@@ -994,7 +996,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
         rendered=template.format_map(resolved)
         proofs.append({'field':field,'template':template,'bindings':bindings,'rendered':rendered,'sources':sources})
         return rendered
-    updates={};errors=[];failures=[]
+    updates={};errors=[];failures=[];targets=[]
     def checked(field,value):
         try:return compile_value(field,value)
         except (ValueError,KeyError,IndexError,TypeError) as exc:
@@ -1071,6 +1073,9 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
                         del proofs[start:]
                         errors.append(str(exc))
                         failures.append(getattr(exc,'failure',{'code':'invalid_row_prose','field_group':'row_prose'}))
+                        targets.append({'code':getattr(exc,'failure',{}).get('code','invalid_row_prose'),
+                            'field':column,'key':dict(entry['key']),'value_digest':digest(value),
+                            'path':['table',i,column],'basis':entry['basis'],'reason':str(exc)})
             updates['table']=table
             updates['table_binding']={**(answer.get('table_binding')or{}),'result_view':root,'rows':len(table),
                 'columns':columns+(field_names or[]),'native_columns':columns,'interpreted_columns':field_names or[],
@@ -1078,7 +1083,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=()):
                 'row_prose':{'schema':'source-bound-row-prose/1','keys':keys,'proposal_digest':digest(spec)}}
         except (ValueError,KeyError,IndexError,TypeError) as exc:
             errors.append(str(exc));failures.append({'code':'invalid_row_prose','field_group':'row_prose'})
-    if errors:raise ComputedProseError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal. An attributed exact passage in verified sources may remain quoted. Do not guess a value or reword a failed quantity to avoid its binding.',failures)
+    if errors:raise ComputedProseError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal. An attributed exact passage in verified sources may remain quoted. Do not guess a value or reword a failed quantity to avoid its binding.',failures,targets if len(targets)==len(errors)else())
     answer.update(updates);answer.pop('computed_prose',None)
     if proofs:answer['computed_prose']=proofs
     return proofs
@@ -1299,7 +1304,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
     kept, dropped = verified_sources(answer, tools)
     answer['sources'] = kept
-    static_feedback=[];prose_problem=None;prose_failures=[];workflow_problem=None;workflow_failure=None
+    static_feedback=[];prose_problem=None;prose_failures=[];prose_targets=[];workflow_problem=None;workflow_failure=None
     if answer.get('status')=='answered' and answer.get('missing'):
         static_feedback.append('The answered status conflicts with declared missing requirements. '
             'Resolve those requirements from the retained sources or return partial/unsupported with the genuine gaps preserved. '
@@ -1323,6 +1328,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         bind_computed_prose(answer,calls,verified_quotes=kept)
     except (ValueError,KeyError,IndexError,TypeError) as exc:
         prose_problem=str(exc);prose_failures=getattr(exc,'progress_failures',[{'code':'invalid_binding','field_group':'prose'}])
+        prose_targets=getattr(exc,'repair_targets',[])
         static_feedback.append(prose_problem)
     # The investigator must obey the same received-source rule as typed plans.
     # Check only dependencies of final rows/bound prose, so an exploratory
@@ -1363,14 +1369,18 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         feedback.append('Cite the exact supporting passage, record ID and date for the document answer.')
     if static_feedback:
         from collections import Counter
+        from ...contracts import digest
         # Retry identity is a compiler state, not a quotation of model wording.
         # All detailed errors and original evidence stay in their receipts.
         counts=Counter((f['code'],f['field_group'])for f in prose_failures)
         progress_state={'prose':[{'code':code,'field_group':field,'failures':count}for (code,field),count in sorted(counts.items())],
             'checks':[re.sub(r'\bagere_result_\d+\b','native_view',s)for s in static_feedback+feedback if s not in (prose_problem,workflow_problem)],
             'workflow':workflow_failure}
+        targeted=({'schema':'native-prose-repair-targets/1','draft_digest':digest(answer),'targets':prose_targets}
+                  if prose_targets and static_feedback==[prose_problem] and not feedback else None)
         return {**assessment,'status':'repair','repair_kind':'deterministic_compiler',
-                'feedback':' '.join(static_feedback+feedback),'progress_state':progress_state}
+                'feedback':' '.join(static_feedback+feedback),'progress_state':progress_state,
+                **({'prose_repair':targeted}if targeted else{})}
     for source in documentary_sources(answer.get('table')or[]):
         # Local warehouse reads only, through the same scope/as-of guards as
         # explicit document tools. A missing source remains a packet gap.
