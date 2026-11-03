@@ -176,3 +176,7 @@ Presentation update: Mike requested percentage changes as the lead and no caveat
 ### User-requested savings, stack and recursive improvement visual
 
 2026-11-03T21:18:09.146345+00:00 — Combined the existing795patient paired benchmark with a stack routing diagram and the outcome/candidate/test/promotion-or-rollback/reuse loop. Saved `/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/savings-stack-recursive-improvement.png`; exact prompt and `savings-stack-learning-receipt.json` retain provenance. Labels preserve API-equivalent cost and the synthetic warehouse. This is presentation work only: no new provider experiment, weights, product release, clinical accuracy result or gate closure. Existing harder payer-analysis repair remains the next engineering action.
+
+### Engineering schematic redesign
+
+2026-11-03T21:36:49.139801+00:00 — User-requested follow-up visual saved at `/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-clinical-bottling-2026-11-03/engineering-bottling-schematic.png`. Exact prior795patient measured savings retained. Distinct new-work/reuse routes converge on verification; validated promotion alone feeds the reusable library. Initial candidate-to-library arrow corrected; both drafts/prompts preserved. No engineering release, new benchmark, weight update, publication or change to G3 next action.
