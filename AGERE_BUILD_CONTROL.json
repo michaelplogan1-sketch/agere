@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-03T00:44:27.450589+00:00",
+  "updated_at": "2026-11-03T00:53:48.363957+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -392,9 +392,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "On-demand output behavior, observed clinical performance and actual-investigator transfer; independent qualification remains separate.",
+      "remaining_acceptance": "Actual-investigator transfer and observed clinical performance; independent model/clinical qualifications remain separate.",
       "engineering_current_status": "Priorfinite9/9alltenareas plus same-codeb4011fc ordinary57-patient HTTP confirmation, current dashboard/PDF and unchanged prior contexts; original clinical answer partial.",
-      "next_action": "Verify the ordinary question-answering path generates a deliverable only when requested, per Mike\u2019s latest instruction. Retain on-demand report/PDF capability; remove any demonstrated automatic export work from ordinary answers or repeated verification. Check the affected request path without another whole-cohort inference or routine PDF regeneration. Then return to the observed clinical reasoning/reuse bottleneck and the actual-investigator transfer comparison, preserving all ten areas and independent qualification requirements."
+      "next_action": "Complete the remaining parameterized-workplan comparison at the actual investigator boundary: reuse the existing automatically generated source-bound plan with fresh executors; compare Haiku-first and fixed Sonnet-only investigators on the same received synthetic source and bindings, retaining all failed attempts and exact independent numeric checks. Keep cross-domain transfer explicitly unqualified where the template cannot bind it. Do not repeat the whole clinical cohort or generate routine deliverables. Use this evidence to select useful reuse before any new training or model activation."
     },
     {
       "id": "G5",
@@ -472,28 +472,27 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_executable_engineering_release",
+    "kind": "on_demand_deliverables",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "A frozen current executable local release now reproduces saved answers and review work through installation,restart,actual uncommitted work rollback,fresh restore and HTTP; all six original workflow reads remain exact.",
-    "measured_failure_reduction": "Current whole-product acceptance and recovery no longer refer only to earlier product code.",
+    "user_behavior_delta": "PDF format selection uses only the current report request; saved-report workflow fulfillment and retry preserve the current quoted request. Ordinary answers continue to create no artifacts.",
+    "measured_failure_reduction": "A current HTML report no longer generates PDF because a previous question/workflow requested one.",
     "evidence": [
-      "artifacts/agere-engineering-release-2026-11-02/delivery-receipt.json",
-      "docs/agere/ENGINEERING_RELEASE_A32A2C5_2026-11-02.md"
+      "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json",
+      "docs/agere/ON_DEMAND_DELIVERABLES_2026-11-02.md"
     ],
-    "remaining_gap": "Clinical result remains partial:57 patients,58 review packets,522 unresolved field judgments. Independent source-family/clinical/model qualification remains open.; Latest ordinary clinical observation is1273.209 seconds,817 attempts,$2.68483958 known API equivalent; acceptable full-clinical latency and all-in economics remain unqualified.; Three automatic numeric transfers pass; the full-investigator and cross-domain comparison remains unqualified. No new weights or partial clinical whole-answer bottle is promoted.; Deliverables are on demand under Mike\u2019s latest instruction; verify ordinary requests do not generate unrequested PDF exports.; Customer deployment authority and outcome qualification remain separate; OWASP/HHS deferred.",
-    "next_action": "Verify the ordinary question-answering path generates a deliverable only when requested, per Mike\u2019s latest instruction. Retain on-demand report/PDF capability; remove any demonstrated automatic export work from ordinary answers or repeated verification. Check the affected request path without another whole-cohort inference or routine PDF regeneration. Then return to the observed clinical reasoning/reuse bottleneck and the actual-investigator transfer comparison, preserving all ten areas and independent qualification requirements.",
+    "remaining_gap": "The original57patient clinical analysis remains partial with522 unresolved field judgments; independent clinical/model/source-family qualification remains open.; Latest full-clinical observation remains1273.209s and$2.68483958API equivalent; this export correction does not establish a full-workflow speedup.; Actual-investigator/cross-domain transfer, equal-quality break-even and all-in economics remain unqualified; no whole clinical bottle or new weights activated.; Customer deployment/outcome qualification remain separate; OWASP/HHS deferred.",
+    "next_action": "Complete the remaining parameterized-workplan comparison at the actual investigator boundary: reuse the existing automatically generated source-bound plan with fresh executors; compare Haiku-first and fixed Sonnet-only investigators on the same received synthetic source and bindings, retaining all failed attempts and exact independent numeric checks. Keep cross-domain transfer explicitly unqualified where the template cannot bind it. Do not repeat the whole clinical cohort or generate routine deliverables. Use this evidence to select useful reuse before any new training or model activation.",
     "latest_review": "docs/agere/reviews/2026-11-02-claude-clinical-role-inputs.md",
-    "coordination": "All recovery/proof jobs terminal; owned8890 ready; source unfrozen; scheduler paused.",
+    "coordination": "Allcheckscomplete;owned8890ready;sourceunfrozen;schedulerpaused.",
     "remaining_blockers": [
-      "Clinical result remains partial:57 patients,58 review packets,522 unresolved field judgments. Independent source-family/clinical/model qualification remains open.",
-      "Latest ordinary clinical observation is1273.209 seconds,817 attempts,$2.68483958 known API equivalent; acceptable full-clinical latency and all-in economics remain unqualified.",
-      "Three automatic numeric transfers pass; the full-investigator and cross-domain comparison remains unqualified. No new weights or partial clinical whole-answer bottle is promoted.",
-      "Deliverables are on demand under Mike\u2019s latest instruction; verify ordinary requests do not generate unrequested PDF exports.",
-      "Customer deployment authority and outcome qualification remain separate; OWASP/HHS deferred."
+      "The original57patient clinical analysis remains partial with522 unresolved field judgments; independent clinical/model/source-family qualification remains open.",
+      "Latest full-clinical observation remains1273.209s and$2.68483958API equivalent; this export correction does not establish a full-workflow speedup.",
+      "Actual-investigator/cross-domain transfer, equal-quality break-even and all-in economics remain unqualified; no whole clinical bottle or new weights activated.",
+      "Customer deployment/outcome qualification remain separate; OWASP/HHS deferred."
     ],
-    "latest_progress": "Current9/9 ten-area engineering decision and fresh executable recovery/HTTP passed with zero providers.",
-    "results_report": "docs/agere/ENGINEERING_RELEASE_A32A2C5_2026-11-02.md",
+    "latest_progress": "36affectedchecks,current57patient/12rowanswerreopens,zero newcohortexports/providers.",
+    "results_report": "docs/agere/ON_DEMAND_DELIVERABLES_2026-11-02.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -522,13 +521,13 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "Currenta32a2c5:9/9engineering acrossalltenareas; six original API workflows and actual current executable recovery/HTTP.",
+      "current_engineering": "Priorcurrenta32a2c5nine-of-ninealltenareas/recovery; scoped22c8c27on-demandexportcorrection with36checks andexactHTTPanswers.",
       "all_ten_scope_areas_retained": true,
       "full_mvp_acceptance": false,
       "independent_clinical_model_qualification": false,
       "current_clinical_status": "partial",
       "current_financial_status": "answered",
-      "evidence": "artifacts/agere-engineering-release-2026-11-02/delivery-receipt.json"
+      "evidence": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json"
     },
     "latest_human_steering": "Accuracy,cost and useful innovation against strong simple baselines; frontier models for appropriate roles. PDF/deliverables only when requested, not every run. Existing synthetic/private-push authorization continues.",
     "comparison_status": {
@@ -544,9 +543,9 @@
       "clinical_quality": "Cohort/pillar source agreement in all arms; confirmed composition errors and incomplete max-dose assessment. No overall winner or cost-per-correct denominator.",
       "scope_correction": "artifacts/agere-app-reports-2026-10-28/comparison/scope-correction.json"
     },
-    "at": "2026-11-03T00:44:27.450589+00:00",
+    "at": "2026-11-03T00:53:48.363957+00:00",
     "workflow_change": [
-      "A frozen current executable local release now reproduces saved answers and review work through installation,restart,actual uncommitted work rollback,fresh restore and HTTP; all six original workflow reads remain exact."
+      "PDF format selection uses only the current report request; saved-report workflow fulfillment and retry preserve the current quoted request. Ordinary answers continue to create no artifacts."
     ],
     "unsealed_work": null,
     "bottling_assessment": {
@@ -634,7 +633,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Current whole-product acceptance and recovery no longer refer only to earlier product code.",
+    "measured_failure_removed": "A current HTML report no longer generates PDF because a previous question/workflow requested one.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -2748,6 +2747,14 @@
       "reason": "Current whole-product acceptance and recovery no longer refer only to earlier product code.",
       "scope_impact": "Alltenareas and model/clinical/transfer requirements retained. No routine PDF generation; no new models,thresholds,main merge or publication.",
       "evidence": "artifacts/agere-engineering-release-2026-11-02/delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-03T00:53:48.363957+00:00",
+      "gate": "G3",
+      "decision": "Keep deliverables on demand and return to actual-investigator reuse qualification.",
+      "reason": "A current HTML report no longer generates PDF because a previous question/workflow requested one.",
+      "scope_impact": "No scopearea removed; deliverable capability retained. No repeat wholecohort,PDF or fullrecovery.",
+      "evidence": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json"
     }
   ],
   "unsealed_work": null,
@@ -2778,7 +2785,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "Verify the ordinary question-answering path generates a deliverable only when requested, per Mike\u2019s latest instruction. Retain on-demand report/PDF capability; remove any demonstrated automatic export work from ordinary answers or repeated verification. Check the affected request path without another whole-cohort inference or routine PDF regeneration. Then return to the observed clinical reasoning/reuse bottleneck and the actual-investigator transfer comparison, preserving all ten areas and independent qualification requirements.",
+  "next_action": "Complete the remaining parameterized-workplan comparison at the actual investigator boundary: reuse the existing automatically generated source-bound plan with fresh executors; compare Haiku-first and fixed Sonnet-only investigators on the same received synthetic source and bindings, retaining all failed attempts and exact independent numeric checks. Keep cross-domain transfer explicitly unqualified where the template cannot bind it. Do not repeat the whole clinical cohort or generate routine deliverables. Use this evidence to select useful reuse before any new training or model activation.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -2787,5 +2794,5 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-03T00:44:27.450589+00:00"
+  "latest_checkpoint": "2026-11-03T00:53:48.363957+00:00"
 }

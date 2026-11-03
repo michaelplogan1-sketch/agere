@@ -58,7 +58,12 @@
       "matched_whole_workflow_improvement_claimed": false
     }
   },
-  "latest_scoped_followup": null,
+  "latest_scoped_followup": {
+    "product_commit": "22c8c2787fdfd6b1d28cc6a75f109e5fc2b5ba65",
+    "receipt": "artifacts/agere-on-demand-delivery-2026-11-02/delivery-receipt.json",
+    "scope": "On-demand export selection,36affectedchecks andexact current57patient/12rowHTTPread; zero newcohortexports/providers.",
+    "new_full_acceptance": false
+  },
   "decision_basis": "Current scoped code compatibility plus six real API reopens,fresh changed-path evidence and actual current executable install/restart/rollback/restore/HTTP.",
   "fresh_current_archive_or_recovery_execution_claimed": true
 }
