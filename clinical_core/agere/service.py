@@ -800,7 +800,14 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 if execution:
                     execution.finish(result)
                     result={**result,'request_execution_id':execution.id}
-                raw=json.dumps(result,allow_nan=False).encode();status=200
+                encoding=None
+                if path=='/api/stack/compose' and self.headers.get('X-Agere-Response-View')=='answer':
+                    from .deliverables.action_center import compose_view,encode_inspection
+                    result=compose_view(connected_stack.path,result)
+                    raw,encoding=encode_inspection(result,self.headers.get('Accept-Encoding',''))
+                else:
+                    raw=json.dumps(result,allow_nan=False).encode()
+                status=200
             except PermissionError as exc:
                 raw=json.dumps({'error':str(exc)[:400]}).encode();status=403
             except (ValueError,TypeError,KeyError) as exc:
@@ -819,6 +826,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                     if execution:execution.close()
                     held.close()
             self.send_response(status);self.send_header('Content-Type','application/json');self.send_header('Content-Length',str(len(raw)))
+            if path=='/api/stack/compose':
+                self.send_header('Vary','X-Agere-Response-View, Accept-Encoding')
+            if status==200 and encoding:self.send_header('Content-Encoding',encoding)
             self.send_header('Cache-Control','no-store');self.send_header('X-Content-Type-Options','nosniff');self.end_headers();self.wfile.write(raw)
         def do_GET(self):
             parsed=urlsplit(self.path);params=parse_qs(parsed.query)

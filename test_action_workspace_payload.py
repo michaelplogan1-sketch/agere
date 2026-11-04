@@ -2,9 +2,85 @@
 import copy
 import json
 import gzip
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
-from clinical_core.agere.deliverables.action_center import inspection_view, encode_inspection
+from clinical_core.agere.deliverables.action_center import inspection_view, encode_inspection, compose_view
+
+
+class ComposePayload(unittest.TestCase):
+    def setUp(self):
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=Path(self.temp.name);self.key='ANS-'+'a'*24
+        target=self.root/self.key;target.mkdir();self.file=target/'answer.json'
+        self.patch=patch('clinical_core.agere.deliverables.answer_context.root',return_value=self.root)
+        self.patch.start();self.addCleanup(self.patch.stop)
+        large='Full native observation; do not turn this into an accepted clinical fact. '*3000
+        graph={'interpretation':'Complete original scope','population':['A','B'],'nodes':[
+            {'id':'extra','operation':'sql','inputs':[],'parameters':{'query':'SELECT '+large},'purpose':'Retained investigation'},
+            {'id':'final','operation':'compose_table','inputs':['extra'],'parameters':{'base':'v'},'purpose':'Answer'}]}
+        review={'status':'repair','support':{'label':'unknown','decided_by':None,'packets':[{'quote':large}]},'feedback':'Review needed.'}
+        contract={'id':'contract','kind':'checked_graph','population':['A','B'],'graph':graph,'unresolved':['Eligibility unknown']}
+        answer={'status':'partial','verification':'unverified','table':[{'patient_id':'A','value':None},{'patient_id':'B','value':3}],
+                'row_prose':{'rows':[{'patient_id':'A','fields':{'reason':'Not documented.'}}]},'missing':['Eligibility unknown'],
+                'investigation_review':review}
+        self.result={'question':'Original question','answer':answer,'graph':graph,'request_contract':contract,
+            'planner_receipt':{'route':'backstop_agent','request_contract':contract,'backstop':{'answer_reviews':[review]}},
+            'investigation':{'model':'fixture','tool_calls':[{'name':'query_sql','input':{'sql':'SELECT 1'},'result':{'rows':[[1]],'trace':large}}],
+                             'answer_reviews':[review],'recovery_checkpoint':{'draft':answer}},
+            'action_context':{'id':self.key,'url':'/action-center?context='+self.key},
+            'cost_receipt':{'usd':None,'usd_known':False,'paid_calls':2},'cost_telemetry':{'attempt_ids':['one','two']},
+            'workflow':[],'conversation':{'id':'C','turn':2},'results':[{'complete':large}]}
+        self.context={**copy.deepcopy(self.result),'id':self.key,'dependencies':{'derivation':'exact-native-snapshot'}}
+        self.file.write_text(json.dumps(self.context))
+
+    def test_browser_view_preserves_original_graph_and_every_answer_and_accounting_field(self):
+        before=copy.deepcopy(self.result);native=self.file.read_bytes()
+        view=compose_view(self.root,self.result)
+        for key in ('answer','action_context','cost_receipt','cost_telemetry','workflow','conversation','question'):
+            self.assertEqual(view[key],before[key])
+        for shown,original in zip(view['graph']['nodes'],before['graph']['nodes']):
+            for key in ('id','operation','inputs','purpose'):self.assertEqual(shown[key],original[key])
+            ref=shown['parameters']['native_reference'];value=self.context
+            for part in ref['path']:value=value[part]
+            self.assertEqual(value,original['parameters']);self.assertEqual(ref['context_derivation'],'exact-native-snapshot')
+        self.assertEqual(len(view['graph']['nodes']),len(before['graph']['nodes']))
+        self.assertEqual(view['request_contract']['population'],['A','B'])
+        self.assertEqual(view['request_contract']['unresolved'],['Eligibility unknown'])
+        self.assertEqual(view['request_contract']['graph'],view['graph'])
+        self.assertTrue(view['investigation']['draft_resume_available'])
+        self.assertNotIn('tool_calls',view['investigation'])
+        self.assertEqual(view['results']['native_reference']['path'],['results'])
+        self.assertLess(len(json.dumps(view)),len(json.dumps(before))//3)
+        self.assertEqual(self.result,before);self.assertEqual(self.file.read_bytes(),native)
+
+    def test_missing_changed_or_unbound_native_record_falls_back_without_losing_the_answer(self):
+        for change in ('missing','id','graph','review','receipt','answer'):
+            context=copy.deepcopy(self.context)
+            if change=='id':context['id']='ANS-'+'b'*24
+            elif change=='graph':context['graph']['nodes'].pop()
+            elif change=='review':context['investigation']['answer_reviews'][0]['status']='confirmed'
+            elif change=='receipt':context['planner_receipt']['route']='other'
+            elif change=='answer':context['answer']['table'][0]['value']=99
+            self.file.write_text(json.dumps(context))
+            if change=='missing':self.file.unlink()
+            with self.subTest(change=change):self.assertIs(compose_view(self.root,self.result),self.result)
+        self.file.write_text(json.dumps(self.context))
+        for key in ('../../native','ANS-fixture',None):
+            result={**self.result,'action_context':{'id':key}}
+            self.assertIs(compose_view(self.root,result),result)
+
+    def test_saved_membership_does_not_rewrite_the_returned_answer_or_workflow(self):
+        self.context['answer']={**self.context['answer'],'patient_ids':['A','B'],'membership_role':'computed_population'}
+        self.file.write_text(json.dumps(self.context));result={**self.result,'workflow':[{'kind':'monitor','status':'watching'}]}
+        view=compose_view(self.root,result)
+        self.assertEqual(view['answer'],result['answer']);self.assertEqual(view['workflow'],result['workflow'])
+        self.assertFalse(view['investigation']['draft_resume_available'])
+
+    def test_json_encoding_does_not_emit_nonstandard_nan(self):
+        with self.assertRaises(ValueError):encode_inspection({'amount':float('nan')},'gzip')
 
 
 class WorkspacePayload(unittest.TestCase):

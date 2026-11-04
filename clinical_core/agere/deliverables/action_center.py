@@ -121,11 +121,83 @@ def inspection_view(record):
     }}
 
 
+def compose_view(path, result):
+    """Browser representation of a captured answer; native execution stays intact.
+
+    Only replace history that matches the immutable saved context. Keep the
+    ordinary response's graph, including operations outside the answer's
+    dependency graph, and every answer, workflow and accounting field.
+    """
+    import json
+    import re
+    from . import answer_context
+    key = (result.get('action_context') or {}).get('id')
+    investigation = result.get('investigation') or {}
+    if (not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key)
+            or not investigation.get('tool_calls')):
+        return result
+    try:
+        context = json.loads((answer_context.root(path) / key / 'answer.json').read_text())
+    except (OSError, ValueError):
+        return result
+    if (not isinstance(context, dict) or context.get('id') != key
+            or any(context.get(k) != result.get(k) for k in ('investigation', 'graph', 'planner_receipt'))):
+        return result
+    # Capture may add exact cohort membership; it must not change the answer
+    # represented here. No historical verdict is inherited by this projection.
+    def without_membership(answer):
+        return {k:v for k,v in (answer or {}).items() if k not in ('patient_ids', 'membership_role')}
+    if without_membership(context.get('answer')) != without_membership(result.get('answer')):
+        return result
+
+    def reference(location):
+        return {'native_context_id':key, 'path':location,
+                'context_derivation':(context.get('dependencies') or {}).get('derivation')}
+    graph = result.get('graph')
+    compact_graph = graph
+    if isinstance(graph, dict) and isinstance(graph.get('nodes'), list):
+        nodes = []
+        for index, node in enumerate(graph['nodes']):
+            shown = dict(node)
+            for field in ('parameters', 'output'):
+                if field in node:
+                    shown[field] = {'native_reference':reference(['graph', 'nodes', index, field])}
+            nodes.append(shown)
+        compact_graph = {**graph, 'nodes':nodes}
+
+    _, receipt, reviews = _review_projection(context)
+    def graphs(value):
+        if isinstance(value, dict):
+            return {k:(compact_graph if k == 'graph' and v == graph else graphs(v)) for k,v in value.items()}
+        if isinstance(value, list):
+            return [graphs(v) for v in value]
+        return value
+    receipt = graphs(receipt)
+    out = {**result, 'graph':compact_graph, 'planner_receipt':receipt,
+           'investigation':{
+               'model':investigation.get('model'),
+               'tool_call_count':len(investigation['tool_calls']),
+               'document_review_count':len(investigation.get('document_reviews') or []),
+               'answer_reviews':reviews,
+               'draft_resume_available':bool(investigation.get('recovery_checkpoint')) and not result.get('workflow'),
+               'native_reference':reference(['investigation']),
+               'complete_native_history_retained':True},
+           'response_projection':{'schema':'saved-compose-view/1', 'native_context_id':key,
+                                  'complete_native_history_retained':True,
+                                  'clinical_acceptance_changed':False}}
+    native_contract = (context.get('planner_receipt') or {}).get('request_contract')
+    if 'request_contract' in result and result['request_contract'] == native_contract:
+        out['request_contract'] = receipt.get('request_contract')
+    if result.get('results') is not None and result['results'] == context.get('results'):
+        out['results'] = {'native_reference':reference(['results'])}
+    return out
+
+
 def encode_inspection(record, accept_encoding=''):
     """Lossless standard HTTP compression, with explicit gzip refusal honored."""
     import gzip
     import json
-    raw=json.dumps(record,default=str).encode()
+    raw=json.dumps(record,default=str,allow_nan=False).encode()
     for entry in accept_encoding.split(','):
         name,*parameters=entry.strip().split(';')
         if name.strip().lower()!='gzip':continue
