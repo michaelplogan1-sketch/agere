@@ -219,6 +219,84 @@ class Harness(unittest.TestCase):
         with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'source_digest':'v1'}):
             return H.propose(executor,self.q,context,self.model,calls,lambda:self.executor(),proposal_result=result)
 
+    def test_shaped_empty_output_membership_does_not_revalidate_identical_native_work(self):
+        import copy
+        from clinical_core.agere.clinical import backstop_agent as B
+        original_execute=Executor.__call__
+        def patient_execute(executor,use):
+            result=original_execute(executor,use)
+            return {**result,'columns':['patient_id','value'],'rows':[['A',result['rows'][0][0]]]}
+        with patch.object(Executor,'__call__',patient_execute):
+            executor,calls=self.trajectory(2)
+            result=self.proposal_run();feedback='Coverage remains unresolved.'
+            result['answer'].update(table=[{'patient_id':'A','value':2}],patient_ids=[],limitations=[feedback],
+                table_binding={'result_view':'agere_result_2','rows':1,'copied_from_executed_result':True})
+            result['investigation']['answer_reviews'][0]['feedback']=feedback
+            candidate=self.propose_draft(executor,calls,result)
+            result['investigation']['recursive_improvement']={'candidate':candidate};H.finish(self.root,result)
+            context={**self.context,'question':self.q};fresh=self.executor()
+            replay=H.replay(fresh,self.q,context,self.model)
+            reviewed=[]
+            def review(answer,actual):
+                B.shaped(answer);reviewed.append(copy.deepcopy(answer))
+                self.assertEqual(actual,replay['calls'])
+                return copy.deepcopy(result['investigation']['answer_reviews'][0])
+            forbidden=lambda *a,**k:self.fail('Unchanged checked work must not execute again or call an actor')
+            current=S.tool_loop(self.q,'',[],forbidden,send=forbidden,model=self.model,max_tools=None,
+                initial_calls=replay['calls'],initial_answer=replay['resume_draft'],review=review)
+            self.assertEqual(len(fresh.executed),2);self.assertEqual(len(reviewed),1)
+            self.assertNotIn('patient_ids',current['answer'])
+            self.assertEqual(current['answer']['table'],result['answer']['table'])
+            with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'source_digest':'v1'}):
+                self.assertIsNone(H.propose(fresh,self.q,context,self.model,current['tool_calls'],forbidden,proposal_result=current))
+            selected=H.latest(self.root,H.identity(fresh,self.q,context,self.model))
+            self.assertEqual(selected['id'],candidate['id'])
+            self.assertEqual(selected['reviewable_draft']['patient_ids'],[])
+            # An explicit empty INPUT population is a distinct guard, not this output placeholder.
+            scoped=H.replay(self.executor(),self.q,{**context,'patient_scope':[]},self.model)
+            self.assertIsNone(scoped['used']);self.assertEqual(scoped['calls'],[])
+
+    def test_changed_proposal_or_same_length_action_still_requires_fresh_validation(self):
+        import copy
+        executor,calls=self.trajectory(2);result=self.proposal_run()
+        calls[0]['input']['comment']='Retained source meaning'
+        candidate=self.propose_draft(executor,calls,result)
+        result['investigation']['recursive_improvement']={'candidate':candidate};H.finish(self.root,result)
+        context={**self.context,'question':self.q}
+        for kind in ('headline','membership','source','action','input_order'):
+            changed=copy.deepcopy(result);actions=copy.deepcopy(calls);validated=[]
+            if kind=='headline':changed['answer']['headline']='A changed interpretation requires review.'
+            elif kind=='membership':changed['answer']['patient_ids']=['B']
+            elif kind=='source':changed['answer']['sources']=[{'record_id':'R2','date':'2030-01-01','quote':'New source'}]
+            elif kind=='action':actions[0]['input']['sql']='SELECT 99'
+            else:actions[0]['input']=dict(reversed(list(actions[0]['input'].items())))
+            def fresh():
+                check=self.executor();validated.append(check);return check
+            with self.subTest(kind=kind),patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'source_digest':'v1'}):
+                revision=H.propose(executor,self.q,context,self.model,actions,fresh,proposal_result=changed)
+                self.assertEqual(revision['status'],'validated_pending_complete_workflow')
+                self.assertEqual(len(validated),1);self.assertEqual(len(validated[0].executed),2)
+
+    def test_empty_output_membership_equivalence_preserves_interpreted_table_binding(self):
+        import copy
+        prose={'schema':'source-bound-row-prose/1','keys':['patient_id'],'rows':[{'key':{'patient_id':'A'},'fields':{'reason':'Source-bound explanation'}}]}
+        proposal={'answer_type':'table','patient_ids':[],'table_from_tool':'agere_result_1',
+            'table':[{'patient_id':'A','reason':'Source-bound explanation'}],'row_prose':prose,
+            'table_binding':{'result_view':'agere_result_1','rows':1,'copied_from_executed_result':False,
+                'native_columns_copied':True,'row_prose':{'schema':'source-bound-row-prose/1','proposal_digest':H.digest(prose)}}}
+        normalized=H._proposal_without_empty_output_membership(proposal)
+        self.assertNotIn('patient_ids',normalized);self.assertEqual(proposal['patient_ids'],[])
+        for kind in ('prose','binding','membership','empty_table','answer_type','result_view','rows'):
+            changed=copy.deepcopy(proposal)
+            if kind=='prose':changed['row_prose']['rows'][0]['fields']['reason']='Different explanation'
+            elif kind=='binding':changed['table_binding']['native_columns_copied']=False
+            elif kind=='membership':changed['patient_ids']=['B']
+            elif kind=='empty_table':changed['table']=[]
+            elif kind=='answer_type':changed['answer_type']='patient_set'
+            elif kind=='result_view':changed['table_from_tool']='agere_result_2'
+            else:changed['table_binding']['rows']=2
+            with self.subTest(kind=kind):self.assertEqual(H._proposal_without_empty_output_membership(changed),changed)
+
     def test_partial_proposal_replays_all_native_work_then_requires_current_review(self):
         import copy
         e,calls=self.trajectory(2);result=self.proposal_run();original=copy.deepcopy(result)

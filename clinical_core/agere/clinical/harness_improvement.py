@@ -549,6 +549,29 @@ def draft_proposal_evidence(result):
         'downstream_workflow':False,'full_current_review_required':True,'unresolved_joint_packets':[p['id']for p in pending]}
 
 
+def _proposal_without_empty_output_membership(proposal):
+    """Ignore the API's unused empty ID placeholder only on a bound patient table.
+
+    The answer shaper removes this placeholder on review. It is not a changed
+    clinical proposal. Input population scope remains in the identity guard;
+    actual output membership and every other field still compare exactly.
+    """
+    if not isinstance(proposal,dict) or proposal.get('patient_ids')!=[]:
+        return proposal
+    table=proposal.get('table');binding=proposal.get('table_binding')or{}
+    bound=isinstance(binding,dict) and (binding.get('copied_from_executed_result') is True or
+        binding.get('native_columns_copied') is True and isinstance(binding.get('row_prose'),dict)
+        and binding['row_prose'].get('schema')=='source-bound-row-prose/1'
+        and binding['row_prose'].get('proposal_digest')==digest(proposal.get('row_prose')))
+    if (proposal.get('answer_type')=='table' and isinstance(table,list) and table
+            and bound
+            and binding.get('result_view')==proposal.get('table_from_tool')
+            and binding.get('rows')==len(table)
+            and all(isinstance(row,dict) and isinstance(row.get('patient_id'),str) and row['patient_id'] for row in table)):
+        return {k:v for k,v in proposal.items() if k!='patient_ids'}
+    return proposal
+
+
 def propose(tools,question,context,model,calls,make_executor,final_answer=None,baseline_metrics=None,partial_result=None,proposal_result=None,
             retain_proposal=True):
     """Training feedback -> candidate -> fresh-executor validation -> pending selection.
@@ -594,9 +617,10 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
         except ValueError:return None
         if not checkpoint or checkpoint['review_contexts']:return None
     equivalent_proposal=(proposal is None or
-        (selected.get('reviewable_draft')==proposal if retain_proposal else
+        (_proposal_without_empty_output_membership(selected.get('reviewable_draft'))==_proposal_without_empty_output_membership(proposal) if retain_proposal else
          selected.get('qualification_mode')=='reviewed_partial_prefix' and not selected.get('reviewable_draft')))if selected else False
     if (selected and len(actions)<=len(selected['actions']) and (selected.get('final_answer') or final_answer is None)
+        and json.dumps(actions)==json.dumps(selected['actions'][:len(actions)])
         and equivalent_proposal):return None
     candidate={'schema':VERSION,'identity':key,'parent':parent['id'] if parent else None,
                'round':parent['round']+1 if parent else 1,'actions':actions,
