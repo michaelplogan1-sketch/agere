@@ -563,7 +563,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             result['answer']={**last_complete_candidate,'status':'partial','verification':'unverified',
                 'limitations':[*(last_complete_candidate.get('limitations')or[]),str(assessment.get('feedback')or assessment.get('reason'))]}
             if assessment.get('retry_disposition')=='retain_partial_until_new_evidence':
-                result['review_stopped']='unresolved_coverage'
+                result['review_stopped']=assessment.get('review_stop_reason')or'unresolved_coverage'
                 return result
         messages += [{'role':'assistant','content':json.dumps(candidate)},
                      {'role':'user','content':'Recheck the retained final draft against the current tool receipts; finish the unresolved work. '+str(assessment.get('feedback') or assessment.get('reason'))}]
@@ -809,7 +809,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                 'returned_answer':'last_structurally_complete_candidate','source_accepted':False}
                         else:result.pop('unaccepted_draft',None)
                         if assessment.get('retry_disposition')=='retain_partial_until_new_evidence':
-                            result['review_stopped']='unresolved_coverage'
+                            result['review_stopped']=assessment.get('review_stop_reason')or'unresolved_coverage'
                             return result
                         indeterminate=assessment.get('repair_kind')=='unresolved_verification'
                         compiler=assessment.get('repair_kind')=='deterministic_compiler'

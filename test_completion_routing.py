@@ -7,6 +7,27 @@ from unittest.mock import patch
 
 from clinical_core.agere import model_policy as M
 from clinical_core.agere.clinical import backstop_agent as B, semantic_analyst as S, system_one_gate as G
+from clinical_core.contracts import digest
+from clinical_core.agere.deliverables.receipts import compact_json,uncompact_json
+
+
+def joint_fixture():
+    claim={'id':'claim_1','field':'reason','path':['answer_rows',0,'reason']}
+    state={'patient_id':'A','answer_rows':[{'patient_id':'A','documentary':{'required_source_dependency':'doc'},'reason':'Review the received record.'}],
+        'claim_manifest':[claim],'source_dependency_contract':{'native_roundtrip_verified':True,'parent_fingerprint':'source',
+            'required_packet_ids':['child_A'],'deferred_source_claim_ids':['claim_0']}}
+    text=json.dumps(compact_json(state))
+    parent={'id':'patient_A','text':text,'claim_manifest':[claim],'patient_dependency_bound':True,
+        'dependency_complete':True,'source_context_complete':True,'source_dependency_roundtrip_verified':True,
+        'source_dependency_fingerprint':'source','source_dependency_patient_id':'A','required_source_packet_ids':['child_A']}
+    child={'id':'child_A','source_dependency_parent_id':'patient_A','source_dependency_fingerprint':'source',
+        'source_context_complete':True,'dependency_complete':True}
+    field={'claim_id':'claim_1','field':'reason','path':claim['path'],'value_digest':digest('Review the received record.'),
+        'verification_observation':{'state':'supported','model_judgment':{'label':'supported','decided_by':'fixture','probability':.9,'threshold':.8}}}
+    review={'all_fields_supported':True,'remaining_obligation':'complete_dependency_support','unresolved_count':0,'fault_count':0,
+        'packet_digest':digest(text),'manifest_digest':digest([claim]),'expected_count':1,'supported_count':1,'supported_claims':[field]}
+    return [parent,child],[{'id':'patient_A','label':'unknown','decided_by':None,'field_review':review},
+        {'id':'child_A','label':'supported','decided_by':'fixture'}]
 
 
 class CompletionRouting(unittest.TestCase):
@@ -30,6 +51,57 @@ class CompletionRouting(unittest.TestCase):
                                copy.deepcopy(self.answer),copy.deepcopy(self.calls),SimpleNamespace(read={}),
                                ledger=None,as_of='2030-05-27')
         return out,source_check.call_count,check.call_args
+
+    def test_joint_unknown_keeps_checks_but_stops_unlocated_prose_rewrites(self):
+        packets,results=joint_fixture();before=copy.deepcopy(results)
+        wait=B.joint_dependency_wait(packets,results)
+        self.assertEqual(wait,['patient_A']);self.assertEqual(results,before)
+        support={**self.support,'packets':results,'all_dependencies_checked':True,'joint_verification_wait':wait,'claim_feedback':[]}
+        assessment,_,_=self.review('answers_fully',decided=None,support=support)
+        self.assertEqual(assessment['status'],'repair');self.assertEqual(assessment['support']['label'],'unknown')
+        self.assertEqual(assessment['retry_disposition'],'retain_partial_until_new_evidence')
+        self.assertEqual(assessment['review_stop_reason'],'unresolved_source_support')
+        self.assertNotIn('prose_repair',assessment)
+        for initial in (True,False):
+            sent=[]
+            def send(body):
+                sent.append(body)
+                return {'content':[{'type':'text','text':json.dumps(self.answer)}]},0,False
+            out=S.tool_loop('Explain each patient.',[],[],lambda use:self.fail('Unexpected source acquisition'),
+                send=send,model=M.HAIKU,escalation_model=M.SONNET,max_tools=None,initial_calls=self.calls,
+                initial_answer=copy.deepcopy(self.answer)if initial else None,review=lambda a,c:copy.deepcopy(assessment))
+            self.assertEqual(len(sent),0 if initial else 1)
+            self.assertEqual(out['review_stopped'],'unresolved_source_support')
+            self.assertEqual(out['answer']['status'],'partial');self.assertEqual(out['answer']['verification'],'unverified')
+            self.assertFalse(out.get('model_escalations'))
+            from clinical_core.agere.clinical.harness_improvement import partial_prefix_evidence
+            self.assertIsNone(partial_prefix_evidence(out))
+        for changed in ({**support,'all_dependencies_checked':False},{**support,'joint_verification_wait':['different_packet']}):
+            self.assertNotIn('retry_disposition',self.review('answers_fully',decided=None,support=changed)[0])
+        self.assertNotIn('retry_disposition',self.review('answers_partially',decided='fixture',support=support)[0])
+
+    def test_joint_wait_requires_exact_fields_current_children_and_no_fault(self):
+        mutations=('missing_child','unknown_child','fault','field_unknown','stale_packet','stale_manifest','value',
+            'low_probability','nonfinite_probability','missing_field','child_family','incomplete_source','missing_roundtrip','deferred_contract')
+        for kind in mutations:
+            packets,results=joint_fixture();parent=packets[0];review=results[0]['field_review'];field=review['supported_claims'][0]
+            if kind=='missing_child':results.pop()
+            elif kind=='unknown_child':results[1].update(label='unknown',decided_by=None)
+            elif kind=='fault':results[0].update(label='contradicted',decided_by='fixture')
+            elif kind=='field_unknown':review.update(all_fields_supported=False,unresolved_count=1)
+            elif kind=='stale_packet':parent['text']+=' '
+            elif kind=='stale_manifest':review['manifest_digest']='changed'
+            elif kind=='value':field['value_digest']='changed'
+            elif kind=='low_probability':field['verification_observation']['model_judgment']['probability']=.79
+            elif kind=='nonfinite_probability':field['verification_observation']['model_judgment']['probability']=float('nan')
+            elif kind=='missing_field':review['supported_claims']=[]
+            elif kind=='child_family':packets[1]['source_dependency_fingerprint']='changed'
+            elif kind=='incomplete_source':packets[1]['source_context_complete']=False
+            elif kind=='missing_roundtrip':parent['source_dependency_roundtrip_verified']=False
+            elif kind=='deferred_contract':
+                state=uncompact_json(json.loads(parent['text']));state['source_dependency_contract']['deferred_source_claim_ids']=['invented']
+                parent['text']=json.dumps(compact_json(state));review['packet_digest']=digest(parent['text'])
+            with self.subTest(kind=kind):self.assertEqual(B.joint_dependency_wait(packets,results),[])
 
     def test_known_incomplete_draft_does_not_dispatch_patient_support(self):
         for label in ('answers_partially','answers_a_different_question'):

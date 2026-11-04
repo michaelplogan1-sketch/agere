@@ -1546,7 +1546,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         n, usd = gate.cost(support)
         assessment.update(support={k: support.get(k) for k in ('label', 'decided_by', 'probabilities', 'steps','packets','failed_packet_ids','claim_feedback','field_review_states',
                           'checked_source_packets','unchecked_packet_ids','packet_manifest_complete','all_dependencies_checked',
-                          'blocked_family_ids','global_stop')},
+                          'blocked_family_ids','global_stop','joint_verification_wait')},
                           calls=assessment['calls'] + n, cost_usd=assessment['cost_usd'] + usd)
         if coverage.get('decided_by') and coverage['label'] in ('answers_partially', 'answers_a_different_question'):
             feedback.append('Coverage check: ' + coverage['label'].replace('_', ' ') + '. Re-read every requested part, filter, period and comparison; supply the missing results.')
@@ -1581,7 +1581,16 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 # no evidence of an omission. Rewriting verified claims only
                 # invalidates their checks; retain a partial answer instead.
                 assessment['retry_disposition']='retain_partial_until_new_evidence'
-        if assessment['status']=='repair'and not numeric_unknown:
+            elif (support.get('joint_verification_wait')
+                    and support.get('all_dependencies_checked')is True
+                    and sorted(support['joint_verification_wait'])==sorted(p['id']for p in indeterminate['unresolved_verification'])
+                    and not support.get('claim_feedback')):
+                assessment.update(retry_disposition='retain_partial_until_new_evidence',
+                    review_stop_reason='unresolved_source_support',
+                    reason='Every bound parent field and required source child has a deciding support check, '
+                        'but their combined dependency remains undecided. No located field fault justifies rewriting '
+                        'the retained answer; keep source support and coverage unresolved until new evidence or review.')
+        if assessment['status']=='repair'and not numeric_unknown and not assessment.get('retry_disposition'):
             from .execution_state import source_prose_repair
             targeted=source_prose_repair(answer,support,packets,coverage)
             if targeted:assessment['prose_repair']=targeted
@@ -2508,7 +2517,66 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         'checked_source_packets':len(observed),'unchecked_packet_ids':unchecked,
         'packet_manifest_complete':True,'blocked_family_ids':sorted(blocked),'global_stop':stopped,
         'all_dependencies_checked':not unchecked,'failed_packet_ids':[r['id']for r in failed],
-        'claim_feedback':feedback,'field_review_states':dict(sorted(review_states.items()))}
+        'claim_feedback':feedback,'field_review_states':dict(sorted(review_states.items())),
+        'joint_verification_wait':joint_dependency_wait(scheduled,results)if not unchecked and not failed and not feedback else []}
+
+
+def joint_dependency_wait(packets,results):
+    """Identify fully checked partition parents with no located repair target.
+
+    This is a stop decision, never support composition or answer acceptance.
+    Exact fields and source children stay supported; the joint vote stays unknown.
+    """
+    from ..deliverables.receipts import uncompact_json
+    from ...contracts import digest
+    producers={p['id']:p for p in packets};checked={r['id']:r for r in results}
+    if len(producers)!=len(packets)or len(checked)!=len(results)or set(producers)!=set(checked):return []
+    pending=[r for r in results if r.get('label')!='supported'or not r.get('decided_by')]
+    try:
+        for result in pending:
+            packet=producers[result['id']];review=result.get('field_review')or{}
+            children=packet.get('required_source_packet_ids')
+            if (result.get('label')!='unknown'or result.get('decided_by')or result.get('claim_feedback')
+                or packet.get('patient_dependency_bound')is not True or packet.get('dependency_complete')is not True
+                or packet.get('source_context_complete')is not True or packet.get('source_dependency_roundtrip_verified')is not True
+                or not packet.get('source_dependency_fingerprint')or packet.get('source_dependency_parent_id')
+                or not isinstance(children,list)or not children or len(set(children))!=len(children)
+                or review.get('all_fields_supported')is not True or review.get('remaining_obligation')!='complete_dependency_support'
+                or review.get('unresolved_count')!=0 or review.get('fault_count')!=0):return []
+            for child in children:
+                source=producers[child];verdict=checked[child]
+                if (source.get('source_dependency_parent_id')!=packet['id']
+                    or source.get('source_dependency_fingerprint')!=packet['source_dependency_fingerprint']
+                    or source.get('source_context_complete')is not True or source.get('dependency_complete')is not True
+                    or verdict.get('label')!='supported'or not verdict.get('decided_by')):return []
+            state=uncompact_json(json.loads(packet['text']));rows=state['answer_rows'];claims=packet['claim_manifest']
+            if not rows or any(r.get('patient_id')!=packet['source_dependency_patient_id']for r in rows):return []
+            # Deferred documentary fields remain as native source references
+            # in the parent. Their original IDs belong to checked children.
+            contract=state.get('source_dependency_contract')or{};deferred=contract.get('deferred_source_claim_ids')
+            expected=[{'id':'claim_'+str(n),'field':str(k),'path':['answer_rows',i,k]}
+                for n,(i,k)in enumerate((i,k)for i,row in enumerate(rows)for k in row if k!='patient_id')]
+            if (contract.get('native_roundtrip_verified')is not True
+                or contract.get('parent_fingerprint')!=packet['source_dependency_fingerprint']
+                or contract.get('required_packet_ids')!=children or not isinstance(deferred,list)
+                or any(not isinstance(i,str)for i in deferred)or len(set(deferred))!=len(deferred)
+                or not set(deferred)<={c['id']for c in expected}):return []
+            expected=[c for c in expected if c['id']not in deferred]
+            supported=review.get('supported_claims')
+            if (not claims or claims!=expected or state.get('claim_manifest')!=claims
+                or review.get('packet_digest')!=digest(packet['text'])or review.get('manifest_digest')!=digest(claims)
+                or review.get('expected_count')!=len(claims)or review.get('supported_count')!=len(claims)
+                or not isinstance(supported,list)or len(supported)!=len(claims)):return []
+            for claim,reading in zip(claims,supported):
+                observed=reading.get('verification_observation')or{};judgment=observed.get('model_judgment')or{}
+                p,threshold=judgment.get('probability'),judgment.get('threshold')
+                if (reading.get('claim_id')!=claim['id']or any(reading.get(k)!=claim[k]for k in ('field','path'))
+                    or reading.get('value_digest')!=digest(_claim_value(state,claim['path']))
+                    or observed.get('state')!='supported'or judgment.get('label')!='supported'or not judgment.get('decided_by')
+                    or type(p)not in(int,float)or type(threshold)not in(int,float)
+                    or not math.isfinite(p)or not math.isfinite(threshold)or not 0<threshold<=p<=1):return []
+        return [r['id']for r in pending]
+    except (ValueError,KeyError,TypeError,IndexError):return []
 
 
 def field_review_observation(reading,steps,claim_id):
