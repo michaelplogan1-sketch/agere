@@ -10,7 +10,7 @@ from clinical_core.contracts import digest
 class ProseRepairs(unittest.TestCase):
     def test_compact_literal_binding_runs_existing_full_review_without_rewriting(self):
         feedback=self.located_failure();original=copy.deepcopy(self.base);reviews=[]
-        address={'result_view':'agere_result_1','row':0,'column':'events'}
+        address={'result_view':'agere_result_1','where':[],'column':'events'}
         def review(candidate,calls):
             reviews.append(copy.deepcopy(candidate))
             if len(reviews)==1:return feedback
@@ -56,12 +56,23 @@ class ProseRepairs(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'preserve the exact value'):
             E.bind_prose_literals('Three events',{'bind_literals':[{'literal':'Three','binding':address}]},native)
 
+    def test_word_literal_cannot_change_a_drug_name_or_other_larger_word(self):
+        native={'agere_result_1':{'columns':['patient_id','n'],'rows':[['A',1]],'truncated':False}}
+        address={'result_view':'agere_result_1','column':'n','where':[]}
+        text='Spironolactone: one observation; someone recorded one more.'
+        operation={'bind_literals':[{'literal':'one','binding':address,'occurrence':i}for i in (0,1)]}
+        out=E.bind_prose_literals(text,operation,native,key={'patient_id':'A'})
+        self.assertEqual(E.repair_rendered_value(out,native),'Spironolactone: 1 observation; someone recorded 1 more.')
+        self.assertEqual(E.canonical_repair_prose(text),E.canonical_repair_prose(E.repair_rendered_value(out,native)))
+        with self.assertRaisesRegex(ValueError,'matches'):
+            E.bind_prose_literals('Spironolactone',{'bind_literals':[{'literal':'one','binding':address}]},native,key={'patient_id':'A'})
+
     def test_compact_binding_cannot_bypass_entity_basis_or_source_meaning_boundary(self):
         feedback=self.located_failure();self.calls[0]['result']['rows'][1][1]=2
         address={'result_view':'agere_result_1','row':1,'column':'events'}
         proposal=self.patch(review={'bind_literals':[{'literal':'two','binding':address}]})
-        merged=E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback)
-        with self.assertRaisesRegex(ValueError,'declared evidence bases'):self.compile(merged)
+        with self.assertRaisesRegex(E.BindingReferenceError,'another entity'):
+            E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback)
         before=copy.deepcopy(self.base)
         with self.assertRaisesRegex(ValueError,'binding-only'):
             E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback={**feedback,
@@ -78,6 +89,9 @@ class ProseRepairs(unittest.TestCase):
         self.assertEqual(row['key']['properties']['patient_id']['enum'],['A'])
         self.assertEqual(set(row['fields']['properties']),{'review'})
         self.assertEqual(row['fields']['properties']['review']['required'],['bind_literals'])
+        self.assertNotIn('basis_additions',row)
+        binding=row['fields']['properties']['review']['properties']['bind_literals']['items']['properties']['binding']
+        self.assertEqual(set(binding['properties']),{'result_view','column','where'})
         operation={'bind_literals':[{'literal':'two','binding':{'result_view':'agere_result_1','row':0,'column':'events'}}]}
         proposal=self.patch(review=operation)
         self.compile(E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback))
@@ -92,6 +106,67 @@ class ProseRepairs(unittest.TestCase):
                 E.apply_prose_repair(changed,self.base,calls=self.calls,feedback=feedback)
         self.assertIsNone(E.binding_repair_schema({**focus,'intent':'source_meaning_review'}))
         self.assertIsNone(E.binding_repair_schema({**focus,'targets':[{**focus['targets'][0],'code':'invalid_row_prose'}]}))
+
+    def test_keyed_binding_resolves_reordered_source_rows_and_derives_bases(self):
+        feedback=self.located_failure();original=copy.deepcopy(self.base)
+        for rows in ([['B','b',2],['A','old',9],['A','current',2]],
+                     [['A','current',2],['B','b',2],['A','old',9]]):
+            calls=copy.deepcopy(self.calls)+[{'name':'query_sql','result':{'result_view':'agere_result_2',
+                'columns':['patient_id','record_id','events'],'rows':rows,'truncated':False}}]
+            binding={'result_view':'agere_result_2','column':'events','where':[{'column':'record_id','value':'current'}]}
+            proposal=self.patch(review={'bind_literals':[{'literal':'two','binding':binding}]})
+            merged=E.apply_prose_repair(proposal,self.base,calls=calls,feedback=feedback)
+            row=merged['row_prose']['rows'][0];index=rows.index(['A','current',2])
+            self.assertEqual(row['basis'],original['row_prose']['rows'][0]['basis']+[{'result_view':'agere_result_2','row':index}])
+            self.assertEqual(next(iter(row['fields']['review']['bindings'].values())),{'result_view':'agere_result_2','row':index,'column':'events'})
+            # No accepted answer is created by the selector; the existing full
+            # compiler must still consume the resolved source-address contract.
+            B.materialize_table(merged,calls);B.bind_computed_prose(merged,calls)
+            self.assertEqual(E.repair_rendered_value(row['fields']['review'],{c['result']['result_view']:c['result']for c in calls}),
+                'Review 2 events on 2030-01-01; preserve the uncertainty.')
+            self.assertEqual(self.base,original)
+
+    def test_key_selection_rejects_ambiguity_foreign_missing_incomplete_and_bad_filters(self):
+        feedback=self.located_failure();original=copy.deepcopy(self.base)
+        extra={'name':'query_sql','result':{'result_view':'agere_result_2','columns':['patient_id','record_id','events'],
+            'rows':[['A','a',2],['A','b',2],['B','b',2]],'truncated':False}}
+        good={'result_view':'agere_result_2','column':'events','where':[{'column':'record_id','value':'a'}]}
+        for kind in ('ambiguous','missing','foreign','column','duplicate','incomplete','mixed_address','nonscalar','wrong_value'):
+            calls=copy.deepcopy(self.calls)+[copy.deepcopy(extra)];binding=copy.deepcopy(good)
+            if kind=='ambiguous':binding['where']=[]
+            if kind=='missing':binding['where'][0]['value']='absent'
+            if kind=='foreign':binding['where']=[{'column':'patient_id','value':'B'}]
+            if kind=='column':binding['where'][0]['column']='absent'
+            if kind=='duplicate':binding['where']*=2
+            if kind=='incomplete':calls[-1]['result']['truncated']=True
+            if kind=='mixed_address':binding['row']=0
+            if kind=='nonscalar':binding['where'][0]['value']={}
+            if kind=='wrong_value':calls[-1]['result']['rows'][0][-1]=3
+            with self.subTest(kind=kind),self.assertRaises(E.BindingReferenceError)as error:
+                E.apply_prose_repair(self.patch(review={'bind_literals':[{'literal':'two','binding':binding}]}),
+                    self.base,calls=calls,feedback=feedback)
+            self.assertEqual(error.exception.detail['key'],{'patient_id':'A'})
+            self.assertEqual(error.exception.detail['field'],'review');self.assertEqual(self.base,original)
+
+    def test_key_selector_requires_all_compound_keys_and_type_exact_values(self):
+        native={'agere_result_2':{'columns':['entity','period','record','value'],
+            'rows':[['A',2030,1,2],['A',2029,True,2],['A',2030,None,2]],'truncated':False}}
+        binding={'result_view':'agere_result_2','column':'value','where':[{'column':'record','value':1}]}
+        self.assertEqual(E.resolve_prose_binding(binding,native,{'entity':'A','period':2030})['row'],0)
+        for key in ({'entity':'A','period':2029},{'entity':'A','period':2030,'missing':'key'},None):
+            with self.assertRaises(ValueError):E.resolve_prose_binding(binding,native,key)
+        binding['where'][0]['value']=None
+        self.assertEqual(E.resolve_prose_binding(binding,native,{'entity':'A','period':2030})['row'],2)
+
+    def test_ambiguous_literal_feedback_names_exact_field_literal_and_match_count(self):
+        feedback=self.located_failure();self.base['row_prose']['rows'][0]['fields']['review']='two and two'
+        feedback=B.review_final(SimpleNamespace(),'Explain each entity',self.base,self.calls,
+            SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+        proposal=self.patch(review={'bind_literals':[{'literal':'two','binding':{'result_view':'agere_result_1','column':'events','where':[]}}]})
+        with self.assertRaises(E.BindingReferenceError)as error:
+            E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback)
+        self.assertEqual(error.exception.detail['field'],'review')
+        self.assertIn('"matches": 2',error.exception.detail['reason']);self.assertIn('"literal": "two"',error.exception.detail['reason'])
 
     def test_binding_reading_selects_explicit_records_without_hiding_native_rows(self):
         for cite in (True,False):

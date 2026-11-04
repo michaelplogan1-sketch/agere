@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/17'
+VERSION = 'execution-state/18'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -23,6 +23,14 @@ class BindingPreservationError(ValueError):
     def failure_identity(self):
         # A new temporary SQL alias does not make the same failed field progress.
         return {k:self.detail[k]for k in ('code','key','field')}
+
+
+class BindingReferenceError(ValueError):
+    """Locate a rejected native binding without discarding the original draft."""
+
+    def __init__(self,key,field,reason):
+        self.detail={'code':'binding_reference_invalid','key':key,'field':field,'reason':str(reason)}
+        super().__init__(json.dumps(self.detail))
 
 
 def operational_feedback_result(result):
@@ -213,11 +221,16 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
             target=located.get((ident,field))
             if targets and target is None:
                 raise ValueError('A focused repair may edit only the producer-located fields')
+            derived=[]
             if isinstance(value,dict)and 'bind_literals'in value:
                 if (not target or target['code']not in ('unbound_literal','missing_scalar_source')
                         or feedback.get('prose_repair',{}).get('intent')=='source_meaning_review'):
                     raise ValueError('Literal binding edits require a located binding-only compiler failure')
-                value=bind_prose_literals(existing[ident]['fields'][field],value,native)
+                try:
+                    value=bind_prose_literals(existing[ident]['fields'][field],value,native,
+                        key=edit['key'],resolved_bases=derived)
+                except ValueError as exc:
+                    raise BindingReferenceError(edit['key'],field,exc)from exc
             if target and target['code']in ('unbound_literal','missing_scalar_source'):
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native)
@@ -228,6 +241,12 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
                     rejected.append(error)
                     continue
             accepted[field]=value
+            # Compact edits already resolve complete same-entity scalar rows.
+            # Derive their bases once; do not ask the actor to repeat addresses.
+            for address in derived:
+                pair=(address['result_view'],address['row'])
+                if pair not in addresses:
+                    addresses.add(pair);extra=[*extra,address]
         changes[ident]={k:v for k,v in accepted.items()if existing[ident]['fields'][k]!=v}
         additions[ident]=extra if accepted else []
     if rejected and not any(changes.values()):raise rejected[0]
@@ -247,7 +266,45 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
     return merged
 
 
-def bind_prose_literals(value,operation,native):
+def resolve_prose_binding(address,native,key):
+    """Resolve exact entity/source keys to the existing native scalar contract."""
+    from .result_assembly import _rows,incomplete_reason
+    if (not isinstance(address,dict)or set(address)not in ({'result_view','row','column'},{'result_view','where','column'})
+            or not isinstance(address['result_view'],str)or address['result_view']not in native
+            or not isinstance(address['column'],str)):
+        raise ValueError('Binding requires an executed result_view, column and either where or row')
+    result=native[address['result_view']]
+    if incomplete_reason(result):raise ValueError('Binding has incomplete source dependencies')
+    columns,rows=_rows(result)
+    if address['column']not in columns:raise ValueError('Binding column is unavailable: '+address['column'])
+    if 'where'in address:
+        if not isinstance(key,dict)or not key:raise ValueError('Key-selected binding requires the original entity key')
+        filters=address['where']
+        if not isinstance(filters,list):raise ValueError('Binding where must be exact column/value filters')
+        selected={}
+        for item in filters:
+            if (not isinstance(item,dict)or set(item)!={'column','value'}or not isinstance(item['column'],str)
+                    or item['column']not in columns or item['column']in selected
+                    or item['value']is not None and type(item['value'])not in(str,int,float,bool)):
+                raise ValueError('Binding filters require unique native columns and scalar values')
+            if item['column']in key and digest(item['value'])!=digest(key[item['column']]):
+                raise ValueError('Binding filter cannot change the original entity key')
+            selected[item['column']]=item['value']
+        selected.update(key)
+        matches=[i for i,row in enumerate(rows)if all(k in row and digest(row[k])==digest(v)for k,v in selected.items())]
+        if len(matches)!=1:
+            raise ValueError('Binding selection requires exactly one same-entity row: '+json.dumps({
+                'result_view':address['result_view'],'column':address['column'],'where':filters,'matches':len(matches)}))
+        index=matches[0]
+    else:
+        index=address['row']
+        if type(index)is not int or not 0<=index<len(rows):raise ValueError('Binding row is unavailable')
+    if key is not None and any(k not in rows[index]or digest(rows[index][k])!=digest(v)for k,v in key.items()):
+        raise ValueError('Binding row belongs to another entity or lacks its keys')
+    return {'result_view':address['result_view'],'row':index,'column':address['column']}
+
+
+def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None):
     """Attach native cells to unchanged literal spans, without model rewriting.
 
     This only constructs the existing scalar template contract. The ordinary
@@ -266,27 +323,34 @@ def bind_prose_literals(value,operation,native):
                 raise ValueError('Literal binding requires plain existing placeholders')
             parts.append((literal,name))
     replacements={};used=set(bindings)
-    for edit in operation['bind_literals']:
+    for edit_index,edit in enumerate(operation['bind_literals']):
         if (not isinstance(edit,dict)or not {'literal','binding'}<=set(edit)
                 or set(edit)-{'literal','binding','occurrence'}or not isinstance(edit['literal'],str)or not edit['literal']):
             raise ValueError('Each literal edit requires exact literal text and an executed scalar binding')
         literal=edit['literal'];matches=[]
+        # Number words are words, never suffixes inside source/drug names.
+        # Numeric and multiword literals keep their exact substring contract.
+        pattern=(r'(?<!\w)'+re.escape(literal)+r'(?!\w)')if literal.isalpha()else re.escape(literal)
         for index,(text,_)in enumerate(parts):
-            matches.extend((index,m.start(),m.end())for m in re.finditer(re.escape(literal),text))
+            matches.extend((index,m.start(),m.end())for m in re.finditer(pattern,text))
         if 'occurrence'not in edit and len(matches)!=1:
-            raise ValueError('Literal must occur exactly once, or specify its zero-based occurrence outside existing placeholders')
+            raise ValueError('Literal must occur exactly once, or specify its zero-based occurrence outside existing placeholders: '
+                +json.dumps({'edit':edit_index,'literal':literal,'matches':len(matches)}))
         occurrence=edit.get('occurrence',0)
         if type(occurrence)is not int or occurrence<0 or occurrence>=len(matches):
-            raise ValueError('Literal occurrence is unavailable outside existing placeholders')
+            raise ValueError('Literal occurrence is unavailable outside existing placeholders: '
+                +json.dumps({'edit':edit_index,'literal':literal,'occurrence':occurrence,'matches':len(matches)}))
         index,start,end=matches[occurrence]
         if any(start<b and a<end for a,b,_ in replacements.get(index,[])):
             raise ValueError('Literal binding edits cannot overlap')
-        rendered=repair_rendered_value({'template':'{value}','bindings':{'value':edit['binding']}},native)
+        address=resolve_prose_binding(edit['binding'],native,key)
+        rendered=repair_rendered_value({'template':'{value}','bindings':{'value':address}},native)
         if canonical_repair_prose(literal)!=canonical_repair_prose(rendered):
             raise ValueError('Literal binding must preserve the exact value; query its actual source instead of changing the sentence')
         serial=len(used);name='bound_literal_'+str(serial)
         while name in used:serial+=1;name='bound_literal_'+str(serial)
-        used.add(name);bindings[name]=edit['binding'];replacements.setdefault(index,[]).append((start,end,name))
+        used.add(name);bindings[name]=address;replacements.setdefault(index,[]).append((start,end,name))
+        if resolved_bases is not None:resolved_bases.append({k:address[k]for k in ('result_view','row')})
     template=[]
     escape=lambda text:text.replace('{','{{').replace('}','}}')
     for index,(text,name)in enumerate(parts):
@@ -309,13 +373,14 @@ def binding_repair_schema(focus):
         return None
     def obj(properties,required=None):
         return {'type':'object','properties':properties,'required':list(properties)if required is None else required,'additionalProperties':False}
-    address={'result_view':{'type':'string'},'row':{'type':'integer','minimum':0}}
-    edit=obj({'literal':{'type':'string','minLength':1},'binding':obj({**address,'column':{'type':'string'}}),
+    selector=obj({'column':{'type':'string'},'value':{'type':['string','number','boolean','null']}})
+    address={'result_view':{'type':'string'},'column':{'type':'string'},'where':{'type':'array','items':selector}}
+    edit=obj({'literal':{'type':'string','minLength':1},'binding':obj(address),
               'occurrence':{'type':'integer','minimum':0}},['literal','binding'])
     field=obj({'bind_literals':{'type':'array','items':edit,'minItems':1}})
     fields={t['field']:field for t in focus['targets']}
     key=obj({k:{'enum':list({digest(t['key'][k]):t['key'][k]for t in focus['targets']}.values())}for k in focus['keys']})
-    row=obj({'key':key,'fields':obj(fields,[]),'basis_additions':{'type':'array','items':obj(address)}},['key','fields'])
+    row=obj({'key':key,'fields':obj(fields,[])})
     return obj({'repair_draft':obj({'draft_digest':{'enum':[focus['draft_digest']]},'rows':{'type':'array','items':row}})})
 
 
@@ -569,11 +634,16 @@ def focused_prose_state(candidate,feedback,calls):
             'Repair only the named fields. Preserve each original sentence, numerical details, units, dates and uncertainty; '
             'use scalar bindings rather than deleting facts. Number words may become the equivalent numeral. '
             'For binding-only repairs prefer the compact field value {"bind_literals":[{"literal":"exact unbound text",'
-            '"binding":{"result_view":"an executed view","row":0,"column":"its scalar column"}}]}. '
+            '"binding":{"result_view":"an executed view","column":"its scalar column",'
+            '"where":[{"column":"record_id","value":"the exact source ID"}]}}]}. '
             'Code attaches each binding to that exact span in the retained sentence and preserves all existing placeholders. '
+            'Alphabetic literals match whole words only, never part of another word. '
             'Do not repeat or rewrite the sentence. If the literal occurs more than once outside placeholders, include '
             '"occurrence":zero_based_index for the intended occurrence in the ORIGINAL template. '
-            'The cell must reproduce the same text/value; normal same-entity basis_additions and complete review still apply. '
+            'The original entity key is always applied by code. Use exact native source/date/field filters to select one row; '
+            'where:[] is valid only when that view has exactly one row for this entity. Do not count native row positions. '
+            'Code resolves the scalar address and derives basis additions; do not supply basis_additions for these compact edits. '
+            'The cell must reproduce the same text/value; complete compilation and source review still apply. '
             'Do not copy draft numbers or entity IDs into source-free SQL constants: that cannot establish an evidence binding. '
             'Every other native row, original prose field and source remains retained and receives the complete review. '
             'Additional basis rows must carry the same entity keys. For a source value inside a nested column, use query_sql '
