@@ -542,13 +542,16 @@ def draft_proposal_evidence(result):
         'downstream_workflow':False,'full_current_review_required':True,'unresolved_joint_packets':[p['id']for p in pending]}
 
 
-def propose(tools,question,context,model,calls,make_executor,final_answer=None,baseline_metrics=None,partial_result=None,proposal_result=None):
+def propose(tools,question,context,model,calls,make_executor,final_answer=None,baseline_metrics=None,partial_result=None,proposal_result=None,
+            retain_proposal=True):
     """Training feedback -> candidate -> fresh-executor validation -> pending selection.
 
     No model callback is removed until validation and the relevant terminal
     outcome qualify it. Evidence review always runs after replay; a partial
     prefix stores no final draft. A separately qualified proposal requires every
     action, its current native result, and a new complete review on each replay.
+    retain_proposal=False bottles only that checked native work, so a new
+    composition can be measured without supplying the previous final proposal.
     """
     if not enabled():return None
     partial_evidence=partial_prefix_evidence(partial_result)if partial_result is not None else None
@@ -557,6 +560,8 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
     proposal_evidence=draft_proposal_evidence(proposal_result)if proposal_result is not None else None
     if proposal_result is not None and (not proposal_evidence or final_answer is not None or partial_result is not None):
         raise ValueError('Reviewable proposal needs checked unfinished work and no accepted final answer')
+    if type(retain_proposal)is not bool or not retain_proposal and not proposal_evidence:
+        raise ValueError('Withholding a proposal requires its complete checked partial-run evidence')
     proposal=copy.deepcopy((proposal_result.get('answer')or(proposal_result.get('investigation')or{}).get('answer')))if proposal_evidence else None
     key=identity(tools,question,context,model);selected=latest(tools.stack.path,key);parent=latest(tools.stack.path,key,selected=False)
     actions=[];boundary=None
@@ -594,7 +599,10 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
     if partial_evidence:
         candidate.update(qualification_mode='source_supported_partial_prefix',partial_execution_evidence=partial_evidence)
     if proposal is not None:
-        candidate.update(qualification_mode='reviewable_partial_proposal',reviewable_draft=proposal,proposal_evidence=proposal_evidence)
+        if retain_proposal:
+            candidate.update(qualification_mode='reviewable_partial_proposal',reviewable_draft=proposal,proposal_evidence=proposal_evidence)
+        else:
+            candidate.update(qualification_mode='reviewed_partial_prefix',prefix_review_evidence=proposal_evidence)
     ident=digest(candidate);db=database(tools.stack.path)
     try:
         with db:
@@ -602,7 +610,7 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
             # and embedded JSON text. Preserve the validated action, including
             # nested mapping order, instead of sorting it for storage.
             db.execute('INSERT OR IGNORE INTO harness_candidates VALUES (?,?)',(ident,json.dumps(candidate)))
-            event(db,ident,'candidate',{'training_feedback':'Checked unfinished analysis supplied a proposal for current review, never an accepted answer'if proposal is not None else'Source-supported partial analysis supplied a read-only prefix; final answer remains unaccepted'if partial_evidence else'Complete checked analysis supplied the current native action trajectory',
+            event(db,ident,'candidate',{'training_feedback':('Checked native work retained without the final proposal'if not retain_proposal else'Checked unfinished analysis supplied a proposal for current review, never an accepted answer')if proposal is not None else'Source-supported partial analysis supplied a read-only prefix; final answer remains unaccepted'if partial_evidence else'Complete checked analysis supplied the current native action trajectory',
                                       'failed_request_feedback_events':[seq for seq,payload in db.execute(
                                           "SELECT seq,payload FROM harness_candidate_events WHERE kind='failed_request'")
                                           if json.loads(payload).get('question_digest')==digest(question)],
@@ -666,7 +674,11 @@ def _finish(path,result):
         proposal_only=(config.get('qualification_mode')=='reviewable_partial_proposal'
             and isinstance(config.get('reviewable_draft'),dict)and config.get('final_answer')is None
             and not expected and not actual_steps and draft_proposal_evidence(result)is not None)
-        execution_qualified=complete or execution_only or proposal_only
+        reviewed_prefix=(config.get('qualification_mode')=='reviewed_partial_prefix'
+            and 'reviewable_draft'not in config and config.get('final_answer')is None
+            and not expected and not actual_steps and config.get('prefix_review_evidence')==draft_proposal_evidence(result)
+            and bool(config.get('prefix_review_evidence')))
+        execution_qualified=complete or execution_only or proposal_only or reviewed_prefix
         regression=False
         actual=info.get('actor_metrics') or {}
         receipt=result.get('cost_receipt') or {}
@@ -688,6 +700,7 @@ def _finish(path,result):
             event(db,ident,'outcome',{'complete_request':complete,'workflow_statuses':[s.get('status') for s in result.get('workflow',[])],
                                     'execution_only_prefix_qualified':bool(execution_only),
                                     'reviewable_proposal_qualified':bool(proposal_only),
+                                    'reviewed_native_prefix_qualified':bool(reviewed_prefix),
                                     'candidate_selection_enabled':selecting,'clinical_qualification':False,
                                     'feedback':(result.get('answer') or {}).get('missing',[]),'actor_metrics':actual,
                                     'observed_actor_cost_regression':regression,
@@ -697,7 +710,7 @@ def _finish(path,result):
                                     'cost_scope':'API estimates include readers, review, repair, validation and artifacts when ledger attribution is complete. Total cost remains unmeasured.'})
             if selecting and candidate.get('status')=='validated_pending_complete_workflow':
                 accepted=execution_qualified and not any_regression
-                reason=('Current-review proposal and all native outputs validated; final answer remains unaccepted; total cost benefit unqualified'if proposal_only else'Source-supported read-only prefix and native-output validation passed; no final answer acceptance/reuse; total cost benefit remains unqualified'if execution_only else'Full request and native-output validation passed; total cost benefit remains unqualified')if accepted else'Incomplete request or observed cost regression; retain known-good configuration'
+                reason=('Checked native outputs validated without a stored proposal; new composition and full review required'if reviewed_prefix else'Current-review proposal and all native outputs validated; final answer remains unaccepted; total cost benefit unqualified'if proposal_only else'Source-supported read-only prefix and native-output validation passed; no final answer acceptance/reuse; total cost benefit remains unqualified'if execution_only else'Full request and native-output validation passed; total cost benefit remains unqualified')if accepted else'Incomplete request or observed cost regression; retain known-good configuration'
                 event(db,ident,'selected' if accepted else 'quarantined',{'reason':reason})
             if selecting and used and (not execution_qualified or any_regression):
                 event(db,used,'quarantined',{'reason':'Complete request not established or observed cost regressed; resume the retained actor on the next request'})

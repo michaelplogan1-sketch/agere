@@ -229,6 +229,26 @@ class Harness(unittest.TestCase):
         self.assertFalse(outcome['clinical_qualification']);self.assertFalse(outcome['total_cost_qualified'])
         self.assertIsNone(self.propose_draft(e,calls,original))
 
+    def test_checked_native_prefix_withholds_all_final_prose_and_keeps_current_review_required(self):
+        import copy
+        e,calls=self.trajectory(2);result=self.proposal_run();context={**self.context,'question':self.q}
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'source_digest':'v1'}):
+            c=H.propose(e,self.q,context,self.model,calls,lambda:self.executor(),proposal_result=result,retain_proposal=False)
+        self.assertEqual(c['status'],'validated_pending_complete_workflow')
+        result['investigation']['recursive_improvement']={'candidate':c};H.finish(self.root,result)
+        selected=H.latest(self.root,H.identity(e,self.q,context,self.model))
+        self.assertEqual(selected['qualification_mode'],'reviewed_partial_prefix')
+        self.assertNotIn('reviewable_draft',selected);self.assertIsNone(selected['final_answer'])
+        replay=H.replay(self.executor(),self.q,context,self.model)
+        self.assertEqual(len(replay['certificates']),2);self.assertNotIn('resume_draft',replay)
+        self.assertIsNone(replay['final_answer'])
+        # A changed or failed review cannot qualify this checked prefix.
+        changed=copy.deepcopy(result);changed['investigation']['answer_reviews'][-1]['support']['label']='contradicted'
+        H.finish(self.root,changed)
+        self.assertIsNone(H.latest(self.root,H.identity(e,self.q,context,self.model)))
+        with self.assertRaises(ValueError):
+            H.propose(e,self.q,context,self.model,calls,lambda:self.executor(),retain_proposal=False)
+
     def test_proposal_changed_native_or_feedback_withholds_draft(self):
         e,calls=self.trajectory(2);result=self.proposal_run();c=self.propose_draft(e,calls,result)
         result['investigation']['recursive_improvement']={'candidate':c};H.finish(self.root,result)

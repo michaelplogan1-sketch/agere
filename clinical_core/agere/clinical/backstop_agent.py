@@ -1499,6 +1499,20 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     'from the retained native results and source observations, including individual explanations where requested. '
                     'Keep genuine missing source facts explicit; do not replace unfinished reading or composition with an unknown. '
                     'Reuse unchanged evidence and repair the missing work. Full source support review will run on the completed proposal.'}
+        if coverage_view.get('table') and (not coverage.get('decided_by') or coverage.get('label')!='answers_fully'):
+            composition=gate.check_composition(question,coverage_view,ledger=ledger,as_of_date=as_of)
+            assessment.update(composition=composition,calls=assessment['calls']+composition['calls'],
+                              cost_usd=assessment['cost_usd']+composition['cost_usd'])
+            if composition.get('targets'):
+                return {**assessment,'status':'repair','repair_kind':'incomplete_composition',
+                    'progress_state':{'unfinished_interpretation':composition['targets']},
+                    'support':{'label':'not_run','decided_by':None,'packets':[],
+                               'all_dependencies_checked':False,'reason':'Finish the located row interpretation before source review.'},
+                    'feedback':'The visible text explicitly defers requested interpretation to the reader in these final-table rows: '
+                        +json.dumps(composition['targets'])+'. Explain the retained findings and derive proposed review actions for each named row. '
+                        'Do not merely instruct the reader to inspect a findings collection. Reuse the existing native results; '
+                        'keep genuinely unavailable facts, source dates and unresolved verification explicit. '
+                        'This is a composition repair, not permission to invent source facts. The completed proposal still receives full review.'}
         # All tool results and the cited documents' context, rather than numeric-token overlap or the quote alone.
         bound = (answer.get('table_binding') or {}).get('result_view')
         evidence = []

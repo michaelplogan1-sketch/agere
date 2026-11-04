@@ -127,6 +127,36 @@ class Checker(unittest.TestCase):
         self.assertIsNone(out['decided_by']);self.assertFalse(out['reject'])
 
 
+class Composition(unittest.TestCase):
+    def test_row_judgments_share_state_and_only_confident_deferrals_trigger_repair(self):
+        import json
+        rows=[{'patient_id':'A','next':'Read the findings.','source':{'clinical_evidence_dependency':0}},
+              {'patient_id':'B','next':'Request the unavailable document.'},
+              {'patient_id':'C','next':'Uncertain wording.'}]
+        class Decider:
+            def judge_fields(self,subject,questions,evidence,**kwargs):
+                self.questions=questions;self.state=json.loads(evidence[0]['text'])
+                return {'judgments':{
+                    'row_0':{'label':'unfinished','probability':.96,'decided_by':'jev'},
+                    'row_1':{'label':'no_observed_omission','probability':.95,'decided_by':'jev'},
+                    'row_2':{'label':'unfinished','probability':.95,'decided_by':None}},
+                    'steps':[{'provider':'jev','cost_usd':.001}]}
+        decider=Decider()
+        with patch.object(G,'s1',return_value=decider):
+            result=G.check_composition('Explain each patient.',{'table':rows},as_of_date='2030-01-01')
+        self.assertEqual(list(decider.questions),['row_0','row_1','row_2'])
+        self.assertEqual(decider.state['rows'][0]['outputs']['next'],rows[0]['next'])
+        self.assertEqual(decider.state['rows'][0]['structured_evidence_fields'],['source'])
+        self.assertEqual([t['patient_id']for t in result['targets']],['A'])
+        self.assertEqual((result['calls'],result['cost_usd']),(1,.001))
+        self.assertNotIn('clinical_evidence_dependency',str(decider.state))
+
+    def test_empty_population_does_not_call_provider(self):
+        with patch.object(G,'s1',side_effect=AssertionError('No call')):
+            result=G.check_composition('Explain each patient.',{'table':[]},as_of_date='2030-01-01')
+        self.assertEqual(result['targets'],[]);self.assertEqual(result['calls'],0)
+
+
 class CheckHook(unittest.TestCase):
     """answer_checks.check runs System One on every executed proposal when it is ready; cost lands in verdict['cost']."""
     def run_check(self, fake, stack=LIVE, env=None):

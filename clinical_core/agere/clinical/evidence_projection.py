@@ -9,7 +9,7 @@ import copy
 import json
 from ...contracts import digest
 
-VERSION='coverage-dependencies/1'
+VERSION='coverage-dependencies/2'
 
 
 def native_timing_legacy_evidence(evidence,compatibility):
@@ -109,6 +109,22 @@ def coverage_answer(answer):
     """Coverage-only projection; support receives every complete native value."""
     out=copy.deepcopy(answer);rows=answer.get('table')or[]
     view,edges=table_view(rows,defer_native_cells=True);out['table']=view
+    # Coverage must read the actual native explanations and proposed actions.
+    # A dependency marker proves that a cell exists, not that its text answers
+    # the request. Keep structured source collections in their complete support
+    # packets, but expose scalar text regardless of whether SQL or row_prose
+    # produced it. This does not change the separate source-support projection.
+    visible=set()
+    for index,(actual,projected) in enumerate(zip(rows,view)):
+        if not isinstance(actual,dict):continue
+        for field,value in actual.items():
+            if not isinstance(value,str):continue
+            try:structured=isinstance(json.loads(value),(dict,list))
+            except (ValueError,TypeError):structured=False
+            if not structured:
+                projected[field]=value
+                visible.add((index,field))
+    edges=[edge for edge in edges if tuple(edge['at']) not in visible]
     if 'row_prose' in out:
         # Coverage needs the actual proposed explanation, not the compiler input
         # duplicated alongside it. Source support still checks each full row.

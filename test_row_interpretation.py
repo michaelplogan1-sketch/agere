@@ -209,6 +209,24 @@ class RowInterpretation(unittest.TestCase):
         self.assertEqual(len(packets),1)
         self.assertEqual(len(uncompact_json(json.loads(packets[0]['text']))['computed_claims']),2)
 
+    def test_located_composition_repair_precedes_full_source_review(self):
+        answer=self.answer()
+        composition={'targets':[{'row':0,'patient_id':'A','reason':'Explicit deferral'}],
+                     'calls':1,'cost_usd':.001,'judgments':{}}
+        with patch.object(G,'ready',return_value=True),patch.object(G,'check',return_value={
+                'label':'answers_partially','p':.7,'decided_by':None,'calls':2,'cost_usd':.002}),\
+             patch.object(G,'check_composition',return_value=composition),\
+             patch.object(B,'check_support_packets',side_effect=AssertionError('Do not review unfinished prose')):
+            result=B.review_final(SimpleNamespace(),'Explain each patient and propose actions.',answer,
+                self.calls,SimpleNamespace(read={},document_reviews=[]),ledger=None,as_of='2030-05-27')
+        self.assertEqual(result['repair_kind'],'incomplete_composition')
+        self.assertEqual(result['progress_state']['unfinished_interpretation'],composition['targets'])
+        self.assertEqual(result['support']['label'],'not_run')
+        self.assertEqual((result['calls'],result['cost_usd']),(3,.003))
+        self.assertIn('genuinely unavailable facts',result['feedback'])
+        self.assertEqual(len(answer['table']),2)
+
+
     def test_empty_native_population_stays_empty(self):
         calls=copy.deepcopy(self.calls);calls[0]['result']['rows']=[]
         answer={'table_from_tool':'agere_result_1','row_prose':{'keys':['patient_id'],'rows':[]}}

@@ -76,6 +76,36 @@ class Projection(unittest.TestCase):
             self.assertNotIn('global_claims_context',native[f'patient_P{i}'])
         self.assertEqual(native['summary']['answer']['facts'],answer['facts'])
 
+    def test_coverage_reads_native_explanation_and_unfinished_referral_equally(self):
+        rows=[{'patient_id':'A','explanation':'Agent Z was declined because its cost was unaffordable.',
+               'next_step':'Review coverage alternatives with the patient; current use is unknown.',
+               'findings':json.dumps([finding('rA','Could not afford Agent Z.')])},
+              {'patient_id':'B','explanation':'Read the findings for the reason.',
+               'next_step':'Review each missing treatment in the findings.',
+               'findings':[finding('rB','Requested the written instructions first.')]}]
+        original=copy.deepcopy(rows);view=E.coverage_answer({'table':rows})
+        for actual,projected in zip(rows,view['table']):
+            for field in ('patient_id','explanation','next_step'):
+                self.assertEqual(projected[field],actual[field])
+        edges=view['coverage_contract']['dependency_edges']
+        self.assertEqual([e['field']for e in edges],['findings','findings'])
+        self.assertEqual(E.restore_table(view['table'],edges,{'patient_A':rows[:1],'patient_B':rows[1:]}),rows)
+        self.assertEqual(rows,original)
+        # Support still checks complete native text, exactly as before; the
+        # coverage fix must not invalidate every cached source packet.
+        support,dependencies=E.table_view(rows,defer_native_cells=True)
+        self.assertIn('clinical_evidence_dependency',support[0]['explanation'])
+        self.assertEqual(E.restore_table(support,dependencies,{'patient_A':rows[:1],'patient_B':rows[1:]}),rows)
+
+    def test_coverage_preserves_all_scalar_text_without_sampling_or_field_name_rules(self):
+        row={'patient_id':'A','arbitrary':'[not JSON]','long_text':'No source established this. '*2000,
+             'numeric_text':'42','quoted_text':'"unknown"','empty':'','missing':None,
+             'structured':' {"evidence": ["retained"]} '}
+        view=E.coverage_answer({'table':[row]})
+        for field in row:
+            if field!='structured':self.assertEqual(view['table'][0][field],row[field])
+        self.assertEqual([e['field']for e in view['coverage_contract']['dependency_edges']],['structured'])
+
     def test_native_text_dependencies_restore_legacy_flattened_cells_exactly(self):
         table=[{'patient_id':'A','reason':'A long literal source account. '*1000,
             'clinician':'Historical author; current responsibility unknown.','literal':'[not JSON]','amount':42}]
