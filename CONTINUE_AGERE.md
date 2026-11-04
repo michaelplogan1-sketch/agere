@@ -1,3 +1,19 @@
+# Current Agere checkpoint — 2026-11-04T16:54:29.656464+00:00
+
+G3: provider work stopped for actual Claude subscription session limit, reported reset November4 11:40America/Chicago. All jobs terminal/source unfrozen. Offline recovery matched32native certificates and exact model draft/patch digests;57patients/114fields preserved,57->54compiler fields after3model age bindings. Last one-field proposal was rejected for lacking same-entity native evidence; it was not the only unresolved field. Preserve all50080attempts and9attempt/$5.267090782/375.179s limit-ending run. Before another provider request, diagnose initial-composition quantity binding using the retained57-field draft and54-field repair state; do not repeat the full question or unchanged source votes. Resolve through existing typed source/native/prose contracts without disease handlers, new models or acceptance expansion. After offline evidence and subscription availability, continue saved work then assess automatic acceptance/currentrelease/package. Alltenareas/G5/customer dependencies retained.
+
+Recovery: artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/limit-recovery-v3/receipt.json. Currentapp8890PID8291/session43919 remainslive; lastseal unchanged.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T16:50:51.196876+00:00
+
+G3: all request jobs terminal/source unfrozen. Latest ordinary run stopped on an actual Claude subscription session limit (reported reset November4 11:40America/Chicago), surfaced asHTTP502 after375.179s/9attempts/$5.267090782API-equivalent. Stop all provider work until subscription availability returns; never substitute an external Anthropic API key. Preserve all50080attempts, complete generated draft and compact patches. Recover and inspect the partial automatic draft offline using native certificates; no duplicate ordinary run or repeated source votes. After reset continue exact saved work when current guards permit, then assess automatic acceptance/currentrelease/package. Alltenareas and independentG5/customer dependencies remain.
+
+Reported reset: 2026-11-04T11:40:00-06:00. App8890PID8291/session43919 still live. Lastseal unchanged; no fullMVPclaim.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T16:35:50.378069+00:00
 
 G3: monitor only automatic-composition-numeric PID8331/session57551 through app8890PID8291/session43919. Product7a568886 and source frozen; no duplicate or edits. Current32-native-operation prefix passed79.876s/0providers with no stored final proposal. This is a fresh ordinary question; no owner prose/bindings or retained final draft supplied. Inspect57patients/114fields, compiler/source packets, missing-data behavior, full latency and all-attempt cost on terminal. Retained automatic recovery58/58source is partial; first patch parser proof62->1failures and163tests do not establish fresh acceptance. If ordinary acceptance passes, reconcile current finite release and package/restore; otherwise preserve exact failure and diagnose offline. Alltenareas and independentG5/customer dependencies unchanged.

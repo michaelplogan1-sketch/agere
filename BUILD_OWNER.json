@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: monitor only automatic-composition-numeric PID8331/session57551 through app8890PID8291/session43919. Product7a568886 and source frozen; no duplicate or edits. Current32-native-operation prefix passed79.876s/0providers with no stored final proposal. This is a fresh ordinary question; no owner prose/bindings or retained final draft supplied. Inspect57patients/114fields, compiler/source packets, missing-data behavior, full latency and all-attempt cost on terminal. Retained automatic recovery58/58source is partial; first patch parser proof62->1failures and163tests do not establish fresh acceptance. If ordinary acceptance passes, reconcile current finite release and package/restore; otherwise preserve exact failure and diagnose offline. Alltenareas and independentG5/customer dependencies unchanged.",
+  "active_work": "G3: provider work stopped for actual Claude subscription session limit, reported reset November4 11:40America/Chicago. All jobs terminal/source unfrozen. Offline recovery matched32native certificates and exact model draft/patch digests;57patients/114fields preserved,57->54compiler fields after3model age bindings. Last one-field proposal was rejected for lacking same-entity native evidence; it was not the only unresolved field. Preserve all50080attempts and9attempt/$5.267090782/375.179s limit-ending run. Before another provider request, diagnose initial-composition quantity binding using the retained57-field draft and54-field repair state; do not repeat the full question or unchanged source votes. Resolve through existing typed source/native/prose contracts without disease handlers, new models or acceptance expansion. After offline evidence and subscription availability, continue saved work then assess automatic acceptance/currentrelease/package. Alltenareas/G5/customer dependencies retained.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
   "owned_server_pid": 8291,
@@ -30,13 +30,25 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "numeric_first_composition_running",
-    "all_jobs_terminal": false,
-    "source_frozen": true,
+    "status": "subscription_limit_partial_draft_recovered",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
     "product_edits": true,
     "product_commit": "7a568886",
     "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
-    "remaining": "G3: monitor only automatic-composition-numeric PID8331/session57551 through app8890PID8291/session43919. Product7a568886 and source frozen; no duplicate or edits. Current32-native-operation prefix passed79.876s/0providers with no stored final proposal. This is a fresh ordinary question; no owner prose/bindings or retained final draft supplied. Inspect57patients/114fields, compiler/source packets, missing-data behavior, full latency and all-attempt cost on terminal. Retained automatic recovery58/58source is partial; first patch parser proof62->1failures and163tests do not establish fresh acceptance. If ordinary acceptance passes, reconcile current finite release and package/restore; otherwise preserve exact failure and diagnose offline. Alltenareas and independentG5/customer dependencies unchanged."
+    "remaining": "G3: provider work stopped for actual Claude subscription session limit, reported reset November4 11:40America/Chicago. All jobs terminal/source unfrozen. Offline recovery matched32native certificates and exact model draft/patch digests;57patients/114fields preserved,57->54compiler fields after3model age bindings. Last one-field proposal was rejected for lacking same-entity native evidence; it was not the only unresolved field. Preserve all50080attempts and9attempt/$5.267090782/375.179s limit-ending run. Before another provider request, diagnose initial-composition quantity binding using the retained57-field draft and54-field repair state; do not repeat the full question or unchanged source votes. Resolve through existing typed source/native/prose contracts without disease handlers, new models or acceptance expansion. After offline evidence and subscription availability, continue saved work then assess automatic acceptance/currentrelease/package. Alltenareas/G5/customer dependencies retained.",
+    "provider_dependency": {
+      "provider": "claude_subscription",
+      "reason": "actual_session_limit",
+      "reported_reset_local": "2026-11-04T11:40:00-06:00",
+      "failed_attempt_rowid": 50080,
+      "all_provider_work_stopped": true,
+      "external_anthropic_api_key_permitted": false
+    },
+    "recovery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/limit-recovery-v3/receipt.json",
+    "remaining_compiler_fields": 54,
+    "patients": 57,
+    "prose_fields": 114
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-04T15:52:57.082024+00:00",
@@ -299,15 +311,7 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [
-    {
-      "pid": 8331,
-      "session": 57551,
-      "server_pid": 8291,
-      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
-      "source_frozen": true
-    }
-  ],
+  "active_jobs": [],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
@@ -455,7 +459,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-04T16:35:50.378069+00:00",
+  "updated_at": "2026-11-04T16:54:29.656464+00:00",
   "last_commit": "ab6faed4813f47521fed67d8a7419416984ac41e",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {

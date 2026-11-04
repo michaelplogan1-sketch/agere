@@ -1,5 +1,16 @@
 # Composition repair and retained-evidence comparison
 
+## November 4 subscription limit and exact partial recovery
+
+The ordinary run on7a568886 ended at10:41a.m.Central after375.179seconds withHTTP502 caused by an actual Claude subscription session limit. The provider reported a reset at11:40a.m.America/Chicago. All provider work is stopped; no external Anthropic key is used. Nine attempts are retained:6validatedClaude,1validatedJev,1validatedPerplexity and1Claude limit failure; total reportedAPI-equivalent$5.267090782,0unpriced. Source/code/priorattempts/exports remained exact.
+
+Offline recovery matched every one of32native certificates and the authentic model draft/patch digests. It preserves57patients/114fields. Initial compilation found57fields;3valid model age bindings reduced that to54. The last attempted one-field patch was rejected because its global scalar had no matching entity key. It was the last attempted repair, **not the sole remaining failure**. Source verification is still pending. All50080attempts remain exact. The earlier retained58/58source-supported answer is a different result.
+
+Before any new paid request, reassess why initial composition still emits raw quantitative claims and work from this exact retained draft using the existing native/source/prose contracts. A passing retained repair or parser test cannot substitute for normal-question acceptance. First recovery preflight and rejected-proposal attempts remain as negative receipts; the completed recovery used0providers and no owner-authored prose or bindings.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json`, `new-attempts.json`, and `limit-recovery-v3/receipt.json`.
+
+
 ## November 4: automatic retained completion and numeric-parser correction
 
 The retained continuation on34e6cb7f cleared62compiler fields and returned **57patients/114fields, 58/58source-supported packets**, with no owner-written prose or bindings. Coverage remains undecided (`decided_by=null`); the answer is partial and the existing stop rule correctly avoids repeating an unchanged vote. The source/native values, all49933priorattempts and previous exports stayed exact. The saved result is `ANS-8b0e4a60b8926da8422af0bf`.
