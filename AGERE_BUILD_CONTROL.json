@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T23:49:16.613573+00:00",
+  "updated_at": "2026-11-04T23:53:41.515759+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -474,16 +474,20 @@
         {
           "path": "artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json",
           "sha256": "2e6d0bf16fb9507b00cb68a6e648daab8122755a0de6c90d1d7795cbcd9f8a87"
+        },
+        {
+          "path": "artifacts/agere-first-composition-text-2026-11-04/delivery-receipt.json",
+          "sha256": "01e3709074b4c56d8f0c5b6aa18de6a8d9d2ac17c48d4bad47f6486637f5f595"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Fresh first-answer cost/latency remains unconfirmed after the compiler/source recovery corrections. Overall request coverage is undecided; stable current packaging and independent G5/customer dependencies remain.",
+      "remaining_acceptance": "First-answer generation remains too slow at 763.425 seconds: one Sonnet request took268.568 seconds. One combined source packet and overall coverage are undecided; no located field fault justifies repeated identical votes. Current stable packaging and independent G5 model/clinical and customer deployment prerequisites remain.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: ordinary dictionary confirmation is terminal on2a370739,763.425s/$4.946419546 API-equivalent/154attempts. It regenerated all57patients/114fields, with59/60source packets supported; the remaining packet has29/29typed fields supported but joint support and overallcoverage are undecided. No missing rows or located field fault; preserve partial authority. All51263attempts/source/prior exports exact. Offline projection463202->244399bytes and116tests passed; observed full-run time11.36% lower andAPI-equivalentcost37.53% lower than priorfailedrun, with multiple changes/warmcache differences disclosed. First answer remains too slow: oneSonnetgeneration268.568s. Next verify currentapp/ten-area applicability and seal this scoped improvement, then use retained actor requests/results to address demonstrated generation overhead before another fullrun. No repeat of unchanged uncertain votes. Stable package follows; alltenareas/G5/customer dependencies retained.",
-      "latest_current_release_decision": "artifacts/agere-prior-review-guidance-2026-11-04/acceptance/assessment.json"
+      "next_action": "G3: lossless first-composition reading projection is sealed on2a370739/55304ed3; app8890 PID34112/session30794 serves current contextANS-77d9d1a8d95d73b85e6e5f9c. All jobs terminal/source unfrozen. Ordinary run regenerated57patients/114fields in763.425s/$4.946419546API-equivalent/154attempts; all51263attempts retained.59/60source packets supported; remaining packet has29/29typed fields supported with no located fault, but joint support/coverage stay undecided. Matched input463202->244399bytes (47.237%);116tests/current9engineeringpredicates acrossalltenareas pass. Whole-run11.36%time/37.53%cost reduction versus earlierfailedrun is observational with multiple changes/warm-cache differences. First answer remains too slow. Next use retained generation-profile.json and exact row_prose to test whether repeated scalar-binding addresses can be expressed once through existing typed source/entity context and expanded back to identical bound cells. Establish actual removable output overhead before changing code or making another full live request. Do not repeat unchanged source votes or passing bottling campaigns; no new disease handler/model/training. Package once the performance candidate is stable. Alltenareas and independent G5/customer dependencies remain.",
+      "latest_current_release_decision": "artifacts/agere-first-composition-text-2026-11-04/acceptance/assessment.json"
     },
     {
       "id": "G5",
@@ -561,11 +565,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "prior_review_notes_sealed",
+    "kind": "lossless_reading_projection_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Revalidated saved answers separate exact historical machine repair messages into provenance; fresh review independently restores any still-unresolved warning. The obsolete compiler instruction no longer appears among current limitations.",
-    "measured_failure_reduction": "Removed 8083 characters of obsolete compiler guidance; all 57 patient tables and 114 narrative fields exact, current coverage warning retained.",
+    "user_behavior_delta": "Complete native readings send exact repeated strings once through an explicit dictionary. Native source tuples and every row remain unchanged. The ordinary app regenerated all requested patient narratives and preserved undecided review states.",
+    "measured_failure_reduction": "Exact repeated input reduced47.237%; ordinary question now preserves57patient/114field output and explicit unresolved review. Recorded API-equivalent cost lower than earlier failed run; first-answer latency not accepted.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -611,16 +615,17 @@
       "artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json",
       "artifacts/agere-protocol-preservation-2026-11-04/source-refresh-delivery-receipt.json",
       "artifacts/agere-protocol-preservation-2026-11-04/source-review-payload/delivery-receipt.json",
-      "artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json"
+      "artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-first-composition-text-2026-11-04/delivery-receipt.json"
     ],
-    "remaining_gap": "Fresh first-answer cost/latency remains unconfirmed after the compiler/source recovery corrections. Overall request coverage is undecided; stable current packaging and independent G5/customer dependencies remain.",
-    "next_action": "G3: ordinary dictionary confirmation is terminal on2a370739,763.425s/$4.946419546 API-equivalent/154attempts. It regenerated all57patients/114fields, with59/60source packets supported; the remaining packet has29/29typed fields supported but joint support and overallcoverage are undecided. No missing rows or located field fault; preserve partial authority. All51263attempts/source/prior exports exact. Offline projection463202->244399bytes and116tests passed; observed full-run time11.36% lower andAPI-equivalentcost37.53% lower than priorfailedrun, with multiple changes/warmcache differences disclosed. First answer remains too slow: oneSonnetgeneration268.568s. Next verify currentapp/ten-area applicability and seal this scoped improvement, then use retained actor requests/results to address demonstrated generation overhead before another fullrun. No repeat of unchanged uncertain votes. Stable package follows; alltenareas/G5/customer dependencies retained.",
+    "remaining_gap": "First-answer generation remains too slow at 763.425 seconds: one Sonnet request took268.568 seconds. One combined source packet and overall coverage are undecided; no located field fault justifies repeated identical votes. Current stable packaging and independent G5 model/clinical and customer deployment prerequisites remain.",
+    "next_action": "G3: lossless first-composition reading projection is sealed on2a370739/55304ed3; app8890 PID34112/session30794 serves current contextANS-77d9d1a8d95d73b85e6e5f9c. All jobs terminal/source unfrozen. Ordinary run regenerated57patients/114fields in763.425s/$4.946419546API-equivalent/154attempts; all51263attempts retained.59/60source packets supported; remaining packet has29/29typed fields supported with no located fault, but joint support/coverage stay undecided. Matched input463202->244399bytes (47.237%);116tests/current9engineeringpredicates acrossalltenareas pass. Whole-run11.36%time/37.53%cost reduction versus earlierfailedrun is observational with multiple changes/warm-cache differences. First answer remains too slow. Next use retained generation-profile.json and exact row_prose to test whether repeated scalar-binding addresses can be expressed once through existing typed source/entity context and expanded back to identical bound cells. Establish actual removable output overhead before changing code or making another full live request. Do not repeat unchanged source votes or passing bottling campaigns; no new disease handler/model/training. Package once the performance candidate is stable. Alltenareas and independent G5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Ordinary confirmation terminal; source/product unfrozen.",
+    "coordination": "Current app verified; all jobs terminal/source unfrozen.",
     "remaining_blockers": [
-      "Initial-generation end-to-end improvement from the earlier composition check is unmeasured. The current backstop reuse/review alone still took104.2seconds; the earlier full-request references remain986.028seconds/$8.909197764 and155.723seconds/$0.015078556 warm reuse. Coverage remains undecided/partial. Independent G5 model/clinical evidence and customer deployment dependencies remain. Known-good archive ff949737 is preserved; no current-archive restore is claimed."
+      "First-answer generation remains too slow at 763.425 seconds: one Sonnet request took268.568 seconds. One combined source packet and overall coverage are undecided; no located field fault justifies repeated identical votes. Current stable packaging and independent G5 model/clinical and customer deployment prerequisites remain."
     ],
-    "latest_progress": "artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json",
+    "latest_progress": "artifacts/agere-first-composition-text-2026-11-04/delivery-receipt.json",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -670,15 +675,8 @@
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
     "at": "2026-11-04T23:03:06.419608+00:00",
-    "workflow_change": "Source-review-required answers retain the compact normal browser response instead of retransmitting all saved execution history. Only the exact conservative workflow status change is recognized; answer, authority, blocked work and accounting remain exact.",
-    "unsealed_work": {
-      "status": "prior_review_notes_offline_verified",
-      "source_frozen": false,
-      "all_jobs_terminal": true,
-      "product_edits": true,
-      "receipt": "artifacts/agere-prior-review-guidance-2026-11-04/native-proof/receipt.json",
-      "next_action": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained."
-    },
+    "workflow_change": "Complete native readings send exact repeated strings once through an explicit dictionary. Native source tuples and every row remain unchanged. The ordinary app regenerated all requested patient narratives and preserved undecided review states.",
+    "unsealed_work": null,
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
       "current_candidate_status": "no_new_candidate_from_unresolved_source_answer",
@@ -3857,16 +3855,15 @@
       "decision": "Seal the connected source-refresh recovery; no repeated fresh generation or package rebuild while concrete presentation/performance work remains.",
       "evidence": "artifacts/agere-protocol-preservation-2026-11-04/source-refresh-delivery-receipt.json",
       "scope_impact": "Alltenacceptanceareas retained; genuine coverage uncertainty and independent qualification remain separate. No threshold or clinical authority changes."
+    },
+    {
+      "at": "2026-11-04T23:53:41.515759+00:00",
+      "decision": "Retain the measured input/cost improvement, but do not treat smaller inputs or another complete row count as satisfactory first-answer performance. Target the observed long generation step using retained output evidence before any new paid whole-question run.",
+      "basis": "artifacts/agere-first-composition-text-2026-11-04/generation-profile.json",
+      "scope_impact": "Existing typed composition/performance obligation only. All ten acceptance areas, review uncertainty and independent qualification boundaries retained."
     }
   ],
-  "unsealed_work": {
-    "status": "ordinary_dictionary_returned_app_pending",
-    "source_frozen": false,
-    "all_jobs_terminal": true,
-    "product_edits": true,
-    "receipt": "artifacts/agere-first-composition-text-2026-11-04/assessment.json",
-    "next_action": "G3: ordinary dictionary confirmation is terminal on2a370739,763.425s/$4.946419546 API-equivalent/154attempts. It regenerated all57patients/114fields, with59/60source packets supported; the remaining packet has29/29typed fields supported but joint support and overallcoverage are undecided. No missing rows or located field fault; preserve partial authority. All51263attempts/source/prior exports exact. Offline projection463202->244399bytes and116tests passed; observed full-run time11.36% lower andAPI-equivalentcost37.53% lower than priorfailedrun, with multiple changes/warmcache differences disclosed. First answer remains too slow: oneSonnetgeneration268.568s. Next verify currentapp/ten-area applicability and seal this scoped improvement, then use retained actor requests/results to address demonstrated generation overhead before another fullrun. No repeat of unchanged uncertain votes. Stable package follows; alltenareas/G5/customer dependencies retained."
-  },
+  "unsealed_work": null,
   "current_visual_request": {
     "status": "completed",
     "path": "/Users/mikel/.codex/visualizations/2026/10/29/01a187c0-23ba-7d02-9368-5ff567327554/wollstonecraft-question-flow.html",
@@ -3891,7 +3888,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: ordinary dictionary confirmation is terminal on2a370739,763.425s/$4.946419546 API-equivalent/154attempts. It regenerated all57patients/114fields, with59/60source packets supported; the remaining packet has29/29typed fields supported but joint support and overallcoverage are undecided. No missing rows or located field fault; preserve partial authority. All51263attempts/source/prior exports exact. Offline projection463202->244399bytes and116tests passed; observed full-run time11.36% lower andAPI-equivalentcost37.53% lower than priorfailedrun, with multiple changes/warmcache differences disclosed. First answer remains too slow: oneSonnetgeneration268.568s. Next verify currentapp/ten-area applicability and seal this scoped improvement, then use retained actor requests/results to address demonstrated generation overhead before another fullrun. No repeat of unchanged uncertain votes. Stable package follows; alltenareas/G5/customer dependencies retained.",
+  "next_action": "G3: lossless first-composition reading projection is sealed on2a370739/55304ed3; app8890 PID34112/session30794 serves current contextANS-77d9d1a8d95d73b85e6e5f9c. All jobs terminal/source unfrozen. Ordinary run regenerated57patients/114fields in763.425s/$4.946419546API-equivalent/154attempts; all51263attempts retained.59/60source packets supported; remaining packet has29/29typed fields supported with no located fault, but joint support/coverage stay undecided. Matched input463202->244399bytes (47.237%);116tests/current9engineeringpredicates acrossalltenareas pass. Whole-run11.36%time/37.53%cost reduction versus earlierfailedrun is observational with multiple changes/warm-cache differences. First answer remains too slow. Next use retained generation-profile.json and exact row_prose to test whether repeated scalar-binding addresses can be expressed once through existing typed source/entity context and expanded back to identical bound cells. Establish actual removable output overhead before changing code or making another full live request. Do not repeat unchanged source votes or passing bottling campaigns; no new disease handler/model/training. Package once the performance candidate is stable. Alltenareas and independent G5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3900,7 +3897,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-first-composition-text-2026-11-04/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
