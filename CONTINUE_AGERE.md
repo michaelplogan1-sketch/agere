@@ -1,8 +1,8 @@
-# Current Agere checkpoint — 2026-11-04T22:58:51.744609+00:00
+# Current Agere checkpoint — 2026-11-04T23:03:06.419608+00:00
 
-G3: offline trace reproduced the485MB ordinary response cause: workflow source-review downgrade adds captured_status after capture, so compose_view rejects an otherwise byte-equivalent saved clinical/native context and retransmits all history. Fix only the existing projection guard to recognize the exact conservative workflow downgrade, retaining all current answer/status/work/accounting fields and immutable native references. Validate on the retained actual response and source-workflow/payload boundaries with no providers. Existing source-refresh recovery is sealed; app33124 remains prior verified candidate. Alltenareas, coverage/first-answer/G5/customer gaps remain.
+G3: source-refresh recovery and source-review browser projection are sealed; currentapp8890PID33284/session59235 on169635f7 ready. 57patients/114fields and60/60source support retained, coverage undecided/partial; nine finite engineering predicates across alltenareas remain applicable. Retained ordinary response484898555->5583654bytes (98.84849% smaller),85native references exact,0newprovider calls; all51105attempts retained. Next correct the known stale compiler instruction in returned limitations using exact authoritative prior/current review identity, preserving clinical unknowns and saved history; offline retained proof only. Then use the existing first-answer profile (10Claude requests486.858s of861.261s total; timings overlap) to determine one justified current first-answer confirmation after the existing fixes, not another repeated campaign. Current package refresh only once stable; known-goodff949737 retained. Disk1.4GiB: preserve evidence and prepare adequate durable capacity before any new large saved run. IndependentG5/customer dependencies remain.
 
-Latest sealed receipt: artifacts/agere-protocol-preservation-2026-11-04/source-refresh-delivery-receipt.json
+Latest sealed receipt: artifacts/agere-protocol-preservation-2026-11-04/source-review-payload/delivery-receipt.json
 
 ## Superseded checkpoint
 
