@@ -373,6 +373,64 @@ class ProseRepairs(unittest.TestCase):
                     self.assertEqual(out['review_stopped'],'compiler_unresolved')
                     self.assertNotIn('prose_repairs',out)
 
+    def test_declined_compiler_queries_native_evidence_before_stopping_on_final_model(self):
+        for repair in (True,False):
+            with self.subTest(repair=repair):
+                self.setUp();feedback=self.located_failure();original=copy.deepcopy(self.base)
+                sent=[];executed=[];reviews=[]
+                tool={'name':'query_sql','input_schema':{'type':'object','properties':{'sql':{'type':'string'}},'required':['sql']}}
+                def review(candidate,calls):
+                    reviews.append(copy.deepcopy(candidate))
+                    if len(reviews)==1:return feedback
+                    B.bind_computed_prose(candidate,calls)
+                    return {'status':'confirmed'}
+                def execute(use):
+                    executed.append(use)
+                    return {'result_view':'agere_result_2','columns':['patient_id','events'],
+                            'rows':[['A',2]],'truncated':False}
+                def send(body):
+                    sent.append(body);focus=json.loads(body['messages'][0]['content'])['focused_prose_repair']
+                    self.assertEqual(focus['draft_digest'],digest(original))
+                    if len(sent)==2:
+                        self.assertEqual(body['tool_choice'],{'type':'tool','name':'query_sql'})
+                        from clinical_core.agere.subscription_transport import decision_output_schema
+                        variants=decision_output_schema(body)['properties']['decision']['anyOf']
+                        self.assertTrue(all('repair_draft'not in v['properties']for v in variants))
+                        return {'content':[{'type':'tool_use','id':'scalar','name':'query_sql',
+                            'input':{'sql':"SELECT patient_id,events FROM agere_result_1 WHERE patient_id='A'"}}]},0.,False
+                    if len(sent)==3 and repair:
+                        proposal=self.patch(review={'bind_literals':[{'literal':'two','binding':{
+                            'result_view':'agere_result_2','column':'events','where':[]}}]})
+                    else:proposal={'repair_draft':{'draft_digest':focus['draft_digest'],'rows':[]}}
+                    return {'content':[{'type':'text','text':json.dumps(proposal)}]},0.,False
+                out=S.tool_loop('Explain both entities',[],[tool],execute,send=send,model=M.SONNET,
+                    max_tools=None,initial_calls=self.calls,initial_answer=self.base,review=review,
+                    compact_execution_state=True)
+                self.assertEqual(len(sent),3);self.assertEqual(len(executed),1)
+                self.assertEqual(len(out['compiler_evidence_requests']),1)
+                self.assertEqual(out['compiler_evidence_requests'][0]['draft_digest'],digest(original))
+                self.assertEqual(self.base,original)
+                if repair:
+                    self.assertEqual(out['prose_repairs'][0]['changed_fields'],1)
+                    self.assertEqual(out['answer']['table'][0]['review'],'Review 2 events on 2030-01-01; preserve the uncertainty.')
+                    self.assertEqual(out['answer']['row_prose']['rows'][1],original['row_prose']['rows'][1])
+                else:
+                    self.assertEqual(out['review_stopped'],'compiler_unresolved')
+                    self.assertNotIn('prose_repairs',out)
+
+    def test_declined_compiler_cannot_force_query_when_tool_permission_is_exhausted(self):
+        feedback=self.located_failure();sent=[]
+        def send(body):
+            sent.append(body)
+            self.assertEqual(body['tool_choice'],{'type':'none'})
+            return {'content':[{'type':'text','text':json.dumps({'repair_draft':{
+                'draft_digest':digest(self.base),'rows':[]}})}]},0.,False
+        out=S.tool_loop('Explain both entities',[],[{'name':'query_sql'}],lambda use:self.fail('Tool not permitted'),
+            send=send,model=M.SONNET,max_tools=1,initial_calls=self.calls,initial_answer=self.base,
+            review=lambda a,c:feedback,compact_execution_state=True)
+        self.assertEqual(len(sent),1);self.assertEqual(out['review_stopped'],'compiler_unresolved')
+        self.assertNotIn('compiler_evidence_requests',out)
+
     def setUp(self):
         self.calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id,events FROM scoped'},
             'result':{'result_view':'agere_result_1','columns':['patient_id','events'],

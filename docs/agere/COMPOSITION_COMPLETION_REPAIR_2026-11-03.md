@@ -1,5 +1,16 @@
 # Composition repair and retained-evidence comparison
 
+## November 4 automatic composition failure and guarded native query
+
+The ordinary question on product84c96cca failed in **501.204 seconds**, **7 provider attempts** (5 Claude, 1 Jev, 1 Perplexity), **$4.342736456 API-equivalent**, zero unpriced. It returned all57native patient rows but no narrative fields. The unaccepted model draft contains57rows/114fields: its first version collided with native column names; its corrected version has62unbound quantitative fields. The final Sonnet response was an empty repair. No compact edit or new native evidence query ran. This is a failed automatic-composition result, distinct from the earlier assisted58/58source-supported answer. Every49933ledger row and the raw responses remain.
+
+The targeted candidate requires the existing native SQL tool after an empty compiler patch on the final model, once per exact draft. Repeated decline stops; an unavailable tool cannot be enabled; source-review abstention remains distinct. The same value, entity, source, sentence-preservation and complete-review requirements apply. The request reason is retained in investigation accounting. This is not a forced positive answer.
+
+The authentic model draft/empty response replay now reaches that query transition in2.103s with0providers, all57patients/114fields and the exact draft unchanged. It still has62compiler failures: the offline proof establishes the transition, not completed composition.107focused regression tests pass. A retained continuation will test the correction without owner-authored bindings or repeating the first question. Release packaging waits for the automatic behavior to pass.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-current/assessment.json` and `declined-transition-proof/receipt.json` beneath that directory.
+
+
 
 ## November 4 release preflight: current scope and storage
 
@@ -11,7 +22,7 @@ Twenty-four completed large diagnostic traces were losslessly archived after exc
 
 The existing package implementation already uses APFS copy-on-write cloning for regular files and eligible cold SQLite databases, with online backup for active journals. Its roughly233GB logical tree size does not establish that233GB of physical space can be reclaimed. A new package must use this existing checked path and measure actual free space; no duplicate packaging job has been started.
 
-The current native-only program was independently revalidated through the ordinary investigator entry in **96.591 seconds**, **32 exact native operations**, **zero provider attempts**, and **no retained final proposal**. The original question has now been submitted once through the normal app with warm caches disclosed. That run is pending; no automatic-composition or latency success is inferred from the native-prefix check.
+The current native-only program was independently revalidated through the ordinary investigator entry in **96.591 seconds**, **32 exact native operations**, **zero provider attempts**, and **no retained final proposal**. The original question has now been submitted once through the normal app with warm caches disclosed. That run failed as detailed below; no automatic-composition or latency success is inferred from the native-prefix check.
 
 Evidence: `artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json`, `composition-check/current-final-native-prefix/receipt.json`, and `composition-check/automatic-composition-current/run-receipt.json` under the same release-finish directory.
 

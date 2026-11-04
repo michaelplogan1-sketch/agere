@@ -530,6 +530,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     messages = [{'role': 'user', 'content': user}]
     state_feedback=None; state_candidate=None; latest_calls=[];last_complete_candidate=None
     repair_protocol_feedback=None;binding_query_required=False
+    binding_query_reason='The previous patch changed a quantity instead of binding it.'
+    declined_compiler_probes=set()
     if initial_calls:
         # Certified literal replay enters through the same native tool protocol.
         # The actor sees actual current receipts, never a cached final answer.
@@ -621,7 +623,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     and any(t.get('name')=='query_sql'for t in tools)):
                 body['tool_choice']={'type':'tool','name':'query_sql'}
                 body['system']=[*(body['system']if isinstance(body['system'],list)else[{'type':'text','text':body['system']}]),
-                    {'type':'text','text':'The previous patch changed a quantity instead of binding it. '
+                    {'type':'text','text':binding_query_reason+' '
                      'The required next action is query_sql, not another prose patch. Select the actual source value '
                      'or compute the named definition count from native evidence, carrying the entity keys and source record/date. '
                      'Do not SELECT invented constants. After its result returns, bind the value in the unchanged original sentence.'}]
@@ -792,6 +794,24 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             repairs+=1
                             repair_protocol_feedback='The retained draft has not compiled. Complete the named quantity bindings using current native evidence and literal tools. Retain all other fields; an empty repair does not finish this compiler work.'
                             continue
+                        # An empty patch is not evidence that native values are
+                        # unavailable. Ask the existing read-only tool for those
+                        # values once for this exact draft before stopping. A
+                        # second decline cannot restart the same investigation.
+                        probe=digest(state_candidate)
+                        if (probe not in declined_compiler_probes and
+                                body['tool_choice']['type']!='none' and
+                                any(t.get('name')=='query_sql'for t in tools)):
+                            declined_compiler_probes.add(probe)
+                            binding_query_required=True
+                            binding_query_reason='The empty repair left located compiler failures unresolved without querying their native evidence.'
+                            repair_protocol_feedback=binding_query_reason+' Query the retained source/result views for the missing scalar values, preserving entity keys and source provenance. No prose change has been applied.'
+                            result.setdefault('compiler_evidence_requests',[]).append({
+                                'draft_digest':probe,'reason':'empty_compiler_patch',
+                                'target_count':len(focused_repair.get('targets')or[]),
+                                'retained_tool_calls':len(result['tool_calls'])})
+                            repairs+=1
+                            continue
                         result['review_stopped']='compiler_unresolved'
                         return result
                     result['review_stopped']='no_supported_prose_change'
@@ -805,7 +825,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                                      binding_rejections=binding_rejections)
                     except ValueError as exc:
                         from .execution_state import BindingPreservationError
-                        if isinstance(exc,BindingPreservationError):binding_query_required=True
+                        if isinstance(exc,BindingPreservationError):
+                            binding_query_required=True
+                            binding_query_reason='The previous patch changed a quantity instead of binding it.'
                         signature=digest([exc.failure_identity()if isinstance(exc,BindingPreservationError)else patch_proposal,
                                           digest(state_candidate)])
                         if signature in rejected_protocol and not escalate('Repeated invalid prose repair'):

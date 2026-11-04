@@ -2926,6 +2926,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'model_escalations':run.get('model_escalations',[]),
                'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),
                'prose_repairs':run.get('prose_repairs',[]),
+               'compiler_evidence_requests':run.get('compiler_evidence_requests',[]),
                'protocol_repairs':run.get('protocol_repairs',[]),
                'unaccepted_draft':run.get('unaccepted_draft'),
                'guarded_continuations':run.get('guarded_continuations',[]),
