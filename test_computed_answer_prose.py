@@ -7,6 +7,15 @@ from clinical_core.agere.clinical import backstop_agent as B,system_one_gate as 
 
 
 class ComputedProse(unittest.TestCase):
+    def test_short_date_pairs_are_temporal_anchors_but_invalid_dates_and_ratios_still_bind(self):
+        for text in ('Observations on 2026-09-03/17.','Observations on 2024-02-01/29.'):
+            a={'table_binding':{'result_view':'table'},'headline':text}
+            B.bind_computed_prose(a,[])
+            self.assertEqual(a['headline'],text)
+        for text in ('Observations on 2026-02-01/29.','Dose 10/20 mg.','There are 2026 patients.'):
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):
+                B.bind_computed_prose({'table_binding':{'result_view':'table'},'headline':text},[])
+
     def setUp(self):
         self.calls=[{'name':'query_sql','input':{'sql':'SELECT count(*) AS distinct_patients, sum(visits) AS visits FROM scoped_clinic'},
                      'result':{'result_view':'agere_result_0','columns':['distinct_patients','visits','paid_dollars','pct','missing'],

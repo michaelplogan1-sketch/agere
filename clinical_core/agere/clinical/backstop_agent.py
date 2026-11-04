@@ -949,7 +949,8 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             if isinstance(source.get('record_id'),str) and source['record_id'] in text and len(re.findall(r'\w+',quote))>=3:
                 for left,right in (("'","'"),('"','"'),('“','”')):
                     text=text.replace(left+quote+right,'')
-        text=re.sub(r'\b\d{4}-\d{2}-\d{2}\b','',text)
+        from .execution_state import expand_date_pairs
+        text=re.sub(r'\b\d{4}-\d{2}-\d{2}\b','',expand_date_pairs(text))
         # A requested calendar year is a temporal anchor, not an inferred
         # patient count. Preserve the text for semantic review; only the
         # quantitative-literal scanner masks syntactically temporal uses.

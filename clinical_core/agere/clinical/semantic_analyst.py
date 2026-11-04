@@ -788,12 +788,15 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 if isinstance(candidate,dict) and 'repair_draft'in candidate:
                     from .execution_state import apply_prose_repair,draft_state
                     patch_proposal=candidate
+                    binding_rejections=[]
                     try:
-                        candidate=apply_prose_repair(patch_proposal,state_candidate,calls=result['tool_calls'],feedback=state_feedback)
+                        candidate=apply_prose_repair(patch_proposal,state_candidate,calls=result['tool_calls'],feedback=state_feedback,
+                                                     binding_rejections=binding_rejections)
                     except ValueError as exc:
                         from .execution_state import BindingPreservationError
                         if isinstance(exc,BindingPreservationError):binding_query_required=True
-                        signature=digest([patch_proposal,digest(state_candidate)])
+                        signature=digest([exc.failure_identity()if isinstance(exc,BindingPreservationError)else patch_proposal,
+                                          digest(state_candidate)])
                         if signature in rejected_protocol and not escalate('Repeated invalid prose repair'):
                             result['review_stopped']='no_progress'
                             return result
@@ -806,13 +809,16 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         messages.append({'role':'user','content':str(exc)+'\n'+json.dumps(draft_state(state_candidate))})
                         continue
                     old_fields={digest(r['key']):r['fields']for r in state_candidate['row_prose']['rows']}
-                    repair_protocol_feedback=None
+                    old_bases={digest(r['key']):r['basis']for r in state_candidate['row_prose']['rows']}
+                    repair_protocol_feedback=('Valid binding edits were retained; these fields are unchanged and still need repair: '
+                        +json.dumps(binding_rejections))if binding_rejections else None
                     changed=[sum(v!=old_fields[digest(r['key'])][k]for k,v in r['fields'].items())
-                             for r in patch_proposal['repair_draft']['rows']]
+                             for r in candidate['row_prose']['rows']]
                     result.setdefault('prose_repairs',[]).append({'base_draft_digest':patch_proposal['repair_draft']['draft_digest'],
                         'proposal_digest':digest(patch_proposal),'changed_rows':sum(bool(n)for n in changed),
                         'changed_fields':sum(changed),
-                        'added_basis_rows':sum(len(r.get('basis_additions',[]))for r in patch_proposal['repair_draft']['rows']),
+                        'added_basis_rows':sum(len(r['basis'])-len(old_bases[digest(r['key'])])for r in candidate['row_prose']['rows']),
+                        'rejected_fields':binding_rejections,
                         'complete_review_required':True})
                 if review is not None:
                     assessment = review(candidate, result['tool_calls'])

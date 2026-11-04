@@ -8,6 +8,73 @@ from clinical_core.contracts import digest
 
 
 class ProseRepairs(unittest.TestCase):
+    def test_date_pair_equivalence_preserves_calendar_values_and_other_quantities(self):
+        self.assertEqual(E.canonical_repair_prose('Recorded on 2026-09-03/17.'),
+                         E.canonical_repair_prose('Recorded on 2026-09-03 and 2026-09-17.'))
+        for text in ('2026-02-03/30','2026-13-03/17','10/20 mg','2026-09-03/17/20','2026-09-03/17.5','2026-09-03/17mg'):
+            with self.subTest(text=text):self.assertEqual(E.expand_date_pairs(text),text)
+        for changed in ('2026-09-03 and 2026-09-18','2026-09-03 and 2026-10-17'):
+            self.assertNotEqual(E.canonical_repair_prose('2026-09-03/17'),E.canonical_repair_prose(changed))
+
+    def test_mixed_binding_batch_retains_valid_fields_then_reviews_remaining_field(self):
+        self.base['status']='partial'
+        self.calls[0]['result']['rows'][1][1]=3
+        self.base['headline']=E.draft_state(self.base)['last_draft']['headline']
+        for row in self.base['row_prose']['rows']:
+            row['fields']['review']='Review '+('two'if row['key']['patient_id']=='A'else'three')+' events on 2030-01-01; preserve the uncertainty.'
+        original=copy.deepcopy(self.base);sent=[];target_counts=[]
+        def review(a,c):
+            checked=copy.deepcopy(a);B.materialize_table(checked,c)
+            try:B.bind_computed_prose(checked,c)
+            except B.ComputedProseError:
+                r=B.review_final(SimpleNamespace(),'Explain each entity',a,c,SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+                target_counts.append(len(r['prose_repair']['targets']));return r
+            a.update(checked)
+            return {'status':'confirmed'}
+        def send(body):
+            state=json.loads(body['messages'][0]['content']);sent.append(state)
+            f=state['focused_prose_repair'];rows=[]
+            if len(sent)==1:
+                rows=[{'key':{'patient_id':'A'},'fields':{'review':self.bound_review()}},
+                      {'key':{'patient_id':'B'},'fields':{'review':'Review the events on 2030-01-01; preserve the uncertainty.'}}]
+            else:
+                self.assertEqual(len(f['targets']),1);self.assertEqual(f['targets'][0]['key'],{'patient_id':'B'})
+                self.assertIn('expected',state['repair_protocol_feedback'])
+                rows=[{'key':{'patient_id':'B'},'fields':{'review':self.bound_review(row=1)}}]
+            return {'content':[{'type':'text','text':json.dumps({'repair_draft':{'draft_digest':f['draft_digest'],'rows':rows}})}]},0.,False
+        out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('No new source needed'),send=send,
+            model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,review=review,compact_execution_state=True)
+        self.assertEqual(target_counts,[2,1]);self.assertEqual(len(sent),2)
+        self.assertEqual([p['changed_fields']for p in out['prose_repairs']],[1,1])
+        self.assertEqual(out['prose_repairs'][0]['rejected_fields'][0]['key'],{'patient_id':'B'})
+        self.assertEqual([{k:s[k]for k in original['sources'][i]}for i,s in enumerate(out['answer']['sources'])],original['sources'])
+        self.assertEqual(out['answer']['table'][1]['review'],'Review 3 events on 2030-01-01; preserve the uncertainty.')
+
+    def test_binding_subset_never_salvages_a_structurally_invalid_patch(self):
+        feedback=self.located_failure();proposal=self.patch(review=self.bound_review())
+        proposal['repair_draft']['rows'].append({'key':{'patient_id':'C'},'fields':{'review':'No entity'}})
+        before=copy.deepcopy(self.base);rejected=[]
+        with self.assertRaisesRegex(ValueError,'cannot add or rename'):
+            E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback,binding_rejections=rejected)
+        self.assertEqual(self.base,before);self.assertEqual(rejected,[])
+
+    def test_repeated_binding_failure_is_stable_across_new_result_aliases(self):
+        feedback=self.located_failure();sent=[]
+        def send(body):
+            sent.append(body)
+            if len(sent)==2:
+                return {'content':[{'type':'tool_use','id':'query','name':'query_sql','input':{'sql':'SELECT patient_id,events FROM scoped'}}]},0.,False
+            proposal=self.patch(review={'template':'Only {n} events.',
+                'bindings':{'n':{'result_view':'agere_result_'+str(1 if len(sent)==1 else 2),'row':0,'column':'events'}}})
+            return {'content':[{'type':'text','text':json.dumps(proposal)}]},0.,False
+        out=S.tool_loop('Explain entities',[],[{'name':'query_sql','input_schema':{'type':'object'}}],
+            lambda use:{**copy.deepcopy(self.calls[0]['result']),'result_view':'agere_result_2'},send=send,
+            model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+            review=lambda a,c:feedback,compact_execution_state=True)
+        self.assertEqual(len(sent),3);self.assertEqual(out['review_stopped'],'no_progress')
+        state=json.loads(sent[1]['messages'][0]['content'])
+        self.assertIn('"patient_id": "A"',state['feedback']['feedback'] if isinstance(state.get('feedback'),dict)else json.dumps(state))
+
     def test_focused_repair_rejects_full_answer_before_review_and_retains_all_fields(self):
         self.base['status']='partial';packet,support=self.source_review()
         feedback={'status':'repair','repair_kind':'unresolved_verification','feedback':'Uncertain source meaning',

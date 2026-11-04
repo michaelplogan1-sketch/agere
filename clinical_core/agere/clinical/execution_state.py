@@ -6,12 +6,23 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/11'
+VERSION = 'execution-state/12'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
 class BindingPreservationError(ValueError):
     """A binding-only patch changed the original claim instead of its address."""
+
+    def __init__(self,key,field,expected,rendered):
+        self.detail={'code':'binding_meaning_changed','key':key,'field':field,
+                     'expected':expected,'rendered':rendered}
+        super().__init__('A binding repair must preserve the original sentence, quantities, units and dates. '
+            +json.dumps(self.detail)+'. Query the required native scalar evidence, then bind it in the unchanged sentence. '
+            'A binding-only operation cannot change source meaning.')
+
+    def failure_identity(self):
+        # A new temporary SQL alias does not make the same failed field progress.
+        return {k:self.detail[k]for k in ('code','key','field')}
 
 
 def operational_feedback_result(result):
@@ -125,8 +136,13 @@ def draft_state(candidate):
     return state
 
 
-def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
-    """Merge an exact-draft prose edit atomically; confer no evidence authority."""
+def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejections=None):
+    """Validate an exact-draft edit; confer no evidence authority.
+
+    By default the patch is atomic. The compiler loop may retain individually
+    valid binding edits, leaving rejected sentences unchanged. Structural and
+    source-meaning repairs remain atomic; every merged draft needs full review.
+    """
     import copy
     if not isinstance(proposal,dict) or set(proposal)!={'repair_draft'}:
         raise ValueError('A prose repair must contain only repair_draft')
@@ -160,6 +176,11 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
             and c['result'].get('result_view')and not c['result'].get('error')}
     targets=prose_repair_targets(candidate,feedback)
     located={(digest(t['key']),t['field']):t for t in targets or[]}
+    retain_valid=(isinstance(binding_rejections,list) and isinstance(feedback,dict)
+        and feedback.get('repair_kind')=='deterministic_compiler' and targets
+        and feedback.get('prose_repair',{}).get('intent')!='source_meaning_review'
+        and all(t['code']in ('unbound_literal','missing_scalar_source')for t in targets))
+    rejected=[]
     changes={};additions={}
     for edit in edits:
         if not isinstance(edit,dict) or not {'key','fields'}<=set(edit) or set(edit)-{'key','fields','basis_additions'}:
@@ -187,6 +208,7 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
             pair=(address['result_view'],address['row'])
             if pair in addresses:raise ValueError('Additional prose basis duplicates a retained address')
             addresses.add(pair)
+        accepted={}
         for field,value in fields.items():
             target=located.get((ident,field))
             if targets and target is None:
@@ -194,10 +216,16 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
             if target and target['code']in ('unbound_literal','missing_scalar_source'):
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native)
-                if canonical_repair_prose(rendered)!=canonical_repair_prose(repair_rendered_value(original,native)):
-                    raise BindingPreservationError('A binding repair must preserve the original sentence, quantities, units and dates at '+field+'. Query the required native scalar evidence, then bind it in the unchanged sentence. A binding-only operation cannot change source meaning.')
-        changes[ident]={k:v for k,v in fields.items()if existing[ident]['fields'][k]!=v}
-        additions[ident]=extra
+                expected=repair_rendered_value(original,native)
+                if canonical_repair_prose(rendered)!=canonical_repair_prose(expected):
+                    error=BindingPreservationError(edit['key'],field,expected,rendered)
+                    if not retain_valid:raise error
+                    rejected.append(error)
+                    continue
+            accepted[field]=value
+        changes[ident]={k:v for k,v in accepted.items()if existing[ident]['fields'][k]!=v}
+        additions[ident]=extra if accepted else []
+    if rejected and not any(changes.values()):raise rejected[0]
     if not any(changes.values())and not any(additions.values()):raise ValueError('Prose repair contains no changed fields; inspect the unresolved dependency')
     merged=copy.deepcopy(candidate)
     # Restore the existing numeric templates, not their rendered numeric text.
@@ -210,7 +238,21 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
         ident=identity(row['key'])
         if ident in changes:
             row['fields'].update(copy.deepcopy(changes[ident]));row['basis'].extend(copy.deepcopy(additions[ident]))
+    if rejected:binding_rejections.extend(copy.deepcopy(e.detail)for e in rejected)
     return merged
+
+
+def expand_date_pairs(text):
+    """Expand only two valid ISO dates sharing a year/month, never a ratio."""
+    import re
+    from datetime import date
+    def expand(match):
+        try:
+            first=date.fromisoformat(match.group(1))
+            second=date(first.year,first.month,int(match.group(2)))
+        except ValueError:return match.group()
+        return first.isoformat()+' and '+second.isoformat()
+    return re.sub(r'(?<![\w/.-])(\d{4}-\d{2}-\d{2})/(\d{1,2})(?![\w/-]|\.\d)',expand,text)
 
 
 def canonical_repair_prose(text):
@@ -222,7 +264,7 @@ def canonical_repair_prose(text):
     def replace(match):
         value=match.group()
         return numbers[value.lower()]if value.lower()in numbers else format(Decimal(value.replace(',','')).normalize(),'f')
-    normalized=re.sub(r'(?<![\w.-])\d+(?:,\d{3})*(?:\.\d+)?(?![\w.-])|\b(?:'+ '|'.join(words)+r')\b',replace,text,flags=re.I)
+    normalized=re.sub(r'(?<![\w.-])\d+(?:,\d{3})*(?:\.\d+)?(?![\w.-])|\b(?:'+ '|'.join(words)+r')\b',replace,expand_date_pairs(text),flags=re.I)
     return re.sub(r'\s+',' ',normalized).strip()
 
 
