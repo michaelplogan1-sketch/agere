@@ -1,5 +1,19 @@
 # Composition repair and retained-evidence comparison
 
+## Retained continuation and localized compiler recovery — November 4
+
+The subscription resumed normally. The retained continuation onf2cc427c revalidated32native receipts and cleared all54original numeric binding failures. It returned all57patients/114narrative fields, with56of60source packets supported and four undecided. Overall coverage remains undecided. Later localized source edits introduced new unbound numbers and the existing no-progress guard stopped; the last structurally complete answer remains partial. The newest pending draft is retained separately, exactly as intended by the new recovery behavior.
+
+The run took570.406seconds and153validatedattempts (11Claude,71Jev,71Perplexity), totaling$5.268015058API-equivalent with0unpricedattempts. All50233attempts, the source, runtime code during the run and prior exports remain intact. This is saved-work continuation, not first-request performance. The prior failed run retains its own9attempts/$5.267090782/375.179seconds.
+
+A measured repair-scope problem explains the last churn: source review located3fields, but subsequent compiler failures named1,2,then1field. The continuation kept reopening all3source fields, allowing another revision to break a field that already compiled. Candidate849d9135 narrows immediate source-authorized editing to the exact compiler-failed fields, retaining all other edits and complete source-review obligations. No numeric, entity or source guard was relaxed.
+
+On the authentic review005-to006 transition, editable fields fall3to1, all57patients/114fields remain unchanged, outside-field edits are rejected, and retained source texts are byte-identical. The focused repair segment decreases39458to15408bytes; no live latency or cost saving is claimed.180targeted regressions pass. The current app on8890PID12624/session62526 serves all57/114 and the continuation control forANS-889cd52879d766516a81d365, with zero new provider calls. Its source/clinical judgments remain unchanged and partial.
+
+The prepared next runner resumes that server-owned checkpoint without owner-written prose or bindings, reexecutes its native origins, and continues the one unfinished compiler field. Three fields still need source review and four packets remain undecided. Fresh automatic-composition acceptance, final current release/package and independentG5/customer dependencies remain.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/receipt.json`, `recovery-persistence-proof.json`, `compiler-scope-proof.json`, `compiler-scope-regressions.log`, `compiler-scope-current-context.json`, and `compiler-scope-current-app.json`.
+
 ## Initial binding-contract candidate f2cc427c
 
 The first composition prompt allowed attributed numerical quotations with a matching sources entry, while the existing patient-row compiler requires a complete typed documentary assertion in the same entity basis and attribution of record ID and date in the field. The instructions now match that stricter existing rule. The row-prose example includes executable scalar bindings, and the initial prompt asks for source-derived quantities before drafting. Runtime verification is unchanged.

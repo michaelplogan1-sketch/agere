@@ -5,11 +5,11 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: monitor only numeric-limit-continuation PID11455/session83558 through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.",
+  "active_work": "G3: all request jobs terminal/source unfrozen. Product849d9135 and app8890PID12624/session62526 include exact failed-field compiler recovery (3editable fields->1 on the authentic transition;180tests). Current saved partial ANS-889cd52879d766516a81d365 preserves57patients/114fields and pendingdraft36442807; HTTP200/current/resume control verified with0providers. Last run cleared54original bindings, returned56/60source-supported packets with4undecided/globalcoverage undecided, then source-edit churn stopped at1unbound field inside3source-review fields. Retain570.406s/153attempts/$5.268015058 and all50233attempts. Next run prepared composition-check/continue_localized_source_compiler.py ONCE; it resumes the existing saved checkpoint, revalidates native origins and only continues unfinished repair. Do not reconstruct prose, repeat full question or rebuy unchanged source votes. On terminal inspect exact compiler/source disposition and total accounting, preserve partials and assess the remaining fresh automatic-composition obligation before current release/package. Alltenareas and independentG5/customer dependencies retained. Subscription resumed normally; stop again on any actual limit.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
-  "owned_server_pid": 10814,
-  "owned_server_session": 68585,
+  "owned_server_pid": 12624,
+  "owned_server_session": 62526,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -30,28 +30,37 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "numeric_limit_continuation_running",
-    "all_jobs_terminal": false,
-    "source_frozen": true,
+    "status": "localized_source_compiler_candidate_ready",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
     "product_edits": true,
-    "product_commit": "f2cc427c",
-    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
-    "remaining": "G3: launching numeric-limit-continuation through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.",
+    "product_commit": "849d9135",
+    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/receipt.json",
+    "remaining": "G3: all request jobs terminal/source unfrozen. Product849d9135 and app8890PID12624/session62526 include exact failed-field compiler recovery (3editable fields->1 on the authentic transition;180tests). Current saved partial ANS-889cd52879d766516a81d365 preserves57patients/114fields and pendingdraft36442807; HTTP200/current/resume control verified with0providers. Last run cleared54original bindings, returned56/60source-supported packets with4undecided/globalcoverage undecided, then source-edit churn stopped at1unbound field inside3source-review fields. Retain570.406s/153attempts/$5.268015058 and all50233attempts. Next run prepared composition-check/continue_localized_source_compiler.py ONCE; it resumes the existing saved checkpoint, revalidates native origins and only continues unfinished repair. Do not reconstruct prose, repeat full question or rebuy unchanged source votes. On terminal inspect exact compiler/source disposition and total accounting, preserve partials and assess the remaining fresh automatic-composition obligation before current release/package. Alltenareas and independentG5/customer dependencies retained. Subscription resumed normally; stop again on any actual limit.",
     "provider_dependency": {
       "provider": "claude_subscription",
       "reason": "actual_session_limit",
       "reported_reset_local": "2026-11-04T11:40:00-06:00",
       "failed_attempt_rowid": 50080,
-      "all_provider_work_stopped": true,
-      "external_anthropic_api_key_permitted": false
+      "all_provider_work_stopped": false,
+      "external_anthropic_api_key_permitted": false,
+      "status": "normal_subscription_dispatch_resumed_after_reported_reset",
+      "resumed_attempt_rowid": 50081
     },
     "recovery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/limit-recovery-v3/receipt.json",
-    "remaining_compiler_fields": 54,
+    "remaining_compiler_fields": 1,
     "patients": 57,
     "prose_fields": 114,
     "recovery_delivery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
     "pid": 11455,
-    "session_id": 83558
+    "session_id": 83558,
+    "observation": "All32native receipts revalidated; quantitative repair reached source review after7Claude calls. Source review in progress; no final acceptance.",
+    "source_repair_fields": 3,
+    "source_supported_packets": 56,
+    "source_packets": 60,
+    "current_context_id": "ANS-889cd52879d766516a81d365",
+    "scope_proof": "artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/compiler-scope-proof.json",
+    "next_runner": "artifacts/agere-current-release-finish-2026-11-04/composition-check/continue_localized_source_compiler.py"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-04T15:52:57.082024+00:00",
@@ -314,16 +323,7 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [
-    {
-      "name": "numeric-limit-continuation",
-      "status": "running",
-      "product_commit": "f2cc427c",
-      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/receipt.json",
-      "pid": 11455,
-      "session_id": 83558
-    }
-  ],
+  "active_jobs": [],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
@@ -463,7 +463,7 @@
   },
   "previous_sealed_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "f2cc427c",
+  "last_product_commit": "849d9135",
   "current_delivery_scope": "Keyed scalar bindings, localized producer-bound source correction, atomic immutable answer saves and current-app reopen preserve the full retained clinical answer.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -471,7 +471,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-04T17:41:10.640707+00:00",
+  "updated_at": "2026-11-04T18:06:03.472724+00:00",
   "last_commit": "ac9af6fe4ac5a0040620070d17ce1e7560f42273",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {

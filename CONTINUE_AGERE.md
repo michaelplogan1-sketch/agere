@@ -1,3 +1,19 @@
+# Current Agere checkpoint — 2026-11-04T18:06:03.472724+00:00
+
+G3: all request jobs terminal/source unfrozen. Product849d9135 and app8890PID12624/session62526 include exact failed-field compiler recovery (3editable fields->1 on the authentic transition;180tests). Current saved partial ANS-889cd52879d766516a81d365 preserves57patients/114fields and pendingdraft36442807; HTTP200/current/resume control verified with0providers. Last run cleared54original bindings, returned56/60source-supported packets with4undecided/globalcoverage undecided, then source-edit churn stopped at1unbound field inside3source-review fields. Retain570.406s/153attempts/$5.268015058 and all50233attempts. Next run prepared composition-check/continue_localized_source_compiler.py ONCE; it resumes the existing saved checkpoint, revalidates native origins and only continues unfinished repair. Do not reconstruct prose, repeat full question or rebuy unchanged source votes. On terminal inspect exact compiler/source disposition and total accounting, preserve partials and assess the remaining fresh automatic-composition obligation before current release/package. Alltenareas and independentG5/customer dependencies retained. Subscription resumed normally; stop again on any actual limit.
+
+Prepared runner: artifacts/agere-current-release-finish-2026-11-04/composition-check/continue_localized_source_compiler.py. Last sealed recovery receipt unchanged; scoped candidate proof at artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/compiler-scope-proof.json. No fullMVP claim.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T17:56:14.222180+00:00
+
+G3: numeric-limit-continuation is terminal (570.406s/153validatedattempts/$5.268015058API-equivalent). All50233attempts/source/code/prior exports retained. Original54bindings cleared; returned57patients/114fields compile with56/60source packets supported and4undecided, globalcoverage undecided. Later source edits reintroduced a compiler failure in1field (three/Two); latestdraft36442807 is saved separately from returned complete table in ANS-27e4598520e74b8c77c14fa5. No unchanged provider votes. Next fix demonstrated repair-scope churn: source-to-compiler continuation currently invites all3original source fields to change although only1failed syntax. Restrict active repair to exact compiler-failed fields, retain other edits and full source-review obligations; prove on saved review005->006 transition and adverse tests before any paid continuation. Source unfrozen/alljobs terminal. App8890 productf2cc427c/PID12415/session83146; currentHTTP preserves57/114 andresume control. Alltenareas, freshautomaticacceptance/currentrelease/package andG5/customer dependencies remain.
+
+Last sealed recovery delivery unchanged. Subscription resumed normally; no active provider job.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T17:40:19.988767+00:00
 
 G3: monitor only numeric-limit-continuation PID11455/session83558 through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.
