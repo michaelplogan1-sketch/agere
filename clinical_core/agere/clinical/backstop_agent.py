@@ -1501,10 +1501,13 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             'workflow':workflow_failure}
         targeted=({'schema':'native-prose-repair-targets/1','draft_digest':digest(answer),'targets':prose_targets}
                   if prose_targets and static_feedback==[prose_problem] and not feedback else None)
-        # Quantity-only feedback must not hide an independently observable
-        # omission in the already materialized table. This existing narrow
-        # judgment does not validate or approve the uncompiled quantities.
+        # With no row-prose proposal, native placeholder text can reveal an
+        # independent omission. Once row_prose exists, its atomic compiler has
+        # not applied ANY proposed fields on failure: this table is still the
+        # native base, not the narrative being repaired. Preserve the exact
+        # compiler targets; composition/source checks run after compilation.
         if (prose_problem and static_feedback==[prose_problem] and not feedback
+                and 'row_prose' not in answer
                 and answer.get('table') and gate.ready(stack, 'AGERE_S1_CHECK')):
             try:
                 from .evidence_projection import coverage_answer

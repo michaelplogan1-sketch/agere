@@ -176,6 +176,47 @@ class ComputedProse(unittest.TestCase):
             self.assertNotIn('unfinished_interpretation',result['progress_state'])
             self.assertIn('13',result['feedback']);self.assertNotEqual(result['status'],'confirmed')
 
+    def test_uncompiled_row_prose_does_not_review_stale_native_placeholders(self):
+        from clinical_core.agere.clinical import execution_state as E
+        calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id,events,review FROM observations'},
+                'result':{'result_view':'agere_result_0','columns':['patient_id','events','review'],
+                          'rows':[['A',2,'Inspect findings and write the explanation.'],
+                                  ['B',3,'Inspect findings and write the explanation.']],
+                          'table_rows':2,'truncated':False}}]
+        draft={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0',
+               'headline':'Source findings retained.',
+               'row_prose':{'keys':['patient_id'],'rows':[
+                   {'key':{'patient_id':'A'},'basis':[{'result_view':'agere_result_0','row':0}],
+                    'fields':{'explanation':'Two observed events; current responsibility is unknown.'}},
+                   {'key':{'patient_id':'B'},'basis':[{'result_view':'agere_result_0','row':1}],
+                    'fields':{'explanation':'Historical findings are retained; current responsibility is unknown.'}}]}}
+        original=copy.deepcopy(draft)
+        with patch.object(G,'ready',side_effect=AssertionError('Repair compiler before judging stale native text')):
+            review=B.review_final(SimpleNamespace(),'Explain each patient.',draft,calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+        self.assertEqual(review['repair_kind'],'deterministic_compiler')
+        self.assertNotIn('unfinished_interpretation',review['progress_state'])
+        targets=E.prose_repair_targets(draft,review)
+        self.assertEqual([(t['key'],t['field'])for t in targets],[({'patient_id':'A'},'explanation')])
+        self.assertEqual(draft['row_prose'],original['row_prose'])
+        self.assertEqual(review['calls'],0);self.assertNotEqual(review['status'],'confirmed')
+        # Repairing syntax must still reach the existing coverage/source path.
+        draft['row_prose']['rows'][0]['fields']['explanation']={
+            'template':'{n} observed events; current responsibility is unknown.',
+            'bindings':{'n':{'result_view':'agere_result_0','row':0,'column':'events'}}}
+        with patch.object(G,'ready',return_value=True),patch.object(G,'check',side_effect=ValueError('full review required')) as coverage:
+            checked=B.review_final(SimpleNamespace(),'Explain each patient.',draft,calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+        coverage.assert_called_once();self.assertIn('full review required',checked['reason'])
+        self.assertEqual(draft['table'][0]['explanation'],'2 observed events; current responsibility is unknown.')
+
+    def test_invalid_row_prose_is_still_a_compiler_failure_not_an_accepted_omission(self):
+        for value in (None,{}, {'keys':[],'rows':[]}):
+            draft={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0',
+                   'headline':'Source findings retained.','row_prose':value}
+            with self.subTest(value=value),patch.object(G,'ready',side_effect=AssertionError('No model review of malformed prose')):
+                review=B.review_final(SimpleNamespace(),'Explain findings.',draft,self.calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+            self.assertEqual(review['repair_kind'],'deterministic_compiler');self.assertEqual(review['status'],'repair')
+            self.assertFalse(review.get('prose_repair'));self.assertIn('row_prose',review['feedback'])
+
     def test_early_judge_unavailable_preserves_compiler_feedback_and_unknown_cost(self):
         a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0','headline':'13 visits'}
         with patch.object(G,'ready',return_value=True),patch.object(G,'check_composition',side_effect=OSError('fixture outage')):
