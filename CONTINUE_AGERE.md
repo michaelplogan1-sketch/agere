@@ -1,8 +1,8 @@
-# Current Agere checkpoint — 2026-11-04T20:20:17.335551+00:00
+# Current Agere checkpoint — 2026-11-04T20:41:47.499645+00:00
 
-G3: early composition review is sealed on 53b8e058. App 8890 (PID 25796, session 99949) serves current context ANS-6bef307be09171faa91122b7. All jobs are terminal and source is unfrozen. The first retained draft now receives 51 explicit omission targets together with quantity errors; 190 tests passed (1 skipped). Current native reuse preserves 33 actions, 57 patients, 114 fields and 58/58 supported source packets, with undecided coverage and no Claude calls. Preserve all 50,581 attempts, including 2 DNS failures. Next isolate the remaining 104.2-second backstop replay/review cost from the retained run and existing native timings, starting offline. Separate native execution, evidence construction and serialization before proposing a targeted optimization; do not repeat a full-cohort provider campaign or claim end-to-end savings from the ordering proof. Keep all ten acceptance areas, G5/customer dependencies and the known-good package; no new model or training scope.
+G3: native-proposal deduplication8bb30c7c sealed with104.2->79.4second matched backstop reuse(23.8% reduction),0duplicate validations and unchanged57patients/114fields/58supported packets. All50585attempts retained; app8890PID26365/session36357 current; source unfrozen/all jobs terminal. Next inspect retained first-generation actor requests/drafts and cost receipts to identify the dominant remaining repeated generation/repair work, then correct only an observed avoidable path with retained-workflow evidence before any paid confirmation. Do not repeat a passing cohort run or start new training. Preserve all ten acceptance areas and independentG5/customer dependencies.
 
-Latest sealed receipt: artifacts/agere-early-composition-review-2026-11-04/delivery-receipt.json
+Latest sealed receipt: artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json
 
 ## Superseded checkpoint
 

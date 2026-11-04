@@ -684,3 +684,15 @@ Receipt: `artifacts/agere-early-composition-review-2026-11-04/delivery-receipt.j
 Initial-generation end-to-end savings remain unmeasured. Independent G5 model/clinical evidence and customer deployment dependencies remain. The known-good ff949737 archive is preserved; this change does not claim a new archive restore.
 
 Next: inspect the retained 104.2-second backstop path for native execution, evidence construction and serialization cost. Retain the fixed scope and avoid another broad provider campaign.
+
+## November 4: skip duplicate native qualification after unchanged review
+
+Product `8bb30c7c` removes a demonstrated redundant second execution. The prior selected program and newly proposed program had identical guards, all 33 actions and expected native outputs, and all patient findings. The only difference was an empty output `patient_ids` placeholder removed by the answer shaper. The new comparison recognizes that narrow equivalence on a bound patient table and also requires an exact action prefix. Changes to patient membership, clinical findings, source bindings, input scope or literal actions retain fresh validation. Current native execution and full review still run.
+
+The authentic retained-proposal check skips all 33 duplicate validation actions. The 128 affected regression tests pass. Current native qualification reproduced 33/33 outputs in 40.196 seconds with zero provider calls; that one-time cost is separate from reuse. Actual ordinary backstop replay then retained 57 patients, 114 explanation fields, 58/58 supported source packets and the original 26-node graph. Coverage remains undecided and the answer remains partial. There were four new typed checks (two Jev, two Perplexity), $0.015079444 API-equivalent and no Claude calls.
+
+Matched reported backstop time fell from **104.2 to 79.4 seconds (23.8%)**. The newly measured outer call was 80.226 seconds. These are warm replay/review measurements, not full HTTP latency or first-generation performance. Native reader invocations fell from 3,450 to 1,725 because duplicate validation was removed; no patient or source obligation was dropped. All 50,585 ledger attempts and the preceding 50,581 rows are preserved exactly.
+
+The integration app on port 8890 reopens the new immutable context `ANS-a4b5f19aa240032ad28ec059`; its current scorecard passes the nine finite engineering predicates spanning all ten areas. HTTP verification initially caught an unsynchronized receipt-pointer hash and a test expectation against projected historical review data; both setup corrections and failed checks are retained. The corrected current HTTP check passes with zero new inference.
+
+Receipt: `artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json`. Rollback product is `53b8e058`. No new weights, clinical qualification or full MVP claim. First-generation latency/cost and independent G5/customer dependencies remain. Next inspect the retained first-generation generation/repair trace before another provider campaign.
