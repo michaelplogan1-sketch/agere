@@ -8,6 +8,8 @@ Eight of28missing historical capability files were recovered exactly. Six indivi
 
 The finite assessment is now verifiable again. **The main remaining product check is first composition of the original clinical answer without a saved final proposal.** The earlier405.339second/$5.055890908ordinary run retained57rows but omitted114patient-specific prose fields. The current112.327second/$0.017496996ordinary run preserves those fields through guarded proposal reuse. They are not an equivalent-output before/after pair. The retained1,920patient numeric pair has matching output and an independent native baseline, within its documented scope. Final packaging follows the remaining clinical composition check; independentG5/customer prerequisites remain separate.
 
+Subsequent retained-trace inspection confirms all57names and clinical/source collections were present in the older native result. The114absent prose fields do not mean114missing clinical facts. The specific remaining behavior is readable interpretation: the native review instructions point back to documentary_findings instead of explaining the patient-specific findings. No whole-source reread is justified by this diagnosis. Evidence:`artifacts/agere-current-release-finish-2026-11-04/first-composition-diagnosis.json`.
+
 Evidence: `artifacts/agere-current-release-finish-2026-11-04/delivery-receipt.json`. No scope expansion, new model weights, clinical qualification or fullMVP claim.
 
 ---

@@ -12,6 +12,8 @@ Exact next: G3: close the original clinical first-composition behavior. Use arti
 
 Read AGENTS, owner/control and this header; run continuity check withG3 build intent. Retain principal audit/October11baseline/fullqueue. Claude subscription only; no extraagents/chats, protected answers, generator truth, Documents corpus, newservices, mainmerge, publication, contacts orrealcare. Deliverables onlyrequested;OWASP/HHS deferred.
 
+First-composition trace inspection: all57patient names and native clinical/source collections are present. The remaining problem is readable patient-specific interpretation: native review instructions refer back to documentary_findings instead of explaining those findings. Do not treat114absent prose fields as114missing clinical facts or require a particular prose format. Evidence:`artifacts/agere-current-release-finish-2026-11-04/first-composition-diagnosis.json`. Existing actor readings span543740–647358messagebytes; no new provider work or source campaign.
+
 # Historical checkpoints
 
 
