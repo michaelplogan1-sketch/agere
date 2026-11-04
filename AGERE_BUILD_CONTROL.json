@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T03:22:50.018662+00:00",
+  "updated_at": "2026-11-04T03:41:34.083299+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -418,6 +418,10 @@
         {
           "path": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
           "sha256": "32ad26c40c88ab068fb1ef783e027779e86a4368f185f70445b38d7e9cf22021"
+        },
+        {
+          "path": "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
+          "sha256": "7e67d975af89fc4ad39c0c1d3b8cecb14e50aafcd2bdbce65d9e8531c5772e95"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -505,11 +509,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_scalar_repair_sealed",
+    "kind": "portable_clinical_native_prefix_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Correct contradictory numeric-quotation repair guidance; retain complete source-bound patient interpretation after localized edits.",
-    "measured_failure_reduction": "Remaining numerical compiler failures cleared. Current source-supported packets increased from54/58 to58/58;57patients and114prose fields retained, all native patient cells unchanged.",
+    "user_behavior_delta": "The source-supported clinical native program is now discoverable by an ordinary request after actor escalation, and stops before temporary review feedback.",
+    "measured_failure_reduction": "Prior candidate quarantined at action27 and escalated-model lookup key;26portable actions now freshly validate and26ordinary-entry replay certificates match.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -672,17 +676,18 @@
       "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json",
       "artifacts/agere-current-release-2026-11-04/code-applicability.json",
       "artifacts/agere-current-release-2026-11-04/six-case-http/receipt.json",
-      "artifacts/agere-current-release-2026-11-04/affected-regressions.log"
+      "artifacts/agere-current-release-2026-11-04/affected-regressions.log",
+      "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json"
     ],
-    "remaining_gap": "Overall completeness verdict remains below its acceptance threshold. Current ten-area release applicability, full-request latency/economics and independent G5/customer requirements are not completed by this source-repair receipt.",
-    "next_action": "G3: qualify reusable clinical native execution without replaying ephemeral review feedback. The current source-supported run has26matching native actions followed by an operational feedback query that correctly quarantined its candidate. Stop portable learning at that boundary, retain the full trace, and verify that proposal and replay use the same entry-model identity after actor escalation. Use fresh native equivalence and regression/rollback checks before selection; no final partial answer or clinical weights may be promoted. Then measure current ordinary reuse/accounting without repeating the full source campaign or chasing the undecided global coverage vote. Current functional compatibility is9/9 across alltenareas; full-request performance, current packaging and independentG5/customer dependencies remain explicit.",
+    "remaining_gap": "Ordinary full-request interpretation, verification and economics are now being measured once. Current packaging and independentG5/customer prerequisites remain explicit; finite ten-area scope unchanged.",
+    "next_action": "G3: inspect the running ordinary original57patient clinical request on currentproduct ab6faed. Do not duplicate it or edit source while frozen. Account for every attempt, inspect actual26action reuse, retained patient/prose scope and source/global coverage separately. Keep partial outputs and unresolved checks explicit. No repeated broad campaign or uncertain-coverage vote chasing. After terminal measurement, update current ten-area applicability and distributable packaging; independentG5 and customer deployment prerequisites remain separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
-    "latest_progress": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
-    "results_report": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
+    "latest_progress": "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
+    "results_report": "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -730,14 +735,15 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T03:13:38.264397+00:00",
-    "workflow_change": "Correct contradictory numeric-quotation repair guidance; retain complete source-bound patient interpretation after localized edits.",
+    "at": "2026-11-04T03:41:34.083299+00:00",
+    "workflow_change": "The source-supported clinical native program is now discoverable by an ordinary request after actor escalation, and stops before temporary review feedback.",
     "unsealed_work": {
-      "status": "clinical_native_prefix_boundary_followthrough",
-      "all_jobs_terminal": true,
-      "source_frozen": false,
+      "status": "ordinary_current_clinical_reuse_running",
+      "source_frozen": true,
+      "all_jobs_terminal": false,
       "product_edits": false,
-      "receipt": "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json"
+      "receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-current/run-receipt.json",
+      "remaining": "Await this owned full request; no duplicate, all-attempt accounting retained."
     },
     "bottling_assessment": {
       "candidate_id": "f7610f2d0d77bd4f3929616ae7af57317e53936de14ffaa377a4fd1a70a0d076",
@@ -791,7 +797,18 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "pid": 69257,
+        "session": 82896,
+        "server_pid": 69250,
+        "server_session": 99446,
+        "status": "running",
+        "source_frozen": true,
+        "provider_dispatch": true,
+        "receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-current/run-receipt.json"
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -815,7 +832,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Remaining numerical compiler failures cleared. Current source-supported packets increased from54/58 to58/58;57patients and114prose fields retained, all native patient cells unchanged.",
+    "measured_failure_removed": "Prior candidate quarantined at action27 and escalated-model lookup key;26portable actions now freshly validate and26ordinary-entry replay certificates match.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -3604,14 +3621,22 @@
       "decision": "Current nine functional requirements retain compatible evidence across alltenareas; six real service reopens pass and225affected checks pass. Next address the observed native-prefix quarantine and entry-model identity mismatch in existing bottling code; no new acceptance area or clinical verification campaign.",
       "evidence": "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json",
       "next_action": "G3: qualify reusable clinical native execution without replaying ephemeral review feedback. The current source-supported run has26matching native actions followed by an operational feedback query that correctly quarantined its candidate. Stop portable learning at that boundary, retain the full trace, and verify that proposal and replay use the same entry-model identity after actor escalation. Use fresh native equivalence and regression/rollback checks before selection; no final partial answer or clinical weights may be promoted. Then measure current ordinary reuse/accounting without repeating the full source campaign or chasing the undecided global coverage vote. Current functional compatibility is9/9 across alltenareas; full-request performance, current packaging and independentG5/customer dependencies remain explicit."
+    },
+    {
+      "at": "2026-11-04T03:41:34.083299+00:00",
+      "gate": "G3",
+      "decision": "Qualify only the portable prefix using actual source-supported training feedback and exact current native equivalence. An unchanged partial answer gains an operational stop note; that summary cache miss does not justify a new broad source campaign. No final answer is selected. One normalAPI request now measures downstream behavior.",
+      "evidence": "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
+      "next_action": "G3: inspect the running ordinary original57patient clinical request on currentproduct ab6faed. Do not duplicate it or edit source while frozen. Account for every attempt, inspect actual26action reuse, retained patient/prose scope and source/global coverage separately. Keep partial outputs and unresolved checks explicit. No repeated broad campaign or uncertain-coverage vote chasing. After terminal measurement, update current ten-area applicability and distributable packaging; independentG5 and customer deployment prerequisites remain separate."
     }
   ],
   "unsealed_work": {
-    "status": "clinical_native_prefix_boundary_followthrough",
-    "all_jobs_terminal": true,
-    "source_frozen": false,
+    "status": "ordinary_current_clinical_reuse_running",
+    "source_frozen": true,
+    "all_jobs_terminal": false,
     "product_edits": false,
-    "receipt": "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json"
+    "receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-current/run-receipt.json",
+    "remaining": "Await this owned full request; no duplicate, all-attempt accounting retained."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3639,8 +3664,19 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: qualify reusable clinical native execution without replaying ephemeral review feedback. The current source-supported run has26matching native actions followed by an operational feedback query that correctly quarantined its candidate. Stop portable learning at that boundary, retain the full trace, and verify that proposal and replay use the same entry-model identity after actor escalation. Use fresh native equivalence and regression/rollback checks before selection; no final partial answer or clinical weights may be promoted. Then measure current ordinary reuse/accounting without repeating the full source campaign or chasing the undecided global coverage vote. Current functional compatibility is9/9 across alltenareas; full-request performance, current packaging and independentG5/customer dependencies remain explicit.",
+  "active_jobs": [
+    {
+      "pid": 69257,
+      "session": 82896,
+      "server_pid": 69250,
+      "server_session": 99446,
+      "status": "running",
+      "source_frozen": true,
+      "provider_dispatch": true,
+      "receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-current/run-receipt.json"
+    }
+  ],
+  "next_action": "G3: inspect the running ordinary original57patient clinical request on currentproduct ab6faed. Do not duplicate it or edit source while frozen. Account for every attempt, inspect actual26action reuse, retained patient/prose scope and source/global coverage separately. Keep partial outputs and unresolved checks explicit. No repeated broad campaign or uncertain-coverage vote chasing. After terminal measurement, update current ten-area applicability and distributable packaging; independentG5 and customer deployment prerequisites remain separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3649,7 +3685,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T03:13:38.264397+00:00",
+  "latest_checkpoint": "2026-11-04T03:41:34.083299+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3729,6 +3765,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 68674,
-  "owned_server_session": 20453
+  "owned_server_pid": 69250,
+  "owned_server_session": 99446
 }
