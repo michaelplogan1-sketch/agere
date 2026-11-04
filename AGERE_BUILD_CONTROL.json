@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T20:41:47.499645+00:00",
+  "updated_at": "2026-11-04T21:21:10.862526+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -478,7 +478,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "First-generation986.028second/$8.909197764API-equivalent reference remains; initial-generation benefit from earlier combined repair is unmeasured. Current matched backstop replay79.4seconds excludes fullHTTP delivery; first-answer latency/cost still needs improvement. Coverage remains undecided/partial. IndependentG5 clinical/model and customer deployment dependencies remain. Known-good ff949737 archive retained; no new current-archive restore claim.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: native-proposal deduplication8bb30c7c sealed with104.2->79.4second matched backstop reuse(23.8% reduction),0duplicate validations and unchanged57patients/114fields/58supported packets. All50585attempts retained; app8890PID26365/session36357 current; source unfrozen/all jobs terminal. Next inspect retained first-generation actor requests/drafts and cost receipts to identify the dominant remaining repeated generation/repair work, then correct only an observed avoidable path with retained-workflow evidence before any paid confirmation. Do not repeat a passing cohort run or start new training. Preserve all ten acceptance areas and independentG5/customer dependencies.",
+      "next_action": "G3: all request jobs terminal/source unfrozen; app8890 stopped after disk-full persistence failure. Storage recovered losslessly with exact hashes/paths/timestamps. Candidate20b58db8 now retains rejected mixed-response text in compact actor state without executing or accepting it;140 focused checks and authentic61,362-byte response/32-native-receipt before-after proof pass with0providers. All50588attempts remain exact; failed first-answer attempt362.526seconds/3Claude/$2.5999245API-equivalent is not a completed answer or savings result. Next verify the changed ordinary first-answer path using the existing current-source native prefix and cached provider responses; preserve the57-row/114-field unaccepted draft through existing protocol repair and full compiler/source/coverage review. Revalidate only changed applicability; no fresh source-reading campaign, owner answer injection or unchanged paid regeneration. Then reconcile current ten-area acceptance and affected release/package checks. Prior sealed8bb30c7c delivery and ff949737 recovery package remain; first-answer performance, independentG5 qualification and customer deployment are open. No scope expansion.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -606,14 +606,14 @@
       "artifacts/agere-replay-validation-dedup-2026-11-04/diagnosis.json",
       "artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json"
     ],
-    "remaining_gap": "First-generation986.028second/$8.909197764API-equivalent reference remains; initial-generation benefit from earlier combined repair is unmeasured. Current matched backstop replay79.4seconds excludes fullHTTP delivery; first-answer latency/cost still needs improvement. Coverage remains undecided/partial. IndependentG5 clinical/model and customer deployment dependencies remain. Known-good ff949737 archive retained; no new current-archive restore claim.",
-    "next_action": "G3: native-proposal deduplication8bb30c7c sealed with104.2->79.4second matched backstop reuse(23.8% reduction),0duplicate validations and unchanged57patients/114fields/58supported packets. All50585attempts retained; app8890PID26365/session36357 current; source unfrozen/all jobs terminal. Next inspect retained first-generation actor requests/drafts and cost receipts to identify the dominant remaining repeated generation/repair work, then correct only an observed avoidable path with retained-workflow evidence before any paid confirmation. Do not repeat a passing cohort run or start new training. Preserve all ten acceptance areas and independentG5/customer dependencies.",
+    "remaining_gap": "First-answer candidate run failed local persistence and did not deliver a reviewed complete result. Mixed protocol draft retention is now offline verified but not activated. Current first-answer completion/performance, ten-area candidate applicability and affected package checks remain; independent G5/customer dependencies unchanged.",
+    "next_action": "G3: all request jobs terminal/source unfrozen; app8890 stopped after disk-full persistence failure. Storage recovered losslessly with exact hashes/paths/timestamps. Candidate20b58db8 now retains rejected mixed-response text in compact actor state without executing or accepting it;140 focused checks and authentic61,362-byte response/32-native-receipt before-after proof pass with0providers. All50588attempts remain exact; failed first-answer attempt362.526seconds/3Claude/$2.5999245API-equivalent is not a completed answer or savings result. Next verify the changed ordinary first-answer path using the existing current-source native prefix and cached provider responses; preserve the57-row/114-field unaccepted draft through existing protocol repair and full compiler/source/coverage review. Revalidate only changed applicability; no fresh source-reading campaign, owner answer injection or unchanged paid regeneration. Then reconcile current ten-area acceptance and affected release/package checks. Prior sealed8bb30c7c delivery and ff949737 recovery package remain; first-answer performance, independentG5 qualification and customer deployment are open. No scope expansion.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All checks terminal; source unfrozen; app8890 PID24381/session80831 ready.",
+    "coordination": "All jobs terminal/source unfrozen; integration app8890 intentionally stopped; primary8885 untouched.",
     "remaining_blockers": [
       "Initial-generation end-to-end improvement from the earlier composition check is unmeasured. The current backstop reuse/review alone still took104.2seconds; the earlier full-request references remain986.028seconds/$8.909197764 and155.723seconds/$0.015078556 warm reuse. Coverage remains undecided/partial. Independent G5 model/clinical evidence and customer deployment dependencies remain. Known-good archive ff949737 is preserved; no current-archive restore is claimed."
     ],
-    "latest_progress": "artifacts/agere-replay-validation-dedup-2026-11-04/diagnosis.json",
+    "latest_progress": "artifacts/agere-complete-reading-encoding-2026-11-04/protocol-preservation-proof.json",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -665,12 +665,15 @@
     "at": "2026-11-04T20:26:59.362709+00:00",
     "workflow_change": "An explicitly unfinished patient explanation can now be reported together with quantity-binding errors before another frontier retry. Uncertain/unavailable composition judgments retain the compiler repair, and full source/coverage review remains required.",
     "unsealed_work": {
-      "status": "sealed_native_proposal_dedup",
+      "status": "protocol_candidate_offline_verified",
       "all_jobs_terminal": true,
       "source_frozen": false,
-      "product_edits": false,
-      "receipt": "artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json",
-      "next_action": "G3: native-proposal deduplication8bb30c7c sealed with104.2->79.4second matched backstop reuse(23.8% reduction),0duplicate validations and unchanged57patients/114fields/58supported packets. All50585attempts retained; app8890PID26365/session36357 current; source unfrozen/all jobs terminal. Next inspect retained first-generation actor requests/drafts and cost receipts to identify the dominant remaining repeated generation/repair work, then correct only an observed avoidable path with retained-workflow evidence before any paid confirmation. Do not repeat a passing cohort run or start new training. Preserve all ten acceptance areas and independentG5/customer dependencies."
+      "product_edits": true,
+      "candidate_product": "20b58db8e1109422b228cb8fff1420b8f7da3dc6",
+      "receipt": "artifacts/agere-complete-reading-encoding-2026-11-04/protocol-preservation-proof.json",
+      "next_action": "G3: all request jobs terminal/source unfrozen; app8890 stopped after disk-full persistence failure. Storage recovered losslessly with exact hashes/paths/timestamps. Candidate20b58db8 now retains rejected mixed-response text in compact actor state without executing or accepting it;140 focused checks and authentic61,362-byte response/32-native-receipt before-after proof pass with0providers. All50588attempts remain exact; failed first-answer attempt362.526seconds/3Claude/$2.5999245API-equivalent is not a completed answer or savings result. Next verify the changed ordinary first-answer path using the existing current-source native prefix and cached provider responses; preserve the57-row/114-field unaccepted draft through existing protocol repair and full compiler/source/coverage review. Revalidate only changed applicability; no fresh source-reading campaign, owner answer injection or unchanged paid regeneration. Then reconcile current ten-area acceptance and affected release/package checks. Prior sealed8bb30c7c delivery and ff949737 recovery package remain; first-answer performance, independentG5 qualification and customer deployment are open. No scope expansion.",
+      "activation": "not_activated_or_sealed",
+      "failed_run_receipt": "artifacts/agere-complete-reading-encoding-2026-11-04/ordinary-first-answer/run-receipt.json"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -3813,15 +3816,31 @@
       "decision": "Deduplicate an unchanged checked proposal only after exact native-action prefix comparison and narrow bound-output placeholder equivalence. Preserve current source review, real membership and input scope.",
       "basis": "artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json",
       "scope_impact": "No acceptance area, clinical review threshold, source, model or training scope changed."
+    },
+    {
+      "at": "2026-11-04T21:21:10.862526+00:00",
+      "gate": "G3",
+      "reason": "Preserve costly generated work after a failed first-answer confirmation; correct observed context loss rather than repeat generation. Storage exhaustion is an operational failure, not clinical/model evidence.",
+      "evidence": [
+        "artifacts/agere-complete-reading-encoding-2026-11-04/protocol-preservation-proof.json",
+        "artifacts/agere-complete-reading-encoding-2026-11-04/ordinary-first-answer/run-receipt.json",
+        "artifacts/agere-complete-reading-encoding-2026-11-04/storage-recovery.json"
+      ],
+      "scope_impact": "None; all ten acceptance areas retained. No new models or training.",
+      "observed_failure": "A registered invocation plus complete57-row/114-field JSON was correctly rejected as mixed protocol, but its text was absent from the next compact actor request. No companion action executed.",
+      "correction": "Retain exact rejected blocks as inert protocol-repair state and failure receipt, keeping existing action permissions and answer checks."
     }
   ],
   "unsealed_work": {
-    "status": "sealed_native_proposal_dedup",
+    "status": "protocol_candidate_offline_verified",
     "all_jobs_terminal": true,
     "source_frozen": false,
-    "product_edits": false,
-    "receipt": "artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json",
-    "next_action": "G3: native-proposal deduplication8bb30c7c sealed with104.2->79.4second matched backstop reuse(23.8% reduction),0duplicate validations and unchanged57patients/114fields/58supported packets. All50585attempts retained; app8890PID26365/session36357 current; source unfrozen/all jobs terminal. Next inspect retained first-generation actor requests/drafts and cost receipts to identify the dominant remaining repeated generation/repair work, then correct only an observed avoidable path with retained-workflow evidence before any paid confirmation. Do not repeat a passing cohort run or start new training. Preserve all ten acceptance areas and independentG5/customer dependencies."
+    "product_edits": true,
+    "candidate_product": "20b58db8e1109422b228cb8fff1420b8f7da3dc6",
+    "receipt": "artifacts/agere-complete-reading-encoding-2026-11-04/protocol-preservation-proof.json",
+    "next_action": "G3: all request jobs terminal/source unfrozen; app8890 stopped after disk-full persistence failure. Storage recovered losslessly with exact hashes/paths/timestamps. Candidate20b58db8 now retains rejected mixed-response text in compact actor state without executing or accepting it;140 focused checks and authentic61,362-byte response/32-native-receipt before-after proof pass with0providers. All50588attempts remain exact; failed first-answer attempt362.526seconds/3Claude/$2.5999245API-equivalent is not a completed answer or savings result. Next verify the changed ordinary first-answer path using the existing current-source native prefix and cached provider responses; preserve the57-row/114-field unaccepted draft through existing protocol repair and full compiler/source/coverage review. Revalidate only changed applicability; no fresh source-reading campaign, owner answer injection or unchanged paid regeneration. Then reconcile current ten-area acceptance and affected release/package checks. Prior sealed8bb30c7c delivery and ff949737 recovery package remain; first-answer performance, independentG5 qualification and customer deployment are open. No scope expansion.",
+    "activation": "not_activated_or_sealed",
+    "failed_run_receipt": "artifacts/agere-complete-reading-encoding-2026-11-04/ordinary-first-answer/run-receipt.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -3847,7 +3866,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: native-proposal deduplication8bb30c7c sealed with104.2->79.4second matched backstop reuse(23.8% reduction),0duplicate validations and unchanged57patients/114fields/58supported packets. All50585attempts retained; app8890PID26365/session36357 current; source unfrozen/all jobs terminal. Next inspect retained first-generation actor requests/drafts and cost receipts to identify the dominant remaining repeated generation/repair work, then correct only an observed avoidable path with retained-workflow evidence before any paid confirmation. Do not repeat a passing cohort run or start new training. Preserve all ten acceptance areas and independentG5/customer dependencies.",
+  "next_action": "G3: all request jobs terminal/source unfrozen; app8890 stopped after disk-full persistence failure. Storage recovered losslessly with exact hashes/paths/timestamps. Candidate20b58db8 now retains rejected mixed-response text in compact actor state without executing or accepting it;140 focused checks and authentic61,362-byte response/32-native-receipt before-after proof pass with0providers. All50588attempts remain exact; failed first-answer attempt362.526seconds/3Claude/$2.5999245API-equivalent is not a completed answer or savings result. Next verify the changed ordinary first-answer path using the existing current-source native prefix and cached provider responses; preserve the57-row/114-field unaccepted draft through existing protocol repair and full compiler/source/coverage review. Revalidate only changed applicability; no fresh source-reading campaign, owner answer injection or unchanged paid regeneration. Then reconcile current ten-area acceptance and affected release/package checks. Prior sealed8bb30c7c delivery and ff949737 recovery package remain; first-answer performance, independentG5 qualification and customer deployment are open. No scope expansion.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3936,6 +3955,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 26365,
-  "owned_server_session": 36357
+  "owned_server_pid": null,
+  "owned_server_session": null
 }
