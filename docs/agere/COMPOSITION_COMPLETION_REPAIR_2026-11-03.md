@@ -1,5 +1,17 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: release evidence audit and recovery
+
+Product `351ac27c` closes an evidence-integrity defect: the release scorer previously trusted six cached individual passes even after all54required raw trace files disappeared. It now checks the complete passing check set and every referenced file hash.36targeted tests cover loss, alteration and paths outside the project. The current app displays the reconciled nine-capability/all-ten-area assessment and preserves the57patient/114field clinical result, stillpartial/unverified.
+
+Eight of28missing historical capability files were recovered exactly. Six individual workflows were mechanically rescored from surviving immutable state, without new interpretation. Both population programs independently reconcile all4,115received members and preserve241internalhandoffs. Fresh corrected-balance, late-arrival and conflicting-snapshot scenarios each change one member, preserve4,114others and retain the exact missing-attribution acquisition/work boundary. The first harness used the wrong saved buyer portfolio; its failure is retained and the verified data copy was reused. No provider calls were made; all49,303attempts remain exact.
+
+The finite assessment is now verifiable again. **The main remaining product check is first composition of the original clinical answer without a saved final proposal.** The earlier405.339second/$5.055890908ordinary run retained57rows but omitted114patient-specific prose fields. The current112.327second/$0.017496996ordinary run preserves those fields through guarded proposal reuse. They are not an equivalent-output before/after pair. The retained1,920patient numeric pair has matching output and an independent native baseline, within its documented scope. Final packaging follows the remaining clinical composition check; independentG5/customer prerequisites remain separate.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/delivery-receipt.json`. No scope expansion, new model weights, clinical qualification or fullMVP claim.
+
+---
+
 ## November 4: ordinary guarded proposal reuse verified
 
 Product `796c1d4c` brings the retained native workflow and unaccepted draft into normal question entry. The exact question, population/date, source, policy and physician-feedback guards must match; every native action reruns and the complete current source/coverage review runs before any answer is returned. Changed evidence withholds the old proposal. Partial output remains partial, with no clinical authority or model-weight promotion.
@@ -8,7 +20,7 @@ The actual ordinary request returned all57patients and114prose fields unchanged 
 
 The preceding ordinary run took150.744seconds. A duplicate warning made its unchanged draft look like a new candidate, triggering32additional validation actions. Idempotent feedback removes that duplicate cycle while preserving all review requirements.91focused checks pass. These observations qualify warm ordinary reuse, not first-request economics or a standalone-model comparison.
 
-The first attempt was interrupted when source/configuration files and Git metadata disappeared from temporary storage. All attempts and returned provider text were retained. Source recovery matches1050recorded file hashes;455missing runtime files were restored and checked against the sealed archive. The active checkout and Git metadata now reside in durable storage, with the original path preserved. Current acceptance evidence is intact; three historical receipt files remain unavailable and are listed in the recovery receipt.
+The first attempt was interrupted when source/configuration files and Git metadata disappeared from temporary storage. All attempts and returned provider text were retained. Source recovery matches1050recorded file hashes;455missing runtime files were restored and checked against the sealed archive. The active checkout and Git metadata now reside in durable storage, with the original path preserved. That initial recovery checked current control references; three historical receipt files remained unavailable. The deeper release audit above subsequently identified and handled additional missing raw evidence.
 
 All work in this increment, including preparation and the failed attempt:21provider attempts,$0.397702818known API-equivalent,0unpriced;49,303shared ledger rows retained. Local compute/development and subscription cash allocation are not included in that estimate.
 

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T06:27:10.455551+00:00",
+  "updated_at": "2026-11-04T07:07:42.527287+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -430,16 +430,20 @@
         {
           "path": "artifacts/agere-ordinary-proposal-reuse-2026-11-04/delivery-receipt.json",
           "sha256": "65b35d291247c0af2fd7f2df6b4f6f6e7b985b3113eb1e564c80a08f00b7000a"
+        },
+        {
+          "path": "artifacts/agere-current-release-finish-2026-11-04/delivery-receipt.json",
+          "sha256": "1617374ae20b0bfbae16c783d3fd65d5b84a9df06d9353b7a346ae6ddcc1f4a0"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Current finite release applicability and first-request composition/economics evidence; supported joint-source and coverage unknowns remain explicit. Independent G5/customer requirements retained.",
-      "engineering_current_status": "Actual ordinary HTTP request retains all57patients/114prose fields and exact table/prose values: 112.327seconds,32native substitutions,0Claude/actor callbacks,4Jev/Perplexity attempts,$0.017496996API-equivalent. No duplicate candidate.59/60source packets supported; joint dependency and coverage remain unknown.",
-      "next_action": "G3: perform the finite current-release finish assessment using the existing nine-capability/all-ten-area matrix at artifacts/agere-current-package-2026-11-04/acceptance, the current ordinary original-question proof and scoped regression evidence. Ordinary guarded proposal reuse is now demonstrated; do not repeat its passing campaign. Reconcile current implementation applicability and the remaining first-request composition/economics evidence separately from warm reuse. Use retained first-request traces and equivalent-evidence baselines before authorizing another provider experiment; name the exact unresolved user behavior and acceptance check before product edits. Close only demonstrated engineering requirements, preserving joint source/coverage unknowns, G5 independent clinical/model/outcome qualification and customer prerequisites. No architecture rewrite, optional-model expansion, untargeted training or new finish-line requirements.",
-      "latest_current_release_decision": "artifacts/agere-ordinary-proposal-reuse-2026-11-04/delivery-receipt.json"
+      "remaining_acceptance": "Original clinical first composition without a saved final proposal has not demonstrated all requested patient-specific fields or acceptable measured economics. Final packaging follows that check. One joint source-support dependency and global coverage remain unknown; independent G5/customer prerequisites stay separate.",
+      "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
+      "next_action": "G3: close the original clinical first-composition behavior. Use artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json and the retained405.339-second native-prefix request to identify why a newly composed answer omitted114patient-specific prose fields despite57native rows. Reuse existing source observations and shared typed assertion/state/composition; no whole-cohort reading campaign or repeated passing warm-reuse/matrix run. Before another provider experiment, prepare the exact ordinary-question comparison and acceptance check: full57patients, names/clinical information/dated PCP and cardiologist, requested drug-pillar/dose reasons and patient-specific recommendations or explicit source-bound unknowns, with all attempts and costs. Distinguish first composition without a prior final proposal from current guarded proposal reuse and cold source ingestion; never inject a precomputed answer as ordinary planning. Repair only the measured generic composition failure, confirm once through the ordinary entry, then seal the final distributable. Preserve joint source/coverage unknowns, alltenareas, separate G5independent qualification/customer prerequisites, approved provider/source/push authority and standing restrictions.",
+      "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
       "id": "G5",
@@ -517,26 +521,25 @@
     }
   ],
   "checkpoint": {
-    "kind": "joint_dependency_stop_sealed",
+    "kind": "current_release_evidence_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Ordinary original-question entry automatically reexecutes its validated native trajectory and submits the retained unaccepted draft to full current verification. Exact question, population/date, source/policy and physician-feedback guards remain. Repeated identical review feedback no longer creates a duplicate proposal or repeats fresh candidate validation.",
-    "measured_failure_reduction": "Actual ordinary HTTP request retains all57patients/114prose fields and exact table/prose values: 112.327seconds,32native substitutions,0Claude/actor callbacks,4Jev/Perplexity attempts,$0.017496996API-equivalent. No duplicate candidate.59/60source packets supported; joint dependency and coverage remain unknown.",
+    "user_behavior_delta": "The existing release evaluation now verifies individual execution evidence before accepting cached passes and serves the reconciled current all-ten-area assessment. Current clinical saved result remains intact.",
+    "measured_failure_reduction": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence.",
     "evidence": [
-      "artifacts/agere-ordinary-proposal-reuse-2026-11-04/delivery-receipt.json",
-      "artifacts/agere-ordinary-proposal-reuse-2026-11-04/ordinary-current-v3/run-receipt.json",
-      "artifacts/agere-ordinary-proposal-reuse-2026-11-04/app-v3/http-check.json",
-      "artifacts/agere-ordinary-proposal-reuse-2026-11-04/all-attempt-accounting.json"
+      "artifacts/agere-current-release-finish-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json",
+      "artifacts/agere-current-release-finish-2026-11-04/app/http-check.json"
     ],
-    "remaining_gap": "Current full-release applicability and first-request composition/economics; one joint source support dependency and coverage judgment unknown. G5 independent clinical/model qualification and customer deployment remain separate.",
-    "next_action": "G3: perform the finite current-release finish assessment using the existing nine-capability/all-ten-area matrix at artifacts/agere-current-package-2026-11-04/acceptance, the current ordinary original-question proof and scoped regression evidence. Ordinary guarded proposal reuse is now demonstrated; do not repeat its passing campaign. Reconcile current implementation applicability and the remaining first-request composition/economics evidence separately from warm reuse. Use retained first-request traces and equivalent-evidence baselines before authorizing another provider experiment; name the exact unresolved user behavior and acceptance check before product edits. Close only demonstrated engineering requirements, preserving joint source/coverage unknowns, G5 independent clinical/model/outcome qualification and customer prerequisites. No architecture rewrite, optional-model expansion, untargeted training or new finish-line requirements.",
-    "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
+    "remaining_gap": "Original clinical first composition without a saved final proposal has not demonstrated all requested patient-specific fields or acceptable measured economics. Final packaging follows that check. One joint source-support dependency and global coverage remain unknown; independent G5/customer prerequisites stay separate.",
+    "next_action": "G3: close the original clinical first-composition behavior. Use artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json and the retained405.339-second native-prefix request to identify why a newly composed answer omitted114patient-specific prose fields despite57native rows. Reuse existing source observations and shared typed assertion/state/composition; no whole-cohort reading campaign or repeated passing warm-reuse/matrix run. Before another provider experiment, prepare the exact ordinary-question comparison and acceptance check: full57patients, names/clinical information/dated PCP and cardiologist, requested drug-pillar/dose reasons and patient-specific recommendations or explicit source-bound unknowns, with all attempts and costs. Distinguish first composition without a prior final proposal from current guarded proposal reuse and cold source ingestion; never inject a precomputed answer as ordinary planning. Repair only the measured generic composition failure, confirm once through the ordinary entry, then seal the final distributable. Preserve joint source/coverage unknowns, alltenareas, separate G5independent qualification/customer prerequisites, approved provider/source/push authority and standing restrictions.",
+    "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
+    "coordination": "All offline verification jobs terminal; source unfrozen. Owned8890 serves 351ac27c6776e1a47befe48e23d52c45d6b8ba18. No additional agents/chats.",
     "remaining_blockers": [
-      "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
+      "Original clinical first composition without a saved final proposal has not demonstrated all requested patient-specific fields or acceptable measured economics. Final packaging follows that check. One joint source-support dependency and global coverage remain unknown; independent G5/customer prerequisites stay separate."
     ],
-    "latest_progress": "Actual ordinary HTTP request retains all57patients/114prose fields and exact table/prose values: 112.327seconds,32native substitutions,0Claude/actor callbacks,4Jev/Perplexity attempts,$0.017496996API-equivalent. No duplicate candidate.59/60source packets supported; joint dependency and coverage remain unknown.",
-    "results_report": "artifacts/agere-source-review-resume-2026-11-04/current-patient-delivery.json",
+    "latest_progress": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence.",
+    "results_report": "artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -3516,14 +3519,21 @@
       "decision": "Qualify ordinary partial draft only as a reverified proposal; keep review feedback idempotent. Recover exact source/runtime after filesystem loss and move the owned checkout to durable storage while preserving its original alias.",
       "evidence": "artifacts/agere-ordinary-proposal-reuse-2026-11-04/delivery-receipt.json",
       "scope_impact": "No acceptance area removed; no clinical labels/model weights, final answer authority or first-request benchmark inferred."
+    },
+    {
+      "at": "2026-11-04T07:07:42.527287+00:00",
+      "gate": "G3",
+      "decision": "Recompute current release evidence after filesystem loss, block unverified cached individual passes, and isolate the remaining first-composition gap. Preserve obsolete raw references and failed verification harnesses; use newer measured evidence without repeating provider campaigns.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/delivery-receipt.json",
+      "scope_impact": "Alltenareas and fixed acceptance retained. No new model, clinical, source-family or customer qualification; no repeated whole clinical or frozen source campaign."
     }
   ],
   "unsealed_work": {
-    "status": "current_release_finish_assessment_next",
+    "status": "clinical_first_composition_next",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": false,
-    "remaining": "G3: perform the finite current-release finish assessment using the existing nine-capability/all-ten-area matrix at artifacts/agere-current-package-2026-11-04/acceptance, the current ordinary original-question proof and scoped regression evidence. Ordinary guarded proposal reuse is now demonstrated; do not repeat its passing campaign. Reconcile current implementation applicability and the remaining first-request composition/economics evidence separately from warm reuse. Use retained first-request traces and equivalent-evidence baselines before authorizing another provider experiment; name the exact unresolved user behavior and acceptance check before product edits. Close only demonstrated engineering requirements, preserving joint source/coverage unknowns, G5 independent clinical/model/outcome qualification and customer prerequisites. No architecture rewrite, optional-model expansion, untargeted training or new finish-line requirements."
+    "remaining": "G3: close the original clinical first-composition behavior. Use artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json and the retained405.339-second native-prefix request to identify why a newly composed answer omitted114patient-specific prose fields despite57native rows. Reuse existing source observations and shared typed assertion/state/composition; no whole-cohort reading campaign or repeated passing warm-reuse/matrix run. Before another provider experiment, prepare the exact ordinary-question comparison and acceptance check: full57patients, names/clinical information/dated PCP and cardiologist, requested drug-pillar/dose reasons and patient-specific recommendations or explicit source-bound unknowns, with all attempts and costs. Distinguish first composition without a prior final proposal from current guarded proposal reuse and cold source ingestion; never inject a precomputed answer as ordinary planning. Repair only the measured generic composition failure, confirm once through the ordinary entry, then seal the final distributable. Preserve joint source/coverage unknowns, alltenareas, separate G5independent qualification/customer prerequisites, approved provider/source/push authority and standing restrictions."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3552,7 +3562,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: perform the finite current-release finish assessment using the existing nine-capability/all-ten-area matrix at artifacts/agere-current-package-2026-11-04/acceptance, the current ordinary original-question proof and scoped regression evidence. Ordinary guarded proposal reuse is now demonstrated; do not repeat its passing campaign. Reconcile current implementation applicability and the remaining first-request composition/economics evidence separately from warm reuse. Use retained first-request traces and equivalent-evidence baselines before authorizing another provider experiment; name the exact unresolved user behavior and acceptance check before product edits. Close only demonstrated engineering requirements, preserving joint source/coverage unknowns, G5 independent clinical/model/outcome qualification and customer prerequisites. No architecture rewrite, optional-model expansion, untargeted training or new finish-line requirements.",
+  "next_action": "G3: close the original clinical first-composition behavior. Use artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json and the retained405.339-second native-prefix request to identify why a newly composed answer omitted114patient-specific prose fields despite57native rows. Reuse existing source observations and shared typed assertion/state/composition; no whole-cohort reading campaign or repeated passing warm-reuse/matrix run. Before another provider experiment, prepare the exact ordinary-question comparison and acceptance check: full57patients, names/clinical information/dated PCP and cardiologist, requested drug-pillar/dose reasons and patient-specific recommendations or explicit source-bound unknowns, with all attempts and costs. Distinguish first composition without a prior final proposal from current guarded proposal reuse and cold source ingestion; never inject a precomputed answer as ordinary planning. Repair only the measured generic composition failure, confirm once through the ordinary entry, then seal the final distributable. Preserve joint source/coverage unknowns, alltenareas, separate G5independent qualification/customer prerequisites, approved provider/source/push authority and standing restrictions.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3561,7 +3571,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T06:27:10.455551+00:00",
+  "latest_checkpoint": "2026-11-04T07:07:42.527287+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3641,6 +3651,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 80302,
-  "owned_server_session": 93521
+  "owned_server_pid": 81207,
+  "owned_server_session": 79745
 }
