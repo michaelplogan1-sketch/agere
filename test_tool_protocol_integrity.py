@@ -13,6 +13,47 @@ def response(text,stop='end_turn'):
 
 
 class Protocol(unittest.TestCase):
+    def test_compact_protocol_repair_keeps_mixed_draft_without_accepting_actions(self):
+        draft={'status':'partial','row_prose':{'rows':[{'key':{'patient_id':'A'},
+            'fields':{'explanation':'Retained source interpretation'}}]}}
+        mixed='<invoke name="query_sql"><parameter name="sql">SELECT 1</parameter></invoke>\n'+json.dumps(draft)
+        native=[{'name':'query_sql','input':{'sql':'SELECT patient_id FROM cohort'},
+                 'result':{'result_view':'cohort','columns':['patient_id'],'rows':[['A']]}}]
+        sent=[];reviewed=[];executed=[]
+        def send(body):
+            sent.append(body)
+            if len(sent)==1:return response(mixed),0.,True
+            state=json.loads(body['messages'][0]['content'])
+            if len(sent)==3:
+                self.assertNotIn('pending_protocol_response',state)
+                return response(json.dumps(draft)),0.,True
+            retained=state['pending_protocol_response']
+            self.assertEqual(retained['content'],response(mixed)['content'])
+            self.assertFalse(retained['tool_actions_executed']);self.assertFalse(retained['accepted_answer'])
+            self.assertEqual(len(state['executed_results']),1)
+            return response(json.dumps({'tool_use':{'name':'query_sql','input':{'sql':'SELECT 2'}}})),0.,True
+        result=S.tool_loop('Explain cohort',[],TOOLS,
+            lambda use:executed.append(use['input'])or{'result_view':'v2','columns':['v'],'rows':[[2]]},
+            send=send,model='authored',max_tools=None,initial_calls=native,compact_execution_state=True,
+            review=lambda answer,calls:reviewed.append(answer)or{'status':'confirmed'})
+        self.assertEqual(executed,[{'sql':'SELECT 2'}]);self.assertEqual(reviewed,[draft])
+        self.assertEqual(result['answer'],draft);self.assertEqual(result['tool_calls'][:1],native)
+        self.assertEqual(result['protocol_repair_responses'][0]['content'],response(mixed)['content'])
+
+    def test_protocol_draft_survives_provider_failure_without_becoming_answer(self):
+        mixed='<invoke name="unknown"><parameter name="x">1</parameter></invoke>\n{"status":"answered","value":99}'
+        sent=[]
+        def send(body):
+            sent.append(body)
+            if len(sent)==1:return response(mixed),.01,False
+            self.assertIn(mixed,json.loads(body['messages'][0]['content'])['pending_protocol_response']['content'][0]['text'])
+            raise RuntimeError('fixture provider unavailable')
+        result=S.tool_loop('Question',[],TOOLS,lambda use:self.fail('Unknown action must remain inert'),
+            send=send,model='authored',max_tools=None,compact_execution_state=True)
+        self.assertIn('fixture provider unavailable',result['error'])
+        self.assertFalse(result.get('answer'));self.assertFalse(result['tool_calls'])
+        self.assertEqual(result['protocol_repair_responses'][0]['content'],response(mixed)['content'])
+
     def test_empty_unknown_prefix_preserves_complete_final_draft_for_full_review(self):
         draft={'status':'partial','headline':'Retained interpretation','row_prose':{'keys':['patient_id'],
             'rows':[{'key':{'patient_id':'A'},'basis':[],'fields':{'explanation':'Current role remains unknown.'}}]}}

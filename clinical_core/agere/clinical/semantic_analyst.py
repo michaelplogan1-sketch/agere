@@ -551,6 +551,22 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
     rejected_protocol = set()
     last_tools = None
     pending_output = None
+    pending_protocol_response = None
+
+    def retain_protocol_response(blocks):
+        # The compact state omits conversational history. A rejected mixed
+        # response may still contain expensive draft work; retain it as inert
+        # input without executing its actions or accepting its answer.
+        nonlocal pending_protocol_response
+        import copy
+        from ...contracts import digest
+        pending_protocol_response = {'turn': turns, 'content': copy.deepcopy(blocks),
+            'content_digest': digest(blocks), 'tool_actions_executed': False,
+            'accepted_answer': False,
+            'instruction': 'This is your rejected response, retained verbatim for protocol repair. '
+                'No action or answer from it was accepted. Resolve the protocol ambiguity using registered literal tools '
+                'or the required answer/repair contract. Preserve useful draft work; all existing review checks still apply.'}
+        result.setdefault('protocol_repair_responses', []).append(copy.deepcopy(pending_protocol_response))
     if initial_answer is not None and review is not None:
         import copy
         candidate=copy.deepcopy(initial_answer)
@@ -610,6 +626,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             focused_repair=None
             if compact_execution_state:
                 state=json.loads(actor_messages[0]['content'])
+                if pending_protocol_response is not None:
+                    state['pending_protocol_response'] = pending_protocol_response
+                    actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
                 focused_repair=state.get('focused_prose_repair')
                 if focused_repair:
                     if repair_protocol_feedback:
@@ -736,6 +755,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     else:
                         candidate = None
                     if candidate is None:
+                        retain_protocol_response(blocks)
                         if retries_left <= 0:
                             if not escalate('Answer JSON remained invalid after format feedback'):
                                 raise
@@ -757,6 +777,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         messages.append({'role': 'user', 'content': format_feedback})
                         continue
                 if isinstance(candidate, dict) and any(k in candidate for k in ('tool_use', 'tool_uses')):
+                    retain_protocol_response(blocks)
                     signature = json.dumps([candidate, result['tool_calls']], sort_keys=True, default=str)
                     if signature in rejected_protocol:
                         if not escalate('Repeated unexecuted tool envelope'):
@@ -776,6 +797,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                      'Do not wrap tool requests in an answer object or mix them with other actions. '
                                      'Execute the missing work before returning the final answer.'})
                     continue
+                pending_protocol_response = None
                 if focused_repair and (not isinstance(candidate,dict) or set(candidate)!={'repair_draft'}):
                     signature=digest(['focused_repair_replacement',candidate,digest(state_candidate)])
                     result.setdefault('protocol_repairs',[]).append({'reason':'Replacement answer rejected at focused repair boundary',
@@ -917,6 +939,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 result.pop('unaccepted_draft',None)
                 result['answer'] = candidate
                 return result
+            pending_protocol_response = None
             messages.append({'role': 'assistant', 'content': blocks})
             answers = []
             latest_calls=[]
