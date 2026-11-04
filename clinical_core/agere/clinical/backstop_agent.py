@@ -2755,12 +2755,15 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         actor_metrics={'new_paid_api_calls':run.get('new_paid_api_calls',0),'estimated_cost_usd':run.get('estimated_cost_usd'),
                        'model_callbacks':run.get('new_paid_api_calls',0)+run.get('cache_hits',0),
                        'input_tokens':run.get('input_tokens'),'output_tokens':run.get('output_tokens')}
-        if isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed':
+        partial_prefix=harness.partial_prefix_evidence(run)is not None
+        if partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed':
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
                 if discover_context: install_context(fresh, full_docs)
                 return Tools(stack,fresh,as_of,cohort=tools.cohort,ledger=ledger,question=question)
-            candidate=harness.attempt_propose(tools,question,payload,model,run.get('tool_calls') or [],fresh_executor,final_answer=run.get('answer'),baseline_metrics=actor_metrics)
+            candidate=harness.attempt_propose(tools,question,payload,model,run.get('tool_calls') or [],fresh_executor,
+                final_answer=None if partial_prefix else run.get('answer'),baseline_metrics=actor_metrics,
+                partial_result=run if partial_prefix else None)
         reviews = run.get('answer_reviews') or []
         review_cost = sum(r.get('cost_usd') or 0.0 for r in reviews)
         out = {'answer': run.get('answer') if isinstance(run.get('answer'), dict) else None, 'tool_calls': run.get('tool_calls') or [],

@@ -269,3 +269,12 @@ Product `83452d5e1764df452475b645087ef146fdeb8dac` preserves the last complete a
 The live followthrough included68attempts and$3.56699049knownAPI-equivalent, with one unpriced pending attempt preserved. It reached61/61, then unnecessary coverage rewrites regressed source support; the entire interrupted chain remains accounted. The repaired stop reconfirms the61/61candidate with zero new calls. This is a scoped engineering delivery, not a new ordinary-question performance result. Receipt: `artifacts/agere-source-prose-followthrough-2026-11-03/delivery-receipt.json`.
 
 Next remains existingG3 ordinary clinical prefix reuse/economics and finite ten-area engineering closeout; independentG5/customer prerequisites remain separate.
+
+
+## Execution-only clinical prefix qualification
+
+A source-supported partial result now qualifies only a read-only execution prefix; it does not store or reuse the unaccepted final answer. Native recovery can retain authentic callback provenance only for exact recorded question/action positions. The current clinical trajectory has such provenance for its first22actions; later unattributed actions are excluded.
+
+The first ordinary replay failed at document-review action10 because sorted candidate JSON changed nested field ordering after in-memory validation. The fix preserves literal input order and validates the persisted representation. No receipt comparison or clinical-source guard was loosened. Fresh22-action validation and ordinary replay now agree exactly; normal `B.answer` automatically selects the candidate and reaches its actor boundary with22current tool results and no initial answer. Replay took29.864s and the normal-entry boundary31.808s, both with0newproviderattempts. Neither is whole-request latency.63focused tests pass; the failed replay and incorrect test-module invocation remain recorded.
+
+Evidence is under `artifacts/agere-clinical-prefix-2026-11-03/`: `native-validation-v2/receipt.json`, `native-validation-v3/receipt.json`, `ordinary-entry-offline/receipt.json`, and `persisted-action-tests-corrected.log`. The current57patient/61source-check answer remains partial/unverified. The ordinary full request, release applicability and independent clinical/model/customer dependencies remain open.

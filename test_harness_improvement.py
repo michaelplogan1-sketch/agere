@@ -23,6 +23,119 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def test_persisted_literal_action_preserves_nested_field_order(self):
+        def execute(executor,use):
+            executor.executed.append(use)
+            fields=use['input']['questions']
+            return {'columns':['review_json'],'rows':[[json.dumps(fields)]]}
+        action={'name':'review_documents','input':{'questions':{
+            'z_reason':{'question':'Why?','entity':{'kind':'drug','id':'Z'}},
+            'a_reason':{'question':'When?','entity':{'kind':'drug','id':'A'}}}}}
+        with patch.object(Executor,'__call__',execute):
+            e=self.executor();out=e(action)
+            calls=[{**action,'result':out,'actor_callback_id':'original_callback'}]
+            candidate=H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor())
+            self.assertEqual(candidate['status'],'validated_pending_complete_workflow')
+            H.finish(self.root,{'answer':{'status':'answered'},'workflow':[],
+                'investigation':{'recursive_improvement':{'candidate':candidate}}})
+            replay=H.replay(self.executor(),self.q,self.context,self.model)
+        self.assertIsNone(replay['reason']);self.assertEqual(len(replay['certificates']),1)
+        self.assertEqual(replay['calls'][0]['result'],out)
+        self.assertEqual(list(replay['calls'][0]['input']['questions']),['z_reason','a_reason'])
+
+    def test_recovery_preserves_actual_callback_origin_but_executes_current_result(self):
+        _,calls=self.trajectory(2)
+        actions=[{k:c[k]for k in ('name','input')}for c in calls]
+        e=self.executor(wrong=True)
+        with H.owned_recovery(actions,self.q,origin={'question':self.q,'calls':calls}):
+            out=H.recover_actions(e,self.q)
+        self.assertEqual(len(e.executed),2)
+        self.assertEqual([c['actor_callback_id']for c in out['calls']],['callback_1','callback_2'])
+        self.assertEqual(out['calls'][0]['result']['rows'],[[99]])
+        self.assertFalse(out['calls'][0]['recovery_origin']['result_acceptance_inherited'])
+        self.assertFalse(out['calls'][0]['recovery_origin']['new_actor_call'])
+        self.assertIsNone(out['used']);self.assertIsNone(out['final_answer'])
+        # Old action lineage cannot bypass fresh output validation/selection.
+        candidate=H.propose(e,self.q,self.context,self.model,out['calls'],lambda:self.executor())
+        self.assertEqual(candidate['status'],'quarantined')
+
+    def test_recovery_origin_rejects_wrong_question_action_position_and_missing_receipt(self):
+        import copy
+        _,calls=self.trajectory(2);actions=[{k:c[k]for k in ('name','input')}for c in calls]
+        for kind in ('question','length','input','callback','result','order'):
+            origin={'question':self.q,'calls':copy.deepcopy(calls)}
+            if kind=='question':origin['question']='Different population'
+            elif kind=='length':origin['calls'].pop()
+            elif kind=='input':origin['calls'][0]['input']={'sql':'SELECT 99'}
+            elif kind=='callback':origin['calls'][0]['actor_callback_id']=''
+            elif kind=='result':origin['calls'][0].pop('result')
+            elif kind=='order':origin['calls'].reverse()
+            e=self.executor()
+            with self.subTest(kind=kind),self.assertRaises(ValueError):
+                with H.owned_recovery(actions,self.q,origin=origin):H.recover_actions(e,self.q)
+            self.assertEqual(e.executed,[])
+
+    def test_missing_origin_never_invents_callbacks_and_mutated_actions_fail_before_execution(self):
+        import copy
+        _,calls=self.trajectory(2);actions=[{k:copy.deepcopy(c[k])for k in ('name','input')}for c in calls]
+        e=self.executor()
+        with H.owned_recovery(actions,self.q,origin={'question':self.q,'calls':[calls[0],None]}):
+            out=H.recover_actions(e,self.q)
+        self.assertIn('actor_callback_id',out['calls'][0]);self.assertNotIn('actor_callback_id',out['calls'][1])
+        e=self.executor()
+        with H.owned_recovery(actions,self.q,origin={'question':self.q,'calls':calls}):
+            actions[0]['input']['sql']='SELECT 99'
+            with self.assertRaisesRegex(ValueError,'changed after'):H.recover_actions(e,self.q)
+        self.assertEqual(e.executed,[])
+
+    def supported_partial(self):
+        review={'status':'repair','repair_kind':'unresolved_verification',
+            'retry_disposition':'retain_partial_until_new_evidence',
+            'progress_state':{'coverage':'unknown','unresolved_verification':[]},
+            'coverage':{'label':'answers_partially','decided_by':None},
+            'support':{'label':'supported','decided_by':'fixture','all_dependencies_checked':True,
+                'packets':[{'id':'patient_A','label':'supported','decided_by':'fixture'}]}}
+        return {'answer':{'status':'partial','verification':'unverified','missing':['Current assignment unavailable']},
+            'investigation':{'review_stopped':'unresolved_coverage','answer_reviews':[review]},'workflow':[]}
+
+    def test_source_supported_partial_can_select_only_reexecuted_prefix_without_final_answer(self):
+        import copy
+        e,calls=self.trajectory(2);result=self.supported_partial();original=copy.deepcopy(result)
+        c=H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor(),partial_result=result)
+        result['investigation']['recursive_improvement']={'candidate':c}
+        H.finish(self.root,result)
+        replay=H.replay(self.executor(),self.q,self.context,self.model)
+        self.assertEqual(replay['used'],c['id']);self.assertEqual(len(replay['certificates']),2)
+        self.assertIsNone(replay['final_answer']);self.assertEqual(result['answer'],original['answer'])
+        with H.database(self.root)as db:
+            outcome=json.loads(db.execute("SELECT payload FROM harness_candidate_events WHERE candidate=? AND kind='outcome'",(c['id'],)).fetchone()[0])
+        self.assertFalse(outcome['complete_request']);self.assertTrue(outcome['execution_only_prefix_qualified'])
+        self.assertFalse(outcome['clinical_qualification'])
+        with self.assertRaisesRegex(ValueError,'no stored final answer'):
+            H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor(),partial_result=result,final_answer=result['answer'])
+        bad=copy.deepcopy(result);bad['investigation']['answer_reviews'][-1]['support']['packets'][0]['decided_by']=None
+        bad['investigation']['recursive_improvement']={'replay':{'used':c['id']}}
+        H.finish(self.root,bad)
+        self.assertIsNone(H.latest(self.root,H.identity(e,self.q,self.context,self.model)))
+
+    def test_partial_prefix_cannot_relax_uncertain_sources_coverage_faults_or_unfinished_work(self):
+        for kind in ('undecided_source','source_fault','unchecked','duplicate','coverage_fault','pending_fields',
+                     'workflow','answer_workflow','no_review','no_stop','ordinary_partial','bad_metadata'):
+            result=self.supported_partial();inv=result['investigation'];review=inv['answer_reviews'][-1];support=review['support']
+            if kind=='undecided_source':support['packets'][0]['decided_by']=None
+            elif kind=='source_fault':support['label']='contradicted'
+            elif kind=='unchecked':support['all_dependencies_checked']=False
+            elif kind=='duplicate':support['packets']*=2
+            elif kind=='coverage_fault':review['coverage']['decided_by']='fixture'
+            elif kind=='pending_fields':review['progress_state']['unresolved_verification']=[{'id':'A'}]
+            elif kind=='workflow':result['workflow']=[{'status':'unresolved'}]
+            elif kind=='answer_workflow':result['answer']['workflow']=[{'kind':'monitor'}]
+            elif kind=='no_review':inv['answer_reviews']=[]
+            elif kind=='no_stop':inv.pop('review_stopped')
+            elif kind=='ordinary_partial':review.pop('retry_disposition')
+            elif kind=='bad_metadata':result['investigation']='broken'
+            with self.subTest(kind=kind):self.assertIsNone(H.partial_prefix_evidence(result))
+
     def test_failed_source_meaning_is_restored_without_reexecuting_provider_work(self):
         from clinical_core.agere.clinical import backstop_agent as B,document_review as D
         tools=B.Tools.__new__(B.Tools);tools.continuation_identity=lambda:{'source':'v1'}

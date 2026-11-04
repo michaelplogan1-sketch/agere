@@ -1,8 +1,9 @@
 """Fixed-weight recursive harness improvement at the existing model/tool boundary.
 
-Completed trajectories propose literal action prefixes. A fresh native executor
-validates their outputs before selection; complete downstream outcomes activate
-them. The next outcome feeds the next revision. Source/meaning changes abstain.
+Trajectories propose literal action prefixes. A fresh native executor validates
+their outputs before selection. Complete downstream outcomes can activate them;
+fully source-supported partial outcomes can qualify only a read-only prefix,
+without storing or accepting the final answer. Source/meaning changes abstain.
 This learns execution, never clinical definitions or a supposed correct answer.
 Only these new operational tables are read; legacy learning/answer stores are not.
 """
@@ -20,12 +21,30 @@ from contextlib import contextmanager
 _OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
 
 @contextmanager
-def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None):
+def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None,origin=None):
     """Explicit unfinished-run recovery; never select a learned configuration or reuse an answer."""
     from .document_review import validate_questions
     contracts=validate_questions(field_contracts)if field_contracts is not None else{}
+    # Only the native caller supplies retained call provenance. An action match
+    # preserves its original callback identity; it does not certify the old
+    # result, skip current execution, or qualify a partial final answer.
+    provenance=[]
+    if origin is not None:
+        if (not isinstance(origin,dict)or set(origin)!={'question','calls'}or origin['question']!=question
+                or not isinstance(origin['calls'],list)or actions is None or len(origin['calls'])!=len(actions)):
+            raise ValueError('Recovery origin must bind the same question and every action position')
+        for action,call in zip(actions,origin['calls']):
+            if call is None:
+                provenance.append(None);continue
+            if (not isinstance(call,dict)or any(call.get(k)!=action.get(k)for k in ('name','input'))
+                    or not isinstance(call.get('actor_callback_id'),str)or not call['actor_callback_id'].strip()
+                    or not isinstance(call.get('result'),dict)):
+                raise ValueError('Recovery origin must be an exact recorded action with callback and result')
+            provenance.append({'actor_callback_id':call['actor_callback_id'],
+                'origin_action_digest':digest([call['name'],call['input']]),'origin_call_digest':digest(call),
+                'origin_result_digest':digest(call['result']),'question_digest':digest(question)})
     token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or [],
-        'field_contracts':json.loads(json.dumps(contracts))} if actions is not None else None)
+        'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
 
@@ -196,12 +215,17 @@ def recover_actions(tools,question):
         expected=action.get('expected_error')
         if 'expected_error'in action and (action['name']!='compose_table'or not isinstance(expected,str)or not expected):
             raise ValueError('Expected errors require an exact recorded pure compose_table validation error')
+        provenance=saved['call_provenance'][index]if saved.get('call_provenance')else None
+        if provenance and digest([action['name'],action['input']])!=provenance['origin_action_digest']:
+            raise ValueError('Recovery action changed after its origin was bound')
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
         try: value=tools({k:action[k]for k in ('name','input')})
         except (ValueError,sqlite3.Error) as exc:value={'error':str(exc)}
         reproduced=expected is not None and isinstance(value,dict)and value.get('error')==expected
         out['calls'].append({'name':action['name'],'input':action['input'],'result':value,
                              'sql':value.get('executed_query') if isinstance(value,dict) else None,'owned_run_recovery':True,
+                             **({'actor_callback_id':provenance['actor_callback_id'],
+                                 'recovery_origin':{**provenance,'new_actor_call':False,'result_acceptance_inherited':False}}if provenance else{}),
                              **({'historical_native_error_reproduced':True}if reproduced else {})})
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
         if reproduced:
@@ -359,13 +383,53 @@ def replay(tools,question,context,model,*,_report=None):
     return report
 
 
-def propose(tools,question,context,model,calls,make_executor,final_answer=None,baseline_metrics=None):
+def partial_prefix_evidence(result):
+    """A verified read-only prefix is distinct from an accepted final answer.
+
+    Only the native review's terminal coverage uncertainty qualifies here. A
+    source fault, unfinished requested workflow or missing check does not.
+    The resulting configuration must never store/reuse the partial draft.
+    """
+    if not isinstance(result,dict):return None
+    investigation=result.get('investigation')or result
+    if not isinstance(investigation,dict):return None
+    answer=result.get('answer')or investigation.get('answer')or{}
+    reviews=investigation.get('answer_reviews')or[]
+    if (not isinstance(answer,dict)or not isinstance(reviews,list)
+            or answer.get('status')!='partial'or answer.get('verification')!='unverified'
+            or investigation.get('review_stopped')!='unresolved_coverage'
+            or result.get('workflow')or answer.get('workflow')or not reviews):return None
+    review=reviews[-1]
+    if not isinstance(review,dict):return None
+    support=review.get('support')or{};coverage=review.get('coverage')or{}
+    if not isinstance(support,dict)or not isinstance(coverage,dict):return None
+    packets=support.get('packets')or[]
+    if (not isinstance(packets,list)or any(not isinstance(p,dict)or not isinstance(p.get('id'),str)or not p['id']for p in packets)
+            or len({p['id']for p in packets})!=len(packets)):return None
+    if (review.get('repair_kind')!='unresolved_verification'
+            or review.get('retry_disposition')!='retain_partial_until_new_evidence'
+            or review.get('progress_state')!={'coverage':'unknown','unresolved_verification':[]}
+            or 'decided_by'not in coverage or coverage['decided_by']
+            or support.get('label')!='supported'or not support.get('decided_by')
+            or support.get('all_dependencies_checked')is not True or not packets
+            or support.get('failed_packet_ids')or support.get('claim_feedback')
+            or any(p.get('label')!='supported'or not p.get('decided_by')for p in packets)):
+        return None
+    return {'review_digest':digest(review),'answer_digest':digest(answer),
+            'source_packets':len(packets),'final_answer_accepted':False,'downstream_workflow':False}
+
+
+def propose(tools,question,context,model,calls,make_executor,final_answer=None,baseline_metrics=None,partial_result=None):
     """Training feedback -> candidate -> fresh-executor validation -> pending selection.
 
-    No model callback is removed until validation has passed AND the full request
-    finishes. The final actor and evidence reviews always run after replay.
+    No model callback is removed until validation and the relevant terminal
+    outcome qualify it. Evidence review always runs after replay; a partial
+    prefix stores no final draft and resumes the ordinary actor.
     """
     if not enabled():return None
+    partial_evidence=partial_prefix_evidence(partial_result)if partial_result is not None else None
+    if partial_result is not None and (not partial_evidence or final_answer is not None):
+        raise ValueError('Execution-only partial prefix requires native support and no stored final answer')
     key=identity(tools,question,context,model);selected=latest(tools.stack.path,key);parent=latest(tools.stack.path,key,selected=False)
     actions=[]
     for index,c in enumerate(calls):
@@ -382,15 +446,23 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
                'baseline_actor_metrics':baseline_metrics or {},
                'selection_order':['identical native tool outputs under exact guards','fewer actor callbacks','elapsed time'],
                'qualification':'Execution equivalence only; no clinical accuracy claim or model-weight change'}
+    if partial_evidence:
+        candidate.update(qualification_mode='source_supported_partial_prefix',partial_execution_evidence=partial_evidence)
     ident=digest(candidate);db=database(tools.stack.path)
     try:
         with db:
-            db.execute('INSERT OR IGNORE INTO harness_candidates VALUES (?,?)',(ident,json.dumps(candidate,sort_keys=True)))
-            event(db,ident,'candidate',{'training_feedback':'Complete checked analysis supplied the current native action trajectory',
+            # Literal tool input order can determine native column/field order
+            # and embedded JSON text. Preserve the validated action, including
+            # nested mapping order, instead of sorting it for storage.
+            db.execute('INSERT OR IGNORE INTO harness_candidates VALUES (?,?)',(ident,json.dumps(candidate)))
+            event(db,ident,'candidate',{'training_feedback':'Source-supported partial analysis supplied a read-only prefix; final answer remains unaccepted'if partial_evidence else'Complete checked analysis supplied the current native action trajectory',
                                       'failed_request_feedback_events':[seq for seq,payload in db.execute(
                                           "SELECT seq,payload FROM harness_candidate_events WHERE kind='failed_request'")
                                           if json.loads(payload).get('question_digest')==digest(question)],
                                       'parent_callbacks':len({a['actor_callback_id'] for a in parent['actions']}) if parent else 0})
+        # Validate the persisted representation that ordinary replay will load.
+        # A successful in-memory execution alone cannot certify serialization.
+        actions=json.loads(db.execute('SELECT payload FROM harness_candidates WHERE id=?',(ident,)).fetchone()[0])['actions']
         fresh=make_executor()
         validation=[];fresh_calls=[]
         try:
@@ -435,10 +507,15 @@ def _finish(path,result):
     db=database(path)
     try:
         stored=db.execute('SELECT payload FROM harness_candidates WHERE id=?',(ident,)).fetchone() if ident else None
-        expected=(json.loads(stored[0]).get('workflow_contract') or []) if stored else(result.get('answer')or{}).get('workflow')or[]
+        config=json.loads(stored[0])if stored else{}
+        expected=(config.get('workflow_contract') or []) if stored else(result.get('answer')or{}).get('workflow')or[]
         actual_steps=result.get('workflow') or []
         complete=complete and [(s.get('kind'),s.get('quote')) for s in actual_steps]==[
             (s.get('kind'),s.get('quote')) for s in expected]
+        execution_only=(config.get('qualification_mode')=='source_supported_partial_prefix'
+            and config.get('final_answer')is None and not expected and not actual_steps
+            and partial_prefix_evidence(result)is not None)
+        execution_qualified=complete or execution_only
         regression=False
         actual=info.get('actor_metrics') or {}
         receipt=result.get('cost_receipt') or {}
@@ -458,6 +535,7 @@ def _finish(path,result):
         any_regression=bool(regression or full_regression)
         with db:
             event(db,ident,'outcome',{'complete_request':complete,'workflow_statuses':[s.get('status') for s in result.get('workflow',[])],
+                                    'execution_only_prefix_qualified':bool(execution_only),
                                     'candidate_selection_enabled':selecting,'clinical_qualification':False,
                                     'feedback':(result.get('answer') or {}).get('missing',[]),'actor_metrics':actual,
                                     'observed_actor_cost_regression':regression,
@@ -466,8 +544,10 @@ def _finish(path,result):
                                     'total_cost_qualified':False,
                                     'cost_scope':'API estimates include readers, review, repair, validation and artifacts when ledger attribution is complete. Total cost remains unmeasured.'})
             if selecting and candidate.get('status')=='validated_pending_complete_workflow':
-                event(db,ident,'selected' if complete and not any_regression else 'quarantined',{'reason':'Full request and native-output validation passed; total cost benefit remains unqualified' if complete and not any_regression else 'Incomplete request or observed cost regression; retain known-good configuration'})
-            if selecting and used and (not complete or any_regression):
+                accepted=execution_qualified and not any_regression
+                reason=('Source-supported read-only prefix and native-output validation passed; no final answer acceptance/reuse; total cost benefit remains unqualified'if execution_only else'Full request and native-output validation passed; total cost benefit remains unqualified')if accepted else'Incomplete request or observed cost regression; retain known-good configuration'
+                event(db,ident,'selected' if accepted else 'quarantined',{'reason':reason})
+            if selecting and used and (not execution_qualified or any_regression):
                 event(db,used,'quarantined',{'reason':'Complete request not established or observed cost regressed; resume the retained actor on the next request'})
     finally:db.close()
 
