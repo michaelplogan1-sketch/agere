@@ -1,6 +1,6 @@
 # Composition repair and retained-evidence comparison
 
-The original clinical workflow remains unaccepted. The repeated continuation was deliberately interrupted after preserving its completed responses; the build remains active. The described repairs are now selected on the owned candidate as `e7a0d1c`; its backend was started at `4c5832b`, followed only by verified presentation-asset changes. No clinical qualification, model superiority or complete MVP acceptance is claimed.
+The latest scoped repair is live on the owned local candidate as `76e953b`. It preserves mixed native/prose repair scope and terminal investigation metadata. The current57patient result remains partial/unverified:56/58source packets supported,4prose judgments and global coverage undecided. Full-request economics and complete MVP acceptance remain open. Earlier sections retain historical experiments; the newest delivery is `artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json`.
 
 ## What the comparison showed
 
@@ -291,3 +291,6 @@ The actual retained six-patient packets match their original hashes. Two origina
 A cache-only whole-answer review retained51supported checks and identified7new dependency checks, including the changed summary. The live check used20validatedJev/Perplexityattempts,0Claude,$0.084118994API-equivalent and61.801seconds. Support is now56/58 versus52/58before; all3native-field uncertainties settled. Four prose judgments in2patients and overall coverage remain undecided. No clinical qualification, new weights or default partial-answer acceptance follows. Shared and isolated prior attempts, warehouse and code are unchanged. Receipts: `artifacts/agere-clinical-prefix-2026-11-03/mixed-dependency-proof-v5/receipt.json`, `artifacts/agere-clinical-prefix-2026-11-03/retained-continuation/receipt.json`, `artifacts/agere-clinical-prefix-2026-11-03/retained-review-offline/receipt.json`, `artifacts/agere-clinical-prefix-2026-11-03/retained-review-live/receipt.json`.
 
 Next is the existing full-request regeneration/economics requirement, followed by current ten-area applicability. The fixed MVP scope remains unchanged.
+
+
+Scoped release saved and reopened current context `ANS-d687f06d7e1369ade9b43953` through the ordinary product bridge. The two earlier clinical contexts remain exactly inspectable and are correctly invalidated for new work under the changed policy. No prior answer or export was overwritten. Product `76e953bbf00bac52cad657ed42b898c2fad245c1` is pushed to the existing private integration branch; no main merge or publication.

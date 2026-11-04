@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T01:45:56.434548+00:00",
+  "updated_at": "2026-11-04T01:49:53.816498+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -406,6 +406,10 @@
         {
           "path": "artifacts/agere-source-prose-followthrough-2026-11-03/delivery-receipt.json",
           "sha256": "d08246f8e67a93825ea49c984f1ba797d5b430321c5e21bdbc28b5056e3459d5"
+        },
+        {
+          "path": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json",
+          "sha256": "d6ed2e788c0324b24cbc62c8eee4636fde944695fe6bdad8620b97230eb25629"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -493,7 +497,7 @@
     }
   ],
   "checkpoint": {
-    "kind": "mixed_dependency_localized_repair",
+    "kind": "mixed_dependency_repair_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
     "user_behavior_delta": "Independent source-bound prose repairs remain available when native fields are uncertain; saved investigations retain stop reason and rejected-draft metadata.",
@@ -618,16 +622,19 @@
       "artifacts/agere-clinical-prefix-2026-11-03/retained-continuation/receipt.json",
       "artifacts/agere-clinical-prefix-2026-11-03/mixed-dependency-tests-v2.log",
       "artifacts/agere-clinical-prefix-2026-11-03/retained-review-offline/receipt.json",
-      "artifacts/agere-clinical-prefix-2026-11-03/retained-review-live/receipt.json"
+      "artifacts/agere-clinical-prefix-2026-11-03/retained-review-live/receipt.json",
+      "artifacts/agere-clinical-prefix-2026-11-03/repair-app/http-check.json",
+      "artifacts/agere-clinical-prefix-2026-11-03/repair-app/current-repaired-context.json",
+      "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json"
     ],
-    "remaining_gap": "Full-request answer regeneration/economics;4sourceprosejudgments and globalcoverage undecided; currentten-area releaseapplicability and independentG5/customer dependencies.",
+    "remaining_gap": "Four prose judgments/two patients and global coverage undecided; full-request regeneration/economics, current ten-area engineering applicability, and independentG5/customer dependencies remain.",
     "next_action": "G3: close full-request regeneration economics through the existing guarded execution and retained draft/review state. The ordinary prefix run has completed; do not repeat that campaign. First inspect which native actions and source-supported interpretation can be reused without inventing callback provenance, bypassing review, or treating operational feedback as patient evidence. Demonstrate any changed path offline with current source/meaning and changed-evidence rejection, then measure only the affected ordinary workflow. Current mixed-dependency repair is verified:3compilerfailures removed,52/58 to56/58source support;4prose judgments/2patients and global coverage remain undecided. Retain alltenareas and proceed to current release applicability; independent G5/customer prerequisites stay separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "All proof/provider jobs terminal. App65460/session51794 still662aea7; verified E/P candidate awaiting private commit and owned app refresh.",
+    "coordination": "Scoped repair sealed on76e953bbf00bac52cad657ed42b898c2fad245c1; owned8890PID66710/session12530. All experiment jobs terminal. Current partial contextANS-d687f06d7e1369ade9b43953.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
-    "latest_progress": "artifacts/agere-clinical-prefix-2026-11-03/retained-review-live/receipt.json",
+    "latest_progress": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -669,14 +676,14 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T01:45:56.434548+00:00",
+    "at": "2026-11-04T01:49:53.816498+00:00",
     "workflow_change": "Large unresolved patient checks now diagnose every final field in one shared evidence state. Complete deciding field judgments may compose only with exact manifest/value/patient/source bindings; global question review and explicit disagreement remain separate. The actual saved57patient result preserves all values and displays57/61supported dependencies, up from55/61.",
     "unsealed_work": {
-      "status": "verified_candidate",
+      "status": "sealed_mixed_dependency_repair",
       "all_jobs_terminal": true,
       "source_frozen": false,
-      "product_edits": true,
-      "receipt": "artifacts/agere-clinical-prefix-2026-11-03/retained-review-live/receipt.json"
+      "product_edits": false,
+      "receipt": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json"
     },
     "bottling_assessment": {
       "candidate": "d9f9ae8cd0bcdd7b32fd874203f578ee6db1e41751e364c2561cc45ebf297570",
@@ -3505,11 +3512,11 @@
     }
   ],
   "unsealed_work": {
-    "status": "verified_candidate",
+    "status": "sealed_mixed_dependency_repair",
     "all_jobs_terminal": true,
     "source_frozen": false,
-    "product_edits": true,
-    "receipt": "artifacts/agere-clinical-prefix-2026-11-03/retained-review-live/receipt.json"
+    "product_edits": false,
+    "receipt": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3547,7 +3554,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T01:45:56.434548+00:00",
+  "latest_checkpoint": "2026-11-04T01:49:53.816498+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3627,6 +3634,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 65460,
-  "owned_server_session": 51794
+  "owned_server_pid": 66710,
+  "owned_server_session": 12530
 }
