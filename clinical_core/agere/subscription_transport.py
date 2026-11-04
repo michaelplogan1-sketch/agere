@@ -228,6 +228,22 @@ def run_cli(model, system, user, timeout=None, *, max_tokens=None, effort=None, 
     return out
 
 
+def strip_empty_unregistered_prefix(text, tools):
+    """Remove only closed, empty, unknown leading tags; never discard an action.
+
+    The subscription sometimes prefixes JSON with an empty formatting tag.
+    Registered tools (even with no arguments), reserved envelopes, nonempty or
+    malformed markup and tags inside JSON remain untouched.
+    """
+    names={t.get('name')for t in tools or []}|{'tool_use','tool_uses'}
+    raw=text
+    while True:
+        padding=INVOKE.match(raw)
+        if (not padding or not padding.group(0).endswith('</invoke>') or
+                padding.group(1)in names or padding.group(2).strip()):return raw
+        raw=raw[padding.end():].lstrip()
+
+
 def _tool_calls(text, tools):
     """Recognize every unambiguous literal action, allowing surrounding prose.
 
@@ -288,10 +304,7 @@ def _tool_calls(text, tools):
             # unregistered companion actions as a partial valid batch.
             xml_calls=_tool_calls(tail,tools)
             return first_calls if same_calls(first_calls,xml_calls) else []
-    while True:
-        padding = INVOKE.match(raw)
-        if not padding or padding.group(1) in names or padding.group(2).strip(): break
-        raw = raw[padding.end():].lstrip()
+    raw=strip_empty_unregistered_prefix(raw,tools)
     xml_start=raw.find('<invoke');json_start=raw.find('{')
     if xml_start>=0 and (json_start<0 or xml_start<json_start):
         calls=[];cursor=0;remainder=[]

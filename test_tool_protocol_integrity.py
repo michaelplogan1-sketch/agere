@@ -13,6 +13,28 @@ def response(text,stop='end_turn'):
 
 
 class Protocol(unittest.TestCase):
+    def test_empty_unknown_prefix_preserves_complete_final_draft_for_full_review(self):
+        draft={'status':'partial','headline':'Retained interpretation','row_prose':{'keys':['patient_id'],
+            'rows':[{'key':{'patient_id':'A'},'basis':[],'fields':{'explanation':'Current role remains unknown.'}}]}}
+        text='<invoke name="noop">\n</invoke>\n```json\n'+json.dumps(draft)+'\n```'
+        reviewed=[]
+        result=S.tool_loop('Explain the patient',[],TOOLS,lambda use:self.fail('Empty tag is not executed'),
+            send=lambda body:(response(text),0.,False),model='authored',max_tools=None,
+            review=lambda a,c:reviewed.append(a)or{'status':'confirmed'})
+        self.assertEqual(reviewed,[draft]);self.assertEqual(result['answer'],draft)
+        self.assertEqual(result['format_repair'],'empty_unregistered_prefix')
+        self.assertEqual(result['final_text'],text)
+
+    def test_empty_prefix_normalization_keeps_actions_malformed_markup_and_literal_data(self):
+        answer=json.dumps({'status':'partial','value':'<invoke name="noop"></invoke>'})
+        for prefix in ('<invoke name="query_sql"></invoke>', '<invoke name="tool_use"></invoke>',
+                       '<invoke name="noop">x</invoke>', '<invoke name="noop">',
+                       '<invoke name="noop"><parameter name="x">1</parameter></invoke>'):
+            text=prefix+answer
+            with self.subTest(prefix=prefix):self.assertEqual(T.strip_empty_unregistered_prefix(text,TOOLS),text)
+        self.assertEqual(T.strip_empty_unregistered_prefix(answer,TOOLS),answer)
+        self.assertEqual(T.strip_empty_unregistered_prefix(answer+'<invoke name="noop"></invoke>',TOOLS),answer+'<invoke name="noop"></invoke>')
+
     def test_prose_and_trailing_transport_marker_do_not_hide_a_literal_action(self):
         prefaced='I will inspect the completed results.\n\n'+json.dumps({'tool_use':CALLS[0]})
         self.assertEqual(T._tool_calls(prefaced,TOOLS),[CALLS[0]])

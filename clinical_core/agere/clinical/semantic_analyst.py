@@ -691,6 +691,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             if not uses:
                 text = '\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text').strip()
                 result['final_text'] = text
+                from ..subscription_transport import strip_empty_unregistered_prefix
+                normalized=strip_empty_unregistered_prefix(text,tools)
+                if normalized!=text:
+                    result['format_repair']='empty_unregistered_prefix'
+                    text=normalized
                 if text.startswith('```'):
                     text = re.sub(r'^```(?:json)?\s*|\s*```$', '', text)
 
