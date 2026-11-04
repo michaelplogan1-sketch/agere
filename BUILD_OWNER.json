@@ -5,11 +5,11 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: provider work stopped for actual Claude subscription session limit, reported reset November4 11:40America/Chicago. All jobs terminal/source unfrozen. Offline recovery matched32native certificates and exact model draft/patch digests;57patients/114fields preserved,57->54compiler fields after3model age bindings. Last one-field proposal was rejected for lacking same-entity native evidence; it was not the only unresolved field. Preserve all50080attempts and9attempt/$5.267090782/375.179s limit-ending run. Before another provider request, diagnose initial-composition quantity binding using the retained57-field draft and54-field repair state; do not repeat the full question or unchanged source votes. Resolve through existing typed source/native/prose contracts without disease handlers, new models or acceptance expansion. After offline evidence and subscription availability, continue saved work then assess automatic acceptance/currentrelease/package. Alltenareas/G5/customer dependencies retained.",
+  "active_work": "G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
-  "latest_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
-  "owned_server_pid": 8291,
-  "owned_server_session": 43919,
+  "latest_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
+  "owned_server_pid": 10814,
+  "owned_server_session": 68585,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -22,7 +22,7 @@
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
@@ -30,13 +30,13 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "subscription_limit_partial_draft_recovered",
+    "status": "remaining_numeric_composition_unresolved",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
-    "product_commit": "7a568886",
+    "product_commit": "ac9af6fe4ac5a0040620070d17ce1e7560f42273",
     "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
-    "remaining": "G3: provider work stopped for actual Claude subscription session limit, reported reset November4 11:40America/Chicago. All jobs terminal/source unfrozen. Offline recovery matched32native certificates and exact model draft/patch digests;57patients/114fields preserved,57->54compiler fields after3model age bindings. Last one-field proposal was rejected for lacking same-entity native evidence; it was not the only unresolved field. Preserve all50080attempts and9attempt/$5.267090782/375.179s limit-ending run. Before another provider request, diagnose initial-composition quantity binding using the retained57-field draft and54-field repair state; do not repeat the full question or unchanged source votes. Resolve through existing typed source/native/prose contracts without disease handlers, new models or acceptance expansion. After offline evidence and subscription availability, continue saved work then assess automatic acceptance/currentrelease/package. Alltenareas/G5/customer dependencies retained.",
+    "remaining": "G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion.",
     "provider_dependency": {
       "provider": "claude_subscription",
       "reason": "actual_session_limit",
@@ -48,7 +48,8 @@
     "recovery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/limit-recovery-v3/receipt.json",
     "remaining_compiler_fields": 54,
     "patients": 57,
-    "prose_fields": 114
+    "prose_fields": 114,
+    "recovery_delivery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-04T15:52:57.082024+00:00",
@@ -157,7 +158,7 @@
   "coordinated_learning_candidate": {
     "thread_id": "01a15b40-8c5e-7263-b8eb-88dc5a24a707",
     "title": "Review AI stack techniques",
-    "authorization": "Direct human answer Yes\u2014coordinate and integrate in that chat, verified by the owner through read_thread.",
+    "authorization": "Direct human answer Yes—coordinate and integrate in that chat, verified by the owner through read_thread.",
     "workspace": "/Users/mikel/agere-question-qualification",
     "status": "temporal_candidate_integrated_with_owner_decimal_concentration_fix_local_evidence_only",
     "boundary": "Isolated candidate implementation and evidence only. This chat remains sole integration/control/runtime owner. No protected evaluation or generator/research edits.",
@@ -449,9 +450,9 @@
     "acceptance_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
     "source_frozen": false
   },
-  "previous_sealed_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "7a568886",
+  "last_product_commit": "ac9af6fe4ac5a0040620070d17ce1e7560f42273",
   "current_delivery_scope": "Keyed scalar bindings, localized producer-bound source correction, atomic immutable answer saves and current-app reopen preserve the full retained clinical answer.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -459,8 +460,8 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-04T16:54:29.656464+00:00",
-  "last_commit": "ab6faed4813f47521fed67d8a7419416984ac41e",
+  "updated_at": "2026-11-04T17:34:48.808245+00:00",
+  "last_commit": "ac9af6fe4ac5a0040620070d17ce1e7560f42273",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
     "at": "2026-11-03T20:36:08.825946+00:00",

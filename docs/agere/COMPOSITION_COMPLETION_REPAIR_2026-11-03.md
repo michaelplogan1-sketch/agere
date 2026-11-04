@@ -1,5 +1,17 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: interruption recovery delivered on ac9af6fe
+
+An actual subscription limit previously caused the outer proposer to discard the newest compiler draft and return HTTP502 without a recovery link. The product now keeps that draft separate from the older structurally complete answer, saves an immutable checkpoint, and exposes the saved investigation in both the error response and reopened conversation. A changed draft receives its own checkpoint identity. The provider failure still stops generation and downstream work; uncompiled prose is not marked verified.
+
+An offline replay of the exact recorded model outputs preserves the same draft digest, all57patients/114fields and32native receipts, with54compiler fields still unresolved. All50080priorattempts remain exact and no new provider request was made. The new app on8890 (PID10814/session68585) serves the recovery UI. This is recovery evidence, not a successful first composition or a new clinical review.
+
+The broad targeted run passed184of194checks. Its10errors are identical on the unchangedabb9d33f baseline: six old fixture inserts omit newly added outcome columns, and four cost fixtures omit attempt ownership/identity fields. A final19-case capture suite passes, including interrupted storage, distinct immutable drafts, source-change refusal, evaluation no-write behavior and failure accounting. The complete page script passes syntax validation, and executed UI checks preserve the saved link and reject invalid context identifiers.
+
+Initial-composition diagnosis is now explicit: all54remaining fields are raw strings containing unbound numerical content, comprising45patient explanations and9proposed-action fields. The exact cause of the model ignoring the existing binding contract is still unestablished. The next increment addresses the existing initial row-prose schema/examples and source-bound scalar presentation; it must be tested without relaxing entity/domain checks before another paid composition attempt. The original question/native work must not be rerun wholesale.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json`, with recorded replay, current-app, UI, diagnosis and test/baseline receipts under`automatic-composition-numeric/checkpoint-proof/`. The first-composition, final release/package, G5 and customer-deployment obligations remain open.
+
 ## November 4 subscription limit and exact partial recovery
 
 The ordinary run on7a568886 ended at10:41a.m.Central after375.179seconds withHTTP502 caused by an actual Claude subscription session limit. The provider reported a reset at11:40a.m.America/Chicago. All provider work is stopped; no external Anthropic key is used. Nine attempts are retained:6validatedClaude,1validatedJev,1validatedPerplexity and1Claude limit failure; total reportedAPI-equivalent$5.267090782,0unpriced. Source/code/priorattempts/exports remained exact.
