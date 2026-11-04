@@ -301,11 +301,11 @@ class ProseRepairs(unittest.TestCase):
 
     def test_partitioned_parent_repair_keeps_full_original_sources_and_requires_children(self):
         from clinical_core.agere.clinical import evidence_projection as P
-        from clinical_core.agere.deliverables.receipts import uncompact_json
+        from clinical_core.agere.deliverables.receipts import uncompact_json,readable_json
         p,support=self.source_review();parent=copy.deepcopy(p)
         state=uncompact_json(json.loads(p['text']));original_sources=copy.deepcopy(state['source_contexts'])
         state['source_contexts'][0]['text']={'checked_source_dependency':'child_A'}
-        parent.update(text=json.dumps(state),required_source_packet_ids=['child_A'])
+        parent.update(text=json.dumps(readable_json(state)),required_source_packet_ids=['child_A'])
         support['packets'][0]['field_review']['packet_digest']=digest(parent['text'])
         support['packets'].append({'id':'child_A','label':'supported','decided_by':'fixture'})
         with patch.object(P,'partition_support_packet',return_value=[parent]):
