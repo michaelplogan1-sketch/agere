@@ -1,5 +1,19 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: numerical repair completed; source review now58/58
+
+Product `12fedfa` corrects a contradictory instruction that permitted literal quotations while patient-row numbers required native bindings. An offline original-record SQL query bound the exact reported-use sentence, preserving the full answer with no provider calls;70targeted checks pass. This owner-authored demonstration is distinct from the live actor's behavior.
+
+The saved live continuation retained57patients/114prose fields, changed5prose fields across3patients, and preserved every native patient cell. All58source packets pass the stack's machine-review checks. The completeness vote remains undecided (highest label answers_fully, probability0.6087); the answer remainspartial/unverified. No repeated source campaign or relaxed acceptance threshold was used.
+
+Measured continuation:250.526seconds,22newattempts (2Claude subscription/10Jev/10Perplexity),$1.591619288API-equivalent,0unpriced. Four exact prior responses were replayed.111older saved answers and48,844earlier sharedledger attempts remain unchanged. Current saved context is`ANS-00a2568c1f1543642a7892d7`; normal API reopen and resume guards pass without new providers.
+
+The clinical native-prefix candidate was quarantined at an operational review-feedback query after26matching native actions; it was not promoted. Current whole-product compatibility, end-to-end economics, independent clinical/model qualification and deployment requirements remain separate. Current six-workflow normal-service checks pass, with all saved decisions/work/followups exact;225affected regression checks pass. The existing finite matrix retains9/9functional requirements across alltenareas under explicit current compatibility. This does not qualify current clinical latency, complete the uncertain global-coverage vote or establish fullMVP readiness. Assessment: `artifacts/agere-current-release-2026-11-04/acceptance/receipt.json`.
+
+Receipt:`artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json`. Earlier sections retain their historical scope.
+
+---
+
 ## November 4: saved recovery and local repair boundary
 
 Saved unfinished investigations reexecute exact native evidence and resume the retained draft. Focused repair rejects replacement answers before source review; complete prior output and its own source review survive rejected edits. Product `15b201a` is active on the owned local candidate.

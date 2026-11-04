@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T02:48:28.809749+00:00",
+  "updated_at": "2026-11-04T03:22:50.018662+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -414,6 +414,10 @@
         {
           "path": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json",
           "sha256": "92c0b435b445e745f8a8b632b5ef2d47e017ec07a3be8264b940d211a9c267f7"
+        },
+        {
+          "path": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
+          "sha256": "32ad26c40c88ab068fb1ef783e027779e86a4368f185f70445b38d7e9cf22021"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -501,11 +505,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "retained_investigation_recovery_sealed",
+    "kind": "source_scalar_repair_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Saved unfinished investigations reexecute exact native evidence and resume the retained draft. Focused repair rejects replacement answers before source review; complete prior output and its own source review survive rejected edits.",
-    "measured_failure_reduction": "28real native receipts revalidated;57patients/114prosefields retained. Actual replacement responses now rejected before source-review fanout. Saved API/browser and source/changed-context guards verified. Local clinical edits remain unaccepted.",
+    "user_behavior_delta": "Correct contradictory numeric-quotation repair guidance; retain complete source-bound patient interpretation after localized edits.",
+    "measured_failure_reduction": "Remaining numerical compiler failures cleared. Current source-supported packets increased from54/58 to58/58;57patients and114prose fields retained, all native patient cells unchanged.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -654,22 +658,31 @@
       "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json",
       "artifacts/agere-retained-draft-recovery-2026-11-04/accounting-merge.json",
       "artifacts/agere-retained-draft-recovery-2026-11-04/app/http-check.json",
-      "artifacts/agere-retained-draft-recovery-2026-11-04/app/browser-verification.json"
+      "artifacts/agere-retained-draft-recovery-2026-11-04/app/browser-verification.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/workflow-delta.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/tests.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/offline/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/offline-v2/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/native-binding/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/live-confirmation/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/accounting-merge.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/app/http-check.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/app/server-process.json",
+      "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json",
+      "artifacts/agere-current-release-2026-11-04/code-applicability.json",
+      "artifacts/agere-current-release-2026-11-04/six-case-http/receipt.json",
+      "artifacts/agere-current-release-2026-11-04/affected-regressions.log"
     ],
-    "remaining_gap": "Current57patient answer has114prose fields but remains partial/unverified. Four proposed local edits still need valid numeric bindings; current54/58source support and global coverage undecided. Full-request economics/currentten-area release applicability and independentG5/customer dependencies remain.",
-    "next_action": "G3: finish the remaining source-to-scalar binding step for the retained four-field/two-patient repair using existing native queries, typed source evidence and compiler bindings. Two scoped live attempts retained the full answer but could not compile proposed numeric prose (last pending literals0/14 in SYN-3AB806B5-AA0). Reassess that exact source-to-binding affordance offline before further provider work; reuse every retained proposal and attempt, do not regenerate114fields or repeat the full clinical campaign. Current saved answer remains54/58source-supported, partial/unverified with summary plus3patient packets and global coverage unsettled. Do not force source acceptance or promote the trace. Then assess current applicability of all ten finite acceptance areas; independentG5 and customer deployment remain separate.",
+    "remaining_gap": "Overall completeness verdict remains below its acceptance threshold. Current ten-area release applicability, full-request latency/economics and independent G5/customer requirements are not completed by this source-repair receipt.",
+    "next_action": "G3: qualify reusable clinical native execution without replaying ephemeral review feedback. The current source-supported run has26matching native actions followed by an operational feedback query that correctly quarantined its candidate. Stop portable learning at that boundary, retain the full trace, and verify that proposal and replay use the same entry-model identity after actor escalation. Use fresh native equivalence and regression/rollback checks before selection; no final partial answer or clinical weights may be promoted. Then measure current ordinary reuse/accounting without repeating the full source campaign or chasing the undecided global coverage vote. Current functional compatibility is9/9 across alltenareas; full-request performance, current packaging and independentG5/customer dependencies remain explicit.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
-    "latest_progress": {
-      "at": "2026-11-04T02:48:28.809749+00:00",
-      "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json",
-      "product_commit": "15b201a2e7bbdc5b4d4ebd0002e6f4afb8961b53",
-      "context_id": "ANS-a0364c7c9a1f74ec58f279d2"
-    },
-    "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
+    "latest_progress": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
+    "results_report": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -698,36 +711,42 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "current_engineering": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
-      "all_ten_scope_areas_retained": true,
-      "full_mvp_acceptance": false,
-      "independent_clinical_model_qualification": false,
-      "current_clinical_status": "partial_unresolved_verification",
-      "current_financial_status": "answered",
-      "evidence": "artifacts/agere-current-release-closure-2026-11-03/delivery-receipt.json",
+      "receipt": "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json",
       "engineering_passed": 9,
-      "engineering_total": 9
+      "engineering_total": 9,
+      "scope_areas": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "full_mvp_acceptance": false
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T02:48:28.809749+00:00",
-    "workflow_change": "Saved unfinished investigations reexecute exact native evidence and resume the retained draft. Focused repair rejects replacement answers before source review; complete prior output and its own source review survive rejected edits.",
+    "at": "2026-11-04T03:13:38.264397+00:00",
+    "workflow_change": "Correct contradictory numeric-quotation repair guidance; retain complete source-bound patient interpretation after localized edits.",
     "unsealed_work": {
-      "status": "none",
+      "status": "clinical_native_prefix_boundary_followthrough",
       "all_jobs_terminal": true,
       "source_frozen": false,
       "product_edits": false,
-      "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json"
+      "receipt": "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json"
     },
     "bottling_assessment": {
-      "candidate": "d9f9ae8cd0bcdd7b32fd874203f578ee6db1e41751e364c2561cc45ebf297570",
-      "selected_event": 100,
-      "reuse_outcome_event": 101,
-      "actions": 7,
-      "later_ordinary_reuse_measured": true,
-      "receipt": "artifacts/agere-current-release-closure-2026-11-03/guarded-reuse-pair.json",
-      "clinical_answer_promoted": false,
-      "parameter_transfer_scope": "Earlier a32a2c5 analysis-shape evidence remains separate; this pair proves exact-question execution reuse."
+      "candidate_id": "f7610f2d0d77bd4f3929616ae7af57317e53936de14ffaa377a4fd1a70a0d076",
+      "status": "quarantined",
+      "first_26_native_outputs_exact": true,
+      "failed_action_index": 27,
+      "failed_action_kind": "historical operational review-feedback query",
+      "selected": false,
+      "reason": "A fresh executor did not reproduce the operational feedback query; no changed clinical source output or final-answer reuse is inferred."
     },
     "owner_review": {
       "at": "2026-10-29T11:48:18.601324+00:00",
@@ -796,7 +815,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Missing per-entity prose integration; no claim that old clinical uncertainties were removed.",
+    "measured_failure_removed": "Remaining numerical compiler failures cleared. Current source-supported packets increased from54/58 to58/58;57patients and114prose fields retained, all native patient cells unchanged.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -859,12 +878,14 @@
       "full_mvp_acceptance": false
     },
     "terminal_clinical_confirmation": {
-      "receipt": "artifacts/agere-clinical-current-confirmation-2026-11-03/run-receipt.json",
-      "acceptance": "artifacts/agere-clinical-current-confirmation-2026-11-03/acceptance-review.json",
-      "context_id": "ANS-881d8683b39b35cc7e343cde",
-      "accepted": false,
-      "new_provider_attempts": 6966,
-      "runtime_seconds": 3459.554309417028
+      "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
+      "context_id": "ANS-00a2568c1f1543642a7892d7",
+      "source_supported_packets": 58,
+      "source_packets": 58,
+      "patients": 57,
+      "prose_fields": 114,
+      "status": "partial_unverified",
+      "remaining": "global coverage verdict undecided"
     },
     "document_field_screen": {
       "receipt": "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json",
@@ -3569,14 +3590,28 @@
       "decision": "Seal recovery and repair-boundary engineering only; retain the original clinical uncertainty and unfinished numeric repair. No readiness claim.",
       "evidence": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json",
       "next_action": "G3: finish the remaining source-to-scalar binding step for the retained four-field/two-patient repair using existing native queries, typed source evidence and compiler bindings. Two scoped live attempts retained the full answer but could not compile proposed numeric prose (last pending literals0/14 in SYN-3AB806B5-AA0). Reassess that exact source-to-binding affordance offline before further provider work; reuse every retained proposal and attempt, do not regenerate114fields or repeat the full clinical campaign. Current saved answer remains54/58source-supported, partial/unverified with summary plus3patient packets and global coverage unsettled. Do not force source acceptance or promote the trace. Then assess current applicability of all ten finite acceptance areas; independentG5 and customer deployment remain separate."
+    },
+    {
+      "at": "2026-11-04T03:13:38.264397+00:00",
+      "gate": "G3",
+      "decision": "Source-binding completion is demonstrated; stop repeating supported patient prose and return to the fixed whole-product release assessment. Independent qualification remains separate. Quarantined operational-feedback reuse is not activated.",
+      "evidence": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
+      "next_action": "G3: complete the current release applicability assessment across the unchanged ten-area acceptance contract. Use the running six-case normal-service HTTP reopen (providers disabled), current saved 57-patient API evidence, native financial/bottling evidence and explicit code compatibility; rerun only affected behavior. The latest clinical answer has all 58 source packets machine-supported and all 57 patients/114 prose fields, but global coverage is undecided. Do not repeat source reading or rewrite supported prose to chase an uncertain completeness vote. Record any concrete missing requested behavior separately from model qualification. The clinical reuse candidate remains quarantined at an ephemeral review-feedback query; no clinical bottle or weights were activated. Then make one finite release decision with remaining performance, independent G5 and customer deployment dependencies explicit."
+    },
+    {
+      "at": "2026-11-04T03:22:50.018662+00:00",
+      "gate": "G3",
+      "decision": "Current nine functional requirements retain compatible evidence across alltenareas; six real service reopens pass and225affected checks pass. Next address the observed native-prefix quarantine and entry-model identity mismatch in existing bottling code; no new acceptance area or clinical verification campaign.",
+      "evidence": "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json",
+      "next_action": "G3: qualify reusable clinical native execution without replaying ephemeral review feedback. The current source-supported run has26matching native actions followed by an operational feedback query that correctly quarantined its candidate. Stop portable learning at that boundary, retain the full trace, and verify that proposal and replay use the same entry-model identity after actor escalation. Use fresh native equivalence and regression/rollback checks before selection; no final partial answer or clinical weights may be promoted. Then measure current ordinary reuse/accounting without repeating the full source campaign or chasing the undecided global coverage vote. Current functional compatibility is9/9 across alltenareas; full-request performance, current packaging and independentG5/customer dependencies remain explicit."
     }
   ],
   "unsealed_work": {
-    "status": "none",
+    "status": "clinical_native_prefix_boundary_followthrough",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": false,
-    "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json"
+    "receipt": "artifacts/agere-current-release-2026-11-04/acceptance/receipt.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3605,7 +3640,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: finish the remaining source-to-scalar binding step for the retained four-field/two-patient repair using existing native queries, typed source evidence and compiler bindings. Two scoped live attempts retained the full answer but could not compile proposed numeric prose (last pending literals0/14 in SYN-3AB806B5-AA0). Reassess that exact source-to-binding affordance offline before further provider work; reuse every retained proposal and attempt, do not regenerate114fields or repeat the full clinical campaign. Current saved answer remains54/58source-supported, partial/unverified with summary plus3patient packets and global coverage unsettled. Do not force source acceptance or promote the trace. Then assess current applicability of all ten finite acceptance areas; independentG5 and customer deployment remain separate.",
+  "next_action": "G3: qualify reusable clinical native execution without replaying ephemeral review feedback. The current source-supported run has26matching native actions followed by an operational feedback query that correctly quarantined its candidate. Stop portable learning at that boundary, retain the full trace, and verify that proposal and replay use the same entry-model identity after actor escalation. Use fresh native equivalence and regression/rollback checks before selection; no final partial answer or clinical weights may be promoted. Then measure current ordinary reuse/accounting without repeating the full source campaign or chasing the undecided global coverage vote. Current functional compatibility is9/9 across alltenareas; full-request performance, current packaging and independentG5/customer dependencies remain explicit.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3614,7 +3649,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T02:48:28.809749+00:00",
+  "latest_checkpoint": "2026-11-04T03:13:38.264397+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3694,6 +3729,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 68044,
-  "owned_server_session": 84966
+  "owned_server_pid": 68674,
+  "owned_server_session": 20453
 }
