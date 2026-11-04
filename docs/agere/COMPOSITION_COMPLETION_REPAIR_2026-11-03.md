@@ -1,5 +1,17 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: question response delivery reduced
+
+The ordinary question page now requests a compact representation after the full result is journaled. All 57 patient rows, 114 narrative fields, partial/unknown status, costs and work links remain exact. All 26 original operation nodes and their scope remain present; bulky parameters and investigation history reference the unchanged saved native context. Existing API clients retain their full representation.
+
+The retained real response decreased from **433,634,113 bytes to 5,582,854 bytes of JSON**, and **378,515 bytes with gzip**: 98.71% and 99.91% reductions respectively. Projection took0.772seconds and gzip encoding0.048seconds. These are transport measurements, not a new end-to-end clinical run.
+
+Real handler checks covered the default API, compressed answer view, explicit gzip refusal, complete journaling and502recovery. The actual question UI displayed the57patient table, partial status, saved cohort, work link, SQL route and cost. All63focused regressions passed. Current app8890 on `a254aac3` reopens the exact saved answer as current; all50,571providerattempts are unchanged. The finite engineering scorecard retains9/9requirements across alltenareas.
+
+The previous archive remains the known-good recovery artifact; no new archive-restore or clinical qualification is claimed. Next: diagnose the12frontiercalls/$8.150616 share of the existing first composition before selecting another localized performance correction.
+
+Receipt: `artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json`.
+
 ## November 4: ordinary bottling comparison passed
 
 The ordinary same-question repeat reexecuted all 33 native operations and reviewed the retained proposal without a new Claude call. It returned the exact 57 patient rows and 114 narrative fields; all 58 source packets remained supported. Overall coverage remained undecided, and the answer stayed partial. The saved current result reopens exactly at `ANS-3162d0505bbf3e1d5c8396a9`.

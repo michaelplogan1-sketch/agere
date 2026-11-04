@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T19:16:20.957746+00:00",
+  "updated_at": "2026-11-04T19:37:03.170932+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -458,15 +458,19 @@
         {
           "path": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/delivery-receipt.json",
           "sha256": "e6e6bc321dbfe7b2b860dcacbdfd80ae62d3237c248cea3dbe52932cbae86b86"
+        },
+        {
+          "path": "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json",
+          "sha256": "d152fd4cbb713d2ff55bc1cc68dd4c3a5c17c7d845639fd5aa593a329db1856a"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "First-generation latency/cost remains986.028s/$8.909197764; warm reuse155.723s/$0.015078556. Large uncompressed response and post-investigation overhead need localized diagnosis. Overall coverage remains undecided, and independent G5/clinical/model/customer qualification remains unavailable; all ten areas retained.",
+      "remaining_acceptance": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: current package/restore and automatic reuse sealed; all jobs terminal/source unfrozen. Currentapp8890PID23302/session67804 on ff949737. Matched repeat155.723s/$0.015078556 with0Claude retains57patients/114fields/58source packets; all50571attempts preserved. Offline profile confirms433.6MBnormalresponse, dominated by276.9MBinvestigation and three~50MBgraph/contract copies; answer5.38MB. Server total147.7725s includes15.5748scapture; runner archival3.510s measured separately, so do not blame all post-backstop time on transport. Next adapt existing saved-context inspection projection/encoding to ordinary question delivery, retaining exact patient/prose/cost/workflow/status and native-history/recovery links. Initial unshipped prototype kept those fields but changed26originalgraph nodes to24dependency nodes; preserve original graph operations/scope in the normal response and test actual UI/HTTP with retained results before activation. No providers or repeated question needed. First-generation performance and independentG5/clinical/customer qualification remain; alltenareas retained.",
+      "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -545,11 +549,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "automatic_current_reuse_sealed",
+    "kind": "compose_response_delivery_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Ordinary same-question entry automatically reexecutes33validated native operations, rechecks the retained partial proposal and saves the exact patient table/prose without new frontier generation.",
-    "measured_failure_reduction": "Matched repeat uses0frontiercalls;84.207%lesswalltime and99.831%lowerAPI-equivalent cost; exact57patient/114field result and58source packets retained.",
+    "user_behavior_delta": "Ordinary question UI requests an answer view with exact clinical output and native evidence references; full native execution remains journaled before transport projection. Existing API clients retain the full response.",
+    "measured_failure_reduction": "433.6 MB response reduced to 5.58 MB JSON / 379 KB gzip; exact patient output, cost records, original graph and native history preserved.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -586,16 +590,17 @@
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/payload-profile.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/runner-archive-profile.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/projection-initial-checks.json",
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/critical-path-followup.json"
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/critical-path-followup.json",
+      "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json"
     ],
-    "remaining_gap": "First-generation latency/cost remains986.028s/$8.909197764; warm reuse155.723s/$0.015078556. Large uncompressed response and post-investigation overhead need localized diagnosis. Overall coverage remains undecided, and independent G5/clinical/model/customer qualification remains unavailable; all ten areas retained.",
-    "next_action": "G3: current package/restore and automatic reuse sealed; all jobs terminal/source unfrozen. Currentapp8890PID23302/session67804 on ff949737. Matched repeat155.723s/$0.015078556 with0Claude retains57patients/114fields/58source packets; all50571attempts preserved. Offline profile confirms433.6MBnormalresponse, dominated by276.9MBinvestigation and three~50MBgraph/contract copies; answer5.38MB. Server total147.7725s includes15.5748scapture; runner archival3.510s measured separately, so do not blame all post-backstop time on transport. Next adapt existing saved-context inspection projection/encoding to ordinary question delivery, retaining exact patient/prose/cost/workflow/status and native-history/recovery links. Initial unshipped prototype kept those fields but changed26originalgraph nodes to24dependency nodes; preserve original graph operations/scope in the normal response and test actual UI/HTTP with retained results before activation. No providers or repeated question needed. First-generation performance and independentG5/clinical/customer qualification remain; alltenareas retained.",
+    "remaining_gap": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
+    "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All jobs terminal/source unfrozen; app8890PID23302/session67804 ready.",
+    "coordination": "All checks terminal; source unfrozen; app8890 PID24381/session80831 ready.",
     "remaining_blockers": [
-      "First-generation latency/cost remains986.028s/$8.909197764; warm reuse155.723s/$0.015078556. Large uncompressed response and post-investigation overhead need localized diagnosis. Overall coverage remains undecided, and independent G5/clinical/model/customer qualification remains unavailable; all ten areas retained."
+      "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim."
     ],
-    "latest_progress": "Automatic reuse sealed; retained-payload diagnosis completed offline. Projection prototype remains unshipped until original graph representation and UI compatibility are preserved.",
+    "latest_progress": "Browser/HTTP and63focused regressions passed; current saved answer and ten-area engineering applicability verified with zero new provider attempts.",
     "results_report": "artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -644,16 +649,16 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T19:11:52.237523+00:00",
-    "workflow_change": "Ordinary same-question entry automatically reexecutes33validated native operations, rechecks the retained partial proposal and saves the exact patient table/prose without new frontier generation.",
+    "at": "2026-11-04T19:37:03.170932+00:00",
+    "workflow_change": "Ordinary question UI requests an answer view with exact clinical output and native evidence references; full native execution remains journaled before transport projection. Existing API clients retain the full response.",
     "unsealed_work": {
-      "status": "automatic_current_proposal_reuse_delivered",
+      "status": "compose_response_delivery_sealed",
       "all_jobs_terminal": true,
       "source_frozen": false,
       "product_edits": false,
-      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/delivery-receipt.json",
-      "remaining": "First-generation latency/cost remains986.028s/$8.909197764; warm reuse155.723s/$0.015078556. Large uncompressed response and post-investigation overhead need localized diagnosis. Overall coverage remains undecided, and independent G5/clinical/model/customer qualification remains unavailable; all ten areas retained.",
-      "current_context_id": "ANS-3162d0505bbf3e1d5c8396a9"
+      "receipt": "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json",
+      "remaining": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
+      "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies."
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -737,7 +742,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Invalid qualification baseline corrected without changing immutable events or runtime guards; automatic reuse measured through ordinaryHTTP.",
+    "measured_failure_removed": "Duplicate native history no longer travels in the normal question-page response.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -3766,17 +3771,24 @@
       "decision": "After current package acceptance, resolve the invalid learning cost comparison before one matched ordinary reuse measurement.",
       "basis": "artifacts/agere-final-package-2026-11-04/learning-baseline-audit.json",
       "scope_impact": "No new acceptance area, model, architecture or training campaign. No runtime defect asserted from the qualification harness mismatch."
+    },
+    {
+      "at": "2026-11-04T19:37:03.170932+00:00",
+      "gate": "G3",
+      "reason": "Retained normal response contained433.6MB largely duplicate execution/graph history. Exact source-bound projection and actual UI/HTTP checks demonstrate a localized delivery improvement. First-generation economics remain separate.",
+      "change": "Activate opt-in question response view after full native journaling; next investigate12frontier attempts from existing trace.",
+      "scope_impact": "No acceptance area, model qualification, source population, API default, clinical content or runtime learning policy changed.",
+      "evidence": "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json"
     }
   ],
   "unsealed_work": {
-    "status": "automatic_current_proposal_reuse_delivered",
+    "status": "compose_response_delivery_sealed",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": false,
-    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/delivery-receipt.json",
-    "remaining": "First-generation latency/cost remains986.028s/$8.909197764; warm reuse155.723s/$0.015078556. Large uncompressed response and post-investigation overhead need localized diagnosis. Overall coverage remains undecided, and independent G5/clinical/model/customer qualification remains unavailable; all ten areas retained.",
-    "current_context_id": "ANS-3162d0505bbf3e1d5c8396a9",
-    "next_action": "G3: current package/restore and automatic reuse sealed; all jobs terminal/source unfrozen. Currentapp8890PID23302/session67804 on ff949737. Matched repeat155.723s/$0.015078556 with0Claude retains57patients/114fields/58source packets; all50571attempts preserved. Offline profile confirms433.6MBnormalresponse, dominated by276.9MBinvestigation and three~50MBgraph/contract copies; answer5.38MB. Server total147.7725s includes15.5748scapture; runner archival3.510s measured separately, so do not blame all post-backstop time on transport. Next adapt existing saved-context inspection projection/encoding to ordinary question delivery, retaining exact patient/prose/cost/workflow/status and native-history/recovery links. Initial unshipped prototype kept those fields but changed26originalgraph nodes to24dependency nodes; preserve original graph operations/scope in the normal response and test actual UI/HTTP with retained results before activation. No providers or repeated question needed. First-generation performance and independentG5/clinical/customer qualification remain; alltenareas retained."
+    "receipt": "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json",
+    "remaining": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
+    "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies."
   },
   "current_visual_request": {
     "status": "completed",
@@ -3802,7 +3814,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: current package/restore and automatic reuse sealed; all jobs terminal/source unfrozen. Currentapp8890PID23302/session67804 on ff949737. Matched repeat155.723s/$0.015078556 with0Claude retains57patients/114fields/58source packets; all50571attempts preserved. Offline profile confirms433.6MBnormalresponse, dominated by276.9MBinvestigation and three~50MBgraph/contract copies; answer5.38MB. Server total147.7725s includes15.5748scapture; runner archival3.510s measured separately, so do not blame all post-backstop time on transport. Next adapt existing saved-context inspection projection/encoding to ordinary question delivery, retaining exact patient/prose/cost/workflow/status and native-history/recovery links. Initial unshipped prototype kept those fields but changed26originalgraph nodes to24dependency nodes; preserve original graph operations/scope in the normal response and test actual UI/HTTP with retained results before activation. No providers or repeated question needed. First-generation performance and independentG5/clinical/customer qualification remain; alltenareas retained.",
+  "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3811,7 +3823,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T19:11:52.237523+00:00",
+  "latest_checkpoint": "2026-11-04T19:37:03.170932+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3891,6 +3903,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 23302,
-  "owned_server_session": 67804
+  "owned_server_pid": 24381,
+  "owned_server_session": 80831
 }

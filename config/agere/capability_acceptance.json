@@ -1,10 +1,10 @@
 {
-  "complete_population_program": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/complete_population_program.json",
-  "evidence_change_reassessment": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/evidence_change_reassessment.json",
-  "source_and_adapter_conformance": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/source_and_adapter_conformance.json",
-  "longitudinal_prediction_path": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/longitudinal_prediction_path.json",
-  "discovery_explanation_path": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/discovery_explanation_path.json",
-  "outcome_and_financial_reconciliation": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/outcome_and_financial_reconciliation.json",
-  "economical_role_routing": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/economical_role_routing.json",
-  "portable_local_operations": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/portable_local_operations.json"
+  "complete_population_program": "artifacts/agere-compose-response-view-2026-11-04/acceptance/complete_population_program.json",
+  "evidence_change_reassessment": "artifacts/agere-compose-response-view-2026-11-04/acceptance/evidence_change_reassessment.json",
+  "source_and_adapter_conformance": "artifacts/agere-compose-response-view-2026-11-04/acceptance/source_and_adapter_conformance.json",
+  "longitudinal_prediction_path": "artifacts/agere-compose-response-view-2026-11-04/acceptance/longitudinal_prediction_path.json",
+  "discovery_explanation_path": "artifacts/agere-compose-response-view-2026-11-04/acceptance/discovery_explanation_path.json",
+  "outcome_and_financial_reconciliation": "artifacts/agere-compose-response-view-2026-11-04/acceptance/outcome_and_financial_reconciliation.json",
+  "economical_role_routing": "artifacts/agere-compose-response-view-2026-11-04/acceptance/economical_role_routing.json",
+  "portable_local_operations": "artifacts/agere-compose-response-view-2026-11-04/acceptance/portable_local_operations.json"
 }

@@ -1,8 +1,8 @@
-# Current Agere checkpoint — 2026-11-04T19:16:20.957746+00:00
+# Current Agere checkpoint — 2026-11-04T19:37:03.170932+00:00
 
-G3: current package/restore and automatic reuse sealed; all jobs terminal/source unfrozen. Currentapp8890PID23302/session67804 on ff949737. Matched repeat155.723s/$0.015078556 with0Claude retains57patients/114fields/58source packets; all50571attempts preserved. Offline profile confirms433.6MBnormalresponse, dominated by276.9MBinvestigation and three~50MBgraph/contract copies; answer5.38MB. Server total147.7725s includes15.5748scapture; runner archival3.510s measured separately, so do not blame all post-backstop time on transport. Next adapt existing saved-context inspection projection/encoding to ordinary question delivery, retaining exact patient/prose/cost/workflow/status and native-history/recovery links. Initial unshipped prototype kept those fields but changed26originalgraph nodes to24dependency nodes; preserve original graph operations/scope in the normal response and test actual UI/HTTP with retained results before activation. No providers or repeated question needed. First-generation performance and independentG5/clinical/customer qualification remain; alltenareas retained.
+G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies.
 
-Latest sealed receipt: artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/delivery-receipt.json
+Latest sealed receipt: artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json
 
 ## Superseded checkpoint
 
