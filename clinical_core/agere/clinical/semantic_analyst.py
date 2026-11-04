@@ -729,18 +729,29 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         else:
                             retries_left -= 1
                         result['format_repair'] = 'asked_again'
-                        force_text = True
-                        state_feedback='Your reply was not valid JSON. Return only the required JSON object.'
+                        force_text = not bool(focused_repair)
+                        if focused_repair:
+                            # A serialization failure does not supersede the
+                            # compiler/source assessment of the retained draft.
+                            # Losing that assessment disables the patch boundary
+                            # and lets a replacement silently discard row prose.
+                            repair_protocol_feedback='Your repair was not valid JSON and was not applied. The complete draft and located targets are unchanged. Use registered tools if needed, then return only the required repair_draft object with its current digest.'
+                            format_feedback=repair_protocol_feedback
+                        else:
+                            state_feedback='Your reply was not valid JSON. Return only the required JSON object.'
+                            format_feedback='Your reply was not a valid JSON answer object. Reply with ONLY the JSON answer object in the required contract, no other text.'
                         messages.append({'role': 'assistant', 'content': blocks})
-                        messages.append({'role': 'user', 'content': 'Your reply was not a valid JSON answer object. Reply with '
-                                         'ONLY the JSON answer object in the required contract, no other text.'})
+                        messages.append({'role': 'user', 'content': format_feedback})
                         continue
                 if isinstance(candidate, dict) and any(k in candidate for k in ('tool_use', 'tool_uses')):
                     signature = json.dumps([candidate, result['tool_calls']], sort_keys=True, default=str)
                     if signature in rejected_protocol:
                         if not escalate('Repeated unexecuted tool envelope'):
                             raise ValueError('Investigation made no progress: repeated unexecuted tool request, not a final answer')
-                    state_feedback='Unexecuted tool envelope. Use the registered tools with literal arguments before returning a final answer.'
+                    if focused_repair:
+                        repair_protocol_feedback='Unexecuted tool envelope: no action or prose edit was applied. The complete draft and located targets are unchanged. Use registered tools with literal arguments, then return only repair_draft with the current digest.'
+                    else:
+                        state_feedback='Unexecuted tool envelope. Use the registered tools with literal arguments before returning a final answer.'
                     rejected_protocol.add(signature)
                     repairs += 1
                     result.setdefault('protocol_repairs', []).append({'reason': 'Unexecuted tool request is not a final answer',

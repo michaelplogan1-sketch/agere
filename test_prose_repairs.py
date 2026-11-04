@@ -42,6 +42,54 @@ class ProseRepairs(unittest.TestCase):
         self.assertEqual(len(reviewed),1);self.assertEqual(out['review_stopped'],'no_progress')
         self.assertEqual(out['answer']['row_prose'],self.base['row_prose']);self.assertEqual(out['new_paid_api_calls'],2)
 
+    def test_malformed_repair_keeps_targets_and_rejects_replacement_before_valid_patch(self):
+        for malformed in ('{"repair_draft":', json.dumps({'tool_use':{'name':'unregistered','input':{}}})):
+            with self.subTest(malformed=malformed):
+                self.setUp();feedback=self.located_failure();original=copy.deepcopy(self.base)
+                sent=[];reviewed=[]
+                def review(candidate,calls):
+                    reviewed.append(copy.deepcopy(candidate))
+                    if len(reviewed)==1:return feedback
+                    self.compile(candidate)
+                    return {'status':'confirmed','feedback':None}
+                def send(body):
+                    state=json.loads(body['messages'][0]['content']);sent.append(state)
+                    focus=state['focused_prose_repair']
+                    self.assertEqual(focus['draft_digest'],digest(original))
+                    self.assertEqual(focus['complete_row_prose_rows'],2)
+                    self.assertEqual(focus['targets'][0]['field'],'review')
+                    if len(sent)==1:text=malformed
+                    elif len(sent)==2:
+                        self.assertIn('repair_protocol_feedback',state)
+                        text=json.dumps({'status':'partial','headline':'Replacement omitting patient prose','table_from_tool':'agere_result_1'})
+                    else:text=json.dumps(self.patch(review=self.bound_review()))
+                    return {'content':[{'type':'text','text':text}]},0.,False
+                out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('Unexpected source execution'),
+                    send=send,model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+                    review=review,format_retries=1,compact_execution_state=True)
+                self.assertIsNone(out.get('error'));self.assertEqual(len(sent),3);self.assertEqual(len(reviewed),2)
+                self.assertEqual(out['answer']['table'][0]['review'],'Review 2 events on 2030-01-01; preserve the uncertainty.')
+                self.assertEqual(out['answer']['row_prose']['rows'][1],original['row_prose']['rows'][1])
+                self.assertEqual(out['answer']['sources'],original['sources'])
+                self.assertTrue(any(p['reason']=='Replacement answer rejected at focused repair boundary'for p in out['protocol_repairs']))
+
+    def test_repeated_malformed_json_retains_source_unverified_draft_without_certification(self):
+        self.base['status']='partial';packet,support=self.source_review()
+        feedback={'status':'repair','repair_kind':'unresolved_verification','feedback':'Uncertain source meaning',
+                  'prose_repair':E.source_prose_repair(self.base,support,[packet],{}),'support':support}
+        original=copy.deepcopy(self.base);sent=[]
+        def send(body):
+            state=json.loads(body['messages'][0]['content']);sent.append(state)
+            self.assertEqual(state['focused_prose_repair']['draft_digest'],digest(original))
+            return {'content':[{'type':'text','text':'{"repair_draft":'}]},0.,False
+        out=S.tool_loop('Explain both entities',[],[],lambda use:None,send=send,model=M.SONNET,
+            max_tools=None,initial_calls=self.calls,initial_answer=self.base,review=lambda a,c:feedback,
+            format_retries=1,compact_execution_state=True)
+        self.assertTrue(out.get('error'));self.assertEqual(len(sent),2)
+        self.assertEqual(out['answer']['row_prose'],original['row_prose'])
+        self.assertEqual(out['answer']['verification'],'unverified')
+        self.assertNotIn('prose_repairs',out)
+
     def setUp(self):
         self.calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id,events FROM scoped'},
             'result':{'result_view':'agere_result_1','columns':['patient_id','events'],

@@ -258,12 +258,14 @@ class FinalReview(unittest.TestCase):
         self.assertFalse(A.investigation_confirmed('backstop_agent',receipt,'q',graph,{**answer,'value':3}))
         self.assertFalse(A.investigation_confirmed('backstop_agent',receipt,'q',{'nodes':[]},answer))
 
-    def review(self, coverage='answers_fully', support='supported'):
+    def review(self, coverage='answers_fully', support='supported', coverage_decided=True):
         tools = SimpleNamespace(read={'N1': {'text': 'Insulin was stopped.', 'date': '2029-01-01'}}, rows_by_record={})
         answer = {'status': 'answered', 'headline': 'Insulin continued.', 'sources': [{'record_id': 'N1', 'quote': 'Insulin was stopped.'}]}
         model = SimpleNamespace(decide=lambda *a, **kw: {'label': support, 'decided_by': 'jev', 'probabilities': {support: .95}, 'provider': 'jev'})
         with patch.object(G, 'ready', return_value=True), patch.object(G, 's1', return_value=model), \
-             patch.object(G, 'check', return_value={'label': coverage, 'calls': 1, 'cost_usd': .0002}):
+             patch.object(G, 'check', return_value={'label': coverage, 'decided_by': 'jev' if coverage_decided else None,
+                                                  'probabilities': {coverage: .95 if coverage_decided else .6},
+                                                  'calls': 1, 'cost_usd': .0002}):
             return B.review_final(SimpleNamespace(), 'What happened to insulin?', answer, [{'result': {'text': 'Insulin was stopped.'}}], tools,
                                   ledger=None, as_of='2030-01-01')
 
@@ -279,6 +281,13 @@ class FinalReview(unittest.TestCase):
 
     def test_complete_supported_answer_records_a_model_review(self):
         self.assertEqual(self.review()['status'], 'confirmed')
+
+    def test_undecided_coverage_label_does_not_confirm_or_establish_missing_work(self):
+        for label in ('answers_fully','answers_partially'):
+            with self.subTest(label=label):
+                result=self.review(coverage=label,coverage_decided=False)
+                self.assertEqual(result['status'],'repair')
+                self.assertIn('Coverage verification remains unresolved',result['feedback'])
 
     def test_missing_reviewer_is_not_a_successful_review(self):
         with patch.object(G, 'ready', return_value=False):
