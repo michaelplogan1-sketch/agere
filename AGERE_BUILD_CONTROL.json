@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T01:49:53.816498+00:00",
+  "updated_at": "2026-11-04T01:53:14.296937+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -625,10 +625,11 @@
       "artifacts/agere-clinical-prefix-2026-11-03/retained-review-live/receipt.json",
       "artifacts/agere-clinical-prefix-2026-11-03/repair-app/http-check.json",
       "artifacts/agere-clinical-prefix-2026-11-03/repair-app/current-repaired-context.json",
-      "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json"
+      "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json",
+      "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json"
     ],
     "remaining_gap": "Four prose judgments/two patients and global coverage undecided; full-request regeneration/economics, current ten-area engineering applicability, and independentG5/customer dependencies remain.",
-    "next_action": "G3: close full-request regeneration economics through the existing guarded execution and retained draft/review state. The ordinary prefix run has completed; do not repeat that campaign. First inspect which native actions and source-supported interpretation can be reused without inventing callback provenance, bypassing review, or treating operational feedback as patient evidence. Demonstrate any changed path offline with current source/meaning and changed-evidence rejection, then measure only the affected ordinary workflow. Current mixed-dependency repair is verified:3compilerfailures removed,52/58 to56/58source support;4prose judgments/2patients and global coverage remain undecided. Retain alltenareas and proceed to current release applicability; independent G5/customer prerequisites stay separate.",
+    "next_action": "G3: implement and qualify retention of the unfinished draft at the existing guarded investigation/recovery boundary so repeated work does not regenerate114prosefields after native replay. Audit completed: all28currentactions have real callback origins; action27 reads originalreview6 as tagged operational feedback and is outside answerdependencies, while quotequery28 is required. Preserve exact native reexecution, original question/source/meaning guards, full current review, and partial/unverified status; recovery is not accepted-answer or learned-path promotion. Do not force-select the current56/58source-supported result or relax source thresholds. Prove changed-source/field/native-result rejection offline before any affected live confirmation. No repeated full campaign. Then currentten-area release applicability; independentG5/customer dependencies remain separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "Scoped repair sealed on76e953bbf00bac52cad657ed42b898c2fad245c1; owned8890PID66710/session12530. All experiment jobs terminal. Current partial contextANS-d687f06d7e1369ade9b43953.",
     "remaining_blockers": [
@@ -676,7 +677,7 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T01:49:53.816498+00:00",
+    "at": "2026-11-04T01:53:14.296937+00:00",
     "workflow_change": "Large unresolved patient checks now diagnose every final field in one shared evidence state. Complete deciding field judgments may compose only with exact manifest/value/patient/source bindings; global question review and explicit disagreement remain separate. The actual saved57patient result preserves all values and displays57/61supported dependencies, up from55/61.",
     "unsealed_work": {
       "status": "sealed_mixed_dependency_repair",
@@ -889,7 +890,8 @@
       "ordinary_candidate_selected": false,
       "provider_attempts": 0,
       "scope": "Read-only provenance/routing diagnosis; not a new native execution or clinical/bottling qualification."
-    }
+    },
+    "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json"
   },
   "decisions": [
     {
@@ -3509,6 +3511,13 @@
       "decision": "Do not repeat the completed ordinary clinical campaign. Prefix22reuse is demonstrated, but full-request economics failed; correct retained repair integration and audit final-draft regeneration before another provider run.",
       "evidence": "artifacts/agere-clinical-prefix-2026-11-03/ordinary-current/run-receipt.json",
       "scope_impact": "No acceptance area removed or new research/model scope added."
+    },
+    {
+      "at": "2026-11-04T01:53:14.296937+00:00",
+      "gate": "G3",
+      "decision": "Ordinary prefix reuse did not preserve unfinished prose. Inspecting actual28calls identifies a historical feedback query outside answer dependencies and a required final quote query. Address resumable draft state within the existing boundary; do not confuse recovery with model/source qualification or force-select the failed prefix.",
+      "evidence": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
+      "scope_impact": "Existing G3 cost/completion requirement; ten-area scope unchanged."
     }
   ],
   "unsealed_work": {
@@ -3545,7 +3554,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: close full-request regeneration economics through the existing guarded execution and retained draft/review state. The ordinary prefix run has completed; do not repeat that campaign. First inspect which native actions and source-supported interpretation can be reused without inventing callback provenance, bypassing review, or treating operational feedback as patient evidence. Demonstrate any changed path offline with current source/meaning and changed-evidence rejection, then measure only the affected ordinary workflow. Current mixed-dependency repair is verified:3compilerfailures removed,52/58 to56/58source support;4prose judgments/2patients and global coverage remain undecided. Retain alltenareas and proceed to current release applicability; independent G5/customer prerequisites stay separate.",
+  "next_action": "G3: implement and qualify retention of the unfinished draft at the existing guarded investigation/recovery boundary so repeated work does not regenerate114prosefields after native replay. Audit completed: all28currentactions have real callback origins; action27 reads originalreview6 as tagged operational feedback and is outside answerdependencies, while quotequery28 is required. Preserve exact native reexecution, original question/source/meaning guards, full current review, and partial/unverified status; recovery is not accepted-answer or learned-path promotion. Do not force-select the current56/58source-supported result or relax source thresholds. Prove changed-source/field/native-result rejection offline before any affected live confirmation. No repeated full campaign. Then currentten-area release applicability; independentG5/customer dependencies remain separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3554,7 +3563,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T01:49:53.816498+00:00",
+  "latest_checkpoint": "2026-11-04T01:53:14.296937+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
