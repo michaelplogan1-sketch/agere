@@ -59,6 +59,26 @@ class Assembly(unittest.TestCase):
   out=A.compose(self.sources,base='people',keys=['patient_id'],joins=[{'result':'passages','as':'sources','on':{'patient_id':'patient_id'},'mode':'collect'}]);self.assertEqual(out['rows'][0]['sources'][0]['text'],'Documented source.')
 
 class State(unittest.TestCase):
+ def test_lossless_actor_readings_preserve_entities_dates_and_literal_source_objects(self):
+  from clinical_core.agere.deliverables.receipts import uncompact_json
+  from clinical_core.contracts import digest
+  rows=[{'patient_id':'P'+str(i),'dated_roles_json':json.dumps([
+   {'record_id':'r'+str(i),'date':'2029-01-02','role':'consultation author','current_assignment':None,
+    'quote':'Do not infer current responsibility. '+('Repeated source qualification. '*25),
+    'literal_source_object':{'$ref':'not a codec reference','payload':[None,False,0,3.25]}}])}
+   for i in range(40)]
+  value={'result_view':'dated_roles',**result(rows)}
+  value['actor_reading']={'mode':'complete_rows','rows_digest':digest(rows),'columns_digest':digest(value['columns'])}
+  call={'name':'query_sql','input':{'sql':'SELECT * FROM dated_roles','read_all_rows':True},'result':value}
+  before=copy.deepcopy(call)
+  state=json.loads(E.messages('Explain dated roles for every patient',[call],recent_results=[call])[0]['content'])
+  wire=state['executed_results'][0]['complete_reading'];native=S.actor_result(value)
+  self.assertEqual(uncompact_json(wire),native)
+  self.assertLess(len(json.dumps(wire)),len(json.dumps(native)))
+  self.assertNotIn('rows',state['latest_results'][0]['result']);self.assertEqual(call,before)
+  damaged=copy.deepcopy(wire);damaged['original_fingerprint']='changed'
+  with self.assertRaises(ValueError):uncompact_json(damaged)
+
  def test_compacted_state_can_recover_the_executed_source_and_period_contract(self):
   sql="SELECT patient_id,COUNT(*) AS n,SUM(amount) AS total FROM claim WHERE source='provider' AND service_date BETWEEN '2029-01-01' AND '2029-12-31' GROUP BY patient_id"
   call={'name':'query_sql','input':{'sql':'SELECT * FROM claim'},'result':{

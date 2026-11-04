@@ -53,7 +53,9 @@ class NativeCompleteness(unittest.TestCase):
         current=json.loads(E.messages('Explain each received account.',[call],recent_results=[call])[0]['content'])
         later=json.loads(E.messages('Explain each received account.',[call],feedback={'status':'repair','feedback':'Explain the observations.'})[0]['content'])
         for state in [current,later]:
-            self.assertEqual(state['executed_results'][0]['complete_reading']['rows'],result['rows'])
+            from clinical_core.agere.deliverables.receipts import uncompact_json
+            reading=state['executed_results'][0]['complete_reading']
+            self.assertEqual(uncompact_json(reading)['rows'],result['rows'])
         self.assertNotIn('rows',current['latest_results'][0]['result'])
         self.assertEqual(result,original)
 
