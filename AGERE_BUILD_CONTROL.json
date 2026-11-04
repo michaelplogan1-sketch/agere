@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T16:12:50.898747+00:00",
+  "updated_at": "2026-11-04T16:35:50.378069+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -525,21 +525,24 @@
     }
   ],
   "checkpoint": {
-    "kind": "automatic_composition_failure_observed",
+    "kind": "automatic_retained_repair_observed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "No new accepted user behavior: ordinary question retained native rows but automatic narrative composition failed.",
-    "measured_failure_reduction": "No reduction in automatic composition failure;62unbound fields remain in saved draft. Prior assisted58/58source-supported answer remains unchanged.",
+    "user_behavior_delta": "Authentic automatic draft now compiles and returns all57patient narratives with58/58automatedsource packets supported; no owner-authored field repairs.",
+    "measured_failure_reduction": "Retained automatic continuation62->0compiler and58/58source. Numeric parser correction accepts61/62fields from authentic first patch offline; prompt392096->92079bytes, allsentences/nativevalues unchanged.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/storage-consolidation/completed-trace-archive.json",
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-current/assessment.json"
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-current/assessment.json",
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-compiler-continuation/receipt.json",
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-compiler-continuation/numeric-repair-proof/receipt.json",
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-native-prefix/receipt.json"
     ],
-    "remaining_gap": "62compiler fields in automatic draft; fresh automatic composition and package/restore unaccepted. Clinical/model/deployment dependencies unchanged.",
-    "next_action": "G3: monitor only automatic-compiler-continuation PID6567/session75013. Product34e6cb7f and source frozen; app8890 remains84c96cca. Authentic draft49932 contains57patients/114fields and62compiler targets; no owner prose/binding edits. Candidate guarded native query after an empty compiler patch passed160tests and actual0-provider transition proof. Preserve failed original501.204s/7attempt/$4.342736456 request and all49933priorattempts. On terminal inspect compiler/source review and complete accounting, then decide next action. Automatic first-composition and package/restore remain unaccepted; alltenareas and independentG5/customer dependencies unchanged.",
+    "remaining_gap": "Fresh automatic first-composition acceptance and complete latency/cost; currentrelease/package refresh. IndependentG5clinical/model/customer dependencies unchanged.",
+    "next_action": "G3: monitor only automatic-composition-numeric PID8331/session57551 through app8890PID8291/session43919. Product7a568886 and source frozen; no duplicate or edits. Current32-native-operation prefix passed79.876s/0providers with no stored final proposal. This is a fresh ordinary question; no owner prose/bindings or retained final draft supplied. Inspect57patients/114fields, compiler/source packets, missing-data behavior, full latency and all-attempt cost on terminal. Retained automatic recovery58/58source is partial; first patch parser proof62->1failures and163tests do not establish fresh acceptance. If ordinary acceptance passes, reconcile current finite release and package/restore; otherwise preserve exact failure and diagnose offline. Alltenareas and independentG5/customer dependencies unchanged.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Single owned retained continuation; source/product frozen.",
+    "coordination": "One owned ordinary HTTP request; currentcode/source frozen.",
     "remaining_blockers": [
       "Global completeness is undecided and clinical facts remain missing; no repeated provider votes without new evidence.",
       "Final current release compatibility and package/restore assessment.",
@@ -3680,13 +3683,13 @@
     }
   ],
   "unsealed_work": {
-    "status": "automatic_compiler_continuation_running",
+    "status": "numeric_first_composition_running",
     "all_jobs_terminal": false,
     "source_frozen": true,
     "product_edits": true,
-    "product_commit": "34e6cb7f",
-    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-compiler-continuation/receipt.json",
-    "remaining": "G3: monitor only automatic-compiler-continuation PID6567/session75013. Product34e6cb7f and source frozen; app8890 remains84c96cca. Authentic draft49932 contains57patients/114fields and62compiler targets; no owner prose/binding edits. Candidate guarded native query after an empty compiler patch passed160tests and actual0-provider transition proof. Preserve failed original501.204s/7attempt/$4.342736456 request and all49933priorattempts. On terminal inspect compiler/source review and complete accounting, then decide next action. Automatic first-composition and package/restore remain unaccepted; alltenareas and independentG5/customer dependencies unchanged."
+    "product_commit": "7a568886",
+    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
+    "remaining": "G3: monitor only automatic-composition-numeric PID8331/session57551 through app8890PID8291/session43919. Product7a568886 and source frozen; no duplicate or edits. Current32-native-operation prefix passed79.876s/0providers with no stored final proposal. This is a fresh ordinary question; no owner prose/bindings or retained final draft supplied. Inspect57patients/114fields, compiler/source packets, missing-data behavior, full latency and all-attempt cost on terminal. Retained automatic recovery58/58source is partial; first patch parser proof62->1failures and163tests do not establish fresh acceptance. If ordinary acceptance passes, reconcile current finite release and package/restore; otherwise preserve exact failure and diagnose offline. Alltenareas and independentG5/customer dependencies unchanged."
   },
   "current_visual_request": {
     "status": "completed",
@@ -3713,13 +3716,14 @@
   },
   "active_jobs": [
     {
-      "pid": 6567,
-      "session": 75013,
-      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-compiler-continuation/receipt.json",
+      "pid": 8331,
+      "session": 57551,
+      "server_pid": 8291,
+      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
       "source_frozen": true
     }
   ],
-  "next_action": "G3: monitor only automatic-compiler-continuation PID6567/session75013. Product34e6cb7f and source frozen; app8890 remains84c96cca. Authentic draft49932 contains57patients/114fields and62compiler targets; no owner prose/binding edits. Candidate guarded native query after an empty compiler patch passed160tests and actual0-provider transition proof. Preserve failed original501.204s/7attempt/$4.342736456 request and all49933priorattempts. On terminal inspect compiler/source review and complete accounting, then decide next action. Automatic first-composition and package/restore remain unaccepted; alltenareas and independentG5/customer dependencies unchanged.",
+  "next_action": "G3: monitor only automatic-composition-numeric PID8331/session57551 through app8890PID8291/session43919. Product7a568886 and source frozen; no duplicate or edits. Current32-native-operation prefix passed79.876s/0providers with no stored final proposal. This is a fresh ordinary question; no owner prose/bindings or retained final draft supplied. Inspect57patients/114fields, compiler/source packets, missing-data behavior, full latency and all-attempt cost on terminal. Retained automatic recovery58/58source is partial; first patch parser proof62->1failures and163tests do not establish fresh acceptance. If ordinary acceptance passes, reconcile current finite release and package/restore; otherwise preserve exact failure and diagnose offline. Alltenareas and independentG5/customer dependencies unchanged.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3808,6 +3812,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 3462,
-  "owned_server_session": 82973
+  "owned_server_pid": 8291,
+  "owned_server_session": 43919
 }

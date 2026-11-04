@@ -1,3 +1,27 @@
+# Current Agere checkpoint — 2026-11-04T16:35:50.378069+00:00
+
+G3: monitor only automatic-composition-numeric PID8331/session57551 through app8890PID8291/session43919. Product7a568886 and source frozen; no duplicate or edits. Current32-native-operation prefix passed79.876s/0providers with no stored final proposal. This is a fresh ordinary question; no owner prose/bindings or retained final draft supplied. Inspect57patients/114fields, compiler/source packets, missing-data behavior, full latency and all-attempt cost on terminal. Retained automatic recovery58/58source is partial; first patch parser proof62->1failures and163tests do not establish fresh acceptance. If ordinary acceptance passes, reconcile current finite release and package/restore; otherwise preserve exact failure and diagnose offline. Alltenareas and independentG5/customer dependencies unchanged.
+
+Lastsealed source-repair-delivery-receipt unchanged.50071priorattempts preserved;163tests pass; no fullMVPclaim.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T16:34:20.505124+00:00
+
+G3: monitor only numeric-native-prefix PID8249/session72666; offline native requalification with provider dispatch blocked. Source/product7a568886 frozen. Owned app8890PID8291/session43919 now runs7a568886, primary8885 untouched. Authentic first patch now62->1compiler failures/61validfields retained, all57patients/114fields and50071attempts preserved;163tests. Retained automatic recovery58/58source-supported is partial, coverage undecided. After native-only qualification passes submit exactly one ordinary question using automatic-composition-numeric/run.py; no prior final proposal or owner field edits. Then assess full first-composition/latency/all-attempt cost and currentrelease/package. Alltenareas/G5/customer dependencies unchanged.
+
+Lastsealedreceipt unchanged; currentcandidate7a568886 not fullMVP.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T16:25:34.682203+00:00
+
+G3: all request jobs terminal/source unfrozen. Authentic automatic draft recovered with57patients/114fields and58/58source-supported packets,62compiler failures cleared, no owner prose/binding edits. Coverage undecided; retain partial without another unchanged vote. Preserve726.296s/138attempts/$3.89823547 and failed first501.204s/7attempts/$4.342736456, all50071attempts. Fix demonstrated numeric literal substring matching inside identifiers/dates offline:19fields in authentic first patch were affected. Prove retained first patch with unchanged values and adverse cases before any more provider work. Then current app/release and fresh ordinary acceptance evidence/package; alltenareas and independentG5/customer dependencies retained.
+
+Lastsealed source-repair-delivery-receipt unchanged pending current app acceptance. Product34e6cb7f/currentapp84c96cca.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T16:12:50.898747+00:00
 
 G3: monitor only automatic-compiler-continuation PID6567/session75013. Product34e6cb7f and source frozen; app8890 remains84c96cca. Authentic draft49932 contains57patients/114fields and62compiler targets; no owner prose/binding edits. Candidate guarded native query after an empty compiler patch passed160tests and actual0-provider transition proof. Preserve failed original501.204s/7attempt/$4.342736456 request and all49933priorattempts. On terminal inspect compiler/source review and complete accounting, then decide next action. Automatic first-composition and package/restore remain unaccepted; alltenareas and independentG5/customer dependencies unchanged.
