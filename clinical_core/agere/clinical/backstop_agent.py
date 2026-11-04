@@ -1589,7 +1589,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     review_stop_reason='unresolved_source_support',
                     reason='Every bound parent field and required source child has a deciding support check, '
                         'but their combined dependency remains undecided. No located field fault justifies rewriting '
-                        'the retained answer; keep source support and coverage unresolved until new evidence or review.')
+                        'the retained answer; retain every unresolved support or coverage obligation until new evidence or review.')
         if assessment['status']=='repair'and not numeric_unknown and not assessment.get('retry_disposition'):
             from .execution_state import source_prose_repair
             targeted=source_prose_repair(answer,support,packets,coverage)
