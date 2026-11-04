@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/15'
+VERSION = 'execution-state/16'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 

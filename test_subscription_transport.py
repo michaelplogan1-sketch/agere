@@ -42,6 +42,7 @@ class Translation(unittest.TestCase):
             with self.subTest(choice=choice):
                 body['tool_choice']={'type':choice,**({'name':'first'}if choice=='tool'else{})}
                 schema=T.decision_output_schema(body)
+                self.assertEqual(schema['type'],'object')
                 variants=schema.get('anyOf',[schema])
                 self.assertEqual(final in variants,choice in ('auto','none'))
                 permitted=T.allowed_tools(tools,body['tool_choice'])

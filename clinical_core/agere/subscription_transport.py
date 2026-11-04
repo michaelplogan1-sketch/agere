@@ -142,7 +142,9 @@ def decision_output_schema(body):
     variants=[obj({'tool_use':calls}),obj({'tool_uses':{'type':'array','items':calls,'minItems':1}})]
     if (body.get('tool_choice')or{}).get('type','auto')not in ('tool','any'):
         variants.insert(0,final)
-    return {'anyOf':variants}
+    # Claude's StructuredOutput tool requires the object type at its schema
+    # root even when each alternative independently declares that type.
+    return {'type':'object','anyOf':variants}
 
 
 INVOKE = re.compile(r'<invoke\s+name="([^"]+)"\s*>(.*?)(?:</invoke>|$)', re.S)
