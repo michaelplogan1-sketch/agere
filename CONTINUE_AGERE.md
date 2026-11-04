@@ -1,8 +1,8 @@
-# Current Agere checkpoint — 2026-11-04T22:51:45.577362+00:00
+# Current Agere checkpoint — 2026-11-04T22:55:55.455344+00:00
 
-G3: source-refresh continuation is terminal on dd91b867. 35 native actions recovered,57 patients/114 fields preserved,60/60 source packets supported; coverage undecided/partial. Targeted recovery262.905s/19attempts/$0.096636356 API-equivalent, no whole-question speedup claimed. All51105 attempts retained. Source unfrozen. Next assess current four-file applicability and verify the saved context through the owned app; seal only scoped recovery. Retain original failed generations, first-answer performance/coverage gaps, current package refresh and all ten acceptance/G5/customer dependencies.
+G3: source-refresh recovery/current app sealed on3fe6ed09. All jobs terminal; app8890PID33124/session60518 ready. 57patients/114fields,60/60source support, coverage undecided/partial; targeted262.905s/19attempts/$0.096636356 API-equivalent. All51105attempts retained. Next inspect retained current answer/trace: distinguish historical compiler feedback from still-pending clinical limitations in the existing returned-answer path, and isolate remaining ordinary first-answer work from existing861s trace. No new whole-question provider run or unchanged passing campaign. Keep current source review and all-ten-area acceptance; defer package refresh until remaining product fixes are stable, preserving known-goodff949737. IndependentG5/customer dependencies remain.
 
-Latest sealed receipt: artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json
+Latest sealed receipt: artifacts/agere-protocol-preservation-2026-11-04/source-refresh-delivery-receipt.json
 
 ## Superseded checkpoint
 
