@@ -35,6 +35,53 @@ class Workflow(unittest.TestCase):
         return {'context_id':self.c['id'],'program':'pharmd','patient_ids':['A','B'],
                 'owner':'PharmD review team','note':'Review suitability; no enrollment', **kw}
 
+    def test_interrupted_capture_preserves_partial_without_publishing_and_retries(self):
+        self.result['answer']['headline'] = 'New snapshot'
+        def interrupted(data, stream, **kwargs):
+            stream.write('{"interrupted":')
+            raise OSError(28, 'No space left on device')
+        with mock.patch.object(A.json, 'dump', side_effect=interrupted):
+            with self.assertRaises(OSError):
+                A.capture(self.path, self.question, self.result)
+        partial, = A.root(self.path).glob('*/.answer-*.partial')
+        self.assertEqual(partial.read_text(), '{"interrupted":')
+        self.assertFalse((partial.parent / 'answer.json').exists())
+        recovered = A.capture(self.path, self.question, self.result)
+        self.assertEqual(A.load(self.path, recovered['id'])['answer'], self.result['answer'])
+        self.assertEqual(partial.parent.name, recovered['id'])
+        self.assertEqual(partial.read_text(), '{"interrupted":')
+        self.assertEqual(A.load(self.path, self.c['id'])['answer']['headline'], 'Three patients')
+
+    def test_capture_sync_failure_does_not_publish(self):
+        self.result['answer']['headline'] = 'Not durable yet'
+        with mock.patch.object(A.os, 'fsync', side_effect=OSError(28, 'No space left on device')):
+            with self.assertRaises(OSError):
+                A.capture(self.path, self.question, self.result)
+        partial, = A.root(self.path).glob('*/.answer-*.partial')
+        self.assertEqual(json.loads(partial.read_text())['answer'], self.result['answer'])
+        self.assertFalse((partial.parent / 'answer.json').exists())
+
+    def test_capture_publication_keeps_concurrent_complete_snapshot_immutable(self):
+        self.result['answer']['headline'] = 'Concurrent snapshot'
+        winner = {}
+        def competing_writer(partial, target):
+            # The complete temporary snapshot is invisible until publication.
+            self.assertFalse(target.exists())
+            data = json.loads(partial.read_text())
+            data['created_at'] = 'first complete writer'
+            winner['bytes'] = json.dumps(data).encode()
+            target.write_bytes(winner['bytes'])
+            raise FileExistsError(target)
+        with mock.patch.object(A.os, 'link', side_effect=competing_writer):
+            captured = A.capture(self.path, self.question, self.result)
+        target = A.root(self.path) / captured['id'] / 'answer.json'
+        self.assertEqual(target.read_bytes(), winner['bytes'])
+        self.assertEqual(A.load(self.path, captured['id'])['answer'], self.result['answer'])
+        self.assertFalse(list(target.parent.glob('.answer-*.partial')))
+        with mock.patch.object(A.json, 'dump', side_effect=AssertionError('Must not rewrite')):
+            self.assertEqual(A.capture(self.path, self.question, self.result)['id'], captured['id'])
+        self.assertEqual(target.read_bytes(), winner['bytes'])
+
     def test_connected_work_survives_reopen_and_duplicate_create(self):
         result = A.create_work(self.path, self.req())
         self.assertEqual([i['patient_id'] for i in result['items']], ['A','B'])

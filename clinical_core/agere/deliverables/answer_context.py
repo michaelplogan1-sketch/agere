@@ -8,9 +8,11 @@ Frontier composition receives the frozen bundle, not a new cohort.
 from collections import Counter
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 import re
 import sqlite3
+import tempfile
 from types import SimpleNamespace
 
 from .receipts import Bundle, fingerprint
@@ -152,12 +154,19 @@ def capture(path, question, result, *, original_question=None):
     d.mkdir(parents=True, exist_ok=True)
     target = d / 'answer.json'
     if not target.exists():
-        # Exclusive creation keeps a shared question context immutable.
+        # Publish only complete snapshots, without replacing a concurrent writer.
+        # Keep an interrupted write under its partial name for recovery/accounting.
+        with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=d,
+                                         prefix='.answer-', suffix='.partial', delete=False) as f:
+            partial = Path(f.name)
+            json.dump({**data, 'id': key, 'created_at': now()}, f, default=str)
+            f.flush()
+            os.fsync(f.fileno())
         try:
-            with target.open('x') as f:
-                json.dump({**data, 'id': key, 'created_at': now()}, f, default=str)
+            os.link(partial, target)
         except FileExistsError:
             pass
+        partial.unlink()
     return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key, **scope_options(data)}
 
 
