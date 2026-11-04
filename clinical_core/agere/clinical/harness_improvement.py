@@ -586,8 +586,11 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
         try:checkpoint=recovery_checkpoint(tools,question,context,{'answer':proposal,'tool_calls':calls,'answer_reviews':[]})
         except ValueError:return None
         if not checkpoint or checkpoint['review_contexts']:return None
+    equivalent_proposal=(proposal is None or
+        (selected.get('reviewable_draft')==proposal if retain_proposal else
+         selected.get('qualification_mode')=='reviewed_partial_prefix' and not selected.get('reviewable_draft')))if selected else False
     if (selected and len(actions)<=len(selected['actions']) and (selected.get('final_answer') or final_answer is None)
-        and (proposal is None or selected.get('reviewable_draft')==proposal)):return None
+        and equivalent_proposal):return None
     candidate={'schema':VERSION,'identity':key,'parent':parent['id'] if parent else None,
                'round':parent['round']+1 if parent else 1,'actions':actions,
                'final_answer':final_answer if len(actions)==len(calls) else None,

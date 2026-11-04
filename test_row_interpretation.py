@@ -151,6 +151,59 @@ class RowInterpretation(unittest.TestCase):
         answer=self.answer();answer['row_prose']['rows'][0]['fields']['explanation']="R1: 'Received 99 events.'"
         with self.assertRaises(ValueError):B.bind_computed_prose(answer,self.calls,verified_quotes=[{'record_id':'R1','quote':'Received 99 events.'}])
 
+    def quote_fixture(self):
+        quote='Prior visit recorded a pressure of 96 mmHg.'
+        finding={'record_id':'R-A','date':'2029-05-01','quote':quote,'assertion':{
+            'binding_version':'documentary-relation/1','patient_id':'A',
+            'source':{'patient_id':'A','record_id':'R-A','event_date':'2029-05-01',
+                      'document_text_digest':digest(quote)},
+            'evidence':{'start':0,'end':len(quote),'quote':quote}}}
+        self.calls[1]['result']['columns'].append('findings')
+        self.calls[1]['result']['rows'][0].append(json.dumps([finding]))
+        self.calls[1]['result']['rows'][1].append(None)
+        answer=self.answer()
+        answer['row_prose']['rows'][0]['fields']['explanation']="R-A on 2029-05-01: '"+quote+"' Current pressure remains unknown."
+        return answer,finding
+
+    def test_exact_dated_same_entity_quote_binds_without_new_query_or_rewriting(self):
+        answer,finding=self.quote_fixture();before=copy.deepcopy(self.calls)
+        sentence=answer['row_prose']['rows'][0]['fields']['explanation']
+        B.bind_computed_prose(answer,self.calls)
+        self.assertEqual(answer['table'][0]['explanation'],sentence)
+        proof=answer['computed_prose'][0];observation=proof['quoted_observations'][0]
+        self.assertEqual(observation['path'],['findings',0])
+        self.assertEqual(observation['basis']['result_view'],'agere_result_2')
+        self.assertEqual(observation['source']['patient_id'],'A')
+        self.assertEqual(self.calls,before)
+        expected=copy.deepcopy(answer);B.bind_computed_prose(answer,self.calls)
+        self.assertEqual(answer,expected)
+        packet=next(p for p in self.packets(answer)if p['id']=='patient_A')
+        self.assertFalse(packet['source_context_complete'])
+        self.assertNotIn('native_profile_fidelity',packet)
+
+    def test_quote_binding_rejects_wrong_tuple_changed_span_and_invented_number(self):
+        for mutation in ('patient','record','date','span','text','metadata','unquoted','extra_number','undeclared_basis'):
+            with self.subTest(mutation=mutation):
+                self.setUp();answer,finding=self.quote_fixture()
+                if mutation=='patient':finding['assertion']['source']['patient_id']='B'
+                if mutation=='record':finding['assertion']['source']['record_id']='R-B'
+                if mutation=='date':finding['assertion']['source']['event_date']='2029-05-02'
+                if mutation=='span':finding['assertion']['evidence']['end']-=1
+                if mutation=='metadata':finding.pop('assertion')
+                if mutation=='text':finding['quote']=finding['quote'].replace('96','97')
+                if mutation=='unquoted':answer['row_prose']['rows'][0]['fields']['explanation']=answer['row_prose']['rows'][0]['fields']['explanation'].replace("'",'')
+                if mutation=='extra_number':answer['row_prose']['rows'][0]['fields']['explanation']+=' Current pressure is 96.'
+                if mutation=='undeclared_basis':answer['row_prose']['rows'][0]['basis'].pop()
+                self.calls[1]['result']['rows'][0][-1]=json.dumps([finding])
+                before=copy.deepcopy(answer)
+                with self.assertRaises(B.ComputedProseError):B.bind_computed_prose(answer,self.calls)
+                self.assertEqual(answer,before)
+
+    def test_old_quote_receipts_do_not_survive_current_native_evidence_change(self):
+        answer,finding=self.quote_fixture();B.bind_computed_prose(answer,self.calls)
+        self.calls[1]['result']['rows'][0][-1]='[]'
+        with self.assertRaises(B.ComputedProseError):B.bind_computed_prose(answer,self.calls)
+
     def test_proofs_and_basis_are_localized_and_new_text_never_gets_native_fidelity(self):
         packets=self.packets();decoded={p['id']:uncompact_json(json.loads(p['text'])) for p in packets}
         self.assertNotIn('row_prose',decoded['summary']['answer'])

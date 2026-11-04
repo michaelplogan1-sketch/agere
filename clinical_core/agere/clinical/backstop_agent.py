@@ -929,7 +929,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     """
     import string
     import math
-    formatter=string.Formatter();proofs=[];row_mode=False
+    formatter=string.Formatter();proofs=[];row_mode=False;row_quotes=[];field_quotes=[]
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
@@ -944,7 +944,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         # Dates/identifiers are addresses or temporal anchors, not row counts.
         # Only independently provenance-checked, explicitly attributed QUOTES
         # are observations rather than newly computed quantitative claims.
-        for source in (() if row_mode else verified_quotes):
+        for source in (field_quotes if row_mode else verified_quotes):
             quote=source.get('quote') or ''
             if isinstance(source.get('record_id'),str) and source['record_id'] in text and len(re.findall(r'\w+',quote))>=3:
                 for left,right in (("'","'"),('"','"'),('“','”')):
@@ -1037,6 +1037,33 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         rendered=template.format_map(resolved)
         proofs.append({'field':field,'template':template,'bindings':bindings,'rendered':rendered,'sources':sources})
         return rendered
+    def quoted_observations(value,path=()):
+        # These are values from an executed, same-entity basis row, never
+        # declarations supplied in row_prose. Retain the nested address and
+        # typed source tuple; copying a quotation is not a new calculation.
+        if isinstance(value,str) and value.lstrip().startswith(('{','[')):
+            try:value=json.loads(value)
+            except ValueError:return
+        if isinstance(value,list):
+            for index,item in enumerate(value):yield from quoted_observations(item,path+(index,))
+        elif isinstance(value,dict):
+            assertion=value.get('assertion')or{}
+            if isinstance(assertion,dict) and assertion.get('binding_version')=='documentary-relation/1':
+                source=assertion.get('source')or{};evidence=assertion.get('evidence')or{}
+                quote=value.get('quote');rid=value.get('record_id');date=value.get('date')
+                if (isinstance(quote,str) and len(re.findall(r'\w+',quote))>=3
+                        and isinstance(rid,str) and isinstance(date,str)
+                        and re.fullmatch(r'\d{4}-\d{2}-\d{2}',date)
+                        and source.get('patient_id')==entry['key'].get('patient_id')
+                        and assertion.get('patient_id')==entry['key'].get('patient_id')
+                        and entry['key'].get('patient_id') is not None
+                        and source.get('record_id')==rid and source.get('event_date')==date
+                        and evidence.get('quote')==quote and source.get('document_text_digest')
+                        and type(evidence.get('start'))is int and type(evidence.get('end'))is int
+                        and evidence['start']>=0 and evidence['end']-evidence['start']==len(quote)):
+                    yield {'path':list(path),'record_id':rid,'date':date,'quote':quote,
+                           'source':source,'evidence':evidence}
+            for name,item in value.items():yield from quoted_observations(item,path+(name,))
     updates={};errors=[];failures=[];targets=[]
     def checked(field,value):
         try:return compile_value(field,value)
@@ -1092,10 +1119,23 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             if set(entries)!=set(identities):raise ValueError('row_prose must preserve every native entity, including unknowns')
             for i,(row,ident) in enumerate(zip(table,identities)):
                 entry,bases,addresses=entries[ident]
+                row_quotes=[]
+                for base in bases:
+                    _,basis_rows=_rows(native[base['result_view']])
+                    for observation in quoted_observations(basis_rows[base['row']]):
+                        row_quotes.append({**observation,'basis':base})
                 for column,value in entry['fields'].items():
                     start=len(proofs);field='table.'+str(i)+'.'+column
                     try:
                         if not isinstance(value,(str,dict)):raise ValueError('row_prose fields must be text or scalar template/bindings at '+field)
+                        text=value if isinstance(value,str)else value.get('template','')
+                        field_quotes=[];seen_quotes=set()
+                        for observation in row_quotes:
+                            quote=observation['quote']
+                            if (isinstance(text,str) and quote not in seen_quotes
+                                    and observation['record_id'] in text and observation['date'] in text
+                                    and any(left+quote+right in text for left,right in (("'","'"),('"','"'),('“','”')))):
+                                field_quotes.append(observation);seen_quotes.add(quote)
                         rendered=compile_value(field,value)
                         if not isinstance(rendered,str):raise ValueError('row_prose field did not compile to text at '+field)
                         if len(proofs)==start:
@@ -1106,6 +1146,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
                             if set(binding)!={'result_view','row','column'} or (binding['result_view'],binding['row']) not in addresses:
                                 raise ValueError('row_prose scalar bindings must use this entity\'s declared evidence bases at '+field)
                         proof.update(entity_key=entry['key'],basis=bases,authority='model_proposed_interpretation_requires_source_review')
+                        if field_quotes:proof['quoted_observations']=field_quotes
                         row[column]=rendered
                     except (ValueError,KeyError,IndexError,TypeError) as exc:
                         # Report every field error in this draft together. Nothing
@@ -1125,7 +1166,9 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         except (ValueError,KeyError,IndexError,TypeError) as exc:
             errors.append(str(exc));failures.append({'code':'invalid_row_prose','field_group':'row_prose'})
     if errors:
-        quotation_rule=(' In patient/entity row prose, numeric quotations also need scalar bindings. '
+        quotation_rule=(' In patient/entity row prose, exact quotations can bind directly to typed documentary assertions '
+            'in this entity\'s executed basis rows when their record_id and source date are explicitly attributed in the same field. '
+            'Other numeric quotations also need scalar bindings. '
             'Preserve the original sentence during a binding repair. If it already quotes the source verbatim, use query_sql '
             'to select that complete quotation as a text scalar. If the sentence paraphrases a source value or label, '
             'extract the exact reported value or literal fragment from the received text into a named scalar instead; '

@@ -239,6 +239,9 @@ class Harness(unittest.TestCase):
         selected=H.latest(self.root,H.identity(e,self.q,context,self.model))
         self.assertEqual(selected['qualification_mode'],'reviewed_partial_prefix')
         self.assertNotIn('reviewable_draft',selected);self.assertIsNone(selected['final_answer'])
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'source_digest':'v1'}):
+            self.assertIsNone(H.propose(e,self.q,context,self.model,calls,lambda:self.executor(),
+                                       proposal_result=result,retain_proposal=False))
         replay=H.replay(self.executor(),self.q,context,self.model)
         self.assertEqual(len(replay['certificates']),2);self.assertNotIn('resume_draft',replay)
         self.assertIsNone(replay['final_answer'])
@@ -248,6 +251,19 @@ class Harness(unittest.TestCase):
         self.assertIsNone(H.latest(self.root,H.identity(e,self.q,context,self.model)))
         with self.assertRaises(ValueError):
             H.propose(e,self.q,context,self.model,calls,lambda:self.executor(),retain_proposal=False)
+
+    def test_selected_proposal_does_not_prevent_explicit_native_only_qualification(self):
+        e,calls=self.trajectory(2);result=self.proposal_run();c=self.propose_draft(e,calls,result)
+        result['investigation']['recursive_improvement']={'candidate':c};H.finish(self.root,result)
+        context={**self.context,'question':self.q}
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'source_digest':'v1'}):
+            native=H.propose(e,self.q,context,self.model,calls,lambda:self.executor(),
+                             proposal_result=result,retain_proposal=False)
+        self.assertIsNotNone(native)
+        result['investigation']['recursive_improvement']={'candidate':native};H.finish(self.root,result)
+        selected=H.latest(self.root,H.identity(e,self.q,context,self.model))
+        self.assertEqual(selected['qualification_mode'],'reviewed_partial_prefix')
+        self.assertNotIn('reviewable_draft',selected)
 
     def test_proposal_changed_native_or_feedback_withholds_draft(self):
         e,calls=self.trajectory(2);result=self.proposal_run();c=self.propose_draft(e,calls,result)
