@@ -1,5 +1,72 @@
 # Composition repair and retained-evidence comparison
 
+
+## Current scoped delivery — source-role repair and persistence
+
+Product **84c96cca** is running in the owned local app on port 8890. The final localized continuation corrected only `WHP-DD255C8A07C4 / proposed_review_steps_patient`; the other **113 narrative fields and every native table value remained exact**. All **58/58 source packets are supported** by the configured automated verifier, with no failed or unchecked packets. The **57-patient / 114-field answer remains partial**: global completeness is undecided and explicitly missing clinical facts remain missing. Source-support acceptance is not independent clinical qualification.
+
+The successful provider phase used **one Claude subscription call, six Jev calls and six Perplexity calls**: 13 validated attempts, **207.372 seconds**, **$0.148618272 API-equivalent**, zero unpriced. Its diagnostic result export subsequently hit ENOSPC. The terminal answer and full review had already been saved; they were recovered without repeating providers. Eight additional completed traces were losslessly archived, restoring about 1.8 GB at that point. The original failed receipt and every attempt remain preserved. The earlier sandbox-DNS attempt is separately counted above.
+
+Current HTTP checks return the exact corrected answer and cohort, current source/policy identity and the existing continuation control, with **zero new provider attempts**. No PDF was created. The previous 64744b2c context and scoped receipt remain the recovery point. The primary port8885 was unchanged.
+
+Sealed scoped receipt: `artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json`. Current context: `ANS-1db529418405dcf4f1c59cbd`. All **49,926** preceding provider rows are retained. The remaining step is current release/package compatibility and storage consolidation; no further unchanged source/coverage vote is justified. This retained, partly owner-assisted repair does not establish fresh automatic first-composition performance, clinical qualification or full MVP readiness.
+
+
+## November 4: recovered completed verification and atomic answer saves
+
+The source-only check finished in **90.659 seconds** with **74 new attempts** (37 Jev, 37 Perplexity), **$0.233714156 API-equivalent**, and no frontier generation. Both earlier clinician-role faults cleared. The retained 57-patient / 114-field answer has **57 of 58 source packets supported**, no unchecked packets, and one remaining machine-identified `wrong_role` field: `WHP-DD255C8A07C4 / proposed_review_steps_patient`. Global completeness remains undecided. These are engineering/model review results, not independent clinical qualification.
+
+The review completed before an `ENOSPC` failure in answer persistence. The old implementation wrote directly to the final immutable `answer.json`, exposing a truncated snapshot after failure. Product commit **84c96cca** writes a unique partial file, flushes and syncs it, then publishes with an exclusive atomic link. A concurrent complete snapshot is never replaced. Failed writes remain identifiable under partial filenames. **83 focused checks pass**, including interrupted writes, sync failures, concurrent publication, existing context behavior, dependencies and recovery.
+
+The completed loop, draft and review were recovered **without provider calls**. All 57 patients, 114 fields, original review results, source identity and 49,908 preceding ledger attempts remained exact. The only changed runtime file from the original verification was the inspected persistence implementation. The actual recovered context reopens under current source/policy identity. Recovery does not upgrade its partial answer or source/coverage verdict.
+
+Disk recovery preserved the failed snapshot bytes and 11 completed trace files in lossless gzip archives, with each decoded SHA checked before replacing its raw file. About 3.6 GB became available. The immutable archive index supplies the new locations. Source records, model weights, provider ledger, deliverables and original review receipts were not discarded. A copy-on-write package deduplication produced no measured space recovery; a failed transparent-compression attempt was rejected before touching its original.
+
+Evidence under `artifacts/agere-current-release-finish-2026-11-04/composition-check/`:
+
+- `scoped-source-continuation/receipt.json`: preceding three-field focused correction, 184.610 seconds / 10 attempts / $2.046978374 API-equivalent; all unrelated prose retained.
+- `scoped-source-continuation/remaining-count-proof/receipt.json`: bind the final unchanged word “three” to its existing native count, compiler failures 1 → 0, 2.078 seconds, no providers; explicitly owner-assisted binding.
+- `scoped-source-continuation/corrected-source-verification/receipt.json`: completed review followed by the original save failure; never overwritten as a passing run.
+- `scoped-source-continuation/corrected-source-verification/completed-trace-archive.json` and `disk-recovery.json`: lossless preservation and disk accounting.
+- `scoped-source-continuation/corrected-source-verification/save-recovery/receipt.json`: actual current-context recovery, source/review/table/prose/ledger preservation and focused checks.
+
+The first one-field continuation reached the exact targeted repair but failed provider DNS in restricted execution: **297.085 seconds / five attempts**, four unpriced and no generated correction. Its ledger rows and result remain in `remaining-role-continuation/`. The authorized network-enabled retry is separately recorded in `remaining-role-continuation-v2/`; do not combine a failed run with the retry or omit it from total effort.
+
+The requested current-stack visual now shows task-selective native, typed-model and frontier paths, connected synthetic data, verification, follow-up, executable bottling and tested learning/promotion. It distinguishes available local specialists from required components on each route. Four viewport widths and route switching passed with no script errors or clipped labels. This presentation does not change product acceptance.
+
+All ten acceptance areas remain. Current app/release/package compatibility, unresolved global completeness, independent G5 qualification and customer deployment requirements remain separate. The one-field continuation must be assessed from its terminal receipt before any further provider request.
+
+## November 4 afternoon: source-key binding and focused source repair
+
+The current candidate retains the fixed ten-area product scope. The served app remains the earlier scoped release `64744b2c`; the complete new first composition has not been accepted. The latest known-good saved answer is still partial. New model weights and clinical/customer qualification are not claimed.
+
+`c4958d70` replaces model row-counting in compact quantity edits with exact entity/source filters. Code requires one complete same-entity native row, resolves the existing scalar address, and derives its evidence basis. Legacy scalar/template contracts remain supported. Alphabetic literals match whole words, so “one” cannot alter “spironolactone.” Original wording, quantities, dates, all native values and complete compiler/source verification remain guarded.
+
+The actual retained five SQL requests were reexecuted offline; all 586 visible evidence rows matched. Re-encoding the retained 95 literal edits with native entity/source keys removed 37 compiler failures in **3.723 seconds**, with **zero provider attempts**. All 57 patients, 114 narrative fields and original warehouse values remained intact. Two erroneous row addresses were resolved by their original entity keys. This is a retained-case compiler result, not fresh model generation, source acceptance or whole-request latency.
+
+The subsequent live continuation revalidated 39 native actions. Source review identified machine-judged clinician-role faults in three fields across two patients, plus native-field uncertainties. Four other patient packets were deliberately left unreviewed after the faults. Because the repair constructor required every dependency to have been checked and required a document-text context even for structured source rows, it failed to produce a scoped repair. Broad regeneration then dropped the prose. The owner interrupted the owned Claude transport and preserved every response, native action, partial result and attempt. The returned zero-prose candidate is not usable; the original compiled draft is retained separately.
+
+That failed continuation took **257.851 seconds**, **127 attempts** (61 Jev, 61 Perplexity, four validated Claude and one interrupted/failed Claude), and **$2.621088128 API-equivalent**; no attempt was unpriced. All 49,697 preceding ledger rows and source/code/export identities were unchanged. A preceding callback-provenance preflight failed without provider calls; its receipt is preserved. Exact callback hashes were then reconstructed from the actual saved actor requests, never invented.
+
+The next candidate corrects both source-repair boundaries. A complete review manifest with a decided fault can expose only its exact reviewed prose fields while retaining every unchecked packet, native uncertainty and coverage requirement. Structured evidence keeps its own typed rows, row digests, execution contracts, source definitions and machine-observation provenance; it is not wrapped in an invented document or promoted to clinical truth. Missing/incomplete/stale/wrong-entity evidence remains ineligible.
+
+The actual saved review reproduces all producer packet and manifest hashes. The existing reviewer and compiled actor loop now reach **exactly three fields for two patients**, retaining all 57 patients/114 fields, four unreviewed packets and six remaining dependencies. The actor-state representation is 657,908 to 370,165 bytes; this measures input bytes only. The offline proof took 14.899 seconds with zero provider attempts and all 49,824 ledger rows exact. The selected regression suite passes **343 tests**. Live focused confirmation remains the next check.
+
+Earlier failed experiments in this same sequence are also retained, not omitted from the economics:
+
+| Saved attempt | Seconds | New attempts | API-equivalent USD | Result |
+|---|---:|---:|---:|---|
+| `current-binding-ordinary` | 487.980 | 11 | 4.266946438 | Saved draft obscured by empty formatting prefix |
+| `empty-prefix-continuation` | 555.021 | 8 | 8.128753350 | 66→37 compiler failures, then malformed output |
+| `compact-binding-continuation` | 184.478 | 4 | 1.718270400 | No further compiler progress |
+| `schema-binding-continuation` | 46.796 | 1 | 0 reported | Native schema rejected before generation |
+| `schema-binding-continuation-v2` | 47.385 | 1 | 0 reported | Top-level schema union rejected |
+| `schema-binding-continuation-v3` | 590.805 | 6 | 4.620136700 | Valid compact JSON; ambiguous spans/wrong addresses |
+
+The intermediate fixes preserve native structured output and permitted tool calls through the existing subscription transport. They do not bypass runtime verification. The accepted CLI schema uses a nested decision union; raw responses remain retained. [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) documents the native schema interface. No external Anthropic API key or custom output ceiling was used.
+
+Evidence is under `artifacts/agere-current-release-finish-2026-11-04/composition-check/`: the named attempt receipts; `schema-binding-continuation-v3/keyed-native-replay/`, `keyed-binding-proof-v3/`, and `keyed-binding-continuation-v2/scoped-stop-proof-v2/`. Initial failed offline proofs and fixtures remain preserved. The canonical control file owns the exact next step; final release/package applicability and independent G5/customer dependencies remain explicit.
+
 ## November 4: preserve useful repairs and complete the retained composition
 
 Product `64744b2c` closes the observed all-or-nothing binding failure. Calendar-valid shorthand dates such as `2026-09-03/17` are equivalent to the two fully written dates; invalid dates, ratios, changed values, units and meaning remain guarded. Independently valid binding fields survive an invalid neighbor. Structural and source-meaning edits remain atomic, and every resulting draft receives the complete compiler/source review. Errors now identify the patient, field and exact expected/rendered text; changing a temporary SQL alias no longer resets the same failed repair.

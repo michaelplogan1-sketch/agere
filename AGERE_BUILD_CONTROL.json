@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T12:41:54.174511+00:00",
+  "updated_at": "2026-11-04T15:40:36.220213+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -446,7 +446,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.",
+      "next_action": "G3: no further provider rerun until offline correction of demonstrated reference failures. Native schema accepted and all37compact fields returned, but ambiguous literal occurrences and wrong native basis indices rejected batches;590.805s/6newClaudeattempts/$4.6201367,37->37,no source review. Preserve34revalidated native actions plus5new literal SQL requests and every actor response. Replace model row-counting in compact binding edits with same-entity key selection resolved deterministically to existing scalar addresses; derive/check native bases in code and return exact located errors. Keep old scalar/template support, source/quantity/complete-review guards and all57patients/114fields. Prove on retained requests and adverse cases before any new provider continuation. Alltenareas/G5/customer dependencies unchanged.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -525,22 +525,27 @@
     }
   ],
   "checkpoint": {
-    "kind": "binding_repair_scoped_sealed",
+    "kind": "scoped_source_repair_delivered",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Valid patient prose binding repairs survive a bad neighboring field; all57patients/114prosefields now return from retained first composition.",
-    "measured_failure_reduction": "34->1offline,1->0currentcontinuation;57patients/114fields/nativevalues exact through app.",
+    "user_behavior_delta": "Keyed scalar bindings, localized producer-bound source correction, atomic immutable answer saves and current-app reopen preserve the full retained clinical answer.",
+    "measured_failure_reduction": "Retained binding compiler37->0; all58source packets supported after exact source-role corrections. Final one-field change preserves113unrelated fields and allnativecells. Atomic save/reopen and HTTP current-context checks pass.",
     "evidence": [
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-delivery-receipt.json"
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/verified-source-repair-app/http-check.json"
     ],
-    "remaining_gap": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate.",
-    "next_action": "G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.",
+    "remaining_gap": "Current whole-release/package and fresh automatic first-composition evidence; global completeness and clinical/model/deployment dependencies remain explicit.",
+    "next_action": "G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All request jobs terminal. Product64744b2c nowserved on8890; source unfrozen. Primary8885 unchanged.",
+    "coordination": "All provider jobs terminal/source unfrozen; owned app8890PID3462/session82973 at84c96cca; primary8885unchanged.",
     "remaining_blockers": [
-      "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate."
+      "Global completeness is undecided and clinical facts remain missing; no repeated provider votes without new evidence.",
+      "Final current release compatibility and package/restore assessment.",
+      "Fresh automatic first-composition quality/performance not established by this retained assisted repair.",
+      "Independent G5/model/clinical evidence and customer deployment prerequisites.",
+      "Reclaim storage from redundant completed artifacts before further large exports."
     ],
-    "latest_progress": "Scoped compiler repair and current saved workflow sealed; fresh ordinary current confirmation remains.",
+    "latest_progress": "Scoped delivery sealed with0-provider recovery and current-app HTTP checks; visual created and tested.",
     "results_report": "artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -589,14 +594,16 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T12:41:54.174511+00:00",
-    "workflow_change": "34compiler failures cleared through equivalent date handling and retained valid edits; full current review remains.",
+    "at": "2026-11-04T15:40:36.220213+00:00",
+    "workflow_change": "Keyed scalar bindings, localized producer-bound source correction, atomic immutable answer saves and current-app reopen preserve the full retained clinical answer.",
     "unsealed_work": {
-      "status": "none",
+      "status": "none_since_scoped_delivery",
       "all_jobs_terminal": true,
       "source_frozen": false,
       "product_edits": false,
-      "remaining": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate."
+      "product_commit": "84c96cca",
+      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
+      "remaining": "G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained."
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -649,10 +656,9 @@
     "provider_dependency": null,
     "active_jobs": [
       {
-        "kind": "retained_protocol_continuation_v2",
-        "pid": 89299,
-        "session": 72126,
-        "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation-v2/receipt.json",
+        "pid": 1378,
+        "session": 37353,
+        "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/scoped-source-continuation/corrected-source-verification/receipt.json",
         "source_frozen": true
       }
     ],
@@ -679,7 +685,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Actual ordinary HTTP request retains all57patients/114prose fields and exact table/prose values: 112.327seconds,32native substitutions,0Claude/actor callbacks,4Jev/Perplexity attempts,$0.017496996API-equivalent. No duplicate candidate.59/60source packets supported; joint dependency and coverage remain unknown.",
+    "measured_failure_removed": "37retained compiler failures cleared offline; no live source qualification or complete MVP claimed.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -3588,23 +3594,94 @@
       "decision": "Allow only retained one-field continuation after actualoffline34-to-1reduction; no full question/provider campaign. Calendar-valid date equivalence and independent binding preservation remove measured failures without changing native values or conferring source authority.",
       "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-subset-proof/receipt.json",
       "scope_impact": "Alltenareas unchanged."
+    },
+    {
+      "at": "2026-11-04T12:55:38.472713+00:00",
+      "gate": "G3",
+      "decision": "Current ordinary confirmation disproves closure despite retained-repair success. Reassess protocol handling using actual57row response; no furtherprovider work until offlineproof, no new architecture or acceptance scope.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/current-binding-ordinary/run-receipt.json"
+    },
+    {
+      "at": "2026-11-04T13:16:55.484847+00:00",
+      "gate": "G3",
+      "decision": "Stop provider reruns after repeated first-composition failure. The current firstquestion+continuation cost$12.395699788API-equivalent without a compiled answer. Reassess serialization and prompt projection offline using actual retained33native actions/37remainingfields; no additional models/research/acceptance expansion.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/empty-prefix-continuation/receipt.json"
+    },
+    {
+      "at": "2026-11-04T13:33:35.414529+00:00",
+      "gate": "G3",
+      "decision": "Offline reassessment: exact cited-record projection reduces retained37-field repair state457851 to316430bytes (30.888%) with all native receipts and targets unchanged. Malformed actor007/008 have no usable strictly complete prefix: first edits change original meaning and the next row is structurally invalid. Do not add lenient JSON salvage. Add a compact literal-to-native-cell edit within the existing repair_draft contract, so code preserves the original sentence and existing placeholders; require the same full compiler and source review. Prove against the actual retained12-edit/46-to37-target transition before any provider continuation. No new clinical model, narrowed cohort or acceptance area.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/empty-prefix-continuation/record-projection-proof/receipt.json"
+    },
+    {
+      "at": "2026-11-04T13:42:33.940722+00:00",
+      "gate": "G3",
+      "decision": "No more prompt-only retries. Existing Claude subscription adapter supports native JSON schema, but focused repair requests supplied none and permitted tools disabled its use. Enforce the existing repair/tool decision shape natively, retaining strict execution and source checks; no broader model campaign. Previous failedrun preserved.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/compact-binding-continuation/receipt.json"
+    },
+    {
+      "at": "2026-11-04T13:52:27.203376+00:00",
+      "gate": "G3",
+      "decision": "Provider rejected schema before generation: root type missing. Add explicit type object; execution-state16 versions the changed output contract.336regressionspass. Retry same retaineddraft only after request shape corrected; preserve failedrequest and no equivalence/savings claim.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/schema-binding-continuation/receipt.json"
+    },
+    {
+      "at": "2026-11-04T14:16:02.613253+00:00",
+      "gate": "G3",
+      "decision": "Stop whole-patch model reference retries. Native schema v3 returned syntactically valid patches, but sparse native indices and duplicated model-provided basis bookkeeping remain error prone. Resolve same-entity key selectors to existing scalar addresses and derive bases in shared typed repair code; no disease logic or new model campaign. Require retained-case offline proof before providers.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/schema-binding-continuation-v3/receipt.json"
+    },
+    {
+      "at": "2026-11-04T14:31:37.482118+00:00",
+      "gate": "G3",
+      "decision": "Recorded reassessment removed model row counting and redundant basis bookkeeping; retained native replay proved39receipts/586visible rows exact.37->3after key resolution,3->0after alphabetic whole-word matching. One targeted verification continuation follows offline proof; no original-question resubmission. Retain first failed proof and all provider failures.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/schema-binding-continuation-v3/keyed-binding-proof-v3/receipt.json"
+    },
+    {
+      "at": "2026-11-04T14:40:13.379145+00:00",
+      "gate": "G3",
+      "decision": "Stop broad repair after exact scoped source faults. Preserved terminal native outputs;257.851s/127attempts/$2.621088128API-equivalent,5Claude+61Jev+61Perplexity. One Claude transport interrupted; all attempts priced, source/code/export identities exact. Fix source_prose_repair early-stop guard offline, retaining the all-dependency full-review obligation.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/keyed-binding-continuation-v2/receipt.json"
+    },
+    {
+      "at": "2026-11-04T14:51:18.269449+00:00",
+      "gate": "G3",
+      "decision": "Offline exact packet/manifest proof supports targeted continuation: permit scoped reviewed prose after a complete-manifest early fault, carry typed structured source observations when no document body applies, preserve all pending native/source/coverage obligations. First live dispatch must be3fields or stop before provider.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/keyed-binding-continuation-v2/scoped-stop-proof-v2/receipt.json"
+    },
+    {
+      "at": "2026-11-04T15:19:23.442738+00:00",
+      "decision": "Repair observed save failure before further provider work; do not repeat completed review.",
+      "evidence": [
+        "artifacts/agere-current-release-finish-2026-11-04/composition-check/scoped-source-continuation/corrected-source-verification/receipt.json",
+        "artifacts/agere-current-release-finish-2026-11-04/composition-check/scoped-source-continuation/corrected-source-verification/disk-recovery.json",
+        "artifacts/agere-current-release-finish-2026-11-04/composition-check/scoped-source-continuation/corrected-source-verification/completed-trace-archive.json"
+      ],
+      "scope_impact": "No acceptance area removed; all partial bytes and attempts preserved."
+    },
+    {
+      "at": "2026-11-04T15:40:36.220213+00:00",
+      "decision": "Seal the scoped source-repair and persistence increment; stop unchanged semantic retries and return to current-release evidence.",
+      "evidence": [
+        "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json"
+      ],
+      "scope_impact": "All ten areas retained; no full MVP, fresh first-composition or clinical qualification claim."
     }
   ],
   "unsealed_work": {
-    "status": "none",
+    "status": "none_since_scoped_delivery",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": false,
-    "remaining": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate."
+    "product_commit": "84c96cca",
+    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
+    "remaining": "G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained."
   },
   "current_visual_request": {
-    "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
-    "publication": "Local assets and copy only; no publication or contact authorized/performed.",
-    "evidence": [
-      "/Users/mikel/clinical-insights-local/artifacts/project-wollstonecraft-2026-10-30/01-architecture.png",
-      "/Users/mikel/clinical-insights-local/artifacts/project-wollstonecraft-2026-10-30/linkedin-post-v2.txt",
-      "/Users/mikel/clinical-insights-local/artifacts/project-wollstonecraft-2026-10-30/tag-guide.md"
-    ]
+    "status": "completed",
+    "path": "/Users/mikel/.codex/visualizations/2026/10/29/01a187c0-23ba-7d02-9368-5ff567327554/wollstonecraft-question-flow.html",
+    "scope": "Current question flow, native/typed/frontier roles, available local specialists, bottling and gated learning; no publication.",
+    "checked": "Four widths, route interaction, no JS errors or clipping."
   },
   "full_stack_candidate_checkpoint": {
     "at": "2026-10-30T12:35:29.209891+00:00",
@@ -3624,7 +3701,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.",
+  "next_action": "G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3713,6 +3790,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 92444,
-  "owned_server_session": 54602
+  "owned_server_pid": 3462,
+  "owned_server_session": 82973
 }

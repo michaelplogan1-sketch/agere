@@ -1,10 +1,92 @@
-# Current Agere checkpoint — 2026-11-04T12:41:54.174511+00:00
+# Current Agere checkpoint — 2026-11-04T15:40:36.220213+00:00
 
-G3 ACTIVE. All request jobs terminal; source unfrozen. Scoped binding repair64744b2c sealed at `artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-delivery-receipt.json`. Owned app8890PID92444/session54602 serves currentcode; primary8885 unchanged.
+G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained.
 
-Actual saved draft34->1compiler failures offline,1->0in currentcontinuation.57patients/114fields/nativecells exact throughHTTP.207.596s/145attempts(5Haiku,70Jev,70Perplexity)/$0.637747706API-equivalent,0unpriced;49666totalledgerrows. Source56/60supported,fourpackets/globalcoverageundecided;answerpartial.289regressions pass. No fullMVP/clinicalqualification or fresh-first performance claim.
+Last sealed receipt: artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json. Last13providerattempts/207.372s/$0.148618272API-equivalent; earlier5DNS failures retained. All49926attempts exact. Diagnostic export ENOSPC recovered offline, lossless archives verified. Current HTTP preserves57patients/114fields and continuation control with0providercalls.83currentfocusedchecks plus prior343compatiblechecks. Current-stack visual ready and tested. FullMVPfalse.
 
-Exact next: G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T15:35:02.543914+00:00
+
+G3: all provider jobs terminal/source unfrozen. Actual one-field repair cleared the last role fault:58/58source packets supported, no failed or unchecked packets,57patients/114fields retained; global completeness remains undecided and requests retain_partial_until_new_evidence. Preserve13validatedattempts/$0.148618272API-equivalent/207.372s and prior5DNS failures. Diagnostic result export hit ENOSPC after terminal answer/review were saved. Archive completed duplicate traces losslessly, recover terminal answer without providers, verify current app, then reconcile current release/package. No further provider vote on unchanged unknowns; alltenareas/G5/customer dependencies remain.
+
+Current visual ready and tested; no fullMVP or clinical qualification claim.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T15:30:51.813210+00:00
+
+G3: monitor only remaining-role-continuation-v2 PID2586/session22929. Source/product frozen. One exact patient prose field is authorized for repair; no duplicate run. Retain57patients/114fields, all attempts and unresolved coverage. Then verify current app/release/package compatibility. Current stack question-flow visual requested by Mike is complete and route/layout tested. All ten areas and G5/customer dependencies remain.
+
+Atomic save84c96cca pushed;83tests and actual0-provider save recovery pass. First one-field continuation failed DNS in restricted execution:5attempts/297.085s retained, no model answer; retry uses authorized network execution. Last seal unchanged/fullMVPfalse.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T15:24:27.277667+00:00
+
+G3: monitor only remaining-role-continuation PID2078/session31837. Product/source frozen. First actor must target only WHP-DD255C8A07C4 proposed_review_steps_patient. Preserve57patients/114fields and all attempts. On terminal inspect scoped source correction and coverage, then current app/release/package compatibility. User also requested a current-stack question-flow visual; presentation work may continue without editing product source. All ten areas and G5/customer dependencies remain.
+
+Atomic save84c96cca pushed; recovered context/review without provider rerun.83tests pass. Lastseal unchanged/fullMVPfalse.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T15:19:23.442738+00:00
+
+G3 ACTIVE. All provider jobs terminal; source unfrozen. Product dbc39003 pushed; app8890 remains64744b2c. Source verification completed57/58 supported packets; only WHP-DD255C8A07C4 proposed_review_steps_patient flagged wrong_role. Global coverage unknown. Context save failed ENOSPC; all49908attempts and completed loop/draft/review retained.11 completed traces archived losslessly with hashes;3.6GB recovered.
+
+Exact next: G3: all provider jobs are terminal and source is unfrozen. Correct the observed non-atomic answer-context save, prove interrupted-write and concurrent-writer recovery, then recover the completed source review from saved loop/draft/review without repeating providers. Retain 57 patients/114 fields, all 49908 attempts, source support 57/58 and one exact wrong_role field for WHP-DD255C8A07C4. Assess that field through existing scoped repair; global coverage, current app/release/package compatibility and independent qualification remain open. All ten acceptance areas retained.
+
+Evidence: artifacts/agere-current-release-finish-2026-11-04/composition-check/scoped-source-continuation/corrected-source-verification/receipt.json and completed-trace-archive.json. Last seal unchanged; no full MVP or clinical qualification claim.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T15:01:57.712760+00:00
+
+G3 ACTIVE. Productdbc39003pushed; corrected-source verification RUNNING/source-codefrozen PID1378/session37353. Prior scoped run184.610s/10attempts/$2.046978374 preserved57patients/114fields and3source proposals. Last unbound three resolved offline against existing native missing-pillar count,1->0failures/2.078s/0providers. No source or fullMVP acceptance inferred. App8890still64744b2c.
+
+Exact next: G3: monitor only corrected-source-verification PID1378/session37353. Source/code frozen; no duplicate or product edits. This is source-only review of3retained role corrections and one existing native count binding;0frontier generation. After terminal inspect exact source faults/unknowns, preserve57patients/114fields and all attempts, then current app/release/package compatibility. Alltenareas/G5/customer dependencies remain.
+
+Receipt:artifacts/agere-current-release-finish-2026-11-04/composition-check/scoped-source-continuation/corrected-source-verification/receipt.json. All49834precedingattempts retained; lastseal/alltenareas unchanged.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T14:51:18.269449+00:00
+
+G3 ACTIVE. Productdbc39003committed; scoped-source continuation RUNNING PID920/session21920; source/codefrozen. Offline37->0compiler failure repair retained; actual early-stop review now scopes3fields/2patients.57patients/114fields/fouruncheckedpackets/sixremainingdependencies preserved;343tests. App8890still64744b2c; no complete first-composition/MVP acceptance.
+
+Exact next: G3: monitor only scoped-source-continuation PID920/session21920. Source/code frozen; no duplicate run or product edits. First actor must stay on3source fields/2patients; preserve57patients/114fields and every remaining dependency/attempt. After terminal inspect accounting and whether exact faults cleared, then current app/release/package compatibility. Alltenareas/G5/customer dependencies remain.
+
+Proof:artifacts/agere-current-release-finish-2026-11-04/composition-check/keyed-binding-continuation-v2/scoped-stop-proof-v2/receipt.json. All49824attempts retained; lastseal unchanged.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T14:40:13.379145+00:00
+
+G3 ACTIVE. All requestjobs terminal/sourceunfrozen. Productc4958d70pushed; app8890still64744b2c.37compiler failures clearedoffline with57patients/114fields unchanged. Live source review flagged2role faults, stopped4packets early and incorrectly lost scoped repair; broad regeneration interrupted.127attempts/$2.621088128/257.851s. All49824attempts and terminal native calls retained. Returned0prose candidate is NOT ready; retain original compiled draft001.
+
+Exact next: G3: repair the demonstrated early-stop source-review transition offline before any new provider call. Keyed bindings cleared37compiler failures with57patients/114fields retained, but two typed clinician-role faults stopped source review early; all_dependencies_checked=False wrongly disabled localized repair and exposed a broad regeneration path. Preserve original compiled draft-001, all39native calls and49824attempts. Permit only exact producer-bound reviewed prose edits while retaining unchecked packets/native uncertainty/global coverage as explicit obligations. Prove on the retained review and adverse cases; no full-cohort rerun or repeated votes. Alltenareas/current release/package/G5 dependencies remain.
+
+Receipt:artifacts/agere-current-release-finish-2026-11-04/composition-check/keyed-binding-continuation-v2/receipt.json. Lastsealunchanged/alltenareas retained/fullMVPfalse.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T14:31:37.482118+00:00
+
+G3 ACTIVE. Productc4958d70 committed; app8890 remains64744b2c. Single owned requestPID99859/session89001 running; source/code frozen.37->0compiler failures offline in3.723s,0providers; all57patients/114fields/nativevalues/claims preserved;341tests pass. Key/source resolver derives native addresses/bases and whole-word matching fixes one inside spironolactone. No source/clinical acceptance from this proof.
+
+Exact next: G3: monitor the single running keyed-binding-continuation-v2 jobPID99859/session89001. Source/code frozen; do not duplicate or mutate product. Inspect its receipt and ledger; on terminal reconcile all attempts and source/global unknowns, preserve the terminal native calls and assess current release/package applicability. Offline37->0compiler repair,57patients/114fields and alltenareas remain; no source/clinical/MVP acceptance inferred.
+
+Proof:artifacts/agere-current-release-finish-2026-11-04/composition-check/schema-binding-continuation-v3/keyed-binding-proof-v3/receipt.json. Lastseal still final-ordinary/binding-delivery-receipt.json. Alltenareas retained; no fullMVP claim.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T14:16:02.613253+00:00
+
+G3 ACTIVE. Allrequestjobs terminal;sourceunfrozen. Product9c191af2pushed,app8890PID92444/session54602still64744b2c. Known-good compiled contextANS-2928a39ee36bbabe120de52f remainspartial/source56of60. Candidate57patients/114fields still37compiler failures;notready.
+
+Native-schema v3 accepted live andreturned37field compact JSON plus5nativeSQLrequests; no syntaxfailures. Reference/basis errors rejectedpatches.590.805s/6newClaude/$4.6201367;all49697attempts retained. Previouscompact run184.478s/$1.7182704 andtwo400requestfailures preserved. No completecomposition/savings/MVPclaim.336tests and offline adapter proofs pass.
+
+Exact next: G3: no further provider rerun until offline correction of demonstrated reference failures. Native schema accepted and all37compact fields returned, but ambiguous literal occurrences and wrong native basis indices rejected batches;590.805s/6newClaudeattempts/$4.6201367,37->37,no source review. Preserve34revalidated native actions plus5new literal SQL requests and every actor response. Replace model row-counting in compact binding edits with same-entity key selection resolved deterministically to existing scalar addresses; derive/check native bases in code and return exact located errors. Keep old scalar/template support, source/quantity/complete-review guards and all57patients/114fields. Prove on retained requests and adverse cases before any new provider continuation. Alltenareas/G5/customer dependencies unchanged.
 
 ## Superseded morning checkpoint
 
