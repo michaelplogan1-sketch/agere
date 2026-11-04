@@ -1,6 +1,6 @@
-# Current Agere checkpoint — 2026-11-04T22:44:52.035220+00:00
+# Current Agere checkpoint — 2026-11-04T22:51:45.577362+00:00
 
-G3: source-suspension recovery candidate is offline verified: retained proof reexecutes/checks35native actions, excludes4currently suspended readings, preserves57patients/114prose fields and exact scalar/entity addresses, then produces only1compiler repair target.182boundary/regression tests pass;0newproviders/all51086attempts retained. Prior559.910s/302attempt/$6.171841982 continuation remains failed presentation acceptance. Next run prepared artifacts/agere-protocol-preservation-2026-11-04/continue_source_refresh.py once to continue the existing unaccepted proposal, then inspect full current source/coverage and clear patient presentation before any release. Source currently unfrozen; no active provider job. No new whole-question generation or unchanged vote repeat. All ten areas, currentrelease/package and independentG5/customer dependencies remain.
+G3: source-refresh continuation is terminal on dd91b867. 35 native actions recovered,57 patients/114 fields preserved,60/60 source packets supported; coverage undecided/partial. Targeted recovery262.905s/19attempts/$0.096636356 API-equivalent, no whole-question speedup claimed. All51105 attempts retained. Source unfrozen. Next assess current four-file applicability and verify the saved context through the owned app; seal only scoped recovery. Retain original failed generations, first-answer performance/coverage gaps, current package refresh and all ten acceptance/G5/customer dependencies.
 
 Latest sealed receipt: artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json
 
