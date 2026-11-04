@@ -8,6 +8,15 @@ from clinical_core.agere.deliverables.action_center import inspection_view, enco
 
 
 class WorkspacePayload(unittest.TestCase):
+    def test_resume_availability_does_not_send_draft_checkpoint_to_browser(self):
+        record={'context':{'id':'ANS-fixture','answer':{'status':'partial'},'workflow':[],
+            'investigation':{'recovery_checkpoint':{'draft':{'headline':'Retained internal draft'}},
+                'tool_calls':[{'name':'query_sql','input':{'sql':'select 1'},'result':{'rows':[[1]],'columns':['value']}}]}}}
+        shown=inspection_view(record)['context']['investigation']
+        self.assertTrue(shown['draft_resume_available']);self.assertNotIn('recovery_checkpoint',shown)
+        record['context']['workflow']=[{'kind':'monitor'}]
+        self.assertFalse(inspection_view(record)['context']['investigation']['draft_resume_available'])
+
     def test_native_history_is_referenced_without_changing_patients_judgments_or_work(self):
         rows = [{'patient_id': 'A', 'quote': 'MRA held; source interpretation unresolved'},
                 {'patient_id': 'B', 'quote': 'Other source retained'}]

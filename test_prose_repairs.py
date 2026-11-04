@@ -8,6 +8,40 @@ from clinical_core.contracts import digest
 
 
 class ProseRepairs(unittest.TestCase):
+    def test_focused_repair_rejects_full_answer_before_review_and_retains_all_fields(self):
+        self.base['status']='partial';packet,support=self.source_review()
+        feedback={'status':'repair','repair_kind':'unresolved_verification','feedback':'Uncertain source meaning',
+                  'prose_repair':E.source_prose_repair(self.base,support,[packet],{}),'support':support}
+        sent=[];reviewed=[];original=copy.deepcopy(self.base)
+        def review(candidate,calls):
+            reviewed.append(copy.deepcopy(candidate));return feedback
+        def send(body):
+            sent.append(body);state=json.loads(body['messages'][0]['content'])
+            self.assertIn('focused_prose_repair',state)
+            if len(sent)==1:answer={'status':'answered','headline':'Replacement with omitted patient prose','table_from_tool':'agere_result_1'}
+            else:
+                self.assertIn('repair_protocol_feedback',state)
+                answer={'repair_draft':{'draft_digest':digest(original),'rows':[]}}
+            return {'content':[{'type':'text','text':json.dumps(answer)}],'usage':{'input_tokens':1,'output_tokens':1}},0.,False
+        out=S.tool_loop('Complete original request','',[],lambda a:self.fail('No new native request'),send=send,
+            model=M.HAIKU,max_tools=None,initial_calls=self.calls,initial_answer=self.base,review=review,compact_execution_state=True)
+        self.assertEqual(len(reviewed),1);self.assertEqual(len(sent),2)
+        self.assertEqual(out['answer']['row_prose'],original['row_prose']);self.assertEqual(out['answer']['table'],original['table'])
+        self.assertEqual(out['answer']['status'],'partial');self.assertEqual(out['review_stopped'],'no_supported_prose_change')
+        self.assertEqual(out['protocol_repairs'][0]['reason'],'Replacement answer rejected at focused repair boundary')
+
+    def test_repeated_replacement_never_reaches_source_review_or_changes_draft(self):
+        self.base['status']='partial';packet,support=self.source_review()
+        feedback={'status':'repair','repair_kind':'unresolved_verification','feedback':'Uncertain source meaning',
+                  'prose_repair':E.source_prose_repair(self.base,support,[packet],{}),'support':support}
+        reviewed=[]
+        def review(candidate,calls):reviewed.append(candidate);return feedback
+        def send(body):return {'content':[{'type':'text','text':'{"status":"answered","headline":"Replacement"}'}]},0.,False
+        out=S.tool_loop('Complete original request','',[],lambda a:None,send=send,model=M.HAIKU,max_tools=None,
+            initial_calls=self.calls,initial_answer=self.base,review=review,compact_execution_state=True)
+        self.assertEqual(len(reviewed),1);self.assertEqual(out['review_stopped'],'no_progress')
+        self.assertEqual(out['answer']['row_prose'],self.base['row_prose']);self.assertEqual(out['new_paid_api_calls'],2)
+
     def setUp(self):
         self.calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id,events FROM scoped'},
             'result':{'result_view':'agere_result_1','columns':['patient_id','events'],
@@ -293,6 +327,17 @@ class ProseRepairs(unittest.TestCase):
         with self.assertRaises(ValueError):
             E.apply_prose_repair(self.patch(events='Changed native count'),self.base,calls=self.calls,feedback=feedback)
 
+    def test_unlocalized_summary_unknown_does_not_disable_exact_patient_prose_repair(self):
+        p,support=self.source_review()
+        summary={'id':'summary','text':json.dumps({'summary':'Unresolved global scope'}),'claim_manifest':[]}
+        support['packets'].insert(0,{'id':'summary','label':'unknown','decided_by':None})
+        target=E.source_prose_repair(self.base,support,[summary,p],{})
+        self.assertIsNotNone(target)
+        self.assertEqual([t['field']for t in target['targets']],['review'])
+        self.assertEqual([x['packet_id']for x in target['remaining_dependencies']],['summary'])
+        self.assertTrue(target['coverage_still_required'])
+        self.assertFalse(target['clinical_qualification'])
+
     def test_source_focus_rejects_native_unlocalized_stale_or_incomplete_obligations(self):
         p,support=self.source_review()
         for mutation in ('packet','manifest','source_gap','wrong_patient','source_empty','unlocalized','native_field','coverage','unchecked'):
@@ -425,6 +470,24 @@ class ProseRepairs(unittest.TestCase):
                     self.assertEqual(out['answer']['table'],self.base['table'])
                     self.assertEqual(out['answer']['verification'],'unverified')
                     self.assertEqual(out['unaccepted_draft']['returned_answer'],'last_structurally_complete_candidate')
+
+    def test_empty_patch_escalates_unfinished_compiler_work_but_preserves_complete_answer(self):
+        feedback,_,_=self.source_compiler_fixture();seen=[];sent=[]
+        def review(a,c):
+            seen.append(copy.deepcopy(a))
+            if len(seen)==1:return copy.deepcopy(feedback)
+            return B.review_final(SimpleNamespace(),'Explain each entity',a,c,
+                SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+        def send(body):
+            sent.append(body);focus=json.loads(body['messages'][0]['content'])['focused_prose_repair']
+            rows=[{'key':{'patient_id':'A'},'fields':{'review':'Review 42 events.'}}]if len(sent)==1 else[]
+            return {'content':[{'type':'text','text':json.dumps({'repair_draft':{'draft_digest':focus['draft_digest'],'rows':rows}})}]},0.,False
+        out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('Unexpected query'),send=send,
+            model=M.HAIKU,escalation_model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+            review=review,compact_execution_state=True)
+        self.assertEqual([b['model']for b in sent],[M.HAIKU,M.HAIKU,M.SONNET])
+        self.assertEqual(len(seen),2);self.assertEqual(out['review_stopped'],'compiler_unresolved')
+        self.assertEqual(out['answer']['table'],self.base['table']);self.assertEqual(out['answer']['verification'],'unverified')
 
 
 if __name__=='__main__':unittest.main()

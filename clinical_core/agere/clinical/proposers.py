@@ -902,11 +902,14 @@ class Cascade:
                                     'answer_reviews': run.get('answer_reviews') or [],
                                     'review_stopped':run.get('review_stopped'),
                                     'unaccepted_draft':run.get('unaccepted_draft'),
+                                    'recovery_checkpoint':run.get('recovery_checkpoint'),
+                                    'recovery_checkpoint_unavailable':run.get('recovery_checkpoint_unavailable'),
                                     'error':run.get('error'),
                                     'document_reviews':run.get('document_reviews') or [],
                                     'model_escalations':run.get('model_escalations') or [],
                                     'actor_prompt_receipts':run.get('actor_prompt_receipts') or [],
                                     'prose_repairs':run.get('prose_repairs') or [],
+                                    'protocol_repairs':run.get('protocol_repairs') or [],
                                     'guarded_continuations':run.get('guarded_continuations') or [],
                                     'recursive_improvement':run.get('recursive_improvement')}}
         review = answer.get('investigation_review') or {}
@@ -1469,7 +1472,7 @@ def execute(stack, question, graph, receipt, *, started,population=None,parent=N
     return out
 
 
-def continue_from_artifact(stack, context_id, feedback):
+def continue_from_artifact(stack, context_id, feedback=None):
     """Continue one server-owned investigation, not the full planning cascade.
 
     Re-execute literal read-only tools and review current evidence. Neither the
@@ -1488,10 +1491,23 @@ def continue_from_artifact(stack, context_id, feedback):
         actions.append({'name':call['name'],'input':call['input']})
     parent_key=(context.get('cohort_transform') or {}).get('parent_context_id')
     parent=A.load(stack.path,parent_key,current=True) if parent_key else None
+    recovery={}
+    if feedback is None:
+        investigation=context.get('investigation') or {}
+        checkpoint=investigation.get('recovery_checkpoint')
+        if not checkpoint or checkpoint.get('source')!=context['source'] or context.get('workflow'):
+            raise ValueError('This investigation has no current unfinished draft available to resume')
+        contracts={}
+        for review in investigation.get('document_reviews') or []:
+            for name,contract in (review.get('questions') or {}).items():
+                if name in contracts and contracts[name]!=contract:raise ValueError('Saved source-field meaning changed: '+name)
+                contracts[name]=contract
+        recovery={'checkpoint':checkpoint,'origin':{'question':question,'calls':investigation['tool_calls']},
+                  'document_reviews':investigation.get('document_reviews') or [],'field_contracts':contracts or None}
     c=Cascade(stack,request_plan.Catalog.load(stack.path),question,population=population)
     before={row[0] for row in c.ledger.db.execute('SELECT id FROM calls')}
     try:
-        with H.owned_recovery(actions,question,feedback), D.scope(question,context['source']['as_of']):
+        with H.owned_recovery(actions,question,feedback,**recovery), D.scope(question,context['source']['as_of']):
             found=c.attempt('backstop_agent',backstop_limit())
             if found is None:
                 raise c.provider_error or QuestionNotUnderstood('Artifact feedback investigation did not produce a checked answer')

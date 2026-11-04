@@ -529,6 +529,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         return True
     messages = [{'role': 'user', 'content': user}]
     state_feedback=None; state_candidate=None; latest_calls=[];last_complete_candidate=None
+    repair_protocol_feedback=None
     if initial_calls:
         # Certified literal replay enters through the same native tool protocol.
         # The actor sees actual current receipts, never a cached final answer.
@@ -601,6 +602,16 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                               documentation_identity=documentation_identity,documentation_in_system=bool(loaded_docs),
                                               feedback_native=review_reference(state_feedback,execute))
             else:actor_messages=messages
+            focused_repair=None
+            if compact_execution_state:
+                state=json.loads(actor_messages[0]['content'])
+                focused_repair=state.get('focused_prose_repair')
+                if focused_repair:
+                    if repair_protocol_feedback:
+                        state['repair_protocol_feedback']=repair_protocol_feedback
+                        actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
+                    actor_system=[*(actor_system if isinstance(actor_system,list)else[{'type':'text','text':actor_system}]),
+                        {'type':'text','text':'Current operation: repair the retained draft. Use literal registered tools if needed, then return ONLY {"repair_draft":{"draft_digest":"the exact focused_prose_repair digest","rows":[changed entity fields]}}. A replacement final answer is invalid in this operation. If the evidence justifies no changes, return the same repair_draft contract with rows:[]; the existing answer remains partial and unresolved.'}]
             body = {'model': model, 'max_tokens': max_tokens, 'system': actor_system, 'messages': actor_messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
             if pending_output is not None:body['tool_choice']=pending_output['tool_choice']
@@ -723,6 +734,27 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                      'Do not wrap tool requests in an answer object or mix them with other actions. '
                                      'Execute the missing work before returning the final answer.'})
                     continue
+                if focused_repair and (not isinstance(candidate,dict) or set(candidate)!={'repair_draft'}):
+                    signature=digest(['focused_repair_replacement',candidate,digest(state_candidate)])
+                    result.setdefault('protocol_repairs',[]).append({'reason':'Replacement answer rejected at focused repair boundary',
+                        'candidate_digest':digest(candidate),'retained_draft_digest':digest(state_candidate)})
+                    result['unaccepted_draft']={'draft_digest':digest(candidate),'reason':'focused_repair_requires_patch',
+                        'returned_answer':'last_structurally_complete_candidate','source_accepted':False}
+                    if signature in rejected_protocol and not escalate('Repeated replacement answer in focused repair'):
+                        result['review_stopped']='no_progress';return result
+                    rejected_protocol.add(signature);repairs+=1;force_text=False
+                    repair_protocol_feedback='Your replacement answer was not reviewed or applied. The complete original draft is intact. Return only repair_draft with the exact current digest and supported changed fields, or rows:[] if no change is justified.'
+                    continue
+                if focused_repair and candidate.get('repair_draft')=={'draft_digest':digest(state_candidate),'rows':[]}:
+                    if focused_repair.get('compiler_feedback'):
+                        if escalate('Scoped source edit still needs native quantity bindings'):
+                            repairs+=1
+                            repair_protocol_feedback='The proposed source edits have not compiled. Complete the named quantity bindings using current native evidence and literal tools. Retain all other fields; an empty repair does not finish this compiler work.'
+                            continue
+                        result['review_stopped']='compiler_unresolved'
+                        return result
+                    result['review_stopped']='no_supported_prose_change'
+                    return result
                 if isinstance(candidate,dict) and 'repair_draft'in candidate:
                     from .execution_state import apply_prose_repair,draft_state
                     patch_proposal=candidate
@@ -742,6 +774,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         messages.append({'role':'user','content':str(exc)+'\n'+json.dumps(draft_state(state_candidate))})
                         continue
                     old_fields={digest(r['key']):r['fields']for r in state_candidate['row_prose']['rows']}
+                    repair_protocol_feedback=None
                     changed=[sum(v!=old_fields[digest(r['key'])][k]for k,v in r['fields'].items())
                              for r in patch_proposal['repair_draft']['rows']]
                     result.setdefault('prose_repairs',[]).append({'base_draft_digest':patch_proposal['repair_draft']['draft_digest'],

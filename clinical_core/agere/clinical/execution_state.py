@@ -267,6 +267,11 @@ def source_prose_repair(candidate,support,packets,coverage):
             packet=producers.get(reviewed['id']);review=reviewed.get('field_review')or{}
             if packet is None:
                 remaining.append({'packet_id':reviewed['id'],'reason':'No direct prose producer for this source check'});continue
+            if (packet.get('patient_dependency_bound')is not True or not reviewed.get('claim_feedback')
+                    or not review.get('packet_digest')or not review.get('manifest_digest')):
+                # Summary and whole-packet unknowns are still obligations, but
+                # have no localized field authority to partition or edit.
+                remaining.append({'packet_id':reviewed['id'],'reason':'No complete producer-bound prose review'});continue
             source_state=uncompact_json(json.loads(packet['text']));source_packet_digest=digest(packet['text'])
             if review.get('packet_digest')!=digest(packet['text']):
                 # Reconstruct the exact existing source-partition parent. Only
@@ -469,7 +474,7 @@ def recovery_context(replay,tools):
     Owned recovery is still unfinished work, never an accepted learned answer.
     This handles the draft before it can become nested original-request text.
     """
-    meta={k:v for k,v in replay.items()if k not in ('calls','final_answer')}
+    meta={k:v for k,v in replay.items()if k not in ('calls','final_answer','resume_draft')}
     feedback=meta.get('downstream_review_feedback')
     if not feedback or tools.semantic is None:return meta
     native_digest=digest(feedback)

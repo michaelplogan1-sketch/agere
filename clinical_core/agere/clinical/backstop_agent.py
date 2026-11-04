@@ -2669,6 +2669,15 @@ def _claim_value(state,path):
     return value
 
 
+def returned_answer_review(run):
+    """Keep a rejected edit's compiler verdict separate from the retained answer."""
+    reviews=run.get('answer_reviews')or[]
+    if not reviews:return None
+    if (run.get('unaccepted_draft')or{}).get('returned_answer')=='last_structurally_complete_candidate':
+        return next((r for r in reversed(reviews)if r.get('repair_kind')!='deterministic_compiler'),reviews[-1])
+    return reviews[-1]
+
+
 def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, population=None, hint=None, validate_final=None):
     """-> {'answer': answer contract or None, 'tool_calls', 'model', 'estimated_cost_usd', 'new_paid_api_calls', 'error', 'seconds'}."""
     if ledger is None and send is None:  # a direct caller: charge the product ledger of a live stack
@@ -2747,7 +2756,8 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                 return raw_send(body)
         run = semantic_analyst.tool_loop(user, system, TOOLS, tools, send=actor_send, model=model,
                                          max_tools=MAX_TOOLS, extra={'cache_control': {'type': 'ephemeral'}}, format_retries=1, max_tokens=8192,
-                                         review=review, continuation_guard=tools.continuation_identity,initial_calls=replay['calls'],initial_answer=replay.get('final_answer'),
+                                         review=review, continuation_guard=tools.continuation_identity,initial_calls=replay['calls'],
+                                         initial_answer=replay.get('resume_draft') if replay.get('resume_draft')is not None else replay.get('final_answer'),
                                          escalation_model=model_policy.SONNET if model==model_policy.HAIKU and model_policy.escalation_enabled() else None,
                                          compact_execution_state=os.environ.get('AGERE_ANALYST_STATE')=='compiled')
         model=run.get('model') or model
@@ -2773,6 +2783,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'model_escalations':run.get('model_escalations',[]),
                'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),
                'prose_repairs':run.get('prose_repairs',[]),
+               'protocol_repairs':run.get('protocol_repairs',[]),
                'unaccepted_draft':run.get('unaccepted_draft'),
                'guarded_continuations':run.get('guarded_continuations',[]),
                'output_continuation_receipts':run.get('output_continuation_receipts',[]),
@@ -2783,14 +2794,19 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         if out['estimated_cost_usd'] is not None:out['estimated_cost_usd'] += tools.subtool_accounting['estimated_cost_usd']
         if not tools.subtool_accounting.get('api_cost_known',True):out['estimated_cost_usd']=None
         out['document_reviews'] = tools.document_reviews
-        out['recursive_improvement']={'replay':{k:v for k,v in replay.items() if k not in ('calls','final_answer')},'candidate':candidate,
+        try:out['recovery_checkpoint']=harness.recovery_checkpoint(tools,question,payload,run)
+        except ValueError as exc:out['recovery_checkpoint_unavailable']=str(exc)
+        out['recursive_improvement']={'replay':{k:v for k,v in replay.items() if k not in ('calls','final_answer','resume_draft')},'candidate':candidate,
                                       'final_decision_reused':bool(run.get('final_decision_reused')),'actor_metrics':actor_metrics}
         a = out['answer']
         if a is not None:
             a = shaped(dict(a))
             kept, dropped = verified_sources(a, tools)
             a['sources'] = kept
-            if reviews: a['investigation_review'] = reviews[-1]
+            if reviews:
+                # A rejected edit's compiler failure is not the source review
+                # of the complete earlier answer returned to the user.
+                a['investigation_review'] = returned_answer_review(run)
             if tools.judged: a['system_one_judgments'] = [{k: d[k] for k in ('record_id', 'date', 'label', 'probability', 'decided_by')} for d in tools.judged]
             notes = list(a.get('limitations') or [])
             if dropped: notes.append(f'{dropped} cited passage(s) were not found verbatim in their documents and were removed.')

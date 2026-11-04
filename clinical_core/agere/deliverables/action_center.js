@@ -238,6 +238,21 @@ function showWork() {
 function render() {
   const c = data.context;
   $('back-to-analysis').href='/ask?context='+encodeURIComponent(c.id);
+  let resume = $('resume-investigation');
+  if (!resume) {
+    resume = document.createElement('button'); resume.id = 'resume-investigation'; resume.className = 'btn';
+    $('back-to-analysis').parentElement.append(resume);
+  }
+  resume.hidden = !c.investigation?.draft_resume_available || !data.allow_frontier || !canChangeWork('custom');
+  resume.textContent = 'Continue analysis';
+  resume.onclick = () => run(async () => {
+    resume.disabled = true; resume.textContent = 'Reviewing saved work…';
+    try {
+      const result = await api('/api/stack/investigation/resume', {context_id:c.id});
+      if (!result.action_context?.id) throw Error('The analysis did not produce a saved result.');
+      location.href = '/action-center?context='+encodeURIComponent(result.action_context.id);
+    } finally { resume.disabled = false; resume.textContent = 'Continue analysis'; }
+  });
   $('center').hidden = false;
   $('loading').hidden = true;
   $('nav-cohort').textContent = num(c.patient_rows.length);

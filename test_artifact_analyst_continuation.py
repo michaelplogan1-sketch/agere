@@ -132,4 +132,46 @@ class Continuation(unittest.TestCase):
   with H.owned_recovery([],self.question,[{'reason':'Investigate'}]):out=H.recover_actions(tools,self.question)
   self.assertEqual(out['downstream_review_feedback'],[{'reason':'Investigate'}]);self.assertIsNone(out['final_answer'])
 
+ def test_saved_draft_resume_preserves_scope_and_reexecutes_before_review(self):
+  from clinical_core.agere.gateway import BudgetLedger
+  from clinical_core.agere.clinical import decision_context as D
+  original=copy.deepcopy(self.result);original['workflow']=[]
+  original['planner_receipt']={'request_contract':{'population':[]}}
+  call=original['investigation']['tool_calls'][0]
+  call.update(actor_callback_id='actual-callback')
+  call['result']['result_view']='agere_result_1'
+  draft={'status':'partial','answer_type':'table','table_from_tool':'agere_result_1','headline':'Still under review'}
+  ctx={'question':self.question,'patient_scope':[]}
+  checkpoint={'source':A.source_identity(self.path),'context':ctx,'draft':draft,'draft_digest':H.digest(draft),'review_contexts':[]}
+  original['investigation']['recovery_checkpoint']=checkpoint
+  key=A.capture(self.path,self.question,original)['id'];test=self
+  class Cascade:
+   def __init__(self,stack,catalog,question,*,population):
+    test.assertEqual(population,[]);self.ledger=BudgetLedger(test.path/'providers.sqlite3');self.started=__import__('time').perf_counter();self.log=[]
+   def attempt(self,name,limit):
+    class Tools:
+     stack=test.stack
+     def continuation_identity(self):return {'source':'current'}
+     def __call__(self,action):
+      test.assertEqual(action,{k:call[k] for k in ('name','input')});return copy.deepcopy(call['result'])
+    replay=H.recover_actions(Tools(),test.question,ctx)
+    test.assertEqual(replay['resume_draft'],{**draft,'verification':'unverified'})
+    test.assertEqual(replay['draft_recovery']['native_receipts_checked'],1)
+    test.assertIsNone(replay['final_answer']);test.assertEqual(replay['downstream_review_feedback'],[])
+    return ({'kind':'checked_graph','graph':{'nodes':[]},'executed':{'answer':{**draft,'patient_ids':[],'verification':'unverified'}}},
+            {'interpreter':'backstop_agent','proposer':{'calibration':'authored test'}})
+   def accept(self,order,name,found):return found
+   def usage(self):return {'new_paid_api_calls':0,'known_api_estimate_usd':0.,'api_cost_known':True}
+   def close(self):self.ledger.close()
+  with patch.object(P,'Cascade',Cascade),patch.object(P.request_plan.Catalog,'load',return_value=object()),patch.object(D,'finalize',side_effect=lambda path,result,state:result):
+   result=P.continue_from_artifact(self.stack,key)
+  self.assertEqual(result['answer']['status'],'partial');self.assertEqual(result['answer']['verification'],'unverified')
+  self.assertEqual(result['request_contract']['population'],[])
+
+ def test_resume_without_bound_checkpoint_stops_before_provider(self):
+  key=A.capture(self.path,self.question,self.result)['id']
+  with patch.object(P,'Cascade') as cascade,self.assertRaisesRegex(ValueError,'no current unfinished draft'):
+   P.continue_from_artifact(self.stack,key)
+  cascade.assert_not_called()
+
 if __name__=='__main__':unittest.main()

@@ -23,6 +23,101 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def test_checkpoint_capture_keeps_unaccepted_draft_and_rejects_missing_callback_origin(self):
+        import copy
+        actions,origin,checkpoint=self.recovery_checkpoint();executor=self.executor()
+        run={'answer':checkpoint['draft'],'tool_calls':origin['calls'],'answer_reviews':[]}
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']):
+            captured=H.recovery_checkpoint(executor,self.q,checkpoint['context'],run)
+            self.assertEqual(captured,checkpoint)
+            captured['draft']['headline']='Client mutation'
+            self.assertNotEqual(captured['draft'],run['answer'])
+            bad=copy.deepcopy(run);bad['tool_calls'][0].pop('actor_callback_id')
+            with self.assertRaises(ValueError):H.recovery_checkpoint(executor,self.q,checkpoint['context'],bad)
+            bad=copy.deepcopy(run);bad['answer']['status']='answered'
+            self.assertIsNone(H.recovery_checkpoint(executor,self.q,checkpoint['context'],bad))
+
+    def recovery_checkpoint(self):
+        import copy
+        _,calls=self.trajectory(2)
+        actions=[{k:copy.deepcopy(c[k])for k in ('name','input')}for c in calls]
+        draft={'status':'partial','answer_type':'table','table_from_tool':'agere_result_2',
+               'headline':'The requested interpretation remains unresolved.'}
+        context={**self.context,'question':self.q}
+        checkpoint={'source':{'source_digest':'v1'},'context':context,'draft':draft,
+                    'draft_digest':H.digest(draft),'review_contexts':[]}
+        return actions,{'question':self.q,'calls':calls},checkpoint
+
+    def test_owned_draft_recovery_reexecutes_every_receipt_and_still_requires_current_review(self):
+        from clinical_core.agere.clinical import execution_state as E
+        actions,origin,checkpoint=self.recovery_checkpoint();executor=self.executor()
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']),H.owned_recovery(
+                actions,self.q,origin=origin,checkpoint=checkpoint):
+            replay=H.attempt_replay(executor,self.q,checkpoint['context'],self.model)
+        self.assertEqual(len(executor.executed),2);self.assertIsNone(replay['final_answer']);self.assertIsNone(replay['used'])
+        self.assertEqual(replay['certificates'],[])
+        self.assertEqual(replay['draft_recovery']['native_receipts_checked'],2)
+        self.assertFalse(replay['draft_recovery']['prior_verdict_accepted'])
+        self.assertNotIn('resume_draft',E.recovery_context(replay,executor))
+        reviewed=[]
+        def review(draft,calls):
+            reviewed.append(draft);self.assertEqual(draft['verification'],'unverified')
+            self.assertEqual(calls,replay['calls'])
+            return {'status':'repair','feedback':'Coverage is undecided.','retry_disposition':'retain_partial_until_new_evidence'}
+        forbidden=lambda *a,**k:(_ for _ in ()).throw(AssertionError('No further generation justified'))
+        out=S.tool_loop(self.q,'',[],forbidden,send=forbidden,model=self.model,max_tools=None,
+                       initial_calls=replay['calls'],initial_answer=replay['resume_draft'],review=review)
+        self.assertEqual(len(reviewed),1);self.assertEqual(out['answer']['status'],'partial')
+        self.assertNotIn('verification',checkpoint['draft'])
+
+    def test_draft_recovery_rejects_changed_source_context_state_and_missing_origins(self):
+        import copy
+        actions,origin,checkpoint=self.recovery_checkpoint()
+        for kind in ('source','context','draft','origin','workflow'):
+            cp=copy.deepcopy(checkpoint);o=copy.deepcopy(origin);executor=self.executor();context=cp['context']
+            if kind=='source':cp['source']['source_digest']='stale'
+            elif kind=='context':context={**context,'as_of':'2031-01-01'}
+            elif kind=='draft':cp['draft']['headline']='Changed after the checkpoint was bound'
+            elif kind=='origin':o['calls'][1]=None
+            elif kind=='workflow':cp['draft']['workflow']=[{'kind':'monitor'}];cp['draft_digest']=H.digest(cp['draft'])
+            with self.subTest(kind=kind),patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']):
+                with self.assertRaises(ValueError),H.owned_recovery(actions,self.q,origin=o,checkpoint=cp):
+                    H.attempt_replay(executor,self.q,context,self.model)
+            self.assertEqual(executor.executed,[])
+
+    def test_changed_native_value_withholds_draft_and_retains_actual_prefix(self):
+        actions,origin,checkpoint=self.recovery_checkpoint();executor=self.executor(wrong=True)
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']),H.owned_recovery(
+                actions,self.q,origin=origin,checkpoint=checkpoint):
+            replay=H.attempt_replay(executor,self.q,checkpoint['context'],self.model)
+        self.assertEqual(len(executor.executed),1);self.assertNotIn('resume_draft',replay)
+        self.assertEqual(replay['calls'][0]['result']['rows'],[[99]])
+        self.assertEqual(replay['draft_recovery']['status'],'withheld')
+
+    def test_historical_operational_review_is_bound_but_cannot_be_answer_evidence(self):
+        import copy
+        actions,origin,checkpoint=self.recovery_checkpoint()
+        review={'support':{'packets':[{'id':'A','label':'unknown','decided_by':None}]},'feedback':'Unverified historical review'}
+        name='agere_review_feedback_'+H.digest(review)
+        origin['calls'][0]['result'].update(read_views=[name],incomplete_dependencies=[{'authority':'unverified_review_feedback','result_view':name}])
+        checkpoint['review_contexts']=[review]
+        executor=self.executor();original_execute=Executor.__call__;restored=[]
+        def execute(e,use):
+            self.assertEqual(restored,[review]);out=original_execute(e,use)
+            if len(e.executed)==1:out.update({k:copy.deepcopy(origin['calls'][0]['result'][k])for k in ('read_views','incomplete_dependencies')})
+            return out
+        def restore(r,t):restored.append(r);return {'feedback_digest':H.digest(r)}
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']),patch(
+                'clinical_core.agere.clinical.execution_state.review_reference',side_effect=restore),patch.object(Executor,'__call__',execute),H.owned_recovery(
+                actions,self.q,origin=origin,checkpoint=checkpoint):
+            replay=H.attempt_replay(executor,self.q,checkpoint['context'],self.model)
+        self.assertIn('resume_draft',replay)
+        for kind in ('dependent','unbound_review'):
+            cp=copy.deepcopy(checkpoint)
+            if kind=='dependent':cp['draft']['table_from_tool']='agere_result_1';cp['draft_digest']=H.digest(cp['draft'])
+            else:cp['review_contexts'][0]['feedback']='Changed review'
+            with self.subTest(kind=kind),self.assertRaises(ValueError),H.owned_recovery(actions,self.q,origin=origin,checkpoint=cp):pass
+
     def test_persisted_literal_action_preserves_nested_field_order(self):
         def execute(executor,use):
             executor.executed.append(use)

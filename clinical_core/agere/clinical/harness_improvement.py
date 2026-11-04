@@ -21,8 +21,8 @@ from contextlib import contextmanager
 _OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
 
 @contextmanager
-def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None,origin=None):
-    """Explicit unfinished-run recovery; never select a learned configuration or reuse an answer."""
+def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None,origin=None,checkpoint=None):
+    """Explicit unfinished-run recovery; never inherit acceptance or select a learned configuration."""
     from .document_review import validate_questions
     contracts=validate_questions(field_contracts)if field_contracts is not None else{}
     # Only the native caller supplies retained call provenance. An action match
@@ -43,8 +43,40 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
             provenance.append({'actor_callback_id':call['actor_callback_id'],
                 'origin_action_digest':digest([call['name'],call['input']]),'origin_call_digest':digest(call),
                 'origin_result_digest':digest(call['result']),'question_digest':digest(question)})
+    retained=None
+    if checkpoint is not None:
+        from .backstop_agent import native_result_dependencies
+        from .execution_state import operational_feedback_result
+        if (not isinstance(checkpoint,dict)or set(checkpoint)!={'source','context','draft','draft_digest','review_contexts'}
+                or not isinstance(checkpoint['source'],dict)or not isinstance(checkpoint['context'],dict)
+                or checkpoint['context'].get('question')!=question or not isinstance(checkpoint['draft'],dict)
+                or checkpoint['draft'].get('status')!='partial'or checkpoint['draft'].get('workflow')
+                or checkpoint['draft_digest']!=digest(checkpoint['draft'])or feedback
+                or not provenance or any(p is None for p in provenance)
+                or any('expected_error'in a for a in actions)):
+            raise ValueError('Draft recovery requires an exact partial draft, question context, source and every native origin')
+        calls=origin['calls'];draft=checkpoint['draft'];roots=[draft.get('table_from_tool')]
+        def bindings(value):
+            if isinstance(value,dict):
+                if isinstance(value.get('result_view'),str):roots.append(value['result_view'])
+                for v in value.values():bindings(v)
+            elif isinstance(value,list):
+                for v in value:bindings(v)
+        bindings(draft.get('row_prose'));bindings(draft.get('computed_prose'))
+        dependencies=native_result_dependencies(calls,list(dict.fromkeys(roots)))
+        operational={c['result'].get('result_view')for c in calls if operational_feedback_result(c['result'])}
+        if dependencies is None or dependencies&operational or any(c['result'].get('error')for c in calls):
+            raise ValueError('Draft recovery needs complete native dependencies without operational feedback as evidence')
+        reviews=checkpoint['review_contexts']
+        if not isinstance(reviews,list)or any(not isinstance(r,dict)or not r.get('support',{}).get('packets')for r in reviews):
+            raise ValueError('Draft recovery review contexts must be retained source-review records')
+        names={'agere_review_feedback_'+digest(r)for r in reviews}
+        needed={v for c in calls for v in c['result'].get('read_views',[])if v.startswith('agere_review_feedback_')}
+        if names!=needed or len(names)!=len(reviews):raise ValueError('Draft recovery review-context bindings differ from native origins')
+        retained=copy.deepcopy(checkpoint)
+        for i,p in enumerate(provenance):p['expected_result']=digest(comparison_result(calls[i]['name'],calls[i]['result'],calls[:i]))
     token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or [],
-        'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance} if actions is not None else None)
+        'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance,'checkpoint':retained} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
 
@@ -54,6 +86,23 @@ READ_ONLY={'query_sql','compose_table','read_patient_profiles','list_documents',
            'list_analyses','describe_analysis','execute_analysis','search_documents'}
 VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',
           'estimated_cost_usd','provider_receipts','typed_checks'}
+
+
+def recovery_checkpoint(tools,question,context,run):
+    """Retain an unfinished server-owned proposal, never an accepted reuse rule."""
+    from ..deliverables.answer_context import source_identity
+    draft=run.get('answer');calls=run.get('tool_calls') or []
+    if not isinstance(draft,dict) or draft.get('status')!='partial' or draft.get('workflow') or not calls:return None
+    saved=_OWNED_RECOVERY.get() or {}
+    reviews=[*((saved.get('checkpoint') or {}).get('review_contexts') or []),*(run.get('answer_reviews') or [])]
+    needed={v for c in calls for v in (c.get('result') or {}).get('read_views',[]) if v.startswith('agere_review_feedback_')}
+    bound={'agere_review_feedback_'+digest(r):r for r in reviews}
+    if not needed<=set(bound):raise ValueError('Historical operational feedback is missing from the investigation')
+    checkpoint={'source':source_identity(tools.stack.path),'context':copy.deepcopy(context),'draft':copy.deepcopy(draft),
+                'draft_digest':digest(draft),'review_contexts':[bound[n] for n in sorted(needed)]}
+    actions=[{k:c[k] for k in ('name','input')} for c in calls]
+    with owned_recovery(actions,question,origin={'question':question,'calls':calls},checkpoint=checkpoint):pass
+    return checkpoint
 
 
 def enabled():
@@ -194,10 +243,15 @@ def record_question_correction(path,question,reason):
     finally:db.close()
 
 
-def recover_actions(tools,question):
+def recover_actions(tools,question,context=None):
     saved=_OWNED_RECOVERY.get()
     if saved is None or saved['question']!=question:return None
     actions=saved['actions']
+    checkpoint=saved.get('checkpoint')
+    if checkpoint:
+        from ..deliverables.answer_context import source_identity
+        if checkpoint['context']!=context or checkpoint['source']!=source_identity(tools.stack.path):
+            raise ValueError('Draft recovery source or question context changed')
     # Failed source calls can establish an immutable field meaning without
     # producing a result view. Restore that guard, not the failed provider work.
     # This does not certify any reading or permit a recorded error as success.
@@ -208,6 +262,13 @@ def recover_actions(tools,question):
         tools.document_field_contracts={**declared,**json.loads(json.dumps(saved['field_contracts']))}
     guard=digest(tools.continuation_identity())
     out={'used':None,'calls':[],'certificates':[],'final_answer':None,'reason':'Explicit owned-run recovery: every literal tool is re-executed; only exact provider requests may hit cache.'}
+    if checkpoint:
+        from .execution_state import review_reference
+        out['draft_recovery']={'status':'reexecuting','draft_digest':checkpoint['draft_digest'],
+            'prior_verdict_accepted':False,'full_current_review_required':True,'native_receipts_checked':0}
+        for review in checkpoint['review_contexts']:
+            reference=review_reference(review,tools)
+            if not reference or reference['feedback_digest']!=digest(review):raise ValueError('Retained operational review unavailable')
     if saved.get('field_contracts'):out['restored_field_contracts']=sorted(saved['field_contracts'])
     for index,action in enumerate(actions):
         if action.get('name') not in READ_ONLY or not {'name','input'}<=set(action)or set(action)-{'name','input','expected_error'}:
@@ -228,6 +289,13 @@ def recover_actions(tools,question):
                                  'recovery_origin':{**provenance,'new_actor_call':False,'result_acceptance_inherited':False}}if provenance else{}),
                              **({'historical_native_error_reproduced':True}if reproduced else {})})
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
+        if checkpoint:
+            same=digest(comparison_result(action['name'],value,out['calls'][:-1]))==provenance['expected_result']
+            if not same:
+                out['draft_recovery'].update(status='withheld',failed_action=index+1)
+                out['reason']='Native receipt changed; retain current results and investigate without the old draft.'
+                break
+            out['draft_recovery']['native_receipts_checked']+=1
         if reproduced:
             out.setdefault('historical_native_errors',[]).append({'action_index':index,'name':action['name'],'error':expected})
             continue
@@ -238,6 +306,10 @@ def recover_actions(tools,question):
             break
         if isinstance(value,dict) and value.get('error'):break
     out['recovered_read_only_actions']=len(out['calls'])
+    if checkpoint and out['draft_recovery']['native_receipts_checked']==len(actions):
+        out['resume_draft']=copy.deepcopy(checkpoint['draft'])
+        out['resume_draft'].update(status='partial',verification='unverified')
+        out['draft_recovery']['status']='revalidated_for_review'
     out['downstream_review_feedback']=saved.get('feedback') or []
     if out['downstream_review_feedback']:
         out['feedback_instruction']='Investigate these prior presentation-review error reports against current sources and existing engines. Repair upstream facts/calculations here, not by rewording a dashboard. The reports are machine observations, not clinical truth. Do not invent eligibility, enrollment or shipment to satisfy a proposed design.'
@@ -313,7 +385,7 @@ def recover_document_observations(questions,manifest,packages):
 
 
 def attempt_replay(tools,*args,**kwargs):
-    recovery=recover_actions(tools,args[0] if args else kwargs.get('question'))
+    recovery=recover_actions(tools,args[0] if args else kwargs.get('question'),args[1] if len(args)>1 else kwargs.get('context'))
     if recovery is not None:return recovery
     report={}
     try:return replay(tools,*args,**kwargs,_report=report)

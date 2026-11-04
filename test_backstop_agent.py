@@ -145,6 +145,16 @@ class Snapping(unittest.TestCase):
 
 
 class Shape(unittest.TestCase):
+    def test_retained_answer_keeps_its_own_source_review_after_a_rejected_edit(self):
+        import copy
+        source={'status':'repair','repair_kind':'unresolved_verification','support':{'packets':[{'id':'A','label':'unknown'}]}}
+        compiler={'status':'repair','repair_kind':'deterministic_compiler','feedback':'Unbound new quantity'}
+        run={'answer_reviews':[source,compiler],'unaccepted_draft':{'returned_answer':'last_structurally_complete_candidate'}}
+        before=copy.deepcopy(run)
+        self.assertEqual(B.returned_answer_review(run),source);self.assertEqual(run,before)
+        run['answer_reviews'].append({'status':'confirmed'});run.pop('unaccepted_draft')
+        self.assertEqual(B.returned_answer_review(run),{'status':'confirmed'})
+
     def test_numbers_in_the_headline_are_not_read_as_an_absent_value(self):
         a = B.shaped({'status': 'answered', 'answer_type': 'value', 'headline': '97 of 490 stays (19.8%)', 'value': None, 'count': None,
                       'table': {'columns': ['g', 'n'], 'rows': [['HF', 51]]}})
@@ -234,11 +244,12 @@ class Cascade(unittest.TestCase):
              'tool_calls':[],'model':'fixture','new_paid_api_calls':0,'estimated_cost_usd':0,
              'answer_reviews':[review],'review_stopped':'unresolved_coverage',
              'unaccepted_draft':{'draft_digest':'current','returned_answer':'last_structurally_complete_candidate'},
+             'recovery_checkpoint':{'draft_digest':'retained-server-owned-proposal'},
              'error':'Retained interrupted response'}
         with patch.object(P,'claude_available',lambda:True),patch.object(B,'answer',return_value=run):
             contract,_=self.cascade().tier_backstop_agent()
         result=contract['executed'];investigation=result['investigation']
-        for key in ('review_stopped','unaccepted_draft','error','answer_reviews'):
+        for key in ('review_stopped','unaccepted_draft','error','answer_reviews','recovery_checkpoint'):
             self.assertEqual(investigation[key],run[key])
         self.assertEqual(result['answer']['status'],'partial')
         self.assertEqual(result['answer']['verification'],'unverified')

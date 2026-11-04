@@ -105,6 +105,7 @@ def inspection_view(record):
         'graph': graph, 'results': None, 'planner_receipt': receipt,'answer':answer,
         'investigation': {
             'model': investigation.get('model'),
+            'draft_resume_available': bool(investigation.get('recovery_checkpoint')) and not context.get('workflow'),
             'tool_call_count': len(calls),
             'document_review_count': len(investigation.get('document_reviews') or []),
             'answer_reviews': reviews,

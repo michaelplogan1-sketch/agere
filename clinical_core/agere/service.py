@@ -320,6 +320,16 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/action-workflow/retry':
                     from .deliverables.workflow import retry_deliverable
                     result=retry_deliverable(connected_stack.path,body,allow_live=connected_stack.allow_live)
+                elif path=='/api/stack/investigation/resume':
+                    if set(body)!={'context_id'}:raise ValueError('Exact saved investigation required')
+                    from .clinical.proposers import continue_from_artifact
+                    from .deliverables import answer_context
+                    result=continue_from_artifact(connected_stack,body['context_id'])
+                    saved=answer_context.capture(connected_stack.path,result['question'],result)
+                    result={'action_context':saved,'status':result['answer']['status'],
+                            'verification':result['answer'].get('verification'),
+                            'new_paid_api_calls':result.get('new_paid_api_calls'),
+                            'planning_economics':result.get('planning_economics')}
                 elif path=='/api/stack/action-monitor':
                     from .deliverables.workflow import refresh
                     result=refresh(connected_stack,body)
