@@ -347,3 +347,17 @@ Scoped release saved and reopened current context `ANS-d687f06d7e1369ade9b43953`
 ### Source-review continuation repair — 2026-11-04T04:26:06.273323+00:00
 
 Product `8a3c9c9f651c2aa08635ebc03916f8510b7d3164` allows the existing read-only analysis path to inspect suspended assertions. Current source/policy checks remain, and downstream work still rejects the suspension.47affected tests and the actual57patient saved-context proof passed:9native receipts unchanged, changed source action10 withheld the old draft/suffix, fresh-analysis boundary reached. No provider dispatch;114saved answers and49,039attempts preserved. ActualHTTP confirms current, partial, suspended-source visibility. Receipt:`artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json`. Individual patient interpretation and practical whole-request economics remain open; no fullMVP or clinical qualification claimed.
+
+
+### Current patient interpretation — 2026-11-04T04:35:27.544613+00:00
+
+The actual saved continuation retained all57patients and114individual explanation fields with58/58source-support decisions and current source disposition. It used0Claudecalls and6Jev/Perplexitychecks,125.225seconds and$0.025991778API-equivalent(0unpriced). Globalcoverage remained undecided, so the existing controller stopped with a partial answer rather than regenerating it. The earlier normal request still lacks equivalent individual composition; this is not a matched whole-request benchmark. All49,039priorattempts preserved,6appended;115prioranswerfiles unchanged. Receipt:`artifacts/agere-source-review-resume-2026-11-04/current-patient-delivery.json`.
+
+
+### Source-fragment binding and retained full-draft review — 2026-11-04T05:21:54.183997+00:00
+
+The actual controller now repairs a reported source fragment through native SQL without changing the original sentence. Forty affected checks and the offline exact-case proof passed. The live continuation retained all 57 patients and 114 explanation fields; source support advanced from 46/60 to 59/60 after localized corrections. The current saved answer reopens over HTTP with identical table/prose values and remains partial/unverified. Receipt: `artifacts/agere-source-fragment-binding-2026-11-04/delivery-receipt.json`.
+
+This is not a successful whole-request economics result: the continuation took 517.308 seconds and 218 new attempts (12 Claude, 103 Jev, 103 Perplexity), $7.68539265 API-equivalent, no unpriced attempts. Thirteen actor callbacks include one cached response. All 49,056 previous attempts remain exact; append-only accounting now contains 49,274. A startup harness error made zero provider calls and is retained. No model or answer-reuse candidate was promoted.
+
+The one unsettled packet has 29/29 supported fields and two supported source children, yet its independent combined check remains unknown. Exact partition reconstruction confirms the retained packet digest; the first diagnosis failed by comparing the unpartitioned parent and is preserved. Existing guards correctly withhold acceptance, but asking for further prose rewrites has no localized failure to repair. Next is a conservative controller stop on this exact fully checked-but-undecided state, preserving all unknowns and real fault repair. The original ordinary composition/economics requirement, all ten areas and independent G5/customer requirements remain open.

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T04:26:06.273323+00:00",
+  "updated_at": "2026-11-04T05:21:54.183997+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -432,10 +432,10 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Four patient dependencies remain unresolved across five prose fields; global coverage remains undecided. Original clinical ordinary-prefix reuse/economics, targeted learning/generalization, independent G5 clinical/model/outcome qualification and customer deployment prerequisites remain. No new weights or clinical final-answer activation.",
-      "engineering_current_status": "Sealeda810031ownedruntime57/61supported. f548631source-repair candidate failed live compiler/no-progress and remains unpromoted.",
-      "next_action": "G3: fix the existing source-prose/compiler handoff offline using artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json and the preserved live proposals. The five-field source repair introduced unbound drug strengths/counts and numbered review steps, then strict binding repair prevented correction; no source review was reached for a valid repaired answer. Distinguish real quantitative claims from list ordinals and preserve semantic/numeric/source bindings; keep all57patients, native values, original source contexts and57/61supported dependencies. Do not repeat providers until the captured proposals pass the real repair/compiler path offline. Then check only changed dependencies and global coverage. Original clinical ordinary-prefix reuse, targeted knowledge/model qualification and alltenareas remain; optional components do not extend the MVP finish line.",
-      "latest_current_release_decision": "artifacts/agere-large-field-diagnosis-2026-11-03/delivery-receipt.json"
+      "remaining_acceptance": "Equivalent ordinary original-question individual composition and practical economics; global coverage undecided. IndependentG5/customer prerequisites retained separately.",
+      "engineering_current_status": "Current retained57patient/114field answer is sourcecurrent and59/60supported. Binding repair verified; one joint dependency and coverage remain uncertain. Ordinary full-request economics remain open.",
+      "next_action": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
+      "latest_current_release_decision": "artifacts/agere-source-fragment-binding-2026-11-04/delivery-receipt.json"
     },
     {
       "id": "G5",
@@ -513,11 +513,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_review_continuation_sealed",
+    "kind": "source_fragment_binding_scoped_seal",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Continue analysis can inspect suspended source evidence while source/policy/currentness and downstream work protections remain enforced.",
-    "measured_failure_reduction": "The real57patient saved context previously rejected source suspension before read-only analysis; now it reexecutes9unchanged native receipts, detects the changed10th reading, withholds the old draft/suffix and reaches fresh analysis.",
+    "user_behavior_delta": "Generic compiler guidance now enables native extraction of a reported source fragment while retaining original prose. Actual retained draft crossed the compiler boundary after two Claude callbacks, then full current source review and localized corrections retained all57patients/114fields.",
+    "measured_failure_reduction": "The previously blocking unbound source fragment now compiles through the real controller. Full retained draft support improves46/60 to59/60; 57patients/114fields survive, unknowns preserved. Broad repair economics remain unacceptable.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -703,17 +703,38 @@
       "artifacts/agere-source-review-resume-2026-11-04/warehouse-proof/replay.json",
       "artifacts/agere-source-review-resume-2026-11-04/warehouse-proof/boundary-exception.json",
       "artifacts/agere-source-review-resume-2026-11-04/app/http-check.json",
-      "artifacts/agere-source-review-resume-2026-11-04/app/server-process.json"
+      "artifacts/agere-source-review-resume-2026-11-04/app/server-process.json",
+      "artifacts/agere-source-review-resume-2026-11-04/current-patient-delivery.json",
+      "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-source-review-resume-2026-11-04/refreshed-patient-proposal/receipt.json",
+      "artifacts/agere-source-review-resume-2026-11-04/live-localized/receipt.json",
+      "artifacts/agere-source-review-resume-2026-11-04/live-localized/review-001.json",
+      "artifacts/agere-source-review-resume-2026-11-04/live-localized/replay.json",
+      "artifacts/agere-source-review-resume-2026-11-04/live-localized/output-context.json",
+      "artifacts/agere-source-review-resume-2026-11-04/accounting-merge.json",
+      "artifacts/agere-lossless-actor-reading-2026-11-04/negative-workflow-audit.json",
+      "artifacts/agere-source-fragment-binding-2026-11-04/offline-v3/receipt.json",
+      "artifacts/agere-source-fragment-binding-2026-11-04/tests.log",
+      "artifacts/agere-source-fragment-binding-2026-11-04/live/receipt.json",
+      "artifacts/agere-source-fragment-binding-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-source-fragment-binding-2026-11-04/live-v2/receipt.json",
+      "artifacts/agere-source-fragment-binding-2026-11-04/accounting-merge.json",
+      "artifacts/agere-source-fragment-binding-2026-11-04/app/http-check.json",
+      "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json"
     ],
-    "remaining_gap": "Patient-specific prose composition, localized source uncertainty and practical whole-request economics; independentG5 and customer deployment.",
-    "next_action": "G3: complete current-source localized patient interpretation from the retained114prose fields. The source-review continuation boundary now passes while downstream work stays blocked; actual native recovery correctly withholds the old draft at changed source action10. Finish the running explicit28-action current-native refresh at artifacts/agere-source-review-resume-2026-11-04/refreshed-patient-proposal/receipt.json; it preserves prior prose only as an unaccepted proposal and requires full current review. Handle the exact disputed beta-blocker relation as unresolved unless current evidence supports it; use existing targeted repair, preserve all57patients, original question, dated roles and remaining uncertainty. No repeated full source campaign or uncertain votes. Then qualify the existing lossless actor-reading representation for practical request economics. Keep alltenareas; same-platform archiveab6faed remains prior known-good rollback, no repeated packaging needed for this isolated continuation change. IndependentG5/customer prerequisites remain separate.",
+    "remaining_gap": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
+    "next_action": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
-    "latest_progress": "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
-    "results_report": "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
+    "latest_progress": {
+      "at": "2026-11-04T05:21:54.183997+00:00",
+      "receipt": "artifacts/agere-source-fragment-binding-2026-11-04/delivery-receipt.json",
+      "full_mvp_acceptance": false
+    },
+    "results_report": "artifacts/agere-source-review-resume-2026-11-04/current-patient-delivery.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -761,15 +782,15 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T04:26:06.273323+00:00",
-    "workflow_change": "Continue analysis can inspect suspended source evidence while source/policy/currentness and downstream work protections remain enforced.",
+    "at": "2026-11-04T05:21:54.183997+00:00",
+    "workflow_change": "Generic compiler guidance now enables native extraction of a reported source fragment while retaining original prose. Actual retained draft crossed the compiler boundary after two Claude callbacks, then full current source review and localized corrections retained all57patients/114fields.",
     "unsealed_work": {
-      "status": "current_source_localized_continuation_running",
-      "source_frozen": true,
-      "all_jobs_terminal": false,
+      "status": "joint_dependency_stop_prepared",
+      "all_jobs_terminal": true,
+      "source_frozen": false,
       "product_edits": false,
-      "receipt": "artifacts/agere-source-review-resume-2026-11-04/live-localized/receipt.json",
-      "scope": "Existing114prose fields/current28native actions; fullcurrent review and localizedrepair, no repeated fullsourcecampaign."
+      "evidence": "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json",
+      "remaining": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope."
     },
     "bottling_assessment": {
       "native_actions_replayed": 26,
@@ -844,7 +865,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "The real57patient saved context previously rejected source suspension before read-only analysis; now it reexecutes9unchanged native receipts, detects the changed10th reading, withholds the old draft/suffix and reaches fresh analysis.",
+    "measured_failure_removed": "The prior normal request lost individual prose and had a suspended source dependency. Explicit current-native refresh and saved continuation retain the individual interpretation, change one patient documentary field, and obtain58/58source-support decisions with current source disposition.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -3661,15 +3682,35 @@
       "decision": "Read-only source-review entry repaired and actual saved context revalidated. Its changed native source receipt still blocks old-draft reuse, as required. Next is the already-scoped localized patient interpretation using fresh native evidence; no scope expansion.",
       "evidence": "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
       "next_action": "G3: complete current-source localized patient interpretation from the retained114prose fields. The source-review continuation boundary now passes while downstream work stays blocked; actual native recovery correctly withholds the old draft at changed source action10. Finish the running explicit28-action current-native refresh at artifacts/agere-source-review-resume-2026-11-04/refreshed-patient-proposal/receipt.json; it preserves prior prose only as an unaccepted proposal and requires full current review. Handle the exact disputed beta-blocker relation as unresolved unless current evidence supports it; use existing targeted repair, preserve all57patients, original question, dated roles and remaining uncertainty. No repeated full source campaign or uncertain votes. Then qualify the existing lossless actor-reading representation for practical request economics. Keep alltenareas; same-platform archiveab6faed remains prior known-good rollback, no repeated packaging needed for this isolated continuation change. IndependentG5/customer prerequisites remain separate."
+    },
+    {
+      "at": "2026-11-04T04:35:27.544613+00:00",
+      "gate": "G3",
+      "decision": "Current retained continuation delivers individual composition with6small-model checks and0Claude calls. Coverage uncertainty correctly stops further actor work. Next qualify reduced actor-reading inputs for the ordinary route; do not repeat uncertain coverage voting or mistake this continuation for a full matched first-run benchmark.",
+      "evidence": "artifacts/agere-source-review-resume-2026-11-04/current-patient-delivery.json",
+      "next_action": "G3: qualify the existing lossless actor-reading representation against the retained original-question workflow. Current saved continuation preserves57patients/114individual explanation fields, all58source packets supported, current source disposition, and no actor regeneration; coverage remains undecided and must remain explicit. The ordinary original-question route still needs equivalent individual composition and practical whole-request economics. Reduce repeated complete-reading serialization without omitting values or changing native bindings; prove exact restoration, changed-source/field guards and actual workflow behavior before default activation. Reuse the current26-action candidate only through fresh native validation/current meaning guards; no repeated full source-reading campaign or uncertain votes. Retain alltenareas; original ab6faed package is the known-good same-platform recovery artifact. G5 independent clinical/model/outcome qualification and customer prerequisites remain separate."
+    },
+    {
+      "at": "2026-11-04T04:53:52.705546+00:00",
+      "gate": "G3",
+      "decision": "Reassessed after negative original-request trial. Smaller reversible input is not enough: one unresolved numeric binding prevents114prose fields from reaching review. Reverted candidate and prioritize the exact compiler/repair affordance instead of another full run or new optimization.",
+      "evidence": "artifacts/agere-lossless-actor-reading-2026-11-04/negative-workflow-audit.json",
+      "next_action": "G3: repair the observed source-value-to-prose binding affordance using the retained57row/114field candidate at artifacts/agere-lossless-actor-reading-2026-11-04/compiler-diagnosis. One field reports a source label as stage3 without a native scalar; full-quote repair conflicts with the existing exact-sentence preservation guard. Prove a source-derived scalar fragment can preserve the sentence and pass current compiler/source guards; clarify existing feedback for paraphrases versus literal quotations, without loosening verification or adding a disease handler. Then continue only the retained failed draft through current full review. No repeated full generation/source-reading campaign. Lossless actor candidate4e82b2c was reverted byab0b6f3 after negative ordinary outcome; prior8a3c9c9current-patient delivery remains known-good. Alltenareas and independentG5/customer requirements retained."
+    },
+    {
+      "at": "2026-11-04T05:21:54.183997+00:00",
+      "decision": "A non-diagnostic complete-dependency uncertainty is not a located prose defect. The terminal run spent further Claude calls after all29parentfields passed. Correct this existing routing decision before any new ordinary campaign. Do not infer source acceptance from field support.",
+      "evidence": "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json",
+      "scope_impact": "No new acceptance area, source/model threshold or product scope; preserve all ten areas and G5/customer dependencies."
     }
   ],
   "unsealed_work": {
-    "status": "current_source_localized_continuation_running",
-    "source_frozen": true,
-    "all_jobs_terminal": false,
+    "status": "joint_dependency_stop_prepared",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
     "product_edits": false,
-    "receipt": "artifacts/agere-source-review-resume-2026-11-04/live-localized/receipt.json",
-    "scope": "Existing114prose fields/current28native actions; fullcurrent review and localizedrepair, no repeated fullsourcecampaign."
+    "evidence": "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json",
+    "remaining": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3698,7 +3739,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: complete current-source localized patient interpretation from the retained114prose fields. The source-review continuation boundary now passes while downstream work stays blocked; actual native recovery correctly withholds the old draft at changed source action10. Finish the running explicit28-action current-native refresh at artifacts/agere-source-review-resume-2026-11-04/refreshed-patient-proposal/receipt.json; it preserves prior prose only as an unaccepted proposal and requires full current review. Handle the exact disputed beta-blocker relation as unresolved unless current evidence supports it; use existing targeted repair, preserve all57patients, original question, dated roles and remaining uncertainty. No repeated full source campaign or uncertain votes. Then qualify the existing lossless actor-reading representation for practical request economics. Keep alltenareas; same-platform archiveab6faed remains prior known-good rollback, no repeated packaging needed for this isolated continuation change. IndependentG5/customer prerequisites remain separate.",
+  "next_action": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3787,6 +3828,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 75518,
-  "owned_server_session": 14641
+  "owned_server_pid": null,
+  "owned_server_session": null
 }
