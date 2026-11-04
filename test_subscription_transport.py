@@ -30,7 +30,39 @@ class Translation(unittest.TestCase):
         self.assertIn('JSON Schema',call.call_args.args[1])
         body['tool_choice']={'type':'auto'}
         with patch.object(T,'run_cli',return_value={'result':'{"tool_use":{"name":"sql","input":{}}}'})as call:response=T.respond(body)
-        self.assertNotIn('json_schema',call.call_args.kwargs);self.assertEqual(response['stop_reason'],'tool_use')
+        self.assertEqual(call.call_args.kwargs['json_schema'],T.decision_output_schema(body))
+        self.assertEqual(response['stop_reason'],'tool_use')
+
+    def test_native_decision_schema_preserves_tool_choice_and_literal_arguments(self):
+        final={'type':'object','properties':{'label':{'enum':['unknown']}},'required':['label'],'additionalProperties':False}
+        tools=[{'name':name,'input_schema':{'type':'object','properties':{'sql':{'type':'string'}},
+                'required':['sql'],'additionalProperties':False}}for name in ('first','second')]
+        body={'tools':tools,'output_config':{'format':{'type':'json_schema','schema':final}}}
+        for choice in ('auto','any','tool','none'):
+            with self.subTest(choice=choice):
+                body['tool_choice']={'type':choice,**({'name':'first'}if choice=='tool'else{})}
+                schema=T.decision_output_schema(body)
+                variants=schema.get('anyOf',[schema])
+                self.assertEqual(final in variants,choice in ('auto','none'))
+                permitted=T.allowed_tools(tools,body['tool_choice'])
+                if permitted:
+                    action_schema=next(v for v in variants if 'tool_use'in v['properties'])
+                    options=action_schema['properties']['tool_use']['anyOf']
+                    self.assertEqual([o['properties']['name']['enum'][0]for o in options],[t['name']for t in permitted])
+                    self.assertEqual([o['properties']['input']for o in options],[t['input_schema']for t in permitted])
+                    self.assertTrue(all(o['additionalProperties']is False for o in options))
+                for name in ('first','second','unregistered'):
+                    action={'tool_use':{'name':name,'input':{'sql':'SELECT original FROM received'}}}
+                    self.assertEqual(bool(T._tool_calls(json.dumps(action),permitted)),name in [t['name']for t in permitted])
+                self.assertEqual(T._tool_calls(json.dumps({'tool_use':{'name':'first','input':{'sql':'SELECT 1'}},'label':'unknown'}),permitted),[])
+        body['tool_choice']={'type':'tool','name':'first'}
+        action={'tool_use':{'name':'first','input':{'sql':"SELECT 'literal source' AS observation"}}}
+        with patch.object(T,'run_cli',return_value={'result':'Retained original','structured_output':action})as call:
+            response=T.respond(body)
+        self.assertEqual(response['content'][0]['name'],'first')
+        self.assertEqual(response['content'][0]['input'],action['tool_use']['input'])
+        self.assertEqual(call.call_args.kwargs['json_schema'],T.decision_output_schema(body))
+        self.assertEqual(response['transport_details']['native_text'],'Retained original')
 
     def test_incomplete_structured_output_stays_inert_and_invalid_format_does_not_generate(self):
         body={'output_config':{'format':{'type':'json_schema','schema':{'type':'object'}}}}

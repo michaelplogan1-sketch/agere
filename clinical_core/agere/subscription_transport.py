@@ -130,6 +130,21 @@ def allowed_tools(tools,choice=None):
     return tools or []
 
 
+def decision_output_schema(body):
+    """Constrain either a final value or currently permitted emulated actions."""
+    final=output_schema(body)
+    if final is None:return None
+    tools=allowed_tools(body.get('tools'),body.get('tool_choice'))
+    if not tools:return final
+    def obj(properties):
+        return {'type':'object','properties':properties,'required':list(properties),'additionalProperties':False}
+    calls={'anyOf':[obj({'name':{'enum':[t['name']]},'input':t.get('input_schema')or{'type':'object'}})for t in tools]}
+    variants=[obj({'tool_use':calls}),obj({'tool_uses':{'type':'array','items':calls,'minItems':1}})]
+    if (body.get('tool_choice')or{}).get('type','auto')not in ('tool','any'):
+        variants.insert(0,final)
+    return {'anyOf':variants}
+
+
 INVOKE = re.compile(r'<invoke\s+name="([^"]+)"\s*>(.*?)(?:</invoke>|$)', re.S)
 PARAM = re.compile(r'<parameter\s+name="([^"]+)"\s*>(.*?)</parameter>', re.S)
 
@@ -376,8 +391,8 @@ def respond(body, *, timeout=None):
     if not isinstance(output_config, dict):
         raise ValueError('output_config must be an object')
     try:
-        schema=output_schema(body)
-        schema_kw={'json_schema':schema} if schema is not None and not allowed_tools(body.get('tools'),body.get('tool_choice')) else {}
+        schema=decision_output_schema(body)
+        schema_kw={'json_schema':schema} if schema is not None else {}
         out = run_cli(model, system, user, timeout=timeout,
                       max_tokens=body.get('max_tokens'), effort=output_config.get('effort'),**schema_kw)
     except Exception as exc:

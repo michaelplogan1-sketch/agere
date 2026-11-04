@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/14'
+VERSION = 'execution-state/15'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -296,6 +296,27 @@ def bind_prose_literals(value,operation,native):
         template.append(escape(text[cursor:]))
         if name is not None:template.append('{'+name+'}')
     return {'template':''.join(template),'bindings':bindings}
+
+
+def binding_repair_schema(focus):
+    """Constrain binding output to small edits, not replacement sentences.
+
+    This is a generation contract, never an acceptance shortcut. Runtime still
+    checks the exact draft, target entity/field, value, basis and full answer.
+    """
+    if (not focus or focus.get('intent')=='source_meaning_review' or not focus.get('targets')
+            or any(t.get('code')not in ('unbound_literal','missing_scalar_source')for t in focus['targets'])):
+        return None
+    def obj(properties,required=None):
+        return {'type':'object','properties':properties,'required':list(properties)if required is None else required,'additionalProperties':False}
+    address={'result_view':{'type':'string'},'row':{'type':'integer','minimum':0}}
+    edit=obj({'literal':{'type':'string','minLength':1},'binding':obj({**address,'column':{'type':'string'}}),
+              'occurrence':{'type':'integer','minimum':0}},['literal','binding'])
+    field=obj({'bind_literals':{'type':'array','items':edit,'minItems':1}})
+    fields={t['field']:field for t in focus['targets']}
+    key=obj({k:{'enum':list({digest(t['key'][k]):t['key'][k]for t in focus['targets']}.values())}for k in focus['keys']})
+    row=obj({'key':key,'fields':obj(fields,[]),'basis_additions':{'type':'array','items':obj(address)}},['key','fields'])
+    return obj({'repair_draft':obj({'draft_digest':{'enum':[focus['draft_digest']]},'rows':{'type':'array','items':row}})})
 
 
 def expand_date_pairs(text):

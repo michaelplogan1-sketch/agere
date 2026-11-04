@@ -18,8 +18,14 @@ class ProseRepairs(unittest.TestCase):
         def send(body):
             state=json.loads(body['messages'][0]['content'])
             self.assertIn('bind_literals',state['focused_prose_repair']['instruction'])
-            return {'content':[{'type':'text','text':json.dumps(self.patch(review={
-                'bind_literals':[{'literal':'two','binding':address}]}))}]},0.,False
+            from clinical_core.agere import subscription_transport as T
+            proposal=self.patch(review={'bind_literals':[{'literal':'two','binding':address}]})
+            schema=body['output_config']['format']['schema']
+            self.assertEqual(schema['required'],['repair_draft']);self.assertFalse(schema['additionalProperties'])
+            with patch.object(T,'run_cli',return_value={'structured_output':proposal})as call:
+                result=T.respond(body)
+            self.assertEqual(call.call_args.kwargs['json_schema'],schema)
+            return result,0.,False
         out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('No new source needed'),
             send=send,model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
             review=review,compact_execution_state=True)
@@ -63,6 +69,29 @@ class ProseRepairs(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'binding-only'):
             E.apply_prose_repair(proposal,self.base,calls=self.calls)
         self.assertEqual(self.base,before)
+
+    def test_binding_schema_is_bound_to_current_digest_and_located_fields_only(self):
+        feedback=self.located_failure();focus=E.focused_prose_state(self.base,feedback,self.calls)
+        schema=E.binding_repair_schema(focus)
+        repair=schema['properties']['repair_draft']['properties'];row=repair['rows']['items']['properties']
+        self.assertEqual(repair['draft_digest']['enum'],[digest(self.base)])
+        self.assertEqual(row['key']['properties']['patient_id']['enum'],['A'])
+        self.assertEqual(set(row['fields']['properties']),{'review'})
+        self.assertEqual(row['fields']['properties']['review']['required'],['bind_literals'])
+        operation={'bind_literals':[{'literal':'two','binding':{'result_view':'agere_result_1','row':0,'column':'events'}}]}
+        proposal=self.patch(review=operation)
+        self.compile(E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback))
+        for mutation in ('digest','key','field','unknown','negative'):
+            changed=copy.deepcopy(proposal);r=changed['repair_draft']
+            if mutation=='digest':r['draft_digest']='stale'
+            if mutation=='key':r['rows'][0]['key']['patient_id']='B'
+            if mutation=='field':r['rows'][0]['fields']={'explanation':operation}
+            if mutation=='unknown':r['rows'][0]['fields']['review']['extra']='changed'
+            if mutation=='negative':r['rows'][0]['fields']['review']['bind_literals'][0]['binding']['row']=-1
+            with self.subTest(mutation=mutation),self.assertRaises(ValueError):
+                E.apply_prose_repair(changed,self.base,calls=self.calls,feedback=feedback)
+        self.assertIsNone(E.binding_repair_schema({**focus,'intent':'source_meaning_review'}))
+        self.assertIsNone(E.binding_repair_schema({**focus,'targets':[{**focus['targets'][0],'code':'invalid_row_prose'}]}))
 
     def test_binding_reading_selects_explicit_records_without_hiding_native_rows(self):
         for cite in (True,False):

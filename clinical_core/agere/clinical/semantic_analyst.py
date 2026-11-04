@@ -626,6 +626,12 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                      'or compute the named definition count from native evidence, carrying the entity keys and source record/date. '
                      'Do not SELECT invented constants. After its result returns, bind the value in the unchanged original sentence.'}]
             if pending_output is not None:body['tool_choice']=pending_output['tool_choice']
+            if focused_repair and pending_output is None:
+                from .execution_state import binding_repair_schema
+                schema=binding_repair_schema(focused_repair)
+                if schema is not None:
+                    body['output_config']={**(body.get('output_config')or{}),
+                        'format':{'type':'json_schema','schema':schema}}
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
             try:
