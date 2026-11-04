@@ -1,5 +1,20 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: ordinary bottling comparison passed
+
+The ordinary same-question repeat reexecuted all 33 native operations and reviewed the retained proposal without a new Claude call. It returned the exact 57 patient rows and 114 narrative fields; all 58 source packets remained supported. Overall coverage remained undecided, and the answer stayed partial. The saved current result reopens exactly at `ANS-3162d0505bbf3e1d5c8396a9`.
+
+| Observed run | Wall time | API-equivalent cost | New provider attempts |
+| --- | ---: | ---: | ---: |
+| First composition | 986.028 s | $8.909197764 | 264 |
+| Ordinary automatic reuse | 155.723 s | $0.015078556 | 4 (2 Jev, 2 Perplexity) |
+
+That is **84.207% less wall time** and **99.831% lower API-equivalent cost**. Both runs used warm source/native caches; this measures the combined bottling/cache path, not a cold-ingestion or isolated causal benchmark. Native proposal requalification additionally took 42.502 seconds and zero provider calls. All 50,571 attempts are preserved. No weights or clinical truth changed, and no independent clinical/total-cost qualification is inferred.
+
+The current repeat returned an uncompressed 433,634,113-byte response. Recorded server time was 147.7725 seconds, including 15.5748 seconds in capture; the 155.723-second runner measurement also includes archival and accounting. Offline serialization took 0.681 seconds and the runner archival operation took 3.510 seconds. The entire 32.847-second post-investigator interval must not be attributed to HTTP transport. The payload itself contains 276.9 MB of investigation and approximately 50 MB each in planner receipt, request contract and graph; the answer is 5.38 MB. An unshipped application of the existing inspection projection preserved patient/prose/cost/workflow/status, but changed the graph from the original 26 SQL nodes to 24 dependency nodes. Normal response integration must preserve its graph semantics and be tested against the actual UI before activation. The next localized performance work uses this retained evidence, without another provider campaign. The first-composition cost remains a separate limitation.
+
+Receipt: `artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/delivery-receipt.json`. Current executable package and all-ten-area evidence remain applicable because runtime code did not change.
+
 ## November 4: current package and isolated restore passed
 
 Current product `ff949737` was packaged, installed using the archived interpreter and verified in 948.992 seconds. A separate 61.969-second HTTP check confirmed both the isolated installation and restored candidate app serve the exact 57 patient rows and 114 narrative fields, with partial status visible and no stale or invalidated context. All 50,567 attempts remain exact; packaging and restore made zero provider calls. The same-platform package retains explicit external dependencies and does not transfer clinical/model qualification. The initial live-lock preflight rejection and its correction are preserved.

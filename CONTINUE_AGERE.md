@@ -1,3 +1,31 @@
+# Current Agere checkpoint — 2026-11-04T19:16:20.957746+00:00
+
+G3: current package/restore and automatic reuse sealed; all jobs terminal/source unfrozen. Currentapp8890PID23302/session67804 on ff949737. Matched repeat155.723s/$0.015078556 with0Claude retains57patients/114fields/58source packets; all50571attempts preserved. Offline profile confirms433.6MBnormalresponse, dominated by276.9MBinvestigation and three~50MBgraph/contract copies; answer5.38MB. Server total147.7725s includes15.5748scapture; runner archival3.510s measured separately, so do not blame all post-backstop time on transport. Next adapt existing saved-context inspection projection/encoding to ordinary question delivery, retaining exact patient/prose/cost/workflow/status and native-history/recovery links. Initial unshipped prototype kept those fields but changed26originalgraph nodes to24dependency nodes; preserve original graph operations/scope in the normal response and test actual UI/HTTP with retained results before activation. No providers or repeated question needed. First-generation performance and independentG5/clinical/customer qualification remain; alltenareas retained.
+
+Latest sealed receipt: artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/delivery-receipt.json
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T19:11:52.237523+00:00
+
+G3: package/isolated restore and automatic current-proposal reuse are sealed on ff949737; all jobs terminal/source unfrozen, app8890PID23302/session67804 ready. Reuse preserved57patients/114fields and58/58source support in155.723s/$0.015078556/4Jev-Perplexity attempts,0Claude, versus986.028s/$8.909197764; all50571attempts retained. Next use retained result/trace to isolate the measured433634113-byte uncompressed response and32.847s post-backstop interval in existing persistence/serialization/HTTP paths; fix only demonstrated avoidable work with offline workflow proof, no repeated provider campaign. First-generation performance, undecided coverage and independentG5/customer dependencies remain; no new scope, models or training. Existing package remains known-good; do not rebuild unchanged runtime.
+
+Latest sealed receipt: artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/delivery-receipt.json
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T19:05:20.155705+00:00
+
+G3: automatic-current-proposal-reuse is launching through app8890PID23302/session67804 on ff949737; source/product frozen, no duplicate. Existing guards selected the authentic33-action proposal after42.502s native revalidation/0providers; prior quarantine preserved. This request measures automatic replay/current review against986.028s/264attempts/$8.909197764 first composition. Same question/source/code/patientset, no owner draft or plan in request. On terminal inspect exact57patients/114fields, source review, partial/unknown coverage and all-attempt accounting; compute actual time/cost changes with warm-cache and qualification cost disclosed. Preserve50567priorattempts. Package/restore already passed; no new generation campaign. Alltenareas/G5/customer dependencies remain.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T19:04:17.584323+00:00
+
+G3: current native-proposal qualification is running with provider/network/process dispatch prohibited; monitor artifacts/agere-current-release-finish-2026-11-04/composition-check/current-proposal-requalification/receipt.json. Source/product frozen; no duplicate. It revalidates the authentic33actions/unchanged draft against the actual986.028s/$8.909197764 generation baseline, preserving prior quarantine and all50567attempts. On success measure one ordinary automatic reuse request through app8890PID23302/session67804, with full current source/coverage review. On failure preserve and diagnose exact native mismatch offline. Package/isolatedHTTP is sealed; no redundant rebuild or fresh-generation campaign. Alltenareas/G5/customer dependencies remain.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T19:02:43.301385+00:00
 
 G3: current ff949737 local package and isolated/current HTTP restore passed; app8890 PID23302/session67804 ready. All jobs terminal/source unfrozen and all50567attempts retained. Correct the measured learning comparison setup: current33-action proposal was quarantined against $0.017497 retained-draft review inherited by native-only qualification, while fresh composition cost $8.909198. Preserve rejection history; qualify only the authentic current33-action proposal through existing exact native validation with its own full-run baseline, no manual promotion or owner answer edits. Then measure one ordinary automatic reuse request against986.028s/$8.909197764, retaining57patients/114fields and current source/coverage review. No new first-generation campaign or package rebuild unless runtime changes. Alltenareas/G5/customer dependencies remain.
