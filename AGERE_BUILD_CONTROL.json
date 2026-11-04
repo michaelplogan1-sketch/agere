@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T22:17:27.184019+00:00",
+  "updated_at": "2026-11-04T22:44:52.035220+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -478,7 +478,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "First-generation986.028second/$8.909197764API-equivalent reference remains; initial-generation benefit from earlier combined repair is unmeasured. Current matched backstop replay79.4seconds excludes fullHTTP delivery; first-answer latency/cost still needs improvement. Coverage remains undecided/partial. IndependentG5 clinical/model and customer deployment dependencies remain. Known-good ff949737 archive retained; no new current-archive restore claim.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: changed-source continuation v2 PID31197/session10853 is running on97a31b36 from saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json; no duplicate or source edits. Product withholds the old draft at action10 because its disputed beta-blocker assertion is now excluded. First actor must see current10native results and no old draft. Prior test-runner failure was dictionary-row indexing, fixed and checked on actual saved outputs; both earlier continuation attempts cost$0 and remain preserved. Complete existing workflow against corrected evidence; all50784priorattempts retained. On terminal inspect57patient/114field preservation, compiler/source/coverage outcome and all-attempt accounting before current acceptance/release/package. No new full question or unchanged vote retries. All ten acceptance areas and independentG5/customer dependencies remain.",
+      "next_action": "G3: source-suspension recovery candidate is offline verified: retained proof reexecutes/checks35native actions, excludes4currently suspended readings, preserves57patients/114prose fields and exact scalar/entity addresses, then produces only1compiler repair target.182boundary/regression tests pass;0newproviders/all51086attempts retained. Prior559.910s/302attempt/$6.171841982 continuation remains failed presentation acceptance. Next run prepared artifacts/agere-protocol-preservation-2026-11-04/continue_source_refresh.py once to continue the existing unaccepted proposal, then inspect full current source/coverage and clear patient presentation before any release. Source currently unfrozen; no active provider job. No new whole-question generation or unchanged vote repeat. All ten areas, currentrelease/package and independentG5/customer dependencies remain.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -560,8 +560,8 @@
     "kind": "native_proposal_dedup_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "A current checked native workflow and bound patient-table proposal are recognized as unchanged when only an unused empty output patient_ids placeholder disappears. Duplicate candidate validation is skipped; exact action prefix, scope guards, current native execution and complete source/coverage review remain required.",
-    "measured_failure_reduction": "Duplicate native validation33->0; native reader invocations3450->1725 with full current review preserved. Matched reported backstop104.2->79.4seconds(23.8%).",
+    "user_behavior_delta": "Candidate preserves the complete unaccepted patient proposal after precisely verified source-suspension exclusions, reexecutes the native suffix and requires full current review.",
+    "measured_failure_reduction": "Retained proof:0->114prose fields recovered; native receipts10->35, four suspended readings excluded; one compiler target remains.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -606,10 +606,10 @@
       "artifacts/agere-replay-validation-dedup-2026-11-04/diagnosis.json",
       "artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json"
     ],
-    "remaining_gap": "Active source-change continuation is not accepted. Require complete patient-specific explanation/action presentation and current source/coverage review; last native table57patients has no114-field row-prose receipt. Preserve alltenareas, currentrelease/package and independentG5/customer dependencies.",
-    "next_action": "G3: changed-source continuation v2 PID31197/session10853 is running on97a31b36 from saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json; no duplicate or source edits. Product withholds the old draft at action10 because its disputed beta-blocker assertion is now excluded. First actor must see current10native results and no old draft. Prior test-runner failure was dictionary-row indexing, fixed and checked on actual saved outputs; both earlier continuation attempts cost$0 and remain preserved. Complete existing workflow against corrected evidence; all50784priorattempts retained. On terminal inspect57patient/114field preservation, compiler/source/coverage outcome and all-attempt accounting before current acceptance/release/package. No new full question or unchanged vote retries. All ten acceptance areas and independentG5/customer dependencies remain.",
+    "remaining_gap": "Targeted live continuation, complete current source/coverage and patient presentation remain unaccepted; current release/package and independentG5/customer dependencies remain.",
+    "next_action": "G3: source-suspension recovery candidate is offline verified: retained proof reexecutes/checks35native actions, excludes4currently suspended readings, preserves57patients/114prose fields and exact scalar/entity addresses, then produces only1compiler repair target.182boundary/regression tests pass;0newproviders/all51086attempts retained. Prior559.910s/302attempt/$6.171841982 continuation remains failed presentation acceptance. Next run prepared artifacts/agere-protocol-preservation-2026-11-04/continue_source_refresh.py once to continue the existing unaccepted proposal, then inspect full current source/coverage and clear patient presentation before any release. Source currently unfrozen; no active provider job. No new whole-question generation or unchanged vote repeat. All ten areas, currentrelease/package and independentG5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Owned changed-source continuation only; source frozen.",
+    "coordination": "All jobs terminal; source unfrozen.",
     "remaining_blockers": [
       "Initial-generation end-to-end improvement from the earlier composition check is unmeasured. The current backstop reuse/review alone still took104.2seconds; the earlier full-request references remain986.028seconds/$8.909197764 and155.723seconds/$0.015078556 warm reuse. Coverage remains undecided/partial. Independent G5 model/clinical evidence and customer deployment dependencies remain. Known-good archive ff949737 is preserved; no current-archive restore is claimed."
     ],
@@ -665,14 +665,13 @@
     "at": "2026-11-04T20:26:59.362709+00:00",
     "workflow_change": "An explicitly unfinished patient explanation can now be reported together with quantity-binding errors before another frontier retry. Uncertain/unavailable composition judgments retain the compiler repair, and full source/coverage review remains required.",
     "unsealed_work": {
-      "status": "changed_source_continuation_running",
-      "all_jobs_terminal": false,
-      "source_frozen": true,
+      "status": "source_refresh_offline_proven",
+      "all_jobs_terminal": true,
+      "source_frozen": false,
       "product_edits": true,
-      "candidate_product": "97a31b36",
-      "receipt": "artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json",
-      "next_action": "G3: changed-source continuation v2 PID31197/session10853 is running on97a31b36 from saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json; no duplicate or source edits. Product withholds the old draft at action10 because its disputed beta-blocker assertion is now excluded. First actor must see current10native results and no old draft. Prior test-runner failure was dictionary-row indexing, fixed and checked on actual saved outputs; both earlier continuation attempts cost$0 and remain preserved. Complete existing workflow against corrected evidence; all50784priorattempts retained. On terminal inspect57patient/114field preservation, compiler/source/coverage outcome and all-attempt accounting before current acceptance/release/package. No new full question or unchanged vote retries. All ten acceptance areas and independentG5/customer dependencies remain.",
-      "observation": "artifacts/agere-protocol-preservation-2026-11-04/running-continuity.json"
+      "candidate_product": "uncommitted_source_refresh",
+      "receipt": "artifacts/agere-protocol-preservation-2026-11-04/source-refresh-proof.json",
+      "next_action": "G3: source-suspension recovery candidate is offline verified: retained proof reexecutes/checks35native actions, excludes4currently suspended readings, preserves57patients/114prose fields and exact scalar/entity addresses, then produces only1compiler repair target.182boundary/regression tests pass;0newproviders/all51086attempts retained. Prior559.910s/302attempt/$6.171841982 continuation remains failed presentation acceptance. Next run prepared artifacts/agere-protocol-preservation-2026-11-04/continue_source_refresh.py once to continue the existing unaccepted proposal, then inspect full current source/coverage and clear patient presentation before any release. Source currently unfrozen; no active provider job. No new whole-question generation or unchanged vote repeat. All ten areas, currentrelease/package and independentG5/customer dependencies remain."
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -3837,17 +3836,24 @@
       "evidence": "artifacts/agere-protocol-preservation-2026-11-04/ordinary-first-answer/assessment.json",
       "correction": "When row_prose is present, preserve compiler failures and exact targets until the atomic proposal compiles; run ordinary composition/source review afterward. Early detection remains for proposals without row_prose. Keep real source-child contradiction and unresolved field checks explicit.",
       "scope_impact": "No acceptance area, source guard, numeric rule, model threshold or clinical claim changes."
+    },
+    {
+      "at": "2026-11-04T22:32:10.677570+00:00",
+      "gate": "G3",
+      "decision": "Stop whole-answer regeneration after localized source changes; diagnose dependency-scoped recovery using the retained complete proposal and native trace.",
+      "basis": "artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json",
+      "observed_failure": "One quarantined beta-blocker assertion changes one patient row at nativeaction10; current recovery withholds all114prose fields. Existing continuation then uses22Claude and280typed calls, returns0row-prose fields and no_progress.",
+      "scope_impact": "No acceptance area, review threshold or source-suspension boundary is removed. Preserve original sources/attempts; any retained draft remains unaccepted until current native,compiler and fullsource/coverage review."
     }
   ],
   "unsealed_work": {
-    "status": "changed_source_continuation_running",
-    "all_jobs_terminal": false,
-    "source_frozen": true,
+    "status": "source_refresh_offline_proven",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
     "product_edits": true,
-    "candidate_product": "97a31b36",
-    "receipt": "artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json",
-    "next_action": "G3: changed-source continuation v2 PID31197/session10853 is running on97a31b36 from saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json; no duplicate or source edits. Product withholds the old draft at action10 because its disputed beta-blocker assertion is now excluded. First actor must see current10native results and no old draft. Prior test-runner failure was dictionary-row indexing, fixed and checked on actual saved outputs; both earlier continuation attempts cost$0 and remain preserved. Complete existing workflow against corrected evidence; all50784priorattempts retained. On terminal inspect57patient/114field preservation, compiler/source/coverage outcome and all-attempt accounting before current acceptance/release/package. No new full question or unchanged vote retries. All ten acceptance areas and independentG5/customer dependencies remain.",
-    "observation": "artifacts/agere-protocol-preservation-2026-11-04/running-continuity.json"
+    "candidate_product": "uncommitted_source_refresh",
+    "receipt": "artifacts/agere-protocol-preservation-2026-11-04/source-refresh-proof.json",
+    "next_action": "G3: source-suspension recovery candidate is offline verified: retained proof reexecutes/checks35native actions, excludes4currently suspended readings, preserves57patients/114prose fields and exact scalar/entity addresses, then produces only1compiler repair target.182boundary/regression tests pass;0newproviders/all51086attempts retained. Prior559.910s/302attempt/$6.171841982 continuation remains failed presentation acceptance. Next run prepared artifacts/agere-protocol-preservation-2026-11-04/continue_source_refresh.py once to continue the existing unaccepted proposal, then inspect full current source/coverage and clear patient presentation before any release. Source currently unfrozen; no active provider job. No new whole-question generation or unchanged vote repeat. All ten areas, currentrelease/package and independentG5/customer dependencies remain."
   },
   "current_visual_request": {
     "status": "completed",
@@ -3872,17 +3878,8 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "kind": "changed_source_continuation",
-      "status": "running",
-      "pid": 31197,
-      "session": 10853,
-      "receipt": "artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json",
-      "product_commit": "24ac727f7a33c2099689f50c663ae0223ca40060"
-    }
-  ],
-  "next_action": "G3: changed-source continuation v2 PID31197/session10853 is running on97a31b36 from saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation-v2/receipt.json; no duplicate or source edits. Product withholds the old draft at action10 because its disputed beta-blocker assertion is now excluded. First actor must see current10native results and no old draft. Prior test-runner failure was dictionary-row indexing, fixed and checked on actual saved outputs; both earlier continuation attempts cost$0 and remain preserved. Complete existing workflow against corrected evidence; all50784priorattempts retained. On terminal inspect57patient/114field preservation, compiler/source/coverage outcome and all-attempt accounting before current acceptance/release/package. No new full question or unchanged vote retries. All ten acceptance areas and independentG5/customer dependencies remain.",
+  "active_jobs": [],
+  "next_action": "G3: source-suspension recovery candidate is offline verified: retained proof reexecutes/checks35native actions, excludes4currently suspended readings, preserves57patients/114prose fields and exact scalar/entity addresses, then produces only1compiler repair target.182boundary/regression tests pass;0newproviders/all51086attempts retained. Prior559.910s/302attempt/$6.171841982 continuation remains failed presentation acceptance. Next run prepared artifacts/agere-protocol-preservation-2026-11-04/continue_source_refresh.py once to continue the existing unaccepted proposal, then inspect full current source/coverage and clear patient presentation before any release. Source currently unfrozen; no active provider job. No new whole-question generation or unchanged vote repeat. All ten areas, currentrelease/package and independentG5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

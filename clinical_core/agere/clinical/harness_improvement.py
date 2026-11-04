@@ -77,7 +77,8 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
         retained=copy.deepcopy(checkpoint)
         for i,p in enumerate(provenance):p['expected_result']=digest(comparison_result(calls[i]['name'],calls[i]['result'],calls[:i]))
     token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or [],
-        'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance,'checkpoint':retained} if actions is not None else None)
+        'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance,'checkpoint':retained,
+        'origin_calls':origin['calls'] if retained else []} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
 
@@ -251,6 +252,106 @@ def record_question_correction(path,question,reason):
     finally:db.close()
 
 
+def _suspended_review_refresh(path, before, after, *, as_of):
+    """Recognize only the native exclusion of already suspended annotations.
+
+    No new reading, changed source, or changed clinical value qualifies. The
+    returned IDs authorize re-executing a read-only suffix, never an answer.
+    """
+    from .backstop_agent import output_table
+    from .typed_document_review import assertion_disposition
+    from .assertion_reconciliation import reconcile
+    try:
+        old,new=semantic_result(before),semantic_result(after)
+        if digest({k:v for k,v in old.items() if k!='rows'})!=digest({k:v for k,v in new.items() if k!='rows'}):return None
+        columns,aa=output_table(old);cc,bb=output_table(new)
+        required={'patient_id','review_json','review_limitations','source_findings_json','documentary_state_json'}
+        if columns!=cc or not required<=set(columns) or len(aa)!=len(bb):return None
+        removed=set()
+        for a,b in zip(aa,bb):
+            if digest(a)==digest(b):continue
+            a,b=dict(zip(columns,a)),dict(zip(columns,b))
+            states=[json.loads(row['documentary_state_json']) for row in (a,b)]
+            prior={v['id']:v for v in states[0]['assertions']};current={v['id']:v for v in states[1]['assertions']}
+            gone=set(prior)-set(current)
+            if not gone or set(current)-set(prior):return None
+            if len(prior)!=len(states[0]['assertions']) or len(current)!=len(states[1]['assertions']):return None
+            expected=copy.deepcopy(states[0]);expected['assertions']=[v for v in expected['assertions'] if v['id'] not in gone]
+            if digest(states[0]['groups'])!=digest(reconcile(a['patient_id'],states[0]['assertions'],as_of)):return None
+            expected['groups']=reconcile(a['patient_id'],expected['assertions'],as_of)
+            if digest(expected)!=digest(states[1]):return None
+            fields=json.loads(a['review_json']);new_fields=json.loads(b['review_json']);located=[]
+            def ident(value):return (value.get('assertion')or{}).get('id') if isinstance(value,dict) else None
+            for field,values in fields.items():
+                for value in values:
+                    if ident(value) in gone:located.append((field,value['record_id']))
+            if {ident(v) for values in fields.values() for v in values if ident(v) in gone}!=gone:return None
+            if digest({k:[v for v in values if ident(v) not in gone] for k,values in fields.items()})!=digest(new_fields):return None
+            findings=json.loads(a['source_findings_json'])
+            if digest([v for v in findings if ident(v) not in gone])!=digest(json.loads(b['source_findings_json'])):return None
+            added={'Disputed source observation '+rid+' field '+field+': unchanged input remains unresolved; source, question, model or review policy must change.' for field,rid in located}
+            old_limits,new_limits=json.loads(a['review_limitations']),json.loads(b['review_limitations'])
+            if (len(set(new_limits))!=len(new_limits) or not set(old_limits)<=set(new_limits)
+                    or set(new_limits)-set(old_limits)!=added-set(old_limits)):return None
+            changed={'review_json','review_limitations','source_findings_json','documentary_state_json'}
+            if digest({k:v for k,v in a.items()if k not in changed})!=digest({k:v for k,v in b.items()if k not in changed}):return None
+            removed.update(gone)
+        if not removed:return None
+        disposition=assertion_disposition(path,removed)
+        if disposition['status']!='suspended' or {r['assertion_id']for r in disposition['suspended_assertions']}!=removed:return None
+        return sorted(removed)
+    except (KeyError,TypeError,ValueError,IndexError):return None
+
+
+def _source_refresh_draft_bindings(draft, old_calls, current_calls):
+    """Keep an unaccepted proposal only when its entity/scalar addresses survive.
+
+    Documentary collections may lose suspended readings. All known scalar
+    values, entity keys and table membership must remain exact; current compiler
+    and full source/coverage review still determine whether the prose can stand.
+    """
+    from .backstop_agent import output_table
+    try:
+        spec=draft['row_prose'];keys=spec['keys']
+        if not isinstance(keys,list) or not keys or len(set(keys))!=len(keys):return False
+        def views(calls):return {c['result']['result_view']:c['result'] for c in calls if c['result'].get('result_view')}
+        old,new=views(old_calls),views(current_calls)
+        def table(pool,name):
+            columns,rows=output_table(pool[name]);return columns,[dict(zip(columns,row))for row in rows]
+        def entity(row):return {k:row[k]for k in keys}
+        columns,aa=table(old,draft['table_from_tool']);cc,bb=table(new,draft['table_from_tool'])
+        if columns!=cc or digest([entity(r)for r in aa])!=digest([entity(r)for r in bb]):return False
+        if len({digest(entity(r))for r in aa})!=len(aa):return False
+        if {digest(r['key'])for r in spec['rows']}!={digest(entity(r))for r in aa}:return False
+        def scalar(value):
+            if isinstance(value,(dict,list)):return False
+            if isinstance(value,str) and value.lstrip().startswith(('{','[')):
+                try:return not isinstance(json.loads(value),(dict,list))
+                except ValueError:pass
+            return True
+        for entry in spec['rows']:
+            for address in entry['basis']:
+                name,index=address['result_view'],address['row'];oc,orows=table(old,name);nc,nrows=table(new,name)
+                if type(index)is not int or index<0:return False
+                a,b=orows[index],nrows[index]
+                if oc!=nc or digest(entity(a))!=digest(entry['key']) or digest(entity(b))!=digest(entry['key']):return False
+                if digest({k:v for k,v in a.items()if scalar(v)})!=digest({k:v for k,v in b.items()if scalar(v)}):return False
+        def unchanged(value):
+            if isinstance(value,dict):
+                if {'result_view','row','column'}<=set(value):
+                    name,index,column=value['result_view'],value['row'],value['column']
+                    if type(index)is not int or index<0:return False
+                    oc,orows=table(old,name);nc,nrows=table(new,name)
+                    if oc!=nc or digest(orows[index])!=digest(nrows[index]):return False
+                    if not scalar(orows[index][column]):return False
+                # Aggregate bindings need a separate proof; do not infer one.
+                if 'measure'in value:return False
+                return all(unchanged(v)for v in value.values())
+            return not isinstance(value,list)or all(unchanged(v)for v in value)
+        return unchanged({k:draft.get(k)for k in ('headline','facts','row_prose','computed_prose')})
+    except (KeyError,TypeError,ValueError,IndexError):return False
+
+
 def recover_actions(tools,question,context=None):
     saved=_OWNED_RECOVERY.get()
     if saved is None or saved['question']!=question:return None
@@ -278,6 +379,7 @@ def recover_actions(tools,question,context=None):
             reference=review_reference(review,tools)
             if not reference or reference['feedback_digest']!=digest(review):raise ValueError('Retained operational review unavailable')
     if saved.get('field_contracts'):out['restored_field_contracts']=sorted(saved['field_contracts'])
+    source_refresh={};refreshed_actions=[]
     for index,action in enumerate(actions):
         if action.get('name') not in READ_ONLY or not {'name','input'}<=set(action)or set(action)-{'name','input','expected_error'}:
             raise ValueError('Owned recovery accepts registered read-only actions only')
@@ -300,9 +402,20 @@ def recover_actions(tools,question,context=None):
         if checkpoint:
             same=digest(comparison_result(action['name'],value,out['calls'][:-1]))==provenance['expected_result']
             if not same:
-                out['draft_recovery'].update(status='withheld',failed_action=index+1)
-                out['reason']='Native receipt changed; retain current results and investigate without the old draft.'
-                break
+                original=saved['origin_calls'][index]['result'];view=value.get('result_view')
+                removed=(_suspended_review_refresh(tools.stack.path,original,value,as_of=checkpoint['source'].get('as_of') or context.get('as_of'))
+                         if action['name']=='review_documents' else None)
+                from .backstop_agent import native_result_dependencies
+                dependencies=native_result_dependencies(out['calls'],[view]) if isinstance(view,str) else None
+                downstream=(action['name']in ('query_sql','compose_table') and source_refresh and dependencies is not None
+                            and bool(set(source_refresh)&dependencies) and original.get('result_view')==view
+                            and original.get('columns')==value.get('columns') and not value.get('error'))
+                if removed and isinstance(view,str):source_refresh[view]=removed
+                elif not downstream:
+                    out['draft_recovery'].update(status='withheld',failed_action=index+1)
+                    out['reason']='Native receipt changed; retain current results and investigate without the old draft.'
+                    break
+                refreshed_actions.append(index+1)
             out['draft_recovery']['native_receipts_checked']+=1
         if reproduced:
             out.setdefault('historical_native_errors',[]).append({'action_index':index,'name':action['name'],'error':expected})
@@ -314,10 +427,24 @@ def recover_actions(tools,question,context=None):
             break
         if isinstance(value,dict) and value.get('error'):break
     out['recovered_read_only_actions']=len(out['calls'])
-    if checkpoint and out['draft_recovery']['native_receipts_checked']==len(actions):
+    complete=checkpoint and out['draft_recovery']['native_receipts_checked']==len(actions)
+    if source_refresh:
+        out['source_refresh']={'suspended_assertions':sorted({v for ids in source_refresh.values()for v in ids}),
+            'root_views':sorted(source_refresh),'changed_actions':refreshed_actions,
+            'prior_verdict_accepted':False,'full_current_review_required':True}
+        if complete:
+            from .typed_document_review import assertion_disposition
+            ids=out['source_refresh']['suspended_assertions'];current=assertion_disposition(tools.stack.path,ids)
+            stable=(current['status']=='suspended' and {r['assertion_id']for r in current['suspended_assertions']}==set(ids))
+            if not stable or not _source_refresh_draft_bindings(checkpoint['draft'],saved['origin_calls'],out['calls']):
+                complete=False;out['draft_recovery'].update(status='withheld',reason='Source suspension or entity/scalar proposal bindings changed during recovery.')
+    if complete:
         out['resume_draft']=copy.deepcopy(checkpoint['draft'])
         out['resume_draft'].update(status='partial',verification='unverified')
         out['draft_recovery']['status']='revalidated_for_review'
+        if source_refresh:
+            out['draft_recovery']['source_refresh']=out['source_refresh']
+            out['reason']='Suspended readings excluded in current native results; unchanged entity/scalar draft bindings permit full current re-review only.'
     out['downstream_review_feedback']=saved.get('feedback') or []
     if out['downstream_review_feedback']:
         out['feedback_instruction']='Investigate these prior presentation-review error reports against current sources and existing engines. Repair upstream facts/calculations here, not by rewording a dashboard. The reports are machine observations, not clinical truth. Do not invent eligibility, enrollment or shipment to satisfy a proposed design.'
