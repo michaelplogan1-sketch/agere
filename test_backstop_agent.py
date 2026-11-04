@@ -227,6 +227,22 @@ class Cascade(unittest.TestCase):
         c._ledger, c._owned = object(), False
         return c
 
+    def test_partial_investigation_retains_terminal_review_and_draft_state(self):
+        review={'status':'repair','feedback':'Coverage remains undecided.'}
+        run={'answer':{'status':'partial','answer_type':'note','headline':'Received evidence is incomplete.',
+                      'investigation_review':review},
+             'tool_calls':[],'model':'fixture','new_paid_api_calls':0,'estimated_cost_usd':0,
+             'answer_reviews':[review],'review_stopped':'unresolved_coverage',
+             'unaccepted_draft':{'draft_digest':'current','returned_answer':'last_structurally_complete_candidate'},
+             'error':'Retained interrupted response'}
+        with patch.object(P,'claude_available',lambda:True),patch.object(B,'answer',return_value=run):
+            contract,_=self.cascade().tier_backstop_agent()
+        result=contract['executed'];investigation=result['investigation']
+        for key in ('review_stopped','unaccepted_draft','error','answer_reviews'):
+            self.assertEqual(investigation[key],run[key])
+        self.assertEqual(result['answer']['status'],'partial')
+        self.assertEqual(result['answer']['verification'],'unverified')
+
     def test_the_backstop_answer_is_accepted_with_checks_as_annotations(self):
         run = {'answer': {'status': 'answered', 'answer_type': 'note', 'headline': 'Stopped for hyperkalemia.',
                           'sources': [{'record_id': 'N1', 'quote': 'Stop losartan due to hyperkalemia'}]},

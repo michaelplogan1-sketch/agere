@@ -247,7 +247,8 @@ def source_prose_repair(candidate,support,packets,coverage):
     """Locate only reviewed prose, retaining complete source and draft bindings.
 
     An undecided check permits source inspection, not a finding of error. Native
-    fields, incomplete source and unlocalized obligations retain the full path.
+    fields, incomplete source and unlocalized obligations remain unresolved;
+    they do not authorize edits or suppress independent bound prose repairs.
     """
     from ..deliverables.receipts import uncompact_json
     if (not isinstance(candidate,dict)or support.get('all_dependencies_checked')is not True or
@@ -258,12 +259,14 @@ def source_prose_repair(candidate,support,packets,coverage):
         rows={r['patient_id']:r for r in candidate['table']}
         prose={r['key']['patient_id']:r for r in spec['rows']}
         if len(rows)!=len(candidate['table'])or len(prose)!=len(spec['rows']):return None
-        producers={p['id']:p for p in packets};targets=[];contexts={};seen=set()
+        producers={p['id']:p for p in packets};targets=[];contexts={};seen=set();remaining=[]
         pending=[p for p in support['packets']if p.get('label')!='supported'or not p.get('decided_by')]
         checks={p['id']:p for p in support['packets']}
         if not pending:return None
         for reviewed in pending:
-            packet=producers[reviewed['id']];review=reviewed.get('field_review')or{}
+            packet=producers.get(reviewed['id']);review=reviewed.get('field_review')or{}
+            if packet is None:
+                remaining.append({'packet_id':reviewed['id'],'reason':'No direct prose producer for this source check'});continue
             source_state=uncompact_json(json.loads(packet['text']));source_packet_digest=digest(packet['text'])
             if review.get('packet_digest')!=digest(packet['text']):
                 # Reconstruct the exact existing source-partition parent. Only
@@ -273,22 +276,31 @@ def source_prose_repair(candidate,support,packets,coverage):
                 parent=next((p for p in parts if p['id']==reviewed['id']),None)
                 required=(parent or{}).get('required_source_packet_ids')
                 if not required or any(checks.get(k,{}).get('label')!='supported'or
-                    not checks[k].get('decided_by')for k in required):return None
+                    not checks[k].get('decided_by')for k in required):
+                    remaining.append({'packet_id':reviewed['id'],'reason':'Source dependency is not settled'});continue
                 packet=parent
             if (packet.get('patient_dependency_bound')is not True or packet.get('source_context_complete')is not True or
                 packet.get('dependency_complete')is not True or packet.get('parent_packet_id')or
                 not reviewed.get('claim_feedback')or review.get('packet_digest')!=digest(packet['text'])or
-                review.get('manifest_digest')!=digest(packet['claim_manifest'])):return None
+                review.get('manifest_digest')!=digest(packet['claim_manifest'])):
+                remaining.append({'packet_id':reviewed['id'],'reason':'No complete producer-bound prose review'});continue
             state=uncompact_json(json.loads(packet['text']));pid=packet['source_dependency_patient_id']
             if (state.get('patient_id')!=pid or source_state.get('patient_id')!=pid or
                 source_state.get('source_context_gaps')or not source_state.get('source_contexts')):return None
-            entry=prose[pid];claims={c['id']:c for c in packet['claim_manifest']}
+            entry=prose[pid];claims={c['id']:c for c in packet['claim_manifest']};before_targets=len(targets)
             for f in reviewed['claim_feedback']:
                 claim=claims[f['claim_id']];field=f['field'];path=f['path']
                 if (f.get('packet_id')!=packet['id']or field!=claim['field']or path!=claim['path']or
-                    field not in entry['fields']or len(path)!=3 or path[0]!='answer_rows'or path[2]!=field or
+                    len(path)!=3 or path[0]!='answer_rows'or path[2]!=field or
                     type(path[1])is not int or state['answer_rows'][path[1]].get('patient_id')!=pid or
-                    state['answer_rows'][path[1]][field]!=rows[pid][field]or(pid,field)in seen):return None
+                    (pid,field)in seen):return None
+                if field not in entry['fields']:
+                    # A native-field uncertainty cannot authorize editing that
+                    # field, or prevent independent located prose corrections.
+                    # Keep it explicit; the full reviewer must still recheck it.
+                    remaining.append({'packet_id':packet['id'],'claim_id':claim['id'],
+                        'field':field,'reason':'Native field requires its own evidence check'});continue
+                if state['answer_rows'][path[1]][field]!=rows[pid][field]:return None
                 seen.add((pid,field))
                 targets.append({'key':entry['key'],'field':field,'basis':entry['basis'],
                     'code':'source_meaning_review','value_digest':digest(entry['fields'][field]),
@@ -296,7 +308,7 @@ def source_prose_repair(candidate,support,packets,coverage):
                     'packet_digest':review['packet_digest'],'source_packet_digest':source_packet_digest,'claim_id':claim['id'],
                     'review_disposition':f.get('label'),'decided_by':f.get('decided_by'),
                     'reason':f.get('reason'),'source_fault_established':bool(f.get('decided_by')and f.get('label')!='unknown')})
-            for c in source_state['source_contexts']:
+            for c in source_state['source_contexts'] if len(targets)>before_targets else []:
                 if c.get('patient_id')!=pid or not c.get('record_id')or not c.get('date')or not isinstance(c.get('text'),str)or not c['text']:return None
                 ident=(pid,c['record_id'],c['date'])
                 if ident in contexts and contexts[ident]!=c:return None
@@ -305,6 +317,7 @@ def source_prose_repair(candidate,support,packets,coverage):
         sources=list(contexts.values())
         return {'schema':'native-prose-repair-targets/1','intent':'source_meaning_review',
             'draft_digest':digest(candidate),'targets':targets,'source_contexts':sources,
+            'remaining_dependencies':remaining,
             'source_contexts_digest':digest(sources),'coverage_still_required':True,
             'authority':'machine_review','clinical_qualification':False}
     except (KeyError,ValueError,TypeError,IndexError):return None

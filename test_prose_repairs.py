@@ -271,6 +271,28 @@ class ProseRepairs(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'producer-located'):
             E.apply_prose_repair(self.patch(explanation='Unrequested change'),self.base,calls=self.calls,feedback=feedback)
 
+    def test_mixed_native_and_prose_uncertainty_preserves_independent_scoped_repair(self):
+        p,support=self.source_review()
+        _,native=self.source_review(field='events')
+        support['packets'][0]['claim_feedback']+=native['packets'][0]['claim_feedback']
+        support['packets'].append({'id':'unresolved_child','label':'unknown','decided_by':None})
+        target=E.source_prose_repair(self.base,support,[p],{})
+        self.assertIsNotNone(target)
+        self.assertEqual([t['field']for t in target['targets']],['review'])
+        self.assertEqual(len(target['remaining_dependencies']),2)
+        self.assertEqual(target['remaining_dependencies'][0]['field'],'events')
+        self.assertTrue(target['coverage_still_required'])
+        self.assertFalse(target['clinical_qualification'])
+        feedback={'prose_repair':target,'support':support}
+        self.assertIsNotNone(E.focused_prose_state(self.base,feedback,self.calls))
+        merged=E.apply_prose_repair(self.patch(review='Current responsibility is unresolved in the received note.'),
+            self.base,calls=self.calls,feedback=feedback)
+        self.compile(merged)
+        self.assertEqual(merged['table'][0]['events'],self.base['table'][0]['events'])
+        self.assertEqual(support['packets'][-1]['label'],'unknown')
+        with self.assertRaises(ValueError):
+            E.apply_prose_repair(self.patch(events='Changed native count'),self.base,calls=self.calls,feedback=feedback)
+
     def test_source_focus_rejects_native_unlocalized_stale_or_incomplete_obligations(self):
         p,support=self.source_review()
         for mutation in ('packet','manifest','source_gap','wrong_patient','source_empty','unlocalized','native_field','coverage','unchecked'):
