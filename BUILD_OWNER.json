@@ -8,8 +8,8 @@
   "active_work": "G3: implement and qualify retention of the unfinished draft at the existing guarded investigation/recovery boundary so repeated work does not regenerate114prosefields after native replay. Audit completed: all28currentactions have real callback origins; action27 reads originalreview6 as tagged operational feedback and is outside answerdependencies, while quotequery28 is required. Preserve exact native reexecution, original question/source/meaning guards, full current review, and partial/unverified status; recovery is not accepted-answer or learned-path promotion. Do not force-select the current56/58source-supported result or relax source thresholds. Prove changed-source/field/native-result rejection offline before any affected live confirmation. No repeated full campaign. Then currentten-area release applicability; independentG5/customer dependencies remain separate.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
-  "owned_server_pid": 69250,
-  "owned_server_session": 99446,
+  "owned_server_pid": null,
+  "owned_server_session": null,
   "full_queue_acceptance": false,
   "spending_limit": "uncapped",
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
@@ -30,12 +30,12 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "ordinary_current_clinical_reuse_running",
+    "status": "current_local_packaging_running",
     "source_frozen": true,
     "all_jobs_terminal": false,
     "product_edits": false,
-    "receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-current/run-receipt.json",
-    "remaining": "Await this owned full request; no duplicate, all-attempt accounting retained."
+    "receipt": "artifacts/agere-current-package-2026-11-04/receipt.json",
+    "remaining": "Current package/isolated install; provider jobs terminal. Ordinary clinical result remains partial."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-04T01:53:14.296937+00:00",
@@ -303,14 +303,13 @@
   },
   "active_jobs": [
     {
-      "pid": 69257,
-      "session": 82896,
-      "server_pid": 69250,
-      "server_session": 99446,
+      "pid": 69645,
+      "session": 19293,
       "status": "running",
+      "phase": "checkpoint",
       "source_frozen": true,
-      "provider_dispatch": true,
-      "receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-current/run-receipt.json"
+      "provider_dispatch": false,
+      "receipt": "artifacts/agere-current-package-2026-11-04/receipt.json"
     }
   ],
   "overnight_completed_jobs": {
@@ -434,8 +433,8 @@
   "integrated_runtime": {
     "workspace": "/private/tmp/agere-codex-integration-20261026",
     "source_commit": "ab6faed4813f47521fed67d8a7419416984ac41e",
-    "pid": 69250,
-    "session": 99446,
+    "pid": null,
+    "session": null,
     "port": 8890,
     "url": "http://127.0.0.1:8890/ask",
     "configuration": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-full-stack-rerun-2026-10-30/focused/evidence-work-network/active-config.json",
@@ -450,7 +449,7 @@
     "context_id": "ANS-00a2568c1f1543642a7892d7",
     "deliverable_id": null,
     "schema": "native-profile-answer-app/1",
-    "status": "ready",
+    "status": "stopped_for_current_packaging",
     "at": "2026-11-04T03:41:34.083299+00:00",
     "source_frozen": false,
     "primary_changed": false,
@@ -465,7 +464,9 @@
     "started_at": "2026-11-04T01:03:54.181243+00:00",
     "trace_path": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-retained-draft-recovery-2026-11-04/app/components.jsonl",
     "custom_output_ceiling": null,
-    "new_provider_request_not_yet_submitted": true
+    "new_provider_request_not_yet_submitted": true,
+    "ordinary_clinical_context": "ANS-91ebb673d677f94d131b3d06",
+    "ordinary_clinical_status": "partial_unverified"
   },
   "previous_sealed_receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
@@ -477,7 +478,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-04T03:41:34.083299+00:00",
+  "updated_at": "2026-11-04T03:55:42.266744+00:00",
   "last_commit": "ab6faed4813f47521fed67d8a7419416984ac41e",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {

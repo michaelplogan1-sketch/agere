@@ -1,5 +1,19 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: native reuse works; ordinary composition remains incomplete
+
+Product `ab6faed` stops portable native learning before temporary review feedback and uses the same entry-model identity for proposal and replay after escalation. Fresh validation and ordinary backstop execution reproduced all 26 portable actions;93 affected regression checks passed. This qualifies execution equivalence only; no partial final answer or clinical weights were stored for reuse.
+
+One normal API request then exercised the original 57-patient question with no injected plan or answer. It used all 26 native substitutions, retained all 57 patients, and returned a partial answer after 405.339 seconds. All 173 new attempts are accounted:4 Haiku, 3 Sonnet, 84 Jev and 82 Perplexity. API-equivalent cost was $5.055890908, with 0 unpriced attempts. Claude accounted for $4.5913982; Jev $0.314512128; Perplexity $0.14998058. This is not a matched first/reuse savings result or a cash invoice. All 48,866 prior attempt rows and earlier exports remain unchanged.
+
+The final result had 55/60 supported source packets and stopped for lack of progress. Native proposed review steps survived, but the earlier 114 individual prose fields were not reproduced and individual recommendation equivalence is unestablished. One exact source assertion received a deciding wrong-entity objection; its existing source observation was suspended once and repeated identical feedback was deduplicated. Other below-threshold checks remain unknown, not proven source defects. The incomplete outcome automatically quarantined the candidate. The earlier 58/58 review retains its historical scope; it is not current clinical acceptance.
+
+The actor consumed 1,898,405 cache-creation input tokens and 186,336 cache-read tokens, in addition to 14 uncached input tokens and 30,242 output tokens. The 14 uncached tokens must never be presented as total input. An offline exact-roundtrip diagnostic using the existing lossless codec reduced retained reading blocks from 398,443 to 131,034 bytes. It is not activated or actor-qualified and establishes no measured token, cost or latency benefit.
+
+Evidence: `artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json`, `ordinary-outcome-audit.json`, `ordinary-cost-and-feedback.json` and `representation-diagnostic.json` in that directory. Remaining work is ordinary source-bound individual composition and practical economics, with independent clinical/model qualification separate. Current local packaging is being verified; no full MVP acceptance is claimed.
+
+---
+
 ## November 4: numerical repair completed; source review now58/58
 
 Product `12fedfa` corrects a contradictory instruction that permitted literal quotations while patient-row numbers required native bindings. An offline original-record SQL query bound the exact reported-use sentence, preserving the full answer with no provider calls;70targeted checks pass. This owner-authored demonstration is distinct from the live actor's behavior.
