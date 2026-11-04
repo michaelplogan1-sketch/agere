@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/19'
+VERSION = 'execution-state/20'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -230,7 +230,10 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
                     value=bind_prose_literals(existing[ident]['fields'][field],value,native,
                         key=edit['key'],resolved_bases=derived)
                 except ValueError as exc:
-                    raise BindingReferenceError(edit['key'],field,exc)from exc
+                    error=BindingReferenceError(edit['key'],field,exc)
+                    if not retain_valid:raise error from exc
+                    rejected.append(error)
+                    continue
             if target and target['code']in ('unbound_literal','missing_scalar_source'):
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native)
@@ -328,11 +331,23 @@ def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None):
                 or set(edit)-{'literal','binding','occurrence'}or not isinstance(edit['literal'],str)or not edit['literal']):
             raise ValueError('Each literal edit requires exact literal text and an executed scalar binding')
         literal=edit['literal'];matches=[]
-        # Number words are words, never suffixes inside source/drug names.
-        # Numeric and multiword literals keep their exact substring contract.
+        # A numeric repair addresses a whole value, never a substring of a
+        # record ID, date, larger number or decimal. This mirrors the compiler's
+        # distinction between quantities and source/temporal addresses.
+        number=r'[+-]?\d+(?:,\d{3})*(?:\.\d+)?'
+        numeric_literal=re.fullmatch(number,literal) is not None
         pattern=(r'(?<!\w)'+re.escape(literal)+r'(?!\w)')if literal.isalpha()else re.escape(literal)
         for index,(text,_)in enumerate(parts):
-            matches.extend((index,m.start(),m.end())for m in re.finditer(pattern,text))
+            if numeric_literal:
+                protected=[m.span()for m in re.finditer(r'\b\d{4}-\d{2}-\d{2}\b',text)]
+                protected.extend(m.span()for m in re.finditer(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',text)
+                                 if any(c.isdigit()for c in m.group()))
+                matches.extend((index,m.start(),m.end())for m in re.finditer(r'(?<![\w.])'+number+r'(?![\w.])',text)
+                    if m.group()==literal and not any(m.start()<end and start<m.end()for start,end in protected))
+            else:
+                # Number words are words; multiword/source quotations remain
+                # exact substring selections rather than inferred quantities.
+                matches.extend((index,m.start(),m.end())for m in re.finditer(pattern,text))
         if 'occurrence'not in edit and len(matches)!=1:
             raise ValueError('Literal must occur exactly once, or specify its zero-based occurrence outside existing placeholders: '
                 +json.dumps({'edit':edit_index,'literal':literal,'matches':len(matches)}))
@@ -696,7 +711,7 @@ def focused_prose_state(candidate,feedback,calls):
             '"binding":{"result_view":"an executed view","column":"its scalar column",'
             '"where":[{"column":"record_id","value":"the exact source ID"}]}}]}. '
             'Code attaches each binding to that exact span in the retained sentence and preserves all existing placeholders. '
-            'Alphabetic literals match whole words only, never part of another word. '
+            'Alphabetic literals match whole words only. Numeric literals match complete values outside dates and identifiers, never a substring of another number. '
             'Do not repeat or rewrite the sentence. If the literal occurs more than once outside placeholders, include '
             '"occurrence":zero_based_index for the intended occurrence in the ORIGINAL template. '
             'The original entity key is always applied by code. Use exact native source/date/field filters to select one row; '

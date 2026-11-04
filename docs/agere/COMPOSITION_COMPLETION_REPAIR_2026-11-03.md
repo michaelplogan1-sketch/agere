@@ -1,5 +1,18 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: automatic retained completion and numeric-parser correction
+
+The retained continuation on34e6cb7f cleared62compiler fields and returned **57patients/114fields, 58/58source-supported packets**, with no owner-written prose or bindings. Coverage remains undecided (`decided_by=null`); the answer is partial and the existing stop rule correctly avoids repeating an unchanged vote. The source/native values, all49933priorattempts and previous exports stayed exact. The saved result is `ANS-8b0e4a60b8926da8422af0bf`.
+
+The continuation took **726.296seconds**, **138validatedattempts** (4Claude,67Jev,67Perplexity), **$3.89823547API-equivalent**, zero unpriced. Combined with the failed original request, both phases total1227.500seconds,145attempts and$8.240971926API-equivalent. This is retained recovery with operator reconstruction of the authentic model draft, not a new first-request latency result. The live model chose the native query itself after escalation; the newly guarded empty-patch transition was proven offline, but was not the cause of this live completion. No such causal claim is made.
+
+The saved first model binding patch exposed a deterministic parser defect: numeric substring matching also selected parts of record IDs, dates and larger values.19fields were affected. The correction uses complete numeric values outside those addresses and retains valid fields when another field has a located binding-reference error. Structural edits and source-meaning edits retain their existing boundaries; real duplicate quantities still require explicit occurrence selection.
+
+On the authentic first patch, the corrected product accepts **61/62fields**, leaving one genuinely ambiguous field. All57patients,114prosefields, sentence meanings, native cells and50071attempts remain exact. No provider call or owner-authored edit was used. The next focused message falls from392096to92079bytes in this replay; this is measured prompt size, not live token/cost/latency savings. The completed58/58answer also recompiles with its full table/prose unchanged.163targeted tests pass. Fresh ordinary acceptance, current app/release compatibility and final package/restore remain; clinical/model/customer dependencies remain separate.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-compiler-continuation/receipt.json`, `numeric-repair-proof/receipt.json`, and `numeric-token-diagnosis.json`. The original automatic assessment's `saved_context` false result was an absent-field comparison bug; the saved table/prose are exact. That correction is in `automatic-composition-current/persistence-assessment-correction.json`; it does not alter the original failed composition result.
+
+
 ## November 4 automatic composition failure and guarded native query
 
 The ordinary question on product84c96cca failed in **501.204 seconds**, **7 provider attempts** (5 Claude, 1 Jev, 1 Perplexity), **$4.342736456 API-equivalent**, zero unpriced. It returned all57native patient rows but no narrative fields. The unaccepted model draft contains57rows/114fields: its first version collided with native column names; its corrected version has62unbound quantitative fields. The final Sonnet response was an empty repair. No compact edit or new native evidence query ran. This is a failed automatic-composition result, distinct from the earlier assisted58/58source-supported answer. Every49933ledger row and the raw responses remain.

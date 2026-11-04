@@ -81,6 +81,54 @@ class ProseRepairs(unittest.TestCase):
             E.apply_prose_repair(proposal,self.base,calls=self.calls)
         self.assertEqual(self.base,before)
 
+    def test_numeric_literal_selects_quantity_without_matching_identifiers_dates_or_other_values(self):
+        native={'agere_result_1':{'columns':['patient_id','dose'],'rows':[['A',25]],'truncated':False}}
+        address={'result_view':'agere_result_1','column':'dose','where':[]}
+        text='Dose 25 mg (WHL-R-2868c50307cfceb625d3b3, 2025-01-25); prior 125, 1,025, 0.25, -25 and 25.5.'
+        operation={'bind_literals':[{'literal':'25','binding':address}]}
+        bound=E.bind_prose_literals(text,operation,native,key={'patient_id':'A'})
+        self.assertEqual(E.repair_rendered_value(bound,native),text)
+        self.assertTrue(bound['template'].startswith('Dose {bound_literal_0} mg'))
+        self.assertIn('WHL-R-2868c50307cfceb625d3b3, 2025-01-25',bound['template'])
+        for invalid in ('WHL-R-25','2025-01-25','125','1,025','0.25','25.5','-25','25mg'):
+            with self.subTest(text=invalid),self.assertRaisesRegex(ValueError,'matches'):
+                E.bind_prose_literals(invalid,operation,native,key={'patient_id':'A'})
+
+    def test_numeric_occurrence_counts_actual_quantities_and_still_requires_disambiguation(self):
+        native={'agere_result_1':{'columns':['patient_id','dose'],'rows':[['A',25]],'truncated':False}}
+        address={'result_view':'agere_result_1','column':'dose','where':[]}
+        text='25 mg (record-25, 2025-01-25), then 25 mg.'
+        with self.assertRaisesRegex(ValueError,'matches'):
+            E.bind_prose_literals(text,{'bind_literals':[{'literal':'25','binding':address}]},native,key={'patient_id':'A'})
+        bound=E.bind_prose_literals(text,{'bind_literals':[{'literal':'25','binding':address,'occurrence':1}]},native,key={'patient_id':'A'})
+        self.assertEqual(bound['template'],'25 mg (record-25, 2025-01-25), then {bound_literal_0} mg.')
+        self.assertEqual(E.repair_rendered_value(bound,native),text)
+        with self.assertRaisesRegex(ValueError,'occurrence'):
+            E.bind_prose_literals(text,{'bind_literals':[{'literal':'25','binding':address,'occurrence':2}]},native,key={'patient_id':'A'})
+
+    def test_valid_binding_survives_an_independent_ambiguous_or_foreign_reference(self):
+        for foreign in (False,True):
+            with self.subTest(foreign=foreign):
+                self.setUp();self.calls[0]['result']['rows'][1][1]=2
+                self.base['row_prose']['rows'][0]['fields']['explanation']='two observations followed two observations.'
+                feedback=self.located_failure();original=copy.deepcopy(self.base);rejected=[]
+                address={'result_view':'agere_result_1','column':'events','where':[]}
+                bad=({'result_view':'agere_result_1','column':'events','where':[{'column':'patient_id','value':'B'}]}
+                     if foreign else address)
+                bad_edit={'literal':'two','binding':bad,**({'occurrence':0}if foreign else{})}
+                proposal=self.patch(review={'bind_literals':[{'literal':'two','binding':address}]},
+                    explanation={'bind_literals':[bad_edit]})
+                candidate=E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback,binding_rejections=rejected)
+                self.assertEqual(len(rejected),1);self.assertEqual(rejected[0]['field'],'explanation')
+                self.assertIn('entity key'if foreign else 'matches',rejected[0]['reason'])
+                self.assertEqual(candidate['row_prose']['rows'][0]['fields']['explanation'],original['row_prose']['rows'][0]['fields']['explanation'])
+                self.assertNotEqual(candidate['row_prose']['rows'][0]['fields']['review'],original['row_prose']['rows'][0]['fields']['review'])
+                self.assertEqual(candidate['row_prose']['rows'][1],original['row_prose']['rows'][1])
+                self.assertEqual(candidate['row_prose']['rows'][0]['basis'],original['row_prose']['rows'][0]['basis'])
+                self.assertEqual(self.base,original)
+                with self.assertRaises(E.BindingReferenceError):
+                    E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback)
+
     def test_binding_schema_is_bound_to_current_digest_and_located_fields_only(self):
         feedback=self.located_failure();focus=E.focused_prose_state(self.base,feedback,self.calls)
         schema=E.binding_repair_schema(focus)
