@@ -99,6 +99,37 @@ class ProseRepairs(unittest.TestCase):
             merged=E.apply_prose_repair(self.patch(explanation=value),self.base)
             with self.subTest(value=value),self.assertRaises(ValueError):self.compile(merged)
 
+    def test_numeric_source_quotation_requires_an_executed_same_entity_scalar(self):
+        # The old feedback said verified quotes could remain literal even though
+        # row prose correctly rejected them. Exercise the usable native route.
+        import sqlite3
+        text='Drug X: reports use on 0 of 14 days; no tablets left.'
+        unbound=E.apply_prose_repair(self.patch(explanation='Note note_A states "'+text+'".'),self.base)
+        with self.assertRaises(B.ComputedProseError) as failure:
+            B.bind_computed_prose(unbound,self.calls,verified_quotes=[{'record_id':'note_A','quote':text}])
+        self.assertIn('numeric quotations also need scalar bindings',str(failure.exception))
+        self.assertNotIn('may remain quoted',str(failure.exception))
+        with sqlite3.connect(':memory:') as db:
+            db.execute('CREATE TABLE source_note(patient_id,record_id,event_date,text)')
+            db.execute('INSERT INTO source_note VALUES(?,?,?,?)',('A','note_A','2030-01-01',text))
+            sql='SELECT patient_id,record_id,event_date,text AS quotation FROM source_note'
+            cursor=db.execute(sql)
+            result={'result_view':'agere_result_2','columns':[x[0]for x in cursor.description],
+                    'rows':[list(r)for r in cursor],'truncated':False}
+        calls=[*self.calls,{'name':'query_sql','input':{'sql':sql},'result':result}]
+        value={'template':'Note note_A states "{quote}".',
+               'bindings':{'quote':{'result_view':'agere_result_2','row':0,'column':'quotation'}}}
+        proposal=self.patch(explanation=value)
+        proposal['repair_draft']['rows'][0]['basis_additions']=[{'result_view':'agere_result_2','row':0}]
+        merged=E.apply_prose_repair(proposal,self.base,calls=calls)
+        B.materialize_table(merged,calls);B.bind_computed_prose(merged,calls)
+        self.assertEqual(merged['table'][0]['explanation'],'Note note_A states "'+text+'".')
+        self.assertEqual(merged['table'][1],self.base['table'][1])
+        self.assertNotEqual(merged.get('verification'),'grounded')
+        result['rows'][0][0]='B'
+        with self.assertRaisesRegex(ValueError,'another entity'):
+            E.apply_prose_repair(proposal,self.base,calls=calls)
+
     def test_noop_patch_is_not_a_new_repair(self):
         with self.assertRaisesRegex(ValueError,'no changed fields'):
             E.apply_prose_repair(self.patch(review=self.base['row_prose']['rows'][0]['fields']['review']),self.base)

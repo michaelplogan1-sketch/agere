@@ -460,7 +460,11 @@ def focused_prose_state(candidate,feedback,calls):
                 'Describe each drug and its own event dates separately; shared lists of drugs and dates must not imply every combination. '
                 'do not replace unfinished interpretation with generic missingness. Proposed review is not completed care or verified eligibility. '
                 'Return only supported changed fields through repair_draft. Preserve native quantities using their existing scalar bindings; '
-                'query complete same-entity nested evidence when an additional binding is needed. All other patient rows, prose and sources remain intact. '
+                'query complete same-entity nested evidence when an additional binding is needed. '
+                'A numerical quotation in row prose also requires an executed scalar: if the extracted findings omit it, '
+                'use query_sql on the original record text with its entity key, record_id and date, select the complete exact quotation, '
+                'then bind that text scalar and include its row in basis_additions. Reading the source_contexts here alone does not create a scalar binding. '
+                'All other patient rows, prose and sources remain intact. '
                 'The complete answer, changed dependencies and global question coverage still require verification; this repair view does not accept them.')
         if receipt.get('pending_compiler'):
             state['compiler_feedback']=receipt['compiler_feedback']

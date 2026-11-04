@@ -1124,7 +1124,15 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
                 'row_prose':{'schema':'source-bound-row-prose/1','keys':keys,'proposal_digest':digest(spec)}}
         except (ValueError,KeyError,IndexError,TypeError) as exc:
             errors.append(str(exc));failures.append({'code':'invalid_row_prose','field_group':'row_prose'})
-    if errors:raise ComputedProseError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal. An attributed exact passage in verified sources may remain quoted. Do not guess a value or reword a failed quantity to avoid its binding.',failures,targets if len(targets)==len(errors)else())
+    if errors:
+        quotation_rule=(' In patient/entity row prose, numeric quotations also need scalar bindings. '
+            'For a reported source observation, use query_sql to select the actual complete quotation from the source text, '
+            'carrying its patient/entity key, record_id and date; bind that quotation as a text scalar and add its executed row to basis. '
+            'Source contexts in review feedback are reading material, not executed scalar cells. '
+            'If the extracted findings omit the quoted value, query the original record text instead of repeating the same findings. '
+            'Do not manufacture numeric constants from the proposed answer.' if row_mode else
+            ' An attributed exact passage in verified sources may remain quoted.')
+        raise ComputedProseError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal.'+quotation_rule+' Do not guess a value or reword a failed quantity to avoid its binding.',failures,targets if len(targets)==len(errors)else())
     answer.update(updates);answer.pop('computed_prose',None)
     if proofs:answer['computed_prose']=proofs
     return proofs
