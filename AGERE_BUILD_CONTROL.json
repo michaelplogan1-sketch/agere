@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T05:21:54.183997+00:00",
+  "updated_at": "2026-11-04T05:42:07.655531+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -433,9 +433,9 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Equivalent ordinary original-question individual composition and practical economics; global coverage undecided. IndependentG5/customer prerequisites retained separately.",
-      "engineering_current_status": "Current retained57patient/114field answer is sourcecurrent and59/60supported. Binding repair verified; one joint dependency and coverage remain uncertain. Ordinary full-request economics remain open.",
-      "next_action": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
-      "latest_current_release_decision": "artifacts/agere-source-fragment-binding-2026-11-04/delivery-receipt.json"
+      "engineering_current_status": "Actual HTTP Continue analysis preserves every table/prose value for57patients/114fields, zero actor callbacks,88.551seconds,four Jev/Perplexity attempts,$0.017496274API-equivalent.59/60source packets and coverage uncertainty remain explicit. Ordinary question reuse and first-pass economics remain open.",
+      "next_action": "G3: complete ordinary question reuse at the existing investigator boundary. Current saved continuation returns57patients/114fields with zero actor calls, but ordinary questions still regenerate prose after native-prefix replay. Inspect current automatic selection and the server-owned recovery checkpoint; connect a reusable draft only as an explicitly unaccepted proposal, with exact question/population/date/source/policy/feedback guards, fresh native execution and full current source/coverage review. Changed meaning or data must withhold the old proposal; unknown support must never become acceptance or authorize work. Qualify actual ordinary entry with the original question and all-attempt/time/cost accounting before activation. Preserve fresh-first-request economics, all ten areas, and independent G5/customer requirements. No source-reading campaign, architecture rewrite, optional model expansion or partial final-answer promotion.",
+      "latest_current_release_decision": "artifacts/agere-joint-review-stop-2026-11-04/delivery-receipt.json"
     },
     {
       "id": "G5",
@@ -513,11 +513,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "source_fragment_binding_scoped_seal",
+    "kind": "joint_dependency_stop_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Generic compiler guidance now enables native extraction of a reported source fragment while retaining original prose. Actual retained draft crossed the compiler boundary after two Claude callbacks, then full current source review and localized corrections retained all57patients/114fields.",
-    "measured_failure_reduction": "The previously blocking unbound source fragment now compiles through the real controller. Full retained draft support improves46/60 to59/60; 57patients/114fields survive, unknowns preserved. Broad repair economics remain unacceptable.",
+    "user_behavior_delta": "Exact checked parent fields and required source children no longer trigger speculative prose rewrites when the joint verdict is unknown. Support remains unknown and the answer partial; no learned partial answer is promoted.",
+    "measured_failure_reduction": "Actual HTTP Continue analysis preserves every table/prose value for57patients/114fields, zero actor callbacks,88.551seconds,four Jev/Perplexity attempts,$0.017496274API-equivalent.59/60source packets and coverage uncertainty remain explicit.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -720,18 +720,27 @@
       "artifacts/agere-source-fragment-binding-2026-11-04/live-v2/receipt.json",
       "artifacts/agere-source-fragment-binding-2026-11-04/accounting-merge.json",
       "artifacts/agere-source-fragment-binding-2026-11-04/app/http-check.json",
-      "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json"
+      "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json",
+      "artifacts/agere-joint-review-stop-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-joint-review-stop-2026-11-04/tests-final.log",
+      "artifacts/agere-joint-review-stop-2026-11-04/tests-initial.log",
+      "artifacts/agere-joint-review-stop-2026-11-04/reason-wording-check.log",
+      "artifacts/agere-joint-review-stop-2026-11-04/offline-current/receipt.json",
+      "artifacts/agere-joint-review-stop-2026-11-04/live-current/receipt.json",
+      "artifacts/agere-joint-review-stop-2026-11-04/accounting-merge.json",
+      "artifacts/agere-joint-review-stop-2026-11-04/app/actual-resume/receipt.json",
+      "artifacts/agere-joint-review-stop-2026-11-04/app/http-check.json"
     ],
-    "remaining_gap": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
-    "next_action": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
+    "remaining_gap": "G3: complete ordinary question reuse at the existing investigator boundary. Current saved continuation returns57patients/114fields with zero actor calls, but ordinary questions still regenerate prose after native-prefix replay. Inspect current automatic selection and the server-owned recovery checkpoint; connect a reusable draft only as an explicitly unaccepted proposal, with exact question/population/date/source/policy/feedback guards, fresh native execution and full current source/coverage review. Changed meaning or data must withhold the old proposal; unknown support must never become acceptance or authorize work. Qualify actual ordinary entry with the original question and all-attempt/time/cost accounting before activation. Preserve fresh-first-request economics, all ten areas, and independent G5/customer requirements. No source-reading campaign, architecture rewrite, optional model expansion or partial final-answer promotion.",
+    "next_action": "G3: complete ordinary question reuse at the existing investigator boundary. Current saved continuation returns57patients/114fields with zero actor calls, but ordinary questions still regenerate prose after native-prefix replay. Inspect current automatic selection and the server-owned recovery checkpoint; connect a reusable draft only as an explicitly unaccepted proposal, with exact question/population/date/source/policy/feedback guards, fresh native execution and full current source/coverage review. Changed meaning or data must withhold the old proposal; unknown support must never become acceptance or authorize work. Qualify actual ordinary entry with the original question and all-attempt/time/cost accounting before activation. Preserve fresh-first-request economics, all ten areas, and independent G5/customer requirements. No source-reading campaign, architecture rewrite, optional model expansion or partial final-answer promotion.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
     "latest_progress": {
-      "at": "2026-11-04T05:21:54.183997+00:00",
-      "receipt": "artifacts/agere-source-fragment-binding-2026-11-04/delivery-receipt.json",
+      "at": "2026-11-04T05:42:07.655531+00:00",
+      "receipt": "artifacts/agere-joint-review-stop-2026-11-04/delivery-receipt.json",
       "full_mvp_acceptance": false
     },
     "results_report": "artifacts/agere-source-review-resume-2026-11-04/current-patient-delivery.json",
@@ -782,19 +791,18 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T05:21:54.183997+00:00",
-    "workflow_change": "Generic compiler guidance now enables native extraction of a reported source fragment while retaining original prose. Actual retained draft crossed the compiler boundary after two Claude callbacks, then full current source review and localized corrections retained all57patients/114fields.",
+    "at": "2026-11-04T05:42:07.655531+00:00",
+    "workflow_change": "Exact checked parent fields and required source children no longer trigger speculative prose rewrites when the joint verdict is unknown. Support remains unknown and the answer partial; no learned partial answer is promoted.",
     "unsealed_work": {
-      "status": "joint_dependency_stop_prepared",
+      "status": "ordinary_guarded_proposal_reuse_next",
       "all_jobs_terminal": true,
       "source_frozen": false,
       "product_edits": false,
-      "evidence": "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json",
-      "remaining": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope."
+      "remaining": "G3: complete ordinary question reuse at the existing investigator boundary. Current saved continuation returns57patients/114fields with zero actor calls, but ordinary questions still regenerate prose after native-prefix replay. Inspect current automatic selection and the server-owned recovery checkpoint; connect a reusable draft only as an explicitly unaccepted proposal, with exact question/population/date/source/policy/feedback guards, fresh native execution and full current source/coverage review. Changed meaning or data must withhold the old proposal; unknown support must never become acceptance or authorize work. Qualify actual ordinary entry with the original question and all-attempt/time/cost accounting before activation. Preserve fresh-first-request economics, all ten areas, and independent G5/customer requirements. No source-reading campaign, architecture rewrite, optional model expansion or partial final-answer promotion."
     },
     "bottling_assessment": {
-      "native_actions_replayed": 26,
-      "current_candidate_status": "quarantined_after_incomplete_ordinary_outcome",
+      "native_actions_reexecuted": 32,
+      "current_candidate_status": "no_new_candidate_from_unresolved_source_answer",
       "final_answer_reuse": false,
       "total_savings_qualified": false
     },
@@ -865,7 +873,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "The prior normal request lost individual prose and had a suspended source dependency. Explicit current-native refresh and saved continuation retain the individual interpretation, change one patient documentary field, and obtain58/58source-support decisions with current source disposition.",
+    "measured_failure_removed": "Actual HTTP Continue analysis preserves every table/prose value for57patients/114fields, zero actor callbacks,88.551seconds,four Jev/Perplexity attempts,$0.017496274API-equivalent.59/60source packets and coverage uncertainty remain explicit.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -3702,15 +3710,20 @@
       "decision": "A non-diagnostic complete-dependency uncertainty is not a located prose defect. The terminal run spent further Claude calls after all29parentfields passed. Correct this existing routing decision before any new ordinary campaign. Do not infer source acceptance from field support.",
       "evidence": "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json",
       "scope_impact": "No new acceptance area, source/model threshold or product scope; preserve all ten areas and G5/customer dependencies."
+    },
+    {
+      "at": "2026-11-04T05:42:07.655531+00:00",
+      "decision": "Connect the proven unfinished-draft continuation to ordinary repeated-question handling only as a proposal after exact native/source checks. Execution-only replay currently discards reviewable prose and regenerates it. No partial-answer acceptance or model-weight promotion.",
+      "evidence": "artifacts/agere-joint-review-stop-2026-11-04/app/actual-resume/receipt.json",
+      "scope_impact": "Existing G3 routing/economics only; ten areas and independent qualification unchanged."
     }
   ],
   "unsealed_work": {
-    "status": "joint_dependency_stop_prepared",
+    "status": "ordinary_guarded_proposal_reuse_next",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": false,
-    "evidence": "artifacts/agere-source-fragment-binding-2026-11-04/joint-obligation/partition-diagnosis.json",
-    "remaining": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope."
+    "remaining": "G3: complete ordinary question reuse at the existing investigator boundary. Current saved continuation returns57patients/114fields with zero actor calls, but ordinary questions still regenerate prose after native-prefix replay. Inspect current automatic selection and the server-owned recovery checkpoint; connect a reusable draft only as an explicitly unaccepted proposal, with exact question/population/date/source/policy/feedback guards, fresh native execution and full current source/coverage review. Changed meaning or data must withhold the old proposal; unknown support must never become acceptance or authorize work. Qualify actual ordinary entry with the original question and all-attempt/time/cost accounting before activation. Preserve fresh-first-request economics, all ten areas, and independent G5/customer requirements. No source-reading campaign, architecture rewrite, optional model expansion or partial final-answer promotion."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3739,7 +3752,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: stop speculative prose rewrites when every exact field judgment is supported, all required source-child checks are supported, but the complete dependency vote remains unknown. Reconstruct the retained partitioned packet and validate its field/child bindings; preserve unknown support and block acceptance. Prove the controller returns the retained57patient/114field answer without another actor call on this exact state, while real field faults, missing source/dependency checks and known omissions still request repair. Do not loosen thresholds or promote the unresolved answer. Then verify current saved-context behavior and resume ordinary routing/economics closure within the existing ten-area scope.",
+  "next_action": "G3: complete ordinary question reuse at the existing investigator boundary. Current saved continuation returns57patients/114fields with zero actor calls, but ordinary questions still regenerate prose after native-prefix replay. Inspect current automatic selection and the server-owned recovery checkpoint; connect a reusable draft only as an explicitly unaccepted proposal, with exact question/population/date/source/policy/feedback guards, fresh native execution and full current source/coverage review. Changed meaning or data must withhold the old proposal; unknown support must never become acceptance or authorize work. Qualify actual ordinary entry with the original question and all-attempt/time/cost accounting before activation. Preserve fresh-first-request economics, all ten areas, and independent G5/customer requirements. No source-reading campaign, architecture rewrite, optional model expansion or partial final-answer promotion.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3828,6 +3841,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": null,
-  "owned_server_session": null
+  "owned_server_pid": 77041,
+  "owned_server_session": 68731
 }
