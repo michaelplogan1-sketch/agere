@@ -560,8 +560,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             result.update(answer=candidate,final_decision_reused=True)
             return result
         if last_complete_candidate is not None:
+            limitations=list(last_complete_candidate.get('limitations')or[])
+            feedback=str(assessment.get('feedback')or assessment.get('reason'))
+            if feedback not in limitations:limitations.append(feedback)
             result['answer']={**last_complete_candidate,'status':'partial','verification':'unverified',
-                'limitations':[*(last_complete_candidate.get('limitations')or[]),str(assessment.get('feedback')or assessment.get('reason'))]}
+                'limitations':limitations}
             if assessment.get('retry_disposition')=='retain_partial_until_new_evidence':
                 result['review_stopped']=assessment.get('review_stop_reason')or'unresolved_coverage'
                 return result
@@ -802,8 +805,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         # failure/evidence state justifies further investigation.
                         key = json.dumps([assessment.get('status'), assessment.get('progress_state',feedback), evidence], sort_keys=True, default=str)
                         retained=last_complete_candidate if assessment.get('repair_kind')=='deterministic_compiler'and last_complete_candidate is not None else candidate
+                        limitations=list(retained.get('limitations')or[])if isinstance(retained,dict)else[]
+                        if str(feedback) not in limitations:limitations.append(str(feedback))
                         result['answer'] = {**retained, 'status': 'partial', 'verification': 'unverified',
-                                            'limitations': [*(retained.get('limitations') or []), str(feedback)]} if isinstance(retained, dict) else None
+                                            'limitations': limitations} if isinstance(retained, dict) else None
                         if retained is not candidate:
                             result['unaccepted_draft']={'draft_digest':digest(candidate),'reason':'compiler_repair_required',
                                 'returned_answer':'last_structurally_complete_candidate','source_accepted':False}

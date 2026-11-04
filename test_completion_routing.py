@@ -103,6 +103,23 @@ class CompletionRouting(unittest.TestCase):
                 parent['text']=json.dumps(compact_json(state));review['packet_digest']=digest(parent['text'])
             with self.subTest(kind=kind):self.assertEqual(B.joint_dependency_wait(packets,results),[])
 
+    def test_repeated_current_review_does_not_grow_the_same_limitation(self):
+        packets,results=joint_fixture()
+        support={**self.support,'packets':results,'all_dependencies_checked':True,
+            'joint_verification_wait':B.joint_dependency_wait(packets,results),'claim_feedback':[]}
+        assessment,_,_=self.review('answers_fully',decided=None,support=support)
+        reviewed=[]
+        def review(answer,calls):
+            reviewed.append(copy.deepcopy(answer));return copy.deepcopy(assessment)
+        forbidden=lambda *a,**k:self.fail('Unchanged review uncertainty must not invoke the actor')
+        first=S.tool_loop('Explain each patient.',[],[],forbidden,send=forbidden,model=M.HAIKU,
+            max_tools=None,initial_calls=self.calls,initial_answer=self.answer,review=review)
+        second=S.tool_loop('Explain each patient.',[],[],forbidden,send=forbidden,model=M.HAIKU,
+            max_tools=None,initial_calls=self.calls,initial_answer=first['answer'],review=review)
+        self.assertEqual(len(reviewed),2);self.assertEqual(first['answer'],second['answer'])
+        self.assertEqual(second['answer']['limitations'].count(assessment['feedback']),1)
+        self.assertEqual(second['review_stopped'],'unresolved_source_support')
+
     def test_known_incomplete_draft_does_not_dispatch_patient_support(self):
         for label in ('answers_partially','answers_a_different_question'):
             with self.subTest(label=label):
