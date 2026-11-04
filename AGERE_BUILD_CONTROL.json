@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T22:10:02.499701+00:00",
+  "updated_at": "2026-11-04T22:15:18.189214+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -478,7 +478,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "First-generation986.028second/$8.909197764API-equivalent reference remains; initial-generation benefit from earlier combined repair is unmeasured. Current matched backstop replay79.4seconds excludes fullHTTP delivery; first-answer latency/cost still needs improvement. Coverage remains undecided/partial. IndependentG5 clinical/model and customer deployment dependencies remain. Known-good ff949737 archive retained; no new current-archive restore claim.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: stale native-table composition failure is corrected in the candidate. Retained workflow proof changes51false unfinished-patient targets to1compiler-failed field, preserving57patients/114fields/35native receipts and all50784attempts;162focused checks pass,0newproviders. Prior ordinary run remains failed861.261seconds/196attempts/$7.917506602. Next continue only the saved unfinished draft through guarded native revalidation and the exact one-field compiler repair; retain source-child contradiction and undecided coverage for full current review. The old context is correctly policy-invalidated; any new recovery context must preserve original evidence and remain partial/unverified, with every native receipt revalidated before actor dispatch. No full-question rerun. App8890 remains20b58db8; candidate is not yet activated or sealed. All ten acceptance areas, current release/package and independentG5/customer dependencies remain.",
+      "next_action": "G3: changed-source continuation is launching on97a31b36 through existing continue_from_artifact, using current saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation/receipt.json. Native-only diagnosis proved action10 excludes exactly one disputed beta-blocker assertion forSYN-7ACE370F-5C6 and adds its limitation; other56patient rows are exact. The strict prior test runner stopped the intended changed-evidence branch before any paid call. New runner preserves the guard: old draft withheld, first actor receives current10native results, no owner edits/acceptance. Complete remaining existing workflow against corrected evidence; retain all50784attempts and prior failed861s/$7.9175 run. No fresh question or unchanged provider-vote retry. On terminal inspect complete57patient/114field result, source/coverage review and all-attempt accounting before current release/package. All ten areas and independentG5/customer dependencies remain.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -607,9 +607,9 @@
       "artifacts/agere-replay-validation-dedup-2026-11-04/delivery-receipt.json"
     ],
     "remaining_gap": "First-answer candidate run failed local persistence and did not deliver a reviewed complete result. Mixed protocol draft retention is now offline verified but not activated. Current first-answer completion/performance, ten-area candidate applicability and affected package checks remain; independent G5/customer dependencies unchanged.",
-    "next_action": "G3: stale native-table composition failure is corrected in the candidate. Retained workflow proof changes51false unfinished-patient targets to1compiler-failed field, preserving57patients/114fields/35native receipts and all50784attempts;162focused checks pass,0newproviders. Prior ordinary run remains failed861.261seconds/196attempts/$7.917506602. Next continue only the saved unfinished draft through guarded native revalidation and the exact one-field compiler repair; retain source-child contradiction and undecided coverage for full current review. The old context is correctly policy-invalidated; any new recovery context must preserve original evidence and remain partial/unverified, with every native receipt revalidated before actor dispatch. No full-question rerun. App8890 remains20b58db8; candidate is not yet activated or sealed. All ten acceptance areas, current release/package and independentG5/customer dependencies remain.",
+    "next_action": "G3: changed-source continuation is launching on97a31b36 through existing continue_from_artifact, using current saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation/receipt.json. Native-only diagnosis proved action10 excludes exactly one disputed beta-blocker assertion forSYN-7ACE370F-5C6 and adds its limitation; other56patient rows are exact. The strict prior test runner stopped the intended changed-evidence branch before any paid call. New runner preserves the guard: old draft withheld, first actor receives current10native results, no owner edits/acceptance. Complete remaining existing workflow against corrected evidence; retain all50784attempts and prior failed861s/$7.9175 run. No fresh question or unchanged provider-vote retry. On terminal inspect complete57patient/114field result, source/coverage review and all-attempt accounting before current release/package. All ten areas and independentG5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All jobs terminal; source unfrozen. One retained compiler repair is prepared next.",
+    "coordination": "Changed-source continuation; source frozen.",
     "remaining_blockers": [
       "Initial-generation end-to-end improvement from the earlier composition check is unmeasured. The current backstop reuse/review alone still took104.2seconds; the earlier full-request references remain986.028seconds/$8.909197764 and155.723seconds/$0.015078556 warm reuse. Coverage remains undecided/partial. Independent G5 model/clinical evidence and customer deployment dependencies remain. Known-good archive ff949737 is preserved; no current-archive restore is claimed."
     ],
@@ -665,13 +665,13 @@
     "at": "2026-11-04T20:26:59.362709+00:00",
     "workflow_change": "An explicitly unfinished patient explanation can now be reported together with quantity-binding errors before another frontier retry. Uncertain/unavailable composition judgments retain the compiler repair, and full source/coverage review remains required.",
     "unsealed_work": {
-      "status": "offline_proven_candidate",
-      "all_jobs_terminal": true,
-      "source_frozen": false,
+      "status": "changed_source_continuation_running",
+      "all_jobs_terminal": false,
+      "source_frozen": true,
       "product_edits": true,
-      "candidate_product": "uncommitted_stale_composition_fix",
-      "receipt": "artifacts/agere-protocol-preservation-2026-11-04/stale-composition-proof.json",
-      "next_action": "G3: stale native-table composition failure is corrected in the candidate. Retained workflow proof changes51false unfinished-patient targets to1compiler-failed field, preserving57patients/114fields/35native receipts and all50784attempts;162focused checks pass,0newproviders. Prior ordinary run remains failed861.261seconds/196attempts/$7.917506602. Next continue only the saved unfinished draft through guarded native revalidation and the exact one-field compiler repair; retain source-child contradiction and undecided coverage for full current review. The old context is correctly policy-invalidated; any new recovery context must preserve original evidence and remain partial/unverified, with every native receipt revalidated before actor dispatch. No full-question rerun. App8890 remains20b58db8; candidate is not yet activated or sealed. All ten acceptance areas, current release/package and independentG5/customer dependencies remain."
+      "candidate_product": "97a31b36",
+      "receipt": "artifacts/agere-protocol-preservation-2026-11-04/native-recovery-diagnosis/receipt.json",
+      "next_action": "G3: changed-source continuation is launching on97a31b36 through existing continue_from_artifact, using current saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation/receipt.json. Native-only diagnosis proved action10 excludes exactly one disputed beta-blocker assertion forSYN-7ACE370F-5C6 and adds its limitation; other56patient rows are exact. The strict prior test runner stopped the intended changed-evidence branch before any paid call. New runner preserves the guard: old draft withheld, first actor receives current10native results, no owner edits/acceptance. Complete remaining existing workflow against corrected evidence; retain all50784attempts and prior failed861s/$7.9175 run. No fresh question or unchanged provider-vote retry. On terminal inspect complete57patient/114field result, source/coverage review and all-attempt accounting before current release/package. All ten areas and independentG5/customer dependencies remain."
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -3839,13 +3839,13 @@
     }
   ],
   "unsealed_work": {
-    "status": "offline_proven_candidate",
-    "all_jobs_terminal": true,
-    "source_frozen": false,
+    "status": "changed_source_continuation_running",
+    "all_jobs_terminal": false,
+    "source_frozen": true,
     "product_edits": true,
-    "candidate_product": "uncommitted_stale_composition_fix",
-    "receipt": "artifacts/agere-protocol-preservation-2026-11-04/stale-composition-proof.json",
-    "next_action": "G3: stale native-table composition failure is corrected in the candidate. Retained workflow proof changes51false unfinished-patient targets to1compiler-failed field, preserving57patients/114fields/35native receipts and all50784attempts;162focused checks pass,0newproviders. Prior ordinary run remains failed861.261seconds/196attempts/$7.917506602. Next continue only the saved unfinished draft through guarded native revalidation and the exact one-field compiler repair; retain source-child contradiction and undecided coverage for full current review. The old context is correctly policy-invalidated; any new recovery context must preserve original evidence and remain partial/unverified, with every native receipt revalidated before actor dispatch. No full-question rerun. App8890 remains20b58db8; candidate is not yet activated or sealed. All ten acceptance areas, current release/package and independentG5/customer dependencies remain."
+    "candidate_product": "97a31b36",
+    "receipt": "artifacts/agere-protocol-preservation-2026-11-04/native-recovery-diagnosis/receipt.json",
+    "next_action": "G3: changed-source continuation is launching on97a31b36 through existing continue_from_artifact, using current saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation/receipt.json. Native-only diagnosis proved action10 excludes exactly one disputed beta-blocker assertion forSYN-7ACE370F-5C6 and adds its limitation; other56patient rows are exact. The strict prior test runner stopped the intended changed-evidence branch before any paid call. New runner preserves the guard: old draft withheld, first actor receives current10native results, no owner edits/acceptance. Complete remaining existing workflow against corrected evidence; retain all50784attempts and prior failed861s/$7.9175 run. No fresh question or unchanged provider-vote retry. On terminal inspect complete57patient/114field result, source/coverage review and all-attempt accounting before current release/package. All ten areas and independentG5/customer dependencies remain."
   },
   "current_visual_request": {
     "status": "completed",
@@ -3870,8 +3870,15 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: stale native-table composition failure is corrected in the candidate. Retained workflow proof changes51false unfinished-patient targets to1compiler-failed field, preserving57patients/114fields/35native receipts and all50784attempts;162focused checks pass,0newproviders. Prior ordinary run remains failed861.261seconds/196attempts/$7.917506602. Next continue only the saved unfinished draft through guarded native revalidation and the exact one-field compiler repair; retain source-child contradiction and undecided coverage for full current review. The old context is correctly policy-invalidated; any new recovery context must preserve original evidence and remain partial/unverified, with every native receipt revalidated before actor dispatch. No full-question rerun. App8890 remains20b58db8; candidate is not yet activated or sealed. All ten acceptance areas, current release/package and independentG5/customer dependencies remain.",
+  "active_jobs": [
+    {
+      "kind": "changed_source_continuation",
+      "status": "launching",
+      "runner": "artifacts/agere-protocol-preservation-2026-11-04/continue_changed_source.py",
+      "receipt": "artifacts/agere-protocol-preservation-2026-11-04/native-recovery-diagnosis/receipt.json"
+    }
+  ],
+  "next_action": "G3: changed-source continuation is launching on97a31b36 through existing continue_from_artifact, using current saved partialANS-f9f6c6033755293077c4505c. Source/product frozen; monitor only artifacts/agere-protocol-preservation-2026-11-04/changed-source-continuation/receipt.json. Native-only diagnosis proved action10 excludes exactly one disputed beta-blocker assertion forSYN-7ACE370F-5C6 and adds its limitation; other56patient rows are exact. The strict prior test runner stopped the intended changed-evidence branch before any paid call. New runner preserves the guard: old draft withheld, first actor receives current10native results, no owner edits/acceptance. Complete remaining existing workflow against corrected evidence; retain all50784attempts and prior failed861s/$7.9175 run. No fresh question or unchanged provider-vote retry. On terminal inspect complete57patient/114field result, source/coverage review and all-attempt accounting before current release/package. All ten areas and independentG5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
