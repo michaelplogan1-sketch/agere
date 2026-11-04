@@ -246,11 +246,17 @@ has already declined this question, so it is yours to answer completely and corr
   supply the substance of an unread finding. Explain those observations; do not replace that work with an instruction to read them.
   Use {{"keys":["patient_id"],"rows":[{{"key":{{"patient_id":"the exact ID"}},
     "basis":[{{"result_view":"agere_result_9","row":0}}],
-    "fields":{{"patient_explanation":"Source-bound interpretation; current responsibility remains unknown.",
+    "fields":{{"patient_explanation":{{"template":"Recorded events: {{events}}. Current responsibility remains unknown.",
+      "bindings":{{"events":{{"result_view":"agere_result_9","row":0,"column":"recorded_events"}}}}}},
       "proposed_review_steps":"A specific proposed review tied to this patient's retained evidence."}}}}]}}.
+  This example illustrates the format only: use actual executed view/column names, entity keys and row positions.
   Supply exactly one entry for every native row, with the same new field names. Keys may name other entity grains too.
   Every basis must be a complete executed row with the exact same key values. For numbers use the scalar template/bindings
   below; each bound row must also be in that entity's basis. Bind received values rather than copying them into text.
+  Build these bindings in the FIRST draft, including ages, strengths, measurements, counts and number words inside
+  explanations or proposed actions. A source citation alone does not bind a numerical value. If a required scalar is
+  embedded in a finding, query it before composing: carry the entity key, record_id, source date and full source quotation
+  with the extracted value. Add that executed row to this entity's basis. Do not derive the value from your draft text.
   Keep original findings and dates in the native table. Prose adds interpretation, not new observations or accepted facts;
   it undergoes the existing source-support review. Missing evidence and proposed actions remain explicit.
 - For a table answer, numeric claims in headline and facts must also be copied by code, not transcribed into prose.
@@ -278,8 +284,12 @@ has already declined this question, so it is yours to answer completely and corr
   number into SELECT (even with a literal patient ID) does not establish a source. Compute definition counts from their
   registered rows. Spelling a numeral as a word does not resolve the binding error.
   Keep dates and patient/record identifiers literal. A bound text column may supply an exact source observation.
-  An exact attributed quotation with its record ID in the prose and a matching sources entry may keep its observed
-  measurements verbatim: code checks that passage in its own record. Do not turn that quote into a population total.
+  In patient/entity row prose, a numeric quotation can stay literal only when the complete exact quote is in a typed
+  documentary assertion in that entity's executed basis, and both record_id and source date are attributed in the same
+  field. A matching sources entry alone is insufficient for row prose. Otherwise bind the full source quotation as a
+  text scalar, or its extracted reported value as a scalar, with the same entity/source evidence described above.
+  Outside row prose, a verified exact quotation attributed to its record ID may keep observed measurements verbatim.
+  Do not turn a quoted observation into a population total or a current clinical fact.
   Non-numeric prose remains a string. Clinical meaning still requires review; bindings do not establish appropriateness.
 Return ONLY one JSON object, no markdown:
 {{"status":"answered|partial|unsupported","answer_type":"count|patient_set|value|table|note|unsupported",

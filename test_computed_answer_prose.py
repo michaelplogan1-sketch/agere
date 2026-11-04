@@ -7,6 +7,28 @@ from clinical_core.agere.clinical import backstop_agent as B,system_one_gate as 
 
 
 class ComputedProse(unittest.TestCase):
+    def test_initial_row_prose_example_compiles_and_cannot_borrow_another_entitys_scalar(self):
+        import json
+        rules=B.RULES.format(tool_quota='No fixed quota.')
+        spec,_=json.JSONDecoder().raw_decode(rules[rules.index('{"keys":["patient_id"]'):])
+        calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id,recorded_events FROM observations'},
+                'result':{'result_view':'agere_result_9','columns':['patient_id','recorded_events'],
+                          'rows':[['the exact ID',2]],'truncated':False}},
+               {'name':'query_sql','input':{'sql':'SELECT patient_id,recorded_events FROM other_observations'},
+                'result':{'result_view':'agere_result_10','columns':['patient_id','recorded_events'],
+                          'rows':[['another entity',2]],'truncated':False}}]
+        def candidate():return {'status':'partial','table_from_tool':'agere_result_9','row_prose':copy.deepcopy(spec)}
+        a=candidate();B.materialize_table(a,calls);B.bind_computed_prose(a,calls)
+        self.assertEqual(a['table'][0]['recorded_events'],2)
+        self.assertEqual(a['table'][0]['patient_explanation'],'Recorded events: 2. Current responsibility remains unknown.')
+        for change in ('foreign_binding','foreign_basis','unbound_text'):
+            a=candidate();row=a['row_prose']['rows'][0]
+            if change=='foreign_binding':row['fields']['patient_explanation']['bindings']['events']['result_view']='agere_result_10'
+            elif change=='foreign_basis':row['basis'].append({'result_view':'agere_result_10','row':0})
+            else:row['fields']['patient_explanation']='Recorded events: two. Current responsibility remains unknown.'
+            with self.subTest(change=change),self.assertRaises(B.ComputedProseError):
+                B.materialize_table(a,calls);B.bind_computed_prose(a,calls)
+
     def test_short_date_pairs_are_temporal_anchors_but_invalid_dates_and_ratios_still_bind(self):
         for text in ('Observations on 2026-09-03/17.','Observations on 2024-02-01/29.'):
             a={'table_binding':{'result_view':'table'},'headline':text}
