@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T01:53:14.296937+00:00",
+  "updated_at": "2026-11-04T02:48:28.809749+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -410,6 +410,10 @@
         {
           "path": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json",
           "sha256": "d6ed2e788c0324b24cbc62c8eee4636fde944695fe6bdad8620b97230eb25629"
+        },
+        {
+          "path": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json",
+          "sha256": "92c0b435b445e745f8a8b632b5ef2d47e017ec07a3be8264b940d211a9c267f7"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -497,11 +501,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "mixed_dependency_repair_sealed",
+    "kind": "retained_investigation_recovery_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Independent source-bound prose repairs remain available when native fields are uncertain; saved investigations retain stop reason and rejected-draft metadata.",
-    "measured_failure_reduction": "Exact unchanged retained proposals clear3compilerfailures with0providers/hashrebases. Existing full review improves52/58 to56/58supported with20Jev/Perplexitycalls,$0.084118994API-equivalent,61.801s,0Claude. All57patients/nativevalues and108untouchedprosefields retained; all3nativeuncertainties nowsettled. Fourprose judgments/twopatients andcoverageundecided.",
+    "user_behavior_delta": "Saved unfinished investigations reexecute exact native evidence and resume the retained draft. Focused repair rejects replacement answers before source review; complete prior output and its own source review survive rejected edits.",
+    "measured_failure_reduction": "28real native receipts revalidated;57patients/114prosefields retained. Actual replacement responses now rejected before source-review fanout. Saved API/browser and source/changed-context guards verified. Local clinical edits remain unaccepted.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -626,16 +630,45 @@
       "artifacts/agere-clinical-prefix-2026-11-03/repair-app/http-check.json",
       "artifacts/agere-clinical-prefix-2026-11-03/repair-app/current-repaired-context.json",
       "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json",
-      "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json"
+      "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/offline/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/offline/mismatch-diagnosis.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/refreshed-native/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/offline-v2/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/product-resume/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/connected-tests.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/connected-tests-v2.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/replacement-guard.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/replacement-guard-v2.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/replacement-guard-v3/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/focused-boundary-tests.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/focused-boundary-tests-v2.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/protocol-regressions.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/compiler-decline-regressions.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/final-targeted-tests.log",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/live-followthrough/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/live-followthrough-network/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/live-scoped-repair/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/live-binding-completion/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/accounting-merge.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/app/http-check.json",
+      "artifacts/agere-retained-draft-recovery-2026-11-04/app/browser-verification.json"
     ],
-    "remaining_gap": "Four prose judgments/two patients and global coverage undecided; full-request regeneration/economics, current ten-area engineering applicability, and independentG5/customer dependencies remain.",
-    "next_action": "G3: implement and qualify retention of the unfinished draft at the existing guarded investigation/recovery boundary so repeated work does not regenerate114prosefields after native replay. Audit completed: all28currentactions have real callback origins; action27 reads originalreview6 as tagged operational feedback and is outside answerdependencies, while quotequery28 is required. Preserve exact native reexecution, original question/source/meaning guards, full current review, and partial/unverified status; recovery is not accepted-answer or learned-path promotion. Do not force-select the current56/58source-supported result or relax source thresholds. Prove changed-source/field/native-result rejection offline before any affected live confirmation. No repeated full campaign. Then currentten-area release applicability; independentG5/customer dependencies remain separate.",
+    "remaining_gap": "Current57patient answer has114prose fields but remains partial/unverified. Four proposed local edits still need valid numeric bindings; current54/58source support and global coverage undecided. Full-request economics/currentten-area release applicability and independentG5/customer dependencies remain.",
+    "next_action": "G3: finish the remaining source-to-scalar binding step for the retained four-field/two-patient repair using existing native queries, typed source evidence and compiler bindings. Two scoped live attempts retained the full answer but could not compile proposed numeric prose (last pending literals0/14 in SYN-3AB806B5-AA0). Reassess that exact source-to-binding affordance offline before further provider work; reuse every retained proposal and attempt, do not regenerate114fields or repeat the full clinical campaign. Current saved answer remains54/58source-supported, partial/unverified with summary plus3patient packets and global coverage unsettled. Do not force source acceptance or promote the trace. Then assess current applicability of all ten finite acceptance areas; independentG5 and customer deployment remain separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
-    "coordination": "Scoped repair sealed on76e953bbf00bac52cad657ed42b898c2fad245c1; owned8890PID66710/session12530. All experiment jobs terminal. Current partial contextANS-d687f06d7e1369ade9b43953.",
+    "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
-    "latest_progress": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json",
+    "latest_progress": {
+      "at": "2026-11-04T02:48:28.809749+00:00",
+      "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json",
+      "product_commit": "15b201a2e7bbdc5b4d4ebd0002e6f4afb8961b53",
+      "context_id": "ANS-a0364c7c9a1f74ec58f279d2"
+    },
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -677,14 +710,14 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T01:53:14.296937+00:00",
-    "workflow_change": "Large unresolved patient checks now diagnose every final field in one shared evidence state. Complete deciding field judgments may compose only with exact manifest/value/patient/source bindings; global question review and explicit disagreement remain separate. The actual saved57patient result preserves all values and displays57/61supported dependencies, up from55/61.",
+    "at": "2026-11-04T02:48:28.809749+00:00",
+    "workflow_change": "Saved unfinished investigations reexecute exact native evidence and resume the retained draft. Focused repair rejects replacement answers before source review; complete prior output and its own source review survive rejected edits.",
     "unsealed_work": {
-      "status": "sealed_mixed_dependency_repair",
+      "status": "none",
       "all_jobs_terminal": true,
       "source_frozen": false,
       "product_edits": false,
-      "receipt": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json"
+      "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json"
     },
     "bottling_assessment": {
       "candidate": "d9f9ae8cd0bcdd7b32fd874203f578ee6db1e41751e364c2561cc45ebf297570",
@@ -735,13 +768,10 @@
       "reason": "Mike reaffirmed continued work on November3. Existing continuation reactivated through the automation tool; configuration read-back confirms ACTIVE. Routine notifications remain muted."
     },
     "owned_recovery_run": {
-      "kind": "actual_installed_local_operations",
-      "status": "passed",
-      "receipt": "/Users/mikel/clinical-insights-local/artifacts/wollstonecraft-engineering-release-a32a2c5-2026-11-02/run-receipt.json",
-      "finished_at": "2026-11-03T00:40:26.145882+00:00",
-      "source_frozen": false
+      "status": "terminal",
+      "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
-    "provider_dependency": "No subscription limit. Provider requires network escalation from restricted sandbox; actual outside-sandbox request returned. Old failed/pending attempts remain preserved.",
+    "provider_dependency": null,
     "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
@@ -3518,14 +3548,35 @@
       "decision": "Ordinary prefix reuse did not preserve unfinished prose. Inspecting actual28calls identifies a historical feedback query outside answer dependencies and a required final quote query. Address resumable draft state within the existing boundary; do not confuse recovery with model/source qualification or force-select the failed prefix.",
       "evidence": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
       "scope_impact": "Existing G3 cost/completion requirement; ten-area scope unchanged."
+    },
+    {
+      "at": "2026-11-04T02:03:55.906978+00:00",
+      "gate": "G3",
+      "decision": "Do not weaken native equality after the actual recovery guard rejected action10. One beta-blocker dose-reason observation forSYN-7ACE370F-5C6 is now disputed by existing source-review state. Refresh native results and recheck affected claims before creating a new current checkpoint; prior source/attempt records stay intact.",
+      "evidence": "artifacts/agere-retained-draft-recovery-2026-11-04/offline/decoded-native-mismatch.json",
+      "scope_impact": "Existing source-change invalidation and localized recovery; no charter expansion or clinical promotion."
+    },
+    {
+      "at": "2026-11-04T02:28:00Z",
+      "gate": "G3",
+      "reason": "Actual saved recovery worked, but actor replacement bypassed the focused repair contract and triggered unrelated verification. Stopped run223.946s/110attempts,$0.74031368knownAPI-equivalent/2unpriced; preserved allsource andattempts. Earlier sandbox run63.539s/7unpriced preserved, includingonependingClaude outcome.",
+      "correction": "Enforce patch-only response at the existing focused repair boundary. Replayed exacttwo offendingresponses withoutedits: no replacement reachedsource review, all57/114retained,0provider.129focused tests pass. Currentlive confirmation only; no fullcampaign orthresholdchange. SixterminalDNSfailures explicitly retried with immutableauthorizations; pendingattemptnotretried.",
+      "scope_impact": "No new acceptance area or clinical promotion. Original complete workflow, local repair andfullcurrentreview remain required."
+    },
+    {
+      "at": "2026-11-04T02:48:28.809749+00:00",
+      "gate": "G3",
+      "decision": "Seal recovery and repair-boundary engineering only; retain the original clinical uncertainty and unfinished numeric repair. No readiness claim.",
+      "evidence": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json",
+      "next_action": "G3: finish the remaining source-to-scalar binding step for the retained four-field/two-patient repair using existing native queries, typed source evidence and compiler bindings. Two scoped live attempts retained the full answer but could not compile proposed numeric prose (last pending literals0/14 in SYN-3AB806B5-AA0). Reassess that exact source-to-binding affordance offline before further provider work; reuse every retained proposal and attempt, do not regenerate114fields or repeat the full clinical campaign. Current saved answer remains54/58source-supported, partial/unverified with summary plus3patient packets and global coverage unsettled. Do not force source acceptance or promote the trace. Then assess current applicability of all ten finite acceptance areas; independentG5 and customer deployment remain separate."
     }
   ],
   "unsealed_work": {
-    "status": "sealed_mixed_dependency_repair",
+    "status": "none",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": false,
-    "receipt": "artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json"
+    "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3554,7 +3605,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: implement and qualify retention of the unfinished draft at the existing guarded investigation/recovery boundary so repeated work does not regenerate114prosefields after native replay. Audit completed: all28currentactions have real callback origins; action27 reads originalreview6 as tagged operational feedback and is outside answerdependencies, while quotequery28 is required. Preserve exact native reexecution, original question/source/meaning guards, full current review, and partial/unverified status; recovery is not accepted-answer or learned-path promotion. Do not force-select the current56/58source-supported result or relax source thresholds. Prove changed-source/field/native-result rejection offline before any affected live confirmation. No repeated full campaign. Then currentten-area release applicability; independentG5/customer dependencies remain separate.",
+  "next_action": "G3: finish the remaining source-to-scalar binding step for the retained four-field/two-patient repair using existing native queries, typed source evidence and compiler bindings. Two scoped live attempts retained the full answer but could not compile proposed numeric prose (last pending literals0/14 in SYN-3AB806B5-AA0). Reassess that exact source-to-binding affordance offline before further provider work; reuse every retained proposal and attempt, do not regenerate114fields or repeat the full clinical campaign. Current saved answer remains54/58source-supported, partial/unverified with summary plus3patient packets and global coverage unsettled. Do not force source acceptance or promote the trace. Then assess current applicability of all ten finite acceptance areas; independentG5 and customer deployment remain separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3563,7 +3614,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T01:53:14.296937+00:00",
+  "latest_checkpoint": "2026-11-04T02:48:28.809749+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3643,6 +3694,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 66710,
-  "owned_server_session": 12530
+  "owned_server_pid": 68044,
+  "owned_server_session": 84966
 }

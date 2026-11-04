@@ -1,5 +1,25 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: saved recovery and local repair boundary
+
+Saved unfinished investigations reexecute exact native evidence and resume the retained draft. Focused repair rejects replacement answers before source review; complete prior output and its own source review survive rejected edits. Product `15b201a` is active on the owned local candidate.
+
+The actual saved workflow reexecuted28native actions and retained57patients/114prose fields. Exact offending replacement responses were replayed offline: neither entered source review after the fix. Failed numeric edits preserve the last complete draft and its applicable source review. The browser shows the complete original question,57patients and Continue analysis; changed-question and stale-context requests fail before provider dispatch. No PDF was generated.
+
+Two scoped live follow-through attempts preserved the full output but did not complete the proposed numeric bindings. The last used5Claude subscription calls,2Jev and2Perplexity in173.162seconds, $0.834415138API-equivalent; every actor request remained scoped to4fields. This is not an accepted-answer savings comparison. The source result remains54/58supported with summary/threepatient packets and global coverage unsettled.
+
+All attempts in this increment:136new attempts,$1.823221284known API-equivalent plus9unpriced attempts. This includes stopped sandbox DNS work, a stopped broad replacement experiment, and the failed artifact-only membership postcheck. All original attempts and partial outputs are preserved. Shared accounting was merged append-only:156rows include136current attempts and20preceding-delivery attempts;48,688priorrows remain exact.
+
+129focused checks and83protocol checks passed before the final two small corrections; affected follow-up suites passed89and102checks respectively (overlapping, not additive). A current cache-only native/full-review proof and saved-context/API/browser checks passed. The two failed offline guard harnesses used a pre-review draft with a post-review digest; the corrected proof uses the exact retained post-review draft, with no hash rebasing.
+
+**Remaining:** Current57patient answer has114prose fields but remains partial/unverified. Four proposed local edits still need valid numeric bindings; current54/58source support and global coverage undecided. Full-request economics/currentten-area release applicability and independentG5/customer dependencies remain.
+
+**Next:** G3: finish the remaining source-to-scalar binding step for the retained four-field/two-patient repair using existing native queries, typed source evidence and compiler bindings. Two scoped live attempts retained the full answer but could not compile proposed numeric prose (last pending literals0/14 in SYN-3AB806B5-AA0). Reassess that exact source-to-binding affordance offline before further provider work; reuse every retained proposal and attempt, do not regenerate114fields or repeat the full clinical campaign. Current saved answer remains54/58source-supported, partial/unverified with summary plus3patient packets and global coverage unsettled. Do not force source acceptance or promote the trace. Then assess current applicability of all ten finite acceptance areas; independentG5 and customer deployment remain separate.
+
+Receipt: `artifacts/agere-retained-draft-recovery-2026-11-04/delivery-receipt.json`. Earlier sections are historical evidence.
+
+---
+
 The latest scoped repair is live on the owned local candidate as `76e953b`. It preserves mixed native/prose repair scope and terminal investigation metadata. The current57patient result remains partial/unverified:56/58source packets supported,4prose judgments and global coverage undecided. Full-request economics and complete MVP acceptance remain open. Earlier sections retain historical experiments; the newest delivery is `artifacts/agere-clinical-prefix-2026-11-03/delivery-receipt.json`.
 
 ## What the comparison showed
