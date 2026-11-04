@@ -142,9 +142,9 @@ def decision_output_schema(body):
     variants=[obj({'tool_use':calls}),obj({'tool_uses':{'type':'array','items':calls,'minItems':1}})]
     if (body.get('tool_choice')or{}).get('type','auto')not in ('tool','any'):
         variants.insert(0,final)
-    # Claude's StructuredOutput tool requires the object type at its schema
-    # root even when each alternative independently declares that type.
-    return {'type':'object','anyOf':variants}
+    # StructuredOutput requires a root object and rejects a top-level union.
+    # Nest the decision, then remove only this transport-owned wrapper below.
+    return obj({'decision':{'anyOf':variants}})
 
 
 INVOKE = re.compile(r'<invoke\s+name="([^"]+)"\s*>(.*?)(?:</invoke>|$)', re.S)
@@ -395,6 +395,9 @@ def respond(body, *, timeout=None):
     try:
         schema=decision_output_schema(body)
         schema_kw={'json_schema':schema} if schema is not None else {}
+        wrapped_decision=bool(schema is not None and allowed_tools(body.get('tools'),body.get('tool_choice')))
+        if wrapped_decision:
+            system+='\nFor the native StructuredOutput response, put the final value or permitted tool envelope under its decision property. This transport wrapper does not authorize any extra tool or mixed action.'
         out = run_cli(model, system, user, timeout=timeout,
                       max_tokens=body.get('max_tokens'), effort=output_config.get('effort'),**schema_kw)
     except Exception as exc:
@@ -405,7 +408,10 @@ def respond(body, *, timeout=None):
         raise
     text = out.get('result') or ''
     if schema_kw and out.get('stop_reason')!='max_tokens'and 'structured_output'in out:
-        text=json.dumps(out['structured_output'],ensure_ascii=False)
+        structured=out['structured_output']
+        if wrapped_decision and isinstance(structured,dict)and set(structured)=={'decision'}:
+            structured=structured['decision']
+        text=json.dumps(structured,ensure_ascii=False)
     reported_usage = out.get('usage') or {}
     usage = {k: reported_usage.get(k) for k in ('input_tokens', 'output_tokens')}
     usage.update({k:reported_usage.get(k,0)for k in ('cache_creation_input_tokens','cache_read_input_tokens')})
@@ -427,7 +433,7 @@ def respond(body, *, timeout=None):
                 'caller_max_tokens_enforced':False,
                 'output_policy':'Service boundary only; no custom output ceiling',
                 'caller_effort': output_config.get('effort'),
-                'structured_output_mode':'native_cli_schema'if schema_kw else 'final_schema_prompt'if schema is not None else None,
+                'structured_output_mode':'native_cli_decision_schema'if wrapped_decision else 'native_cli_schema'if schema_kw else None,
                 'cli': {k: out[k] for k in ('num_turns', 'duration_ms', 'duration_api_ms', 'subtype', 'stop_reason', 'modelUsage','structured_output') if k in out},
                 **({'native_text':out['result']}if schema_kw and out.get('result')and 'structured_output'in out else {}),
                 'usage_scope': 'CLI aggregate, including reported internal recovery requests; internal API attempt count is unknown unless explicitly reported. No subscription allocation or invoice inferred.'}}

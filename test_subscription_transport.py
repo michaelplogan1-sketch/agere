@@ -43,7 +43,8 @@ class Translation(unittest.TestCase):
                 body['tool_choice']={'type':choice,**({'name':'first'}if choice=='tool'else{})}
                 schema=T.decision_output_schema(body)
                 self.assertEqual(schema['type'],'object')
-                variants=schema.get('anyOf',[schema])
+                self.assertNotIn('anyOf',schema);self.assertNotIn('oneOf',schema);self.assertNotIn('allOf',schema)
+                variants=schema['properties']['decision']['anyOf']if choice!='none'else[schema]
                 self.assertEqual(final in variants,choice in ('auto','none'))
                 permitted=T.allowed_tools(tools,body['tool_choice'])
                 if permitted:
@@ -58,12 +59,19 @@ class Translation(unittest.TestCase):
                 self.assertEqual(T._tool_calls(json.dumps({'tool_use':{'name':'first','input':{'sql':'SELECT 1'}},'label':'unknown'}),permitted),[])
         body['tool_choice']={'type':'tool','name':'first'}
         action={'tool_use':{'name':'first','input':{'sql':"SELECT 'literal source' AS observation"}}}
-        with patch.object(T,'run_cli',return_value={'result':'Retained original','structured_output':action})as call:
+        with patch.object(T,'run_cli',return_value={'result':'Retained original','structured_output':{'decision':action}})as call:
             response=T.respond(body)
         self.assertEqual(response['content'][0]['name'],'first')
         self.assertEqual(response['content'][0]['input'],action['tool_use']['input'])
         self.assertEqual(call.call_args.kwargs['json_schema'],T.decision_output_schema(body))
         self.assertEqual(response['transport_details']['native_text'],'Retained original')
+        self.assertEqual(response['transport_details']['cli']['structured_output'],{'decision':action})
+        self.assertEqual(response['transport_details']['structured_output_mode'],'native_cli_decision_schema')
+        # A malformed wrapper or a mixed action remains inert; no extra action
+        # is dropped to make the response executable.
+        for bad in ({'decision':action,'extra':action},{'decision':{**action,'label':'unknown'}}):
+            with patch.object(T,'run_cli',return_value={'structured_output':bad}):result=T.respond(body)
+            self.assertEqual(result['stop_reason'],'end_turn')
 
     def test_incomplete_structured_output_stays_inert_and_invalid_format_does_not_generate(self):
         body={'output_config':{'format':{'type':'json_schema','schema':{'type':'object'}}}}
