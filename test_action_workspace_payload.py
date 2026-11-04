@@ -82,6 +82,38 @@ class ComposePayload(unittest.TestCase):
     def test_json_encoding_does_not_emit_nonstandard_nan(self):
         with self.assertRaises(ValueError):encode_inspection({'amount':float('nan')},'gzip')
 
+    def test_exact_source_review_downgrade_keeps_current_answer_and_blocked_work(self):
+        self.result['answer']['status']='answered'
+        self.result['answer']['verification']='verified'
+        self.context={**copy.deepcopy(self.result),'id':self.key,'dependencies':{'derivation':'exact-native-snapshot'}}
+        self.file.write_text(json.dumps(self.context));native=self.file.read_bytes()
+        result=copy.deepcopy(self.result)
+        result.update(source_review_required=True,clinical_execution_authorized=False,
+                      workflow=[{'kind':'simulation','status':'blocked','reason':'Source review required'}])
+        result['answer']={**result['answer'],'status':'partial','verification':'unverified','captured_status':'answered'}
+        before=copy.deepcopy(result);view=compose_view(self.root,result)
+        self.assertIn('response_projection',view)
+        for key in ('answer','workflow','source_review_required','clinical_execution_authorized','cost_receipt','cost_telemetry'):
+            self.assertEqual(view[key],before[key])
+        self.assertFalse(view['investigation']['draft_resume_available'])
+        self.assertEqual(result,before);self.assertEqual(self.file.read_bytes(),native)
+
+    def test_source_review_metadata_never_hides_an_answer_or_authority_mismatch(self):
+        for change in ('capture','status','verification','row','review','missing_flag','authority','clinical_limit'):
+            result=copy.deepcopy(self.result)
+            result.update(source_review_required=True,clinical_execution_authorized=False)
+            result['answer']=copy.deepcopy(result['answer'])
+            result['answer']['captured_status']='partial'
+            if change=='capture':result['answer']['captured_status']='answered'
+            elif change=='status':result['answer']['status']='answered'
+            elif change=='verification':result['answer']['verification']='verified'
+            elif change=='row':result['answer']['table'][0]['value']=99
+            elif change=='review':result['answer']['investigation_review']['status']='confirmed'
+            elif change=='missing_flag':result.pop('source_review_required')
+            elif change=='authority':result['clinical_execution_authorized']=True
+            elif change=='clinical_limit':result['answer']['missing']=[]
+            with self.subTest(change=change):self.assertIs(compose_view(self.root,result),result)
+
 
 class WorkspacePayload(unittest.TestCase):
     def test_resume_availability_does_not_send_draft_checkpoint_to_browser(self):

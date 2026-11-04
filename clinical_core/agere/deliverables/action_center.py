@@ -147,8 +147,20 @@ def compose_view(path, result):
     # represented here. No historical verdict is inherited by this projection.
     def without_membership(answer):
         return {k:v for k,v in (answer or {}).items() if k not in ('patient_ids', 'membership_role')}
-    if without_membership(context.get('answer')) != without_membership(result.get('answer')):
-        return result
+    saved_answer = without_membership(context.get('answer'))
+    shown_answer = without_membership(result.get('answer'))
+    if saved_answer != shown_answer:
+        # fulfill() can conservatively downgrade delivery after capture when
+        # current source review is required. Recognize only that exact change;
+        # the current answer/authority flags below remain untouched. This does
+        # not inherit an earlier verdict or authorize any clinical work.
+        source_review_answer = {**saved_answer,
+            'captured_status': saved_answer.get('captured_status', saved_answer.get('status')),
+            'status': 'partial', 'verification': 'unverified'}
+        if (result.get('source_review_required') is not True
+                or result.get('clinical_execution_authorized') is not False
+                or shown_answer != source_review_answer):
+            return result
 
     def reference(location):
         return {'native_context_id':key, 'path':location,

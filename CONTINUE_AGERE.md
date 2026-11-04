@@ -1,6 +1,6 @@
-# Current Agere checkpoint — 2026-11-04T22:55:55.455344+00:00
+# Current Agere checkpoint — 2026-11-04T22:58:51.744609+00:00
 
-G3: source-refresh recovery/current app sealed on3fe6ed09. All jobs terminal; app8890PID33124/session60518 ready. 57patients/114fields,60/60source support, coverage undecided/partial; targeted262.905s/19attempts/$0.096636356 API-equivalent. All51105attempts retained. Next inspect retained current answer/trace: distinguish historical compiler feedback from still-pending clinical limitations in the existing returned-answer path, and isolate remaining ordinary first-answer work from existing861s trace. No new whole-question provider run or unchanged passing campaign. Keep current source review and all-ten-area acceptance; defer package refresh until remaining product fixes are stable, preserving known-goodff949737. IndependentG5/customer dependencies remain.
+G3: offline trace reproduced the485MB ordinary response cause: workflow source-review downgrade adds captured_status after capture, so compose_view rejects an otherwise byte-equivalent saved clinical/native context and retransmits all history. Fix only the existing projection guard to recognize the exact conservative workflow downgrade, retaining all current answer/status/work/accounting fields and immutable native references. Validate on the retained actual response and source-workflow/payload boundaries with no providers. Existing source-refresh recovery is sealed; app33124 remains prior verified candidate. Alltenareas, coverage/first-answer/G5/customer gaps remain.
 
 Latest sealed receipt: artifacts/agere-protocol-preservation-2026-11-04/source-refresh-delivery-receipt.json
 
