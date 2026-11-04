@@ -872,11 +872,13 @@ class Cascade:
             run = backstop_agent.answer(self.stack, self.question, ledger=self.ledger, population=self.population,
                                         hint=getattr(self, 'second_look_hint', None), validate_final=validate_final)
         self.spend(run.get('new_paid_api_calls', 0), run.get('known_cost_usd') or run.get('estimated_cost_usd') or 0.0, run.get('estimated_cost_usd') is not None)
+        limit_error=None
         if run.get('error') and outage(RuntimeError(run['error'])) == 'rate_limit' and os.environ.get('AGERE_CLAUDE_TRANSPORT') == 'subscription':
             from ..gateway import ProviderUnavailable
-            raise ProviderUnavailable(run['error'], kind='rate_limit')
+            limit_error=ProviderUnavailable(run['error'], kind='rate_limit')
         answer = run.get('answer')
         if not isinstance(answer, dict) or answer.get('status') not in ('answered', 'partial', 'unsupported'):
+            if limit_error is not None:raise limit_error
             return self.reject('backstop_agent', [str(run.get('error') or 'no answer')[:300]])
         if answer.get('answer_type') == 'note': answer['answer_type'] = 'note_answer'
         if answer.get('status') == 'unsupported':
@@ -912,6 +914,18 @@ class Cascade:
                                     'protocol_repairs':run.get('protocol_repairs') or [],
                                     'guarded_continuations':run.get('guarded_continuations') or [],
                                     'recursive_improvement':run.get('recursive_improvement')}}
+        if limit_error is not None:
+            # Stop before checks, another proposer or downstream work. Preserve
+            # only a server-owned checkpoint; the uncompiled prose stays inside
+            # it, separate from the last structurally complete displayed answer.
+            checkpoint=run.get('recovery_checkpoint')
+            if checkpoint and answer.get('status')=='partial':
+                limit_error.partial_result={**result,'question':self.question,'graph':graph,'workflow':[],
+                    'answer':{**answer,'status':'partial','verification':'unverified'},
+                    'execution_snapshot':checkpoint['source'],
+                    'request_contract':{'population':self.population},
+                    'planner_receipt':{**receipt,**self.usage()}}
+            raise limit_error
         review = answer.get('investigation_review') or {}
         if review and review.get('status') != 'confirmed':
             answer = {**answer, 'verification': 'unverified', 'status': 'partial' if answer.get('status') == 'answered' else answer.get('status'),

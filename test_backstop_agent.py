@@ -263,6 +263,26 @@ class SubQuestionIsolation(unittest.TestCase):
 
 
 class Cascade(unittest.TestCase):
+    def test_subscription_limit_preserves_checkpoint_without_more_checks_or_generation(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        checkpoint={'source':{'source_digest':'retained'},'draft_digest':'unfinished'}
+        run={'answer':{'status':'partial','answer_type':'table','headline':'Native table'},
+             'tool_calls':[],'new_paid_api_calls':1,'estimated_cost_usd':.01,
+             'recovery_checkpoint':checkpoint,'error':'Claude subscription limit reached'}
+        for has_answer in (True,False):
+            candidate={**run,'answer':run['answer'] if has_answer else None}
+            with patch.dict(os.environ,{'AGERE_CLAUDE_TRANSPORT':'subscription'}),patch.object(P,'claude_available',lambda:True),patch.object(
+                    B,'answer',return_value=candidate) as generate,patch.object(P,'answer_gate') as gate:
+                with self.assertRaises(ProviderUnavailable) as caught:self.cascade().tier_backstop_agent()
+            self.assertEqual(generate.call_count,1);gate.assert_not_called()
+            self.assertEqual(caught.exception.kind,'rate_limit')
+            partial=getattr(caught.exception,'partial_result',None)
+            if has_answer:
+                self.assertEqual(partial['investigation']['recovery_checkpoint'],checkpoint)
+                self.assertEqual(partial['answer']['verification'],'unverified')
+                self.assertEqual(partial['workflow'],[])
+            else:self.assertIsNone(partial)
+
     def cascade(self):
         c = P.Cascade.__new__(P.Cascade)
         c.stack, c.question, c.population, c.log, c.deferred = SimpleNamespace(allow_live=True), 'Why was losartan stopped for P1?', None, [], []

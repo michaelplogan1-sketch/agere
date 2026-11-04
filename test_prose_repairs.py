@@ -8,6 +8,18 @@ from clinical_core.contracts import digest
 
 
 class ProseRepairs(unittest.TestCase):
+    def test_subscription_failure_retains_exact_unfinished_compiler_draft_separately(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        feedback=self.located_failure();original=copy.deepcopy(self.base)
+        def send(body):raise ProviderUnavailable('Subscription limit',kind='rate_limit')
+        out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('No new source needed'),
+            send=send,model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+            review=lambda a,c:copy.deepcopy(feedback),compact_execution_state=True)
+        self.assertIn('Subscription limit',out['error'])
+        self.assertEqual(out['unfinished_draft'],{'draft':original,'draft_digest':digest(original)})
+        self.assertIsNone(out.get('answer'))
+        self.assertEqual(self.base,original)
+
     def test_compact_literal_binding_runs_existing_full_review_without_rewriting(self):
         feedback=self.located_failure();original=copy.deepcopy(self.base);reviews=[]
         address={'result_view':'agere_result_1','where':[],'column':'events'}
@@ -1031,11 +1043,14 @@ class ProseRepairs(unittest.TestCase):
                 self.assertEqual(out['answer']['table'][1],self.base['table'][1])
                 if finish:
                     self.assertNotIn('unaccepted_draft',out)
+                    self.assertNotIn('unfinished_draft',out)
                     self.assertEqual(out['answer']['table'][0]['review'],'Confirm current responsibility from the dated note.')
                 else:
                     self.assertEqual(out['answer']['table'],self.base['table'])
                     self.assertEqual(out['answer']['verification'],'unverified')
                     self.assertEqual(out['unaccepted_draft']['returned_answer'],'last_structurally_complete_candidate')
+                    self.assertEqual(out['unfinished_draft']['draft'],seen[-1])
+                    self.assertNotEqual(out['unfinished_draft']['draft'],out['answer'])
 
     def test_empty_patch_escalates_unfinished_compiler_work_but_preserves_complete_answer(self):
         feedback,_,_=self.source_compiler_fixture();seen=[];sent=[]

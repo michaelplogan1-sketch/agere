@@ -137,6 +137,7 @@ def capture(path, question, result, *, original_question=None):
     # Identity describes the executed answer, not punctuation, elapsed time,
     # cache state or cost. Keep the first complete execution receipt immutable.
     graph = data.get('graph') or {}
+    recovery=(data.get('investigation') or {}).get('recovery_checkpoint')
     plan = [{k: n.get(k) for k in ('id', 'operation', 'inputs', 'parameters')} for n in graph.get('nodes') or []]
     key = 'ANS-' + fingerprint({'version': 8, 'context_policy_identity': context_policy,
                                'patient_profiles':data['patient_profiles'],
@@ -149,6 +150,7 @@ def capture(path, question, result, *, original_question=None):
                                'answer_policy_identity': (result.get('planner_receipt') or {}).get('policy_identity'),
                                'cohort_transform': data.get('cohort_transform'),
                                'investigation_evidence': investigation_evidence(data.get('investigation')),
+                               **({'unfinished_draft_digest': recovery['draft_digest']} if recovery else {}),
                                'observation_dependencies': data['dependencies']['observation']})[:24]
     d = root(path) / key
     d.mkdir(parents=True, exist_ok=True)

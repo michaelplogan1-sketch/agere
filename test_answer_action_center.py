@@ -35,6 +35,63 @@ class Workflow(unittest.TestCase):
         return {'context_id':self.c['id'],'program':'pharmd','patient_ids':['A','B'],
                 'owner':'PharmD review team','note':'Review suitability; no enrollment', **kw}
 
+    def test_different_unfinished_drafts_preserve_separate_immutable_checkpoints(self):
+        import copy
+        from clinical_core.contracts import digest
+        before=copy.deepcopy(self.result);keys=[]
+        for text in ('Unbound first draft','Progressed but still unbound draft'):
+            draft={'status':'partial','headline':text}
+            candidate=copy.deepcopy(before)
+            candidate['investigation']={'recovery_checkpoint':{'draft':draft,'draft_digest':digest(draft)}}
+            key=A.capture(self.path,self.question,candidate)['id'];keys.append(key)
+            self.assertEqual(A.load(self.path,key)['investigation']['recovery_checkpoint']['draft'],draft)
+        self.assertNotEqual(*keys)
+        self.assertEqual(A.load(self.path,keys[0])['investigation']['recovery_checkpoint']['draft']['headline'],'Unbound first draft')
+        self.assertEqual(A.load(self.path,self.c['id'])['answer'],before['answer'])
+
+    def test_failed_compose_saves_recovery_link_and_preserves_error_and_accounting(self):
+        import copy
+        from clinical_core.agere.gateway import ProviderUnavailable
+        from clinical_core.agere.service import _failure_receipts
+        from clinical_core.agere.deliverables import workflow
+        partial=copy.deepcopy(self.result);partial['answer'].update(status='partial',verification='unverified')
+        partial['execution_snapshot']=A.source_identity(self.path)
+        partial['investigation']={'recovery_checkpoint':{'draft_digest':'retained-compiler-draft'}}
+        for blocked in (False,True):
+            exc=ProviderUnavailable('Subscription limit reached',kind='rate_limit')
+            exc.partial_result=copy.deepcopy(partial)
+            exc.planner_receipt={'new_paid_api_calls':1,'known_api_estimate_usd':.01,'api_cost_known':False}
+            if blocked:exc.partial_result['execution_snapshot']['source_digest']='changed-source'
+            stack=SimpleNamespace(path=self.path,allow_live=False,compose=mock.Mock(side_effect=exc))
+            with mock.patch.object(workflow,'fulfill') as fulfill:
+                with self.assertRaises(ProviderUnavailable) as caught:
+                    conversation.handle_compose(stack,{'question':self.question,'conversation_id':'recovery'})
+            self.assertIs(caught.exception,exc);self.assertEqual(stack.compose.call_count,1);fulfill.assert_not_called()
+            receipts=_failure_receipts(exc)
+            self.assertIn('cost_receipt',receipts);self.assertIn('cost_telemetry',receipts)
+            if blocked:
+                self.assertNotIn('action_context',receipts)
+                self.assertIn('Warehouse changed',receipts['action_context_error'])
+            else:
+                saved=A.load(self.path,receipts['action_context']['id'])
+                self.assertEqual(saved['answer'],partial['answer'])
+                self.assertEqual(saved['investigation'],partial['investigation'])
+                self.assertEqual(saved['original_question'],self.question)
+                with sqlite3.connect(self.path/'conversations.sqlite3') as db:
+                    rows=db.execute('SELECT answer_summary FROM turns WHERE conversation_id=?',('recovery',)).fetchall()
+                self.assertEqual(json.loads(rows[-1][0])['action_context'],receipts['action_context'])
+
+    def test_evaluation_failure_does_not_save_its_unfinished_draft(self):
+        from clinical_core.agere.gateway import ProviderUnavailable
+        from clinical_core.agere.clinical import evaluation
+        exc=ProviderUnavailable('Subscription limit reached',kind='rate_limit')
+        exc.partial_result=self.result
+        stack=SimpleNamespace(path=self.path,allow_live=False,compose=mock.Mock(side_effect=exc))
+        with evaluation.scope('authored-recovery-fixture'),mock.patch.object(A,'capture') as capture:
+            with self.assertRaises(ProviderUnavailable):
+                conversation.handle_compose(stack,{'question':self.question})
+        capture.assert_not_called();self.assertFalse(hasattr(exc,'action_context'))
+
     def test_interrupted_capture_preserves_partial_without_publishing_and_retries(self):
         self.result['answer']['headline'] = 'New snapshot'
         def interrupted(data, stream, **kwargs):

@@ -980,6 +980,13 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         # Keep all measured usage from successful calls even if final parsing fails.
         result['error'] = type(exc).__name__ + ': ' + str(exc)
         return result
+    finally:
+        # The displayed answer may be an older, structurally complete table.
+        # Retain the latest compiler draft separately for guarded continuation;
+        # it must never become a checked answer merely because generation stopped.
+        if isinstance(state_candidate,dict) and isinstance(state_feedback,dict) and state_feedback.get('repair_kind')=='deterministic_compiler':
+            import copy
+            result['unfinished_draft']={'draft':copy.deepcopy(state_candidate),'draft_digest':digest(state_candidate)}
 
 
 def _sql_executor(semantic, as_of, max_rows, max_chars):

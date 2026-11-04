@@ -23,6 +23,22 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def test_checkpoint_prefers_unfinished_compiler_draft_and_rejects_changed_identity(self):
+        import copy
+        _,origin,checkpoint=self.recovery_checkpoint();executor=self.executor()
+        run={'answer':{**checkpoint['draft'],'headline':'Earlier native table'},'tool_calls':origin['calls'],
+             'unfinished_draft':{'draft':checkpoint['draft'],'draft_digest':checkpoint['draft_digest']},
+             'answer_reviews':[{'repair_kind':'deterministic_compiler'}]}
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']):
+            self.assertEqual(H.recovery_checkpoint(executor,self.q,checkpoint['context'],run),checkpoint)
+            for kind in ('digest','review','origin'):
+                bad=copy.deepcopy(run)
+                if kind=='digest':bad['unfinished_draft']['draft']['headline']='Unbound changed draft'
+                elif kind=='review':bad['answer_reviews']=[{'status':'confirmed'}]
+                else:bad['tool_calls'][0].pop('actor_callback_id')
+                with self.subTest(kind=kind),self.assertRaises(ValueError):
+                    H.recovery_checkpoint(executor,self.q,checkpoint['context'],bad)
+
     def test_checkpoint_capture_keeps_unaccepted_draft_and_rejects_missing_callback_origin(self):
         import copy
         actions,origin,checkpoint=self.recovery_checkpoint();executor=self.executor()

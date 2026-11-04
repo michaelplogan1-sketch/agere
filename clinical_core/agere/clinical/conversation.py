@@ -1050,9 +1050,19 @@ def handle_compose(stack, body, hosted_factory=None):
                               'reason': 'Stated absence: the received catalog holds no such data'}
         else:
             logged = resolution['standalone'] if resolution else str(question)
+            partial=getattr(exc,'partial_result',None)
+            if partial is not None and not _evaluating():
+                # Persist unfinished work without executing its workflow or
+                # converting a provider failure into a successful answer.
+                from ..deliverables import answer_context
+                try:
+                    exc.action_context=answer_context.capture(stack.path,logged,partial,original_question=question)
+                except (OSError,ValueError,sqlite3.Error) as capture_error:
+                    exc.action_context_error=str(capture_error)
             from .question_input import failure
             usage = getattr(exc, 'planner_receipt', {})
             failed = failure(exc)
+            if getattr(exc,'action_context',None):failed['action_context']=exc.action_context
             logged_failure = None
             if hasattr(exc, 'planner_receipt'):
                 from .shared_planner import economics as planner_economics

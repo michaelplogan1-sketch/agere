@@ -41,6 +41,8 @@ def _failure_receipts(exc):
     if getattr(exc,'cost_receipt',None):out['cost_receipt']=exc.cost_receipt
     if getattr(exc,'cost_telemetry',None):out['cost_telemetry']=exc.cost_telemetry
     if getattr(exc,'evaluation',None):out['evaluation']=exc.evaluation
+    if getattr(exc,'action_context',None):out['action_context']=exc.action_context
+    if getattr(exc,'action_context_error',None):out['action_context_error']=exc.action_context_error
     return out
 
 def answer_feedback(stack,body):

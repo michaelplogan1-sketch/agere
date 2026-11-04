@@ -82,7 +82,7 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
     finally: _OWNED_RECOVERY.reset(token)
 
 
-VERSION='recursive-harness/2'
+VERSION='recursive-harness/3'
 READ_ONLY={'query_sql','compose_table','read_patient_profiles','list_documents','read_document','review_documents','execute_metric','list_metrics',
            'list_analyses','describe_analysis','execute_analysis','search_documents'}
 VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',
@@ -93,6 +93,13 @@ def recovery_checkpoint(tools,question,context,run):
     """Retain an unfinished server-owned proposal, never an accepted reuse rule."""
     from ..deliverables.answer_context import source_identity
     draft=run.get('answer');calls=run.get('tool_calls') or []
+    unfinished=run.get('unfinished_draft')
+    if unfinished is not None:
+        if (not isinstance(unfinished,dict) or set(unfinished)!={'draft','draft_digest'}
+                or not isinstance(unfinished['draft'],dict) or unfinished['draft_digest']!=digest(unfinished['draft'])
+                or (run.get('answer_reviews') or [{}])[-1].get('repair_kind')!='deterministic_compiler'):
+            raise ValueError('Unfinished compiler draft must match its digest and retained compiler review')
+        draft=unfinished['draft']
     if not isinstance(draft,dict) or draft.get('status')!='partial' or draft.get('workflow') or not calls:return None
     saved=_OWNED_RECOVERY.get() or {}
     reviews=[*((saved.get('checkpoint') or {}).get('review_contexts') or []),*(run.get('answer_reviews') or [])]
