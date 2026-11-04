@@ -342,3 +342,8 @@ Next is the existing full-request regeneration/economics requirement, followed b
 
 
 Scoped release saved and reopened current context `ANS-d687f06d7e1369ade9b43953` through the ordinary product bridge. The two earlier clinical contexts remain exactly inspectable and are correctly invalidated for new work under the changed policy. No prior answer or export was overwritten. Product `76e953bbf00bac52cad657ed42b898c2fad245c1` is pushed to the existing private integration branch; no main merge or publication.
+
+
+### Source-review continuation repair — 2026-11-04T04:26:06.273323+00:00
+
+Product `8a3c9c9f651c2aa08635ebc03916f8510b7d3164` allows the existing read-only analysis path to inspect suspended assertions. Current source/policy checks remain, and downstream work still rejects the suspension.47affected tests and the actual57patient saved-context proof passed:9native receipts unchanged, changed source action10 withheld the old draft/suffix, fresh-analysis boundary reached. No provider dispatch;114saved answers and49,039attempts preserved. ActualHTTP confirms current, partial, suspended-source visibility. Receipt:`artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json`. Individual patient interpretation and practical whole-request economics remain open; no fullMVP or clinical qualification claimed.

@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T04:15:02.265744+00:00",
+  "updated_at": "2026-11-04T04:26:06.273323+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -513,11 +513,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_package_and_ordinary_outcome_sealed",
+    "kind": "source_review_continuation_sealed",
     "gate_id": "G3",
-    "last_delivered_gate": "G6",
-    "user_behavior_delta": "Current same-platform executable package installs with its archived runtime and reopens the complete saved partial result with source suspension visible.",
-    "measured_failure_reduction": "Current distributable archive/install was unverified; snapshot, archived-runtime installation, integrity verification and actual HTTP inspection now pass.",
+    "last_delivered_gate": "G3",
+    "user_behavior_delta": "Continue analysis can inspect suspended source evidence while source/policy/currentness and downstream work protections remain enforced.",
+    "measured_failure_reduction": "The real57patient saved context previously rejected source suspension before read-only analysis; now it reexecutes9unchanged native receipts, detects the changed10th reading, withholds the old draft/suffix and reaches fresh analysis.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -696,17 +696,24 @@
       "artifacts/agere-current-package-2026-11-04/acceptance/receipt.json",
       "artifacts/agere-current-package-2026-11-04/app/server-process.json",
       "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-cost-and-feedback.json",
-      "artifacts/agere-clinical-native-prefix-2026-11-04/representation-diagnostic.json"
+      "artifacts/agere-clinical-native-prefix-2026-11-04/representation-diagnostic.json",
+      "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-source-review-resume-2026-11-04/tests.log",
+      "artifacts/agere-source-review-resume-2026-11-04/warehouse-proof/receipt.json",
+      "artifacts/agere-source-review-resume-2026-11-04/warehouse-proof/replay.json",
+      "artifacts/agere-source-review-resume-2026-11-04/warehouse-proof/boundary-exception.json",
+      "artifacts/agere-source-review-resume-2026-11-04/app/http-check.json",
+      "artifacts/agere-source-review-resume-2026-11-04/app/server-process.json"
     ],
-    "remaining_gap": "Read-only continuation of suspended-source review, original patient-specific composition, and practical whole-request economics. Independent G5 and customer deployment requirements remain.",
-    "next_action": "G3: repair the saved source-review continuation boundary demonstrated by artifacts/agere-current-package-2026-11-04/resume-source-boundary.json. Continue analysis currently calls answer_context.load(current=True) and rejects the suspended source reading before read-only re-analysis can begin. Use the existing source_review mode only for guarded analysis; preserve source/policy/context checks and downstream-work suspension. Then use current retained evidence to handle the exact disputed beta-blocker relation and restore individual patient assessment/recommendation composition, keeping the other uncertainty labels explicit. Qualify the existing lossless representation against the retained actor reading to reduce large repeated inputs. No broad source campaign, repeated uncertain votes, invented clinical labels, or new model/research scope. All ten acceptance areas remain; current same-platform package is verified at ab6faed. Independent G5 and customer deployment dependencies remain separate.",
+    "remaining_gap": "Patient-specific prose composition, localized source uncertainty and practical whole-request economics; independentG5 and customer deployment.",
+    "next_action": "G3: complete current-source localized patient interpretation from the retained114prose fields. The source-review continuation boundary now passes while downstream work stays blocked; actual native recovery correctly withholds the old draft at changed source action10. Finish the running explicit28-action current-native refresh at artifacts/agere-source-review-resume-2026-11-04/refreshed-patient-proposal/receipt.json; it preserves prior prose only as an unaccepted proposal and requires full current review. Handle the exact disputed beta-blocker relation as unresolved unless current evidence supports it; use existing targeted repair, preserve all57patients, original question, dated roles and remaining uncertainty. No repeated full source campaign or uncertain votes. Then qualify the existing lossless actor-reading representation for practical request economics. Keep alltenareas; same-platform archiveab6faed remains prior known-good rollback, no repeated packaging needed for this isolated continuation change. IndependentG5/customer prerequisites remain separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
-    "latest_progress": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
-    "results_report": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
+    "latest_progress": "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
+    "results_report": "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -754,14 +761,15 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T04:15:02.265744+00:00",
-    "workflow_change": "Current same-platform executable package installs with its archived runtime and reopens the complete saved partial result with source suspension visible.",
+    "at": "2026-11-04T04:26:06.273323+00:00",
+    "workflow_change": "Continue analysis can inspect suspended source evidence while source/policy/currentness and downstream work protections remain enforced.",
     "unsealed_work": {
-      "status": "none",
-      "source_frozen": false,
-      "all_jobs_terminal": true,
+      "status": "current_source_localized_continuation_running",
+      "source_frozen": true,
+      "all_jobs_terminal": false,
       "product_edits": false,
-      "remaining": "Read-only continuation of suspended-source review, original patient-specific composition, and practical whole-request economics. Independent G5 and customer deployment requirements remain."
+      "receipt": "artifacts/agere-source-review-resume-2026-11-04/live-localized/receipt.json",
+      "scope": "Existing114prose fields/current28native actions; fullcurrent review and localizedrepair, no repeated fullsourcecampaign."
     },
     "bottling_assessment": {
       "native_actions_replayed": 26,
@@ -836,7 +844,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Current distributable archive/install was unverified; snapshot, archived-runtime installation, integrity verification and actual HTTP inspection now pass.",
+    "measured_failure_removed": "The real57patient saved context previously rejected source suspension before read-only analysis; now it reexecutes9unchanged native receipts, detects the changed10th reading, withholds the old draft/suffix and reaches fresh analysis.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -3646,14 +3654,22 @@
       "decision": "Current package/install and partial-result inspection close the finite packaging gap. The ordinary result remains unaccepted. The next increment is an observed read-only source-review continuation rejection, not a new acceptance area. Use existing boundaries and localized evidence; no repeated full campaign.",
       "evidence": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
       "next_action": "G3: repair the saved source-review continuation boundary demonstrated by artifacts/agere-current-package-2026-11-04/resume-source-boundary.json. Continue analysis currently calls answer_context.load(current=True) and rejects the suspended source reading before read-only re-analysis can begin. Use the existing source_review mode only for guarded analysis; preserve source/policy/context checks and downstream-work suspension. Then use current retained evidence to handle the exact disputed beta-blocker relation and restore individual patient assessment/recommendation composition, keeping the other uncertainty labels explicit. Qualify the existing lossless representation against the retained actor reading to reduce large repeated inputs. No broad source campaign, repeated uncertain votes, invented clinical labels, or new model/research scope. All ten acceptance areas remain; current same-platform package is verified at ab6faed. Independent G5 and customer deployment dependencies remain separate."
+    },
+    {
+      "at": "2026-11-04T04:26:06.273323+00:00",
+      "gate": "G3",
+      "decision": "Read-only source-review entry repaired and actual saved context revalidated. Its changed native source receipt still blocks old-draft reuse, as required. Next is the already-scoped localized patient interpretation using fresh native evidence; no scope expansion.",
+      "evidence": "artifacts/agere-source-review-resume-2026-11-04/delivery-receipt.json",
+      "next_action": "G3: complete current-source localized patient interpretation from the retained114prose fields. The source-review continuation boundary now passes while downstream work stays blocked; actual native recovery correctly withholds the old draft at changed source action10. Finish the running explicit28-action current-native refresh at artifacts/agere-source-review-resume-2026-11-04/refreshed-patient-proposal/receipt.json; it preserves prior prose only as an unaccepted proposal and requires full current review. Handle the exact disputed beta-blocker relation as unresolved unless current evidence supports it; use existing targeted repair, preserve all57patients, original question, dated roles and remaining uncertainty. No repeated full source campaign or uncertain votes. Then qualify the existing lossless actor-reading representation for practical request economics. Keep alltenareas; same-platform archiveab6faed remains prior known-good rollback, no repeated packaging needed for this isolated continuation change. IndependentG5/customer prerequisites remain separate."
     }
   ],
   "unsealed_work": {
-    "status": "none",
-    "source_frozen": false,
-    "all_jobs_terminal": true,
+    "status": "current_source_localized_continuation_running",
+    "source_frozen": true,
+    "all_jobs_terminal": false,
     "product_edits": false,
-    "remaining": "Read-only continuation of suspended-source review, original patient-specific composition, and practical whole-request economics. Independent G5 and customer deployment requirements remain."
+    "receipt": "artifacts/agere-source-review-resume-2026-11-04/live-localized/receipt.json",
+    "scope": "Existing114prose fields/current28native actions; fullcurrent review and localizedrepair, no repeated fullsourcecampaign."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3682,7 +3698,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: repair the saved source-review continuation boundary demonstrated by artifacts/agere-current-package-2026-11-04/resume-source-boundary.json. Continue analysis currently calls answer_context.load(current=True) and rejects the suspended source reading before read-only re-analysis can begin. Use the existing source_review mode only for guarded analysis; preserve source/policy/context checks and downstream-work suspension. Then use current retained evidence to handle the exact disputed beta-blocker relation and restore individual patient assessment/recommendation composition, keeping the other uncertainty labels explicit. Qualify the existing lossless representation against the retained actor reading to reduce large repeated inputs. No broad source campaign, repeated uncertain votes, invented clinical labels, or new model/research scope. All ten acceptance areas remain; current same-platform package is verified at ab6faed. Independent G5 and customer deployment dependencies remain separate.",
+  "next_action": "G3: complete current-source localized patient interpretation from the retained114prose fields. The source-review continuation boundary now passes while downstream work stays blocked; actual native recovery correctly withholds the old draft at changed source action10. Finish the running explicit28-action current-native refresh at artifacts/agere-source-review-resume-2026-11-04/refreshed-patient-proposal/receipt.json; it preserves prior prose only as an unaccepted proposal and requires full current review. Handle the exact disputed beta-blocker relation as unresolved unless current evidence supports it; use existing targeted repair, preserve all57patients, original question, dated roles and remaining uncertainty. No repeated full source campaign or uncertain votes. Then qualify the existing lossless actor-reading representation for practical request economics. Keep alltenareas; same-platform archiveab6faed remains prior known-good rollback, no repeated packaging needed for this isolated continuation change. IndependentG5/customer prerequisites remain separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3771,6 +3787,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 75209,
-  "owned_server_session": 26207
+  "owned_server_pid": 75518,
+  "owned_server_session": 14641
 }
