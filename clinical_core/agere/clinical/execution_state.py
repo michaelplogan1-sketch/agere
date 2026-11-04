@@ -766,16 +766,4 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
         state['instruction']+=' A focused_prose_repair replaces full draft repetition only for the producer-bound repair fields; it never narrows the requested output or source obligations.'
     elif candidate is not None:
         state.update(draft_state(candidate))
-    # Only the actor's wire view changes. Native rows, source bindings and
-    # repair-entity selection above keep their original representations.
-    from ..deliverables.receipts import compact_json,uncompact_json
-    for entry in state['executed_results']:
-        for field in ('complete_reading','repair_reading'):
-            reading=entry.get(field)
-            if not isinstance(reading,dict):continue
-            packed=compact_json(reading,expand_json_strings=True)
-            if uncompact_json(packed)!=reading:
-                raise ValueError('Actor reading did not restore its exact native values')
-            if len(json.dumps(packed,default=str))<len(json.dumps(reading,default=str)):
-                entry[field]=packed
     return [{'role':'user','content':json.dumps(state,default=str,allow_nan=False)}]
