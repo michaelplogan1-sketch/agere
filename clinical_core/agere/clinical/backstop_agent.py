@@ -1377,6 +1377,20 @@ def execution_review_graph(calls,answer=None):
     return graph
 
 
+def incomplete_composition(assessment, composition, *, feedback='', progress_state=None):
+    """Located unfinished work requests a repair; it never accepts source truth."""
+    return {**assessment, 'status':'repair', 'repair_kind':'incomplete_composition',
+        'progress_state':{**(progress_state or {}), 'unfinished_interpretation':composition['targets']},
+        'support':{'label':'not_run','decided_by':None,'packets':[],
+                   'all_dependencies_checked':False,'reason':'Finish the located row interpretation before source review.'},
+        'feedback':(feedback+' ' if feedback else '')+
+            'The visible text explicitly defers requested interpretation to the reader in these final-table rows: '
+            +json.dumps(composition['targets'])+'. Explain the retained findings and derive proposed review actions for each named row. '
+            'Do not merely instruct the reader to inspect a findings collection. Reuse the existing native results; '
+            'keep genuinely unavailable facts, source dates and unresolved verification explicit. '
+            'This is a composition repair, not permission to invent source facts. The completed proposal still receives full review.'}
+
+
 def review_final(stack, question, answer, calls, tools, *, ledger, as_of, context=None):
     """Review the complete proposed answer, then return actionable feedback to the SAME investigation, not a new planner.
     This is a recorded model judgment, not clinical qualification. Quote provenance and claim support remain distinct."""
@@ -1487,6 +1501,24 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             'workflow':workflow_failure}
         targeted=({'schema':'native-prose-repair-targets/1','draft_digest':digest(answer),'targets':prose_targets}
                   if prose_targets and static_feedback==[prose_problem] and not feedback else None)
+        # Quantity-only feedback must not hide an independently observable
+        # omission in the already materialized table. This existing narrow
+        # judgment does not validate or approve the uncompiled quantities.
+        if (prose_problem and static_feedback==[prose_problem] and not feedback
+                and answer.get('table') and gate.ready(stack, 'AGERE_S1_CHECK')):
+            try:
+                from .evidence_projection import coverage_answer
+                composition=gate.check_composition(question,coverage_answer(answer),ledger=ledger,as_of_date=as_of)
+                assessment.update(composition=composition,calls=composition['calls'],cost_usd=composition['cost_usd'])
+                if composition.get('targets'):
+                    return incomplete_composition(assessment,composition,feedback=prose_problem,progress_state=progress_state)
+            except Exception as exc:
+                if getattr(exc,'kind',None)=='rate_limit':raise
+                # Preserve the concrete compiler feedback during an outage.
+                # A failed request may have incurred usage; the question ledger
+                # owns its accounting, and this review cannot claim zero cost.
+                assessment.update(composition={'status':'unavailable','targets':[],
+                    'reason':f'{type(exc).__name__}: {exc}'[:300]},cost_usd=None,cost_known=False)
         return {**assessment,'status':'repair','repair_kind':'deterministic_compiler',
                 'feedback':' '.join(static_feedback+feedback),'progress_state':progress_state,
                 **({'prose_repair':targeted}if targeted else{})}
@@ -1558,15 +1590,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             assessment.update(composition=composition,calls=assessment['calls']+composition['calls'],
                               cost_usd=assessment['cost_usd']+composition['cost_usd'])
             if composition.get('targets'):
-                return {**assessment,'status':'repair','repair_kind':'incomplete_composition',
-                    'progress_state':{'unfinished_interpretation':composition['targets']},
-                    'support':{'label':'not_run','decided_by':None,'packets':[],
-                               'all_dependencies_checked':False,'reason':'Finish the located row interpretation before source review.'},
-                    'feedback':'The visible text explicitly defers requested interpretation to the reader in these final-table rows: '
-                        +json.dumps(composition['targets'])+'. Explain the retained findings and derive proposed review actions for each named row. '
-                        'Do not merely instruct the reader to inspect a findings collection. Reuse the existing native results; '
-                        'keep genuinely unavailable facts, source dates and unresolved verification explicit. '
-                        'This is a composition repair, not permission to invent source facts. The completed proposal still receives full review.'}
+                return incomplete_composition(assessment,composition)
         # All tool results and the cited documents' context, rather than numeric-token overlap or the quote alone.
         bound = (answer.get('table_binding') or {}).get('result_view')
         evidence = []
@@ -2947,6 +2971,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
         out['known_cost_usd']=(run.get('known_cost_usd') if run.get('known_cost_usd') is not None else run.get('estimated_cost_usd') or 0)+review_cost+tools.subtool_accounting['estimated_cost_usd']
         if out['estimated_cost_usd'] is not None:out['estimated_cost_usd'] += tools.subtool_accounting['estimated_cost_usd']
         if not tools.subtool_accounting.get('api_cost_known',True):out['estimated_cost_usd']=None
+        if any(r.get('cost_known') is False for r in reviews):out['estimated_cost_usd']=None
         out['document_reviews'] = tools.document_reviews
         try:out['recovery_checkpoint']=harness.recovery_checkpoint(tools,question,payload,run)
         except ValueError as exc:out['recovery_checkpoint_unavailable']=str(exc)

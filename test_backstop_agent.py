@@ -8,7 +8,7 @@ from clinical_core.agere.clinical import backstop_agent as B, proposers as P
 
 
 class EntryModelReuse(unittest.TestCase):
-    def test_escalated_actor_keeps_native_learning_on_the_entry_model_key(self):
+    def entry_result(self, reviews=None):
         from contextlib import ExitStack
         from clinical_core.agere import model_policy as M
         from clinical_core.agere.clinical import harness_improvement as H
@@ -16,7 +16,7 @@ class EntryModelReuse(unittest.TestCase):
         tools=SimpleNamespace(cohort=None,scope=None,db=SimpleNamespace(close=lambda:None),continuation_identity=lambda:{'source':'fixture'},
             subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0.0},document_reviews=[],judged=[])
         run={'answer':{'status':'answered','headline':'Native result retained.'},'model':M.SONNET,
-             'tool_calls':[],'answer_reviews':[{'status':'confirmed','calls':0}],
+             'tool_calls':[],'answer_reviews':reviews or [{'status':'confirmed','calls':0}],
              'estimated_cost_usd':0.01,'new_paid_api_calls':1}
         with ExitStack() as stack:
             for name,value in {
@@ -35,10 +35,24 @@ class EntryModelReuse(unittest.TestCase):
             stack.enter_context(patch.object(H,'recovery_checkpoint',return_value=None))
             result=B.answer(SimpleNamespace(), 'A source question',send=lambda body:self.fail('No provider call'),
                             as_of='2030-05-27',model=M.HAIKU)
+        return result,replay,propose
+
+    def test_escalated_actor_keeps_native_learning_on_the_entry_model_key(self):
+        from clinical_core.agere import model_policy as M
+        result,replay,propose=self.entry_result()
         self.assertEqual(replay.call_args.args[3],M.HAIKU)
         self.assertEqual(propose.call_args.args[3],replay.call_args.args[3])
         self.assertEqual(result['model'],M.SONNET)
         self.assertEqual(result['recursive_improvement']['candidate']['id'],'native-prefix')
+
+    def test_unavailable_review_cost_preserves_known_subtotal_without_claiming_complete_cost(self):
+        reviews=[{'status':'repair','calls':0,'cost_usd':None,'cost_known':False},
+                 {'status':'confirmed','calls':1,'cost_usd':0.002}]
+        result,_,_=self.entry_result(reviews)
+        self.assertIsNone(result['estimated_cost_usd'])
+        self.assertAlmostEqual(result['known_cost_usd'],0.012)
+        self.assertEqual(result['new_paid_api_calls'],2)
+        self.assertEqual(result['answer_reviews'],reviews)
 
 
 class FakeTools:

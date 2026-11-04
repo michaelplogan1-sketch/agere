@@ -142,5 +142,58 @@ class ComputedProse(unittest.TestCase):
         self.assertEqual(out['table'],original['table']);self.assertEqual(out['facts'],{})
         self.assertTrue(out['uncompiled_prose_fingerprint']);self.assertEqual(a,original)
 
+    def test_numeric_repair_also_locates_unfinished_interpretation_before_regeneration(self):
+        calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id,review FROM observations'},
+                'result':{'result_view':'agere_result_0','columns':['patient_id','review'],
+                          'rows':[['A','Inspect the available findings and write the explanation.']],
+                          'table_rows':1,'truncated':False}}]
+        a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0','headline':'13 patients'}
+        def judge(question,questions,state,**kwargs):
+            self.assertIn('original_question',state[0]['text'])
+            self.assertEqual(set(questions),{'row_0'})
+            return {'judgments':{'row_0':{'label':'unfinished','probability':.98,'decided_by':'jev'}},
+                    'steps':[{'provider':'jev','cost_usd':.002,'status':'answered','attempt_id':'fixture'}]}
+        with patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=SimpleNamespace(judge_fields=judge)),\
+             patch.object(G,'check',side_effect=AssertionError('No coverage/source review before compiler repair')):
+            result=B.review_final(SimpleNamespace(),'Explain the findings for each patient.',a,calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+        self.assertEqual(result['repair_kind'],'incomplete_composition')
+        self.assertIn('13',result['feedback']);self.assertIn('explicitly defers',result['feedback'])
+        self.assertEqual(result['calls'],1);self.assertEqual(result['cost_usd'],.002)
+        self.assertEqual(result['progress_state']['unfinished_interpretation'][0]['patient_id'],'A')
+        self.assertTrue(result['progress_state']['prose']);self.assertEqual(result['support']['label'],'not_run')
+        self.assertEqual(a['table'],[{'patient_id':'A','review':calls[0]['result']['rows'][0][1]}])
+
+    def test_missing_row_prose_uncertain_and_data_only_judgments_do_not_invent_an_omission(self):
+        for label,provider,probability in [('no_observed_omission','jev',.99),('not_requested','jev',.99),
+                                          ('unfinished',None,.99),('unfinished','jev',.1),('unknown',None,.5)]:
+            a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0','headline':'13 visits'}
+            judge=lambda *a,**kw:{'judgments':{'row_0':{'label':label,'probability':probability,'decided_by':provider}}}
+            with self.subTest(label=label,provider=provider,probability=probability),\
+                 patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=SimpleNamespace(judge_fields=judge)),\
+                 patch.object(G,'check',side_effect=AssertionError('Quantity repair remains necessary')):
+                result=B.review_final(SimpleNamespace(),'Show visits',a,self.calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+            self.assertEqual(result['repair_kind'],'deterministic_compiler')
+            self.assertNotIn('unfinished_interpretation',result['progress_state'])
+            self.assertIn('13',result['feedback']);self.assertNotEqual(result['status'],'confirmed')
+
+    def test_early_judge_unavailable_preserves_compiler_feedback_and_unknown_cost(self):
+        a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0','headline':'13 visits'}
+        with patch.object(G,'ready',return_value=True),patch.object(G,'check_composition',side_effect=OSError('fixture outage')):
+            result=B.review_final(SimpleNamespace(),'Explain visits',a,self.calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+        self.assertEqual(result['repair_kind'],'deterministic_compiler');self.assertIn('13',result['feedback'])
+        self.assertEqual(result['composition']['status'],'unavailable')
+        self.assertIsNone(result['cost_usd']);self.assertFalse(result['cost_known'])
+        limited=RuntimeError('fixture subscription limit');limited.kind='rate_limit'
+        with patch.object(G,'ready',return_value=True),patch.object(G,'check_composition',side_effect=limited),self.assertRaises(RuntimeError):
+            B.review_final(SimpleNamespace(),'Explain visits',copy.deepcopy(a),self.calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+
+    def test_valid_native_answer_keeps_existing_review_order(self):
+        a={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0','headline':self.template()}
+        with patch.object(G,'ready',return_value=True),patch.object(G,'check',side_effect=ValueError('coverage reached')) as coverage,\
+             patch.object(G,'check_composition',side_effect=AssertionError('No early check without numeric failure')) as composition:
+            result=B.review_final(SimpleNamespace(),'Show visits',a,self.calls,SimpleNamespace(read={}),ledger=None,as_of='2030-01-01')
+        coverage.assert_called_once();composition.assert_not_called()
+        self.assertIn('coverage reached',result['reason'])
+
 
 if __name__=='__main__':unittest.main()
