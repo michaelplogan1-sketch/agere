@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: repair the five localized prose obligations in artifacts/agere-large-field-diagnosis-2026-11-03/remaining-fields.json through the existing source-bound row-prose repair and execution state. Preserve all57patients,57/61supported dependency checks, all native values and complete source contexts. Inspect exact entity/reason/date associations (including the combined losartan/carvedilol dates in SYN-7ACE370F-5C6); uncertainty alone is not a proven defect and cannot justify lowering thresholds or replacing facts with generic unknowns. Recheck only changed dependencies plus global coverage, which remains undecided. Then qualify ordinary reuse of completed native prefixes without selecting an unverified clinical final answer; targeted question-family knowledge learning follows. Do not repeat the passing harder1920patient pair or source-reading campaign. Retain alltenareas, G5 independent qualification and customer prerequisites.",
+  "active_work": "G3: fix the existing source-prose/compiler handoff offline using artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json and the preserved live proposals. The five-field source repair introduced unbound drug strengths/counts and numbered review steps, then strict binding repair prevented correction; no source review was reached for a valid repaired answer. Distinguish real quantitative claims from list ordinals and preserve semantic/numeric/source bindings; keep all57patients, native values, original source contexts and57/61supported dependencies. Do not repeat providers until the captured proposals pass the real repair/compiler path offline. Then check only changed dependencies and global coverage. Original clinical ordinary-prefix reuse, targeted knowledge/model qualification and alltenareas remain; optional components do not extend the MVP finish line.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-large-field-diagnosis-2026-11-03/delivery-receipt.json",
   "owned_server_pid": 62147,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: repair the five localized prose obligations in artifacts/agere-large-field-diagnosis-2026-11-03/remaining-fields.json through the existing source-bound row-prose repair and execution state. Preserve all57patients,57/61supported dependency checks, all native values and complete source contexts. Inspect exact entity/reason/date associations (including the combined losartan/carvedilol dates in SYN-7ACE370F-5C6); uncertainty alone is not a proven defect and cannot justify lowering thresholds or replacing facts with generic unknowns. Recheck only changed dependencies plus global coverage, which remains undecided. Then qualify ordinary reuse of completed native prefixes without selecting an unverified clinical final answer; targeted question-family knowledge learning follows. Do not repeat the passing harder1920patient pair or source-reading campaign. Retain alltenareas, G5 independent qualification and customer prerequisites.",
+  "resume_priority": "G3: fix the existing source-prose/compiler handoff offline using artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json and the preserved live proposals. The five-field source repair introduced unbound drug strengths/counts and numbered review steps, then strict binding repair prevented correction; no source review was reached for a valid repaired answer. Distinguish real quantitative claims from list ordinals and preserve semantic/numeric/source bindings; keep all57patients, native values, original source contexts and57/61supported dependencies. Do not repeat providers until the captured proposals pass the real repair/compiler path offline. Then check only changed dependencies and global coverage. Original clinical ordinary-prefix reuse, targeted knowledge/model qualification and alltenareas remain; optional components do not extend the MVP finish line.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
@@ -30,14 +30,14 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "sealed_scoped_engineering",
+    "status": "source_prose_followthrough_failed_unpromoted",
     "all_jobs_terminal": true,
     "source_frozen": false,
-    "product_edits": false,
-    "receipt": "artifacts/agere-large-field-diagnosis-2026-11-03/delivery-receipt.json"
+    "product_edits": true,
+    "receipt": "artifacts/agere-source-prose-followthrough-2026-11-03/live/run-receipt.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-11-03T23:55:03.352810+00:00",
+  "latest_continuity_checkpoint": "2026-11-04T00:12:04.367579+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "active_turns_and_quiet_thread_heartbeat",
   "mvp_server": {
@@ -406,9 +406,8 @@
   },
   "push_authorization": "Mike: you dont need to turn off Git pushes if that helps you, im not sure if it does but i gave you no such instructions",
   "current_candidate_commits": [
-    "2df7f26",
-    "735f1a6",
-    "168ae81624cb381cb7a41a4763370ff9baca9abc"
+    "9854202",
+    "f548631"
   ],
   "provider_payload_authorization": {
     "at": "2026-10-29T15:18:31.337417+00:00",
@@ -458,7 +457,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-03T23:55:03.352810+00:00",
+  "updated_at": "2026-11-04T00:12:04.367579+00:00",
   "last_commit": "e7f3ac19643a19c63900ff46096b0d291baa4bd7",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
