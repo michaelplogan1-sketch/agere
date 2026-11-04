@@ -1480,7 +1480,10 @@ def continue_from_artifact(stack, context_id, feedback=None):
     """
     from ..deliverables import answer_context as A
     from . import harness_improvement as H, decision_context as D
-    context=A.load(stack.path,context_id,current=True)
+    # This path re-investigates source objections; it does not authorize work.
+    # Keep current source/policy checks while allowing the existing read-only
+    # review mode to inspect the very assertion that needs repair.
+    context=A.load(stack.path,context_id,current=True,source_review=True)
     question=context['question'];population=context['input_patient_ids']
     actions=[]
     for call in (context.get('investigation') or {}).get('tool_calls') or []:
@@ -1490,7 +1493,7 @@ def continue_from_artifact(stack, context_id, feedback=None):
             raise exc
         actions.append({'name':call['name'],'input':call['input']})
     parent_key=(context.get('cohort_transform') or {}).get('parent_context_id')
-    parent=A.load(stack.path,parent_key,current=True) if parent_key else None
+    parent=A.load(stack.path,parent_key,current=True,source_review=True) if parent_key else None
     recovery={}
     if feedback is None:
         investigation=context.get('investigation') or {}

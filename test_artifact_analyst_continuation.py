@@ -144,7 +144,16 @@ class Continuation(unittest.TestCase):
   ctx={'question':self.question,'patient_scope':[]}
   checkpoint={'source':A.source_identity(self.path),'context':ctx,'draft':draft,'draft_digest':H.digest(draft),'review_contexts':[]}
   original['investigation']['recovery_checkpoint']=checkpoint
+  from clinical_core.agere.clinical import span_repair as SP
+  finding={'value':'Authored observation','assertion':{'id':'suspended-fixture'}}
+  original['investigation']['document_reviews']=[{'questions':{'field':'What is documented?'},
+   'rows':[{'patient_id':'A','review_json':json.dumps({'field':[finding]})}]}]
+  SP.remember_observation(self.path,'span-fixture',{'label':'finding'},['authored-request'],assertion_id='suspended-fixture')
   key=A.capture(self.path,self.question,original)['id'];test=self
+  SP.quarantine_assertions(self.path,['suspended-fixture'],'Authored unadjudicated source objection')
+  saved=(A.root(self.path)/key/'answer.json').read_bytes()
+  with self.assertRaisesRegex(ValueError,'suspended source reading'):
+   A.load(self.path,key,current=True)
   class Cascade:
    def __init__(self,stack,catalog,question,*,population):
     test.assertEqual(population,[]);self.ledger=BudgetLedger(test.path/'providers.sqlite3');self.started=__import__('time').perf_counter();self.log=[]
@@ -167,6 +176,11 @@ class Continuation(unittest.TestCase):
    result=P.continue_from_artifact(self.stack,key)
   self.assertEqual(result['answer']['status'],'partial');self.assertEqual(result['answer']['verification'],'unverified')
   self.assertEqual(result['request_contract']['population'],[])
+  self.assertEqual((A.root(self.path)/key/'answer.json').read_bytes(),saved)
+  self.assertEqual(A.load(self.path,key,current=True,source_review=True)['source_disposition']['status'],'suspended')
+  with self.assertRaisesRegex(ValueError,'suspended source reading'):
+   A.create_work(self.path,{'context_id':key,'program':'custom','patient_ids':['A'],'owner':'Fixture review team','note':'Synthetic only'})
+  self.assertEqual(A.inspect(self.path,key)['items'],[])
 
  def test_resume_without_bound_checkpoint_stops_before_provider(self):
   key=A.capture(self.path,self.question,self.result)['id']
