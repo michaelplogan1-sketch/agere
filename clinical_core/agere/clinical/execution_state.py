@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/20'
+VERSION = 'execution-state/21'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -625,8 +625,9 @@ def continue_source_prose_repair(previous,feedback,candidate,assessment):
     """Keep an authorized source edit editable while its new syntax is fixed.
 
     A pure binding repair still preserves every sentence. This continuation is
-    limited to the exact earlier source-review fields, complete unchanged source
-    contexts and unchanged native table/bases; the full reviewer remains required.
+    limited to compiler-failed fields within the earlier source-review scope.
+    Other proposed edits stay intact; the full reviewer remains required after
+    compilation. Relevant source contexts and native table/bases stay unchanged.
     """
     import copy
     if assessment.get('repair_kind')!='deterministic_compiler':return assessment
@@ -652,10 +653,17 @@ def continue_source_prose_repair(previous,feedback,candidate,assessment):
         fields=set().union(*(set(r['fields'])for r in old['rows']))
         def native_rows(a):return[{k:v for k,v in r.items()if k not in fields}for r in a['table']]
         if native_rows(previous)!=native_rows(candidate):return assessment
-        targets=[{**t,'value_digest':digest(updated[digest(t['key'])]['fields'][t['field']])}for t in allowed]
+        failed_scope={(digest(t['key']),t['field'])for t in failed}
+        targets=[{**t,'value_digest':digest(updated[digest(t['key'])]['fields'][t['field']])}
+                 for t in allowed if(digest(t['key']),t['field'])in failed_scope]
         continued={**copy.deepcopy(receipt),'draft_digest':digest(candidate),'targets':targets,'pending_compiler':True,
             'source_review_origin_digest':receipt.get('source_review_origin_digest',receipt['draft_digest']),
             'compiler_feedback':assessment.get('feedback')}
+        patients={t['key'].get('patient_id')for t in targets}
+        for key in ('source_contexts','native_source_contexts'):
+            if key in continued:
+                continued[key]=[c for c in continued[key]if c.get('patient_id')in patients]
+                continued[key+'_digest']=digest(continued[key])
         return {**assessment,'prose_repair':continued}
     except (KeyError,TypeError,ValueError):return assessment
 

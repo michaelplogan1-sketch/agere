@@ -989,6 +989,27 @@ class ProseRepairs(unittest.TestCase):
         self.assertEqual(repaired['table'][0]['events'],2)
         self.assertIn('not a sentence-preserving',E.focused_prose_state(candidate,continued,self.calls)['instruction'])
 
+    def test_compiler_repair_does_not_reopen_other_source_fields_that_already_compile(self):
+        feedback,_,_=self.source_compiler_fixture()
+        extra=copy.deepcopy(feedback['prose_repair']['targets'][0])
+        extra.update(field='explanation',path=['table',0,'explanation'],
+                     value_digest=digest(self.base['row_prose']['rows'][0]['fields']['explanation']),
+                     reviewed_value_digest=digest(self.base['table'][0]['explanation']))
+        feedback['prose_repair']['targets'].append(extra)
+        candidate=E.apply_prose_repair(self.patch(review='Review 42 events.',explanation='The dated observation needs confirmation.'),
+            self.base,calls=self.calls,feedback=feedback)
+        assessment=B.review_final(SimpleNamespace(),'Explain each entity',candidate,self.calls,
+            SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+        continued=E.continue_source_prose_repair(self.base,feedback,candidate,assessment)
+        self.assertEqual([t['field']for t in E.prose_repair_targets(candidate,continued)],['review'])
+        proposed={'repair_draft':{'draft_digest':digest(candidate),'rows':[{'key':{'patient_id':'A'},
+            'fields':{'explanation':'Three new unbound observations.'}}]}}
+        with self.assertRaises(ValueError):E.apply_prose_repair(proposed,candidate,calls=self.calls,feedback=continued)
+        proposed['repair_draft']['rows'][0]['fields']={'review':'Confirm the dated observation.'}
+        repaired=E.apply_prose_repair(proposed,candidate,calls=self.calls,feedback=continued);self.compile(repaired)
+        self.assertEqual(repaired['row_prose']['rows'][0]['fields']['explanation'],candidate['row_prose']['rows'][0]['fields']['explanation'])
+        self.assertNotEqual(repaired['row_prose']['rows'][0]['fields']['explanation'],self.base['row_prose']['rows'][0]['fields']['explanation'])
+
     def test_source_compiler_continuation_rejects_changed_native_other_prose_and_stale_source(self):
         feedback,candidate,assessment=self.source_compiler_fixture()
         for kind in ('native','other_prose','global','basis','stale','source','pure_binding','string_feedback'):
