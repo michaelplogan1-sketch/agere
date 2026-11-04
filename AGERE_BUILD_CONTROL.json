@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T19:37:03.170932+00:00",
+  "updated_at": "2026-11-04T19:42:09.682506+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -470,7 +470,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies.",
+      "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all jobs terminal/source unfrozen, private branch pushed through12c8c8e7. Retained first-generation audit found12frontiercalls/$8.150616 of$8.909198total. Offline proof shows the first3Haiku proposals give the existing narrow composition verifier byte-identical57row inputs;51explicit interpretation omissions were detected only after two numeric-only retries(61.331summed service seconds/$0.558690). This is an ordering opportunity, not yet measured savings. Next integrate the existing composition check ahead of numeric-only static repair when the native table is materialized, return both omission and quantity feedback, retain deciding thresholds/full source checks, and test retained proposals plus valid/unknown/unavailable-judge cases without providers before activation. Do not infer clinical facts or incomplete work solely from missing row_prose. Preserve current known-good app/package, all50571attempts, all ten acceptance areas and G5/customer dependencies; no full-cohort rerun or new training.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -591,16 +591,18 @@
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/runner-archive-profile.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/projection-initial-checks.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-current-proposal-reuse/critical-path-followup.json",
-      "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json"
+      "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-compose-response-view-2026-11-04/first-generation-frontier-audit.json",
+      "artifacts/agere-compose-response-view-2026-11-04/early-composition-input-proof.json"
     ],
     "remaining_gap": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
-    "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies.",
+    "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all jobs terminal/source unfrozen, private branch pushed through12c8c8e7. Retained first-generation audit found12frontiercalls/$8.150616 of$8.909198total. Offline proof shows the first3Haiku proposals give the existing narrow composition verifier byte-identical57row inputs;51explicit interpretation omissions were detected only after two numeric-only retries(61.331summed service seconds/$0.558690). This is an ordering opportunity, not yet measured savings. Next integrate the existing composition check ahead of numeric-only static repair when the native table is materialized, return both omission and quantity feedback, retain deciding thresholds/full source checks, and test retained proposals plus valid/unknown/unavailable-judge cases without providers before activation. Do not infer clinical facts or incomplete work solely from missing row_prose. Preserve current known-good app/package, all50571attempts, all ten acceptance areas and G5/customer dependencies; no full-cohort rerun or new training.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
     "coordination": "All checks terminal; source unfrozen; app8890 PID24381/session80831 ready.",
     "remaining_blockers": [
       "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim."
     ],
-    "latest_progress": "Browser/HTTP and63focused regressions passed; current saved answer and ten-area engineering applicability verified with zero new provider attempts.",
+    "latest_progress": "Response delivery sealed and pushed. Retained first-generation audit/proof identifies byte-identical composition judgment inputs across3Haiku proposals; next correction targets verification ordering without removing numeric/source guards.",
     "results_report": "artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -658,7 +660,8 @@
       "product_edits": false,
       "receipt": "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json",
       "remaining": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
-      "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies."
+      "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all jobs terminal/source unfrozen, private branch pushed through12c8c8e7. Retained first-generation audit found12frontiercalls/$8.150616 of$8.909198total. Offline proof shows the first3Haiku proposals give the existing narrow composition verifier byte-identical57row inputs;51explicit interpretation omissions were detected only after two numeric-only retries(61.331summed service seconds/$0.558690). This is an ordering opportunity, not yet measured savings. Next integrate the existing composition check ahead of numeric-only static repair when the native table is materialized, return both omission and quantity feedback, retain deciding thresholds/full source checks, and test retained proposals plus valid/unknown/unavailable-judge cases without providers before activation. Do not infer clinical facts or incomplete work solely from missing row_prose. Preserve current known-good app/package, all50571attempts, all ten acceptance areas and G5/customer dependencies; no full-cohort rerun or new training.",
+      "offline_diagnosis": "artifacts/agere-compose-response-view-2026-11-04/early-composition-input-proof.json"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -3779,6 +3782,14 @@
       "change": "Activate opt-in question response view after full native journaling; next investigate12frontier attempts from existing trace.",
       "scope_impact": "No acceptance area, model qualification, source population, API default, clinical content or runtime learning policy changed.",
       "evidence": "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-04T19:42:09.682506+00:00",
+      "gate": "G3",
+      "reason": "Existing first-generation trace shows two numeric-only regeneration rounds before51row interpretation omissions. Offline exact-payload proof reproduces identical narrow composition inputs on all3initial proposals.",
+      "change": "Next localized candidate is existing verifier ordering, not a new model, truth rule or blanket strong-model route. No runtime edit in this diagnostic step.",
+      "scope_impact": "All ten areas and original question/source/clinical-qualification boundaries unchanged; measured savings not yet claimed.",
+      "evidence": "artifacts/agere-compose-response-view-2026-11-04/early-composition-input-proof.json"
     }
   ],
   "unsealed_work": {
@@ -3788,7 +3799,8 @@
     "product_edits": false,
     "receipt": "artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json",
     "remaining": "First-generation performance remains 986.028 seconds/$8.909197764 API-equivalent; measured warm reuse remains 155.723 seconds/$0.015078556 until a future ordinary run measures this transport change. Overall coverage stays undecided. Independent G5 clinical/model qualification and customer deployment dependencies remain. Current executable archive is the known-good ff949737 build; this UI-only change has current process/HTTP evidence, not a new archive-restore claim.",
-    "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies."
+    "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all jobs terminal/source unfrozen, private branch pushed through12c8c8e7. Retained first-generation audit found12frontiercalls/$8.150616 of$8.909198total. Offline proof shows the first3Haiku proposals give the existing narrow composition verifier byte-identical57row inputs;51explicit interpretation omissions were detected only after two numeric-only retries(61.331summed service seconds/$0.558690). This is an ordering opportunity, not yet measured savings. Next integrate the existing composition check ahead of numeric-only static repair when the native table is materialized, return both omission and quantity feedback, retain deciding thresholds/full source checks, and test retained proposals plus valid/unknown/unavailable-judge cases without providers before activation. Do not infer clinical facts or incomplete work solely from missing row_prose. Preserve current known-good app/package, all50571attempts, all ten acceptance areas and G5/customer dependencies; no full-cohort rerun or new training.",
+    "offline_diagnosis": "artifacts/agere-compose-response-view-2026-11-04/early-composition-input-proof.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -3814,7 +3826,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all verification jobs terminal and source unfrozen. Exact57patient/114field answer and26original graph nodes retained; 433.6MB reduced to5.58MB JSON/379KB gzip with0newprovider attempts and all50571attempts exact. Next inspect the retained automatic-initial-contract trace and request accounting to explain the12frontier calls/$8.150616 frontier share of the986.028s/$8.909198 first composition. Identify one demonstrated redundant context/generation or repair step and prove a localized correction offline before any new paid check. No whole-cohort rerun, new models or training campaign. Preserve uncertainty, original scope, all ten areas and G5/customer dependencies.",
+  "next_action": "G3: response delivery is sealed on a254aac3; app8890 PID24381/session80831 ready, all jobs terminal/source unfrozen, private branch pushed through12c8c8e7. Retained first-generation audit found12frontiercalls/$8.150616 of$8.909198total. Offline proof shows the first3Haiku proposals give the existing narrow composition verifier byte-identical57row inputs;51explicit interpretation omissions were detected only after two numeric-only retries(61.331summed service seconds/$0.558690). This is an ordering opportunity, not yet measured savings. Next integrate the existing composition check ahead of numeric-only static repair when the native table is materialized, return both omission and quantity feedback, retain deciding thresholds/full source checks, and test retained proposals plus valid/unknown/unavailable-judge cases without providers before activation. Do not infer clinical facts or incomplete work solely from missing row_prose. Preserve current known-good app/package, all50571attempts, all ten acceptance areas and G5/customer dependencies; no full-cohort rerun or new training.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3823,7 +3835,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T19:37:03.170932+00:00",
+  "latest_checkpoint": "2026-11-04T19:42:09.682506+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",

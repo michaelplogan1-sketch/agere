@@ -12,6 +12,8 @@ The previous archive remains the known-good recovery artifact; no new archive-re
 
 Receipt: `artifacts/agere-compose-response-view-2026-11-04/delivery-receipt.json`.
 
+A subsequent offline first-generation audit accounts for all 12 frontier calls: three Haiku full proposals, one Sonnet full proposal, one native SQL request and seven localized prose-repair attempts (six applied). The first 3 proposals produce byte-identical inputs for the existing narrow row-composition judge. Its retained judgment locates 51 unfinished row interpretations, but it ran only after two numeric-only retries totaling 61.331 service-seconds/$0.558690 API-equivalent. Earlier omission diagnosis is now the next candidate; this is not measured end-to-end savings or permission to bypass quantity/source checks. Evidence: `artifacts/agere-compose-response-view-2026-11-04/early-composition-input-proof.json`.
+
 ## November 4: ordinary bottling comparison passed
 
 The ordinary same-question repeat reexecuted all 33 native operations and reviewed the retained proposal without a new Claude call. It returned the exact 57 patient rows and 114 narrative fields; all 58 source packets remained supported. Overall coverage remained undecided, and the answer stayed partial. The saved current result reopens exactly at `ANS-3162d0505bbf3e1d5c8396a9`.
