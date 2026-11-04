@@ -1,3 +1,31 @@
+# Current Agere checkpoint — 2026-11-04T18:17:26.301277+00:00
+
+G3: automatic-initial-contract is launching through ownedapp8890PID12624/session62526 on849d9135. Source/product frozen; no duplicate or source edits. Fresh ordinary question only: no saved final draft, owner prose/binding edits or prior final proposal. Current32native-operation prefix qualified in75.281s/0providers and source caches are warm. This tests initial binding instructions plus localized compiler repair. On terminal inspect complete57patients/114fields, source review/unknowns and all-attempt cost; then current release/package if accepted, otherwise preserve exact failure and diagnose offline. Retain all50303priorattempts, alltenareas and independentG5/customer dependencies; stop allproviders on actualsubscriptionlimit.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T18:15:15.426564+00:00
+
+G3: current-initial-native-prefix native-only qualification is launching on849d9135, with provider/network/process dispatch prohibited. Source/product frozen; no duplicate or source edits. On success submit exactly one ordinary question through currentapp8890PID12624/session62526 using automatic-initial-contract/run.py. No saved final draft or owner repairs; warm native/source caches disclosed. This tests f2 initial numerical binding contract and849localized repair. Retainedcontinuation58/58source-supported remains partial; all50303attempts retained. Then current acceptance/package if passed, otherwise preserve exact failure and diagnose offline. Alltenareas/G5/customer dependencies retained.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T18:14:49.125818+00:00
+
+G3: all request jobs terminal. Localized continuation on849d9135 cleared the remaining compiler field;57patients/114fields and58/58source packets preserved, overallcoverage undecided/partial. Current HTTP persistence verified with0providers. Preserve223.283s/70attempts/$0.279712436 and all50303attempts. Next refresh only the native-only prefix for the changed policy with network blocked, then run one ordinary question through current app8890 without a prior final draft or owner edits to test corrected initial composition. No unchanged source-vote repeat. If automatic composition passes, assess current finite release and package/restore; if it fails preserve exact failure and diagnose offline. Alltenareas/G5/customer dependencies retained.
+
+Latest scoped seal: artifacts/agere-current-release-finish-2026-11-04/composition-check/localized-source-compiler-delivery-receipt.json.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T18:08:13.543158+00:00
+
+G3: localized-source-compiler-continuation PID12822/session13712 is running from existing server-owned contextANS-889cd52879d766516a81d365 on product849d9135. Source/product frozen; monitor only this job and do not edit source or duplicate it. Revalidate native origins, then continue the one compiler-failed pending field; full57patients/114fields and remaining source/coverage review remain. Preserve all50233priorattempts and earlier570.406s/153attempt/$5.268015058 run. On terminal inspect compiler/source disposition, saved recovery and all-attempt accounting before deciding remaining automatic-composition/currentrelease/package work. Alltenareas/G5/customer dependencies retained; stop provider work on any actual limit.
+
+Lastsealed checkpoint-recovery-delivery-receipt unchanged.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T18:06:03.472724+00:00
 
 G3: all request jobs terminal/source unfrozen. Product849d9135 and app8890PID12624/session62526 include exact failed-field compiler recovery (3editable fields->1 on the authentic transition;180tests). Current saved partial ANS-889cd52879d766516a81d365 preserves57patients/114fields and pendingdraft36442807; HTTP200/current/resume control verified with0providers. Last run cleared54original bindings, returned56/60source-supported packets with4undecided/globalcoverage undecided, then source-edit churn stopped at1unbound field inside3source-review fields. Retain570.406s/153attempts/$5.268015058 and all50233attempts. Next run prepared composition-check/continue_localized_source_compiler.py ONCE; it resumes the existing saved checkpoint, revalidates native origins and only continues unfinished repair. Do not reconstruct prose, repeat full question or rebuy unchanged source votes. On terminal inspect exact compiler/source disposition and total accounting, preserve partials and assess the remaining fresh automatic-composition obligation before current release/package. Alltenareas and independentG5/customer dependencies retained. Subscription resumed normally; stop again on any actual limit.

@@ -1,5 +1,11 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: localized source/compiler continuation completes
+
+The actual saved-work continuation on `849d9135` clears its remaining compiler failure and returns all 57 patients and 114 narrative fields. All 58 source-review packets are supported. Overall coverage remains undecided, so the result stays partial. No owner prose or binding edits were supplied. The first actor received one permitted field; two Claude calls and 68 Jev/Perplexity checks completed in 223.283 seconds at $0.279712436 API-equivalent, with zero unpriced attempts. All 50,303 attempts, native/source evidence and prior exports remain intact. This is retained-work recovery, not fresh first-request performance. The saved answer `ANS-9c1c1203a5787b7d82a15f34` reopens through the current app with exact table/prose, partial status and zero new provider calls.
+
+Receipt: `artifacts/agere-current-release-finish-2026-11-04/composition-check/localized-source-compiler-delivery-receipt.json`. Next is the remaining automatic first-composition acceptance, followed by current release packaging. All ten acceptance areas and independent qualification dependencies remain.
+
 ## Retained continuation and localized compiler recovery — November 4
 
 The subscription resumed normally. The retained continuation onf2cc427c revalidated32native receipts and cleared all54original numeric binding failures. It returned all57patients/114narrative fields, with56of60source packets supported and four undecided. Overall coverage remains undecided. Later localized source edits introduced new unbound numbers and the existing no-progress guard stopped; the last structurally complete answer remains partial. The newest pending draft is retained separately, exactly as intended by the new recovery behavior.
