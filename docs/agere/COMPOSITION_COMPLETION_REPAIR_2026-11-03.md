@@ -1,6 +1,21 @@
 # Composition repair and retained-evidence comparison
 
 
+## November 4 release preflight: current scope and storage
+
+The existing finite release contract was assessed at the current product implementation: **9/9 scoped engineering requirements across all ten acceptance areas pass**. Eight runtime files differ from the prior finite matrix. Their applicability is explicitly tied to the retained source-repair, transport, composition, persistence and regression evidence; unchanged native methods retain only their original measured scope. The current app and original source remain unchanged. The runtime release-view pointers have not yet been moved to this candidate assessment.
+
+This is not first-composition acceptance. The remaining automatic clinical question must generate its patient-specific interpretation without an injected final draft or owner field corrections, with all failures and costs included. Final package/restore follows that check. Clinical/model qualification and customer deployment requirements remain separate.
+
+Twenty-four completed large diagnostic traces were losslessly archived after excluding references consumed by both the current and baseline finite acceptance matrices. Each archive was decoded and SHA-checked before replacing its raw trace. **5,569,683,456 bytes** of free space were recovered in that operation; all source data, live answer workspaces, provider accounting and learning state remain. Archive index: `artifacts/agere-current-release-finish-2026-11-04/storage-consolidation/completed-trace-archive.json`. Older replay scripts must restore named raw traces or use the indexed gzip files. No historical receipt was rewritten to pretend a failed run passed.
+
+The existing package implementation already uses APFS copy-on-write cloning for regular files and eligible cold SQLite databases, with online backup for active journals. Its roughly233GB logical tree size does not establish that233GB of physical space can be reclaimed. A new package must use this existing checked path and measure actual free space; no duplicate packaging job has been started.
+
+The current native-only program was independently revalidated through the ordinary investigator entry in **96.591 seconds**, **32 exact native operations**, **zero provider attempts**, and **no retained final proposal**. The original question has now been submitted once through the normal app with warm caches disclosed. That run is pending; no automatic-composition or latency success is inferred from the native-prefix check.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json`, `composition-check/current-final-native-prefix/receipt.json`, and `composition-check/automatic-composition-current/run-receipt.json` under the same release-finish directory.
+
+
 ## Current scoped delivery — source-role repair and persistence
 
 Product **84c96cca** is running in the owned local app on port 8890. The final localized continuation corrected only `WHP-DD255C8A07C4 / proposed_review_steps_patient`; the other **113 narrative fields and every native table value remained exact**. All **58/58 source packets are supported** by the configured automated verifier, with no failed or unchecked packets. The **57-patient / 114-field answer remains partial**: global completeness is undecided and explicitly missing clinical facts remain missing. Source-support acceptance is not independent clinical qualification.

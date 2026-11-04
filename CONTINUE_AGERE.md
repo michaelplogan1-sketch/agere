@@ -1,3 +1,19 @@
+# Current Agere checkpoint — 2026-11-04T15:52:57.082024+00:00
+
+G3: monitor only automatic-composition-current PID5021/session64692 through owned app8890PID3462/session82973. Source/product frozen; do not duplicate or edit. Current32-native-operation prefix was freshly revalidated in96.591s with0providers, no stored or supplied final proposal; ordinary question only is submitted, warm caches disclosed. Inspect full57patient/114field composition, native/source checks, missing-data behavior and complete latency/all-attempt costs on terminal. No owner-authored repair may be counted as automatic success. Then current package/restore if this obligation passes; otherwise retain exact failure and make one targeted generic correction. Current matrix9/9coversalltenareas; clinical/model/G5/customer dependencies remain distinct.
+
+Lastseal remains composition-check/source-repair-delivery-receipt.json. Current source58/58retained answer remains partial; this new run has no prior final draft. All49926priorattempts retained.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T15:50:31.425893+00:00
+
+G3: monitor current-final-native-prefix/session51966 only; offline qualification has all provider dispatch blocked. Current finite matrix verifies9/9scoped engineering requirements/alltenareas with eight changed runtime files explicitly reconciled.24completed traces archived losslessly;5.57GB reclaimed. Qualify current32-native-action prefix with NO saved final proposal, then submit one ordinary original question through app8890 to measure fresh automatic composition from retained native/source evidence, preserving every attempt. Do not inject repaired prose or owner bindings. After that result, package/restore the final candidate using existing APFS-copy implementation. Prior logical233GB package copies already use COW; do not mistake logical size for reclaimed space. FullMVP/G5/customer dependencies remain explicit.
+
+Lastseal remains composition-check/source-repair-delivery-receipt.json. App8890PID3462/session82973 at84c96cca. No new provider work yet; original49926attempts retained.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T15:40:36.220213+00:00
 
 G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained.

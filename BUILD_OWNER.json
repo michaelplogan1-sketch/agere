@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained.",
+  "active_work": "G3: monitor only automatic-composition-current PID5021/session64692 through owned app8890PID3462/session82973. Source/product frozen; do not duplicate or edit. Current32-native-operation prefix was freshly revalidated in96.591s with0providers, no stored or supplied final proposal; ordinary question only is submitted, warm caches disclosed. Inspect full57patient/114field composition, native/source checks, missing-data behavior and complete latency/all-attempt costs on terminal. No owner-authored repair may be counted as automatic success. Then current package/restore if this obligation passes; otherwise retain exact failure and make one targeted generic correction. Current matrix9/9coversalltenareas; clinical/model/G5/customer dependencies remain distinct.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
   "owned_server_pid": 3462,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained.",
+  "resume_priority": "G3: monitor only automatic-composition-current PID5021/session64692 through owned app8890PID3462/session82973. Source/product frozen; do not duplicate or edit. Current32-native-operation prefix was freshly revalidated in96.591s with0providers, no stored or supplied final proposal; ordinary question only is submitted, warm caches disclosed. Inspect full57patient/114field composition, native/source checks, missing-data behavior and complete latency/all-attempt costs on terminal. No owner-authored repair may be counted as automatic success. Then current package/restore if this obligation passes; otherwise retain exact failure and make one targeted generic correction. Current matrix9/9coversalltenareas; clinical/model/G5/customer dependencies remain distinct.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
@@ -30,16 +30,16 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "none_since_scoped_delivery",
-    "all_jobs_terminal": true,
-    "source_frozen": false,
+    "status": "ordinary_first_composition_running",
+    "all_jobs_terminal": false,
+    "source_frozen": true,
     "product_edits": false,
     "product_commit": "84c96cca",
-    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
-    "remaining": "G3: scoped source repair and persistence delivered at84c96cca; current app8890PID3462/session82973 serves ANS-1db529418405dcf4f1c59cbd.58/58source packets supported;57patients/114fields retained; global completeness remains undecided. All provider jobs terminal; do not repeat unchanged source/coverage votes. Next reclaim redundant completed artifact storage losslessly, then assess final current-release compatibility and package/restore using the existing finite acceptance matrix. Only four runtime files changed since64744b2c; reuse valid evidence and rerun affected checks only. Do not blindly run the old233GB package copier. Preserve the distinction between this retained assisted repair and fresh automatic first-composition performance. Alltenareas/G5/customer dependencies retained."
+    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-current/run-receipt.json",
+    "remaining": "G3: monitor only automatic-composition-current PID5021/session64692 through owned app8890PID3462/session82973. Source/product frozen; do not duplicate or edit. Current32-native-operation prefix was freshly revalidated in96.591s with0providers, no stored or supplied final proposal; ordinary question only is submitted, warm caches disclosed. Inspect full57patient/114field composition, native/source checks, missing-data behavior and complete latency/all-attempt costs on terminal. No owner-authored repair may be counted as automatic success. Then current package/restore if this obligation passes; otherwise retain exact failure and make one targeted generic correction. Current matrix9/9coversalltenareas; clinical/model/G5/customer dependencies remain distinct."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-11-04T15:40:36.220213+00:00",
+  "latest_continuity_checkpoint": "2026-11-04T15:52:57.082024+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "active_turns_and_quiet_thread_heartbeat",
   "mvp_server": {
@@ -299,7 +299,15 @@
     "until": "2026-10-29T14:00:00Z",
     "no_readiness_guarantee": true
   },
-  "active_jobs": [],
+  "active_jobs": [
+    {
+      "pid": 5021,
+      "session": 64692,
+      "server_pid": 3462,
+      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-current/run-receipt.json",
+      "source_frozen": true
+    }
+  ],
   "overnight_completed_jobs": {
     "local_adapter_qualification": {
       "session": 96934,
@@ -447,7 +455,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-04T15:40:36.220213+00:00",
+  "updated_at": "2026-11-04T15:52:57.082024+00:00",
   "last_commit": "ab6faed4813f47521fed67d8a7419416984ac41e",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
