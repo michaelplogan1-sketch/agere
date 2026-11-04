@@ -1,3 +1,11 @@
+# Current Agere checkpoint — 2026-11-04T17:40:19.988767+00:00
+
+G3: monitor only numeric-limit-continuation PID11455/session83558 through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.
+
+Last sealed recovery delivery is unchanged;97focusedchecks passed.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T17:34:48.808245+00:00
 
 G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion.

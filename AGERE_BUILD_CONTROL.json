@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T17:34:48.808245+00:00",
+  "updated_at": "2026-11-04T17:41:10.640707+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -543,10 +543,11 @@
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/checkpoint-proof/initial-binding-diagnosis.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/checkpoint-proof/receipt.json",
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/checkpoint-proof/current-app.json"
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/checkpoint-proof/current-app.json",
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/receipt.json"
     ],
     "remaining_gap": "54quantity bindings, source/coverage review and fresh automatic composition acceptance remain; final current release/package and independent qualification/customer dependencies remain.",
-    "next_action": "G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion.",
+    "next_action": "G3: monitor only numeric-limit-continuation PID11455/session83558 through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
     "coordination": "All provider work stopped at actual subscription limit. Offline retained draft recovery; app8890PID8291 still live.",
     "remaining_blockers": [
@@ -605,16 +606,16 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T17:34:48.808245+00:00",
+    "at": "2026-11-04T17:40:19.988767+00:00",
     "workflow_change": "Saved unfinished draft survives a subscription failure independently of the older displayable table; no downstream execution or retry.",
     "unsealed_work": {
-      "status": "remaining_numeric_composition_unresolved",
-      "all_jobs_terminal": true,
-      "source_frozen": false,
+      "status": "numeric_limit_continuation_running",
+      "all_jobs_terminal": false,
+      "source_frozen": true,
       "product_edits": true,
-      "product_commit": "ac9af6fe4ac5a0040620070d17ce1e7560f42273",
+      "product_commit": "f2cc427c",
       "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
-      "remaining": "G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion.",
+      "remaining": "G3: launching numeric-limit-continuation through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.",
       "provider_dependency": {
         "provider": "claude_subscription",
         "reason": "actual_session_limit",
@@ -627,7 +628,9 @@
       "remaining_compiler_fields": 54,
       "patients": 57,
       "prose_fields": 114,
-      "recovery_delivery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json"
+      "recovery_delivery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
+      "pid": 11455,
+      "session_id": 83558
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -3716,16 +3719,24 @@
       "reason": "The observed subscription failure discarded the latest compiler draft at the outer proposer and returned HTTP502 without a saved continuation. Exact reconstruction proved57patients/114fields were available. This fix removes manual recovery within existing saved-work acceptance; it does not fix54unbound fields or widen scope.",
       "scope_impact": "No acceptance area added or removed; native/source/domain guards and current provider stop retained. Ten errors in the broad legacy evaluation fixture suite reproduced unchanged at abb9d33f; record separately from passing changed-path checks.",
       "next_action": "G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion."
+    },
+    {
+      "at": "2026-11-04T17:40:19.988767+00:00",
+      "gate": "G3",
+      "decision": "Align initial binding instructions before retained continuation",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/checkpoint-proof/initial-contract-tests-v2.log",
+      "reason": "Initial instructions allowed a numeric quotation with a record citation and matching sources entry; row compiler requires typed same-entity documentary evidence and explicit source date. The initial row example also omitted numeric templates. Corrected the existing instructions and proved the actual example plus wrong-entity/unbound rejections. Generation improvement is unmeasured; no guards relaxed.",
+      "next_action": "G3: launching numeric-limit-continuation through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained."
     }
   ],
   "unsealed_work": {
-    "status": "remaining_numeric_composition_unresolved",
-    "all_jobs_terminal": true,
-    "source_frozen": false,
+    "status": "numeric_limit_continuation_running",
+    "all_jobs_terminal": false,
+    "source_frozen": true,
     "product_edits": true,
-    "product_commit": "ac9af6fe4ac5a0040620070d17ce1e7560f42273",
+    "product_commit": "f2cc427c",
     "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-composition-numeric/run-receipt.json",
-    "remaining": "G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion.",
+    "remaining": "G3: launching numeric-limit-continuation through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.",
     "provider_dependency": {
       "provider": "claude_subscription",
       "reason": "actual_session_limit",
@@ -3738,7 +3749,9 @@
     "remaining_compiler_fields": 54,
     "patients": 57,
     "prose_fields": 114,
-    "recovery_delivery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json"
+    "recovery_delivery_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
+    "pid": 11455,
+    "session_id": 83558
   },
   "current_visual_request": {
     "status": "completed",
@@ -3763,8 +3776,17 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: scoped interrupted-draft recovery is delivered on ac9af6fe and app8890 PID10814/session68585; all request jobs terminal/source unfrozen. Actual Claude subscription limit still stops all provider work; reported reset November4 11:40America/Chicago, availability not rechecked. Retain exact saved draft a1d17c90 (57patients/114fields/32native receipts), all50080attempts and every failed run. The 54 remaining compiler fields are plain numeric prose:45patient explanations and9proposed actions. First composition is not fixed. Next inspect the initial-composition row-prose schema/examples against authentic response50077, correct the existing bound-field generation contract without relaxing source/entity/domain guards, and prove the candidate offline. After that evidence and subscription availability, evaluate only the affected composition/binding continuation from retained native work; no duplicate full question or unchanged source votes. Then automatic acceptance/current release/package. Alltenareas, independentG5 qualification and customer dependencies remain; no optional models or scope expansion.",
+  "active_jobs": [
+    {
+      "name": "numeric-limit-continuation",
+      "status": "running",
+      "product_commit": "f2cc427c",
+      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/receipt.json",
+      "pid": 11455,
+      "session_id": 83558
+    }
+  ],
+  "next_action": "G3: monitor only numeric-limit-continuation PID11455/session83558 through continue_numeric_after_limit.py on productf2cc427c. Source/product frozen; monitor this owned job only, no duplicate or source edits. It starts from the authentic54-field unfinished draft and revalidates32native receipts before any provider work. First actor dispatch must be after reported17:40UTC subscription reset; an actual limit stops again. Preserve all50080priorattempts and original57patients/114fields. Corrected initial row-prose instructions pass97checks; live quality/performance remain unproven. On terminal inspect exact remaining bindings, source/coverage review, checkpoint preservation and complete accounting; do not repeat unchanged votes. Retained recovery is not fresh first-composition acceptance. Currentapp8890 remainsac9af6fe/PID10814/session68585. Alltenareas, finalrelease/package andG5/customer dependencies retained.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

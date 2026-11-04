@@ -1,5 +1,11 @@
 # Composition repair and retained-evidence comparison
 
+## Initial binding-contract candidate f2cc427c
+
+The first composition prompt allowed attributed numerical quotations with a matching sources entry, while the existing patient-row compiler requires a complete typed documentary assertion in the same entity basis and attribution of record ID and date in the field. The instructions now match that stricter existing rule. The row-prose example includes executable scalar bindings, and the initial prompt asks for source-derived quantities before drafting. Runtime verification is unchanged.
+
+The actual prompt example compiles; foreign entity/basis and unbound prose counterexamples remain rejected.97focusedchecks pass. The first proof attempt selected the wrong prose example in its test parser; that fixture failure and corrected successful run are both retained. This is a candidate protocol correction, not measured first-composition improvement. A single continuation of the authentic54-field draft is running with current native revalidation and no owner prose/binding edits. Preserve its original failed run and all attempts.
+
 ## November 4: interruption recovery delivered on ac9af6fe
 
 An actual subscription limit previously caused the outer proposer to discard the newest compiler draft and return HTTP502 without a recovery link. The product now keeps that draft separate from the older structurally complete answer, saves an immutable checkpoint, and exposes the saved investigation in both the error response and reopened conversation. A changed draft receives its own checkpoint identity. The provider failure still stops generation and downstream work; uncompiled prose is not marked verified.
