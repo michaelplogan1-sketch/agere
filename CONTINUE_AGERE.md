@@ -1,12 +1,10 @@
-# Current Agere checkpoint — 2026-11-04T11:57:28.822755+00:00
+# Current Agere checkpoint — 2026-11-04T12:41:54.174511+00:00
 
-G3 ACTIVE. Preparing the sole retained-protocol continuation onade0bba8; source frozen, no duplicate request. Receipt `artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation/receipt.json`. Owned8890stillb7e71e56/PID87110/session93413; direct continuation runs currentcode.
+G3 ACTIVE. All request jobs terminal; source unfrozen. Scoped binding repair64744b2c sealed at `artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-delivery-receipt.json`. Owned app8890PID92444/session54602 serves currentcode; primary8885 unchanged.
 
-Latestseal:`artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/protocol-delivery-receipt.json`. Exact actual malformed-response replay retains57rows/114fields/34targets; baseline loses repaircontext.283tests pass. Failedordinary826.653s/20attempts/$12.874891328API-equivalent/57native rows but0prose preserved. All49506attempts retained. No fullMVP orclinicalqualification.
+Actual saved draft34->1compiler failures offline,1->0in currentcontinuation.57patients/114fields/nativecells exact throughHTTP.207.596s/145attempts(5Haiku,70Jev,70Perplexity)/$0.637747706API-equivalent,0unpriced;49666totalledgerrows. Source56/60supported,fourpackets/globalcoverageundecided;answerpartial.289regressions pass. No fullMVP/clinicalqualification or fresh-first performance claim.
 
-Exact next: G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained.
-
-Alltenareas, source/globalunknowns and standing restrictions retained.
+Exact next: G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.
 
 ## Superseded morning checkpoint
 

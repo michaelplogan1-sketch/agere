@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T11:57:28.822755+00:00",
+  "updated_at": "2026-11-04T12:41:54.174511+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -434,15 +434,19 @@
         {
           "path": "artifacts/agere-current-release-finish-2026-11-04/delivery-receipt.json",
           "sha256": "1617374ae20b0bfbae16c783d3fd65d5b84a9df06d9353b7a346ae6ddcc1f4a0"
+        },
+        {
+          "path": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-delivery-receipt.json",
+          "sha256": "3966973873db9da15093b7bbc9b18c48aa165cd9fd1856c759a44af7e12184b6"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Original clinical first composition without a saved final proposal has not demonstrated all requested patient-specific fields or acceptable measured economics. Final packaging follows that check. One joint source-support dependency and global coverage remain unknown; independent G5/customer prerequisites stay separate.",
+      "remaining_acceptance": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: close the original clinical first-composition behavior. Use artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json and the retained405.339-second native-prefix request to identify why a newly composed answer omitted114patient-specific prose fields despite57native rows. Reuse existing source observations and shared typed assertion/state/composition; no whole-cohort reading campaign or repeated passing warm-reuse/matrix run. Before another provider experiment, prepare the exact ordinary-question comparison and acceptance check: full57patients, names/clinical information/dated PCP and cardiologist, requested drug-pillar/dose reasons and patient-specific recommendations or explicit source-bound unknowns, with all attempts and costs. Distinguish first composition without a prior final proposal from current guarded proposal reuse and cold source ingestion; never inject a precomputed answer as ordinary planning. Repair only the measured generic composition failure, confirm once through the ordinary entry, then seal the final distributable. Preserve joint source/coverage unknowns, alltenareas, separate G5independent qualification/customer prerequisites, approved provider/source/push authority and standing restrictions.",
+      "next_action": "G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -521,22 +525,22 @@
     }
   ],
   "checkpoint": {
-    "kind": "composition_protocol_state_sealed",
+    "kind": "binding_repair_scoped_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Malformed JSON or an unexecuted tool envelope no longer clears the retained draft repair targets. A replacement that drops patient prose is rejected before review.",
-    "measured_failure_reduction": "Exact observed malformed response: baseline loses focused targets after one call; current loop retains57rows/114fields/34targets through allthree inspected actor boundaries. The prose-dropping replacement reaches review in baseline only.",
+    "user_behavior_delta": "Valid patient prose binding repairs survive a bad neighboring field; all57patients/114prosefields now return from retained first composition.",
+    "measured_failure_reduction": "34->1offline,1->0currentcontinuation;57patients/114fields/nativevalues exact through app.",
     "evidence": [
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/protocol-delivery-receipt.json"
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-delivery-receipt.json"
     ],
-    "remaining_gap": "The complete ordinary clinical first-composition result remains unqualified. Resume the saved34-field failed draft once through the current local repair path; do not repeat the whole question or source campaign. Final package and release applicability follow successful composition.",
-    "next_action": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained.",
+    "remaining_gap": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate.",
+    "next_action": "G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All request jobs terminal. Run completed2026-11-04T08:20:56Z; no further build execution evidenced before morning check-in. App8890 remains a6197e9e; source unfrozen.",
+    "coordination": "All request jobs terminal. Product64744b2c nowserved on8890; source unfrozen. Primary8885 unchanged.",
     "remaining_blockers": [
-      "One combined source check and global completeness unresolved; scopedseal/privatepush/finalcurrentpackaging remain. IndependentG5/customerqualification separate."
+      "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate."
     ],
-    "latest_progress": "Exact observed malformed response: baseline loses focused targets after one call; current loop retains57rows/114fields/34targets through allthree inspected actor boundaries. The prose-dropping replacement reaches review in baseline only.",
+    "latest_progress": "Scoped compiler repair and current saved workflow sealed; fresh ordinary current confirmation remains.",
     "results_report": "artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -585,17 +589,14 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T11:57:28.822755+00:00",
-    "workflow_change": "Ordinary original-question entry automatically reexecutes its validated native trajectory and submits the retained unaccepted draft to full current verification. Exact question, population/date, source/policy and physician-feedback guards remain. Repeated identical review feedback no longer creates a duplicate proposal or repeats fresh candidate validation.",
+    "at": "2026-11-04T12:41:54.174511+00:00",
+    "workflow_change": "34compiler failures cleared through equivalent date handling and retained valid edits; full current review remains.",
     "unsealed_work": {
-      "status": "retained_protocol_continuation_starting",
-      "all_jobs_terminal": false,
-      "source_frozen": true,
+      "status": "none",
+      "all_jobs_terminal": true,
+      "source_frozen": false,
       "product_edits": false,
-      "product_commit": "ade0bba82269a892b3470a14254f73677e5cdb63",
-      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation/receipt.json",
-      "preceding_failed_run": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/ordinary-current/run-receipt.json",
-      "remaining": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained."
+      "remaining": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate."
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -646,7 +647,15 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [],
+    "active_jobs": [
+      {
+        "kind": "retained_protocol_continuation_v2",
+        "pid": 89299,
+        "session": 72126,
+        "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation-v2/receipt.json",
+        "source_frozen": true
+      }
+    ],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -3559,17 +3568,34 @@
       "decision": "Seal exact repair-state correction; resume only its retained failed draft.",
       "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/protocol-delivery-receipt.json",
       "scope_impact": "No changes to thresholds, clinical meanings, source scope or finite acceptance."
+    },
+    {
+      "at": "2026-11-04T12:03:17.763242+00:00",
+      "decision": "Correct empty compiler repair classification, preserving the existing source-review no-change behavior.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/compiler-decline-proof.json",
+      "scope_impact": "Existing stopping rule only; no thresholds, facts, scope or acceptance narrowed."
+    },
+    {
+      "at": "2026-11-04T12:23:52.936761+00:00",
+      "gate": "G3",
+      "decision": "Reassess before further provider work: two targeted continuations did not complete composition. Diagnose actual rejected patches offline; fix generic repair state/progress rather than repeat whole question.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation-v2/receipt.json",
+      "scope_impact": "No acceptance area removed; no new architecture/model/research scope."
+    },
+    {
+      "at": "2026-11-04T12:30:57.488733+00:00",
+      "gate": "G3",
+      "decision": "Allow only retained one-field continuation after actualoffline34-to-1reduction; no full question/provider campaign. Calendar-valid date equivalence and independent binding preservation remove measured failures without changing native values or conferring source authority.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-subset-proof/receipt.json",
+      "scope_impact": "Alltenareas unchanged."
     }
   ],
   "unsealed_work": {
-    "status": "retained_protocol_continuation_starting",
-    "all_jobs_terminal": false,
-    "source_frozen": true,
+    "status": "none",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
     "product_edits": false,
-    "product_commit": "ade0bba82269a892b3470a14254f73677e5cdb63",
-    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation/receipt.json",
-    "preceding_failed_run": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/ordinary-current/run-receipt.json",
-    "remaining": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained."
+    "remaining": "Current saved continuation restores all57patients/114fields and clears compiler failures;4of60source packets and global coverage remain undecided, without an established source fault. Fresh ordinary first-composition on this code and its economics still require current confirmation; final package follows. Independentclinical/modelG5 and customer deployment prerequisites remain separate."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3598,7 +3624,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained.",
+  "next_action": "G3: qualify the current32-step native-only prefix offline after64744b2c, explicitly withholding all final proposals. Confirm the original question once through the ordinary app with all57patients, nativeclinical/name/datedrolefields and114patient-specific explanation/proposal fields or explicit source-bound unknowns; preserve every attempt and actual cost. Current retained continuation nowpasses composition and stops appropriately on four source/global unknowns. Do not repeat the whole-cohort source-reading campaign or another passing reuse/matrix campaign. After current first-composition evidence, assess release applicability and make the final distributable. Retain alltenareas and separateG5/customer qualification.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3687,6 +3713,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 87110,
-  "owned_server_session": 93413
+  "owned_server_pid": 92444,
+  "owned_server_session": 54602
 }

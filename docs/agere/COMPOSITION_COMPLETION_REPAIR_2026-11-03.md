@@ -1,5 +1,19 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: preserve useful repairs and complete the retained composition
+
+Product `64744b2c` closes the observed all-or-nothing binding failure. Calendar-valid shorthand dates such as `2026-09-03/17` are equivalent to the two fully written dates; invalid dates, ratios, changed values, units and meaning remain guarded. Independently valid binding fields survive an invalid neighbor. Structural and source-meaning edits remain atomic, and every resulting draft receives the complete compiler/source review. Errors now identify the patient, field and exact expected/rendered text; changing a temporary SQL alias no longer resets the same failed repair.
+
+On the actual saved draft, 34 compiler targets fell to 29 through date-format recognition and then to one through 28 preserved model-authored binding edits. All 57 patients, 114 prose fields and native values remained intact. Six recorded SQL actions were reexecuted and 870 retained prompt rows checked. This offline proof made zero provider calls and preserved all 49,521 prior ledger rows. The selected regression suite passes 289 tests.
+
+The existing saved-draft continuation then cleared the remaining compiler failure and returned all requested fields in **207.596 seconds**, with **145 new attempts: five Claude Haiku, 70 Jev and 70 Perplexity**. API-equivalent usage was **$0.637747706**, with no unpriced attempts. All native values, source/code, prior attempt rows and prior exports were preserved. This is retained recovery, not a fresh first-request latency comparison. The failed 627.815-second/$12.29129565 attempt and the zero-provider continuation preflight failure are preserved.
+
+Source support is **56/60 packets**; four packets and overall coverage remain undecided. Located uncertainties favor support below the existing decision threshold; they do not establish a factual error. A source-edit attempt produced malformed JSON, followed by an empty repair; the unchanged, compiled complete draft was retained as partial. No threshold was lowered, no model weights promoted and no clinical or full-MVP acceptance claimed.
+
+The owned port8890 app now runs this product commit. The saved answer `ANS-2928a39ee36bbabe120de52f` reopens with all table and prose values exact, current source/policy, available continuation control and zero new provider attempts. Primary8885 is unchanged. Receipt: `artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/binding-delivery-receipt.json`.
+
+Next is one current ordinary first-composition confirmation with a freshly qualified native-only prefix and no stored answer, followed by final release applicability/packaging. All ten acceptance areas remain; independent clinical/model qualification and customer deployment prerequisites are separate.
+
 ## November 4: preserve focused repair through protocol errors
 
 Current product `ade0bba8` fixes a reproduced state-loss defect. Invalid JSON and unexecuted tool envelopes previously replaced the structured repair assessment with a string; the next iteration lost its focused patch boundary and could discard all patient prose. These errors now retain the assessment and draft, while separate protocol feedback requests correction. Replacement answers remain rejected before review.
