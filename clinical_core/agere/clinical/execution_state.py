@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/12'
+VERSION = 'execution-state/14'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -213,6 +213,11 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
             target=located.get((ident,field))
             if targets and target is None:
                 raise ValueError('A focused repair may edit only the producer-located fields')
+            if isinstance(value,dict)and 'bind_literals'in value:
+                if (not target or target['code']not in ('unbound_literal','missing_scalar_source')
+                        or feedback.get('prose_repair',{}).get('intent')=='source_meaning_review'):
+                    raise ValueError('Literal binding edits require a located binding-only compiler failure')
+                value=bind_prose_literals(existing[ident]['fields'][field],value,native)
             if target and target['code']in ('unbound_literal','missing_scalar_source'):
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native)
@@ -240,6 +245,57 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
             row['fields'].update(copy.deepcopy(changes[ident]));row['basis'].extend(copy.deepcopy(additions[ident]))
     if rejected:binding_rejections.extend(copy.deepcopy(e.detail)for e in rejected)
     return merged
+
+
+def bind_prose_literals(value,operation,native):
+    """Attach native cells to unchanged literal spans, without model rewriting.
+
+    This only constructs the existing scalar template contract. The ordinary
+    compiler still checks entity bases, source completeness and every value;
+    independent review still checks meaning. No new evidence is created.
+    """
+    import string,re
+    if set(operation)!={'bind_literals'}or not isinstance(operation['bind_literals'],list)or not operation['bind_literals']:
+        raise ValueError('bind_literals requires a nonempty list of literal/binding edits')
+    if isinstance(value,str):parts=[(value,None)];bindings={}
+    else:
+        repair_rendered_value(value,native)
+        bindings=dict(value['bindings']);parts=[]
+        for literal,name,spec,conversion in string.Formatter().parse(value['template']):
+            if name is not None and (not re.fullmatch(r'[A-Za-z_]\w*',name)or spec or conversion):
+                raise ValueError('Literal binding requires plain existing placeholders')
+            parts.append((literal,name))
+    replacements={};used=set(bindings)
+    for edit in operation['bind_literals']:
+        if (not isinstance(edit,dict)or not {'literal','binding'}<=set(edit)
+                or set(edit)-{'literal','binding','occurrence'}or not isinstance(edit['literal'],str)or not edit['literal']):
+            raise ValueError('Each literal edit requires exact literal text and an executed scalar binding')
+        literal=edit['literal'];matches=[]
+        for index,(text,_)in enumerate(parts):
+            matches.extend((index,m.start(),m.end())for m in re.finditer(re.escape(literal),text))
+        if 'occurrence'not in edit and len(matches)!=1:
+            raise ValueError('Literal must occur exactly once, or specify its zero-based occurrence outside existing placeholders')
+        occurrence=edit.get('occurrence',0)
+        if type(occurrence)is not int or occurrence<0 or occurrence>=len(matches):
+            raise ValueError('Literal occurrence is unavailable outside existing placeholders')
+        index,start,end=matches[occurrence]
+        if any(start<b and a<end for a,b,_ in replacements.get(index,[])):
+            raise ValueError('Literal binding edits cannot overlap')
+        rendered=repair_rendered_value({'template':'{value}','bindings':{'value':edit['binding']}},native)
+        if canonical_repair_prose(literal)!=canonical_repair_prose(rendered):
+            raise ValueError('Literal binding must preserve the exact value; query its actual source instead of changing the sentence')
+        serial=len(used);name='bound_literal_'+str(serial)
+        while name in used:serial+=1;name='bound_literal_'+str(serial)
+        used.add(name);bindings[name]=edit['binding'];replacements.setdefault(index,[]).append((start,end,name))
+    template=[]
+    escape=lambda text:text.replace('{','{{').replace('}','}}')
+    for index,(text,name)in enumerate(parts):
+        cursor=0
+        for start,end,new_name in sorted(replacements.get(index,[])):
+            template.extend((escape(text[cursor:start]),'{'+new_name+'}'));cursor=end
+        template.append(escape(text[cursor:]))
+        if name is not None:template.append('{'+name+'}')
+    return {'template':''.join(template),'bindings':bindings}
 
 
 def expand_date_pairs(text):
@@ -491,6 +547,12 @@ def focused_prose_state(candidate,feedback,calls):
         'instruction':'These are all located compiler failures, not a reduced patient cohort or a clinical conclusion. '
             'Repair only the named fields. Preserve each original sentence, numerical details, units, dates and uncertainty; '
             'use scalar bindings rather than deleting facts. Number words may become the equivalent numeral. '
+            'For binding-only repairs prefer the compact field value {"bind_literals":[{"literal":"exact unbound text",'
+            '"binding":{"result_view":"an executed view","row":0,"column":"its scalar column"}}]}. '
+            'Code attaches each binding to that exact span in the retained sentence and preserves all existing placeholders. '
+            'Do not repeat or rewrite the sentence. If the literal occurs more than once outside placeholders, include '
+            '"occurrence":zero_based_index for the intended occurrence in the ORIGINAL template. '
+            'The cell must reproduce the same text/value; normal same-entity basis_additions and complete review still apply. '
             'Do not copy draft numbers or entity IDs into source-free SQL constants: that cannot establish an evidence binding. '
             'Every other native row, original prose field and source remains retained and receives the complete review. '
             'Additional basis rows must carry the same entity keys. For a source value inside a nested column, use query_sql '
@@ -797,6 +859,34 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
     if focus:
         # This subset is a repair view, never complete population evidence.
         from .result_assembly import _rows
+        # A binding-only edit cannot change its sentence. When every failed
+        # sentence for an entity explicitly names known records, present those
+        # records in full rather than all unrelated findings for that entity.
+        # Uncited fields and source-meaning review keep the broader reading.
+        import re
+        native={c['result']['result_view']:c['result']for c in calls
+            if isinstance(c.get('result'),dict)and c['result'].get('result_view')and not c['result'].get('error')}
+        records={};cited={};uncited=set()
+        for entry in state['executed_results']:
+            reading=entry.get('complete_reading')
+            if not isinstance(reading,dict):continue
+            try:columns,rows=_rows(reading)
+            except ValueError:continue
+            if not (set(focus['keys'])|{'record_id'})<=set(columns):continue
+            for row in rows:
+                if isinstance(row.get('record_id'),str)and row['record_id']:
+                    key=digest({k:row[k]for k in focus['keys']})
+                    records.setdefault(key,set()).add(row['record_id'])
+        if focus.get('intent')!='source_meaning_review':
+            for target in focus['targets']:
+                key=digest(target['key'])
+                try:prose=repair_rendered_value(target['value'],native)
+                except ValueError:uncited.add(key);continue
+                found={record for record in records.get(key,())
+                       if re.search(r'(?<![\w-])'+re.escape(record)+r'(?![\w-])',prose)}
+                if not found:uncited.add(key)
+                cited.setdefault(key,set()).update(found)
+        cited={k:v for k,v in cited.items()if k not in uncited}
         for entry in state['executed_results']:
             reading=entry.get('complete_reading')
             if not isinstance(reading,dict):continue
@@ -804,10 +894,20 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             except ValueError:continue  # Preserve incomplete readings and their warnings in full.
             if not set(focus['keys'])<=set(columns):continue
             indices=[i for i,row in enumerate(rows)if digest({k:row[k]for k in focus['keys']})in selected_keys]
+            entity_rows=len(indices)
+            if 'record_id'in columns and cited:
+                indices=[i for i in indices if not isinstance(rows[i].get('record_id'),str)
+                    or not rows[i]['record_id']
+                    or digest({k:rows[i][k]for k in focus['keys']})not in cited
+                    or rows[i]['record_id']in cited[digest({k:rows[i][k]for k in focus['keys']})]]
             entry.pop('complete_reading')
             entry['repair_reading']={'columns':columns,'rows':[rows[i]for i in indices],'native_row_indices':indices,
                 'native_total_rows':len(rows),'complete_native_result_retained':True,
                 'scope':'Exact rows for the located repair entities only; all other rows remain queryable and in the final answer.'}
+            if len(indices)!=entity_rows:
+                entry['repair_reading'].update(repair_entity_rows=entity_rows,
+                    selection='Explicit record references in every failed binding sentence for the entity; no relevance inference or row cap.',
+                    scope='Complete rows for explicitly cited records in binding-only repair. Other records remain in this result_view and are queryable with read_all_rows=true. This is not a source review or a narrowed cohort.')
         state['focused_prose_repair']=focus
         state['instruction']+=' A focused_prose_repair replaces full draft repetition only for the producer-bound repair fields; it never narrows the requested output or source obligations.'
     elif candidate is not None:

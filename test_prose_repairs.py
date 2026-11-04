@@ -8,6 +8,94 @@ from clinical_core.contracts import digest
 
 
 class ProseRepairs(unittest.TestCase):
+    def test_compact_literal_binding_runs_existing_full_review_without_rewriting(self):
+        feedback=self.located_failure();original=copy.deepcopy(self.base);reviews=[]
+        address={'result_view':'agere_result_1','row':0,'column':'events'}
+        def review(candidate,calls):
+            reviews.append(copy.deepcopy(candidate))
+            if len(reviews)==1:return feedback
+            self.compile(candidate);return {'status':'confirmed'}
+        def send(body):
+            state=json.loads(body['messages'][0]['content'])
+            self.assertIn('bind_literals',state['focused_prose_repair']['instruction'])
+            return {'content':[{'type':'text','text':json.dumps(self.patch(review={
+                'bind_literals':[{'literal':'two','binding':address}]}))}]},0.,False
+        out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('No new source needed'),
+            send=send,model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+            review=review,compact_execution_state=True)
+        self.assertEqual(len(reviews),2);self.assertEqual(out['prose_repairs'][0]['changed_fields'],1)
+        self.assertEqual(out['answer']['table'][0]['review'],'Review 2 events on 2030-01-01; preserve the uncertainty.')
+        self.assertEqual(out['answer']['sources'],original['sources'])
+        self.assertEqual(out['answer']['row_prose']['rows'][1],original['row_prose']['rows'][1])
+        self.assertEqual(self.base,original)
+
+    def test_literal_binding_preserves_placeholders_braces_and_original_occurrence_indices(self):
+        address={'result_view':'agere_result_1','row':0,'column':'events'}
+        native={'agere_result_1':self.calls[0]['result']}
+        value={'template':'Literal {{prior}}: {n} events; two before two after.', 'bindings':{'n':address}}
+        operation={'bind_literals':[{'literal':'two','occurrence':1,'binding':address},
+                                   {'literal':'two','occurrence':0,'binding':address}]}
+        before=copy.deepcopy(value);out=E.bind_prose_literals(value,operation,native)
+        self.assertEqual(E.repair_rendered_value(out,native),'Literal {prior}: 2 events; 2 before 2 after.')
+        self.assertEqual(out['bindings']['n'],address);self.assertEqual(value,before)
+        self.assertEqual(len(out['bindings']),3)
+        for edits in ([{'literal':'two','binding':address}],
+                      [{'literal':'two','binding':address,'occurrence':True}],
+                      [{'literal':'two','binding':address,'occurrence':2}],
+                      [{'literal':'n','binding':address}],
+                      [{'literal':'three','binding':address}],
+                      [{'literal':'two','binding':address,'occurrence':0}]*2):
+            with self.subTest(edits=edits),self.assertRaises(ValueError):
+                E.bind_prose_literals(value,{'bind_literals':edits},native)
+        with self.assertRaisesRegex(ValueError,'preserve the exact value'):
+            E.bind_prose_literals('Three events',{'bind_literals':[{'literal':'Three','binding':address}]},native)
+
+    def test_compact_binding_cannot_bypass_entity_basis_or_source_meaning_boundary(self):
+        feedback=self.located_failure();self.calls[0]['result']['rows'][1][1]=2
+        address={'result_view':'agere_result_1','row':1,'column':'events'}
+        proposal=self.patch(review={'bind_literals':[{'literal':'two','binding':address}]})
+        merged=E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback)
+        with self.assertRaisesRegex(ValueError,'declared evidence bases'):self.compile(merged)
+        before=copy.deepcopy(self.base)
+        with self.assertRaisesRegex(ValueError,'binding-only'):
+            E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback={**feedback,
+                'prose_repair':{**feedback['prose_repair'],'intent':'source_meaning_review'}})
+        with self.assertRaisesRegex(ValueError,'binding-only'):
+            E.apply_prose_repair(proposal,self.base,calls=self.calls)
+        self.assertEqual(self.base,before)
+
+    def test_binding_reading_selects_explicit_records_without_hiding_native_rows(self):
+        for cite in (True,False):
+            with self.subTest(cite=cite):
+                self.setUp();self.located_failure()
+                if cite:self.base['row_prose']['rows'][0]['fields']['review']='Review two events reported in note_A.'
+                columns=['patient_id','record_id','text'];rows=[['A','note_A','Complete cited observation.'],
+                    ['A','note_A_extra','Complete separate observation.'],['B','note_B','Other entity.']]
+                source={'result_view':'agere_result_2','columns':columns,'rows':rows,'truncated':False,
+                    'actor_reading':{'mode':'complete_rows','rows_digest':digest(rows),'columns_digest':digest(columns)}}
+                calls=self.calls+[{'name':'query_sql','input':{'sql':'SELECT patient_id,record_id,text FROM notes','read_all_rows':True},'result':source}]
+                feedback=B.review_final(SimpleNamespace(),'Explain each entity',self.base,calls,
+                    SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+                before=copy.deepcopy(calls)
+                state=json.loads(E.messages('Both entities',calls,candidate=self.base,feedback=feedback)[0]['content'])
+                reading=state['executed_results'][1]['repair_reading']
+                self.assertEqual(reading['native_row_indices'],[0]if cite else[0,1])
+                self.assertEqual(reading['native_total_rows'],3);self.assertTrue(reading['complete_native_result_retained'])
+                self.assertEqual(reading['rows'][0]['text'],'Complete cited observation.')
+                self.assertEqual(calls,before)
+                self.assertEqual(state['focused_prose_repair']['complete_row_prose_rows'],2)
+                if cite:
+                    # Source-meaning review must still see the broader entity
+                    # evidence even when the proposed sentence cites one note.
+                    self.base['row_prose']['rows'][0]['fields']['review']='Inspect note_A; current responsibility remains unknown.'
+                    self.compile(self.base)
+                    packet,support=self.source_review()
+                    source_feedback={'repair_kind':'unresolved_verification',
+                        'prose_repair':E.source_prose_repair(self.base,support,[packet],{}),'support':support}
+                    wider=json.loads(E.messages('Both entities',calls,candidate=self.base,feedback=source_feedback)[0]['content'])
+                    self.assertEqual(wider['focused_prose_repair']['intent'],'source_meaning_review')
+                    self.assertEqual(wider['executed_results'][1]['repair_reading']['native_row_indices'],[0,1])
+
     def test_date_pair_equivalence_preserves_calendar_values_and_other_quantities(self):
         self.assertEqual(E.canonical_repair_prose('Recorded on 2026-09-03/17.'),
                          E.canonical_repair_prose('Recorded on 2026-09-03 and 2026-09-17.'))
