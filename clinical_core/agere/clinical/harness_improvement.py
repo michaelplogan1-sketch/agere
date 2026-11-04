@@ -2,8 +2,9 @@
 
 Trajectories propose literal action prefixes. A fresh native executor validates
 their outputs before selection. Complete downstream outcomes can activate them;
-fully source-supported partial outcomes can qualify only a read-only prefix,
-without storing or accepting the final answer. Source/meaning changes abstain.
+fully checked partial outcomes can retain a reviewable draft proposal after
+complete native validation. Every replay reviews it again; it is never a trusted
+final answer. Source/meaning changes withhold the proposal.
 This learns execution, never clinical definitions or a supposed correct answer.
 Only these new operational tables are read; legacy learning/answer stores are not.
 """
@@ -452,6 +453,24 @@ def replay(tools,question,context,model,*,_report=None):
         finally:db.close()
     else:
         report['final_answer']=config.get('final_answer')
+        proposal=config.get('reviewable_draft')
+        if proposal is not None:
+            report['final_answer']=None
+            if (config.get('qualification_mode')!='reviewable_partial_proposal'
+                    or config.get('final_answer')is not None or config.get('workflow_contract')
+                    or not isinstance(proposal,dict)or proposal.get('status')!='partial'or proposal.get('workflow')
+                    or (config.get('proposal_evidence')or{}).get('answer_digest')!=digest(proposal)):
+                report['reason']='Retained proposal binding changed; investigate using current native results.'
+                db=database(tools.stack.path)
+                try:
+                    with db:event(db,config['id'],'quarantined',{'reason':report['reason']})
+                finally:db.close()
+            else:
+                report['resume_draft']=copy.deepcopy(proposal)
+                report['resume_draft'].update(status='partial',verification='unverified')
+                report['draft_recovery']={'status':'revalidated_for_review','draft_digest':digest(proposal),
+                    'native_receipts_checked':len(report['calls']),'prior_verdict_accepted':False,
+                    'full_current_review_required':True,'origin':'validated_execution_candidate'}
     return report
 
 
@@ -491,17 +510,54 @@ def partial_prefix_evidence(result):
             'source_packets':len(packets),'final_answer_accepted':False,'downstream_workflow':False}
 
 
-def propose(tools,question,context,model,calls,make_executor,final_answer=None,baseline_metrics=None,partial_result=None):
+def draft_proposal_evidence(result):
+    """Allow checked unfinished work to seed review, never answer acceptance."""
+    if not isinstance(result,dict):return None
+    investigation=result.get('investigation')or result
+    if not isinstance(investigation,dict):return None
+    answer=result.get('answer')or investigation.get('answer')or{}
+    reviews=investigation.get('answer_reviews')or[]
+    if (not isinstance(answer,dict)or answer.get('status')!='partial'or answer.get('verification')!='unverified'
+        or result.get('workflow')or answer.get('workflow')or investigation.get('error')or investigation.get('unaccepted_draft')
+        or not isinstance(reviews,list)or not reviews):return None
+    evidence=partial_prefix_evidence(result)
+    if evidence is not None:return {**evidence,'full_current_review_required':True}
+    review=reviews[-1]
+    if not isinstance(review,dict):return None
+    support=review.get('support')or{};coverage=review.get('coverage')or{}
+    if not isinstance(support,dict)or not isinstance(coverage,dict):return None
+    from .backstop_agent import verification_repair_state
+    try:state=verification_repair_state(coverage,support)
+    except (ValueError,KeyError,TypeError):return None
+    pending=(state or {}).get('unresolved_verification')or[]
+    if (investigation.get('review_stopped')!='unresolved_source_support'
+        or review.get('status')!='repair'or review.get('repair_kind')!='unresolved_verification'
+        or review.get('retry_disposition')!='retain_partial_until_new_evidence'
+        or review.get('review_stop_reason')!='unresolved_source_support'
+        or not pending or state!=review.get('progress_state')or support.get('all_dependencies_checked')is not True
+        or support.get('failed_packet_ids')or support.get('unchecked_packet_ids')or support.get('claim_feedback')
+        or support.get('global_stop')or support.get('blocked_family_ids')
+        or sorted(support.get('joint_verification_wait')or[])!=sorted(p['id']for p in pending)):return None
+    return {'answer_digest':digest(answer),'review_digest':digest(review),'final_answer_accepted':False,
+        'downstream_workflow':False,'full_current_review_required':True,'unresolved_joint_packets':[p['id']for p in pending]}
+
+
+def propose(tools,question,context,model,calls,make_executor,final_answer=None,baseline_metrics=None,partial_result=None,proposal_result=None):
     """Training feedback -> candidate -> fresh-executor validation -> pending selection.
 
     No model callback is removed until validation and the relevant terminal
     outcome qualify it. Evidence review always runs after replay; a partial
-    prefix stores no final draft and resumes the ordinary actor.
+    prefix stores no final draft. A separately qualified proposal requires every
+    action, its current native result, and a new complete review on each replay.
     """
     if not enabled():return None
     partial_evidence=partial_prefix_evidence(partial_result)if partial_result is not None else None
     if partial_result is not None and (not partial_evidence or final_answer is not None):
         raise ValueError('Execution-only partial prefix requires native support and no stored final answer')
+    proposal_evidence=draft_proposal_evidence(proposal_result)if proposal_result is not None else None
+    if proposal_result is not None and (not proposal_evidence or final_answer is not None or partial_result is not None):
+        raise ValueError('Reviewable proposal needs checked unfinished work and no accepted final answer')
+    proposal=copy.deepcopy((proposal_result.get('answer')or(proposal_result.get('investigation')or{}).get('answer')))if proposal_evidence else None
     key=identity(tools,question,context,model);selected=latest(tools.stack.path,key);parent=latest(tools.stack.path,key,selected=False)
     actions=[];boundary=None
     for index,c in enumerate(calls):
@@ -518,7 +574,15 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
         actions.append({'name':c['name'],'input':c['input'],'expected_result':digest(comparison_result(c['name'],out,calls[:index])),
                         'actor_callback_id':c['actor_callback_id']})
     if not actions:return None
-    if selected and len(actions)<=len(selected['actions']) and (selected.get('final_answer') or final_answer is None):return None
+    if proposal is not None:
+        if len(actions)!=len(calls)or any(c['result'].get('error')for c in calls):return None
+        # Existing checkpoint validation checks complete native binding closure
+        # and callback provenance. Historical reviewer control state is excluded.
+        try:checkpoint=recovery_checkpoint(tools,question,context,{'answer':proposal,'tool_calls':calls,'answer_reviews':[]})
+        except ValueError:return None
+        if not checkpoint or checkpoint['review_contexts']:return None
+    if (selected and len(actions)<=len(selected['actions']) and (selected.get('final_answer') or final_answer is None)
+        and (proposal is None or selected.get('reviewable_draft')==proposal)):return None
     candidate={'schema':VERSION,'identity':key,'parent':parent['id'] if parent else None,
                'round':parent['round']+1 if parent else 1,'actions':actions,
                'final_answer':final_answer if len(actions)==len(calls) else None,
@@ -529,6 +593,8 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
     if boundary:candidate['prefix_boundary']=boundary
     if partial_evidence:
         candidate.update(qualification_mode='source_supported_partial_prefix',partial_execution_evidence=partial_evidence)
+    if proposal is not None:
+        candidate.update(qualification_mode='reviewable_partial_proposal',reviewable_draft=proposal,proposal_evidence=proposal_evidence)
     ident=digest(candidate);db=database(tools.stack.path)
     try:
         with db:
@@ -536,7 +602,7 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
             # and embedded JSON text. Preserve the validated action, including
             # nested mapping order, instead of sorting it for storage.
             db.execute('INSERT OR IGNORE INTO harness_candidates VALUES (?,?)',(ident,json.dumps(candidate)))
-            event(db,ident,'candidate',{'training_feedback':'Source-supported partial analysis supplied a read-only prefix; final answer remains unaccepted'if partial_evidence else'Complete checked analysis supplied the current native action trajectory',
+            event(db,ident,'candidate',{'training_feedback':'Checked unfinished analysis supplied a proposal for current review, never an accepted answer'if proposal is not None else'Source-supported partial analysis supplied a read-only prefix; final answer remains unaccepted'if partial_evidence else'Complete checked analysis supplied the current native action trajectory',
                                       'failed_request_feedback_events':[seq for seq,payload in db.execute(
                                           "SELECT seq,payload FROM harness_candidate_events WHERE kind='failed_request'")
                                           if json.loads(payload).get('question_digest')==digest(question)],
@@ -545,14 +611,14 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
         # A successful in-memory execution alone cannot certify serialization.
         actions=json.loads(db.execute('SELECT payload FROM harness_candidates WHERE id=?',(ident,)).fetchone()[0])['actions']
         fresh=make_executor()
-        validation=[];fresh_calls=[]
+        validation=[];fresh_calls=[];recovery_token=_OWNED_RECOVERY.set(None)
         try:
             for action in actions:
                 if identity(fresh,question,context,model)!=key:raise ValueError('Source/meaning changed during validation')
                 try:out=fresh({'name':action['name'],'input':action['input']})
                 except (ValueError,sqlite3.Error) as exc:out={'error':str(exc)}
                 same=digest(comparison_result(action['name'],out,fresh_calls))==action['expected_result']
-                fresh_calls.append({'result':out})
+                fresh_calls.append({'name':action['name'],'input':action['input'],'result':out})
                 validation.append({'action':digest([action['name'],action['input']]),'same_output':same})
                 if not same:raise ValueError('Candidate changed a native tool output')
                 if identity(fresh,question,context,model)!=key:raise ValueError('Source/meaning changed during validation')
@@ -564,6 +630,7 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
             with db:event(db,ident,'quarantined',{'reason':type(exc).__name__+': '+str(exc)[:500]})
             return {'id':ident,'status':'quarantined','validation':validation}
         finally:
+            _OWNED_RECOVERY.reset(recovery_token)
             tools.subtool_accounting['new_paid_api_calls']+=fresh.subtool_accounting['new_paid_api_calls']
             tools.subtool_accounting['estimated_cost_usd']+=fresh.subtool_accounting['estimated_cost_usd']
             tools.subtool_accounting['api_cost_known']=tools.subtool_accounting.get('api_cost_known',True) and fresh.subtool_accounting.get('api_cost_known',True)
@@ -596,7 +663,10 @@ def _finish(path,result):
         execution_only=(config.get('qualification_mode')=='source_supported_partial_prefix'
             and config.get('final_answer')is None and not expected and not actual_steps
             and partial_prefix_evidence(result)is not None)
-        execution_qualified=complete or execution_only
+        proposal_only=(config.get('qualification_mode')=='reviewable_partial_proposal'
+            and isinstance(config.get('reviewable_draft'),dict)and config.get('final_answer')is None
+            and not expected and not actual_steps and draft_proposal_evidence(result)is not None)
+        execution_qualified=complete or execution_only or proposal_only
         regression=False
         actual=info.get('actor_metrics') or {}
         receipt=result.get('cost_receipt') or {}
@@ -617,6 +687,7 @@ def _finish(path,result):
         with db:
             event(db,ident,'outcome',{'complete_request':complete,'workflow_statuses':[s.get('status') for s in result.get('workflow',[])],
                                     'execution_only_prefix_qualified':bool(execution_only),
+                                    'reviewable_proposal_qualified':bool(proposal_only),
                                     'candidate_selection_enabled':selecting,'clinical_qualification':False,
                                     'feedback':(result.get('answer') or {}).get('missing',[]),'actor_metrics':actual,
                                     'observed_actor_cost_regression':regression,
@@ -626,7 +697,7 @@ def _finish(path,result):
                                     'cost_scope':'API estimates include readers, review, repair, validation and artifacts when ledger attribution is complete. Total cost remains unmeasured.'})
             if selecting and candidate.get('status')=='validated_pending_complete_workflow':
                 accepted=execution_qualified and not any_regression
-                reason=('Source-supported read-only prefix and native-output validation passed; no final answer acceptance/reuse; total cost benefit remains unqualified'if execution_only else'Full request and native-output validation passed; total cost benefit remains unqualified')if accepted else'Incomplete request or observed cost regression; retain known-good configuration'
+                reason=('Current-review proposal and all native outputs validated; final answer remains unaccepted; total cost benefit unqualified'if proposal_only else'Source-supported read-only prefix and native-output validation passed; no final answer acceptance/reuse; total cost benefit remains unqualified'if execution_only else'Full request and native-output validation passed; total cost benefit remains unqualified')if accepted else'Incomplete request or observed cost regression; retain known-good configuration'
                 event(db,ident,'selected' if accepted else 'quarantined',{'reason':reason})
             if selecting and used and (not execution_qualified or any_regression):
                 event(db,used,'quarantined',{'reason':'Complete request not established or observed cost regressed; resume the retained actor on the next request'})

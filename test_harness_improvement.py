@@ -193,6 +193,113 @@ class Harness(unittest.TestCase):
         return {'answer':{'status':'partial','verification':'unverified','missing':['Current assignment unavailable']},
             'investigation':{'review_stopped':'unresolved_coverage','answer_reviews':[review]},'workflow':[]}
 
+    def proposal_run(self):
+        result=self.supported_partial()
+        result['answer'].update(answer_type='table',table_from_tool='agere_result_2',headline='The current interpretation is unresolved.')
+        return result
+
+    def propose_draft(self,executor,calls,result):
+        context={**self.context,'question':self.q}
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value={'source_digest':'v1'}):
+            return H.propose(executor,self.q,context,self.model,calls,lambda:self.executor(),proposal_result=result)
+
+    def test_partial_proposal_replays_all_native_work_then_requires_current_review(self):
+        import copy
+        e,calls=self.trajectory(2);result=self.proposal_run();original=copy.deepcopy(result)
+        c=self.propose_draft(e,calls,result);self.assertEqual(c['status'],'validated_pending_complete_workflow')
+        result['investigation']['recursive_improvement']={'candidate':c};H.finish(self.root,result)
+        context={**self.context,'question':self.q};executor=self.executor();replay=H.replay(executor,self.q,context,self.model)
+        self.assertEqual(replay['used'],c['id']);self.assertEqual(len(replay['certificates']),2)
+        self.assertEqual(len(executor.executed),2);self.assertIsNone(replay['final_answer'])
+        self.assertEqual(replay['resume_draft'],original['answer'])
+        self.assertTrue(replay['draft_recovery']['full_current_review_required'])
+        self.assertFalse(replay['draft_recovery']['prior_verdict_accepted'])
+        reviewed=[]
+        def review(answer,actual):
+            reviewed.append(copy.deepcopy(answer));self.assertEqual(actual,replay['calls'])
+            return copy.deepcopy(original['investigation']['answer_reviews'][-1])
+        forbidden=lambda *a,**k:self.fail('No actor justified by unchanged review uncertainty')
+        out=S.tool_loop(self.q,'',[],forbidden,send=forbidden,model=self.model,max_tools=None,
+            initial_calls=replay['calls'],initial_answer=replay['resume_draft'],review=review)
+        self.assertEqual(len(reviewed),1);self.assertEqual(out['answer']['status'],'partial')
+        self.assertFalse(out.get('final_decision_reused'))
+        with H.database(self.root)as db:
+            outcome=json.loads(db.execute("SELECT payload FROM harness_candidate_events WHERE candidate=? AND kind='outcome'",(c['id'],)).fetchone()[0])
+        self.assertFalse(outcome['complete_request']);self.assertTrue(outcome['reviewable_proposal_qualified'])
+        self.assertFalse(outcome['clinical_qualification']);self.assertFalse(outcome['total_cost_qualified'])
+        self.assertIsNone(self.propose_draft(e,calls,original))
+
+    def test_proposal_changed_native_or_feedback_withholds_draft(self):
+        e,calls=self.trajectory(2);result=self.proposal_run();c=self.propose_draft(e,calls,result)
+        result['investigation']['recursive_improvement']={'candidate':c};H.finish(self.root,result)
+        context={**self.context,'question':self.q}
+        for question,ctx,executor in ((self.q+' changed',context,self.executor()),(self.q,{**context,'as_of':'2031-01-01'},self.executor()),(self.q,context,self.executor(source='v2'))):
+            replay=H.replay(executor,question,ctx,self.model)
+            self.assertIsNone(replay['used']);self.assertNotIn('resume_draft',replay);self.assertEqual(executor.executed,[])
+        changed=H.replay(self.executor(wrong=True),self.q,context,self.model)
+        self.assertNotIn('resume_draft',changed);self.assertIsNone(changed['final_answer'])
+        self.assertEqual(changed['calls'][0]['result']['rows'],[[99]])
+        self.assertIsNone(H.latest(self.root,H.identity(e,self.q,context,self.model)))
+        c=self.propose_draft(e,calls,result);result['investigation']['recursive_improvement']={'candidate':c};H.finish(self.root,result)
+        H.record_question_correction(self.root,self.q,'The source interpretation needs correction.')
+        replay=H.replay(self.executor(),self.q,context,self.model)
+        self.assertIsNone(replay['used']);self.assertNotIn('resume_draft',replay)
+
+    def test_proposal_validation_cannot_inherit_owned_recovery_or_incomplete_prefix(self):
+        import copy
+        e,calls=self.trajectory(2);result=self.proposal_run();original=Executor.__call__;observed=[]
+        def execute(executor,use):
+            observed.append(H.recovering(self.q));return original(executor,use)
+        with H.owned_recovery([{'name':'query_sql','input':{'sql':'SELECT 1'}}],self.q),patch.object(Executor,'__call__',execute):
+            c=self.propose_draft(e,calls,result)
+            self.assertTrue(H.recovering(self.q))
+        self.assertEqual(observed,[False,False]);self.assertEqual(c['status'],'validated_pending_complete_workflow')
+        for kind in ('missing_origin','operational','error'):
+            changed=copy.deepcopy(calls)
+            if kind=='missing_origin':changed[1].pop('actor_callback_id')
+            elif kind=='operational':changed[1]['result']['incomplete_dependencies']=[{'authority':'unverified_review_feedback','result_view':'review'}]
+            else:changed[1]['result']['error']='Unresolved native failure'
+            with self.subTest(kind=kind):self.assertIsNone(self.propose_draft(e,changed,result))
+
+    def test_proposal_rejects_failed_or_incomplete_review_and_downstream_work(self):
+        import copy
+        result=self.proposal_run()
+        for kind in ('source_fault','missing_check','compiler_failure','error','workflow','no_progress'):
+            changed=copy.deepcopy(result);inv=changed['investigation'];review=inv['answer_reviews'][-1]
+            if kind=='source_fault':review['support']['packets'][0].update(label='contradicted',decided_by='fixture')
+            elif kind=='missing_check':review['support']['all_dependencies_checked']=False
+            elif kind=='compiler_failure':inv['unaccepted_draft']={'reason':'compiler_repair_required'}
+            elif kind=='error':inv['error']='Provider failed'
+            elif kind=='workflow':changed['workflow']=[{'kind':'action'}]
+            else:inv['review_stopped']='no_progress'
+            with self.subTest(kind=kind):self.assertIsNone(H.draft_proposal_evidence(changed))
+
+    def test_joint_source_uncertainty_reuses_only_proposal_and_preserves_unknown(self):
+        import copy
+        from test_completion_routing import joint_fixture
+        from clinical_core.agere.clinical import backstop_agent as B
+        packets,results=joint_fixture();result=self.proposal_run()
+        review=result['investigation']['answer_reviews'][-1]
+        review['support'].update(label='unknown',decided_by=None,packets=results,
+            joint_verification_wait=B.joint_dependency_wait(packets,results))
+        review.update(review_stop_reason='unresolved_source_support',
+            progress_state=B.verification_repair_state(review['coverage'],review['support']))
+        result['investigation']['review_stopped']='unresolved_source_support'
+        self.assertIsNone(H.partial_prefix_evidence(result))
+        self.assertEqual(H.draft_proposal_evidence(result)['unresolved_joint_packets'],['patient_A'])
+        e,calls=self.trajectory(2);c=self.propose_draft(e,calls,result)
+        result['investigation']['recursive_improvement']={'candidate':c};H.finish(self.root,result)
+        replay=H.replay(self.executor(),self.q,{**self.context,'question':self.q},self.model)
+        self.assertEqual(replay['used'],c['id']);self.assertIsNone(replay['final_answer'])
+        self.assertEqual(replay['resume_draft']['verification'],'unverified')
+        for kind in ('unknown_child','missing_joint_certificate','source_fault','global_stop'):
+            changed=copy.deepcopy(result);support=changed['investigation']['answer_reviews'][-1]['support']
+            if kind=='unknown_child':support['packets'][1].update(label='unknown',decided_by=None)
+            elif kind=='missing_joint_certificate':support['joint_verification_wait']=[]
+            elif kind=='source_fault':support['failed_packet_ids']=['patient_A']
+            else:support['global_stop']=True
+            with self.subTest(kind=kind):self.assertIsNone(H.draft_proposal_evidence(changed))
+
     def test_source_supported_partial_can_select_only_reexecuted_prefix_without_final_answer(self):
         import copy
         e,calls=self.trajectory(2);result=self.supported_partial();original=copy.deepcopy(result)

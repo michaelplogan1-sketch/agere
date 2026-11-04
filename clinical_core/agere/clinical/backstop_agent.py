@@ -2845,14 +2845,16 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                        'model_callbacks':run.get('new_paid_api_calls',0)+run.get('cache_hits',0),
                        'input_tokens':run.get('input_tokens'),'output_tokens':run.get('output_tokens')}
         partial_prefix=harness.partial_prefix_evidence(run)is not None
-        if partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed':
+        reviewable_proposal=harness.draft_proposal_evidence(run)is not None
+        if reviewable_proposal or partial_prefix or isinstance(run.get('answer'),dict) and run['answer'].get('status')=='answered' and (run.get('answer_reviews') or [{}])[-1].get('status')=='confirmed':
             def fresh_executor():
                 fresh=semantic_analyst.SemanticWarehouse(path);fresh.define(as_of)
                 if discover_context: install_context(fresh, full_docs)
                 return Tools(stack,fresh,as_of,cohort=tools.cohort,ledger=ledger,question=question)
             candidate=harness.attempt_propose(tools,question,payload,model,run.get('tool_calls') or [],fresh_executor,
-                final_answer=None if partial_prefix else run.get('answer'),baseline_metrics=actor_metrics,
-                partial_result=run if partial_prefix else None)
+                final_answer=None if partial_prefix or reviewable_proposal else run.get('answer'),baseline_metrics=actor_metrics,
+                partial_result=run if partial_prefix and not reviewable_proposal else None,
+                proposal_result=run if reviewable_proposal else None)
         # Reuse is looked up with the entry model above. Escalation describes
         # the actual actor, but must not strand its native prefix under a key
         # the next ordinary request never queries.
