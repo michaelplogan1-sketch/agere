@@ -1,8 +1,8 @@
-# Current Agere checkpoint — 2026-11-04T23:22:15.276398+00:00
+# Current Agere checkpoint — 2026-11-04T23:24:52.781808+00:00
 
-G3: current review on 66194da5 finished in 150.514 seconds with 4 Jev/Perplexity attempts, zero Claude, $0.014869726 API-equivalent. All 37 native actions, 57 patients and 114 narrative fields retained; 60/60 source packets supported. Obsolete compiler instruction removed, unresolved coverage warning freshly retained; coverage remains undecided/partial. All 51105 prior attempts exact. Next verify this saved answer and current ten-area engineering applicability through the owned candidate app, then seal and push this increment. First-answer performance and stable current package remain, alongside independent G5/customer dependencies. No scope expansion.
+G3: exact historical review-note separation is sealed on 66194da5/1945fa68 and app8890 PID33889/session77035. All jobs terminal/source unfrozen. Current review retained 57 patients/114 fields and 60/60 source support with 0 Claude calls, 4 Jev/Perplexity attempts, 150.514s/$0.014869726 API-equivalent; all51109attempts retained. The old 8083-character compiler instruction is absent; current coverage remains undecided/partial. Next diagnose first-composition frontier payload from the retained861.261s/$7.917506602 ordinary run and its exact native state, then address only demonstrated avoidable repeated input/work before one changed first-answer confirmation. Do not repeat passing source-review or bottling campaigns. After stable confirmation update the current package once. All ten acceptance areas and independent G5/customer dependencies remain.
 
-Latest sealed receipt: artifacts/agere-protocol-preservation-2026-11-04/source-review-payload/delivery-receipt.json
+Latest sealed receipt: artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json
 
 ## Superseded checkpoint
 
