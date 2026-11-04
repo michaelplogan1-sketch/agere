@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T18:43:02.682391+00:00",
+  "updated_at": "2026-11-04T19:02:43.301385+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -132,6 +132,10 @@
         {
           "path": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
           "sha256": "510ccbc2142884d2250a19c7d88aeb48d9d7912f22415e6d848caa9b60101290"
+        },
+        {
+          "path": "artifacts/agere-final-package-2026-11-04/delivery-receipt.json",
+          "sha256": "601c4128a10e2e94d87ef7f7392dca0e1a6edc44027b56117d6b90521f12429d"
         }
       ],
       "acceptance_kind": "same_platform_declared_local_operations_with_explicit_external_and_qualification_dependencies"
@@ -446,15 +450,19 @@
         {
           "path": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json",
           "sha256": "61ac1e2d1b12763034e0413a6596495d00018435bffb82b3ce645521ce6a6687"
+        },
+        {
+          "path": "artifacts/agere-final-package-2026-11-04/delivery-receipt.json",
+          "sha256": "601c4128a10e2e94d87ef7f7392dca0e1a6edc44027b56117d6b90521f12429d"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Current executable package/restore. First-answer latency/economics are measured limitations; independentG5/customer dependencies remain.",
+      "remaining_acceptance": "First-composition latency/cost (986.028 seconds/$8.909197764 API-equivalent), matched automatic reuse, explicit unresolved overall coverage, and independent G5/clinical/model/customer dependencies. All ten acceptance areas retained.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
+      "next_action": "G3: current ff949737 local package and isolated/current HTTP restore passed; app8890 PID23302/session67804 ready. All jobs terminal/source unfrozen and all50567attempts retained. Correct the measured learning comparison setup: current33-action proposal was quarantined against $0.017497 retained-draft review inherited by native-only qualification, while fresh composition cost $8.909198. Preserve rejection history; qualify only the authentic current33-action proposal through existing exact native validation with its own full-run baseline, no manual promotion or owner answer edits. Then measure one ordinary automatic reuse request against986.028s/$8.909197764, retaining57patients/114fields and current source/coverage review. No new first-generation campaign or package rebuild unless runtime changes. Alltenareas/G5/customer dependencies remain.",
       "latest_current_release_decision": "artifacts/agere-current-release-finish-2026-11-04/acceptance/receipt.json"
     },
     {
@@ -533,11 +541,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "automatic_composition_and_release_view_sealed",
+    "kind": "current_package_and_restore_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "An ordinary question automatically composes57patient rows/114narrative fields, passes58source-support packets, saves a current partial result and serves current all-ten-area engineering evidence. No owner answer/binding corrections or prior final draft.",
-    "measured_failure_reduction": "Prior ordinary first composition omitted requested prose; current normal entry returns57patients/114fields with58/58source support. Current9/9engineering evidence coversalltenareas.",
+    "user_behavior_delta": "Current source and runtime install with the bundled interpreter, and both archived and restored owned applications reopen the exact saved patient table and narrative fields.",
+    "measured_failure_reduction": "Current release portability verified: independent bundled runtime startup and exact saved57patient/114field result on both applications;0newproviderattempts.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -565,16 +573,18 @@
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/completed-wire-archive.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-initial-contract/assessment.json",
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-initial-contract/economics-audit.json",
-      "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json"
+      "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json",
+      "artifacts/agere-final-package-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-final-package-2026-11-04/learning-baseline-audit.json"
     ],
-    "remaining_gap": "Current executable package/restore; first-answer performance and independent qualification/customer dependencies remain.",
-    "next_action": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
+    "remaining_gap": "First-composition latency/cost (986.028 seconds/$8.909197764 API-equivalent), matched automatic reuse, explicit unresolved overall coverage, and independent G5/clinical/model/customer dependencies. All ten acceptance areas retained.",
+    "next_action": "G3: current ff949737 local package and isolated/current HTTP restore passed; app8890 PID23302/session67804 ready. All jobs terminal/source unfrozen and all50567attempts retained. Correct the measured learning comparison setup: current33-action proposal was quarantined against $0.017497 retained-draft review inherited by native-only qualification, while fresh composition cost $8.909198. Preserve rejection history; qualify only the authentic current33-action proposal through existing exact native validation with its own full-run baseline, no manual promotion or owner answer edits. Then measure one ordinary automatic reuse request against986.028s/$8.909197764, retaining57patients/114fields and current source/coverage review. No new first-generation campaign or package rebuild unless runtime changes. Alltenareas/G5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Owned8890 stopping for snapshot; no active provider job. Source/product frozen for package.",
+    "coordination": "All jobs terminal; source unfrozen; currentapp8890PID23302/session67804 ready.",
     "remaining_blockers": [
-      "Fresh automatic first-composition without a prior final draft or owner repairs, then current release compatibility/package/restore. Coverage remains explicitly undecided. All ten areas and independent G5/clinical/model/customer dependencies remain."
+      "First-composition latency/cost (986.028 seconds/$8.909197764 API-equivalent), matched automatic reuse, explicit unresolved overall coverage, and independent G5/clinical/model/customer dependencies. All ten acceptance areas retained."
     ],
-    "latest_progress": "An ordinary question automatically composes57patient rows/114narrative fields, passes58source-support packets, saves a current partial result and serves current all-ten-area engineering evidence. No owner answer/binding corrections or prior final draft.",
+    "latest_progress": "Package and current saved-result restore passed. Learning baseline audit identifies incomparable inherited cost; no source/model changes or manual promotion.",
     "results_report": "artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -623,19 +633,16 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T18:43:02.682391+00:00",
-    "workflow_change": "An ordinary question automatically composes57patient rows/114narrative fields, passes58source-support packets, saves a current partial result and serves current all-ten-area engineering evidence. No owner answer/binding corrections or prior final draft.",
+    "at": "2026-11-04T19:02:43.301385+00:00",
+    "workflow_change": "Current source and runtime install with the bundled interpreter, and both archived and restored owned applications reopen the exact saved patient table and narrative fields.",
     "unsealed_work": {
-      "status": "final_current_package_running",
-      "all_jobs_terminal": false,
-      "source_frozen": true,
+      "status": "current_package_delivered_learning_baseline_audit",
+      "all_jobs_terminal": true,
+      "source_frozen": false,
       "product_edits": false,
-      "product_commit": "ff949737e5a929443eded1899afd6ebc391ea6da",
-      "receipt": "artifacts/agere-final-package-2026-11-04/receipt.json",
-      "remaining": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
-      "current_context_id": "ANS-9f4b8b69313e9b3afc32904a",
-      "pid": 16485,
-      "session_id": 45868
+      "receipt": "artifacts/agere-final-package-2026-11-04/delivery-receipt.json",
+      "remaining": "First-composition latency/cost (986.028 seconds/$8.909197764 API-equivalent), matched automatic reuse, explicit unresolved overall coverage, and independent G5/clinical/model/customer dependencies. All ten acceptance areas retained.",
+      "current_context_id": "ANS-9f4b8b69313e9b3afc32904a"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -695,14 +702,7 @@
       "status": "normal_subscription_dispatch_resumed_after_reported_reset",
       "resumed_attempt_rowid": 50081
     },
-    "active_jobs": [
-      {
-        "pid": 1378,
-        "session": 37353,
-        "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/scoped-source-continuation/corrected-source-verification/receipt.json",
-        "source_frozen": true
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -726,7 +726,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "37retained compiler failures cleared offline; no live source qualification or complete MVP claimed.",
+    "measured_failure_removed": "Current-code package/restore evidence gap closed; first-composition cost and invalid reuse comparison remain explicit.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -3749,19 +3749,22 @@
       "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/numeric-limit-continuation/receipt.json",
       "reason": "Source review located3fields. Subsequent compiler failures named1,2,then1field, but continue_source_prose_repair restored all3as editable. Each revision could introduce new bare numbers into a previously compiling field. Narrow immediate repair while preserving all pending source review and native values; do not buy another unchanged full pass.",
       "next_action": "G3: numeric-limit-continuation is terminal (570.406s/153validatedattempts/$5.268015058API-equivalent). All50233attempts/source/code/prior exports retained. Original54bindings cleared; returned57patients/114fields compile with56/60source packets supported and4undecided, globalcoverage undecided. Later source edits reintroduced a compiler failure in1field (three/Two); latestdraft36442807 is saved separately from returned complete table in ANS-27e4598520e74b8c77c14fa5. No unchanged provider votes. Next fix demonstrated repair-scope churn: source-to-compiler continuation currently invites all3original source fields to change although only1failed syntax. Restrict active repair to exact compiler-failed fields, retain other edits and full source-review obligations; prove on saved review005->006 transition and adverse tests before any paid continuation. Source unfrozen/alljobs terminal. App8890 productf2cc427c/PID12415/session83146; currentHTTP preserves57/114 andresume control. Alltenareas, freshautomaticacceptance/currentrelease/package andG5/customer dependencies remain."
+    },
+    {
+      "at": "2026-11-04T19:02:43.301385+00:00",
+      "decision": "After current package acceptance, resolve the invalid learning cost comparison before one matched ordinary reuse measurement.",
+      "basis": "artifacts/agere-final-package-2026-11-04/learning-baseline-audit.json",
+      "scope_impact": "No new acceptance area, model, architecture or training campaign. No runtime defect asserted from the qualification harness mismatch."
     }
   ],
   "unsealed_work": {
-    "status": "final_current_package_running",
-    "all_jobs_terminal": false,
-    "source_frozen": true,
+    "status": "current_package_delivered_learning_baseline_audit",
+    "all_jobs_terminal": true,
+    "source_frozen": false,
     "product_edits": false,
-    "product_commit": "ff949737e5a929443eded1899afd6ebc391ea6da",
-    "receipt": "artifacts/agere-final-package-2026-11-04/receipt.json",
-    "remaining": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
-    "current_context_id": "ANS-9f4b8b69313e9b3afc32904a",
-    "pid": 16485,
-    "session_id": 45868
+    "receipt": "artifacts/agere-final-package-2026-11-04/delivery-receipt.json",
+    "remaining": "First-composition latency/cost (986.028 seconds/$8.909197764 API-equivalent), matched automatic reuse, explicit unresolved overall coverage, and independent G5/clinical/model/customer dependencies. All ten acceptance areas retained.",
+    "current_context_id": "ANS-9f4b8b69313e9b3afc32904a"
   },
   "current_visual_request": {
     "status": "completed",
@@ -3786,16 +3789,8 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "name": "final-current-local-package",
-      "status": "running",
-      "receipt": "artifacts/agere-final-package-2026-11-04/receipt.json",
-      "pid": 16485,
-      "session_id": 45868
-    }
-  ],
-  "next_action": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
+  "active_jobs": [],
+  "next_action": "G3: current ff949737 local package and isolated/current HTTP restore passed; app8890 PID23302/session67804 ready. All jobs terminal/source unfrozen and all50567attempts retained. Correct the measured learning comparison setup: current33-action proposal was quarantined against $0.017497 retained-draft review inherited by native-only qualification, while fresh composition cost $8.909198. Preserve rejection history; qualify only the authentic current33-action proposal through existing exact native validation with its own full-run baseline, no manual promotion or owner answer edits. Then measure one ordinary automatic reuse request against986.028s/$8.909197764, retaining57patients/114fields and current source/coverage review. No new first-generation campaign or package rebuild unless runtime changes. Alltenareas/G5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3804,7 +3799,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T07:07:42.527287+00:00",
+  "latest_checkpoint": "2026-11-04T19:02:43.301385+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3884,6 +3879,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 12624,
-  "owned_server_session": 62526
+  "owned_server_pid": 23302,
+  "owned_server_session": 67804
 }

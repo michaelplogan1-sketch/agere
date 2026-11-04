@@ -1,5 +1,13 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: current package and isolated restore passed
+
+Current product `ff949737` was packaged, installed using the archived interpreter and verified in 948.992 seconds. A separate 61.969-second HTTP check confirmed both the isolated installation and restored candidate app serve the exact 57 patient rows and 114 narrative fields, with partial status visible and no stale or invalidated context. All 50,567 attempts remain exact; packaging and restore made zero provider calls. The same-platform package retains explicit external dependencies and does not transfer clinical/model qualification. The initial live-lock preflight rejection and its correction are preserved.
+
+The next performance step is a matched automatic reuse measurement. Audit found the owner native-only qualification harness inherited a $0.017497 retained-draft review cost; the intentionally fresh $8.909198 composition was subsequently compared to that different mode and quarantined. Those events remain immutable. Requalify the authentic current 33-action proposal with its own full-run baseline through existing guards before measuring reuse. No owner prose edits, manual promotion, model weights or clinical truth are introduced.
+
+Receipt: `artifacts/agere-final-package-2026-11-04/delivery-receipt.json`. Audit: `artifacts/agere-final-package-2026-11-04/learning-baseline-audit.json`. All ten areas and independent dependencies remain.
+
 ## November 4: ordinary automatic composition passes; cost remains a limitation
 
 The ordinary question on product `849d9135` returned all 57 patients and 114 patient-specific narrative fields without a prior final draft or owner prose/binding corrections. All 58 source-review packets are supported; global coverage remains undecided and the saved answer remains partial/unverified. Native/source caches were warm, with 32 native operations freshly executed. This is a first-composition test, not cold ingestion or independent clinical qualification.

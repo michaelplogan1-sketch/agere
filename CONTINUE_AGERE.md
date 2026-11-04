@@ -1,3 +1,11 @@
+# Current Agere checkpoint — 2026-11-04T19:02:43.301385+00:00
+
+G3: current ff949737 local package and isolated/current HTTP restore passed; app8890 PID23302/session67804 ready. All jobs terminal/source unfrozen and all50567attempts retained. Correct the measured learning comparison setup: current33-action proposal was quarantined against $0.017497 retained-draft review inherited by native-only qualification, while fresh composition cost $8.909198. Preserve rejection history; qualify only the authentic current33-action proposal through existing exact native validation with its own full-run baseline, no manual promotion or owner answer edits. Then measure one ordinary automatic reuse request against986.028s/$8.909197764, retaining57patients/114fields and current source/coverage review. No new first-generation campaign or package rebuild unless runtime changes. Alltenareas/G5/customer dependencies remain.
+
+Latest sealed receipt: artifacts/agere-final-package-2026-11-04/delivery-receipt.json
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T18:43:02.682391+00:00
 
 G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.
