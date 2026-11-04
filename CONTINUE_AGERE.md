@@ -1,3 +1,17 @@
+# Current Agere checkpoint — 2026-11-04T18:43:02.682391+00:00
+
+G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.
+
+Latest sealed receipt: artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T18:39:05.597139+00:00
+
+G3: all request jobs terminal and source unfrozen. Fresh ordinary composition on849d9135 passed with57patients/114fields and58/58source-supported packets, no owner draft or bindings. Coverage undecided/partial. Preserve986.028s/264attempts/$8.909197764API-equivalent and all50567attempts. Late source review reused260cached steps; no identical paid source request repeated.12Claude calls account for$8.150616; performance is not qualified. Next reconcile current finite release applicability and existing runtime receipt pointers, then package/restore this version with no new provider campaign. Alltenareas and independentG5/customer dependencies retained.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T18:17:26.301277+00:00
 
 G3: automatic-initial-contract is launching through ownedapp8890PID12624/session62526 on849d9135. Source/product frozen; no duplicate or source edits. Fresh ordinary question only: no saved final draft, owner prose/binding edits or prior final proposal. Current32native-operation prefix qualified in75.281s/0providers and source caches are warm. This tests initial binding instructions plus localized compiler repair. On terminal inspect complete57patients/114fields, source review/unknowns and all-attempt cost; then current release/package if accepted, otherwise preserve exact failure and diagnose offline. Retain all50303priorattempts, alltenareas and independentG5/customer dependencies; stop allproviders on actualsubscriptionlimit.

@@ -5,9 +5,9 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: automatic-initial-contract is launching through ownedapp8890PID12624/session62526 on849d9135. Source/product frozen; no duplicate or source edits. Fresh ordinary question only: no saved final draft, owner prose/binding edits or prior final proposal. Current32native-operation prefix qualified in75.281s/0providers and source caches are warm. This tests initial binding instructions plus localized compiler repair. On terminal inspect complete57patients/114fields, source review/unknowns and all-attempt cost; then current release/package if accepted, otherwise preserve exact failure and diagnose offline. Retain all50303priorattempts, alltenareas and independentG5/customer dependencies; stop allproviders on actualsubscriptionlimit.",
+  "active_work": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
-  "latest_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/localized-source-compiler-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json",
   "owned_server_pid": 12624,
   "owned_server_session": 62526,
   "full_queue_acceptance": false,
@@ -15,38 +15,34 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: automatic-initial-contract is launching through ownedapp8890PID12624/session62526 on849d9135. Source/product frozen; no duplicate or source edits. Fresh ordinary question only: no saved final draft, owner prose/binding edits or prior final proposal. Current32native-operation prefix qualified in75.281s/0providers and source caches are warm. This tests initial binding instructions plus localized compiler repair. On terminal inspect complete57patients/114fields, source review/unknowns and all-attempt cost; then current release/package if accepted, otherwise preserve exact failure and diagnose offline. Retain all50303priorattempts, alltenareas and independentG5/customer dependencies; stop allproviders on actualsubscriptionlimit.",
+  "resume_priority": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "artifacts/agere-current-release-finish-2026-11-04/composition-check/localized-source-compiler-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "pause_reason": null,
   "last_observed_server_session": 2376,
-  "server_status": "ready",
+  "server_status": "stopped_for_package_checkpoint",
   "unsealed_work": {
-    "status": "automatic_initial_contract_running",
+    "status": "final_current_package_running",
     "all_jobs_terminal": false,
     "source_frozen": true,
     "product_edits": false,
-    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-initial-contract/run-receipt.json",
-    "remaining": "G3: automatic-initial-contract is launching through ownedapp8890PID12624/session62526 on849d9135. Source/product frozen; no duplicate or source edits. Fresh ordinary question only: no saved final draft, owner prose/binding edits or prior final proposal. Current32native-operation prefix qualified in75.281s/0providers and source caches are warm. This tests initial binding instructions plus localized compiler repair. On terminal inspect complete57patients/114fields, source review/unknowns and all-attempt cost; then current release/package if accepted, otherwise preserve exact failure and diagnose offline. Retain all50303priorattempts, alltenareas and independentG5/customer dependencies; stop allproviders on actualsubscriptionlimit.",
-    "current_context_id": "ANS-9c1c1203a5787b7d82a15f34",
-    "provider_dependency": {
-      "status": "normal_subscription_transport",
-      "all_provider_work_stopped": false,
-      "external_anthropic_api_key_permitted": false
-    },
-    "pid": 13305,
-    "session_id": 94754
+    "product_commit": "ff949737e5a929443eded1899afd6ebc391ea6da",
+    "receipt": "artifacts/agere-final-package-2026-11-04/receipt.json",
+    "remaining": "G3: current automatic composition and all-ten-area release view sealed on ff949737. Final local package is launching; source/product frozen. Monitor only artifacts/agere-final-package-2026-11-04/receipt.json. Stop ownedapp8890 for its checkpoint lock; primary8885 untouched. No provider calls or new question runs. Package the current source/runtime, perform isolated local installation/check, then verify saved57patient/114field result through archived HTTP and restore ownedapp. Preserve all50567attempts, sources and prior packages. First-answer performance remains16.4minutes/$8.91API-equivalent; coverage remains undecided/partial. Alltenareas and independentG5/customer qualification remain explicit.",
+    "current_context_id": "ANS-9f4b8b69313e9b3afc32904a",
+    "pid": 16485,
+    "session_id": 45868
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-11-04T18:14:49.125818+00:00",
+  "latest_continuity_checkpoint": "2026-11-04T18:43:02.682391+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "active_turns_and_quiet_thread_heartbeat",
   "mvp_server": {
@@ -56,7 +52,7 @@
     "transport": "claude_subscription",
     "live_stack": true,
     "primary_modified": false,
-    "product_commit": "849d9135ed7887e8c6838a7895a4869fd3386668",
+    "product_commit": "ff949737e5a929443eded1899afd6ebc391ea6da",
     "read_boundary_guard": "Same protected/unrelated-source guard as the prior ordinary reference.",
     "started_at": "2026-11-04T18:03:30.984008+00:00",
     "document_field_screen": "candidate",
@@ -65,10 +61,11 @@
     "new_provider_request_not_yet_submitted": true,
     "session": 62526,
     "current_context": "ANS-9c1c1203a5787b7d82a15f34",
-    "health": "ready",
-    "context_id": "ANS-9c1c1203a5787b7d82a15f34",
-    "source_frozen": false,
-    "acceptance_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/localized-source-compiler-delivery-receipt.json"
+    "health": "stopped_for_package_checkpoint",
+    "context_id": "ANS-9f4b8b69313e9b3afc32904a",
+    "source_frozen": true,
+    "acceptance_receipt": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json",
+    "source_commit": "ff949737e5a929443eded1899afd6ebc391ea6da"
   },
   "pending_handoff": {
     "status": "completed",
@@ -311,11 +308,11 @@
   },
   "active_jobs": [
     {
-      "name": "automatic-initial-contract",
+      "name": "final-current-local-package",
       "status": "running",
-      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-initial-contract/run-receipt.json",
-      "pid": 13305,
-      "session_id": 94754
+      "receipt": "artifacts/agere-final-package-2026-11-04/receipt.json",
+      "pid": 16485,
+      "session_id": 45868
     }
   ],
   "overnight_completed_jobs": {
@@ -443,7 +440,7 @@
     "transport": "claude_subscription",
     "live_stack": true,
     "primary_modified": false,
-    "product_commit": "849d9135ed7887e8c6838a7895a4869fd3386668",
+    "product_commit": "ff949737e5a929443eded1899afd6ebc391ea6da",
     "read_boundary_guard": "Same protected/unrelated-source guard as the prior ordinary reference.",
     "started_at": "2026-11-04T18:03:30.984008+00:00",
     "document_field_screen": "candidate",
@@ -452,14 +449,15 @@
     "new_provider_request_not_yet_submitted": true,
     "session": 62526,
     "current_context": "ANS-9c1c1203a5787b7d82a15f34",
-    "acceptance_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/localized-source-compiler-delivery-receipt.json",
-    "source_frozen": false,
-    "context_id": "ANS-9c1c1203a5787b7d82a15f34",
-    "health": "ready"
+    "acceptance_receipt": "artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/delivery-receipt.json",
+    "source_frozen": true,
+    "context_id": "ANS-9f4b8b69313e9b3afc32904a",
+    "health": "stopped_for_package_checkpoint",
+    "source_commit": "ff949737e5a929443eded1899afd6ebc391ea6da"
   },
-  "previous_sealed_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/checkpoint-recovery-delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/localized-source-compiler-delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
-  "last_product_commit": "849d9135",
+  "last_product_commit": "ff949737e5a929443eded1899afd6ebc391ea6da",
   "current_delivery_scope": "Keyed scalar bindings, localized producer-bound source correction, atomic immutable answer saves and current-app reopen preserve the full retained clinical answer.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
@@ -467,7 +465,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-04T18:17:26.301277+00:00",
+  "updated_at": "2026-11-04T18:43:02.682391+00:00",
   "last_commit": "ac9af6fe4ac5a0040620070d17ce1e7560f42273",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
