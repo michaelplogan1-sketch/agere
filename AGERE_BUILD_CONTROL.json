@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T23:03:06.419608+00:00",
+  "updated_at": "2026-11-04T23:13:41.936252+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -609,7 +609,7 @@
       "artifacts/agere-protocol-preservation-2026-11-04/source-review-payload/delivery-receipt.json"
     ],
     "remaining_gap": "Stale prior compiler message presentation, first-answer performance confirmation, stable current package and independentG5/customer prerequisites remain. Coverage is undecided/partial.",
-    "next_action": "G3: source-refresh recovery and source-review browser projection are sealed; currentapp8890PID33284/session59235 on169635f7 ready. 57patients/114fields and60/60source support retained, coverage undecided/partial; nine finite engineering predicates across alltenareas remain applicable. Retained ordinary response484898555->5583654bytes (98.84849% smaller),85native references exact,0newprovider calls; all51105attempts retained. Next correct the known stale compiler instruction in returned limitations using exact authoritative prior/current review identity, preserving clinical unknowns and saved history; offline retained proof only. Then use the existing first-answer profile (10Claude requests486.858s of861.261s total; timings overlap) to determine one justified current first-answer confirmation after the existing fixes, not another repeated campaign. Current package refresh only once stable; known-goodff949737 retained. Disk1.4GiB: preserve evidence and prepare adequate durable capacity before any new large saved run. IndependentG5/customer dependencies remain.",
+    "next_action": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
     "coordination": "Owned candidate app ready; all verification jobs terminal.",
     "remaining_blockers": [
@@ -666,7 +666,14 @@
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
     "at": "2026-11-04T23:03:06.419608+00:00",
     "workflow_change": "Source-review-required answers retain the compact normal browser response instead of retransmitting all saved execution history. Only the exact conservative workflow status change is recognized; answer, authority, blocked work and accounting remain exact.",
-    "unsealed_work": null,
+    "unsealed_work": {
+      "status": "prior_review_notes_offline_verified",
+      "source_frozen": false,
+      "all_jobs_terminal": true,
+      "product_edits": true,
+      "receipt": "artifacts/agere-prior-review-guidance-2026-11-04/native-proof/receipt.json",
+      "next_action": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained."
+    },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
       "current_candidate_status": "no_new_candidate_from_unresolved_source_answer",
@@ -3847,7 +3854,14 @@
       "scope_impact": "Alltenacceptanceareas retained; genuine coverage uncertainty and independent qualification remain separate. No threshold or clinical authority changes."
     }
   ],
-  "unsealed_work": null,
+  "unsealed_work": {
+    "status": "prior_review_notes_offline_verified",
+    "source_frozen": false,
+    "all_jobs_terminal": true,
+    "product_edits": true,
+    "receipt": "artifacts/agere-prior-review-guidance-2026-11-04/native-proof/receipt.json",
+    "next_action": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained."
+  },
   "current_visual_request": {
     "status": "completed",
     "path": "/Users/mikel/.codex/visualizations/2026/10/29/01a187c0-23ba-7d02-9368-5ff567327554/wollstonecraft-question-flow.html",
@@ -3872,7 +3886,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: source-refresh recovery and source-review browser projection are sealed; currentapp8890PID33284/session59235 on169635f7 ready. 57patients/114fields and60/60source support retained, coverage undecided/partial; nine finite engineering predicates across alltenareas remain applicable. Retained ordinary response484898555->5583654bytes (98.84849% smaller),85native references exact,0newprovider calls; all51105attempts retained. Next correct the known stale compiler instruction in returned limitations using exact authoritative prior/current review identity, preserving clinical unknowns and saved history; offline retained proof only. Then use the existing first-answer profile (10Claude requests486.858s of861.261s total; timings overlap) to determine one justified current first-answer confirmation after the existing fixes, not another repeated campaign. Current package refresh only once stable; known-goodff949737 retained. Disk1.4GiB: preserve evidence and prepare adequate durable capacity before any new large saved run. IndependentG5/customer dependencies remain.",
+  "next_action": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

@@ -22,7 +22,7 @@ from contextlib import contextmanager
 _OWNED_RECOVERY = ContextVar('agere_owned_investigation_recovery',default=None)
 
 @contextmanager
-def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None,origin=None,checkpoint=None):
+def owned_recovery(actions,question=None,feedback=None,document_reviews=None,field_contracts=None,origin=None,checkpoint=None,prior_review_notes=None):
     """Explicit unfinished-run recovery; never inherit acceptance or select a learned configuration."""
     from .document_review import validate_questions
     contracts=validate_questions(field_contracts)if field_contracts is not None else{}
@@ -76,8 +76,14 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
         if names!=needed or len(names)!=len(reviews):raise ValueError('Draft recovery review-context bindings differ from native origins')
         retained=copy.deepcopy(checkpoint)
         for i,p in enumerate(provenance):p['expected_result']=digest(comparison_result(calls[i]['name'],calls[i]['result'],calls[:i]))
+    if prior_review_notes is not None and (retained is None or not isinstance(prior_review_notes,list)
+            or any(not isinstance(r,dict)or set(r)!={'context_id','review_index','review'}
+                or not isinstance(r['context_id'],str)or type(r['review_index'])is not int or r['review_index']<0
+                or not isinstance(r['review'],dict) for r in prior_review_notes)):
+        raise ValueError('Prior review annotations require a bound owned draft and exact review references')
     token=_OWNED_RECOVERY.set({'actions':actions,'question':question,'feedback':feedback,'document_reviews':document_reviews or [],
         'field_contracts':json.loads(json.dumps(contracts)),'call_provenance':provenance,'checkpoint':retained,
+        'prior_review_notes':copy.deepcopy(prior_review_notes or []),
         'origin_calls':origin['calls'] if retained else []} if actions is not None else None)
     try: yield
     finally: _OWNED_RECOVERY.reset(token)
@@ -88,6 +94,29 @@ READ_ONLY={'query_sql','compose_table','read_patient_profiles','list_documents',
            'list_analyses','describe_analysis','execute_analysis','search_documents'}
 VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',
           'estimated_cost_usd','provider_receipts','typed_checks'}
+
+
+def separate_prior_review_notes(draft,notes):
+    """Separate exact prior machine instructions before fresh review, not source facts.
+
+    No instruction is declared resolved. Current review must emit its own pending
+    guidance again; original contexts and the returned annotations retain history.
+    """
+    limits=draft.get('limitations') if isinstance(draft,dict)else None
+    if not isinstance(limits,list):return copy.deepcopy(draft),[]
+    by_text={r['review']['feedback']:r for r in notes if isinstance(r.get('review'),dict)
+             and r['review'].get('status')=='repair' and isinstance(r['review'].get('feedback'),str)
+             and r['review']['feedback']}
+    annotations=[];kept=[]
+    for i,text in enumerate(limits):
+        note=by_text.get(text) if isinstance(text,str)else None
+        if note is None:kept.append(copy.deepcopy(text));continue
+        annotations.append({'text':text,'original_limitation_index':i,'context_id':note['context_id'],
+            'review_index':note['review_index'],'review_digest':digest(note['review']),
+            'authority':'prior_machine_review','current_review_required':True,'resolved':False})
+    out=copy.deepcopy(draft)
+    if annotations:out['limitations']=kept
+    return out,annotations
 
 
 def recovery_checkpoint(tools,question,context,run):
@@ -439,7 +468,8 @@ def recover_actions(tools,question,context=None):
             if not stable or not _source_refresh_draft_bindings(checkpoint['draft'],saved['origin_calls'],out['calls']):
                 complete=False;out['draft_recovery'].update(status='withheld',reason='Source suspension or entity/scalar proposal bindings changed during recovery.')
     if complete:
-        out['resume_draft']=copy.deepcopy(checkpoint['draft'])
+        out['resume_draft'],annotations=separate_prior_review_notes(checkpoint['draft'],saved.get('prior_review_notes')or[])
+        if annotations:out['draft_recovery']['prior_review_annotations']=annotations
         out['resume_draft'].update(status='partial',verification='unverified')
         out['draft_recovery']['status']='revalidated_for_review'
         if source_refresh:

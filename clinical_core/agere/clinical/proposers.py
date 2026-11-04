@@ -1486,6 +1486,33 @@ def execute(stack, question, graph, receipt, *, started,population=None,parent=N
     return out
 
 
+def prior_recovery_review_notes(path,context_id,context):
+    """Find exact machine annotations in the same question/source's saved lineage.
+
+    Historical reviews provide provenance only, never current acceptance. An
+    unavailable or incompatible ancestor leaves its unmatched limitations intact.
+    """
+    from ..deliverables import answer_context as A
+    import re
+    draft=((context.get('investigation')or{}).get('recovery_checkpoint')or{}).get('draft')or{}
+    wanted={v for v in draft.get('limitations')or[] if isinstance(v,str)}
+    current=context;key=context_id;seen=set();notes=[]
+    while wanted and key not in seen:
+        seen.add(key)
+        for i,review in enumerate((current.get('investigation')or{}).get('answer_reviews')or[]):
+            if not isinstance(review,dict):continue
+            text=review.get('feedback')
+            if review.get('status')=='repair' and isinstance(text,str) and text in wanted:
+                notes.append({'context_id':key,'review_index':i,'review':review});wanted.remove(text)
+        parent=(current.get('planner_receipt')or{}).get('artifact_feedback_context')
+        if not isinstance(parent,str)or not re.fullmatch(r'ANS-[0-9a-f]{24}',parent)or parent in seen:break
+        try:ancestor=A.load(path,parent,current=False,source_review=True)
+        except (ValueError,OSError,sqlite3.Error):break
+        if ancestor.get('question')!=context.get('question')or ancestor.get('source')!=context.get('source'):break
+        current=ancestor;key=parent
+    return notes
+
+
 def continue_from_artifact(stack, context_id, feedback=None):
     """Continue one server-owned investigation, not the full planning cascade.
 
@@ -1520,7 +1547,8 @@ def continue_from_artifact(stack, context_id, feedback=None):
                 if name in contracts and contracts[name]!=contract:raise ValueError('Saved source-field meaning changed: '+name)
                 contracts[name]=contract
         recovery={'checkpoint':checkpoint,'origin':{'question':question,'calls':investigation['tool_calls']},
-                  'document_reviews':investigation.get('document_reviews') or [],'field_contracts':contracts or None}
+                  'document_reviews':investigation.get('document_reviews') or [],'field_contracts':contracts or None,
+                  'prior_review_notes':prior_recovery_review_notes(stack.path,context_id,context)}
     c=Cascade(stack,request_plan.Catalog.load(stack.path),question,population=population)
     before={row[0] for row in c.ledger.db.execute('SELECT id FROM calls')}
     try:

@@ -27,7 +27,7 @@ class SourceSuspensionRecovery(unittest.TestCase):
   cp={'source':source,'context':context,'draft':draft,'draft_digest':H.digest(draft),'review_contexts':[]}
   disposition={'status':'suspended','suspended_assertions':[{'assertion_id':assertion['id']}]}
   return calls,outputs,cp,disposition
- def run_recovery(self,calls,outputs,cp,disposition):
+ def run_recovery(self,calls,outputs,cp,disposition,notes=None):
   class Tools:
    stack=SimpleNamespace(path='.');document_field_contracts={}
    def __init__(self):self.executed=[]
@@ -37,7 +37,7 @@ class SourceSuspensionRecovery(unittest.TestCase):
   tools=Tools();actions=[{k:c[k]for k in('name','input')}for c in calls]
   with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=cp['source']),patch(
    'clinical_core.agere.clinical.typed_document_review.assertion_disposition',return_value=disposition),H.owned_recovery(
-   actions,'q',origin={'question':'q','calls':calls},checkpoint=cp):out=H.recover_actions(tools,'q',cp['context'])
+   actions,'q',origin={'question':'q','calls':calls},checkpoint=cp,prior_review_notes=notes):out=H.recover_actions(tools,'q',cp['context'])
   return out,tools
  def test_source_exclusion_reexecutes_suffix_preserves_proposal_and_requires_full_review(self):
   calls,outputs,cp,disposition=self.fixture();original=copy.deepcopy(cp);out,tools=self.run_recovery(calls,outputs,cp,disposition)
@@ -51,6 +51,20 @@ class SourceSuspensionRecovery(unittest.TestCase):
   def forbidden(*a,**k):self.fail('No actor/provider is needed to establish this guard')
   result=S.tool_loop('q','',[],forbidden,send=forbidden,model='fixture',max_tools=None,initial_calls=out['calls'],initial_answer=out['resume_draft'],review=review)
   self.assertEqual(len(reviewed),1);self.assertEqual(result['answer']['status'],'partial')
+ def test_recovered_machine_note_is_history_and_fresh_pending_feedback_is_retained(self):
+  calls,outputs,cp,disposition=self.fixture();feedback='Bind the failed quantity to its current source.'
+  cp['draft']['limitations']=['Maximum tolerated dose is unknown.',feedback];cp['draft_digest']=H.digest(cp['draft'])
+  old=copy.deepcopy(cp);notes=[{'context_id':'ANS-'+'a'*24,'review_index':0,'review':{'status':'repair','feedback':feedback}}]
+  out,tools=self.run_recovery(calls,outputs,cp,disposition,notes)
+  self.assertEqual(out['resume_draft']['limitations'],['Maximum tolerated dose is unknown.']);self.assertEqual(cp,old)
+  annotation=out['draft_recovery']['prior_review_annotations'][0]
+  self.assertEqual(annotation['text'],feedback);self.assertFalse(annotation['resolved']);self.assertTrue(annotation['current_review_required'])
+  def review(draft,actual):
+   self.assertNotIn(feedback,draft['limitations']);self.assertEqual(len(actual),2)
+   return {'status':'repair','repair_kind':'unresolved_verification','feedback':feedback,'retry_disposition':'retain_partial_until_new_evidence'}
+  def forbidden(*a,**k):self.fail('No provider dispatch in this guard check')
+  result=S.tool_loop('q','',[],forbidden,send=forbidden,model='fixture',max_tools=None,initial_calls=out['calls'],initial_answer=out['resume_draft'],review=review)
+  self.assertIn(feedback,result['answer']['limitations']);self.assertEqual(result['answer']['status'],'partial')
  def test_unrelated_reading_source_population_or_limitation_changes_cannot_refresh(self):
   for kind in ('reading','source','population','limitation','unavailable','unsuspended','new_assertion'):
    calls,outputs,cp,disposition=self.fixture();row=outputs[0]['rows'][0]
