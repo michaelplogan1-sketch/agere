@@ -967,6 +967,20 @@ def catalog(calls):
     return entries
 
 
+def _column_order_reading(reading):
+    """Encode complete table cells once under their columns; never alter native rows."""
+    if not isinstance(reading,dict):return reading
+    columns=reading.get('columns');rows=reading.get('rows')
+    if (not isinstance(columns,list) or not columns or not all(isinstance(c,str)for c in columns)
+            or len(set(columns))!=len(columns) or not isinstance(rows,list) or not rows
+            or not all(isinstance(row,dict) and set(row)==set(columns)for row in rows)):
+        return reading
+    projected={**reading,'rows':[[row[column]for column in columns]for row in rows],
+        'row_encoding':'Each row contains values in columns order. All cells and row order are exact; native receipts retain the original row objects.'}
+    # Small tables can cost more with the format explanation. Preserve them.
+    return projected if len(json.dumps(projected,default=str))<len(json.dumps(reading,default=str)) else reading
+
+
 def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,documentation_identity=None,documentation_in_system=False,feedback_native=None):
     from .semantic_analyst import actor_result,complete_actor_reading
     focus=focused_prose_state(candidate,feedback,calls)
@@ -1092,4 +1106,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
         state['instruction']+=' A focused_prose_repair replaces full draft repetition only for the producer-bound repair fields; it never narrows the requested output or source obligations.'
     elif candidate is not None:
         state.update(draft_state(candidate))
+    for entry in state['executed_results']:
+        for name in ('complete_reading','repair_reading'):
+            if name in entry:entry[name]=_column_order_reading(entry[name])
     return [{'role':'user','content':json.dumps(state,default=str,allow_nan=False)}]

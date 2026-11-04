@@ -53,9 +53,35 @@ class NativeCompleteness(unittest.TestCase):
         current=json.loads(E.messages('Explain each received account.',[call],recent_results=[call])[0]['content'])
         later=json.loads(E.messages('Explain each received account.',[call],feedback={'status':'repair','feedback':'Explain the observations.'})[0]['content'])
         for state in [current,later]:
-            self.assertEqual(state['executed_results'][0]['complete_reading']['rows'],result['rows'])
+            reading=state['executed_results'][0]['complete_reading']
+            self.assertEqual(R._rows(reading)[1],result['rows'])
+            self.assertIn('row_encoding',reading)
+            self.assertEqual(reading['actor_reading'],result['actor_reading'])
+            self.assertLess(len(json.dumps(reading)),len(json.dumps(shown)))
         self.assertNotIn('rows',current['latest_results'][0]['result'])
         self.assertEqual(result,original)
+
+    def test_column_order_reading_preserves_source_tuples_types_and_nulls(self):
+        from clinical_core.agere.clinical import execution_state as E
+        columns=['patient_id','record_id','date','quote','amount','observations']
+        rows=[{'patient_id':str(i),'record_id':'record_'+str(i),'date':'2030-01-01',
+               'quote':'Received text "one"; Unicode: μg.','amount':None if i%2 else 10.5,
+               'observations':{'negative':False,'values':[0,'0',None]}}for i in range(20)]
+        reading={'columns':columns,'rows':rows,'result_view':'agere_result_1','truncated':False,
+                 'incomplete_dependencies':[{'reason':'Source observation remains incomplete'}]}
+        original=copy.deepcopy(reading);shown=E._column_order_reading(reading)
+        self.assertEqual(shown['rows'][0],[rows[0][c]for c in columns])
+        self.assertEqual([dict(zip(columns,row))for row in shown['rows']],rows)
+        self.assertEqual(shown['incomplete_dependencies'],reading['incomplete_dependencies'])
+        self.assertEqual(reading,original)
+        for kind in ('missing','extra','duplicate_columns','empty','already_arrays'):
+            changed=copy.deepcopy(reading)
+            if kind=='missing':changed['rows'][0].pop('amount')
+            elif kind=='extra':changed['rows'][0]['unlisted']='Retain me'
+            elif kind=='duplicate_columns':changed['columns'].append('amount')
+            elif kind=='empty':changed['rows']=[]
+            else:changed['rows']=shown['rows']
+            with self.subTest(kind=kind):self.assertEqual(E._column_order_reading(changed),changed)
 
     def test_stale_or_changed_reading_marker_cannot_silently_bypass_preview(self):
         result=self.query('SELECT * FROM financial_event ORDER BY event_id',read_all_rows=True)
