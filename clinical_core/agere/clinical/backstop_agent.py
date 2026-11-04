@@ -1126,8 +1126,12 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             errors.append(str(exc));failures.append({'code':'invalid_row_prose','field_group':'row_prose'})
     if errors:
         quotation_rule=(' In patient/entity row prose, numeric quotations also need scalar bindings. '
-            'For a reported source observation, use query_sql to select the actual complete quotation from the source text, '
-            'carrying its patient/entity key, record_id and date; bind that quotation as a text scalar and add its executed row to basis. '
+            'Preserve the original sentence during a binding repair. If it already quotes the source verbatim, use query_sql '
+            'to select that complete quotation as a text scalar. If the sentence paraphrases a source value or label, '
+            'extract the exact reported value or literal fragment from the received text into a named scalar instead; '
+            'bind just that placeholder in the unchanged sentence. Do not replace a paraphrase with a new quotation in a binding-only repair. '
+            'Carry the patient/entity key, record_id, date and complete source quotation alongside the extracted scalar, '
+            'and add its executed row to basis. Extraction reports what the source says; it does not establish current clinical state. '
             'Source contexts in review feedback are reading material, not executed scalar cells. '
             'If the extracted findings omit the quoted value, query the original record text instead of repeating the same findings. '
             'Do not manufacture numeric constants from the proposed answer.' if row_mode else
