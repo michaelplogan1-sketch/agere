@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained.",
+  "active_work": "G3: current review on 66194da5 finished in 150.514 seconds with 4 Jev/Perplexity attempts, zero Claude, $0.014869726 API-equivalent. All 37 native actions, 57 patients and 114 narrative fields retained; 60/60 source packets supported. Obsolete compiler instruction removed, unresolved coverage warning freshly retained; coverage remains undecided/partial. All 51105 prior attempts exact. Next verify this saved answer and current ten-area engineering applicability through the owned candidate app, then seal and push this increment. First-answer performance and stable current package remain, alongside independent G5/customer dependencies. No scope expansion.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-protocol-preservation-2026-11-04/source-review-payload/delivery-receipt.json",
   "owned_server_pid": 33284,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained.",
+  "resume_priority": "G3: current review on 66194da5 finished in 150.514 seconds with 4 Jev/Perplexity attempts, zero Claude, $0.014869726 API-equivalent. All 37 native actions, 57 patients and 114 narrative fields retained; 60/60 source packets supported. Obsolete compiler instruction removed, unresolved coverage warning freshly retained; coverage remains undecided/partial. All 51105 prior attempts exact. Next verify this saved answer and current ten-area engineering applicability through the owned candidate app, then seal and push this increment. First-answer performance and stable current package remain, alongside independent G5/customer dependencies. No scope expansion.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
@@ -30,12 +30,12 @@
   "last_observed_server_session": 2376,
   "server_status": "ready",
   "unsealed_work": {
-    "status": "prior_review_notes_offline_verified",
+    "status": "current_review_returned_app_pending",
     "source_frozen": false,
     "all_jobs_terminal": true,
     "product_edits": true,
-    "receipt": "artifacts/agere-prior-review-guidance-2026-11-04/native-proof/receipt.json",
-    "next_action": "G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained."
+    "receipt": "artifacts/agere-prior-review-guidance-2026-11-04/current-review/receipt.json",
+    "next_action": "G3: current review on 66194da5 finished in 150.514 seconds with 4 Jev/Perplexity attempts, zero Claude, $0.014869726 API-equivalent. All 37 native actions, 57 patients and 114 narrative fields retained; 60/60 source packets supported. Obsolete compiler instruction removed, unresolved coverage warning freshly retained; coverage remains undecided/partial. All 51105 prior attempts exact. Next verify this saved answer and current ten-area engineering applicability through the owned candidate app, then seal and push this increment. First-answer performance and stable current package remain, alongside independent G5/customer dependencies. No scope expansion."
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "2026-11-04T20:41:47.499645+00:00",

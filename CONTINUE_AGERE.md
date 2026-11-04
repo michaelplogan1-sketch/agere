@@ -1,6 +1,6 @@
-# Current Agere checkpoint — 2026-11-04T23:13:41.936252+00:00
+# Current Agere checkpoint — 2026-11-04T23:22:15.276398+00:00
 
-G3: prior review annotation separation passed130tests and actual37action native replay in37.898s with0providers; all57patients/114fields and51105attempts exact. No source freeze/provider job. Recover storage via lossless transparent compression of completed evidence only, preserving decoded hashes/mtime/paths, before one current retained-draft review of the annotation change. Prior guidance is history, not presumed resolved. Full current source/coverage review remains required. Alltenareas and first-answer/package/G5/customer dependencies retained.
+G3: current review on 66194da5 finished in 150.514 seconds with 4 Jev/Perplexity attempts, zero Claude, $0.014869726 API-equivalent. All 37 native actions, 57 patients and 114 narrative fields retained; 60/60 source packets supported. Obsolete compiler instruction removed, unresolved coverage warning freshly retained; coverage remains undecided/partial. All 51105 prior attempts exact. Next verify this saved answer and current ten-area engineering applicability through the owned candidate app, then seal and push this increment. First-answer performance and stable current package remain, alongside independent G5/customer dependencies. No scope expansion.
 
 Latest sealed receipt: artifacts/agere-protocol-preservation-2026-11-04/source-review-payload/delivery-receipt.json
 
