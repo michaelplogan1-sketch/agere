@@ -258,3 +258,14 @@ Candidate 9854202/f548631 carries the five unresolved prose fields, four exact p
 The live followthrough failed acceptance in 130.966 seconds with 7 new Claude subscription attempts, $1.8959314 API-equivalent and no unpriced API attempts. The first proposal introduced drug strengths, counts and numbered review steps without scalar bindings. Subsequent corrections did not pass the existing compiler/preservation guard, and the ordinary loop stopped for no progress. The diagnostic harness rejected the incomplete candidate shape. All 57 identities and native values survived; 114 compiled prose cells are absent from that rejected output. The valid saved answer was not replaced. No source-review success or model/runtime promotion is claimed.
 
 All requests, partial proposals, native queries and costs remain under `artifacts/agere-source-prose-followthrough-2026-11-03/live/`; the next bounded investigation is in `terminal-audit.json`. Fix this existing source-prose/compiler interaction offline using those exact proposals before another provider request. The broader roadmap is unchanged; optional research/components do not add new MVP acceptance requirements.
+
+
+## Source-prose/compiler closure and coverage stopping — 2026-11-04T00:39:12.087848+00:00
+
+The current original-question result retains all57patients and114prose cells and improves source support from57/61 to61/61. Current context `ANS-a61a4a1a16ef0fd03e5feb3e` remains partial/unverified because global coverage is undecided. Source checks do not establish clinical qualification.
+
+Product `83452d5e1764df452475b645087ef146fdeb8dac` preserves the last complete answer on compiler failure, keeps source corrections editable only within their producer-bound fields, and stops speculative rewriting when all sources pass but coverage alone remains undecided. Explicit numeric list layout is separated from doses/counts; actual quantities still require bindings.132targeted tests, the captured live-proposal replay, a cache-only actual final review and saved-context HTTP check pass.100prioranswers are byte-preserved via streaming hashes. No new export or model weights.
+
+The live followthrough included68attempts and$3.56699049knownAPI-equivalent, with one unpriced pending attempt preserved. It reached61/61, then unnecessary coverage rewrites regressed source support; the entire interrupted chain remains accounted. The repaired stop reconfirms the61/61candidate with zero new calls. This is a scoped engineering delivery, not a new ordinary-question performance result. Receipt: `artifacts/agere-source-prose-followthrough-2026-11-03/delivery-receipt.json`.
+
+Next remains existingG3 ordinary clinical prefix reuse/economics and finite ten-area engineering closeout; independentG5/customer prerequisites remain separate.
