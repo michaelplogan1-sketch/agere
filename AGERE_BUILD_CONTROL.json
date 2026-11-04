@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T07:40:38.691255+00:00",
+  "updated_at": "2026-11-04T11:57:28.822755+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -521,25 +521,22 @@
     }
   ],
   "checkpoint": {
-    "kind": "scoped_composition_restored_with_unknowns",
+    "kind": "composition_protocol_state_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "All57patients now have source-bound explanation and proposed review steps; native table values preserved.",
-    "measured_failure_reduction": "12numeric binding failures reduced to0;57rows/114prosefields retained;59of60packets supported. Latestcontinuation369.058s/148attempts/$1.253995602API-equivalent. Wholepacket/globalcompleteness remain unknown.",
+    "user_behavior_delta": "Malformed JSON or an unexecuted tool envelope no longer clears the retained draft repair targets. A replacement that drops patient prose is rejected before review.",
+    "measured_failure_reduction": "Exact observed malformed response: baseline loses focused targets after one call; current loop retains57rows/114fields/34targets through allthree inspected actor boundaries. The prose-dropping replacement reaches review in baseline only.",
     "evidence": [
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/morning-assessment.json",
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation-v2/receipt.json",
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/binding-query-proof/receipt.json",
-      "artifacts/agere-current-release-finish-2026-11-04/composition-check/binding-query-tests-v2.log"
+      "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/protocol-delivery-receipt.json"
     ],
-    "remaining_gap": "One combined source check and global completeness unresolved; scopedseal/privatepush/finalcurrentpackaging remain. IndependentG5/customerqualification separate.",
-    "next_action": "G3: assess only the retained unresolved joint packet patient_SYN-7ACE370F-5C6 and global completeness input at artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation-v2. All12compiler failures are cleared;57patients/114prosefields and originalnativecells are preserved.29of29individual fields are supported but combinedpacket/globalcoverage remain undecided. Distinguish legitimate source unknowns from a verifier defect without relabeling confidence as clinical truth. No repeated wholecohort/source campaign. Seal the scoped repairs, update private integration branch, then perform the final current-release/package check when supported. Retain alltenareas and separate G5/customer prerequisites.",
+    "remaining_gap": "The complete ordinary clinical first-composition result remains unqualified. Resume the saved34-field failed draft once through the current local repair path; do not repeat the whole question or source campaign. Final package and release applicability follow successful composition.",
+    "next_action": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
     "coordination": "All request jobs terminal. Run completed2026-11-04T08:20:56Z; no further build execution evidenced before morning check-in. App8890 remains a6197e9e; source unfrozen.",
     "remaining_blockers": [
       "One combined source check and global completeness unresolved; scopedseal/privatepush/finalcurrentpackaging remain. IndependentG5/customerqualification separate."
     ],
-    "latest_progress": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence.",
+    "latest_progress": "Exact observed malformed response: baseline loses focused targets after one call; current loop retains57rows/114fields/34targets through allthree inspected actor boundaries. The prose-dropping replacement reaches review in baseline only.",
     "results_report": "artifacts/agere-current-release-finish-2026-11-04/economics-assessment.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -588,17 +585,17 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T10:56:00.903799+00:00",
+    "at": "2026-11-04T11:57:28.822755+00:00",
     "workflow_change": "Ordinary original-question entry automatically reexecutes its validated native trajectory and submits the retained unaccepted draft to full current verification. Exact question, population/date, source/policy and physician-feedback guards remain. Repeated identical review feedback no longer creates a duplicate proposal or repeats fresh candidate validation.",
     "unsealed_work": {
-      "status": "composition_restored_verification_unknowns",
-      "all_jobs_terminal": true,
-      "source_frozen": false,
-      "product_edits": true,
-      "product_commit": "3554c9eb4ad49f6a847cee2618b83f8ddcc6426b",
-      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation-v2/receipt.json",
-      "assessment": "artifacts/agere-current-release-finish-2026-11-04/composition-check/morning-assessment.json",
-      "remaining": "G3: assess only the retained unresolved joint packet patient_SYN-7ACE370F-5C6 and global completeness input at artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation-v2. All12compiler failures are cleared;57patients/114prosefields and originalnativecells are preserved.29of29individual fields are supported but combinedpacket/globalcoverage remain undecided. Distinguish legitimate source unknowns from a verifier defect without relabeling confidence as clinical truth. No repeated wholecohort/source campaign. Seal the scoped repairs, update private integration branch, then perform the final current-release/package check when supported. Retain alltenareas and separate G5/customer prerequisites."
+      "status": "retained_protocol_continuation_starting",
+      "all_jobs_terminal": false,
+      "source_frozen": true,
+      "product_edits": false,
+      "product_commit": "ade0bba82269a892b3470a14254f73677e5cdb63",
+      "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation/receipt.json",
+      "preceding_failed_run": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/ordinary-current/run-receipt.json",
+      "remaining": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained."
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -3544,17 +3541,35 @@
       "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation/receipt.json",
       "reason": "All33native receipts reproduced; 4fields remain after5actorresponses/3newcalls/90.469s/$0.29102023. Every patch deleted or changed quantitative detail; no query was executed. Prior quote repair reduced12to4 but did not complete workflow.",
       "scope_impact": "Same G3 four-field repair and ten-area scope; no threshold relaxation, new model, source campaign or finish-line expansion."
+    },
+    {
+      "at": "2026-11-04T11:30:52.701870+00:00",
+      "decision": "Retain genuine combined/global machine uncertainty and proceed to current ordinary workflow verification.",
+      "basis": "artifacts/agere-current-release-finish-2026-11-04/composition-check/remaining-verification-audit-v7/receipt.json",
+      "scope_impact": "No thresholds, claims, acceptance areas or clinical qualification changed."
+    },
+    {
+      "at": "2026-11-04T11:48:46.692039+00:00",
+      "decision": "Stop broad confirmation repeats; correct exact protocol-state loss using retained malformed response and draft.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/first-draft-diagnostic/format-reset.json",
+      "scope_impact": "No new acceptance requirement or clinical threshold change; existing composition promise remains incomplete."
+    },
+    {
+      "at": "2026-11-04T11:57:28.822755+00:00",
+      "decision": "Seal exact repair-state correction; resume only its retained failed draft.",
+      "evidence": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/protocol-delivery-receipt.json",
+      "scope_impact": "No changes to thresholds, clinical meanings, source scope or finite acceptance."
     }
   ],
   "unsealed_work": {
-    "status": "composition_restored_verification_unknowns",
-    "all_jobs_terminal": true,
-    "source_frozen": false,
-    "product_edits": true,
-    "product_commit": "3554c9eb4ad49f6a847cee2618b83f8ddcc6426b",
-    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation-v2/receipt.json",
-    "assessment": "artifacts/agere-current-release-finish-2026-11-04/composition-check/morning-assessment.json",
-    "remaining": "G3: assess only the retained unresolved joint packet patient_SYN-7ACE370F-5C6 and global completeness input at artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation-v2. All12compiler failures are cleared;57patients/114prosefields and originalnativecells are preserved.29of29individual fields are supported but combinedpacket/globalcoverage remain undecided. Distinguish legitimate source unknowns from a verifier defect without relabeling confidence as clinical truth. No repeated wholecohort/source campaign. Seal the scoped repairs, update private integration branch, then perform the final current-release/package check when supported. Retain alltenareas and separate G5/customer prerequisites."
+    "status": "retained_protocol_continuation_starting",
+    "all_jobs_terminal": false,
+    "source_frozen": true,
+    "product_edits": false,
+    "product_commit": "ade0bba82269a892b3470a14254f73677e5cdb63",
+    "receipt": "artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation/receipt.json",
+    "preceding_failed_run": "artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/ordinary-current/run-receipt.json",
+    "remaining": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3583,7 +3598,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: assess only the retained unresolved joint packet patient_SYN-7ACE370F-5C6 and global completeness input at artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-continuation-v2. All12compiler failures are cleared;57patients/114prosefields and originalnativecells are preserved.29of29individual fields are supported but combinedpacket/globalcoverage remain undecided. Distinguish legitimate source unknowns from a verifier defect without relabeling confidence as clinical truth. No repeated wholecohort/source campaign. Seal the scoped repairs, update private integration branch, then perform the final current-release/package check when supported. Retain alltenareas and separate G5/customer prerequisites.",
+  "next_action": "G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3672,6 +3687,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 81997,
-  "owned_server_session": 90663
+  "owned_server_pid": 87110,
+  "owned_server_session": 93413
 }

@@ -1,5 +1,14 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: preserve focused repair through protocol errors
+
+Current product `ade0bba8` fixes a reproduced state-loss defect. Invalid JSON and unexecuted tool envelopes previously replaced the structured repair assessment with a string; the next iteration lost its focused patch boundary and could discard all patient prose. These errors now retain the assessment and draft, while separate protocol feedback requests correction. Replacement answers remain rejected before review.
+
+The exact retained response from the failed ordinary run reproduces the difference offline: all57patients,114fields and34targets survive across three actor boundaries; the replacement reaches review only under the preceding code.283related tests pass. The initial fixture failures and complete failed run remain retained. The failed run took826.653seconds and20attempts at$12.874891328API-equivalent, returning57native rows but no patient prose. It is not an accepted performance result.
+
+The next check resumes that saved draft through existing native recovery; no whole-question or source-reading campaign is repeated. Global/headline binding errors still require whole-contract repair before row-only targeting, and clinical/source uncertainty remains explicit. Final composition and package acceptance remain open. Evidence:`artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/protocol-delivery-receipt.json`.
+
+
 ## November 4: locate unfinished interpretation before source review
 
 Candidate `a6197e9e` fixes a coverage-input defect: the existing projection replaced native text cells with source-dependency references, hiding all 57 proposed patient actions from the completion judge. Coverage now sees complete scalar text from either SQL or the prose compiler. Structured evidence remains in its existing complete support packets; the source-support projection is unchanged.

@@ -1,3 +1,15 @@
+# Current Agere checkpoint — 2026-11-04T11:57:28.822755+00:00
+
+G3 ACTIVE. Preparing the sole retained-protocol continuation onade0bba8; source frozen, no duplicate request. Receipt `artifacts/agere-current-release-finish-2026-11-04/composition-check/retained-protocol-continuation/receipt.json`. Owned8890stillb7e71e56/PID87110/session93413; direct continuation runs currentcode.
+
+Latestseal:`artifacts/agere-current-release-finish-2026-11-04/composition-check/final-ordinary/protocol-delivery-receipt.json`. Exact actual malformed-response replay retains57rows/114fields/34targets; baseline loses repaircontext.283tests pass. Failedordinary826.653s/20attempts/$12.874891328API-equivalent/57native rows but0prose preserved. All49506attempts retained. No fullMVP orclinicalqualification.
+
+Exact next: G3: run the prepared retained-protocol continuation once, not the whole ordinary request. Currentade0bba8 preserves draft/targets across JSON/tool-envelope errors; exact failure replay57rows/114fields/34targets and283regressions pass. Reexecute33native receipts, resume only the saved unaccepted34-field draft, then full source/global review with allattemptaccounting. Preserve genuine unknowns. Final package/current release applicability remains after composition; alltenareas and G5/customer prerequisites retained.
+
+Alltenareas, source/globalunknowns and standing restrictions retained.
+
+## Superseded morning checkpoint
+
 # Current Agere checkpoint — 2026-11-04T10:56:00.903799+00:00
 
 G3 ACTIVE. All jobs terminal; source unfrozen. Latest retained continuation finished2026-11-04T08:20:56Z (02:20Central). Prior running marker was stale and is now corrected; no later build execution evidenced before morning check-in. App8890 stilla6197e9e. Product3554c9eb candidate unsealed.
