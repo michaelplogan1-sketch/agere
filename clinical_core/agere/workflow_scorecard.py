@@ -5,6 +5,9 @@ import hashlib,json
 from ..contracts import digest
 
 STAGES=('retrieval','reranking','source_scope','source_interpretation','reader_comparison','planning','matching','work_followthrough')
+CASE_CHECKS=('received_category_coverage','source_transport','question_evidence_identity','declared_unit_accounting',
+    'supported_answer_or_explicit_unknown','planning_consumes_answer','supported_service_selection',
+    'owned_internal_work','work_persists','followup_reassesses_same_decision')
 ROOT=Path(__file__).resolve().parents[2]
 CONTRACT=ROOT/'config/agere/release_acceptance.json'
 
@@ -233,6 +236,38 @@ def capability_checks(spec, receipt_path, snapshot, evidence_root=ROOT):
             raise ValueError('Capability evaluated implementation changed: '+name)
     return [{**row,'receipt':str(p),'receipt_sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for row in rows]
 
+def individual_checks(cases, evidence_root=ROOT):
+    """A saved pass is usable only while its complete execution evidence verifies."""
+    root=Path(evidence_root).resolve();observations=[];errors=[]
+    for case in cases:
+        status=case['acceptance']['status']
+        acceptance_status([{'status':status}])
+        try:
+            if status=='passed':
+                checks=case['acceptance'].get('checks',[])
+                if (len(checks)!=len(CASE_CHECKS) or {c.get('id') for c in checks}!=set(CASE_CHECKS)
+                        or acceptance_status(checks)!='passed'):
+                    raise ValueError('Individual pass lacks the complete passing check set')
+                hashes=case['acceptance'].get('evidence_sha256')
+                if not isinstance(hashes,dict) or not hashes:
+                    raise ValueError('Individual pass lacks hashed execution evidence; rescore the saved traces')
+                for check in checks:
+                    paths=check.get('evidence_paths')
+                    if not isinstance(paths,list) or not paths:
+                        raise ValueError('Individual check lacks execution evidence: '+check['id'])
+                    for name in paths:
+                        p=(root/name).resolve()
+                        if not p.is_relative_to(root) or not p.is_file():
+                            raise ValueError('Individual evidence missing or outside project: '+name)
+                        if hashlib.sha256(p.read_bytes()).hexdigest()!=hashes.get(name):
+                            raise ValueError('Individual execution evidence changed: '+name)
+            observations.append({'id':case['id'],'status':status})
+        except (ValueError,KeyError,TypeError,OSError) as exc:
+            errors.append({'case':case['id'],'detail':str(exc)})
+            observations.append({'id':case['id'],'status':'blocked','detail':str(exc)})
+    return observations,errors
+
+
 def release_acceptance(cases, contract_path=CONTRACT, capability_evidence=None, snapshot=None, evidence_root=ROOT):
     contract=json.loads(Path(contract_path).read_text())
     expected=contract['individual_cases']
@@ -245,7 +280,10 @@ def release_acceptance(cases, contract_path=CONTRACT, capability_evidence=None, 
         # population/qualification/package evidence stays visible, not inferred.
         error=None;verification=None;scope=None
         if spec['evidence_kind']=='individual_workflows':
-            checks=[{'id':c['id'],'status':c['acceptance']['status']} for c in cases]
+            checks,invalid=individual_checks(cases,evidence_root)
+            if invalid:
+                error={'status':'invalid_evidence','receipt':None,
+                    'detail':'Individual execution evidence could not be verified','cases':invalid}
         else:
             try:
                 checks=capability_checks(spec,(capability_evidence or {}).get(spec['id']),snapshot,evidence_root)
@@ -416,6 +454,8 @@ def score_case(case,folder,planning_folder=None,trace_overrides=None):
     acceptance=case_acceptance(case,stages,evidence,response(load(planning_folder or folder,'planning')))
     for check in acceptance['checks']:
         check['evidence_paths']=[str(Path(planning_folder or folder)/'planning.json') if n=='planning' else trace_paths[n] for n in check['traces'] if n=='planning' or n in trace_paths]
+    acceptance['evidence_sha256']={p:hashlib.sha256(Path(p).read_bytes()).hexdigest()
+        for check in acceptance['checks'] for p in check['evidence_paths'] if Path(p).is_file()}
     return {'id':case['id'],'patient':case['patient'],'question':case['question'],'stages':stages,
         'end_to_end':'complete' if acceptance['status']=='passed' else 'incomplete','acceptance':acceptance,
         'clinical_validated':False,'expectations':'assistant_authored_development_checks','trace_links':trace_paths,

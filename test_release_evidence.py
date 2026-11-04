@@ -13,14 +13,53 @@ class ReleaseEvidence(unittest.TestCase):
   self.contract={'id':'test','individual_cases':['one'],'requirements':[{'id':'individual','axis':'engineering','evidence_kind':'individual_workflows','scope_areas':[1],'required_checks':['one'],'required_evidence':'Saved execution'},self.spec]}
   self.contract_path=self.root/'contract.json';self.contract_path.write_text(json.dumps(self.contract))
   self.raw=self.root/'execution.json';self.raw.write_text('{"verified":true}')
+  self.case_raw=self.root/'individual.json';self.case_raw.write_text('{"saved_question_workflow":true}')
+  self.case={'id':'one','acceptance':{'status':'passed',
+   'checks':[{'id':k,'status':'passed','evidence_paths':['individual.json']} for k in workflow_scorecard.CASE_CHECKS],
+   'evidence_sha256':{'individual.json':self.sha(self.case_raw)}}}
   self.code=self.root/'implementation.py';self.code.write_text('version = 1\n')
   self.receipt={'schema':'agere-capability-acceptance/1','requirement_id':'dependency','snapshot_digest':digest(self.snap),'implementation_sha256':{'implementation.py':self.sha(self.code)},'checks':[{'id':k,'status':'passed','evidence':[{'path':'execution.json','sha256':self.sha(self.raw)}]} for k in ['changed','unchanged']]}
   self.save()
  def sha(self,p):return hashlib.sha256(p.read_bytes()).hexdigest()
  def save(self): (self.root/'receipt.json').write_text(json.dumps(self.receipt))
- def report(self):return release_acceptance([{'id':'one','acceptance':{'status':'passed'}}],self.contract_path,{'dependency':'receipt.json'},self.snap,self.root)
+ def report(self):return release_acceptance([self.case],self.contract_path,{'dependency':'receipt.json'},self.snap,self.root)
  def test_valid_execution_and_implementation_pass(self):
   r=self.report();self.assertEqual(r['engineering_requirements_passed'],2);self.assertEqual(r['invalid_evidence_requirements'],[])
+ def test_cached_individual_pass_cannot_survive_missing_or_changed_execution(self):
+  for missing in (False,True):
+   with self.subTest(missing=missing):
+    if missing:self.case_raw.unlink()
+    else:self.case_raw.write_text('{"saved_question_workflow":false}')
+    r=self.report();self.assertEqual(r['engineering_requirements_passed'],1)
+    self.assertEqual(r['requirements'][0]['status'],'blocked')
+    self.assertEqual(r['requirements'][1]['status'],'passed')
+    self.assertEqual(r['invalid_evidence_requirements'],['individual'])
+ def test_individual_pass_requires_all_checks_and_hashes(self):
+  import copy
+  original=copy.deepcopy(self.case)
+  for kind in ('no_checks','missing_check','failed_check','no_hashes','unhashed_path','no_paths'):
+   with self.subTest(kind=kind):
+    self.case=copy.deepcopy(original);a=self.case['acceptance']
+    if kind=='no_checks':a.pop('checks')
+    elif kind=='missing_check':a['checks'].pop()
+    elif kind=='failed_check':a['checks'][0]['status']='failed'
+    elif kind=='no_hashes':a.pop('evidence_sha256')
+    elif kind=='unhashed_path':a['evidence_sha256']={'other.json':self.sha(self.case_raw)}
+    else:a['checks'][0]['evidence_paths']=[]
+    self.assertEqual(self.report()['requirements'][0]['status'],'blocked')
+ def test_individual_evidence_cannot_escape_root_through_symlink(self):
+  with tempfile.TemporaryDirectory()as external:
+   p=Path(external)/'outside.json';p.write_text(self.case_raw.read_text())
+   self.case_raw.unlink();self.case_raw.symlink_to(p)
+   self.assertEqual(self.report()['requirements'][0]['status'],'blocked')
+ def test_invalid_individual_does_not_hide_another_case_or_capability(self):
+  import copy
+  other=copy.deepcopy(self.case);other['id']='two';self.case['acceptance'].pop('evidence_sha256')
+  self.contract['individual_cases'].append('two');self.contract['requirements'][0]['required_checks'].append('two')
+  self.contract_path.write_text(json.dumps(self.contract))
+  r=release_acceptance([self.case,other],self.contract_path,{'dependency':'receipt.json'},self.snap,self.root)
+  self.assertEqual(r['requirements'][0]['observations'][1]['status'],'passed')
+  self.assertEqual(r['requirements'][1]['status'],'passed')
  def test_changed_raw_evidence_blocks_all_claims_without_hiding_other_requirement(self):
   self.raw.write_text('{}');r=self.report();self.assertEqual(r['engineering_requirements_passed'],1)
   self.assertEqual(r['requirements'][0]['status'],'passed');self.assertEqual(r['requirements'][1]['status'],'blocked')
