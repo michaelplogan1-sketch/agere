@@ -10,7 +10,7 @@ The final result had 55/60 supported source packets and stopped for lack of prog
 
 The actor consumed 1,898,405 cache-creation input tokens and 186,336 cache-read tokens, in addition to 14 uncached input tokens and 30,242 output tokens. The 14 uncached tokens must never be presented as total input. An offline exact-roundtrip diagnostic using the existing lossless codec reduced retained reading blocks from 398,443 to 131,034 bytes. It is not activated or actor-qualified and establishes no measured token, cost or latency benefit.
 
-Evidence: `artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json`, `ordinary-outcome-audit.json`, `ordinary-cost-and-feedback.json` and `representation-diagnostic.json` in that directory. Remaining work is ordinary source-bound individual composition and practical economics, with independent clinical/model qualification separate. Current local packaging is being verified; no full MVP acceptance is claimed.
+Evidence: `artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json`, `ordinary-outcome-audit.json`, `ordinary-cost-and-feedback.json` and `representation-diagnostic.json` in that directory. Remaining work is ordinary source-bound individual composition and practical economics, with independent clinical/model qualification separate. Current local packaging, archived-runtime installation and actual HTTP inspection now pass. Both applications retain all 57 patients and expose the suspended-source status. The read-only saved continuation currently rejects that suspension before investigation; this is the next measured boundary to repair. No full MVP acceptance is claimed.
 
 ---
 

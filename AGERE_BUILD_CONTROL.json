@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T03:55:42.266744+00:00",
+  "updated_at": "2026-11-04T04:15:02.265744+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -128,6 +128,10 @@
         {
           "path": "artifacts/agere-current-ten-area-acceptance-2026-11-02/delivery-receipt.json",
           "sha256": "6c3e6a27fb81d1d98be160acfd2ecd0a5e107b672c354f69cb0486c43c032902"
+        },
+        {
+          "path": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
+          "sha256": "510ccbc2142884d2250a19c7d88aeb48d9d7912f22415e6d848caa9b60101290"
         }
       ],
       "acceptance_kind": "same_platform_declared_local_operations_with_explicit_external_and_qualification_dependencies"
@@ -509,11 +513,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "portable_clinical_native_prefix_sealed",
+    "kind": "current_package_and_ordinary_outcome_sealed",
     "gate_id": "G3",
-    "last_delivered_gate": "G3",
-    "user_behavior_delta": "The source-supported clinical native program is now discoverable by an ordinary request after actor escalation, and stops before temporary review feedback.",
-    "measured_failure_reduction": "Prior candidate quarantined at action27 and escalated-model lookup key;26portable actions now freshly validate and26ordinary-entry replay certificates match.",
+    "last_delivered_gate": "G6",
+    "user_behavior_delta": "Current same-platform executable package installs with its archived runtime and reopens the complete saved partial result with source suspension visible.",
+    "measured_failure_reduction": "Current distributable archive/install was unverified; snapshot, archived-runtime installation, integrity verification and actual HTTP inspection now pass.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -678,17 +682,31 @@
       "artifacts/agere-current-release-2026-11-04/six-case-http/receipt.json",
       "artifacts/agere-current-release-2026-11-04/affected-regressions.log",
       "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
-      "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json"
+      "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
+      "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-current-package-2026-11-04/receipt.json",
+      "artifacts/agere-current-package-2026-11-04/checkpoint-result.json",
+      "artifacts/agere-current-package-2026-11-04/archive-result.json",
+      "artifacts/agere-current-package-2026-11-04/installation.log",
+      "artifacts/agere-current-package-2026-11-04/verification.log",
+      "artifacts/agere-current-package-2026-11-04/installed-http.json",
+      "artifacts/agere-current-package-2026-11-04/installed-http-v2.json",
+      "artifacts/agere-current-package-2026-11-04/resume-source-boundary.json",
+      "artifacts/agere-current-package-2026-11-04/code-applicability.json",
+      "artifacts/agere-current-package-2026-11-04/acceptance/receipt.json",
+      "artifacts/agere-current-package-2026-11-04/app/server-process.json",
+      "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-cost-and-feedback.json",
+      "artifacts/agere-clinical-native-prefix-2026-11-04/representation-diagnostic.json"
     ],
-    "remaining_gap": "Repair the bound source-field fault and ensure original patient-specific interpretation is composed in ordinary execution; do not repeat unknown votes or a broad source-reading campaign. Source-reading representation diagnostic is67%smaller but not activated or model-qualified.",
-    "next_action": "G3: finish the owned current local-package job, inspect its receipt and restore owned8890 afterwards; do not duplicate it or edit frozen source. Current ordinary clinical measurement ended partial after405.339seconds/$5.055890908API-equivalent/173attempts.26native actions replayed,57patients retained;55/60source packets supported and individual-prose equivalence not established. The incomplete outcome automatically quarantined the candidate and one wrong-entity source assertion was suspended. After packaging/current applicability, repair that exact source-field dependency and ordinary per-patient composition using retained results, not another broad source campaign or repeated uncertain votes. Keep alltenareas and independentG5/customer requirements.",
+    "remaining_gap": "Read-only continuation of suspended-source review, original patient-specific composition, and practical whole-request economics. Independent G5 and customer deployment requirements remain.",
+    "next_action": "G3: repair the saved source-review continuation boundary demonstrated by artifacts/agere-current-package-2026-11-04/resume-source-boundary.json. Continue analysis currently calls answer_context.load(current=True) and rejects the suspended source reading before read-only re-analysis can begin. Use the existing source_review mode only for guarded analysis; preserve source/policy/context checks and downstream-work suspension. Then use current retained evidence to handle the exact disputed beta-blocker relation and restore individual patient assessment/recommendation composition, keeping the other uncertainty labels explicit. Qualify the existing lossless representation against the retained actor reading to reduce large repeated inputs. No broad source campaign, repeated uncertain votes, invented clinical labels, or new model/research scope. All ten acceptance areas remain; current same-platform package is verified at ab6faed. Independent G5 and customer deployment dependencies remain separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All owned experiments terminal; source unfrozen. Owned8890 serves15b201a. No extraagents/chats.",
     "remaining_blockers": [
       "Practical full-request economics remains unqualified; two source packets and global coverage remain undecided."
     ],
-    "latest_progress": "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
-    "results_report": "artifacts/agere-clinical-native-prefix-2026-11-04/delivery-receipt.json",
+    "latest_progress": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
+    "results_report": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
       "commit": "163d4d6c8e0c1f500f41057f86c4f3995e969965",
@@ -736,24 +754,20 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-04T03:41:34.083299+00:00",
-    "workflow_change": "The source-supported clinical native program is now discoverable by an ordinary request after actor escalation, and stops before temporary review feedback.",
+    "at": "2026-11-04T04:15:02.265744+00:00",
+    "workflow_change": "Current same-platform executable package installs with its archived runtime and reopens the complete saved partial result with source suspension visible.",
     "unsealed_work": {
-      "status": "current_local_packaging_running",
-      "source_frozen": true,
-      "all_jobs_terminal": false,
+      "status": "none",
+      "source_frozen": false,
+      "all_jobs_terminal": true,
       "product_edits": false,
-      "receipt": "artifacts/agere-current-package-2026-11-04/receipt.json",
-      "remaining": "Current package/isolated install; provider jobs terminal. Ordinary clinical result remains partial."
+      "remaining": "Read-only continuation of suspended-source review, original patient-specific composition, and practical whole-request economics. Independent G5 and customer deployment requirements remain."
     },
     "bottling_assessment": {
-      "candidate_id": "f7610f2d0d77bd4f3929616ae7af57317e53936de14ffaa377a4fd1a70a0d076",
-      "status": "quarantined",
-      "first_26_native_outputs_exact": true,
-      "failed_action_index": 27,
-      "failed_action_kind": "historical operational review-feedback query",
-      "selected": false,
-      "reason": "A fresh executor did not reproduce the operational feedback query; no changed clinical source output or final-answer reuse is inferred."
+      "native_actions_replayed": 26,
+      "current_candidate_status": "quarantined_after_incomplete_ordinary_outcome",
+      "final_answer_reuse": false,
+      "total_savings_qualified": false
     },
     "owner_review": {
       "at": "2026-10-29T11:48:18.601324+00:00",
@@ -798,17 +812,7 @@
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
     "provider_dependency": null,
-    "active_jobs": [
-      {
-        "pid": 69645,
-        "session": 19293,
-        "status": "running",
-        "phase": "checkpoint",
-        "source_frozen": true,
-        "provider_dispatch": false,
-        "receipt": "artifacts/agere-current-package-2026-11-04/receipt.json"
-      }
-    ],
+    "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
       "script": "artifacts/agere-offline-finish-2026-10-27/finish.py",
@@ -832,7 +836,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Prior candidate quarantined at action27 and escalated-model lookup key;26portable actions now freshly validate and26ordinary-entry replay certificates match.",
+    "measured_failure_removed": "Current distributable archive/install was unverified; snapshot, archived-runtime installation, integrity verification and actual HTTP inspection now pass.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -895,14 +899,13 @@
       "full_mvp_acceptance": false
     },
     "terminal_clinical_confirmation": {
-      "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/source-scalar/delivery-receipt.json",
-      "context_id": "ANS-00a2568c1f1543642a7892d7",
-      "source_supported_packets": 58,
-      "source_packets": 58,
+      "receipt": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
+      "context_id": "ANS-91ebb673d677f94d131b3d06",
       "patients": 57,
-      "prose_fields": 114,
-      "status": "partial_unverified",
-      "remaining": "global coverage verdict undecided"
+      "source_supported_packets": 55,
+      "source_packets": 60,
+      "status": "partial_unverified_source_suspended",
+      "individual_recommendation_equivalence": false
     },
     "document_field_screen": {
       "receipt": "artifacts/agere-document-field-screen-2026-11-03/delivery-receipt.json",
@@ -3636,15 +3639,21 @@
       "decision": "Native replay passed but ordinary downstream composition did not. Preserve negative result and existing automatic source/candidate quarantine; do not infer clinical progress from faster retrieval or uncertain model votes. Continue finite packaging offline before focused existing-source repair.",
       "evidence": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
       "next_action": "G3: finish the owned current local-package job, inspect its receipt and restore owned8890 afterwards; do not duplicate it or edit frozen source. Current ordinary clinical measurement ended partial after405.339seconds/$5.055890908API-equivalent/173attempts.26native actions replayed,57patients retained;55/60source packets supported and individual-prose equivalence not established. The incomplete outcome automatically quarantined the candidate and one wrong-entity source assertion was suspended. After packaging/current applicability, repair that exact source-field dependency and ordinary per-patient composition using retained results, not another broad source campaign or repeated uncertain votes. Keep alltenareas and independentG5/customer requirements."
+    },
+    {
+      "at": "2026-11-04T04:15:02.265744+00:00",
+      "gate": "G3",
+      "decision": "Current package/install and partial-result inspection close the finite packaging gap. The ordinary result remains unaccepted. The next increment is an observed read-only source-review continuation rejection, not a new acceptance area. Use existing boundaries and localized evidence; no repeated full campaign.",
+      "evidence": "artifacts/agere-current-package-2026-11-04/delivery-receipt.json",
+      "next_action": "G3: repair the saved source-review continuation boundary demonstrated by artifacts/agere-current-package-2026-11-04/resume-source-boundary.json. Continue analysis currently calls answer_context.load(current=True) and rejects the suspended source reading before read-only re-analysis can begin. Use the existing source_review mode only for guarded analysis; preserve source/policy/context checks and downstream-work suspension. Then use current retained evidence to handle the exact disputed beta-blocker relation and restore individual patient assessment/recommendation composition, keeping the other uncertainty labels explicit. Qualify the existing lossless representation against the retained actor reading to reduce large repeated inputs. No broad source campaign, repeated uncertain votes, invented clinical labels, or new model/research scope. All ten acceptance areas remain; current same-platform package is verified at ab6faed. Independent G5 and customer deployment dependencies remain separate."
     }
   ],
   "unsealed_work": {
-    "status": "current_local_packaging_running",
-    "source_frozen": true,
-    "all_jobs_terminal": false,
+    "status": "none",
+    "source_frozen": false,
+    "all_jobs_terminal": true,
     "product_edits": false,
-    "receipt": "artifacts/agere-current-package-2026-11-04/receipt.json",
-    "remaining": "Current package/isolated install; provider jobs terminal. Ordinary clinical result remains partial."
+    "remaining": "Read-only continuation of suspended-source review, original patient-specific composition, and practical whole-request economics. Independent G5 and customer deployment requirements remain."
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3672,18 +3681,8 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [
-    {
-      "pid": 69645,
-      "session": 19293,
-      "status": "running",
-      "phase": "checkpoint",
-      "source_frozen": true,
-      "provider_dispatch": false,
-      "receipt": "artifacts/agere-current-package-2026-11-04/receipt.json"
-    }
-  ],
-  "next_action": "G3: finish the owned current local-package job, inspect its receipt and restore owned8890 afterwards; do not duplicate it or edit frozen source. Current ordinary clinical measurement ended partial after405.339seconds/$5.055890908API-equivalent/173attempts.26native actions replayed,57patients retained;55/60source packets supported and individual-prose equivalence not established. The incomplete outcome automatically quarantined the candidate and one wrong-entity source assertion was suspended. After packaging/current applicability, repair that exact source-field dependency and ordinary per-patient composition using retained results, not another broad source campaign or repeated uncertain votes. Keep alltenareas and independentG5/customer requirements.",
+  "active_jobs": [],
+  "next_action": "G3: repair the saved source-review continuation boundary demonstrated by artifacts/agere-current-package-2026-11-04/resume-source-boundary.json. Continue analysis currently calls answer_context.load(current=True) and rejects the suspended source reading before read-only re-analysis can begin. Use the existing source_review mode only for guarded analysis; preserve source/policy/context checks and downstream-work suspension. Then use current retained evidence to handle the exact disputed beta-blocker relation and restore individual patient assessment/recommendation composition, keeping the other uncertainty labels explicit. Qualify the existing lossless representation against the retained actor reading to reduce large repeated inputs. No broad source campaign, repeated uncertain votes, invented clinical labels, or new model/research scope. All ten acceptance areas remain; current same-platform package is verified at ab6faed. Independent G5 and customer deployment dependencies remain separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3692,7 +3691,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "2026-11-04T03:41:34.083299+00:00",
+  "latest_checkpoint": "2026-11-04T04:15:02.265744+00:00",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -3772,6 +3771,6 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": null,
-  "owned_server_session": null
+  "owned_server_pid": 75209,
+  "owned_server_session": 26207
 }
