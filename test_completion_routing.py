@@ -74,6 +74,38 @@ class CompletionRouting(unittest.TestCase):
         self.assertNotEqual(out.get('repair_kind'),'unresolved_verification')
         self.assertIn('Evidence check: contradicted',out['feedback'])
 
+    def test_complete_source_support_stops_uncertain_coverage_rewrites_without_acceptance(self):
+        supported={'label':'supported','decided_by':'fixture','steps':[], 'all_dependencies_checked':True,
+            'packets':[{'id':'patient_A','label':'supported','decided_by':'fixture'}]}
+        assessment=self.review(decided=None,support=supported)[0]
+        self.assertEqual(assessment['retry_disposition'],'retain_partial_until_new_evidence')
+        for initial in (False,True):
+            sent=[]
+            def send(body):
+                sent.append(body)
+                return {'content':[{'type':'text','text':json.dumps(self.answer)}]},0,False
+            out=S.tool_loop('Explain each patient.',[],[],lambda use:self.fail('No source rerun'),send=send,
+                model=M.HAIKU,escalation_model=M.SONNET,max_tools=None,initial_calls=self.calls,
+                initial_answer=self.answer if initial else None,review=lambda a,c:copy.deepcopy(assessment))
+            with self.subTest(initial=initial):
+                self.assertEqual(len(sent),0 if initial else 1)
+                self.assertEqual(out['review_stopped'],'unresolved_coverage')
+                self.assertEqual(out['answer']['status'],'partial')
+                self.assertEqual(out['answer']['verification'],'unverified')
+                self.assertEqual(out['answer']['missing'],self.answer['missing'])
+                self.assertFalse(out.get('model_escalations'))
+        for kind in ('unchecked','empty','fault','uncertain'):
+            changed=copy.deepcopy(supported)
+            if kind=='unchecked':changed['all_dependencies_checked']=False
+            elif kind=='empty':changed['packets']=[]
+            elif kind=='fault':
+                changed['label']='contradicted';changed['packets'][0]['label']='contradicted'
+            else:
+                changed['label']='unknown';changed['decided_by']=None;changed['packets'][0]['decided_by']=None
+            with self.subTest(kind=kind):
+                self.assertNotIn('retry_disposition',self.review(decided=None,support=changed)[0])
+        self.assertNotIn('retry_disposition',self.review(decided='fixture',support=supported)[0])
+
     def test_uncertain_coverage_and_source_outage_do_not_request_a_rewrite(self):
         unavailable={'label':'unknown','decided_by':None,'steps':[{'provider':'fixture','status':'error'}],
                      'packets':[{'id':'patient_A','label':None,'decided_by':None}]}

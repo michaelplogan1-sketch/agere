@@ -1563,6 +1563,12 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         indeterminate=verification_repair_state(coverage,support)
         if assessment['status']=='repair'and indeterminate is not None and not numeric_unknown:
             assessment.update(repair_kind='unresolved_verification',progress_state=indeterminate)
+            if (indeterminate=={'coverage':'unknown','unresolved_verification':[]}
+                    and support.get('all_dependencies_checked')is True and support.get('packets')):
+                # Complete source support plus an undecided coverage vote is
+                # no evidence of an omission. Rewriting verified claims only
+                # invalidates their checks; retain a partial answer instead.
+                assessment['retry_disposition']='retain_partial_until_new_evidence'
         if assessment['status']=='repair'and not numeric_unknown:
             from .execution_state import source_prose_repair
             targeted=source_prose_repair(answer,support,packets,coverage)
