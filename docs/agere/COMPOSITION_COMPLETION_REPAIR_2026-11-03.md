@@ -667,3 +667,20 @@ The complete current review supported **59 of 60 packets**. The remaining packet
 This continuation took **369.058 seconds** and **$1.253995602 API-equivalent**, with 148 new attempts: eight Claude, 70 Jev and 70 Perplexity. Every one of the prior 49,338 ledger rows, source/code identity and existing export files remained unchanged. The earlier failed ordinary request and failed first continuation remain separately accounted for. This is saved-draft recovery, not a successful fresh first-request benchmark or an independently qualified cost comparison.
 
 The morning inspection found the canonical checkpoint still marked running after this terminal receipt. That stale marker is corrected. No further build execution is evidenced between the 02:20 completion and the morning check-in; queued heartbeats must not be reported as completed engineering work. Current evidence and next action are recorded in `artifacts/agere-current-release-finish-2026-11-04/composition-check/morning-assessment.json`. Next is the one retained joint-dependency/coverage audit, scoped release integration and final package verification. The ten-area charter and separate independent G5/customer prerequisites are unchanged.
+
+
+## November 4 — earlier composition feedback (53b8e058)
+
+An explicitly unfinished patient explanation can now be reported together with quantity-binding errors before another frontier retry. Uncertain or unavailable composition judgments retain the compiler repair. Full source and coverage review remains required.
+
+On the authentic initial 57-patient draft, the same typed request and cached judgment locate 51 explicit omissions before the two numeric-only regeneration rounds. Current review and actor-loop replay move omission feedback from review 3 to review 1 while preserving all 32 native operations and the original quantity errors. Those historical retries totaled 61.331 service seconds and $0.558690 API-equivalent; this is not a measured end-to-end saving. Missing row_prose alone never establishes an omission.
+
+The actual current native reuse and review passed with 33 actions, 57 patients, 114 fields and 58/58 source-supported packets. It used no Claude calls and four typed review calls ($0.015078472 API-equivalent), and took 104.2 seconds inside the backstop. Coverage remains undecided and the answer remains partial. The newly captured immutable context is `ANS-6bef307be09171faa91122b7`; previous contexts are preserved. Current app 8890 and all ten-area applicability checks passed (9/9 finite engineering predicates). The affected regression suite passed 190 tests, with one skipped.
+
+Verification accounting retains eight successful typed calls ($0.030157564 known API-equivalent), two DNS failures and their explicit retries, and all 50,581 ledger rows. Earlier offline checks correctly stopped at uncached global judgments; a manual review fixture lacked complete document state and was discarded as acceptance evidence. Final ordinary native replay restored that state. A test-runner bookkeeping loop was interrupted only after verification and context capture, then independently reconciled in one ledger read. Original records remain available.
+
+Receipt: `artifacts/agere-early-composition-review-2026-11-04/delivery-receipt.json`.
+
+Initial-generation end-to-end savings remain unmeasured. Independent G5 model/clinical evidence and customer deployment dependencies remain. The known-good ff949737 archive is preserved; this change does not claim a new archive restore.
+
+Next: inspect the retained 104.2-second backstop path for native execution, evidence construction and serialization cost. Retain the fixed scope and avoid another broad provider campaign.
