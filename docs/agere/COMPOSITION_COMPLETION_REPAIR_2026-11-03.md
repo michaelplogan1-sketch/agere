@@ -1,5 +1,17 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: ordinary automatic composition passes; cost remains a limitation
+
+The ordinary question on product `849d9135` returned all 57 patients and 114 patient-specific narrative fields without a prior final draft or owner prose/binding corrections. All 58 source-review packets are supported; global coverage remains undecided and the saved answer remains partial/unverified. Native/source caches were warm, with 32 native operations freshly executed. This is a first-composition test, not cold ingestion or independent clinical qualification.
+
+The complete run took **986.028 seconds (16.4 minutes)** and **$8.909197764 API-equivalent**, with **264 attempts: 12 Claude, 126 Jev and 126 Perplexity**, zero unpriced attempts. Claude accounts for $8.150616, Jev $0.511980924 and Perplexity $0.24660084. Three initial Haiku responses failed binding/composition requirements before automatic escalation. Source review initially stopped after 29 packets at a located issue, leaving 31 unchecked; subsequent passes finished the work. Later source checks reused 260 cached steps, with zero identical paid source-request repeats. Changed-payload semantic redundancy has not been established. The latency/cost is not a fast-answer or superiority claim.
+
+The run also generated a new candidate with 33 validated native actions; it remains governed by the existing complete-workflow/promotion checks. No model weights were trained or promoted. All 50,567 provider attempts and prior exports remain intact.
+
+The current finite assessment still verifies nine engineering requirements across all ten acceptance areas. The existing runtime release view now uses current receipt pointers, and HTTP reopen preserves the new answer exactly at `ANS-9f4b8b69313e9b3afc32904a`. The assessment script initially compared the 1,047-file runtime evidence manifest to the 1,050-file package inventory; its correction preserves the existing exclusion of three question catalogs from runtime verification. This was an assessment harness error, retained in the artifacts, not a source/result failure.
+
+Evidence: `artifacts/agere-current-release-finish-2026-11-04/composition-check/automatic-initial-contract/assessment.json`, its `economics-audit.json`, and `artifacts/agere-current-release-finish-2026-11-04/automatic-release-acceptance/receipt.json`. Next: current executable package, isolated installation and saved-result checks. Practical first-answer performance, independent clinical/model/outcome qualification and customer deployment remain explicit limitations/dependencies; no full MVP readiness claim.
+
 ## November 4: localized source/compiler continuation completes
 
 The actual saved-work continuation on `849d9135` clears its remaining compiler failure and returns all 57 patients and 114 narrative fields. All 58 source-review packets are supported. Overall coverage remains undecided, so the result stays partial. No owner prose or binding edits were supplied. The first actor received one permitted field; two Claude calls and 68 Jev/Perplexity checks completed in 223.283 seconds at $0.279712436 API-equivalent, with zero unpriced attempts. All 50,303 attempts, native/source evidence and prior exports remain intact. This is retained-work recovery, not fresh first-request performance. The saved answer `ANS-9c1c1203a5787b7d82a15f34` reopens through the current app with exact table/prose, partial status and zero new provider calls.
