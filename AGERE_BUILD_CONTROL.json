@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T00:39:12.087848+00:00",
+  "updated_at": "2026-11-04T00:43:28.933300+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -603,10 +603,12 @@
       "artifacts/agere-source-prose-followthrough-2026-11-03/retained-confirmation/receipt.json",
       "artifacts/agere-source-prose-followthrough-2026-11-03/saved-context-HTTP.json",
       "artifacts/agere-source-prose-followthrough-2026-11-03/coverage-stop-regressions.log",
-      "artifacts/agere-source-prose-followthrough-2026-11-03/delivery-receipt.json"
+      "artifacts/agere-source-prose-followthrough-2026-11-03/delivery-receipt.json",
+      "artifacts/agere-clinical-prefix-2026-11-03/preflight.json",
+      "artifacts/agere-clinical-prefix-2026-11-03/provenance-search.json"
     ],
     "remaining_gap": "Overall question coverage remains undecided. Original clinical ordinary-prefix reuse/economics and existing G3 closeout remain; independent G5 clinical/model/outcome qualification and customer prerequisites are separate. Alltenareas retained.",
-    "next_action": "G3: qualify the original clinical question through existing ordinary-entry native-prefix bottling against the current saved57patient/61of61source-supported partial candidate. Inspect current harness guard, existing28action recipe and current source/config identities; preserve all source/native values, all attempts and undecided coverage, and require final review after native replay. Do not repeat the source-reading campaign or reword solely to satisfy an undecided coverage vote. Measure actual calls/time/cost for ordinary routing and qualified repeat, then reconcile the finite existing ten-area engineering closeout. Independent G5 clinical/model/outcome and customer prerequisites remain separate; optional models/research do not expand scope.",
+    "next_action": "G3: finish ordinary clinical native-prefix bottling qualification using artifacts/agere-clinical-prefix-2026-11-03/preflight.json and provenance-search.json. Current28actions retain3callback IDs; exact name/input matches recover authentic origin callbacks for actions1-22 from the original owned confirmation. Actions24-26 lack such provenance and must not be assigned fabricated callbacks. Reconcile current source/meaning/ordinary payload guards, exact fresh native receipts, and the operational feedback view at result23 without treating it as patient evidence. Preserve the current61/61source-supported partial answer and undecided coverage. Keep prefix execution qualification separate from final-answer acceptance: current proposer/selector only admit answered+confirmed complete requests; do not mislabel this answer to activate reuse. Require offline guard/regression/recovery proof before an ordinary comparison, no repeated source campaign. Then measure whole-request calls/time/cost and reconcile existingtenarea engineering closeout; independentG5/customer dependencies remain separate.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All proof/provider jobs terminal; sourceunfrozen. Owned8890PID64602/session7609 serves83452d5e1764df452475b645087ef146fdeb8dac. Current partial result saved; ACTIVE quiet overnight continuation.",
     "remaining_blockers": [
@@ -854,6 +856,19 @@
       "status": "superseded_all_jobs_terminal",
       "interrupted_run": "artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json",
       "latest_probe": "artifacts/agere-completion-routing-2026-11-03/localized-prose-live-retry/run-receipt.json"
+    },
+    "prefix_preflight": {
+      "native_actions": 28,
+      "callback_ids_in_current_receipt": 3,
+      "authentic_prior_action_matches": 22,
+      "remaining_unattributed_action_indices": [
+        24,
+        25,
+        26
+      ],
+      "ordinary_candidate_selected": false,
+      "provider_attempts": 0,
+      "scope": "Read-only provenance/routing diagnosis; not a new native execution or clinical/bottling qualification."
     }
   },
   "decisions": [
@@ -3446,14 +3461,21 @@
       "decision": "Actual source review reached61/61, but global uncertainty caused gratuitous rewrites and source regression. Corrected generic terminal handling: only complete source support plus explicit undecided coverage and no quantitative/source fault returns partial without more actor calls. A decided omission still continues. All costs/failures retained.",
       "evidence": "artifacts/agere-source-prose-followthrough-2026-11-03/delivery-receipt.json",
       "scope_impact": "Existing G3 repair/routing; no new feature/model/acceptance area. Clinical qualification and coverage certainty are not inferred."
+    },
+    {
+      "at": "2026-11-04T00:43:28.933300+00:00",
+      "gate": "G3",
+      "decision": "Follow existing clinical-prefix task after sealed source-support closure. Recovered receipts omitted callback identity; actual original owned transcript matches actions1-22. Preserve the original records and distinguish action provenance from output equivalence. A partial answer remains partial; execution-only reuse needs its own measured qualification under the existing harness.",
+      "evidence": "artifacts/agere-clinical-prefix-2026-11-03/provenance-search.json",
+      "scope_impact": "No new component/acceptance area, provider call or candidate selection."
     }
   ],
   "unsealed_work": {
-    "status": "sealed_source_prose_and_coverage_stop",
+    "status": "clinical_prefix_provenance_diagnosed",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": false,
-    "receipt": "artifacts/agere-source-prose-followthrough-2026-11-03/delivery-receipt.json"
+    "receipt": "artifacts/agere-clinical-prefix-2026-11-03/preflight.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3482,7 +3504,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: qualify the original clinical question through existing ordinary-entry native-prefix bottling against the current saved57patient/61of61source-supported partial candidate. Inspect current harness guard, existing28action recipe and current source/config identities; preserve all source/native values, all attempts and undecided coverage, and require final review after native replay. Do not repeat the source-reading campaign or reword solely to satisfy an undecided coverage vote. Measure actual calls/time/cost for ordinary routing and qualified repeat, then reconcile the finite existing ten-area engineering closeout. Independent G5 clinical/model/outcome and customer prerequisites remain separate; optional models/research do not expand scope.",
+  "next_action": "G3: finish ordinary clinical native-prefix bottling qualification using artifacts/agere-clinical-prefix-2026-11-03/preflight.json and provenance-search.json. Current28actions retain3callback IDs; exact name/input matches recover authentic origin callbacks for actions1-22 from the original owned confirmation. Actions24-26 lack such provenance and must not be assigned fabricated callbacks. Reconcile current source/meaning/ordinary payload guards, exact fresh native receipts, and the operational feedback view at result23 without treating it as patient evidence. Preserve the current61/61source-supported partial answer and undecided coverage. Keep prefix execution qualification separate from final-answer acceptance: current proposer/selector only admit answered+confirmed complete requests; do not mislabel this answer to activate reuse. Require offline guard/regression/recovery proof before an ordinary comparison, no repeated source campaign. Then measure whole-request calls/time/cost and reconcile existingtenarea engineering closeout; independentG5/customer dependencies remain separate.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
