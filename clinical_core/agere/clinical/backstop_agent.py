@@ -1556,6 +1556,10 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         indeterminate=verification_repair_state(coverage,support)
         if assessment['status']=='repair'and indeterminate is not None and not numeric_unknown:
             assessment.update(repair_kind='unresolved_verification',progress_state=indeterminate)
+        if assessment['status']=='repair'and not numeric_unknown:
+            from .execution_state import source_prose_repair
+            targeted=source_prose_repair(answer,support,packets,coverage)
+            if targeted:assessment['prose_repair']=targeted
     except Exception as exc:  # a reviewer outage does not fabricate a successful check or erase the observed evidence
         if getattr(exc,'kind',None)=='rate_limit':raise
         assessment['reason'] = f'{type(exc).__name__}: {exc}'[:300]

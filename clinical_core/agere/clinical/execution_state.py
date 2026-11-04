@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/10'
+VERSION = 'execution-state/11'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -186,7 +186,7 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
         for field,value in fields.items():
             target=located.get((ident,field))
             if targets and target is None:
-                raise ValueError('A focused binding repair may edit only the compiler-located fields')
+                raise ValueError('A focused repair may edit only the producer-located fields')
             if target and target['code']in ('unbound_literal','missing_scalar_source'):
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native)
@@ -243,6 +243,73 @@ def repair_rendered_value(value,native):
     except (ValueError,KeyError,IndexError,AttributeError)as exc:raise ValueError('Binding repair template is invalid')from exc
 
 
+def source_prose_repair(candidate,support,packets,coverage):
+    """Locate only reviewed prose, retaining complete source and draft bindings.
+
+    An undecided check permits source inspection, not a finding of error. Native
+    fields, incomplete source and unlocalized obligations retain the full path.
+    """
+    from ..deliverables.receipts import uncompact_json
+    if (not isinstance(candidate,dict)or support.get('all_dependencies_checked')is not True or
+        coverage.get('decided_by')and coverage.get('label')!='answers_fully'):return None
+    spec=candidate.get('row_prose')or{}
+    if spec.get('keys')!=['patient_id']:return None
+    try:
+        rows={r['patient_id']:r for r in candidate['table']}
+        prose={r['key']['patient_id']:r for r in spec['rows']}
+        if len(rows)!=len(candidate['table'])or len(prose)!=len(spec['rows']):return None
+        producers={p['id']:p for p in packets};targets=[];contexts={};seen=set()
+        pending=[p for p in support['packets']if p.get('label')!='supported'or not p.get('decided_by')]
+        checks={p['id']:p for p in support['packets']}
+        if not pending:return None
+        for reviewed in pending:
+            packet=producers[reviewed['id']];review=reviewed.get('field_review')or{}
+            source_state=uncompact_json(json.loads(packet['text']));source_packet_digest=digest(packet['text'])
+            if review.get('packet_digest')!=digest(packet['text']):
+                # Reconstruct the exact existing source-partition parent. Only
+                # already-supported children can remain outside this repair.
+                from .evidence_projection import partition_support_packet
+                parts=partition_support_packet(packet)
+                parent=next((p for p in parts if p['id']==reviewed['id']),None)
+                required=(parent or{}).get('required_source_packet_ids')
+                if not required or any(checks.get(k,{}).get('label')!='supported'or
+                    not checks[k].get('decided_by')for k in required):return None
+                packet=parent
+            if (packet.get('patient_dependency_bound')is not True or packet.get('source_context_complete')is not True or
+                packet.get('dependency_complete')is not True or packet.get('parent_packet_id')or
+                not reviewed.get('claim_feedback')or review.get('packet_digest')!=digest(packet['text'])or
+                review.get('manifest_digest')!=digest(packet['claim_manifest'])):return None
+            state=uncompact_json(json.loads(packet['text']));pid=packet['source_dependency_patient_id']
+            if (state.get('patient_id')!=pid or source_state.get('patient_id')!=pid or
+                source_state.get('source_context_gaps')or not source_state.get('source_contexts')):return None
+            entry=prose[pid];claims={c['id']:c for c in packet['claim_manifest']}
+            for f in reviewed['claim_feedback']:
+                claim=claims[f['claim_id']];field=f['field'];path=f['path']
+                if (f.get('packet_id')!=packet['id']or field!=claim['field']or path!=claim['path']or
+                    field not in entry['fields']or len(path)!=3 or path[0]!='answer_rows'or path[2]!=field or
+                    type(path[1])is not int or state['answer_rows'][path[1]].get('patient_id')!=pid or
+                    state['answer_rows'][path[1]][field]!=rows[pid][field]or(pid,field)in seen):return None
+                seen.add((pid,field))
+                targets.append({'key':entry['key'],'field':field,'basis':entry['basis'],
+                    'code':'source_meaning_review','value_digest':digest(entry['fields'][field]),
+                    'reviewed_value_digest':digest(rows[pid][field]),'packet_id':packet['id'],
+                    'packet_digest':review['packet_digest'],'source_packet_digest':source_packet_digest,'claim_id':claim['id'],
+                    'review_disposition':f.get('label'),'decided_by':f.get('decided_by'),
+                    'reason':f.get('reason'),'source_fault_established':bool(f.get('decided_by')and f.get('label')!='unknown')})
+            for c in source_state['source_contexts']:
+                if c.get('patient_id')!=pid or not c.get('record_id')or not c.get('date')or not isinstance(c.get('text'),str)or not c['text']:return None
+                ident=(pid,c['record_id'],c['date'])
+                if ident in contexts and contexts[ident]!=c:return None
+                contexts[ident]=c
+        if not targets:return None
+        sources=list(contexts.values())
+        return {'schema':'native-prose-repair-targets/1','intent':'source_meaning_review',
+            'draft_digest':digest(candidate),'targets':targets,'source_contexts':sources,
+            'source_contexts_digest':digest(sources),'coverage_still_required':True,
+            'authority':'machine_review','clinical_qualification':False}
+    except (KeyError,ValueError,TypeError,IndexError):return None
+
+
 def prose_repair_targets(candidate,feedback):
     """Only exact producer-bound row failures permit a narrower repair view."""
     if not isinstance(candidate,dict)or not isinstance(feedback,dict):return None
@@ -262,6 +329,15 @@ def prose_repair_targets(candidate,feedback):
         if target.get('value_digest')!=digest(entry['fields'][field])or target.get('basis')!=entry.get('basis'):return None
         if (ident,field)in found:return None
         found.add((ident,field))
+    if receipt.get('intent')=='source_meaning_review':
+        sources=receipt.get('source_contexts');wanted={t['key'].get('patient_id')for t in targets}
+        if (not isinstance(sources,list)or not sources or not all(isinstance(c,dict)for c in sources)or
+            receipt.get('source_contexts_digest')!=digest(sources)or
+            {c.get('patient_id')for c in sources}!=wanted or any(
+                not c.get('record_id')or not c.get('date')or not isinstance(c.get('text'),str)or not c['text']for c in sources)):return None
+        rows={r.get('patient_id'):r for r in candidate.get('table',[])}
+        if any(t.get('code')!='source_meaning_review'or t.get('reviewed_value_digest')!=digest(
+            rows.get(t['key'].get('patient_id'),{}).get(t['field']))for t in targets):return None
     return targets
 
 
@@ -303,7 +379,7 @@ def focused_prose_state(candidate,feedback,calls):
                 'nested_columns_available_by_query':[k for k,v in row.items()if is_collection(v)],'row_digest':digest(row)})
             collect_ids(row)
     fields=[{**target,'value':entries[digest(target['key'])]['fields'][target['field']]}for target in targets]
-    return {'schema':'focused-native-prose-repair/1','draft_digest':digest(candidate),
+    state={'schema':'focused-native-prose-repair/1','draft_digest':digest(candidate),
         'keys':keys,'targets':fields,'native_scalar_rows':native_rows,
         'cited_sources':[s for s in candidate.get('sources',[])if s.get('record_id')in record_ids],
         'native_answer_rows':len(candidate.get('table')or[]),'repair_entities':len(wanted),
@@ -317,6 +393,18 @@ def focused_prose_state(candidate,feedback,calls):
             'Additional basis rows must carry the same entity keys. For a source value inside a nested column, use query_sql '
             'to select its complete exact value with the entity keys and source record/date; do not truncate quotes. '
             'All original results and their scope remain available in executed_results. Nothing here establishes source support.'}
+    receipt=feedback['prose_repair']
+    if receipt.get('intent')=='source_meaning_review':
+        state.update(intent='source_meaning_review',source_contexts=receipt['source_contexts'],
+            source_contexts_digest=receipt['source_contexts_digest'],coverage_still_required=True,
+            instruction='Inspect only these exact unresolved prose fields against the complete dated source contexts and retained native results. '
+                'An undecided model judgment is not a proven error; do not change facts solely to satisfy a probability threshold. '
+                'Make entity, drug/reason, date, role and source scope explicit where supported. Preserve correct detail and supported unknowns; '
+                'do not replace unfinished interpretation with generic missingness. Proposed review is not completed care or verified eligibility. '
+                'Return only supported changed fields through repair_draft. Preserve native quantities using their existing scalar bindings; '
+                'query complete same-entity nested evidence when an additional binding is needed. All other patient rows, prose and sources remain intact. '
+                'The complete answer, changed dependencies and global question coverage still require verification; this repair view does not accept them.')
+    return state
 
 
 def recovery_context(replay,tools):
@@ -610,7 +698,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
                 'native_total_rows':len(rows),'complete_native_result_retained':True,
                 'scope':'Exact rows for the located repair entities only; all other rows remain queryable and in the final answer.'}
         state['focused_prose_repair']=focus
-        state['instruction']+=' A focused_prose_repair replaces full draft repetition only for the bound compiler failures; it never narrows the requested output or source obligations.'
+        state['instruction']+=' A focused_prose_repair replaces full draft repetition only for the producer-bound repair fields; it never narrows the requested output or source obligations.'
     elif candidate is not None:
         state.update(draft_state(candidate))
     return [{'role':'user','content':json.dumps(state,default=str,allow_nan=False)}]
