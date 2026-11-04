@@ -1,5 +1,21 @@
 # Composition repair and retained-evidence comparison
 
+## November 4: ordinary guarded proposal reuse verified
+
+Product `796c1d4c` brings the retained native workflow and unaccepted draft into normal question entry. The exact question, population/date, source, policy and physician-feedback guards must match; every native action reruns and the complete current source/coverage review runs before any answer is returned. Changed evidence withholds the old proposal. Partial output remains partial, with no clinical authority or model-weight promotion.
+
+The actual ordinary request returned all57patients and114prose fields unchanged in **112.327seconds**, with32native substitutions, **zero Claude callbacks**, and fourJeV/Perplexity attempts costing **$0.017496996API-equivalent**. Source support remains59/60packets; the joint support dependency and overall coverage are unknown. Normal reopening preserves all content without provider calls. No PDF was created.
+
+The preceding ordinary run took150.744seconds. A duplicate warning made its unchanged draft look like a new candidate, triggering32additional validation actions. Idempotent feedback removes that duplicate cycle while preserving all review requirements.91focused checks pass. These observations qualify warm ordinary reuse, not first-request economics or a standalone-model comparison.
+
+The first attempt was interrupted when source/configuration files and Git metadata disappeared from temporary storage. All attempts and returned provider text were retained. Source recovery matches1050recorded file hashes;455missing runtime files were restored and checked against the sealed archive. The active checkout and Git metadata now reside in durable storage, with the original path preserved. Current acceptance evidence is intact; three historical receipt files remain unavailable and are listed in the recovery receipt.
+
+All work in this increment, including preparation and the failed attempt:21provider attempts,$0.397702818known API-equivalent,0unpriced;49,303shared ledger rows retained. Local compute/development and subscription cash allocation are not included in that estimate.
+
+Evidence: `artifacts/agere-ordinary-proposal-reuse-2026-11-04/delivery-receipt.json`. Current app context:`ANS-7633d132315046d50c408331`. G3 remains active for the finite current-release assessment and remaining first-request evidence. G5/customer dependencies stay separate; alltenareas retained.
+
+---
+
 ## November 4: native reuse works; ordinary composition remains incomplete
 
 Product `ab6faed` stops portable native learning before temporary review feedback and uses the same entry-model identity for proposal and replay after escalation. Fresh validation and ordinary backstop execution reproduced all 26 portable actions;93 affected regression checks passed. This qualifies execution equivalence only; no partial final answer or clinical weights were stored for reuse.
