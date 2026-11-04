@@ -503,10 +503,18 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
     if partial_result is not None and (not partial_evidence or final_answer is not None):
         raise ValueError('Execution-only partial prefix requires native support and no stored final answer')
     key=identity(tools,question,context,model);selected=latest(tools.stack.path,key);parent=latest(tools.stack.path,key,selected=False)
-    actions=[]
+    actions=[];boundary=None
     for index,c in enumerate(calls):
         out=c.get('result')
         if c.get('name') not in READ_ONLY or not c.get('actor_callback_id') or not isinstance(out,dict):break
+        from .execution_state import operational_feedback_result
+        if operational_feedback_result(out):
+            # Review feedback belongs to this investigation. A portable native
+            # prefix can end here; importing old feedback would turn control
+            # state into a prerequisite for a new question's evidence.
+            boundary={'call_index':index+1,'reason':'current_review_feedback_required',
+                      'result_digest':digest(out)}
+            break
         actions.append({'name':c['name'],'input':c['input'],'expected_result':digest(comparison_result(c['name'],out,calls[:index])),
                         'actor_callback_id':c['actor_callback_id']})
     if not actions:return None
@@ -518,6 +526,7 @@ def propose(tools,question,context,model,calls,make_executor,final_answer=None,b
                'baseline_actor_metrics':baseline_metrics or {},
                'selection_order':['identical native tool outputs under exact guards','fewer actor callbacks','elapsed time'],
                'qualification':'Execution equivalence only; no clinical accuracy claim or model-weight change'}
+    if boundary:candidate['prefix_boundary']=boundary
     if partial_evidence:
         candidate.update(qualification_mode='source_supported_partial_prefix',partial_execution_evidence=partial_evidence)
     ident=digest(candidate);db=database(tools.stack.path)

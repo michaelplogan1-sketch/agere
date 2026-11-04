@@ -213,6 +213,32 @@ class Harness(unittest.TestCase):
         H.finish(self.root,bad)
         self.assertIsNone(H.latest(self.root,H.identity(e,self.q,self.context,self.model)))
 
+    def test_portable_prefix_stops_before_operational_feedback_and_keeps_the_full_trace(self):
+        import copy
+        e,calls=self.trajectory(3);calls[1]['result']['incomplete_dependencies']=[{
+            'result_view':'agere_review_feedback_prior','authority':'unverified_review_feedback',
+            'reason':'Operational review state, not answer evidence.'}]
+        original=copy.deepcopy(calls);result=self.supported_partial()
+        candidate=H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor(),partial_result=result)
+        self.assertEqual(candidate['status'],'validated_pending_complete_workflow')
+        self.assertEqual(candidate['actions'],1);self.assertEqual(calls,original)
+        with H.database(self.root)as db:
+            saved=json.loads(db.execute('SELECT payload FROM harness_candidates WHERE id=?',(candidate['id'],)).fetchone()[0])
+        self.assertEqual(saved['prefix_boundary']['call_index'],2)
+        self.assertEqual(saved['prefix_boundary']['result_digest'],H.digest(calls[1]['result']))
+        self.assertIsNone(saved['final_answer'])
+        result['investigation']['recursive_improvement']={'candidate':candidate};H.finish(self.root,result)
+        replay=H.replay(self.executor(),self.q,self.context,self.model)
+        self.assertEqual(len(replay['calls']),1);self.assertIsNone(replay['final_answer'])
+        self.assertIsNone(H.propose(e,self.q,self.context,self.model,calls[1:],lambda:self.executor(),partial_result=result))
+
+    def test_feedback_words_in_native_evidence_do_not_cut_the_prefix(self):
+        e,calls=self.trajectory(2)
+        # Content names cannot confer operational authority or change learning.
+        for c in calls:c['input']['comment']='agere_review_feedback is mentioned in a source'
+        c=H.propose(e,self.q,self.context,self.model,calls,lambda:self.executor(),partial_result=self.supported_partial())
+        self.assertEqual(c['status'],'validated_pending_complete_workflow');self.assertEqual(c['actions'],2)
+
     def test_partial_prefix_cannot_relax_uncertain_sources_coverage_faults_or_unfinished_work(self):
         for kind in ('undecided_source','source_fault','unchecked','duplicate','coverage_fault','pending_fields',
                      'workflow','answer_workflow','no_review','no_stop','ordinary_partial','bad_metadata'):

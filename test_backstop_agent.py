@@ -7,6 +7,40 @@ from unittest.mock import patch
 from clinical_core.agere.clinical import backstop_agent as B, proposers as P
 
 
+class EntryModelReuse(unittest.TestCase):
+    def test_escalated_actor_keeps_native_learning_on_the_entry_model_key(self):
+        from contextlib import ExitStack
+        from clinical_core.agere import model_policy as M
+        from clinical_core.agere.clinical import harness_improvement as H
+        wh=SimpleNamespace(define=lambda day:None,close=lambda:None)
+        tools=SimpleNamespace(cohort=None,scope=None,db=SimpleNamespace(close=lambda:None),continuation_identity=lambda:{'source':'fixture'},
+            subtool_accounting={'new_paid_api_calls':0,'estimated_cost_usd':0.0},document_reviews=[],judged=[])
+        run={'answer':{'status':'answered','headline':'Native result retained.'},'model':M.SONNET,
+             'tool_calls':[],'answer_reviews':[{'status':'confirmed','calls':0}],
+             'estimated_cost_usd':0.01,'new_paid_api_calls':1}
+        with ExitStack() as stack:
+            for name,value in {
+                'clinical_core.agere.clinical.legacy_proposers._semantic_path':'unused',
+                'clinical_core.agere.clinical.together.warehouse':wh,
+                'clinical_core.agere.clinical.semantic_analyst.semantic_context':'',
+                'clinical_core.agere.clinical.analyst_definitions.agere_context':('',None),
+                'clinical_core.agere.clinical.analyst_context.install':'',
+                'clinical_core.agere.clinical.component_learning.shape_hint':None,
+                'clinical_core.agere.clinical.backstop_agent.conversation_turns':[],
+                'clinical_core.agere.clinical.backstop_agent.Tools':tools,
+                'clinical_core.agere.clinical.semantic_analyst.tool_loop':run,
+            }.items():stack.enter_context(patch(name,return_value=value))
+            replay=stack.enter_context(patch.object(H,'attempt_replay',return_value={'used':None,'calls':[]}))
+            propose=stack.enter_context(patch.object(H,'attempt_propose',return_value={'id':'native-prefix'}))
+            stack.enter_context(patch.object(H,'recovery_checkpoint',return_value=None))
+            result=B.answer(SimpleNamespace(), 'A source question',send=lambda body:self.fail('No provider call'),
+                            as_of='2030-05-27',model=M.HAIKU)
+        self.assertEqual(replay.call_args.args[3],M.HAIKU)
+        self.assertEqual(propose.call_args.args[3],replay.call_args.args[3])
+        self.assertEqual(result['model'],M.SONNET)
+        self.assertEqual(result['recursive_improvement']['candidate']['id'],'native-prefix')
+
+
 class FakeTools:
     def __init__(self, docs): self.read = {k: {'text': v} for k, v in docs.items()}
     def read_document(self, rid):

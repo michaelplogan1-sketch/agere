@@ -2768,7 +2768,6 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                                          initial_answer=replay.get('resume_draft') if replay.get('resume_draft')is not None else replay.get('final_answer'),
                                          escalation_model=model_policy.SONNET if model==model_policy.HAIKU and model_policy.escalation_enabled() else None,
                                          compact_execution_state=os.environ.get('AGERE_ANALYST_STATE')=='compiled')
-        model=run.get('model') or model
         candidate=None
         actor_metrics={'new_paid_api_calls':run.get('new_paid_api_calls',0),'estimated_cost_usd':run.get('estimated_cost_usd'),
                        'model_callbacks':run.get('new_paid_api_calls',0)+run.get('cache_hits',0),
@@ -2782,6 +2781,10 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
             candidate=harness.attempt_propose(tools,question,payload,model,run.get('tool_calls') or [],fresh_executor,
                 final_answer=None if partial_prefix else run.get('answer'),baseline_metrics=actor_metrics,
                 partial_result=run if partial_prefix else None)
+        # Reuse is looked up with the entry model above. Escalation describes
+        # the actual actor, but must not strand its native prefix under a key
+        # the next ordinary request never queries.
+        model=run.get('model') or model
         reviews = run.get('answer_reviews') or []
         review_cost = sum(r.get('cost_usd') or 0.0 for r in reviews)
         out = {'answer': run.get('answer') if isinstance(run.get('answer'), dict) else None, 'tool_calls': run.get('tool_calls') or [],
