@@ -529,7 +529,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         return True
     messages = [{'role': 'user', 'content': user}]
     state_feedback=None; state_candidate=None; latest_calls=[];last_complete_candidate=None
-    repair_protocol_feedback=None
+    repair_protocol_feedback=None;binding_query_required=False
     if initial_calls:
         # Certified literal replay enters through the same native tool protocol.
         # The actor sees actual current receipts, never a cached final answer.
@@ -617,6 +617,14 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         {'type':'text','text':'Current operation: repair the retained draft. Use literal registered tools if needed, then return ONLY {"repair_draft":{"draft_digest":"the exact focused_prose_repair digest","rows":[changed entity fields]}}. A replacement final answer is invalid in this operation. If the evidence justifies no changes, return the same repair_draft contract with rows:[]; the existing answer remains partial and unresolved.'}]
             body = {'model': model, 'max_tokens': max_tokens, 'system': actor_system, 'messages': actor_messages, 'tools': tools,
                     'tool_choice': {'type': 'none' if (max_tools is not None and calls >= max_tools) or force_text else 'auto'}, **(extra or {})}
+            if (binding_query_required and focused_repair and body['tool_choice']['type']!='none'
+                    and any(t.get('name')=='query_sql'for t in tools)):
+                body['tool_choice']={'type':'tool','name':'query_sql'}
+                body['system']=[*(body['system']if isinstance(body['system'],list)else[{'type':'text','text':body['system']}]),
+                    {'type':'text','text':'The previous patch changed a quantity instead of binding it. '
+                     'The required next action is query_sql, not another prose patch. Select the actual source value '
+                     'or compute the named definition count from native evidence, carrying the entity keys and source record/date. '
+                     'Do not SELECT invented constants. After its result returns, bind the value in the unchanged original sentence.'}]
             if pending_output is not None:body['tool_choice']=pending_output['tool_choice']
             if deadline is not None and deadline - time.monotonic() <= 0:
                 raise TimeoutError('Wall-clock limit reached')
@@ -673,6 +681,13 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
             response = normalize_tool_response(response, tools,body.get('tool_choice'))
             blocks = response.get('content', [])
             uses = [b for b in blocks if b.get('type') == 'tool_use']
+            if binding_query_required and body['tool_choice']=={'type':'tool','name':'query_sql'} and not uses:
+                result.setdefault('protocol_repairs',[]).append({'reason':'Required binding evidence query was not returned',
+                    'retained_draft_digest':digest(state_candidate),'response':response})
+                if not escalate('Binding repair requires native evidence before another prose patch'):
+                    result['review_stopped']='binding_evidence_required';return result
+                repair_protocol_feedback='Return the required query_sql tool call. No patch can be applied before its native evidence returns.'
+                continue
             if not uses:
                 text = '\n'.join(b.get('text', '') for b in blocks if b.get('type') == 'text').strip()
                 result['final_text'] = text
@@ -764,6 +779,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     try:
                         candidate=apply_prose_repair(patch_proposal,state_candidate,calls=result['tool_calls'],feedback=state_feedback)
                     except ValueError as exc:
+                        from .execution_state import BindingPreservationError
+                        if isinstance(exc,BindingPreservationError):binding_query_required=True
                         signature=digest([patch_proposal,digest(state_candidate)])
                         if signature in rejected_protocol and not escalate('Repeated invalid prose repair'):
                             result['review_stopped']='no_progress'
@@ -877,6 +894,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         output = {'error': str(exc)}
                         failure = True
                 failure=failure or (isinstance(output,dict) and bool(output.get('error')))
+                if use.get('name')=='query_sql'and not failure:binding_query_required=False
                 if guarded and index>0 and not failure:
                     certificate={'decision_digest':digest([use.get('name'),use.get('input')]),
                                  'guard_identity':guard_identity,'predecessor_receipt_digest':digest(result['tool_calls'][-1]),

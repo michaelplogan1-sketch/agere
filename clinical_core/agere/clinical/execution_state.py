@@ -10,6 +10,10 @@ VERSION = 'execution-state/11'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
+class BindingPreservationError(ValueError):
+    """A binding-only patch changed the original claim instead of its address."""
+
+
 def operational_feedback_result(result):
     """Recognize only complete producer declarations, never row content/names."""
     dependencies = result.get('incomplete_dependencies') if isinstance(result, dict) else None
@@ -191,7 +195,7 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None):
                 original=existing[ident]['fields'][field]
                 rendered=repair_rendered_value(value,native)
                 if canonical_repair_prose(rendered)!=canonical_repair_prose(repair_rendered_value(original,native)):
-                    raise ValueError('A binding repair must preserve the original sentence, quantities, units and dates at '+field+'. Use a full answer for a source-meaning correction.')
+                    raise BindingPreservationError('A binding repair must preserve the original sentence, quantities, units and dates at '+field+'. Query the required native scalar evidence, then bind it in the unchanged sentence. A binding-only operation cannot change source meaning.')
         changes[ident]={k:v for k,v in fields.items()if existing[ident]['fields'][k]!=v}
         additions[ident]=extra
     if not any(changes.values())and not any(additions.values()):raise ValueError('Prose repair contains no changed fields; inspect the unresolved dependency')

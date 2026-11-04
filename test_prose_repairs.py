@@ -284,6 +284,44 @@ class ProseRepairs(unittest.TestCase):
         self.assertTrue(all('focused_prose_repair'in json.loads(b['messages'][0]['content'])for b in sent))
         self.assertIn('preserve the original',sent[-1]['messages'][0]['content'])
 
+    def test_quantity_deleting_patch_requires_native_query_before_next_patch(self):
+        for obey in (True,False):
+            with self.subTest(obey=obey):
+                self.setUp();feedback=self.located_failure();sent=[];reviewed=[];executed=[]
+                def review(a,c):
+                    reviewed.append(copy.deepcopy(a))
+                    if len(reviewed)==1:return feedback
+                    B.materialize_table(a,c);B.bind_computed_prose(a,c)
+                    self.assertEqual(a['table'][0]['review'],'Review 2 events on 2030-01-01; preserve the uncertainty.')
+                    return {'status':'confirmed'}
+                def send(body):
+                    sent.append(body)
+                    if len(sent)==2:
+                        self.assertEqual(body['tool_choice'],{'type':'tool','name':'query_sql'})
+                        if obey:return {'content':[{'type':'tool_use','id':'native','name':'query_sql',
+                            'input':{'sql':'SELECT patient_id,events FROM scoped'}}]},0.,False
+                    proposal=self.patch(review='Review the events; omit the numeric detail.')
+                    if len(sent)==3:
+                        self.assertEqual(body['tool_choice'],{'type':'auto'})
+                        proposal=self.patch(review=self.bound_review('agere_result_2'))
+                        proposal['repair_draft']['rows'][0]['basis_additions']=[{'result_view':'agere_result_2','row':0}]
+                    return {'content':[{'type':'text','text':json.dumps(proposal)}]},0.,False
+                def execute(use):
+                    executed.append(use)
+                    return {**copy.deepcopy(self.calls[0]['result']),'result_view':'agere_result_2'}
+                out=S.tool_loop('Explain both entities',[],[{'name':'query_sql','input_schema':{'type':'object'}}],
+                    execute,send=send,model=M.HAIKU,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+                    review=review,compact_execution_state=True)
+                if obey:
+                    self.assertEqual(len(executed),1);self.assertEqual(len(reviewed),2)
+                    self.assertEqual(out['prose_repairs'][0]['changed_fields'],1)
+                    self.assertEqual(out['answer']['table'][1],{
+                        **self.base['table'][1],**self.base['row_prose']['rows'][1]['fields']})
+                else:
+                    self.assertEqual(executed,[]);self.assertEqual(len(reviewed),1)
+                    self.assertEqual(out['review_stopped'],'binding_evidence_required')
+                    self.assertNotIn('prose_repairs',out)
+
     def test_source_free_keyed_constants_do_not_establish_patient_evidence(self):
         feedback=self.located_failure()
         self.calls.append({'name':'query_sql','input':{'sql':"SELECT 'A' AS patient_id,2 AS events"},

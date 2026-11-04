@@ -157,6 +157,11 @@ class Translation(unittest.TestCase):
         self.assertEqual(result['content'],[{'type':'text','text':action}]);self.assertEqual(result['stop_reason'],'end_turn')
         selected=T.allowed_tools(tools,{'type':'tool','name':'review'})
         self.assertEqual(selected,[tools[1]])
+        body['tool_choice']={'type':'tool','name':'review'}
+        system,_=T.build_prompt(body)
+        self.assertIn('This turn requires a tool call',system)
+        self.assertIn('naming review with literal input arguments',system)
+        self.assertNotIn('Unique SQL tool',system)
 
     def test_failed_cli_output_and_usage_survive_on_the_exception(self):
         raw={'is_error':True,'result':'Partial output before terminal failure','usage':{'output_tokens':19}}

@@ -97,6 +97,11 @@ def build_prompt(body):
     if tools:
         listing = json.dumps([{'name': t.get('name'), 'description': t.get('description'), 'input_schema': t.get('input_schema')} for t in tools], indent=1)
         system += TOOL_PROTOCOL.format(tools=listing)
+        choice=body.get('tool_choice')or{}
+        if choice.get('type')in ('tool','any'):
+            system+='\nThis turn requires a tool call. Return ONLY the tool_use object'
+            if choice['type']=='tool':system+=' naming '+choice['name']
+            system+=' with literal input arguments. Do not return final text or a repair_draft on this turn.'
     elif body.get('tools'):
         system += '\nTools are disabled for this turn. Return the final answer in the required contract. Tool requests will not execute.'
     turns = []
