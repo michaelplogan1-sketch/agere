@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/18'
+VERSION = 'execution-state/19'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -431,6 +431,29 @@ def repair_rendered_value(value,native):
     except (ValueError,KeyError,IndexError,AttributeError)as exc:raise ValueError('Binding repair template is invalid')from exc
 
 
+def valid_native_prose_context(context):
+    """Check the exact typed observation provenance carried by a repair view."""
+    try:
+        rows=context['evidence'];provenance=context['evidence_provenance']
+        origins={p['row_digest']:p['origins']for p in provenance}
+        contracts={c['result_view']:c for c in context['native_calculation_contracts']}
+        questions={digest(r['questions'])for r in context.get('review_scope',[])}
+        if (not context.get('patient_id')or not context.get('packet_digest')or not rows or not contracts or
+                len(origins)!=len(provenance)or {digest(r)for r in rows}!=set(origins)):
+            return False
+        for row in rows:
+            if row.get('patient_id')!=context['patient_id']or not origins[digest(row)]:return False
+            for origin in origins[digest(row)]:
+                if origin.get('kind')=='executed_native_result':
+                    c=contracts[origin['result_view']]
+                    if origin['tool']!=c['tool']or origin['input_digest']!=digest(c.get('input')):return False
+                elif origin.get('kind')=='machine_document_observation':
+                    if origin.get('question_digest')not in questions:return False
+                else:return False
+        return True
+    except (KeyError,TypeError,ValueError,AttributeError):return False
+
+
 def source_prose_repair(candidate,support,packets,coverage):
     """Locate only reviewed prose, retaining complete source and draft bindings.
 
@@ -439,15 +462,30 @@ def source_prose_repair(candidate,support,packets,coverage):
     they do not authorize edits or suppress independent bound prose repairs.
     """
     from ..deliverables.receipts import uncompact_json
-    if (not isinstance(candidate,dict)or support.get('all_dependencies_checked')is not True or
+    if (not isinstance(candidate,dict)or
         coverage.get('decided_by')and coverage.get('label')!='answers_fully'):return None
+    if support.get('all_dependencies_checked')is not True:
+        # The reviewer stops further work on a decided field fault. That stop
+        # must not revoke the exact reviews already obtained, or authorize a
+        # rewrite of unreviewed patients. Keep their full obligations below.
+        unchecked=support.get('unchecked_packet_ids');reviewed=support.get('packets')or[]
+        checks={p.get('id'):p for p in reviewed}
+        faults={p.get('id')for p in reviewed if p.get('decided_by')and any(
+            f.get('decided_by')and f.get('label')not in ('supported','unknown',None)
+            for f in p.get('claim_feedback')or[])}
+        if (support.get('all_dependencies_checked')is not False or
+                support.get('packet_manifest_complete')is not True or support.get('label')!='contradicted' or
+                support.get('decided_by')!='all_dependency_checks' or not isinstance(unchecked,list)or not unchecked or
+                len(set(unchecked))!=len(unchecked)or not faults.intersection(support.get('failed_packet_ids')or[])or
+                any(k not in checks or checks[k].get('decided_by')or checks[k].get('label')!='unknown'for k in unchecked)):
+            return None
     spec=candidate.get('row_prose')or{}
     if spec.get('keys')!=['patient_id']:return None
     try:
         rows={r['patient_id']:r for r in candidate['table']}
         prose={r['key']['patient_id']:r for r in spec['rows']}
         if len(rows)!=len(candidate['table'])or len(prose)!=len(spec['rows']):return None
-        producers={p['id']:p for p in packets};targets=[];contexts={};seen=set();remaining=[]
+        producers={p['id']:p for p in packets};targets=[];contexts={};native_contexts={};seen=set();remaining=[]
         pending=[p for p in support['packets']if p.get('label')!='supported'or not p.get('decided_by')]
         checks={p['id']:p for p in support['packets']}
         if not pending:return None
@@ -479,7 +517,16 @@ def source_prose_repair(candidate,support,packets,coverage):
                 remaining.append({'packet_id':reviewed['id'],'reason':'No complete producer-bound prose review'});continue
             state=uncompact_json(json.loads(packet['text']));pid=packet['source_dependency_patient_id']
             if (state.get('patient_id')!=pid or source_state.get('patient_id')!=pid or
-                source_state.get('source_context_gaps')or not source_state.get('source_contexts')):return None
+                source_state.get('source_context_gaps')):return None
+            native_context=None
+            if not source_state.get('source_contexts'):
+                # Structured evidence has no document body to copy. Preserve
+                # its typed rows, execution contracts and machine-observation
+                # status instead of inventing a document or losing locality.
+                native_context={'patient_id':pid,'packet_digest':source_packet_digest,
+                    **{k:source_state.get(k)for k in ('evidence','evidence_provenance','native_calculation_contracts',
+                        'executed_source_definitions','shared_evidence','review_scope')}}
+                if not valid_native_prose_context(native_context):return None
             entry=prose[pid];claims={c['id']:c for c in packet['claim_manifest']};before_targets=len(targets)
             for f in reviewed['claim_feedback']:
                 claim=claims[f['claim_id']];field=f['field'];path=f['path']
@@ -501,17 +548,22 @@ def source_prose_repair(candidate,support,packets,coverage):
                     'packet_digest':review['packet_digest'],'source_packet_digest':source_packet_digest,'claim_id':claim['id'],
                     'review_disposition':f.get('label'),'decided_by':f.get('decided_by'),
                     'reason':f.get('reason'),'source_fault_established':bool(f.get('decided_by')and f.get('label')!='unknown')})
-            for c in source_state['source_contexts'] if len(targets)>before_targets else []:
+            if native_context is not None and len(targets)>before_targets:native_contexts[pid]=native_context
+            for c in source_state.get('source_contexts',[]) if len(targets)>before_targets else []:
                 if c.get('patient_id')!=pid or not c.get('record_id')or not c.get('date')or not isinstance(c.get('text'),str)or not c['text']:return None
                 ident=(pid,c['record_id'],c['date'])
                 if ident in contexts and contexts[ident]!=c:return None
                 contexts[ident]=c
         if not targets:return None
         sources=list(contexts.values())
+        native_sources=list(native_contexts.values())
         return {'schema':'native-prose-repair-targets/1','intent':'source_meaning_review',
             'draft_digest':digest(candidate),'targets':targets,'source_contexts':sources,
             'remaining_dependencies':remaining,
+            'all_dependencies_checked':support.get('all_dependencies_checked')is True,
+            'unchecked_packet_ids':list(support.get('unchecked_packet_ids')or[]),
             'source_contexts_digest':digest(sources),'coverage_still_required':True,
+            'native_source_contexts':native_sources,'native_source_contexts_digest':digest(native_sources),
             'authority':'machine_review','clinical_qualification':False}
     except (KeyError,ValueError,TypeError,IndexError):return None
 
@@ -537,9 +589,16 @@ def prose_repair_targets(candidate,feedback):
         found.add((ident,field))
     if receipt.get('intent')=='source_meaning_review':
         sources=receipt.get('source_contexts');wanted={t['key'].get('patient_id')for t in targets}
-        if (not isinstance(sources,list)or not sources or not all(isinstance(c,dict)for c in sources)or
+        native_sources=receipt.get('native_source_contexts',[])
+        if (not isinstance(native_sources,list)or any(not valid_native_prose_context(c)for c in native_sources)or
+            native_sources and receipt.get('native_source_contexts_digest')!=digest(native_sources)):
+            return None
+        native_patients={c['patient_id']for c in native_sources}
+        if any(c['packet_digest']!=t.get('source_packet_digest')for c in native_sources
+               for t in targets if t['key'].get('patient_id')==c['patient_id']):return None
+        if (not isinstance(sources,list)or not(sources or native_sources)or not all(isinstance(c,dict)for c in sources)or
             receipt.get('source_contexts_digest')!=digest(sources)or
-            {c.get('patient_id')for c in sources}!=wanted or any(
+            {c.get('patient_id')for c in sources}|native_patients!=wanted or any(
                 not c.get('record_id')or not c.get('date')or not isinstance(c.get('text'),str)or not c['text']for c in sources)):return None
         rows={r.get('patient_id'):r for r in candidate.get('table',[])}
         if any(t.get('code')!='source_meaning_review'or (not receipt.get('pending_compiler')and
@@ -653,8 +712,14 @@ def focused_prose_state(candidate,feedback,calls):
     if receipt.get('intent')=='source_meaning_review':
         state.update(intent='source_meaning_review',source_contexts=receipt['source_contexts'],
             source_contexts_digest=receipt['source_contexts_digest'],coverage_still_required=True,
+            native_source_contexts=receipt.get('native_source_contexts',[]),
+            remaining_dependencies=receipt.get('remaining_dependencies',[]),
+            all_dependencies_checked=receipt.get('all_dependencies_checked'),
+            unchecked_packet_ids=receipt.get('unchecked_packet_ids',[]),
             instruction='Inspect only these exact unresolved prose fields against the complete dated source contexts and retained native results. '
                 'An undecided model judgment is not a proven error; do not change facts solely to satisfy a probability threshold. '
+                'native_source_contexts are executed structured observations and explicitly labeled machine findings, not invented documents or clinical truth. '
+                'Their row provenance, source definitions and review scope are retained; acquire a missing original note when its meaning is needed. '
                 'Make entity, drug/reason, date, role and source scope explicit where supported. Preserve correct detail and supported unknowns; '
                 'Describe each drug and its own event dates separately; shared lists of drugs and dates must not imply every combination. '
                 'do not replace unfinished interpretation with generic missingness. Proposed review is not completed care or verified eligibility. '
@@ -664,6 +729,7 @@ def focused_prose_state(candidate,feedback,calls):
                 'use query_sql on the original record text with its entity key, record_id and date, select the complete exact quotation, '
                 'then bind that text scalar and include its row in basis_additions. Reading the source_contexts here alone does not create a scalar binding. '
                 'All other patient rows, prose and sources remain intact. '
+                'Unchecked packets and remaining dependencies are still open obligations, not accepted findings or permission to edit them. '
                 'The complete answer, changed dependencies and global question coverage still require verification; this repair view does not accept them.')
         if receipt.get('pending_compiler'):
             state['compiler_feedback']=receipt['compiler_feedback']

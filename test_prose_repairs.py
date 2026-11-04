@@ -669,7 +669,7 @@ class ProseRepairs(unittest.TestCase):
         self.calls[-1]['result']['read_views']=['received_events']
         self.compile(merged)
 
-    def source_review(self,field='review'):
+    def source_review(self,field='review',label='unknown'):
         from clinical_core.agere.deliverables.receipts import readable_json
         row=copy.deepcopy(self.base['table'][0])
         claims=[{'id':'claim_'+str(i),'field':k,'path':['answer_rows',0,k]}
@@ -681,13 +681,44 @@ class ProseRepairs(unittest.TestCase):
         p={'id':'patient_A','date':'2030-05-27','text':text,'bytes':len(text.encode()),'claim_manifest':claims,
             'patient_dependency_bound':True,'source_dependency_patient_id':'A','source_context_complete':True,'dependency_complete':True}
         def judge(task,named,evidence,**kw):
-            return {'steps':[],'judgments':{k:{'label':'unknown'if v['instructions']['claim']['field']==field else'supported',
-                'decided_by':None if v['instructions']['claim']['field']==field else'fixture',
+            return {'steps':[],'judgments':{k:{'label':label if v['instructions']['claim']['field']==field else'supported',
+                'decided_by':None if v['instructions']['claim']['field']==field and label=='unknown'else'fixture',
                 'probability':.9,'threshold':.8}for k,v in named.items()}}
         r=B.localize_support_failure(p,judge,as_of=p['date'],ledger=None)
         support={'all_dependencies_checked':True,'packets':[{'id':p['id'],'label':'unknown','decided_by':None,
             'field_review':r['field_review'],'claim_feedback':r['feedback']}]}
         return p,support
+
+    def test_early_source_fault_keeps_only_reviewed_fields_editable_and_unchecked_work_open(self):
+        packet,support=self.source_review(label='wrong_role')
+        support.update(label='contradicted',decided_by='all_dependency_checks',all_dependencies_checked=False,
+            packet_manifest_complete=True,failed_packet_ids=['patient_A'],unchecked_packet_ids=['patient_B'])
+        support['packets'][0].update(label='contradicted',decided_by='typed_claim_checks')
+        support['packets'].append({'id':'patient_B','label':'unknown','decided_by':None})
+        target=E.source_prose_repair(self.base,support,[packet],{})
+        self.assertIsNotNone(target);self.assertFalse(target['all_dependencies_checked'])
+        self.assertEqual(target['unchecked_packet_ids'],['patient_B'])
+        self.assertEqual([t['key']for t in target['targets']],[{'patient_id':'A'}])
+        self.assertTrue(target['targets'][0]['source_fault_established'])
+        self.assertEqual([d['packet_id']for d in target['remaining_dependencies']],['patient_B'])
+        feedback={'prose_repair':target,'support':support}
+        focus=E.focused_prose_state(self.base,feedback,self.calls)
+        self.assertEqual(focus['unchecked_packet_ids'],['patient_B']);self.assertFalse(focus['all_dependencies_checked'])
+        proposal=self.patch(review='The note describes correspondence; current responsibility is unestablished.')
+        merged=E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback);self.compile(merged)
+        self.assertEqual(merged['table'][1],self.base['table'][1])
+        proposal['repair_draft']['rows'][0]['key']={'patient_id':'B'}
+        with self.assertRaisesRegex(ValueError,'producer-located'):
+            E.apply_prose_repair(proposal,self.base,calls=self.calls,feedback=feedback)
+        for mutation in ('manifest','fault','decider','unchecked_missing','unchecked_decided','coverage'):
+            bad=copy.deepcopy(support);coverage={}
+            if mutation=='manifest':bad['packet_manifest_complete']=False
+            if mutation=='fault':bad['failed_packet_ids']=[]
+            if mutation=='decider':bad['decided_by']=None
+            if mutation=='unchecked_missing':bad['packets'].pop()
+            if mutation=='unchecked_decided':bad['packets'][-1]['decided_by']='fixture'
+            if mutation=='coverage':coverage={'label':'answers_partially','decided_by':'fixture'}
+            with self.subTest(mutation=mutation):self.assertIsNone(E.source_prose_repair(self.base,bad,[packet],coverage))
 
     def test_source_repair_uses_exact_complete_context_without_calling_unknown_a_fault(self):
         p,support=self.source_review()
@@ -704,6 +735,35 @@ class ProseRepairs(unittest.TestCase):
         self.assertEqual(merged['table'][0]['events'],self.base['table'][0]['events'])
         with self.assertRaisesRegex(ValueError,'producer-located'):
             E.apply_prose_repair(self.patch(explanation='Unrequested change'),self.base,calls=self.calls,feedback=feedback)
+
+    def test_structured_source_context_remains_typed_and_exact_without_invented_documents(self):
+        from clinical_core.agere.deliverables.receipts import uncompact_json,readable_json
+        packet,support=self.source_review(label='wrong_role');state=uncompact_json(json.loads(packet['text']))
+        observation={'patient_id':'A','record_id':'assignment_A','role':'correspondence','date':'2030-01-01'}
+        query={'sql':'SELECT patient_id,record_id,role,date FROM received_roles'}
+        state.update(source_contexts=[],evidence=[observation],
+            evidence_provenance=[{'row_digest':digest(observation),'origins':[{'kind':'executed_native_result',
+                'result_view':'agere_result_2','tool':'query_sql','input_digest':digest(query)}]}],
+            native_calculation_contracts=[{'result_view':'agere_result_2','tool':'query_sql','input':query}],
+            executed_source_definitions={},shared_evidence=[],review_scope=[])
+        packet['text']=json.dumps(readable_json(state));support['packets'][0]['field_review']['packet_digest']=digest(packet['text'])
+        target=E.source_prose_repair(self.base,support,[packet],{})
+        self.assertIsNotNone(target);self.assertEqual(target['source_contexts'],[])
+        native=target['native_source_contexts'][0]
+        self.assertEqual(native['evidence'],[observation]);self.assertEqual(native['packet_digest'],digest(packet['text']))
+        self.assertNotIn('text',native);self.assertNotIn('answer_rows',native)
+        focus=E.focused_prose_state(self.base,{'prose_repair':target},self.calls)
+        self.assertEqual(focus['native_source_contexts'],[native])
+        for kind in ('row','entity','origin','query','packet','missing'):
+            bad=copy.deepcopy(target);context=bad['native_source_contexts'][0]
+            if kind=='row':context['evidence'][0]['role']='assigned'
+            if kind=='entity':context['patient_id']='B'
+            if kind=='origin':context['evidence_provenance'][0]['origins'][0]['kind']='model_answer'
+            if kind=='query':context['native_calculation_contracts'][0]['input']={'sql':'SELECT 1'}
+            if kind=='packet':context['packet_digest']='unrelated'
+            if kind=='missing':context['evidence']=[]
+            bad['native_source_contexts_digest']=digest(bad['native_source_contexts'])
+            with self.subTest(kind=kind):self.assertIsNone(E.focused_prose_state(self.base,{'prose_repair':bad},self.calls))
 
     def test_mixed_native_and_prose_uncertainty_preserves_independent_scoped_repair(self):
         p,support=self.source_review()
