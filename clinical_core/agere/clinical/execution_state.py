@@ -336,9 +336,48 @@ def prose_repair_targets(candidate,feedback):
             {c.get('patient_id')for c in sources}!=wanted or any(
                 not c.get('record_id')or not c.get('date')or not isinstance(c.get('text'),str)or not c['text']for c in sources)):return None
         rows={r.get('patient_id'):r for r in candidate.get('table',[])}
-        if any(t.get('code')!='source_meaning_review'or t.get('reviewed_value_digest')!=digest(
-            rows.get(t['key'].get('patient_id'),{}).get(t['field']))for t in targets):return None
+        if any(t.get('code')!='source_meaning_review'or (not receipt.get('pending_compiler')and
+            t.get('reviewed_value_digest')!=digest(rows.get(t['key'].get('patient_id'),{}).get(t['field'])))for t in targets):return None
     return targets
+
+
+def continue_source_prose_repair(previous,feedback,candidate,assessment):
+    """Keep an authorized source edit editable while its new syntax is fixed.
+
+    A pure binding repair still preserves every sentence. This continuation is
+    limited to the exact earlier source-review fields, complete unchanged source
+    contexts and unchanged native table/bases; the full reviewer remains required.
+    """
+    import copy
+    if assessment.get('repair_kind')!='deterministic_compiler':return assessment
+    receipt=feedback.get('prose_repair',{})if isinstance(feedback,dict)else{}
+    if receipt.get('intent')!='source_meaning_review':return assessment
+    allowed=prose_repair_targets(previous,feedback);failed=prose_repair_targets(candidate,assessment)
+    if not allowed or not failed:return assessment
+    scope={(digest(t['key']),t['field'])for t in allowed}
+    if any((digest(t['key']),t['field'])not in scope for t in failed):return assessment
+    try:
+        if previous['table_from_tool']!=candidate['table_from_tool']:return assessment
+        old=previous['row_prose'];new=candidate['row_prose']
+        if old['keys']!=new['keys']or len(old['rows'])!=len(new['rows']):return assessment
+        updated={}
+        for before,after in zip(old['rows'],new['rows']):
+            if before['key']!=after['key']or before['basis']!=after['basis']or set(before['fields'])!=set(after['fields']):return assessment
+            ident=digest(before['key']);updated[ident]=after
+            if any(v!=after['fields'][field]for field,v in before['fields'].items()if(ident,field)not in scope):return assessment
+        # Only the named prose may change; global fields and other contracts
+        # cannot acquire source-edit authority from this continuation.
+        ignored={'row_prose','table','table_binding','computed_prose','sources','investigation_review','verification'}
+        if {k:v for k,v in draft_state(previous)['last_draft'].items()if k not in ignored}!={k:v for k,v in draft_state(candidate)['last_draft'].items()if k not in ignored}:return assessment
+        fields=set().union(*(set(r['fields'])for r in old['rows']))
+        def native_rows(a):return[{k:v for k,v in r.items()if k not in fields}for r in a['table']]
+        if native_rows(previous)!=native_rows(candidate):return assessment
+        targets=[{**t,'value_digest':digest(updated[digest(t['key'])]['fields'][t['field']])}for t in allowed]
+        continued={**copy.deepcopy(receipt),'draft_digest':digest(candidate),'targets':targets,'pending_compiler':True,
+            'source_review_origin_digest':receipt.get('source_review_origin_digest',receipt['draft_digest']),
+            'compiler_feedback':assessment.get('feedback')}
+        return {**assessment,'prose_repair':continued}
+    except (KeyError,TypeError,ValueError):return assessment
 
 
 def focused_prose_state(candidate,feedback,calls):
@@ -400,10 +439,14 @@ def focused_prose_state(candidate,feedback,calls):
             instruction='Inspect only these exact unresolved prose fields against the complete dated source contexts and retained native results. '
                 'An undecided model judgment is not a proven error; do not change facts solely to satisfy a probability threshold. '
                 'Make entity, drug/reason, date, role and source scope explicit where supported. Preserve correct detail and supported unknowns; '
+                'Describe each drug and its own event dates separately; shared lists of drugs and dates must not imply every combination. '
                 'do not replace unfinished interpretation with generic missingness. Proposed review is not completed care or verified eligibility. '
                 'Return only supported changed fields through repair_draft. Preserve native quantities using their existing scalar bindings; '
                 'query complete same-entity nested evidence when an additional binding is needed. All other patient rows, prose and sources remain intact. '
                 'The complete answer, changed dependencies and global question coverage still require verification; this repair view does not accept them.')
+        if receipt.get('pending_compiler'):
+            state['compiler_feedback']=receipt['compiler_feedback']
+            state['instruction']+=' The current proposal has not compiled. Revise these same source-review fields as needed to correct meaning and bindings; this is not a sentence-preserving binding-only edit. Do not delete native values or evade actual quantitative evidence requirements.'
     return state
 
 

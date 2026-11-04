@@ -528,7 +528,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         result['model'] = model
         return True
     messages = [{'role': 'user', 'content': user}]
-    state_feedback=None; state_candidate=None; latest_calls=[]
+    state_feedback=None; state_candidate=None; latest_calls=[];last_complete_candidate=None
     if initial_calls:
         # Certified literal replay enters through the same native tool protocol.
         # The actor sees actual current receipts, never a cached final answer.
@@ -553,10 +553,14 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         candidate=copy.deepcopy(initial_answer)
         assessment=review(candidate,result['tool_calls'])
         state_feedback=assessment;state_candidate=candidate
+        if assessment.get('repair_kind')!='deterministic_compiler':last_complete_candidate=copy.deepcopy(candidate)
         result.setdefault('answer_reviews',[]).append(assessment)
         if assessment.get('status')=='confirmed' and not assessment.get('feedback'):
             result.update(answer=candidate,final_decision_reused=True)
             return result
+        if last_complete_candidate is not None:
+            result['answer']={**last_complete_candidate,'status':'partial','verification':'unverified',
+                'limitations':[*(last_complete_candidate.get('limitations')or[]),str(assessment.get('feedback')or assessment.get('reason'))]}
         messages += [{'role':'assistant','content':json.dumps(candidate)},
                      {'role':'user','content':'Recheck the retained final draft against the current tool receipts; finish the unresolved work. '+str(assessment.get('feedback') or assessment.get('reason'))}]
         from .execution_state import draft_state
@@ -744,7 +748,12 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         'complete_review_required':True})
                 if review is not None:
                     assessment = review(candidate, result['tool_calls'])
+                    from .execution_state import continue_source_prose_repair
+                    assessment=continue_source_prose_repair(state_candidate,state_feedback,candidate,assessment)
                     state_feedback=assessment;state_candidate=candidate
+                    if assessment.get('repair_kind')!='deterministic_compiler':
+                        import copy
+                        last_complete_candidate=copy.deepcopy(candidate)
                     result.setdefault('answer_reviews', []).append(assessment)
                     feedback = assessment.get('feedback')
                     if feedback:
@@ -756,8 +765,13 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         # can pass using existing evidence. Otherwise, only a new
                         # failure/evidence state justifies further investigation.
                         key = json.dumps([assessment.get('status'), assessment.get('progress_state',feedback), evidence], sort_keys=True, default=str)
-                        result['answer'] = {**candidate, 'status': 'partial', 'verification': 'unverified',
-                                            'limitations': [*(candidate.get('limitations') or []), str(feedback)]} if isinstance(candidate, dict) else None
+                        retained=last_complete_candidate if assessment.get('repair_kind')=='deterministic_compiler'and last_complete_candidate is not None else candidate
+                        result['answer'] = {**retained, 'status': 'partial', 'verification': 'unverified',
+                                            'limitations': [*(retained.get('limitations') or []), str(feedback)]} if isinstance(retained, dict) else None
+                        if retained is not candidate:
+                            result['unaccepted_draft']={'draft_digest':digest(candidate),'reason':'compiler_repair_required',
+                                'returned_answer':'last_structurally_complete_candidate','source_accepted':False}
+                        else:result.pop('unaccepted_draft',None)
                         indeterminate=assessment.get('repair_kind')=='unresolved_verification'
                         compiler=assessment.get('repair_kind')=='deterministic_compiler'
                         history=compiler_reviewed if compiler else reviewed
@@ -788,6 +802,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                          'Repair the final answer, fetching or computing anything missing. ' + str(feedback)
                                          + ('\n'+json.dumps(repair_contract) if repair_contract else '')})
                         continue
+                result.pop('unaccepted_draft',None)
                 result['answer'] = candidate
                 return result
             messages.append({'role': 'assistant', 'content': blocks})

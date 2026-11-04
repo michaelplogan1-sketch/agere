@@ -319,5 +319,90 @@ class ProseRepairs(unittest.TestCase):
                 else:changed['packets'][1]['label']='contradicted'
                 with self.subTest(mutation=mutation):self.assertIsNone(E.source_prose_repair(self.base,changed,[p],{}))
 
+    def source_compiler_fixture(self):
+        self.base['status']='partial'
+        p,support=self.source_review()
+        feedback={'status':'repair','repair_kind':'unresolved_verification','feedback':'Review the exact source meaning.',
+            'prose_repair':E.source_prose_repair(self.base,support,[p],{})}
+        candidate=E.apply_prose_repair(self.patch(review='Review 42 events before confirming responsibility.'),
+            self.base,calls=self.calls,feedback=feedback)
+        assessment=B.review_final(SimpleNamespace(),'Explain each entity',candidate,self.calls,
+            SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+        self.assertEqual(assessment['repair_kind'],'deterministic_compiler')
+        return feedback,candidate,assessment
+
+    def test_source_edit_remains_editable_after_compiler_failure_without_expanding_scope(self):
+        feedback,candidate,assessment=self.source_compiler_fixture()
+        continued=E.continue_source_prose_repair(self.base,feedback,candidate,assessment)
+        self.assertTrue(continued['prose_repair']['pending_compiler'])
+        self.assertEqual(continued['prose_repair']['source_contexts'],feedback['prose_repair']['source_contexts'])
+        proposal={'repair_draft':{'draft_digest':digest(candidate),'rows':[{'key':{'patient_id':'A'},
+            'fields':{'review':'Confirm responsibility from the dated source; the current clinician is unknown.'}}]}}
+        repaired=E.apply_prose_repair(proposal,candidate,calls=self.calls,feedback=continued)
+        self.compile(repaired)
+        self.assertEqual(repaired['table'][1],self.base['table'][1])
+        self.assertEqual(repaired['table'][0]['events'],2)
+        self.assertIn('not a sentence-preserving',E.focused_prose_state(candidate,continued,self.calls)['instruction'])
+
+    def test_source_compiler_continuation_rejects_changed_native_other_prose_and_stale_source(self):
+        feedback,candidate,assessment=self.source_compiler_fixture()
+        for kind in ('native','other_prose','global','basis','stale','source','pure_binding','string_feedback'):
+            c=copy.deepcopy(candidate);f=copy.deepcopy(feedback)
+            if kind=='native':c['table'][0]['events']=99
+            elif kind=='other_prose':c['row_prose']['rows'][1]['fields']['review']='Changed unrelated patient.'
+            elif kind=='global':c['missing']=[]
+            elif kind=='basis':c['row_prose']['rows'][0]['basis']=[]
+            elif kind=='stale':f['prose_repair']['draft_digest']='stale'
+            elif kind=='source':f['prose_repair']['source_contexts'][0]['text']='Changed'
+            elif kind=='pure_binding':f={'prose_repair':assessment['prose_repair']}
+            elif kind=='string_feedback':f='Protocol error'
+            with self.subTest(kind=kind):
+                self.assertEqual(E.continue_source_prose_repair(self.base,f,c,assessment),assessment)
+
+    def test_list_layout_is_not_a_quantity_but_doses_counts_and_inline_numbers_still_bind(self):
+        for style in ('{}.','{})','({})'):
+            text='\n'.join(style.format(i)+' '+s for i,s in enumerate(('Confirm responsibility.','Review the source.'),1))
+            a=E.apply_prose_repair(self.patch(review=text),self.base);self.compile(a)
+            self.assertEqual(a['table'][0]['review'],text)
+        for text in ('1. Confirm 10 mg.\n2. Review the source.',
+                     '1. Review two events.\n2. Confirm responsibility.',
+                     '1. Confirm responsibility.', '1. Confirm responsibility.\n3. Review the source.',
+                     'Confirm (1) event; review (2) events.'):
+            with self.subTest(text=text),self.assertRaises(B.ComputedProseError):
+                self.compile(E.apply_prose_repair(self.patch(review=text),self.base))
+
+    def test_loop_keeps_complete_answer_on_failed_compiler_and_clears_marker_after_repair(self):
+        for finish in (False,True):
+            feedback,_,_=self.source_compiler_fixture();seen=[];sent=[]
+            def review(a,c):
+                if not seen:
+                    seen.append(copy.deepcopy(a));return copy.deepcopy(feedback)
+                trial=copy.deepcopy(a)
+                try:self.compile(trial)
+                except B.ComputedProseError:
+                    assessed=B.review_final(SimpleNamespace(),'Explain each entity',a,c,
+                        SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
+                else:
+                    a.clear();a.update(trial);assessed={'status':'confirmed'}
+                seen.append(copy.deepcopy(a));return assessed
+            def send(body):
+                sent.append(body)
+                text='Confirm current responsibility from the dated note.'if finish and len(sent)>1 else'Review 42 events.'
+                proposal={'repair_draft':{'draft_digest':digest(seen[-1]),'rows':[
+                    {'key':{'patient_id':'A'},'fields':{'review':text}}]}}
+                return {'content':[{'type':'text','text':json.dumps(proposal)}]},0,False
+            out=S.tool_loop('Explain both entities',[],[],lambda use:self.fail('Unexpected query'),send=send,
+                model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,review=review,
+                compact_execution_state=True)
+            with self.subTest(finish=finish):
+                self.assertEqual(out['answer']['table'][1],self.base['table'][1])
+                if finish:
+                    self.assertNotIn('unaccepted_draft',out)
+                    self.assertEqual(out['answer']['table'][0]['review'],'Confirm current responsibility from the dated note.')
+                else:
+                    self.assertEqual(out['answer']['table'],self.base['table'])
+                    self.assertEqual(out['answer']['verification'],'unverified')
+                    self.assertEqual(out['unaccepted_draft']['returned_answer'],'last_structurally_complete_candidate')
+
 
 if __name__=='__main__':unittest.main()

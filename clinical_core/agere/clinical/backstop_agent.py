@@ -934,6 +934,13 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
     def numeric(text):
+        # Explicit multiline ordered-list markers are layout, not measures.
+        # Require a complete consecutive sequence beginning at one; inline
+        # parenthesized quantities, doses and numbers inside items still bind.
+        markers=list(re.finditer(r'(?m)^[ \t]*(?:\(([1-9]\d*)\)|([1-9]\d*)[.)])(?=[ \t]+[A-Za-z])',text))
+        if len(markers)>1 and [int(m.group(1)or m.group(2))for m in markers]==list(range(1,len(markers)+1)):
+            for m in reversed(markers):
+                start,end=m.span(1 if m.group(1)else 2);text=text[:start]+text[end:]
         # Dates/identifiers are addresses or temporal anchors, not row counts.
         # Only independently provenance-checked, explicitly attributed QUOTES
         # are observations rather than newly computed quantitative claims.
@@ -2757,6 +2764,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
                'model_escalations':run.get('model_escalations',[]),
                'actor_prompt_receipts':run.get('actor_prompt_receipts',[]),
                'prose_repairs':run.get('prose_repairs',[]),
+               'unaccepted_draft':run.get('unaccepted_draft'),
                'guarded_continuations':run.get('guarded_continuations',[]),
                'output_continuation_receipts':run.get('output_continuation_receipts',[]),
                'completed_output_continuations':run.get('completed_output_continuations',0),

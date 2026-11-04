@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T00:12:04.367579+00:00",
+  "updated_at": "2026-11-04T00:26:30.198716+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -492,8 +492,8 @@
     "kind": "complete_source_field_composition_sealed",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Unpromoted source-repair candidate carries the five located fields plus84complete source contexts. Actual live followthrough failed compilation/no-progress; existing served57/61partial result unchanged.",
-    "measured_failure_reduction": "None in the live followthrough:57patient identities and all native values retained, but final candidate lacks compiled prose and is rejected.110targeted tests and native targeting proof passed; they do not establish workflow completion.",
+    "user_behavior_delta": "Candidate preserves the last complete answer on failed compilation and permits correction within original source-review fields. Captured live proposals now compile without losing prose.",
+    "measured_failure_reduction": "Actual captured57patient repair now retains114/114prose cells instead of0; all109untargeted prose/native values exact.93targeted regressions pass.0newproviderattempts. Source/global support still pending.",
     "evidence": [
       "artifacts/agere-row-interpretation-2026-11-03/delivery-receipt.json",
       "docs/agere/SOURCE_BOUND_ROW_INTERPRETATION_2026-11-03.md",
@@ -591,10 +591,12 @@
       "artifacts/agere-source-prose-followthrough-2026-11-03/offline-proof.json",
       "artifacts/agere-source-prose-followthrough-2026-11-03/final-tests-corrected-fixture.log",
       "artifacts/agere-source-prose-followthrough-2026-11-03/live/run-receipt.json",
-      "artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json"
+      "artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json",
+      "artifacts/agere-source-prose-followthrough-2026-11-03/offline-v2/audit.json",
+      "artifacts/agere-source-prose-followthrough-2026-11-03/compiler-regressions-final.log"
     ],
-    "remaining_gap": "The same five prose obligations and undecided global coverage remain. Repair/compiler interaction must pass captured-proposal offline checks before any further provider run; clinical reuse and independent G5/customer prerequisites remain.",
-    "next_action": "G3: fix the existing source-prose/compiler handoff offline using artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json and the preserved live proposals. The five-field source repair introduced unbound drug strengths/counts and numbered review steps, then strict binding repair prevented correction; no source review was reached for a valid repaired answer. Distinguish real quantitative claims from list ordinals and preserve semantic/numeric/source bindings; keep all57patients, native values, original source contexts and57/61supported dependencies. Do not repeat providers until the captured proposals pass the real repair/compiler path offline. Then check only changed dependencies and global coverage. Original clinical ordinary-prefix reuse, targeted knowledge/model qualification and alltenareas remain; optional components do not extend the MVP finish line.",
+    "remaining_gap": "Source meaning and global coverage still require affected confirmation; current runtime remains sealed a810031 with57/61support. Original clinical ordinary reuse and independent G5/customer prerequisites remain.",
+    "next_action": "G3: run the affected source-prose confirmation through the repaired existing loop, reusing unchanged provider receipts. Captured actor1/actor6 now pass actual repair/compiler flow offline, preserving57patients/114prose cells/109untargeted cells/28actions with zero new providers. Check only changed dependencies (including bound summary/source children) and global coverage; all previous attempts remain intact. Do not promote until actual workflow evidence; keep current served57/61partial answer intact. Then qualify original clinical ordinary-prefix reuse and close existing ten-area engineering checklist; independent G5/customer prerequisites remain separate. Optional models/research do not expand scope.",
     "latest_review": "docs/agere/MVP_COMPLETION_AUDIT_2026-11-03.md",
     "coordination": "All harder-question jobs terminal. Prior owned8890PID41475 stopped; same-code app restored on8890PID47807/session12518, GET/ask200. No active sourcefreeze or provider job.",
     "remaining_blockers": [
@@ -3420,14 +3422,21 @@
       "decision": "Frozen source-prose followthrough returned unsuccessfully after130.966s/7newClaude subscription attempts/$1.8959314API-equivalent. No final valid source review or promotion. Preserve exact attempts and inspect the captured compiler/semantic-repair interaction offline; do not rerun the cohort or add components to address it.",
       "evidence": "artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json",
       "scope_impact": "No new acceptance area, dropped source, threshold change, clinical acceptance or runtime activation. All57patients/native values preserved; prior sealed result unchanged."
+    },
+    {
+      "at": "2026-11-04T00:26:30.198716+00:00",
+      "gate": "G3",
+      "decision": "Corrected existing source/compiler phase handoff and retained last complete answer. Offline captured proposals pass without digest rebasing. The initial replay assertion wrongly expected old summary/child verification to cover changed claims; audited54unchanged packets exact and left7changed dependencies unverified. Preserve both original failed harness receipts.",
+      "evidence": "artifacts/agere-source-prose-followthrough-2026-11-03/offline-v2/audit.json",
+      "scope_impact": "Existing G3 defect only; no new acceptance area/model/default activation."
     }
   ],
   "unsealed_work": {
-    "status": "source_prose_followthrough_failed_unpromoted",
+    "status": "source_compiler_offline_passed_unpromoted",
     "all_jobs_terminal": true,
     "source_frozen": false,
     "product_edits": true,
-    "receipt": "artifacts/agere-source-prose-followthrough-2026-11-03/live/run-receipt.json"
+    "receipt": "artifacts/agere-source-prose-followthrough-2026-11-03/offline-v2/audit.json"
   },
   "current_visual_request": {
     "user_request": "Mike approved Project Wollstonecraft and requested a LinkedIn-formatted caption, updated whole-product visual without caveat blocks and verified tag credits.",
@@ -3456,7 +3465,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: fix the existing source-prose/compiler handoff offline using artifacts/agere-source-prose-followthrough-2026-11-03/terminal-audit.json and the preserved live proposals. The five-field source repair introduced unbound drug strengths/counts and numbered review steps, then strict binding repair prevented correction; no source review was reached for a valid repaired answer. Distinguish real quantitative claims from list ordinals and preserve semantic/numeric/source bindings; keep all57patients, native values, original source contexts and57/61supported dependencies. Do not repeat providers until the captured proposals pass the real repair/compiler path offline. Then check only changed dependencies and global coverage. Original clinical ordinary-prefix reuse, targeted knowledge/model qualification and alltenareas remain; optional components do not extend the MVP finish line.",
+  "next_action": "G3: run the affected source-prose confirmation through the repaired existing loop, reusing unchanged provider receipts. Captured actor1/actor6 now pass actual repair/compiler flow offline, preserving57patients/114prose cells/109untargeted cells/28actions with zero new providers. Check only changed dependencies (including bound summary/source children) and global coverage; all previous attempts remain intact. Do not promote until actual workflow evidence; keep current served57/61partial answer intact. Then qualify original clinical ordinary-prefix reuse and close existing ten-area engineering checklist; independent G5/customer prerequisites remain separate. Optional models/research do not expand scope.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
