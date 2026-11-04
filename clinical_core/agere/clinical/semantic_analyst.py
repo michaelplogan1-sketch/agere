@@ -775,10 +775,11 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     repair_protocol_feedback='Your replacement answer was not reviewed or applied. The complete original draft is intact. Return only repair_draft with the exact current digest and supported changed fields, or rows:[] if no change is justified.'
                     continue
                 if focused_repair and candidate.get('repair_draft')=={'draft_digest':digest(state_candidate),'rows':[]}:
-                    if focused_repair.get('compiler_feedback'):
+                    if (focused_repair.get('compiler_feedback') or
+                            isinstance(state_feedback,dict) and state_feedback.get('repair_kind')=='deterministic_compiler'):
                         if escalate('Scoped source edit still needs native quantity bindings'):
                             repairs+=1
-                            repair_protocol_feedback='The proposed source edits have not compiled. Complete the named quantity bindings using current native evidence and literal tools. Retain all other fields; an empty repair does not finish this compiler work.'
+                            repair_protocol_feedback='The retained draft has not compiled. Complete the named quantity bindings using current native evidence and literal tools. Retain all other fields; an empty repair does not finish this compiler work.'
                             continue
                         result['review_stopped']='compiler_unresolved'
                         return result

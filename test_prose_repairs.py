@@ -90,6 +90,30 @@ class ProseRepairs(unittest.TestCase):
         self.assertEqual(out['answer']['verification'],'unverified')
         self.assertNotIn('prose_repairs',out)
 
+    def test_empty_compiler_patch_escalates_same_draft_and_cannot_mean_no_source_change(self):
+        for repair in (True,False):
+            with self.subTest(repair=repair):
+                self.setUp();feedback=self.located_failure();original=copy.deepcopy(self.base);sent=[];reviews=[]
+                def review(candidate,calls):
+                    reviews.append(copy.deepcopy(candidate))
+                    if len(reviews)==1:return feedback
+                    self.compile(candidate);return {'status':'confirmed','feedback':None}
+                def send(body):
+                    sent.append(body);focus=json.loads(body['messages'][0]['content'])['focused_prose_repair']
+                    self.assertEqual(focus['draft_digest'],digest(original))
+                    p=(self.patch(review=self.bound_review())if len(sent)==2 and repair else
+                       {'repair_draft':{'draft_digest':digest(original),'rows':[]}})
+                    return {'content':[{'type':'text','text':json.dumps(p)}]},0.,False
+                out=S.tool_loop('Explain both entities',[],[],lambda use:None,send=send,model=M.HAIKU,
+                    escalation_model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+                    review=review,compact_execution_state=True)
+                self.assertEqual([b['model']for b in sent],[M.HAIKU,M.SONNET])
+                self.assertEqual(len(reviews),2 if repair else 1)
+                if repair:self.assertEqual(out['answer']['table'][0]['review'],'Review 2 events on 2030-01-01; preserve the uncertainty.')
+                else:
+                    self.assertEqual(out['review_stopped'],'compiler_unresolved')
+                    self.assertNotIn('prose_repairs',out)
+
     def setUp(self):
         self.calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id,events FROM scoped'},
             'result':{'result_view':'agere_result_1','columns':['patient_id','events'],
