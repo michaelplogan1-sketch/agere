@@ -1,3 +1,19 @@
+# Current Agere checkpoint — 2026-11-04T16:12:50.898747+00:00
+
+G3: monitor only automatic-compiler-continuation PID6567/session75013. Product34e6cb7f and source frozen; app8890 remains84c96cca. Authentic draft49932 contains57patients/114fields and62compiler targets; no owner prose/binding edits. Candidate guarded native query after an empty compiler patch passed160tests and actual0-provider transition proof. Preserve failed original501.204s/7attempt/$4.342736456 request and all49933priorattempts. On terminal inspect compiler/source review and complete accounting, then decide next action. Automatic first-composition and package/restore remain unaccepted; alltenareas and independentG5/customer dependencies unchanged.
+
+Lastseal remains composition-check/source-repair-delivery-receipt.json; prior assisted answer58/58supported, partial.
+
+## Superseded checkpoint
+
+# Current Agere checkpoint — 2026-11-04T16:06:09.335661+00:00
+
+G3: all request jobs terminal and source unfrozen. Fresh automatic composition failed after501.204s/7attempts/$4.342736456API-equivalent:57native rows but0returned narrative fields. Preserve the unaccepted57-row draft and all49933attempts. Diagnose retained compiler/transition errors offline: one native-column collision followed by62unbound quantitative fields; no compact prose repair executed. Make one targeted generic correction with authentic replay and adverse checks before another live request. Package/restore waits for automatic composition acceptance; alltenareas and clinical/model/G5/customer dependencies remain.
+
+Last seal remains composition-check/source-repair-delivery-receipt.json. No fresh automatic success or full MVP acceptance. Product84c96cca/app8890PID3462.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-04T15:52:57.082024+00:00
 
 G3: monitor only automatic-composition-current PID5021/session64692 through owned app8890PID3462/session82973. Source/product frozen; do not duplicate or edit. Current32-native-operation prefix was freshly revalidated in96.591s with0providers, no stored or supplied final proposal; ordinary question only is submitted, warm caches disclosed. Inspect full57patient/114field composition, native/source checks, missing-data behavior and complete latency/all-attempt costs on terminal. No owner-authored repair may be counted as automatic success. Then current package/restore if this obligation passes; otherwise retain exact failure and make one targeted generic correction. Current matrix9/9coversalltenareas; clinical/model/G5/customer dependencies remain distinct.
