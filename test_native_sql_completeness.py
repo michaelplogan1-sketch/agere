@@ -15,6 +15,13 @@ from clinical_core.agere.clinical import backstop_agent as B, result_assembly as
 from clinical_core.agere.clinical.semantic_analyst import SemanticWarehouse, actor_result
 
 
+def literal_reading_rows(reading):
+    """Decode the displayed wire contract without changing native row parsing."""
+    values=reading.get('text_dictionary',[])
+    return [dict(zip(reading['columns'],[values[c['text_ref']]if isinstance(c,dict)and set(c)=={'text_ref'} else c
+                                       for c in row]))for row in reading['rows']]
+
+
 class NativeCompleteness(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -54,12 +61,45 @@ class NativeCompleteness(unittest.TestCase):
         later=json.loads(E.messages('Explain each received account.',[call],feedback={'status':'repair','feedback':'Explain the observations.'})[0]['content'])
         for state in [current,later]:
             reading=state['executed_results'][0]['complete_reading']
-            self.assertEqual(R._rows(reading)[1],result['rows'])
+            self.assertEqual(literal_reading_rows(reading),result['rows'])
             self.assertIn('row_encoding',reading)
             self.assertEqual(reading['actor_reading'],result['actor_reading'])
             self.assertLess(len(json.dumps(reading)),len(json.dumps(shown)))
         self.assertNotIn('rows',current['latest_results'][0]['result'])
         self.assertEqual(result,original)
+
+    def test_dictionary_reading_retains_source_relations_conflicts_and_literal_types(self):
+        from clinical_core.agere.clinical import execution_state as E
+        quote='Received text "one"; Unicode: μg.\n Literal {"text_ref":0} is quoted text. '*8
+        rows=[{'patient_id':'A'if i%2 else'B','record_id':'record_'+str(i),
+               'date':'2030-01-01'if i%3 else'2030-02-01','quote':quote,
+               'relation':'held'if i%2 else'continued','amount':None if i%3 else 0,
+               'reported':bool(i%2),'literal_number':'0'}for i in range(30)]
+        reading={'columns':list(rows[0]),'rows':rows,'result_view':'agere_result_1',
+                 'truncated':False,'native_row_indices':list(range(30)),
+                 'source_scope':'Received historical observations; current responsibility unresolved.'}
+        original=copy.deepcopy(reading);shown=E._column_order_reading(reading)
+        self.assertIn('text_dictionary',shown)
+        self.assertEqual(shown['text_dictionary'].count(quote),1)
+        self.assertEqual(literal_reading_rows(shown),rows)
+        self.assertEqual(shown['native_row_indices'],list(range(30)))
+        self.assertEqual(shown['source_scope'],reading['source_scope'])
+        self.assertLess(len(json.dumps(shown)),len(json.dumps(reading))//2)
+        self.assertEqual(reading,original)
+
+    def test_dictionary_never_collides_with_structured_cells_or_reencodes_values(self):
+        from clinical_core.agere.clinical import execution_state as E
+        for value in ({'text_ref':0},['literal',None],{'text_ref':'A','other':'B'}):
+            reading={'columns':['id','quote','structured'],'rows':[{'id':i,'quote':'Repeated quote '*100,'structured':value}for i in range(12)]}
+            original=copy.deepcopy(reading);shown=E._column_order_reading(reading)
+            self.assertNotIn('text_dictionary',shown)
+            self.assertEqual(R._rows(shown)[1],reading['rows'])
+            self.assertEqual(reading,original)
+        tiny={'columns':['x'],'rows':[{'x':'A'},{'x':'A'}]}
+        self.assertEqual(E._column_order_reading(tiny),tiny)
+        reading={'columns':['quote'],'rows':[{'quote':'Exact repeated quotation '*100}for _ in range(12)]}
+        encoded=E._column_order_reading(reading)
+        self.assertEqual(E._column_order_reading(encoded),encoded)
 
     def test_column_order_reading_preserves_source_tuples_types_and_nulls(self):
         from clinical_core.agere.clinical import execution_state as E

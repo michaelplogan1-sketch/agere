@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T23:24:52.781808+00:00",
+  "updated_at": "2026-11-04T23:30:01.410784+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -482,7 +482,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "Fresh first-answer cost/latency remains unconfirmed after the compiler/source recovery corrections. Overall request coverage is undecided; stable current packaging and independent G5/customer dependencies remain.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: exact historical review-note separation is sealed on 66194da5/1945fa68 and app8890 PID33889/session77035. All jobs terminal/source unfrozen. Current review retained 57 patients/114 fields and 60/60 source support with 0 Claude calls, 4 Jev/Perplexity attempts, 150.514s/$0.014869726 API-equivalent; all51109attempts retained. The old 8083-character compiler instruction is absent; current coverage remains undecided/partial. Next diagnose first-composition frontier payload from the retained861.261s/$7.917506602 ordinary run and its exact native state, then address only demonstrated avoidable repeated input/work before one changed first-answer confirmation. Do not repeat passing source-review or bottling campaigns. After stable confirmation update the current package once. All ten acceptance areas and independent G5/customer dependencies remain.",
+      "next_action": "G3: first-composition dictionary projection is an unactivated candidate. Matched offline projection of32retained actions preserved all754read rows/cells/types/source metadata and reduced463202->244399bytes (47.237%);116focusedtests pass. No provider token/cost or answer-quality benefit claimed yet. Qualify the current37-action native-only prefix with network/provider/process dispatch prohibited, then run exactly one ordinary original question through the candidate app with no final proposal or owner draft supplied. Compare against retained861.261s/$7.917506602 failed ordinary reference with all source, attempts and warm-cache differences explicit. Do not repeat passing source-review campaigns. Preserve51109attempts and last sealed57patient/114field answer. All ten areas, stable package and G5/customer dependencies remain.",
       "latest_current_release_decision": "artifacts/agere-prior-review-guidance-2026-11-04/acceptance/assessment.json"
     },
     {
@@ -614,9 +614,9 @@
       "artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json"
     ],
     "remaining_gap": "Fresh first-answer cost/latency remains unconfirmed after the compiler/source recovery corrections. Overall request coverage is undecided; stable current packaging and independent G5/customer dependencies remain.",
-    "next_action": "G3: exact historical review-note separation is sealed on 66194da5/1945fa68 and app8890 PID33889/session77035. All jobs terminal/source unfrozen. Current review retained 57 patients/114 fields and 60/60 source support with 0 Claude calls, 4 Jev/Perplexity attempts, 150.514s/$0.014869726 API-equivalent; all51109attempts retained. The old 8083-character compiler instruction is absent; current coverage remains undecided/partial. Next diagnose first-composition frontier payload from the retained861.261s/$7.917506602 ordinary run and its exact native state, then address only demonstrated avoidable repeated input/work before one changed first-answer confirmation. Do not repeat passing source-review or bottling campaigns. After stable confirmation update the current package once. All ten acceptance areas and independent G5/customer dependencies remain.",
+    "next_action": "G3: first-composition dictionary projection is an unactivated candidate. Matched offline projection of32retained actions preserved all754read rows/cells/types/source metadata and reduced463202->244399bytes (47.237%);116focusedtests pass. No provider token/cost or answer-quality benefit claimed yet. Qualify the current37-action native-only prefix with network/provider/process dispatch prohibited, then run exactly one ordinary original question through the candidate app with no final proposal or owner draft supplied. Compare against retained861.261s/$7.917506602 failed ordinary reference with all source, attempts and warm-cache differences explicit. Do not repeat passing source-review campaigns. Preserve51109attempts and last sealed57patient/114field answer. All ten areas, stable package and G5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Current app verified; all jobs terminal/source unfrozen.",
+    "coordination": "Offline candidate verified; native qualification and one ordinary confirmation pending.",
     "remaining_blockers": [
       "Initial-generation end-to-end improvement from the earlier composition check is unmeasured. The current backstop reuse/review alone still took104.2seconds; the earlier full-request references remain986.028seconds/$8.909197764 and155.723seconds/$0.015078556 warm reuse. Coverage remains undecided/partial. Independent G5 model/clinical evidence and customer deployment dependencies remain. Known-good archive ff949737 is preserved; no current-archive restore is claimed."
     ],
@@ -3859,7 +3859,14 @@
       "scope_impact": "Alltenacceptanceareas retained; genuine coverage uncertainty and independent qualification remain separate. No threshold or clinical authority changes."
     }
   ],
-  "unsealed_work": null,
+  "unsealed_work": {
+    "status": "lossless_reading_candidate_offline_verified",
+    "source_frozen": false,
+    "all_jobs_terminal": true,
+    "product_edits": true,
+    "receipt": "artifacts/agere-first-composition-text-2026-11-04/projection-proof.json",
+    "next_action": "G3: first-composition dictionary projection is an unactivated candidate. Matched offline projection of32retained actions preserved all754read rows/cells/types/source metadata and reduced463202->244399bytes (47.237%);116focusedtests pass. No provider token/cost or answer-quality benefit claimed yet. Qualify the current37-action native-only prefix with network/provider/process dispatch prohibited, then run exactly one ordinary original question through the candidate app with no final proposal or owner draft supplied. Compare against retained861.261s/$7.917506602 failed ordinary reference with all source, attempts and warm-cache differences explicit. Do not repeat passing source-review campaigns. Preserve51109attempts and last sealed57patient/114field answer. All ten areas, stable package and G5/customer dependencies remain."
+  },
   "current_visual_request": {
     "status": "completed",
     "path": "/Users/mikel/.codex/visualizations/2026/10/29/01a187c0-23ba-7d02-9368-5ff567327554/wollstonecraft-question-flow.html",
@@ -3884,7 +3891,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: exact historical review-note separation is sealed on 66194da5/1945fa68 and app8890 PID33889/session77035. All jobs terminal/source unfrozen. Current review retained 57 patients/114 fields and 60/60 source support with 0 Claude calls, 4 Jev/Perplexity attempts, 150.514s/$0.014869726 API-equivalent; all51109attempts retained. The old 8083-character compiler instruction is absent; current coverage remains undecided/partial. Next diagnose first-composition frontier payload from the retained861.261s/$7.917506602 ordinary run and its exact native state, then address only demonstrated avoidable repeated input/work before one changed first-answer confirmation. Do not repeat passing source-review or bottling campaigns. After stable confirmation update the current package once. All ten acceptance areas and independent G5/customer dependencies remain.",
+  "next_action": "G3: first-composition dictionary projection is an unactivated candidate. Matched offline projection of32retained actions preserved all754read rows/cells/types/source metadata and reduced463202->244399bytes (47.237%);116focusedtests pass. No provider token/cost or answer-quality benefit claimed yet. Qualify the current37-action native-only prefix with network/provider/process dispatch prohibited, then run exactly one ordinary original question through the candidate app with no final proposal or owner draft supplied. Compare against retained861.261s/$7.917506602 failed ordinary reference with all source, attempts and warm-cache differences explicit. Do not repeat passing source-review campaigns. Preserve51109attempts and last sealed57patient/114field answer. All ten areas, stable package and G5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

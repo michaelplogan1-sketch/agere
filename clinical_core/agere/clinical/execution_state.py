@@ -977,6 +977,29 @@ def _column_order_reading(reading):
         return reading
     projected={**reading,'rows':[[row[column]for column in columns]for row in rows],
         'row_encoding':'Each row contains values in columns order. All cells and row order are exact; native receipts retain the original row objects.'}
+    # Repeated source text is a transport cost, not additional evidence. Keep
+    # its complete bytes once; every occurrence still has its own row/column.
+    # Structured cells stay literal to avoid confusing native objects with refs.
+    if ('text_dictionary' not in reading and
+            not any(isinstance(value,(dict,list,tuple))for row in projected['rows']for value in row)):
+        from collections import Counter
+        counts=Counter(value for row in projected['rows']for value in row if isinstance(value,str))
+        dictionary=[];indices={}
+        for value,count in counts.items():
+            if count<2:continue
+            index=len(dictionary);literal=len(json.dumps(value));reference=len(json.dumps({'text_ref':index}))
+            if count*(literal-reference)>literal+2:
+                indices[value]=index;dictionary.append(value)
+        if dictionary:
+            encoded={**projected,
+                'rows':[[{'text_ref':indices[value]}if isinstance(value,str)and value in indices else value
+                         for value in row]for row in projected['rows']],
+                'text_dictionary':dictionary,
+                'row_encoding':projected['row_encoding']+' A cell {"text_ref": N} means the exact complete string at text_dictionary[N] (zero-based). '
+                    'Substitute that string at that cell before interpretation or quoting. This only deduplicates identical text; '
+                    'distinct rows, entities, dates, relations and contradictory observations remain distinct. All other cells are literal.'}
+            if len(json.dumps(encoded,default=str))<len(json.dumps(projected,default=str)):
+                projected=encoded
     # Small tables can cost more with the format explanation. Preserve them.
     return projected if len(json.dumps(projected,default=str))<len(json.dumps(reading,default=str)) else reading
 
