@@ -1,5 +1,19 @@
 # Composition repair and retained-evidence comparison
 
+## November 5: structured recovery completes membership; five quantity fields remain
+
+The existing tool loop now retains the typed unfinished-composition review after invalid JSON or an unexecuted invocation. Complete rejected output remains inert recovery material even if a later response is incomplete. A draft-bound schema derives all entity keys from the complete executed table; an additional native guard blocks omissions, duplicate/foreign keys, unequal fields and attempts to overwrite native columns. This does not certify the meaning of the prose. The full compiler and source review remain required.
+
+The retained 43-operation workflow replay preserves all 57 patients and 114 fields, rejects the incomplete replacement before review and retains unresolved source support, with zero provider calls. The current targeted suites pass 217 tests with one opt-in live test skipped.
+
+Two focused subscription confirmations used recorded review and rejected-output state as explicit test inputs. The first returned 57 patients/171 fields but attempted to overwrite a native column. The schema now excludes those names. The second returned the requested 57 patients/114 fields without that collision, in 70.227 seconds total (65.962 provider seconds), at $0.825842 API-equivalent. It remains unaccepted: the headline and four patient fields contain unbound quantities. No fresh source review or runtime replacement occurred. Both attempts cost $1.9263327 API-equivalent combined; all 51,267 ledger attempts are retained.
+
+The subscription prompt previously requested a complete plain-text answer while also enabling native structured output. That conflicting instruction is removed. The receipts contain equal text and structured representations in both runs; equality alone does not prove separate generations. CLI turns changed from three to two and aggregate output tokens from 31,844 to 12,401, but field count, prose and cache usage also changed. These samples are not a causal speed/cost benchmark or accepted first-answer result.
+
+The remaining repair is located. On a diagnostic copy of the first proposal, a headline error suppresses 15 otherwise available row repair targets. On the second unchanged proposal, five quantitative fields remain. Next, extend the existing producer-bound repair contract to retain and repair headline/facts targets alongside patient targets, preserving all prose and native scope. Another complete-generation probe is not justified. All ten areas, first-answer qualification, current packaging and independent G5/customer dependencies remain.
+
+Evidence: `artifacts/agere-structured-completion-2026-11-05/candidate-assessment-v2.json`, `after-v2.json`, `native-field-collision-proof.json`, `serialization-comparison.json`, `localization-diagnosis.json`, live receipts and regression logs. Candidate product is `c3d5ce42`; running app and last sealed receipt remain unchanged.
+
 ## November 5: compact binding candidate and failed generation probes
 
 The candidate compiler accepts a scalar reference such as `{"basis":0,"column":"age"}` within an entity's existing row-prose entry. It expands that explicit local index to the original executed view and row before the existing source, entity, completeness and scalar checks. Full addresses remain supported. Localized binding repairs preserve both forms; persisted proofs still contain full addresses.
