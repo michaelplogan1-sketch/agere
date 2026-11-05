@@ -49,6 +49,7 @@ def attempts():
 @contextmanager
 def source_boundary(scratch):
     """Same forbidden source families as the ordinary app, including prior answers."""
+    scratch = Path(scratch).resolve()
     import builtins
     import io
     from unittest.mock import patch
