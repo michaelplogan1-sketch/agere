@@ -758,3 +758,12 @@ The continuation took273.448seconds and172new attempts (4Claude,84Jev,84Perplexi
 Offline comparison found0changes across all29nativecolumns for57patients. All14unresolved narrative field observations favor supported but fall below the existing threshold; this does not establish correctness, an incorrect source, or missing clinical facts. The global at-least-one threshold is still bound to a patient-specific missing_word cell. Current summary review supports its rendered claim, but that does not qualify the source-role binding for reuse. No owner-authored replacement was made.
 
 Currentapp8890 and its saved answer remain unchanged. Next use existing finite acceptance and package/restore paths to assess current engineering compatibility; do not repeat the unchanged full source campaign, lower thresholds or promote the unqualified draft. Keep first-answer/model qualification, this source-role concern and independentG5/customer dependencies explicit. Alltenareas remain in scope. Receipt: `artifacts/agere-mixed-scope-binding-2026-11-05/recovery-continuation-assessment.json`; detailed continuation and offline diagnosis are in its `patient-continuation-v2/` directory.
+
+
+## November 5 — current local package and preserved inspection
+
+Product `7e1f3612` completes the existing checkpoint/archive/isolated-install path in 900.588 seconds. Native file cloning removes the small-file duplication bottleneck while retaining independent mutable copies and byte checks. The checkpoint includes 2,262 files and 132 databases (142,076,368,644 logical bytes); the bundled runtime contains 33,586 files. 56 packaging/recovery and 206 affected-runtime checks pass. No provider calls were made; all 51,440 attempts and source bytes remain unchanged.
+
+Archived and current HTTP inspection preserve the complete 57-patient/114-field result, 59/60 source support and unresolved joint/global review. The saved answer is intentionally invalidated for new work by subsequent planning-code changes; it was not restamped. Two failed harness assumptions and the exact corrections are retained. Current scoped release evidence is 9/9 across all ten areas; first-answer/source-role qualification and independent G5/customer dependencies remain incomplete. The faster 52/60 candidate is not promoted.
+
+Receipt: `artifacts/agere-current-release-2026-11-05/delivery-receipt.json`. The canonical next action remains in `AGERE_BUILD_CONTROL.json`; do not rebuild the unchanged package.
