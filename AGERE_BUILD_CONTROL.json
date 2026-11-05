@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T05:00:25.173508+00:00",
+  "updated_at": "2026-11-05T05:19:02.119667+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -514,7 +514,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "First-answer performance; current candidate-app/release applicability; independentG5/customer evidence. Coverage remains explicitly undecided with no located omission.",
       "engineering_current_status": "Retained continuation source58/58supported and compiler clear; no ordinary performance qualification or runtime promotion.",
-      "next_action": "G3: targeted pending-draft continuation terminal with57patients/114fields,58/58source packets supported,compiler clear,coverage undecided/partial. Preserve555.263s/$7.94112301/181newattempts and all51895attempts; together with prior retained continuation903.499s/$12.814776314, not a performance win or fresh matched run. Product/source unfrozen; known-good app unchanged. Next use saved repair-request-profile.json to reduce generic compiler-only prompt overhead in the existing execution path, preserving full source-meaning context, native query provenance, exact field/quantity guards and full downstream review. Prove current saved requests offline before any narrowly justified binding-only measurement; no repeated source votes, whole question, new models or disease-specific rules. Then reconcile current candidate-app/release applicability. Alltenareas/G5/customer dependencies remain.",
+      "next_action": "G3: binding role917f1f23 sealed:147regressions, exact full-wrapper capture, one-field measurement3->2Claude calls/21.683->12.548actor seconds/$0.8976001->$0.5961154API-equivalent;57patients/114fields preserved and no repeated source review. All51897attempts retained; jobs terminal/source unfrozen. Next reconcile current candidate-app and all-ten-area evidence applicability for exactly4changed runtime files, preserving historical receipts and unknown coverage; current package remains known-good7e1f3612 until current archive/restore verification. No new provider campaign or requalification of passing source votes. First-answer performance remains unqualified; independentG5/customer dependencies remain.",
       "latest_current_release_decision": "artifacts/agere-current-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -596,8 +596,8 @@
     "kind": "scoped_engineering_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "A source correction now retains compiler binding targets and compact binding schema; numerical repair preserves its sentence and cannot delete or rewrite facts.",
-    "measured_failure_reduction": "Exact authentic source-to-compiler transition no longer authorizes the next failed semantic rewrite; offline binding resolves1remaining compiler failure to0 with57patients/114fields intact.",
+    "user_behavior_delta": "Compiler binding requests use an explicit smaller caller-owned role, retaining native definitions, loaded documentation, tools, original question and all downstream review. Source/interpretation requests restore the full analyst role; service-boundary continuation keeps the exact selected role.",
+    "measured_failure_reduction": "Authentic one-field repair: 3 to 2 actorcalls; 21.683s to 12.548s summed actor time; $0.8976001 to $0.5961154 API-equivalent. Text/membership unchanged; no full-workflow claim.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -738,10 +738,11 @@
       "artifacts/agere-current-first-answer-2026-11-05/full-wrapper-continuation/assessment.json",
       "artifacts/agere-current-first-answer-2026-11-05/source-binding-delivery-receipt.json",
       "artifacts/agere-current-first-answer-2026-11-05/pending-binding-continuation/assessment.json",
-      "artifacts/agere-current-first-answer-2026-11-05/repair-request-profile.json"
+      "artifacts/agere-current-first-answer-2026-11-05/repair-request-profile.json",
+      "artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json"
     ],
-    "remaining_gap": "First-answer performance; current candidate-app/release applicability; independentG5/customer evidence. Coverage remains explicitly undecided with no located omission.",
-    "next_action": "G3: targeted pending-draft continuation terminal with57patients/114fields,58/58source packets supported,compiler clear,coverage undecided/partial. Preserve555.263s/$7.94112301/181newattempts and all51895attempts; together with prior retained continuation903.499s/$12.814776314, not a performance win or fresh matched run. Product/source unfrozen; known-good app unchanged. Next use saved repair-request-profile.json to reduce generic compiler-only prompt overhead in the existing execution path, preserving full source-meaning context, native query provenance, exact field/quantity guards and full downstream review. Prove current saved requests offline before any narrowly justified binding-only measurement; no repeated source votes, whole question, new models or disease-specific rules. Then reconcile current candidate-app/release applicability. Alltenareas/G5/customer dependencies remain.",
+    "remaining_gap": "Current candidate-app/release applicability and first-answer performance; independentG5/customer dependencies.",
+    "next_action": "G3: current binding-role917f1f23 package is launching; source/product frozen. Monitor only artifacts/agere-binding-release-2026-11-05/receipt.json, never duplicate. Eight of nine scoped engineering requirements remain applicable across alltenareas; current archive/install pending. Stop only owned8890PID39826 for checkpoint, primary8885 untouched. On terminal check archived/current HTTP preserves57patients/228fields,59/60source support, partial/undecided coverage and planning invalidation; retain all51897attempts. Then seal actual current package applicability and push verified private branch. No provider campaign. First-answer performance and independentG5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
     "coordination": "Product/source frozen for targeted current-wrapper continuation.",
     "remaining_blockers": [
@@ -796,8 +797,8 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T05:00:25.173508+00:00",
-    "workflow_change": "Retained pending draft completed autonomous native binding and localized source repairs with57patients/114fields and58/58source packets supported; coverage remains undecided/partial.",
+    "at": "2026-11-05T05:14:16.395938+00:00",
+    "workflow_change": "Compiler binding requests use an explicit smaller caller-owned role, retaining native definitions, loaded documentation, tools, original question and all downstream review. Source/interpretation requests restore the full analyst role; service-boundary continuation keeps the exact selected role.",
     "unsealed_work": {
       "status": "native_recovery_and_compiler_passed_source_model_qualification_incomplete",
       "product_commit": "2ec665f4c8f76091a9d3413145c53cdea668feb1",
@@ -901,7 +902,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Compiler failure and source-attribution defects cleared in the retained continuation. Latency/cost remains unacceptable for a performance claim.",
+    "measured_failure_removed": "Authentic one-field repair: 3 to 2 actorcalls; 21.683s to 12.548s summed actor time; $0.8976001 to $0.5961154 API-equivalent. Text/membership unchanged; no full-workflow claim.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -4181,8 +4182,15 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: targeted pending-draft continuation terminal with57patients/114fields,58/58source packets supported,compiler clear,coverage undecided/partial. Preserve555.263s/$7.94112301/181newattempts and all51895attempts; together with prior retained continuation903.499s/$12.814776314, not a performance win or fresh matched run. Product/source unfrozen; known-good app unchanged. Next use saved repair-request-profile.json to reduce generic compiler-only prompt overhead in the existing execution path, preserving full source-meaning context, native query provenance, exact field/quantity guards and full downstream review. Prove current saved requests offline before any narrowly justified binding-only measurement; no repeated source votes, whole question, new models or disease-specific rules. Then reconcile current candidate-app/release applicability. Alltenareas/G5/customer dependencies remain.",
+  "active_jobs": [
+    {
+      "kind": "current_binding_release_package",
+      "status": "launching",
+      "receipt": "artifacts/agere-binding-release-2026-11-05/receipt.json",
+      "source_frozen": true
+    }
+  ],
+  "next_action": "G3: current binding-role917f1f23 package is launching; source/product frozen. Monitor only artifacts/agere-binding-release-2026-11-05/receipt.json, never duplicate. Eight of nine scoped engineering requirements remain applicable across alltenareas; current archive/install pending. Stop only owned8890PID39826 for checkpoint, primary8885 untouched. On terminal check archived/current HTTP preserves57patients/228fields,59/60source support, partial/undecided coverage and planning invalidation; retain all51897attempts. Then seal actual current package applicability and push verified private branch. No provider campaign. First-answer performance and independentG5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4191,7 +4199,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/source-binding-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",

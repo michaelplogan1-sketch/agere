@@ -1,10 +1,10 @@
 {
-  "complete_population_program": "artifacts/agere-current-release-2026-11-05/acceptance/complete_population_program.json",
-  "evidence_change_reassessment": "artifacts/agere-current-release-2026-11-05/acceptance/evidence_change_reassessment.json",
-  "source_and_adapter_conformance": "artifacts/agere-current-release-2026-11-05/acceptance/source_and_adapter_conformance.json",
-  "longitudinal_prediction_path": "artifacts/agere-current-release-2026-11-05/acceptance/longitudinal_prediction_path.json",
-  "discovery_explanation_path": "artifacts/agere-current-release-2026-11-05/acceptance/discovery_explanation_path.json",
-  "outcome_and_financial_reconciliation": "artifacts/agere-current-release-2026-11-05/acceptance/outcome_and_financial_reconciliation.json",
-  "economical_role_routing": "artifacts/agere-current-release-2026-11-05/acceptance/economical_role_routing.json",
-  "portable_local_operations": "artifacts/agere-current-release-2026-11-05/acceptance/portable_local_operations.json"
+  "complete_population_program": "artifacts/agere-binding-release-2026-11-05/acceptance/complete_population_program.json",
+  "evidence_change_reassessment": "artifacts/agere-binding-release-2026-11-05/acceptance/evidence_change_reassessment.json",
+  "source_and_adapter_conformance": "artifacts/agere-binding-release-2026-11-05/acceptance/source_and_adapter_conformance.json",
+  "longitudinal_prediction_path": "artifacts/agere-binding-release-2026-11-05/acceptance/longitudinal_prediction_path.json",
+  "discovery_explanation_path": "artifacts/agere-binding-release-2026-11-05/acceptance/discovery_explanation_path.json",
+  "outcome_and_financial_reconciliation": "artifacts/agere-binding-release-2026-11-05/acceptance/outcome_and_financial_reconciliation.json",
+  "economical_role_routing": "artifacts/agere-binding-release-2026-11-05/acceptance/economical_role_routing.json",
+  "portable_local_operations": "artifacts/agere-binding-release-2026-11-05/acceptance/portable_local_operations.json"
 }

@@ -1,8 +1,8 @@
-# Current Agere checkpoint — 2026-11-05T05:00:25.173508+00:00
+# Current Agere checkpoint — 2026-11-05T05:19:02.119667+00:00
 
-G3: targeted pending-draft continuation terminal with57patients/114fields,58/58source packets supported,compiler clear,coverage undecided/partial. Preserve555.263s/$7.94112301/181newattempts and all51895attempts; together with prior retained continuation903.499s/$12.814776314, not a performance win or fresh matched run. Product/source unfrozen; known-good app unchanged. Next use saved repair-request-profile.json to reduce generic compiler-only prompt overhead in the existing execution path, preserving full source-meaning context, native query provenance, exact field/quantity guards and full downstream review. Prove current saved requests offline before any narrowly justified binding-only measurement; no repeated source votes, whole question, new models or disease-specific rules. Then reconcile current candidate-app/release applicability. Alltenareas/G5/customer dependencies remain.
+G3: current binding-role917f1f23 package is launching; source/product frozen. Monitor only artifacts/agere-binding-release-2026-11-05/receipt.json, never duplicate. Eight of nine scoped engineering requirements remain applicable across alltenareas; current archive/install pending. Stop only owned8890PID39826 for checkpoint, primary8885 untouched. On terminal check archived/current HTTP preserves57patients/228fields,59/60source support, partial/undecided coverage and planning invalidation; retain all51897attempts. Then seal actual current package applicability and push verified private branch. No provider campaign. First-answer performance and independentG5/customer dependencies remain.
 
-Latest sealed receipt: artifacts/agere-current-first-answer-2026-11-05/source-binding-delivery-receipt.json
+Latest sealed receipt: artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json
 
 Canonical authority: AGERE_BUILD_CONTROL.json.
 
