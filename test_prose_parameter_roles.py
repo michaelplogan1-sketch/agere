@@ -37,6 +37,9 @@ class ProseParameterRoles(unittest.TestCase):
             ('Definition: duration_known = 0 (missing value).', 'executed_predicate'),
             ('Rate = payments / invoices x 100, unadjusted.', 'percentage_formula'),
             ('Missing durations are not counted as 0 days.', 'documented_missing_value_convention'),
+            ('Observed zero-day durations; missing durations are separate.', 'documented_zero_duration_category'),
+            ('Zero-duration categories are included.', 'documented_zero_duration_category'),
+            ('Missing duration is NULL (not zero).', 'null_zero_distinction'),
         ]:
             with self.subTest(text=text):
                 answer = self.compile(text)
@@ -48,7 +51,8 @@ class ProseParameterRoles(unittest.TestCase):
             self.assertEqual(self.compile(text)['headline'], text)
 
     def test_same_numerals_as_counts_doses_or_other_parameters_still_fail(self):
-        for text in ('90 invoices', '90 mg daily', 'There were 1 payments.',
+        for text in ('90 invoices', '90 mg daily', 'zero invoices', 'zero mg daily', 'one invoice per account',
+                     'zero-week durations', 'There were 1 payments.',
                      'There were 0 missing durations.', 'The rate was 100 percent.',
                      '30-day payment window.', 'within 90 weeks.',
                      'invoice.paid = 0 (received flag).', 'other.paid = 1 (received flag).',
@@ -85,6 +89,7 @@ class ProseParameterRoles(unittest.TestCase):
         calls = copy.deepcopy(self.calls)
         calls[0]['result'].pop('loaded_documentation')
         with self.assertRaises(B.ComputedProseError): self.compile(text, calls=calls)
+        with self.assertRaises(B.ComputedProseError): self.compile('zero-day durations', calls=calls)
         calls = copy.deepcopy(self.calls)
         calls[0]['result']['loaded_documentation']['sections'][0]['documentation_text'] += 'changed'
         with self.assertRaisesRegex(ValueError, 'digest changed'): self.compile(text, calls=calls)
@@ -98,7 +103,8 @@ class ProseParameterRoles(unittest.TestCase):
     def test_parameters_do_not_exempt_entity_level_observations(self):
         calls = copy.deepcopy(self.calls)
         calls[0]['result'].update(columns=['invoice_id', 'payments'], rows=[['A', 8]])
-        for text in ('Received within 90 days.', 'invoice.paid = 1 (received flag).',
+        for text in ('Received within 90 days.', 'invoice.paid = 1 (received flag).', 'zero-day duration.',
+                     'Duration is NULL (not zero).',
                      'Missing durations are not counted as 0 days.'):
             answer = {'table_from_tool': 'result', 'row_prose': {'keys': ['invoice_id'], 'rows': [{
                 'key': {'invoice_id': 'A'}, 'basis': [{'result_view': 'result', 'row': 0}],

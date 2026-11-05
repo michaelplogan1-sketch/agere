@@ -1020,6 +1020,21 @@ def mask_prose_parameters(text,context,proofs):
     Original prose is unchanged and still receives source/meaning review. This
     function is never used to exempt patient/entity prose from scalar binding.
     """
+    def zero_category(m):
+        unit=m['unit'].lower()
+        units=r'(?:day|week|month|year)s?'if unit=='duration'else re.escape(unit)+r's?'
+        for section in context['docs']:
+            if re.search(r'\bas\s+0\s+'+units+r'\b',section['documentation_text'],re.I):
+                proofs.append({'kind':'documented_zero_duration_category','literal':m.group(),
+                    'identity':section['identity'],'section_id':section['section_id'],'sha256':section['sha256']})
+                return m.group()[len('zero'):]
+        return m.group()
+    text=re.sub(r'\bzero-(?P<unit>day|week|month|year|duration)\b',zero_category,text,flags=re.I)
+    def null_definition(m):
+        proofs.append({'kind':'null_zero_distinction','literal':m.group(),
+                       'meaning':'NULL denotes missingness, distinct from the numeric value zero; no observed count is established.'})
+        return 'NULL'
+    text=re.sub(r'\bNULL\s*\(\s*not\s+(?:zero|0)\s*\)',null_definition,text,flags=re.I)
     def duration(m):
         proof=context['durations'].get((m['number'],m['unit'].lower().rstrip('s')))
         if proof is None:return m.group()

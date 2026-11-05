@@ -47,7 +47,7 @@ def attempts():
 
 
 @contextmanager
-def source_boundary():
+def source_boundary(scratch):
     """Same forbidden source families as the ordinary app, including prior answers."""
     import builtins
     import io
@@ -64,7 +64,7 @@ def source_boundary():
             or '/tools/calibration/data/' in str(path)
             or str(path).startswith(('/Users/mikel/Documents/', '/Users/mikel/synthetic-patient-ecosystem/'))
             or path.name.lower() in {'healthcare_questions.json', 'vbc_questions.json', 'questions.json'}
-            or (not path.is_relative_to(RUNTIME) and ('answer-workspaces' in parts or path.name in
+            or (not path.is_relative_to(RUNTIME) and not path.is_relative_to(scratch) and ('answer-workspaces' in parts or path.name in
                 {'answers.sqlite3', 'question-plans.sqlite3', 'model-cache.sqlite3'}))):
             raise RuntimeError('Protected or unrelated source unavailable: ' + str(path))
     def guarded(fn):
@@ -149,6 +149,9 @@ def main():
     output = args.output.resolve()
     if not output.is_relative_to(ROOT / 'artifacts'): raise ValueError('Study outputs belong under workspace artifacts.')
     output.mkdir(parents=True, exist_ok=True)
+    os.environ.update(AGERE_EVALUATION='1', AGERE_EVALUATION_SCRATCH=str(output / 'scratch'),
+                      AGERE_FROZEN_LEARNING=hashlib.sha256(CURRICULUM.read_bytes()).hexdigest(),
+                      AGERE_EXECUTION_TRACE=str(output / 'components.jsonl'))
     receipt_path = output / 'receipt.json'
     if receipt_path.exists(): raise ValueError('Run already has a receipt; preserve it instead of repeating the arm.')
     from clinical_core.agere.local_release import code_identity
@@ -165,6 +168,7 @@ def main():
               'runner_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'curriculum_sha256': hashlib.sha256(CURRICULUM.read_bytes()).hexdigest(),
               'custom_spend_or_output_ceiling': None, 'all_attempt_accounting': True,
+              'learning_writes': 'Disabled by existing evaluation mode; certified state reads remain enabled. Per-arm private operational scratch.',
               'source_caches': 'Existing source caches are warm; no previous arm answer is supplied.'}
     save(receipt_path, record)
     started = time.perf_counter()
@@ -177,7 +181,9 @@ def main():
             assert os.environ['ANTHROPIC_API_KEY'] == 'subscription-transport'
             assert subscription_transport.install()
         from clinical_core.agere.clinical.stack_runtime import Stack
-        with source_boundary():
+        from clinical_core.agere.clinical import evaluation
+        evaluation.install_audit()
+        with source_boundary(output / 'scratch'), evaluation.scope(os.environ['AGERE_FROZEN_LEARNING'], RUNTIME):
             stack = Stack(RUNTIME, allow_live=args.execute)
             record['setup_seconds'] = time.perf_counter() - started
             answer_started = time.perf_counter()
@@ -187,6 +193,7 @@ def main():
                 result = handle_compose(stack, {'question': case['question'], 'scope': 'warehouse', 'conversation_id': None})
             else: result = {'status': 'dry_run', 'normal_handler': 'conversation.handle_compose', 'provider_calls': 0}
             record['answer_seconds'] = time.perf_counter() - answer_started
+            record['evaluation'] = evaluation.receipt()
         with gzip.open(output / 'result.json.gz', 'wt') as target: json.dump(result, target, allow_nan=False)
         record.update(status='returned' if args.execute else 'dry_run_passed', answer_status=(result.get('answer') or {}).get('status'),
                       answer_rows=len((result.get('answer') or {}).get('table') or []))
