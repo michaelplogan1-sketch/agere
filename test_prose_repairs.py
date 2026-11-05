@@ -919,7 +919,8 @@ class ProseRepairs(unittest.TestCase):
             evidence_provenance=[{'row_digest':digest(observation),'origins':[{'kind':'executed_native_result',
                 'result_view':'agere_result_2','tool':'query_sql','input_digest':digest(query)}]}],
             native_calculation_contracts=[{'result_view':'agere_result_2','tool':'query_sql','input':query}],
-            executed_source_definitions={},shared_evidence=[],review_scope=[])
+            executed_source_definitions={'first':'Received role provenance. '*200,
+                                         'second':'Received role provenance. '*200},shared_evidence=[],review_scope=[])
         packet['text']=json.dumps(readable_json(state));support['packets'][0]['field_review']['packet_digest']=digest(packet['text'])
         target=E.source_prose_repair(self.base,support,[packet],{})
         self.assertIsNotNone(target);self.assertEqual(target['source_contexts'],[])
@@ -928,6 +929,10 @@ class ProseRepairs(unittest.TestCase):
         self.assertNotIn('text',native);self.assertNotIn('answer_rows',native)
         focus=E.focused_prose_state(self.base,{'prose_repair':target},self.calls)
         self.assertEqual(focus['native_source_contexts'],[native])
+        from clinical_core.agere.deliverables.receipts import undictionary_json
+        visible=json.loads(E.messages('Explain each entity',self.calls,candidate=self.base,
+                                      feedback={'prose_repair':target})[0]['content'])['focused_prose_repair']
+        self.assertEqual(undictionary_json(visible['native_source_contexts']),[native])
         for kind in ('row','entity','origin','query','packet','missing'):
             bad=copy.deepcopy(target);context=bad['native_source_contexts'][0]
             if kind=='row':context['evidence'][0]['role']='assigned'
@@ -938,6 +943,58 @@ class ProseRepairs(unittest.TestCase):
             if kind=='missing':context['evidence']=[]
             bad['native_source_contexts_digest']=digest(bad['native_source_contexts'])
             with self.subTest(kind=kind):self.assertIsNone(E.focused_prose_state(self.base,{'prose_repair':bad},self.calls))
+
+    def test_repair_context_dictionary_preserves_sources_provenance_and_review_boundary(self):
+        from clinical_core.agere.deliverables.receipts import readable_json,uncompact_json,undictionary_json
+        packet,support=self.source_review()
+        state=uncompact_json(json.loads(packet['text']))
+        text='Historical correspondence only; current assignment is unknown. '*80
+        state['source_contexts']=[{'patient_id':'A','record_id':'note_'+str(i),
+            'date':'2030-01-'+str(i+1).zfill(2),'text':text}for i in range(4)]
+        observation={'patient_id':'A','record_id':'role_A','role':'correspondence','date':'2030-01-01',
+            'literal_object':{'$':0},'unknown':None,'current':False,'count':0}
+        query={'sql':'SELECT * FROM received_roles /* '+text+' */'}
+        state.update(evidence=[observation],evidence_provenance=[{'row_digest':digest(observation),
+            'origins':[{'kind':'executed_native_result','result_view':'agere_result_2',
+                       'tool':'query_sql','input_digest':digest(query)}]}],
+            native_calculation_contracts=[{'result_view':'agere_result_2','tool':'query_sql','input':query}],
+            executed_source_definitions={'original':text,'retained':text},shared_evidence=[],review_scope=[])
+        packet['text']=json.dumps(readable_json(state))
+        support['packets'][0]['field_review']['packet_digest']=digest(packet['text'])
+        target=E.source_prose_repair(self.base,support,[packet],{})
+        feedback={'prose_repair':target,'support':support,'repair_kind':'unresolved_verification'}
+        original=copy.deepcopy((self.base,feedback,self.calls));seen=[]
+        def review(candidate,calls):
+            seen.append(copy.deepcopy(candidate))
+            if len(seen)==1:return feedback
+            self.compile(candidate)
+            return {'status':'repair','feedback':'Independent coverage remains unknown.',
+                    'retry_disposition':'retain_partial_until_new_evidence'}
+        def send(body):
+            visible=json.loads(body['messages'][0]['content'])['focused_prose_repair']
+            self.assertEqual(visible['draft_digest'],digest(self.base))
+            for name in ('source_contexts','native_source_contexts'):
+                if not target[name]:
+                    self.assertEqual(visible[name],target[name]);continue
+                self.assertIsInstance(visible[name],dict,name)
+                self.assertEqual(undictionary_json(visible[name]),target[name])
+            self.assertEqual(visible['targets'],E.focused_prose_state(self.base,feedback,self.calls)['targets'])
+            self.assertTrue(visible['coverage_still_required'])
+            self.assertEqual(visible['complete_row_prose_rows'],2)
+            self.assertNotIn('output_config',body)  # Still a source-meaning operation.
+            return {'content':[{'type':'text','text':json.dumps(self.patch(
+                review='Current responsibility remains unresolved in the received correspondence.'))}]},0.,False
+        out=S.tool_loop('Explain each entity',[],[],lambda use:self.fail('No new native action'),send=send,
+            model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=copy.deepcopy(self.base),
+            review=review,compact_execution_state=True,binding_system='Binding only')
+        self.assertIsNone(out['error'])
+        self.assertEqual(len(seen),2);self.assertEqual(out['answer']['status'],'partial')
+        self.assertEqual(out['answer']['verification'],'unverified')
+        self.assertEqual(out['answer']['table'][1],self.base['table'][1])
+        self.assertEqual((self.base,feedback,self.calls),original)
+        bad=copy.deepcopy(feedback);bad['prose_repair']['source_contexts'][0]['patient_id']='B'
+        visible=json.loads(E.messages('Explain each entity',self.calls,candidate=self.base,feedback=bad)[0]['content'])
+        self.assertNotIn('focused_prose_repair',visible)  # Encoding cannot rescue stale provenance.
 
     def test_mixed_native_and_prose_uncertainty_preserves_independent_scoped_repair(self):
         p,support=self.source_review()

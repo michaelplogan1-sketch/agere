@@ -6,7 +6,7 @@ model-generated summary, source truncation or learned clinical assertion is used
 import json
 from ...contracts import digest
 
-VERSION = 'execution-state/21'
+VERSION = 'execution-state/22'
 OPERATIONAL_FEEDBACK_AUTHORITIES = frozenset({'unverified_review_feedback'})
 
 
@@ -1310,4 +1310,20 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
     for entry in state['executed_results']:
         for name in ('complete_reading','repair_reading'):
             if name in entry:entry[name]=_column_order_reading(entry[name])
+    if focus:
+        # These complete producer-bound contexts can repeat entire native
+        # definitions and observations across repair entities. Share exact
+        # values using the existing reversible evidence encoding, after scope
+        # and provenance validation. The saved review and draft stay native.
+        from ..deliverables.receipts import dictionary_json,undictionary_json
+        projected=dict(focus)
+        for name in ('source_contexts','native_source_contexts'):
+            original=focus.get(name)
+            if not original:continue
+            encoded=dictionary_json(original)
+            if len(json.dumps(encoded,default=str).encode())>=len(json.dumps(original,default=str).encode()):continue
+            if undictionary_json(encoded)!=original:
+                raise ValueError('Repair source context did not restore exactly')
+            projected[name]=encoded
+        state['focused_prose_repair']=projected
     return [{'role':'user','content':json.dumps(state,default=str,allow_nan=False)}]
