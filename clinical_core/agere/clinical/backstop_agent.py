@@ -247,12 +247,15 @@ has already declined this question, so it is yours to answer completely and corr
   Use {{"keys":["patient_id"],"rows":[{{"key":{{"patient_id":"the exact ID"}},
     "basis":[{{"result_view":"agere_result_9","row":0}}],
     "fields":{{"patient_explanation":{{"template":"Recorded events: {{events}}. Current responsibility remains unknown.",
-      "bindings":{{"events":{{"result_view":"agere_result_9","row":0,"column":"recorded_events"}}}}}},
+      "bindings":{{"events":{{"basis":0,"column":"recorded_events"}}}}}},
       "proposed_review_steps":"A specific proposed review tied to this patient's retained evidence."}}}}]}}.
   This example illustrates the format only: use actual executed view/column names, entity keys and row positions.
   Supply exactly one entry for every native row, with the same new field names. Keys may name other entity grains too.
   Every basis must be a complete executed row with the exact same key values. For numbers use the scalar template/bindings
-  below; each bound row must also be in that entity's basis. Bind received values rather than copying them into text.
+  below; each bound row must also be in that entity's basis. Within row_prose use {{"basis":0,"column":"column_name"}}
+  to reference that entry's zero-based basis index; code expands it to the exact result_view/row/column address.
+  Full scalar addresses remain valid. Headline/facts have no row-local basis and require full addresses.
+  Bind received values rather than copying them into text.
   Build these bindings in the FIRST draft, including ages, strengths, measurements, counts and number words inside
   explanations or proposed actions. A source citation alone does not bind a numerical value. If a required scalar is
   embedded in a finding, query it before composing: carry the entity key, record_id, source date and full source quotation
@@ -980,12 +983,15 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',
                     lambda m:'' if any(c.isdigit() for c in m.group()) else m.group(),text)
         return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
-    def compile_value(field,value):
+    def compile_value(field,value,basis=None):
         if isinstance(value,str) and field in old:
             prior=old[field]
             # A mutated field must supply a new explicit template, not silently
             # inherit old bindings attached to a different sentence.
             if value==prior.get('rendered') and prior.get('bindings'):value={k:prior[k] for k in ('template','bindings')}
+        from .execution_state import expand_prose_bindings
+        try:value=expand_prose_bindings(value,basis)
+        except ValueError as exc:raise ProseIssue('invalid_scalar_address',field,str(exc)+' at '+field)from exc
         if not isinstance(value,dict) or 'template' not in value:
             if (row_mode or answer.get('table_binding')) and ((isinstance(value,str) and numeric(value)) or type(value) in (int,float)):
                 raise ProseIssue('unbound_literal',field,'Quantitative '+field+' needs a template with bindings to actual executed scalar cells; unbound literals: '+json.dumps(numeric(value) if isinstance(value,str) else [value]))
@@ -1147,7 +1153,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
                                     and observation['record_id'] in text and observation['date'] in text
                                     and any(left+quote+right in text for left,right in (("'","'"),('"','"'),('“','”')))):
                                 field_quotes.append(observation);seen_quotes.add(quote)
-                        rendered=compile_value(field,value)
+                        rendered=compile_value(field,value,basis=entry['basis'])
                         if not isinstance(rendered,str):raise ValueError('row_prose field did not compile to text at '+field)
                         if len(proofs)==start:
                             proofs.append({'field':field,'template':value,'bindings':{},'rendered':rendered,'sources':{}})

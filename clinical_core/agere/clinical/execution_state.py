@@ -228,7 +228,7 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
                     raise ValueError('Literal binding edits require a located binding-only compiler failure')
                 try:
                     value=bind_prose_literals(existing[ident]['fields'][field],value,native,
-                        key=edit['key'],resolved_bases=derived)
+                        key=edit['key'],resolved_bases=derived,basis=existing[ident].get('basis'))
                 except ValueError as exc:
                     error=BindingReferenceError(edit['key'],field,exc)
                     if not retain_valid:raise error from exc
@@ -236,8 +236,8 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
                     continue
             if target and target['code']in ('unbound_literal','missing_scalar_source'):
                 original=existing[ident]['fields'][field]
-                rendered=repair_rendered_value(value,native)
-                expected=repair_rendered_value(original,native)
+                rendered=repair_rendered_value(value,native,basis=[*existing[ident].get('basis',[]),*extra])
+                expected=repair_rendered_value(original,native,basis=existing[ident].get('basis'))
                 if canonical_repair_prose(rendered)!=canonical_repair_prose(expected):
                     error=BindingPreservationError(edit['key'],field,expected,rendered)
                     if not retain_valid:raise error
@@ -307,7 +307,7 @@ def resolve_prose_binding(address,native,key):
     return {'result_view':address['result_view'],'row':index,'column':address['column']}
 
 
-def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None):
+def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None,basis=None):
     """Attach native cells to unchanged literal spans, without model rewriting.
 
     This only constructs the existing scalar template contract. The ordinary
@@ -317,6 +317,7 @@ def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None):
     import string,re
     if set(operation)!={'bind_literals'}or not isinstance(operation['bind_literals'],list)or not operation['bind_literals']:
         raise ValueError('bind_literals requires a nonempty list of literal/binding edits')
+    value=expand_prose_bindings(value,basis)
     if isinstance(value,str):parts=[(value,None)];bindings={}
     else:
         repair_rendered_value(value,native)
@@ -425,9 +426,33 @@ def canonical_repair_prose(text):
     return re.sub(r'\s+',' ',normalized).strip()
 
 
-def repair_rendered_value(value,native):
+def expand_prose_bindings(value,basis=None):
+    """Expand explicit row-local references; never infer evidence or entity keys.
+
+    This is representation only. The compiler still validates every basis and
+    scalar against current executed results. Persisted proofs use full addresses.
+    """
+    if not isinstance(value,dict)or not isinstance(value.get('bindings'),dict):return value
+    bindings={}
+    for name,address in value['bindings'].items():
+        if isinstance(address,dict)and 'basis'in address:
+            if (set(address)!={'basis','column'}or type(address['basis'])is not int
+                    or not isinstance(address['column'],str)or not isinstance(basis,list)
+                    or not 0<=address['basis']<len(basis)):
+                raise ValueError('Scalar basis reference requires a valid zero-based index in this entity\'s basis and a column')
+            row=basis[address['basis']]
+            if (not isinstance(row,dict)or set(row)!={'result_view','row'}or not isinstance(row['result_view'],str)
+                    or type(row['row'])is not int or row['row']<0):
+                raise ValueError('Scalar basis reference must name an explicit native row address')
+            address={**row,'column':address['column']}
+        bindings[name]=address
+    return {**value,'bindings':bindings}
+
+
+def repair_rendered_value(value,native,*,basis=None):
     """Preview exact scalar insertion for preservation only; compiler still runs."""
     from .result_assembly import _rows
+    value=expand_prose_bindings(value,basis)
     if isinstance(value,str):return value
     if not isinstance(value,dict)or set(value)!={'template','bindings'}or not isinstance(value['template'],str)or not isinstance(value['bindings'],dict):
         raise ValueError('Binding repair requires a scalar template')
@@ -1097,7 +1122,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
         if focus.get('intent')!='source_meaning_review':
             for target in focus['targets']:
                 key=digest(target['key'])
-                try:prose=repair_rendered_value(target['value'],native)
+                try:prose=repair_rendered_value(target['value'],native,basis=target.get('basis'))
                 except ValueError:uncited.add(key);continue
                 found={record for record in records.get(key,())
                        if re.search(r'(?<![\w-])'+re.escape(record)+r'(?![\w-])',prose)}

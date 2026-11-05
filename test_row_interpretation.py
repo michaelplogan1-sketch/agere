@@ -38,6 +38,99 @@ class RowInterpretation(unittest.TestCase):
     def compiled(self):
         out=self.answer();B.bind_computed_prose(out,self.calls);return out
 
+    def compact(self,answer):
+        for entry in answer['row_prose']['rows']:
+            positions={(a['result_view'],a['row']):i for i,a in enumerate(entry['basis'])}
+            for value in entry['fields'].values():
+                if isinstance(value,dict):
+                    value['bindings']={k:{'basis':positions[a['result_view'],a['row']],'column':a['column']}
+                                       for k,a in value['bindings'].items()}
+        return answer
+
+    def test_local_basis_references_preserve_compiled_values_proofs_and_source_packets(self):
+        expected=self.compiled();answer=self.compact(self.answer());proposal=copy.deepcopy(answer['row_prose'])
+        before=copy.deepcopy(self.calls);B.bind_computed_prose(answer,self.calls)
+        self.assertEqual(answer['table'],expected['table'])
+        self.assertEqual(answer['computed_prose'],expected['computed_prose'])
+        self.assertEqual(self.packets(answer),self.packets(expected))
+        self.assertEqual(answer['row_prose'],proposal);self.assertEqual(self.calls,before)
+        before=copy.deepcopy(answer);B.bind_computed_prose(answer,self.calls);self.assertEqual(answer,before)
+        # Same numeric value is never a substitute for the selected address.
+        self.calls[0]['result']['rows'][0][1]=3
+        B.bind_computed_prose(answer,self.calls)
+        self.assertIn('events: 3',answer['table'][0]['explanation'])
+        self.assertIn('events: unknown',answer['table'][1]['explanation'])
+
+    def test_local_basis_reference_malformed_and_ambiguous_shapes_fail_atomically(self):
+        for address in ({'basis':True,'column':'events'},{'basis':-1,'column':'events'},
+                        {'basis':2,'column':'events'},{'basis':0.0,'column':'events'},
+                        {'basis':'0','column':'events'},{'basis':0,'column':[]},
+                        {'basis':0,'column':'absent'},{'basis':0,'column':'events','row':1},
+                        {'basis':0,'column':'events','result_view':'agere_result_2'},
+                        {'basis':0,'column':'events','measure':{}}):
+            answer=self.compact(self.answer());answer['row_prose']['rows'][0]['fields']['explanation']['bindings']['events']=address
+            original=copy.deepcopy(answer)
+            with self.subTest(address=address),self.assertRaises(B.ComputedProseError):B.bind_computed_prose(answer,self.calls)
+            self.assertEqual(answer,original)
+
+    def test_local_basis_reference_cannot_infer_a_missing_or_foreign_source(self):
+        for mutation in ('foreign_entity','missing_view','incomplete_result','missing_basis','not_scalar'):
+            answer=self.compact(self.answer());calls=copy.deepcopy(self.calls);entry=answer['row_prose']['rows'][0]
+            if mutation=='foreign_entity':entry['basis'][0]['row']=1
+            elif mutation=='missing_view':entry['basis'][0]['result_view']='invented'
+            elif mutation=='incomplete_result':calls[0]['result']['truncated']=True
+            elif mutation=='missing_basis':entry['basis'].pop(0)
+            else:calls[0]['result']['rows'][0][1]={'nested':2}
+            before=copy.deepcopy(answer)
+            with self.subTest(mutation=mutation),self.assertRaises(ValueError):B.bind_computed_prose(answer,calls)
+            self.assertEqual(answer,before)
+        answer=self.compact(self.answer());answer['headline']={'template':'{events} events',
+            'bindings':{'events':{'basis':0,'column':'events'}}}
+        with self.assertRaisesRegex(ValueError,'basis reference'):B.bind_computed_prose(answer,self.calls)
+
+    def test_basis_order_is_local_explicit_and_full_addresses_remain_compatible(self):
+        answer=self.compact(self.answer());entry=answer['row_prose']['rows'][0]
+        entry['basis'].reverse()
+        for address in entry['fields']['explanation']['bindings'].values():address['basis']=1-address['basis']
+        entry['fields']['explanation']['bindings']['events']={'result_view':'agere_result_1','row':0,'column':'events'}
+        B.bind_computed_prose(answer,self.calls)
+        self.assertEqual(answer['table'],self.compiled()['table'])
+
+    def test_local_binding_repair_preserves_original_compact_sentence_and_other_rows(self):
+        answer=self.compact(self.answer());entry=answer['row_prose']['rows'][0]
+        entry['fields']['explanation']['template']+=' Then two events.'
+        before=copy.deepcopy(answer)
+        feedback=B.review_final(SimpleNamespace(),'Explain each entity',answer,self.calls,
+            SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+        self.assertEqual(feedback['repair_kind'],'deterministic_compiler')
+        before=copy.deepcopy(answer)
+        proposal={'repair_draft':{'draft_digest':digest(answer),'rows':[{'key':{'patient_id':'A'},'fields':{
+            'explanation':{'bind_literals':[{'literal':'two','binding':{
+                'result_view':'agere_result_1','row':0,'column':'events'}}]}}}]}}
+        merged=X.apply_prose_repair(proposal,answer,calls=self.calls,feedback=feedback)
+        B.bind_computed_prose(merged,self.calls)
+        self.assertTrue(merged['table'][0]['explanation'].endswith('Then 2 events.'))
+        self.assertEqual(merged['row_prose']['rows'][1],before['row_prose']['rows'][1])
+        self.assertEqual(answer,before)
+
+    def test_replacement_template_resolves_added_basis_after_existing_local_indices(self):
+        answer=self.compact(self.answer());entry=answer['row_prose']['rows'][0]
+        entry['fields']['proposed_review_steps']='Review two received events.'
+        calls=copy.deepcopy(self.calls)
+        calls.append({'name':'query_sql','input':{'sql':'SELECT patient_id,events FROM observations'},
+            'result':{'result_view':'agere_result_3','columns':['patient_id','events'],
+                      'rows':[['A',2]],'truncated':False}})
+        feedback=B.review_final(SimpleNamespace(),'Explain each entity',answer,calls,
+            SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+        proposal={'repair_draft':{'draft_digest':digest(answer),'rows':[{'key':{'patient_id':'A'},
+            'basis_additions':[{'result_view':'agere_result_3','row':0}],
+            'fields':{'proposed_review_steps':{'template':'Review {events} received events.',
+                'bindings':{'events':{'basis':2,'column':'events'}}}}}]}}
+        merged=X.apply_prose_repair(proposal,answer,calls=calls,feedback=feedback)
+        B.bind_computed_prose(merged,calls)
+        self.assertEqual(merged['table'][0]['proposed_review_steps'],'Review 2 received events.')
+        self.assertEqual(merged['row_prose']['rows'][0]['basis'][:2],entry['basis'])
+
     def packets(self,answer=None,**kwargs):
         return B.support_packets('Explain each selected entity and its next review.',answer or self.compiled(),self.calls,[],
                                  '2030-05-27',**kwargs)
