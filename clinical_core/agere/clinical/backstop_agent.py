@@ -45,10 +45,11 @@ class ProseIssue(ValueError):
 
 
 class ComputedProseError(ValueError):
-    def __init__(self, message, failures, targets=()):
+    def __init__(self, message, failures, targets=(), answer_targets=()):
         super().__init__(message)
         self.progress_failures = failures
         self.repair_targets = list(targets)
+        self.answer_repair_targets = list(answer_targets)
 
 
 MAX_TOOLS = int(os.environ['AGERE_BACKSTOP_TOOLS']) if os.environ.get('AGERE_BACKSTOP_TOOLS') else None
@@ -1086,14 +1087,18 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
                     yield {'path':list(path),'record_id':rid,'date':date,'quote':quote,
                            'source':source,'evidence':evidence}
             for name,item in value.items():yield from quoted_observations(item,path+(name,))
-    updates={};errors=[];failures=[];targets=[]
-    def checked(field,value):
+    updates={};errors=[];failures=[];targets=[];answer_targets=[]
+    def checked(field,value,path):
         try:return compile_value(field,value)
         except (ValueError,KeyError,IndexError,TypeError) as exc:
-            errors.append(str(exc));failures.append(getattr(exc,'failure',{'code':'invalid_binding','field_group':field.split('.')[0]}));return value
-    if 'headline' in answer:updates['headline']=checked('headline',answer['headline'])
+            from ...contracts import digest
+            failure=getattr(exc,'failure',{'code':'invalid_binding','field_group':field.split('.')[0]})
+            errors.append(str(exc));failures.append(failure)
+            answer_targets.append({'code':failure['code'],'path':path,'value_digest':digest(value),'reason':str(exc)})
+            return value
+    if 'headline' in answer:updates['headline']=checked('headline',answer['headline'],['headline'])
     if isinstance(answer.get('facts'),dict):
-        updates['facts']={key:checked('facts.'+key,value) for key,value in answer['facts'].items()}
+        updates['facts']={key:checked('facts.'+key,value,['facts',key]) for key,value in answer['facts'].items()}
     if 'row_prose' in answer:
         # Rebuild from actual native rows on every review; model-provided proof
         # metadata and a previously rendered table never establish evidence.
@@ -1201,7 +1206,8 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             'If the extracted findings omit the quoted value, query the original record text instead of repeating the same findings. '
             'Do not manufacture numeric constants from the proposed answer.' if row_mode else
             ' An attributed exact passage in verified sources may remain quoted.')
-        raise ComputedProseError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal.'+quotation_rule+' Do not guess a value or reword a failed quantity to avoid its binding.',failures,targets if len(targets)==len(errors)else())
+        located=len(targets)+len(answer_targets)==len(errors)
+        raise ComputedProseError('Repair computed prose: '+json.dumps(errors)+'. For each named literal, compute the quantity (or explicitly named definition constant) in SQL and bind a plain placeholder to its actual result_view/row/column. Dates and identifiers may remain literal.'+quotation_rule+' Do not guess a value or reword a failed quantity to avoid its binding.',failures,targets if located else(),answer_targets if located else())
     answer.update(updates);answer.pop('computed_prose',None)
     if proofs:answer['computed_prose']=proofs
     return proofs
@@ -1438,7 +1444,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         return {**assessment, 'status': 'repair', 'feedback': 'Compute the requested table in SQL, using earlier result_view tables as needed, and return table_from_tool. Do not transcribe rows or calculate changes in the final answer.'}
     kept, dropped = verified_sources(answer, tools)
     answer['sources'] = kept
-    static_feedback=[];prose_problem=None;prose_failures=[];prose_targets=[];workflow_problem=None;workflow_failure=None
+    static_feedback=[];prose_problem=None;prose_failures=[];prose_targets=[];answer_prose_targets=[];workflow_problem=None;workflow_failure=None
     if answer.get('status')=='answered' and answer.get('missing'):
         static_feedback.append('The answered status conflicts with declared missing requirements. '
             'Resolve those requirements from the retained sources or return partial/unsupported with the genuine gaps preserved. '
@@ -1463,6 +1469,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
     except (ValueError,KeyError,IndexError,TypeError) as exc:
         prose_problem=str(exc);prose_failures=getattr(exc,'progress_failures',[{'code':'invalid_binding','field_group':'prose'}])
         prose_targets=getattr(exc,'repair_targets',[])
+        answer_prose_targets=getattr(exc,'answer_repair_targets',[])
         static_feedback.append(prose_problem)
     # The investigator must obey the same received-source rule as typed plans.
     # Check only dependencies of final rows/bound prose, so an exploratory
@@ -1512,8 +1519,9 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         progress_state={'prose':[{'code':code,'field_group':field,'failures':count}for (code,field),count in sorted(counts.items())],
             'checks':[re.sub(r'\bagere_result_\d+\b','native_view',s)for s in static_feedback+feedback if s not in (prose_problem,workflow_problem)],
             'workflow':workflow_failure}
-        targeted=({'schema':'native-prose-repair-targets/1','draft_digest':digest(answer),'targets':prose_targets}
-                  if prose_targets and static_feedback==[prose_problem] and not feedback else None)
+        targeted=({'schema':'native-prose-repair-targets/1','draft_digest':digest(answer),'targets':prose_targets,
+                   **({'answer_targets':answer_prose_targets}if answer_prose_targets else{})}
+                  if (prose_targets or answer_prose_targets) and static_feedback==[prose_problem] and not feedback else None)
         # With no row-prose proposal, native placeholder text can reveal an
         # independent omission. Once row_prose exists, its atomic compiler has
         # not applied ANY proposed fields on failure: this table is still the

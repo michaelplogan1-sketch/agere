@@ -641,7 +641,7 @@ class ProseRepairs(unittest.TestCase):
         return {'template':'Review {n} events on 2030-01-01; preserve the uncertainty.',
             'bindings':{'n':{'result_view':view,'row':row,'column':'events'}}}
 
-    def test_compiler_targets_bind_exact_field_and_mixed_global_failures_disable_focus(self):
+    def test_compiler_targets_keep_mixed_global_failure_separate_from_patient_edits(self):
         feedback=self.located_failure();targets=E.prose_repair_targets(self.base,feedback)
         self.assertEqual(len(targets),1);self.assertEqual(targets[0]['field'],'review')
         self.assertEqual(targets[0]['key'],{'patient_id':'A'})
@@ -649,8 +649,13 @@ class ProseRepairs(unittest.TestCase):
         self.base['headline']='There are 99 events.'
         mixed=B.review_final(SimpleNamespace(),'Explain each entity',self.base,self.calls,
             SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
-        self.assertNotIn('prose_repair',mixed)
-        self.assertIsNone(E.focused_prose_state(self.base,mixed,self.calls))
+        focus=E.focused_prose_state(self.base,mixed,self.calls)
+        self.assertEqual(focus['scope'],'answer')
+        self.assertEqual(focus['answer_targets'][0]['path'],['headline'])
+        self.assertEqual(mixed['prose_repair']['targets'],targets)
+        patch={'repair_draft':{'draft_digest':digest(self.base),'fields':[{'path':['headline'],
+            'bind_literals':[{'literal':'99','binding':{'result_view':'agere_result_1','row':0,'column':'events'}}]}]}}
+        with self.assertRaises(ValueError):E.apply_prose_repair(patch,self.base,calls=self.calls,feedback=mixed)
 
     def test_same_entity_basis_addition_keeps_prior_bases_and_requires_complete_compilation(self):
         feedback=self.located_failure()

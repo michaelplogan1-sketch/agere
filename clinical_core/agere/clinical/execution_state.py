@@ -155,6 +155,25 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
     if not isinstance(proposal,dict) or set(proposal)!={'repair_draft'}:
         raise ValueError('A prose repair must contain only repair_draft')
     repair=proposal['repair_draft']
+    answer_targets=answer_prose_repair_targets(candidate,feedback)
+    if answer_targets:
+        if (not isinstance(repair,dict)or set(repair)!={'draft_digest','fields'}
+                or repair['draft_digest']!=digest(candidate)or not isinstance(repair['fields'],list)or not repair['fields']):
+            raise ValueError('This exact draft requires only located headline/facts binding edits in repair_draft.fields')
+        native={c['result']['result_view']:c['result']for c in calls if isinstance(c.get('result'),dict)
+            and c['result'].get('result_view')and not c['result'].get('error')}
+        allowed={tuple(t['path'])for t in answer_targets};seen=set()
+        merged=copy.deepcopy(candidate);merged.update(copy.deepcopy(draft_state(candidate)['last_draft']))
+        for edit in repair['fields']:
+            if not isinstance(edit,dict)or set(edit)!={'path','bind_literals'}or not isinstance(edit['path'],list):
+                raise ValueError('Answer binding edits require path and bind_literals only')
+            if any(not isinstance(k,str)for k in edit['path']):raise ValueError('Answer repair path must contain literal keys')
+            path=tuple(edit['path'])
+            if path not in allowed or path in seen:raise ValueError('Answer repair may edit each producer-located path once')
+            seen.add(path);parent=merged if len(path)==1 else merged['facts'];field=path[-1]
+            parent[field]=bind_prose_literals(parent[field],{'bind_literals':edit['bind_literals']},native)
+        for name in ('computed_prose','investigation_review','verification'):merged.pop(name,None)
+        return merged
     if not isinstance(repair,dict) or set(repair)!={'draft_digest','rows'}:
         raise ValueError('repair_draft requires draft_digest and rows')
     if not isinstance(candidate,dict) or repair['draft_digest']!=digest(candidate):
@@ -471,6 +490,14 @@ def binding_repair_schema(focus):
     This is a generation contract, never an acceptance shortcut. Runtime still
     checks the exact draft, target entity/field, value, basis and full answer.
     """
+    if focus and focus.get('scope')=='answer':
+        def obj(properties):return {'type':'object','properties':properties,'required':list(properties),'additionalProperties':False}
+        address=obj({'result_view':{'type':'string'},'row':{'type':'integer','minimum':0},'column':{'type':'string'}})
+        edit={'type':'object','properties':{'literal':{'type':'string','minLength':1},'binding':address,
+            'occurrence':{'type':'integer','minimum':0}},'required':['literal','binding'],'additionalProperties':False}
+        field=obj({'path':{'enum':[t['path']for t in focus['answer_targets']]},
+            'bind_literals':{'type':'array','minItems':1,'items':edit}})
+        return obj({'repair_draft':obj({'draft_digest':{'enum':[focus['draft_digest']]},'fields':{'type':'array','items':field}})})
     if (not focus or focus.get('intent')=='source_meaning_review' or not focus.get('targets')
             or any(t.get('code')not in ('unbound_literal','missing_scalar_source')for t in focus['targets'])):
         return None
@@ -695,6 +722,28 @@ def source_prose_repair(candidate,support,packets,coverage):
     except (KeyError,ValueError,TypeError,IndexError):return None
 
 
+def answer_prose_repair_targets(candidate,feedback):
+    """Only compiler-bound top-level quantities authorize a small binding edit."""
+    if not isinstance(candidate,dict)or not isinstance(candidate.get('row_prose'),dict)or not isinstance(feedback,dict):return None
+    receipt=feedback.get('prose_repair')
+    if (not isinstance(receipt,dict)or receipt.get('schema')!='native-prose-repair-targets/1'
+            or receipt.get('draft_digest')!=digest(candidate)or feedback.get('repair_kind')!='deterministic_compiler'):
+        return None
+    targets=receipt.get('answer_targets')
+    if not isinstance(targets,list)or not targets:return None
+    seen=set()
+    for target in targets:
+        if not isinstance(target,dict)or target.get('code')!='unbound_literal':return None
+        path=target.get('path')
+        if (not isinstance(path,list)or not(path==['headline']or len(path)==2 and path[0]=='facts'and isinstance(path[1],str))):return None
+        try:value=candidate[path[0]]if len(path)==1 else candidate['facts'][path[1]]
+        except (KeyError,TypeError):return None
+        if not isinstance(value,(str,dict)):return None
+        if target.get('value_digest')!=digest(value)or tuple(path)in seen:return None
+        seen.add(tuple(path))
+    return targets
+
+
 def prose_repair_targets(candidate,feedback):
     """Only exact producer-bound row failures permit a narrower repair view."""
     if not isinstance(candidate,dict)or not isinstance(feedback,dict):return None
@@ -783,6 +832,15 @@ def continue_source_prose_repair(previous,feedback,candidate,assessment):
 def focused_prose_state(candidate,feedback,calls):
     """A compiler-selected repair view; the full native answer stays intact."""
     from .result_assembly import _rows
+    answer_targets=answer_prose_repair_targets(candidate,feedback)
+    if answer_targets:
+        editable=draft_state(candidate)['last_draft']
+        return {'schema':'focused-native-prose-repair/1','scope':'answer','draft_digest':digest(candidate),'keys':[],
+            'targets':[],'answer_targets':[{**t,'value':editable[t['path'][0]]if len(t['path'])==1 else editable['facts'][t['path'][1]]}for t in answer_targets],
+            'native_answer_rows':len(candidate.get('table')or[]),'complete_row_prose_rows':len(candidate['row_prose'].get('rows',[])),
+            'retained_patient_target_count':len(feedback['prose_repair'].get('targets')or[]),
+            'patch_contract':{'draft_digest':digest(candidate),'fields':[{'path':'exact located path array','bind_literals':[{'literal':'exact unbound span','binding':{'result_view':'executed view','row':'zero-based native row','column':'scalar column'}}]}]},
+            'instruction':'Bind only the located headline/facts literals using repair_draft.fields. Preserve the entire original sentence, existing placeholders, quantities, dates and uncertainty. Do not rewrite patient prose or regenerate the answer. Use exact executed scalar cells, or query their actual source/definition first; never copy draft constants into SQL. The complete patient draft and its located failures remain retained and are recompiled after this patch. These edits establish no source meaning or clinical acceptance.'}
     targets=prose_repair_targets(candidate,feedback)
     if targets is None:return None
     keys=candidate['row_prose']['keys'];wanted={digest(t['key'])for t in targets}
@@ -1185,7 +1243,10 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
             if support.get('failed_packet_ids'):
                 state['current_review_feedback']['failed_dependency_ids']=support['failed_packet_ids']
         else:state['current_review_feedback']=feedback
-    if focus:
+    if focus and focus.get('scope')=='answer':
+        state['focused_prose_repair']=focus
+        state['instruction']+=' Only the producer-located headline/facts bindings are editable now; complete patient prose and all row repair obligations remain retained.'
+    elif focus:
         # This subset is a repair view, never complete population evidence.
         from .result_assembly import _rows
         # A binding-only edit cannot change its sentence. When every failed
