@@ -148,6 +148,10 @@ def recovery_checkpoint(tools,question,context,run):
                 or (run.get('answer_reviews') or [{}])[-1].get('repair_kind')!='deterministic_compiler'):
             raise ValueError('Unfinished compiler draft must match its digest and retained compiler review')
         draft=unfinished['draft']
+        # A model may call its draft answered even though the compiler rejected
+        # it. Preserve the raw draft above; the resumable copy is unverified.
+        if draft.get('status')=='answered':
+            draft={**copy.deepcopy(draft),'status':'partial','verification':'unverified'}
     if not isinstance(draft,dict) or draft.get('status')!='partial' or draft.get('workflow') or not calls:return None
     saved=_OWNED_RECOVERY.get() or {}
     reviews=[*((saved.get('checkpoint') or {}).get('review_contexts') or []),*(run.get('answer_reviews') or [])]

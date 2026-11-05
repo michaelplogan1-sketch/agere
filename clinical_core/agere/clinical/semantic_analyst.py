@@ -925,17 +925,21 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         messages.append({'role':'assistant','content':blocks})
                         messages.append({'role':'user','content':str(exc)+'\n'+json.dumps(draft_state(state_candidate))})
                         continue
-                    old_fields={digest(r['key']):r['fields']for r in state_candidate['row_prose']['rows']}
-                    old_bases={digest(r['key']):r['basis']for r in state_candidate['row_prose']['rows']}
+                    old_prose=state_candidate.get('row_prose')
+                    new_prose=candidate.get('row_prose')
+                    old_rows=old_prose.get('rows',[])if isinstance(old_prose,dict)else[]
+                    new_rows=new_prose.get('rows',[])if isinstance(new_prose,dict)else[]
+                    old_fields={digest(r['key']):r['fields']for r in old_rows}
+                    old_bases={digest(r['key']):r['basis']for r in old_rows}
                     repair_protocol_feedback=('Valid binding edits were retained; these fields are unchanged and still need repair: '
                         +json.dumps(binding_rejections))if binding_rejections else None
                     changed=[sum(v!=old_fields[digest(r['key'])][k]for k,v in r['fields'].items())
-                             for r in candidate['row_prose']['rows']]
+                             for r in new_rows]
                     result.setdefault('prose_repairs',[]).append({'base_draft_digest':patch_proposal['repair_draft']['draft_digest'],
                         'proposal_digest':digest(patch_proposal),'changed_rows':sum(bool(n)for n in changed),
                         'changed_fields':sum(changed),
                         'changed_answer_fields':len(patch_proposal['repair_draft'].get('fields',[])),
-                        'added_basis_rows':sum(len(r['basis'])-len(old_bases[digest(r['key'])])for r in candidate['row_prose']['rows']),
+                        'added_basis_rows':sum(len(r['basis'])-len(old_bases[digest(r['key'])])for r in new_rows),
                         'rejected_fields':binding_rejections,
                         'complete_review_required':True})
                 if review is not None:

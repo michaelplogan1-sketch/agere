@@ -99,5 +99,56 @@ class AnswerProseRepair(unittest.TestCase):
         self.assertEqual(out['prose_repairs'][0]['changed_answer_fields'],1)
         self.assertEqual(out['prose_repairs'][0]['changed_fields'],0)
 
+    def test_aggregate_answers_bind_only_the_named_quantity_without_entity_prose(self):
+        for noun,answer_type,row_prose in [('organizations','table','absent'),
+                ('invoices','table',None)]:
+            with self.subTest(noun=noun):
+                draft={'status':'partial','answer_type':answer_type,'headline':'Recorded totals.',
+                    'facts':{'total':f'2 {noun} are represented.','scope':'Historical received records.'}}
+                if answer_type=='table':
+                    draft['table_from_tool']='agere_result_1';B.materialize_table(draft,self.calls)
+                if row_prose is None:draft['row_prose']=None
+                feedback=self.review(draft);before=copy.deepcopy(draft)
+                focus=E.focused_prose_state(draft,feedback,self.calls)
+                self.assertEqual(focus['scope'],'answer')
+                self.assertEqual(focus['complete_row_prose_rows'],0)
+                self.assertEqual([x['path']for x in focus['answer_targets']],[['facts','total']])
+                fixed=E.apply_prose_repair(self.edit(draft,['facts','total']),draft,
+                    calls=self.calls,feedback=feedback)
+                B.bind_computed_prose(fixed,self.calls)
+                self.assertEqual(fixed['facts'],before['facts'])
+                self.assertEqual(fixed.get('table'),before.get('table'))
+                self.assertEqual(draft,before)
+                self.assertEqual(fixed['headline'],before['headline'])
+                stale=copy.deepcopy(feedback);stale['prose_repair']['draft_digest']='stale'
+                self.assertIsNone(E.answer_prose_repair_targets(draft,stale))
+                with self.assertRaises(ValueError):
+                    E.apply_prose_repair(self.edit(draft,['headline']),draft,
+                        calls=self.calls,feedback=feedback)
+
+    def test_aggregate_real_loop_keeps_other_facts_and_source_review_required(self):
+        draft={'status':'partial','answer_type':'table','headline':'Recorded organizations.',
+            'table_from_tool':'agere_result_1','facts':{'count':'2 organizations.','scope':'Historical records only.'}}
+        B.materialize_table(draft,self.calls);before=copy.deepcopy(draft);sent=[]
+        def review(candidate,calls):
+            try:B.bind_computed_prose(candidate,calls)
+            except B.ComputedProseError:return self.review(candidate)
+            return {'status':'repair','feedback':'Source interpretation still requires review.',
+                'retry_disposition':'retain_partial_until_new_evidence','review_stop_reason':'unresolved_source_support'}
+        def send(body):
+            state=json.loads(body['messages'][0]['content']);focus=state['focused_prose_repair'];sent.append(focus)
+            self.assertEqual(focus['scope'],'answer');self.assertNotIn('last_draft',state)
+            reply=self.edit(draft,['facts','count']);reply['repair_draft']['draft_digest']=focus['draft_digest']
+            return {'content':[{'type':'text','text':json.dumps(reply)}]},0.,True
+        out=S.tool_loop('Count organizations.','system',[],lambda u:self.fail('No new tool needed'),
+            send=send,model='scripted',max_tools=None,initial_calls=self.calls,initial_answer=draft,
+            review=review,compact_execution_state=True)
+        self.assertEqual(len(sent),1)
+        self.assertEqual(out['answer']['facts'],before['facts'])
+        self.assertEqual(out['answer']['table'],before['table'])
+        self.assertEqual(out['answer']['status'],'partial')
+        self.assertEqual(out['review_stopped'],'unresolved_source_support')
+        self.assertEqual(out['prose_repairs'][0]['changed_answer_fields'],1)
+
 
 if __name__=='__main__':unittest.main()

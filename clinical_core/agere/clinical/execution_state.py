@@ -729,7 +729,10 @@ def source_prose_repair(candidate,support,packets,coverage):
 
 def answer_prose_repair_targets(candidate,feedback):
     """Only compiler-bound top-level quantities authorize a small binding edit."""
-    if not isinstance(candidate,dict)or not isinstance(candidate.get('row_prose'),dict)or not isinstance(feedback,dict):return None
+    # Aggregate/scalar answers have the same headline/fact binding contract
+    # without entity prose. Their exact producer targets authorize only these
+    # fields; row edits still require the separate keyed-prose contract.
+    if not isinstance(candidate,dict)or not isinstance(feedback,dict):return None
     receipt=feedback.get('prose_repair')
     if (not isinstance(receipt,dict)or receipt.get('schema')!='native-prose-repair-targets/1'
             or receipt.get('draft_digest')!=digest(candidate)or feedback.get('repair_kind')!='deterministic_compiler'):
@@ -839,12 +842,13 @@ def focused_prose_state(candidate,feedback,calls):
     answer_targets=answer_prose_repair_targets(candidate,feedback)
     if answer_targets:
         editable=draft_state(candidate)['last_draft']
+        row_prose=candidate.get('row_prose')
         return {'schema':'focused-native-prose-repair/1','scope':'answer','draft_digest':digest(candidate),'keys':[],
             'targets':[],'answer_targets':[{**t,'value':editable[t['path'][0]]if len(t['path'])==1 else editable['facts'][t['path'][1]]}for t in answer_targets],
-            'native_answer_rows':len(candidate.get('table')or[]),'complete_row_prose_rows':len(candidate['row_prose'].get('rows',[])),
+            'native_answer_rows':len(candidate.get('table')or[]),'complete_row_prose_rows':len(row_prose.get('rows')or[])if isinstance(row_prose,dict)else 0,
             'retained_patient_target_count':len(feedback['prose_repair'].get('targets')or[]),
             'patch_contract':{'draft_digest':digest(candidate),'fields':[{'path':'exact located path array','bind_literals':[{'literal':'exact unbound span','binding':{'result_view':'executed view','row':'zero-based native row','column':'scalar column'}}]}]},
-            'instruction':'Bind only the located headline/facts literals using repair_draft.fields. Preserve the entire original sentence, existing placeholders, quantities, dates and uncertainty. Do not rewrite patient prose or regenerate the answer. Use exact executed scalar cells, or query their actual source/definition first; never copy draft constants into SQL. The complete patient draft and its located failures remain retained and are recompiled after this patch. These edits establish no source meaning or clinical acceptance.'}
+            'instruction':'Bind only the located headline/facts literals using repair_draft.fields. Preserve the entire original sentence, existing placeholders, quantities, dates and uncertainty. Do not rewrite other prose or regenerate the answer. Use exact executed scalar cells, or query their actual source/definition first; never copy draft constants into SQL. The complete native answer, any entity prose and all located failures remain retained and are recompiled after this patch. These edits establish no source meaning or clinical acceptance.'}
     targets=prose_repair_targets(candidate,feedback)
     if targets is None:return None
     keys=candidate['row_prose']['keys'];wanted={digest(t['key'])for t in targets}
@@ -1255,7 +1259,7 @@ def messages(request,calls,*,recent_results=(),feedback=None,candidate=None,docu
         else:state['current_review_feedback']=feedback
     if focus and focus.get('scope')=='answer':
         state['focused_prose_repair']=focus
-        state['instruction']+=' Only the producer-located headline/facts bindings are editable now; complete patient prose and all row repair obligations remain retained.'
+        state['instruction']+=' Only the producer-located headline/facts bindings are editable now; the complete native answer, any entity prose and all row repair obligations remain retained.'
     elif focus:
         # This subset is a repair view, never complete population evidence.
         from .result_assembly import _rows

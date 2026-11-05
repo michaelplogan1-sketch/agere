@@ -96,6 +96,22 @@ class Harness(unittest.TestCase):
                 with self.subTest(kind=kind),self.assertRaises(ValueError):
                     H.recovery_checkpoint(executor,self.q,checkpoint['context'],bad)
 
+    def test_compiler_rejected_answered_draft_is_resumable_without_promoting_it(self):
+        import copy
+        _,origin,checkpoint=self.recovery_checkpoint();executor=self.executor()
+        draft={**checkpoint['draft'],'status':'answered','verification':'checked'}
+        run={'answer':checkpoint['draft'],'tool_calls':origin['calls'],
+             'unfinished_draft':{'draft':draft,'draft_digest':H.digest(draft)},
+             'answer_reviews':[{'status':'repair','repair_kind':'deterministic_compiler'}]}
+        before=copy.deepcopy(run)
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']):
+            captured=H.recovery_checkpoint(executor,self.q,checkpoint['context'],run)
+            self.assertEqual(captured['draft'],{**draft,'status':'partial','verification':'unverified'})
+            self.assertEqual(captured['draft_digest'],H.digest(captured['draft']))
+            self.assertEqual(run,before)
+            run.pop('unfinished_draft');run['answer']=draft
+            self.assertIsNone(H.recovery_checkpoint(executor,self.q,checkpoint['context'],run))
+
     def test_checkpoint_capture_keeps_unaccepted_draft_and_rejects_missing_callback_origin(self):
         import copy
         actions,origin,checkpoint=self.recovery_checkpoint();executor=self.executor()
