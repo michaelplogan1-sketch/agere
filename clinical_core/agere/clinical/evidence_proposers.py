@@ -60,8 +60,15 @@ WORDS = {'one': 1, 'two': 2, 'three': 3, 'six': 6, 'twelve': 12}
 # -- question kind -------------------------------------------------------------------------------------------------
 def _not_examples(question):
     """Counts, values, tables and patient lists are not answered by ranked examples."""
-    from .analysis_graph import requested_shape
-    return requested_shape(question) is not None
+    from .analysis_graph import requested_shape,patient_list_question
+    from .patient_ids import names_a_patient
+    if requested_shape(question)is not None:return True
+    if patient_list_question(question)and not names_a_patient(question):return True
+    # A cohort-prefixed request needs its membership resolved before retrieval.
+    # This tier cannot compile those predicates or produce a complete patient
+    # comparison. Keep single-patient and unfiltered passage questions available.
+    return bool(re.match(r'^\s*(?:for|among)\s+(?:(?:the|all|received|recorded|these|those)\s+)*'
+                         r'(?:patients|members|people|individuals|beneficiaries)\b',str(question),re.I))
 
 
 def narrative_question(question, stack=None):
@@ -110,7 +117,7 @@ def named_patients(stack, question, limit=20):
 
 def population_ids(population):
     ids = population.get('patient_ids') if isinstance(population, dict) else population
-    return sorted({str(p) for p in ids}) if isinstance(ids, (list, tuple, set)) and ids else None
+    return sorted({str(p) for p in ids}) if isinstance(ids, (list, tuple, set)) else None
 
 
 def window(question, as_of):
@@ -133,11 +140,8 @@ def window(question, as_of):
 
 def cohort_node(ids, purpose):
     from .cohorts import empty
-    spec = empty()
-    atoms = [{'kind': 'patient', 'field': 'patient_id', 'op': 'eq', 'value': p} for p in (ids or [])]
-    if len(atoms) == 1: spec['all'] = atoms
-    elif atoms: spec['any'] = atoms
-    return {'id': 'population', 'operation': 'cohort', 'inputs': [], 'parameters': {'specification': spec}, 'purpose': purpose}
+    return {'id': 'population', 'operation': 'cohort', 'inputs': [],
+            'parameters': {'specification': empty(),**({'patient_ids':list(ids)}if ids is not None else{})}, 'purpose': purpose}
 
 
 def retrieve_node(query, win, purpose):
@@ -155,7 +159,7 @@ def as_of(stack):
 
 def membership(stack, ids):
     """The exact membership the graph's cohort node yields, so the preflight search shares the executed search's cache."""
-    if ids: return sorted(ids)
+    if ids is not None: return sorted(ids)
     return sorted(r[0] for r in stack.retriever.db.execute('SELECT id FROM patients'))
 
 
@@ -216,12 +220,12 @@ def expand(question, hits, limit=12):
 def retrieval_tier(stack, question, population=None, *, granite_encoder=None):
     """What do the notes/documents/charts say -> cohort -> retrieve. None when not a narrative question or nothing found."""
     if not narrative_question(question, stack): return None
+    if population_ids(population)==[]:return None
     started, cutoff = time.perf_counter(), as_of(stack)
     named = named_patients(stack, question)
     if named and len(named) <= 3 and ASSERTION.match(question) and evidence_question(question):
         return None  # "does the chart support X for P-1" is an assertion for review_tier, not a passage search
     ids = named or population_ids(population)
-    if ids is not None and len(ids) > 20: ids = None  # cohort predicates are bounded; rank across the whole roster
     win = window(question, cutoff)
     components = list(RETRIEVAL_COMPONENTS)
     members = membership(stack, ids)
@@ -245,7 +249,7 @@ def retrieval_tier(stack, question, population=None, *, granite_encoder=None):
                                                 'connected_record_ids', 'scope_sufficiency')}
         except Exception as exc:  # noqa: BLE001 - context selection is supporting detail; retrieval still answers
             context = {'status': 'failed', 'reason': f'{type(exc).__name__}: {exc}'[:300]}
-    scope = f"patient {ids[0]}" if ids and len(ids) == 1 else f"{len(ids)} selected patients" if ids else 'all observed patients'
+    scope = f"patient {ids[0]}" if ids and len(ids) == 1 else f"{len(ids)} selected patients" if ids is not None else 'all observed patients'
     nodes = [cohort_node(ids, f'Source passages are ranked within {scope}'),
              retrieve_node(query, win, 'Ranked source passages answering what the received text says (examples, not a denominator)')]
     graph = graph_of(question, nodes)
