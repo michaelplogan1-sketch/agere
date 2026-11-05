@@ -54,7 +54,7 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
                 or checkpoint['draft'].get('status')!='partial'or checkpoint['draft'].get('workflow')
                 or checkpoint['draft_digest']!=digest(checkpoint['draft'])or feedback
                 or not provenance or any(p is None for p in provenance)
-                or any('expected_error'in a for a in actions)):
+                ):
             raise ValueError('Draft recovery requires an exact partial draft, question context, source and every native origin')
         calls=origin['calls'];draft=checkpoint['draft'];roots=[draft.get('table_from_tool')]
         def bindings(value):
@@ -63,10 +63,14 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
                 for v in value.values():bindings(v)
             elif isinstance(value,list):
                 for v in value:bindings(v)
-        bindings(draft.get('row_prose'));bindings(draft.get('computed_prose'))
+        for field in ('headline','facts','row_prose','computed_prose'):bindings(draft.get(field))
         dependencies=native_result_dependencies(calls,list(dict.fromkeys(roots)))
         operational={c['result'].get('result_view')for c in calls if operational_feedback_result(c['result'])}
-        if dependencies is None or dependencies&operational or any(c['result'].get('error')for c in calls):
+        invalid_errors=any(
+            (a.get('expected_error')!=c['result'].get('error') or not native_validation_failure(c))
+            if 'expected_error'in a or c['result'].get('error') else False
+            for a,c in zip(actions,calls))
+        if dependencies is None or dependencies&operational or invalid_errors:
             raise ValueError('Draft recovery needs complete native dependencies without operational feedback as evidence')
         reviews=checkpoint['review_contexts']
         if not isinstance(reviews,list)or any(not isinstance(r,dict)or not r.get('support',{}).get('packets')for r in reviews):
@@ -92,8 +96,22 @@ def owned_recovery(actions,question=None,feedback=None,document_reviews=None,fie
 VERSION='recursive-harness/3'
 READ_ONLY={'query_sql','compose_table','read_patient_profiles','list_documents','read_document','review_documents','execute_metric','list_metrics',
            'list_analyses','describe_analysis','execute_analysis','search_documents'}
+NATIVE_VALIDATION_TOOLS={'query_sql','compose_table'}
 VOLATILE={'accounting','seconds','elapsed_s','elapsed_seconds','cache_hit','compute','new_paid_api_calls','known_api_estimate_usd',
           'estimated_cost_usd','provider_receipts','typed_checks'}
+
+
+def native_validation_failure(call):
+    """A failed pure native action has no result that a draft can cite."""
+    result=call.get('result')
+    return (call.get('name')in NATIVE_VALIDATION_TOOLS and isinstance(result,dict)
+            and set(result)=={'error'} and isinstance(result['error'],str) and bool(result['error']))
+
+
+def recovery_actions(calls):
+    """Keep every action, including exact non-evidence native validation failures."""
+    return [{**{k:copy.deepcopy(c[k])for k in ('name','input')},
+             **({'expected_error':c['result']['error']}if native_validation_failure(c)else{})}for c in calls]
 
 
 def separate_prior_review_notes(draft,notes):
@@ -138,7 +156,7 @@ def recovery_checkpoint(tools,question,context,run):
     if not needed<=set(bound):raise ValueError('Historical operational feedback is missing from the investigation')
     checkpoint={'source':source_identity(tools.stack.path),'context':copy.deepcopy(context),'draft':copy.deepcopy(draft),
                 'draft_digest':digest(draft),'review_contexts':[bound[n] for n in sorted(needed)]}
-    actions=[{k:c[k] for k in ('name','input')} for c in calls]
+    actions=recovery_actions(calls)
     with owned_recovery(actions,question,origin={'question':question,'calls':calls},checkpoint=checkpoint):pass
     return checkpoint
 
@@ -413,15 +431,15 @@ def recover_actions(tools,question,context=None):
         if action.get('name') not in READ_ONLY or not {'name','input'}<=set(action)or set(action)-{'name','input','expected_error'}:
             raise ValueError('Owned recovery accepts registered read-only actions only')
         expected=action.get('expected_error')
-        if 'expected_error'in action and (action['name']!='compose_table'or not isinstance(expected,str)or not expected):
-            raise ValueError('Expected errors require an exact recorded pure compose_table validation error')
+        if 'expected_error'in action and (action['name']not in NATIVE_VALIDATION_TOOLS or not isinstance(expected,str)or not expected):
+            raise ValueError('Expected errors require an exact recorded pure native query_sql/compose_table validation error')
         provenance=saved['call_provenance'][index]if saved.get('call_provenance')else None
         if provenance and digest([action['name'],action['input']])!=provenance['origin_action_digest']:
             raise ValueError('Recovery action changed after its origin was bound')
         if digest(tools.continuation_identity())!=guard:raise ValueError('Source/scope changed during owned recovery')
         try: value=tools({k:action[k]for k in ('name','input')})
         except (ValueError,sqlite3.Error) as exc:value={'error':str(exc)}
-        reproduced=expected is not None and isinstance(value,dict)and value.get('error')==expected
+        reproduced=expected is not None and value=={'error':expected}
         out['calls'].append({'name':action['name'],'input':action['input'],'result':value,
                              'sql':value.get('executed_query') if isinstance(value,dict) else None,'owned_run_recovery':True,
                              **({'actor_callback_id':provenance['actor_callback_id'],

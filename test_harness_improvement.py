@@ -23,6 +23,63 @@ class Executor:
 
 
 class Harness(unittest.TestCase):
+    def failed_native_checkpoint(self):
+        actions,origin,checkpoint=self.recovery_checkpoint()
+        failure={'name':'query_sql','input':{'sql':'SELECT * FROM missing_view'},
+                 'result':{'error':'no such table: missing_view'},'actor_callback_id':'failed-native-callback'}
+        origin['calls'].insert(1,failure)
+        return H.recovery_actions(origin['calls']),origin,checkpoint
+
+    def test_draft_recovery_preserves_failed_sql_and_requires_current_review(self):
+        import copy
+        actions,origin,checkpoint=self.failed_native_checkpoint();before=copy.deepcopy(origin)
+        executor=self.executor();attempts=[];original=Executor.__call__
+        def execute(e,use):
+            attempts.append(use)
+            self.assertNotIn('expected_error',use)
+            if use['input']['sql']=='SELECT * FROM missing_view':raise sqlite3.OperationalError('no such table: missing_view')
+            return original(e,use)
+        with patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']):
+            captured=H.recovery_checkpoint(executor,self.q,checkpoint['context'],{'answer':checkpoint['draft'],'tool_calls':origin['calls']})
+            with H.owned_recovery(actions,self.q,origin=origin,checkpoint=captured),patch.object(Executor,'__call__',execute):
+                out=H.recover_actions(executor,self.q,checkpoint['context'])
+        self.assertEqual(origin,before);self.assertEqual(len(attempts),3)
+        self.assertEqual(out['draft_recovery']['native_receipts_checked'],3)
+        self.assertTrue(out['calls'][1]['historical_native_error_reproduced'])
+        self.assertEqual(out['calls'][1]['result'],origin['calls'][1]['result'])
+        self.assertEqual(out['resume_draft']['verification'],'unverified')
+        self.assertTrue(out['draft_recovery']['full_current_review_required']);self.assertIsNone(out['final_answer'])
+
+    def test_failed_sql_draft_withheld_if_error_changes_or_query_now_succeeds(self):
+        original=Executor.__call__
+        for result in ({'error':'different failure'},{'columns':['value'],'rows':[[2]],'result_view':'agere_result_2'},
+                       {'error':'no such table: missing_view','result_view':'agere_result_2'}):
+            actions,origin,checkpoint=self.failed_native_checkpoint();e=self.executor();attempts=[]
+            def execute(e,use):
+                attempts.append(use)
+                return result if use['input']['sql']=='SELECT * FROM missing_view'else original(e,use)
+            with self.subTest(result=result),patch('clinical_core.agere.deliverables.answer_context.source_identity',return_value=checkpoint['source']),H.owned_recovery(actions,self.q,origin=origin,checkpoint=checkpoint),patch.object(Executor,'__call__',execute):
+                out=H.recover_actions(e,self.q,checkpoint['context'])
+            self.assertEqual(len(attempts),2);self.assertNotIn('resume_draft',out)
+            self.assertEqual(out['draft_recovery']['status'],'withheld')
+
+    def test_checkpoint_cannot_authorize_provider_failures_or_fabricated_expected_error(self):
+        for kind in ('provider','changed_error','evidence_on_failure','undeclared_error'):
+            actions,origin,checkpoint=self.failed_native_checkpoint()
+            if kind=='provider':actions[1]['name']=origin['calls'][1]['name']='review_documents'
+            elif kind=='changed_error':actions[1]['expected_error']='invented'
+            elif kind=='evidence_on_failure':origin['calls'][1]['result']['rows']=[]
+            else:actions[1].pop('expected_error')
+            with self.subTest(kind=kind),self.assertRaises(ValueError),H.owned_recovery(actions,self.q,origin=origin,checkpoint=checkpoint):pass
+
+    def test_checkpoint_requires_real_headline_and_fact_dependencies(self):
+        for field in ('headline','facts'):
+            actions,origin,checkpoint=self.recovery_checkpoint()
+            value={'template':'{x}','bindings':{'x':{'result_view':'missing_result','row':0,'column':'value'}}}
+            checkpoint['draft'][field]=value if field=='headline'else {'claim':value}
+            checkpoint['draft_digest']=H.digest(checkpoint['draft'])
+            with self.subTest(field=field),self.assertRaises(ValueError),H.owned_recovery(actions,self.q,origin=origin,checkpoint=checkpoint):pass
+
     def test_checkpoint_prefers_unfinished_compiler_draft_and_rejects_changed_identity(self):
         import copy
         _,origin,checkpoint=self.recovery_checkpoint();executor=self.executor()
@@ -553,7 +610,7 @@ class Harness(unittest.TestCase):
     def test_historical_error_metadata_cannot_bypass_a_provider_or_source_guard(self):
         e=self.executor()
         with H.owned_recovery([{'name':'review_documents','input':{},'expected_error':'provider failed'}],self.q):
-            with self.assertRaisesRegex(ValueError,'pure compose_table'):H.recover_actions(e,self.q)
+            with self.assertRaisesRegex(ValueError,'pure native'):H.recover_actions(e,self.q)
         self.assertEqual(e.executed,[])
         def change(_,use):
             e.source='changed';raise ValueError('old')

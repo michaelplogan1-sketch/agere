@@ -1532,7 +1532,7 @@ def continue_from_artifact(stack, context_id, feedback=None):
             exc=ValueError('Artifact continuation requires registered read-only native actions: '+str(call.get('name')))
             exc.planner_receipt={'new_paid_api_calls':0,'known_api_estimate_usd':0.,'api_cost_known':True}
             raise exc
-        actions.append({'name':call['name'],'input':call['input']})
+        actions.extend(H.recovery_actions([call]))
     parent_key=(context.get('cohort_transform') or {}).get('parent_context_id')
     parent=A.load(stack.path,parent_key,current=True,source_review=True) if parent_key else None
     recovery={}
