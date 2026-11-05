@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3 whole-stack delivery: aggregate repair81f8bbf5 is sealed; app8890PID61768/session99647 exposes currentANS-a8581d6090ba70320e34eb30 with92organizations/505discharges/106readmissions,1located repair and full current machine review. All52495attempts retained; no jobs/freeze. Next isolate the ordinary routing failure using the two retained spec_path proposals and request_plan validator:56.146s was spent before declining and restarting in the backstop. Determine whether the existing interpretation contract can express the requested calculations plus definition/source caveats; fix only a reproduced shared composition/binding defect, with offline proof and a named simple baseline before any paid run. Preserve strict predicate/wording bindings; no disease handler, broad bypass, new model/catalog or repeated full clinical/package campaign. Bottling optional. First-question performance, G5 and customer dependencies remain. c0ea6324 package is the recovery point.",
+  "active_work": "G3 whole-stack delivery: candidate 4d1f3a9d preserves both rejected same-question planner proposals and validation errors for the existing backstop; offline exact proof and81affected tests pass. Two broader-suite failures reproduce on unchanged baseline. Candidate is committed but not in app8890; current app remains81f8bbf5/PID61768/session99647 and last sealed aggregate delivery is unchanged. Next prepare one ordinary same-question request on the guarded candidate, preserving full source/scope/all attempts and comparing the independent505discharge/106readmission/92organization baseline. Measure actual routing, handoff, answer completion, total latency/cost and current saved-result behavior; no injected plan, repeated full clinical/package campaign or automatic retry. Mike requested an independent Claude full-stack review prompt; it is prepared at docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md but has not been sent or answered. Reconcile any returned review before further implementation. Bottling remains optional; alltenareas/G5/customer dependencies retained.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
   "owned_server_pid": 61768,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3 whole-stack delivery: aggregate repair81f8bbf5 is sealed; app8890PID61768/session99647 exposes currentANS-a8581d6090ba70320e34eb30 with92organizations/505discharges/106readmissions,1located repair and full current machine review. All52495attempts retained; no jobs/freeze. Next isolate the ordinary routing failure using the two retained spec_path proposals and request_plan validator:56.146s was spent before declining and restarting in the backstop. Determine whether the existing interpretation contract can express the requested calculations plus definition/source caveats; fix only a reproduced shared composition/binding defect, with offline proof and a named simple baseline before any paid run. Preserve strict predicate/wording bindings; no disease handler, broad bypass, new model/catalog or repeated full clinical/package campaign. Bottling optional. First-question performance, G5 and customer dependencies remain. c0ea6324 package is the recovery point.",
+  "resume_priority": "G3 whole-stack delivery: candidate 4d1f3a9d preserves both rejected same-question planner proposals and validation errors for the existing backstop; offline exact proof and81affected tests pass. Two broader-suite failures reproduce on unchanged baseline. Candidate is committed but not in app8890; current app remains81f8bbf5/PID61768/session99647 and last sealed aggregate delivery is unchanged. Next prepare one ordinary same-question request on the guarded candidate, preserving full source/scope/all attempts and comparing the independent505discharge/106readmission/92organization baseline. Measure actual routing, handoff, answer completion, total latency/cost and current saved-result behavior; no injected plan, repeated full clinical/package campaign or automatic retry. Mike requested an independent Claude full-stack review prompt; it is prepared at docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md but has not been sent or answered. Reconcile any returned review before further implementation. Bottling remains optional; alltenareas/G5/customer dependencies retained.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
@@ -30,14 +30,17 @@
   "last_observed_server_session": 2376,
   "server_status": "Current owned candidate on localhost8890; scoped aggregate repair/current saved result verified; primary8885 untouched.",
   "unsealed_work": {
-    "status": "no_unsealed_product_edits_next_G3_routing_work_pending",
-    "product_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
-    "receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
-    "product_code_in_candidate_app": true,
+    "status": "committed_candidate_offline_verified_ordinary_check_pending",
+    "product_commit": "4d1f3a9d0e4c2dd9df102e8dd13bfa97f9d8c6b7",
+    "receipt": "artifacts/agere-spec-routing-2026-11-05/handoff-proof.json",
+    "product_code_in_candidate_app": false,
     "source_frozen": false,
     "runtime_activation": false,
-    "activation_subject": "clinical_or_first_question_performance_acceptance",
-    "answer_selected": false
+    "activation_subject": "planner_handoff_candidate",
+    "answer_selected": false,
+    "affected_tests_passed": 81,
+    "baseline_reproduced_test_failures": 2,
+    "provider_calls_this_increment": 0
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -461,7 +464,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-05T12:21:03.531332+00:00",
+  "updated_at": "2026-11-05T12:45:50.567972+00:00",
   "last_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -510,5 +513,14 @@
     "receipt": "artifacts/agere-hospital-question-2026-11-05/current-continuation/receipt.json",
     "status": "terminal",
     "at": "2026-11-05T12:21:03.531332+00:00"
-  }
+  },
+  "current_review_prompt": {
+    "at": "2026-11-05T12:45:50.567972+00:00",
+    "instruction": "Mike requested a full independent Claude review of the implementation and remaining plan, including project background, purpose and saved research, and specifically asked for a review prompt. No new provider run was launched while preparing it.",
+    "prompt": "docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md",
+    "review_dispatched": false,
+    "review_received": false,
+    "build_pause_requested": false
+  },
+  "last_candidate_product_commit": "4d1f3a9d0e4c2dd9df102e8dd13bfa97f9d8c6b7"
 }
