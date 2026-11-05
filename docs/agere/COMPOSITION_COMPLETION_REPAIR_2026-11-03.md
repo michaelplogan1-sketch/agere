@@ -906,3 +906,14 @@ The result reopens through the app in7.561seconds with exact57patients/114fields
 Next inspect the four retained unresolved packet inputs and the one-patient source-to-numeric repair trace offline. Distinguish missing native/source bindings from model uncertainty before changing routing or verification; preserve the thresholds and quarantine. Target the existing source/compilation path, not another full-cohort or repeated passing campaign. First-answer performance, current package applicability, G5 and customer prerequisites remain open.
 
 Assessment: `artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json`.
+
+
+### November 5 — unchanged source repair
+
+The first response in the retained ordinary run repeated an existing recommendation exactly. The old controller rejected the no-op and requested another rewrite; the next response introduced quantities that required three SQL calls and a binding response. Source repair now treats an exact, validated no-op like the existing empty patch: retain the complete partial answer and its unresolved review. Compiler repairs and invalid identities still follow their repair paths.
+
+Exact replay of the original draft digest and response changes two controller requests to one before the replay boundary, with all 57 patients, 114 prose fields, 47 native receipts and the current review unchanged. This is a controller proof, not a new live latency or cost measurement. 149 targeted tests pass. Candidate app8890 on `f58ba3c27c48d5b18e03e7683e8531487d3c7231` reopens the saved answer unchanged and preserves planning-policy invalidation. All 52,471 provider attempts remain intact; this increment used none.
+
+The offline source audit verified all 324 received source dependencies and reproduced the three unresolved patient inputs exactly. The historical summary input still differs from the saved post-review draft; this remains an explicit reconstruction gap. No source omission or clinical fault was demonstrated. The current ordinary result remains partial with 56/60 source checks supported, and the reuse candidate remains quarantined. Current packaging, first-answer performance and independent G5/customer prerequisites remain.
+
+Receipt: `artifacts/agere-source-binding-audit-2026-11-05/delivery-receipt.json`.
