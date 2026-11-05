@@ -252,7 +252,8 @@ class SemanticWarehouse:
             'source_digest':self.meta.get('source_digest'),'semantic_version':self.meta.get('version'),
             'definitions':[{'name':name,'query':views[name],'query_digest':digest(views[name])}
                            for name in sorted(definitions)],
-            'relations':[{'name':name,'meaning':meanings.get(name),'columns':self.columns.get(name,[])}
+            'relations':[{'name':name,'meaning':meanings.get(name),'columns':self.columns.get(name,[]),
+                          'clock_roles':semantic_docs.source_clock_roles(self.columns.get(name,[]))}
                          for name in sorted(reads)],
             'scope':'Inherited definitions and source-table semantics from actual authorized SQLite reads. These describe computation and received evidence, not independent clinical support.'}
         return result
@@ -293,7 +294,8 @@ examples; do not explore tables blindly. Query only to compute the answer or to 
 the documentation (for example the exact spelling of a received label).
 Answer the question as asked: follow its literal scope (records vs patients vs visits, named fields, units, date
 clocks, inclusions/exclusions). Prefer modeled tables; use record with json_extract(payload, '$.field') for fields
-the modeled tables do not carry. Deduplicate patients. Distinguish event dates from arrival (available_date).
+the modeled tables do not carry. Deduplicate patients. Distinguish reported event, source-recorded and source-availability
+dates. available_date is reported availability, not proof of a physical warehouse receipt/ingestion timestamp.
 Do arithmetic in SQL. You have at most 8 query_sql calls; tools may return explicit errors or truncation, never
 treat either as zero.
 Snapshot semantics: the semantic layer is ONE snapshot of received evidence (see the Snapshot line). It holds records

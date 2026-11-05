@@ -280,7 +280,21 @@ CONVENTIONS = """## Canonical conventions (apply unless the question defines oth
 
 
 def _conventions_section():
-    return CONVENTIONS
+    return CONVENTIONS + '\nReceived source clock roles:\n' + json.dumps(source_clock_roles(
+        ['event_date','recorded_date','available_date']),ensure_ascii=False) + (
+        '\nAn actual physical warehouse receipt/ingestion timestamp requires its own explicitly defined received field. '
+        'Do not rename reported availability as physical receipt, infer it from file times, or invent a missing clock. '
+        'Current snapshot versions alone do not reconstruct all observations visible at an earlier cutoff; '
+        'state version-history and precision limitations separately.\n')
+
+
+def source_clock_roles(columns):
+    """Meaning supplied by this received-source model, independent of a query."""
+    roles={
+        'event_date':{'role':'reported_event_date','precision':'Use the received event_date_precision when present; do not assume sharper precision.'},
+        'recorded_date':{'role':'source_recorded_date','does_not_establish':'Physical warehouse receipt or clinical occurrence.'},
+        'available_date':{'role':'reported_source_availability','does_not_establish':'Physical warehouse receipt/ingestion timestamp. If that distinct clock is absent, keep it unknown.'}}
+    return {name:roles[name]for name in columns if name in roles}
 
 
 def _cash_reconciliation_section():
