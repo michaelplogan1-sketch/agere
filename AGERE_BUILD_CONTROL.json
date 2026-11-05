@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T01:26:47.408444+00:00",
+  "updated_at": "2026-11-05T01:52:49.405261+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -488,9 +488,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "First-answer generation remains too slow at 763.425 seconds: one Sonnet request took268.568 seconds. One combined source packet and overall coverage are undecided; no located field fault justifies repeated identical votes. Current stable packaging and independent G5 model/clinical and customer deployment prerequisites remain.",
+      "remaining_acceptance": "Current archive/install/HTTP check pending; first-answer and source-role qualification plus G5/customer prerequisites remain.",
       "engineering_current_status": "Six cached individual passes previously survived loss of54required raw trace files. They now block; allsix restored cases pass freshly recomputed mechanical lineage checks with hashed evidence. Nine scoped engineering capabilities verified with current applicability; first composition remains unqualified.",
-      "next_action": "G3: all jobs terminal/source unfrozen. Mixed-scope repair candidate27223f1d preserves producer-located headline/facts and patient failures.221tests pass/1skip. Full57patient/114field mechanical replay passes. Live model-generated headline patch took16.940s total/12.882s provider,774outputtokens,$0.614516API-equivalent; headline compiler errors cleared and all patient prose/native rows stayed exact.4patientfields remain in artifacts/agere-mixed-scope-binding-2026-11-05/live-headline/review-2.json; authentic candidate artifacts/agere-mixed-scope-binding-2026-11-05/live-headline/retained-proposal.json. All51268attempts exact. This is syntax/value preservation only: headline one was bound to a patient-specific missing_word cell and still needs domain/role review; no source acceptance or runtime promotion. Next continue the EXISTING localized binding repair with the real native executor from this retained candidate and43calls, preserving all sentences/source/provenance. Address only4located patient fields, then perform complete quantity/domain/source/question review, explicitly checking the global one binding; unknowns stay unknown. Do not regenerate57patients, hand-author repaired text/bindings, repeat unchanged source votes, lower effort globally or start training. Currentapp8890PID34112 still serves2a370739/ANS-77d9d1a8d95d73b85e6e5f9c; last seal unchanged. Alltenareas, first-answer qualification, stable packaging and independentG5/customer dependencies remain.",
+      "next_action": "G3: current package/install check is launching; product and source frozen. Native small-file copy-on-write fixes the measured447MB duplicated runtime payload (twice) on a disk with about0.76GB free.56package/recovery and206affected-runtime tests pass. Current finite applicability is8/9pending actual packaging; alltenareas retained. Monitor only artifacts/agere-current-release-2026-11-05/receipt.json; no duplicate or provider campaign. Stop ownedapp8890PID34112 for checkpoint lock; primary8885 untouched. On terminal verify current archived/currentHTTP savedcontextANS-77d9d1a8d95d73b85e6e5f9c:57patients/114fields,59/60source support, joint/global unknowns; preserve51440attempts. New52/60fastcomposition remains unqualified and must not replace savedanswer or select learnedfinalanswer. If package fails retainpartialreceipt and fix only demonstrateddefect. Then complete current applicability and checkpoint. First-answer performance/source-role qualification and independentG5/customer prerequisites remain.",
       "latest_current_release_decision": "artifacts/agere-first-composition-text-2026-11-04/acceptance/assessment.json"
     },
     {
@@ -569,11 +569,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "mixed_scope_headline_binding_mechanically_confirmed",
+    "kind": "current_package_copy_verification",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The actor can bind headline/facts quantities without replacing complete patient prose; the four located patient repairs remain available.",
-    "measured_failure_reduction": "Real model patch clears headline compilation and retains57patients/114fields exactly;5compiler fields ->4. Domain/source meaning is not yet qualified.",
+    "user_behavior_delta": "Package/runtime files use independent native filesystem copies with exact byte verification; actual installation verification is next.",
+    "measured_failure_reduction": "56packaging and206affected-runtime tests pass; small-file copy requirement previously exceeded free space. Actual package pending.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -648,16 +648,23 @@
       "artifacts/agere-mixed-scope-binding-2026-11-05/candidate-assessment.json",
       "artifacts/agere-mixed-scope-binding-2026-11-05/live-headline/receipt.json",
       "artifacts/agere-mixed-scope-binding-2026-11-05/live-headline/review-2.json",
-      "artifacts/agere-mixed-scope-binding-2026-11-05/recovery-continuation-assessment.json"
+      "artifacts/agere-mixed-scope-binding-2026-11-05/recovery-continuation-assessment.json",
+      "artifacts/agere-current-release-2026-11-05/package-copy-regressions.log",
+      "artifacts/agere-current-release-2026-11-05/affected-runtime-regressions.log",
+      "artifacts/agere-current-release-2026-11-05/acceptance/assessment-before-package.json",
+      "artifacts/agere-current-release-2026-11-05/compression-pilot.json",
+      "artifacts/agere-current-release-2026-11-05/compression-pilot-native.json",
+      "artifacts/agere-current-release-2026-11-05/storage-recovery.json",
+      "artifacts/agere-current-release-2026-11-05/storage-recovery-v2.json"
     ],
-    "remaining_gap": "Eight source packets and overall coverage remain undecided; headline binding role is unqualified; ordinary first-answer performance and current stable packaging remain open alongside independent G5/customer prerequisites.",
-    "next_action": "G3: all jobs terminal/source unfrozen. Recovery candidate2ec665f4 passes106tests and actual43step revalidation (42successes plus1exact failedSQL) in39.365s/0providers. The retained full continuation cleared4bindingfields with all57patients/114sentences exact; full run273.448s/172attempts/$2.811182924API-equivalent ended52/60supported source packets, coverage undecided, no_supported_prose_change. All51440attempts retained. Offline diagnosis confirms all29nativecolumns unchanged;14narrativefields in8packets are below-threshold unknowns with0established faults. Do not repeat unchanged votes, lower thresholds or promote this proposal over saved59/60answer. Global one still uses a patient-specific value: summary support is not reusable role qualification. Next reconcile current finite release applicability and affected current-app/package checks using existing acceptance and packaging paths, without a new full-question/provider campaign. Keep this fast-composition proposal and its source-role/model non-regression unqualified; do not select learned final-answer reuse. If current release checks expose a concrete engineering defect, repair only that defect. Currentapp8890PID34112 remains2a370739/ANS-77d9d1a8d95d73b85e6e5f9c; last seal unchanged. Alltenareas, first-answer qualification and independentG5/customer dependencies remain explicit.",
+    "remaining_gap": "Current archive/install/HTTP check pending; first-answer and source-role qualification plus G5/customer prerequisites remain.",
+    "next_action": "G3: current package/install check is launching; product and source frozen. Native small-file copy-on-write fixes the measured447MB duplicated runtime payload (twice) on a disk with about0.76GB free.56package/recovery and206affected-runtime tests pass. Current finite applicability is8/9pending actual packaging; alltenareas retained. Monitor only artifacts/agere-current-release-2026-11-05/receipt.json; no duplicate or provider campaign. Stop ownedapp8890PID34112 for checkpoint lock; primary8885 untouched. On terminal verify current archived/currentHTTP savedcontextANS-77d9d1a8d95d73b85e6e5f9c:57patients/114fields,59/60source support, joint/global unknowns; preserve51440attempts. New52/60fastcomposition remains unqualified and must not replace savedanswer or select learnedfinalanswer. If package fails retainpartialreceipt and fix only demonstrateddefect. Then complete current applicability and checkpoint. First-answer performance/source-role qualification and independentG5/customer prerequisites remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Current app verified; all jobs terminal/source unfrozen.",
+    "coordination": "Owned package launching; product/source frozen; no provider work.",
     "remaining_blockers": [
       "First-answer generation remains too slow at 763.425 seconds: one Sonnet request took268.568 seconds. One combined source packet and overall coverage are undecided; no located field fault justifies repeated identical votes. Current stable packaging and independent G5 model/clinical and customer deployment prerequisites remain."
     ],
-    "latest_progress": "43native actions revalidated; four compiler fields repaired;52/60source packets supported; unresolved qualification retained.",
+    "latest_progress": "Eight engineering requirements applicable; current portable operations awaiting actual package.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -706,8 +713,8 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T01:26:47.408444+00:00",
-    "workflow_change": "Resume an authentic unfinished draft across an exact historical failed pure-native SQL step, then repair only compiler-located fields without rebuilding the patient table.",
+    "at": "2026-11-05T01:52:49.405261+00:00",
+    "workflow_change": "Avoid physical duplication of small runtime files while retaining isolated editable installations.",
     "unsealed_work": {
       "status": "native_recovery_and_compiler_passed_source_model_qualification_incomplete",
       "product_commit": "2ec665f4c8f76091a9d3413145c53cdea668feb1",
@@ -3924,6 +3931,15 @@
       "evidence": "artifacts/agere-mixed-scope-binding-2026-11-05/recovery-continuation-assessment.json",
       "reason": "All29nativecolumns remain exact.14narrativefields have undecided favorable judgments and0established source faults. The candidate52/60support has not shown non-regression versus prior59/60; no additional model rewrite is justified by current receipts. Current principal review explicitly separates engineering delivery from model/clinical qualification.",
       "scope_impact": "Alltenacceptanceareas retained; no draft/default activation, clinical claim, threshold change or new research campaign."
+    },
+    {
+      "at": "2026-11-05T01:52:49.405261+00:00",
+      "decision": "Finish existing current-release path; do not repeat unqualified prose votes. Transparent compression preserved data but did not recover adequate usable disk space. Existing small-file copying would duplicate~893MB against~762MBavailable. Use native independent clonefile for all package files, retain portable fallback and byte verification. No new architecture/scope/provider campaign.",
+      "evidence": [
+        "artifacts/agere-current-release-2026-11-05/package-copy-regressions.log",
+        "artifacts/agere-current-release-2026-11-05/storage-recovery-v2.json",
+        "artifacts/agere-current-release-2026-11-05/acceptance/assessment-before-package.json"
+      ]
     }
   ],
   "unsealed_work": {
@@ -3955,8 +3971,16 @@
       "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
     }
   },
-  "active_jobs": [],
-  "next_action": "G3: all jobs terminal/source unfrozen. Recovery candidate2ec665f4 passes106tests and actual43step revalidation (42successes plus1exact failedSQL) in39.365s/0providers. The retained full continuation cleared4bindingfields with all57patients/114sentences exact; full run273.448s/172attempts/$2.811182924API-equivalent ended52/60supported source packets, coverage undecided, no_supported_prose_change. All51440attempts retained. Offline diagnosis confirms all29nativecolumns unchanged;14narrativefields in8packets are below-threshold unknowns with0established faults. Do not repeat unchanged votes, lower thresholds or promote this proposal over saved59/60answer. Global one still uses a patient-specific value: summary support is not reusable role qualification. Next reconcile current finite release applicability and affected current-app/package checks using existing acceptance and packaging paths, without a new full-question/provider campaign. Keep this fast-composition proposal and its source-role/model non-regression unqualified; do not select learned final-answer reuse. If current release checks expose a concrete engineering defect, repair only that defect. Currentapp8890PID34112 remains2a370739/ANS-77d9d1a8d95d73b85e6e5f9c; last seal unchanged. Alltenareas, first-answer qualification and independentG5/customer dependencies remain explicit.",
+  "active_jobs": [
+    {
+      "kind": "current_local_package",
+      "status": "launching",
+      "source_frozen": true,
+      "receipt": "artifacts/agere-current-release-2026-11-05/receipt.json",
+      "driver": "artifacts/agere-current-release-2026-11-05/build_package.py"
+    }
+  ],
+  "next_action": "G3: current package/install check is launching; product and source frozen. Native small-file copy-on-write fixes the measured447MB duplicated runtime payload (twice) on a disk with about0.76GB free.56package/recovery and206affected-runtime tests pass. Current finite applicability is8/9pending actual packaging; alltenareas retained. Monitor only artifacts/agere-current-release-2026-11-05/receipt.json; no duplicate or provider campaign. Stop ownedapp8890PID34112 for checkpoint lock; primary8885 untouched. On terminal verify current archived/currentHTTP savedcontextANS-77d9d1a8d95d73b85e6e5f9c:57patients/114fields,59/60source support, joint/global unknowns; preserve51440attempts. New52/60fastcomposition remains unqualified and must not replace savedanswer or select learnedfinalanswer. If package fails retainpartialreceipt and fix only demonstrateddefect. Then complete current applicability and checkpoint. First-answer performance/source-role qualification and independentG5/customer prerequisites remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",

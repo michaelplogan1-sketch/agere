@@ -1,7 +1,9 @@
 """Same-machine, offline checkpoints. Restores never activate or rewind provider state."""
 from contextlib import contextmanager
 from datetime import datetime, timezone
+import ctypes
 import fcntl
+from functools import lru_cache
 import hashlib
 import json
 import os
@@ -250,12 +252,29 @@ def fresh_destination(path, *sources):
     return target
 
 
+@lru_cache(maxsize=1)
+def _clone_function():
+    if sys.platform != 'darwin': return None
+    try:
+        clone = ctypes.CDLL(None, use_errno=True).clonefile
+    except (AttributeError, OSError):
+        return None
+    clone.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int)
+    clone.restype = ctypes.c_int
+    return clone
+
+
 def copy_file(source, target):
+    source, target = Path(source), Path(target)
     target.parent.mkdir(parents=True, exist_ok=True)
-    if sys.platform == 'darwin':
-        # APFS clones have independent mutable data, unlike hard links.
-        cp = subprocess.run(['/bin/cp', '-c', str(source), str(target)], capture_output=True)
-        if cp.returncode == 0: return
+    clone = _clone_function()
+    # clonefile is atomic, follows source symlinks with flags=0 and requires a
+    # fresh destination. Both files remain independently mutable. Calling it
+    # directly also avoids a subprocess for every small interpreter/library file.
+    if clone is not None and source.is_file() and clone(os.fsencode(source), os.fsencode(target), 0) == 0:
+        shutil.copystat(source, target)
+        return
+    # Other filesystems/platforms and existing destinations retain copy2 behavior.
     shutil.copy2(source, target)
 
 

@@ -46,9 +46,7 @@ def archive_files(root):
 def copy_entries(source, target, entries):
     for name, expected in entries.items():
         src, dst = Path(source) / L.safe_relative(name), Path(target) / L.safe_relative(name)
-        if expected['size'] < 1024 * 1024:
-            dst.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(src, dst)
-        else: L.copy_file(src, dst)
+        L.copy_file(src, dst)
         if L.file_entry(dst) != expected: raise ValueError('Archive copy changed: ' + name)
 
 

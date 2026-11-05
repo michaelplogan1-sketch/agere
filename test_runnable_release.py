@@ -12,6 +12,18 @@ from test_local_release import RecoveryTests
 class RunnableReleaseTests(unittest.TestCase):
     setUp = RecoveryTests.setUp
 
+    def test_small_runtime_entries_use_independent_copy_and_verify_bytes(self):
+        source, target = self.root/'runtime-source', self.root/'runtime-copy'
+        source.mkdir(); (source/'library').write_bytes(b'library contents')
+        entries = R.archive_files(source)
+        with patch.object(L, 'copy_file', wraps=L.copy_file) as copy:
+            R.copy_entries(source, target, entries)
+        copy.assert_called_once_with(source/'library', target/'library')
+        (target/'library').write_bytes(b'isolated change')
+        self.assertEqual((source/'library').read_bytes(), b'library contents')
+        with self.assertRaisesRegex(ValueError, 'Archive copy changed'):
+            R.copy_entries(source, self.root/'bad-copy', {'library': {'size': 1, 'sha256': 'wrong'}})
+
     def package(self):
         code = self.root / 'checkout'; code.mkdir()
         (code / 'engine').write_text('archived code')

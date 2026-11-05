@@ -32,6 +32,50 @@ class LedgerDependencies(unittest.TestCase):
             self.assertEqual(legacy.read_text(),'unused accounting')
 
 
+class IndependentFileCopies(unittest.TestCase):
+    @unittest.skipUnless(sys.platform == 'darwin', 'native clonefile contract')
+    def test_native_small_file_clone_is_independent_and_preserves_metadata(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source', Path(temp)/'nested/copy'
+            source.write_bytes(b'independent runtime'); source.chmod(0o751)
+            os.utime(source, ns=(1700000000123456789, 1700000000123456789))
+            before = source.stat()
+            with patch.object(L.shutil, 'copy2', side_effect=AssertionError('clone expected')), \
+                 patch.object(L.subprocess, 'run', side_effect=AssertionError('no per-file process')):
+                L.copy_file(source, target)
+            self.assertEqual(target.read_bytes(), source.read_bytes())
+            self.assertEqual(target.stat().st_mtime_ns, before.st_mtime_ns)
+            self.assertEqual(target.stat().st_mode, before.st_mode)
+            self.assertNotEqual(target.stat().st_ino, before.st_ino)
+            target.write_bytes(b'changed installation')
+            self.assertEqual(source.read_bytes(), b'independent runtime')
+            source.write_bytes(b'changed development runtime')
+            self.assertEqual(target.read_bytes(), b'changed installation')
+
+    def test_unsupported_clone_and_existing_destination_keep_copy_semantics(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, target = Path(temp)/'source', Path(temp)/'copy'
+            source.write_bytes(b'complete data')
+            for clone in (None, lambda *args: -1):
+                with self.subTest(clone=clone), patch.object(L, '_clone_function', return_value=clone):
+                    L.copy_file(source, target)
+                    self.assertEqual(target.read_bytes(), b'complete data')
+                    target.write_bytes(b'old destination')
+            L.copy_file(source, target)
+            self.assertEqual(target.read_bytes(), b'complete data')
+
+    def test_source_symlink_copies_contents_and_same_file_is_not_truncated(self):
+        with tempfile.TemporaryDirectory() as temp:
+            source, link, target = (Path(temp)/n for n in ('source', 'link', 'copy'))
+            source.write_text('runtime'); link.symlink_to(source)
+            L.copy_file(link, target)
+            self.assertFalse(target.is_symlink())
+            self.assertEqual(target.read_text(), 'runtime')
+            import shutil
+            with self.assertRaises(shutil.SameFileError): L.copy_file(source, source)
+            self.assertEqual(source.read_text(), 'runtime')
+
+
 class SavedAnswerRecovery(unittest.TestCase):
     def test_cold_copy_is_independent_and_retains_observation_clock(self):
         with tempfile.TemporaryDirectory() as temp:
