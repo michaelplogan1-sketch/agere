@@ -4,6 +4,59 @@ from unittest.mock import patch
 from clinical_core.agere.clinical import result_assembly as A,backstop_agent as B
 
 
+class TransactionForeignKeys(unittest.TestCase):
+    def source(self):
+        return {'events':{'rows':[{'event_id':'E1','subject':'A','invoice_id':'I'},
+                                  {'event_id':'E2','subject':'A','invoice_id':'I'},
+                                  {'event_id':'E3','subject':'A','invoice_id':None},
+                                  {'event_id':'E4','subject':'B','invoice_id':'I'}]},
+                'invoices':{'rows':[{'invoice_id':'I','subject':'A','currency':'USD'}]}}
+
+    def join(self,results):
+        return A.compose(results,base='events',keys=['event_id'],joins=[{
+            'result':'invoices','as':'invoice','on':{'invoice_id':'invoice_id','subject':'subject'},'mode':'one'}])
+
+    def test_foreign_key_join_retains_event_identity_and_unmatched_subjects(self):
+        results=self.source();before=copy.deepcopy(results);r=self.join(results)
+        self.assertEqual(results,before)
+        self.assertEqual([x['event_id']for x in r['rows']],['E1','E2','E3','E4'])
+        self.assertEqual([x['invoice']is not None for x in r['rows']],[True,True,False,False])
+        self.assertEqual(r['assembly']['keys'],['event_id'])
+        self.assertEqual(r['assembly']['joins'][0]['base_rows_without_match'],2)
+
+    def test_ambiguous_right_keys_and_duplicate_base_ids_still_fail(self):
+        results=self.source();results['invoices']['rows'].append({'invoice_id':'I','subject':'A','currency':'EUR'})
+        with self.assertRaisesRegex(ValueError,'not unique'):self.join(results)
+        results=self.source();results['events']['rows'].append(dict(results['events']['rows'][0]))
+        with self.assertRaisesRegex(ValueError,'not unique'):self.join(results)
+
+    def test_unavailable_foreign_columns_and_structured_join_values_fail(self):
+        results=self.source();results['events']['rows'][0]['invoice_id']={'invented':'I'}
+        with self.assertRaisesRegex(ValueError,'scalar'):self.join(results)
+        with self.assertRaisesRegex(ValueError,'base columns'):
+            A.compose(self.source(),base='events',keys=['event_id'],joins=[{
+                'result':'invoices','as':'invoice','on':{'unreceived':'invoice_id'},'mode':'one'}])
+
+    def test_registered_reconciliation_contract_is_shared_data_model_documentation(self):
+        from clinical_core.agere.clinical import financial_accounts as F,semantic_docs,analyst_context
+        contract=F.cash_input_contract();section=semantic_docs._cash_reconciliation_section()
+        self.assertIn('unlinked',json.dumps(contract['reconciliation_contract']))
+        self.assertIn(json.dumps(contract['reconciliation_contract']),section)
+        _,parts=analyst_context.partition('# Semantic model documentation\n'+section)
+        self.assertTrue(any(p['title']=='## Received cash ledger reconciliation'for p in parts))
+
+    def test_composed_value_lineage_requires_unchanged_native_values_and_producers(self):
+        results=self.source();results['joined']=self.join(results)
+        query=A.source_query(results,'joined')
+        self.assertIn('LEFT JOIN',query);self.assertIn('json_object',query)
+        changed=copy.deepcopy(results);changed['joined']['rows'][0]['invoice']['currency']='EUR'
+        self.assertIsNone(A.source_query(changed,'joined'))
+        changed=copy.deepcopy(results);changed['invoices']['rows'][0]['currency']='EUR'
+        self.assertIsNone(A.source_query(changed,'joined'))
+        changed=copy.deepcopy(results);changed['joined']['assembly']['joins'][0]['on']={'invoice_id':'subject'}
+        self.assertIsNone(A.source_query(changed,'joined'))
+
+
 class ParentIdentityRetention(unittest.TestCase):
     def issues(self,expected,actual,*,parent=None,final_parent=None,keys=None,on=None):
         parent={'patient_id':'A'}if parent is None else parent

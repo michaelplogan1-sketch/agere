@@ -283,6 +283,16 @@ def _conventions_section():
     return CONVENTIONS
 
 
+def _cash_reconciliation_section():
+    """Publish the same registered source contract to every SQL consumer."""
+    spec=json.loads((CLINICAL/'financial_account_maps.json').read_text())
+    return ('## Received cash ledger reconciliation\n'
+            +json.dumps({'native_source':'record/current_record with stream, patient_id, event_date, available_date and payload',
+                'transactions':spec['transactions'],'account_currency_source':{
+                    k:spec[k]for k in ('snapshot_stream','account_field','currency_field')},
+                'reconciliation_contract':spec['reconciliation_contract']},ensure_ascii=False))
+
+
 def build_context(columns, streams, drug_classes, snapshot, examples):
     """The documentation block of the system prompt (stable across questions for one build)."""
     stream_list = ', '.join(f'{s} ({n})' for s, n in streams)
@@ -294,6 +304,7 @@ def build_context(columns, streams, drug_classes, snapshot, examples):
         _concepts_section(concept_library(), drug_classes),
         _definitions_section(),
         _conventions_section(),
+        _cash_reconciliation_section(),
         _metrics_section(),
         _measures_section(),
         _examples_section(examples),

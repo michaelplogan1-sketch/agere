@@ -105,5 +105,14 @@
     "submission_record_id",
     "original_submission_record_id",
     "original_adjudication_record_id"
-  ]
+  ],
+  "reconciliation_contract": {
+    "universe": "For a transaction reconciliation, begin with every received transaction record in the inherited patient population and receipt cutoff. Claim/account summaries contain linked records only and cannot establish the absence of unlinked transactions.",
+    "link": "Keep the transaction record_id as the unique row key. Left-link explicit entity IDs; require matching subject/account for accepted attribution. Retain absent, ambiguous and conflicting links as separate unresolved categories.",
+    "cohort_partition": "Partition linked transactions by the requested entity cohort and retain transactions linked to another received cohort plus unlinked/invalid-link transactions. A service-date cohort does not authorize discarding older or undated cash posting records with unresolved service attribution.",
+    "clocks": "Keep transaction event and receipt clocks distinct. Keep unknown clocks explicit; never derive a missing event date from receipt date. Apply a posting-period filter only when the request actually specifies one.",
+    "currency": "Use explicit transaction currency or the registered same-subject/account currency binding. Missing or conflicting currency remains unknown. Never add currencies together or label unbound cents USD.",
+    "closure": "Verify that the disjoint categories contain every selected source record_id exactly once. Reconcile counts, known amounts and missing-amount counts per currency; retain negative allocations. Arithmetic ties alone do not establish source completeness.",
+    "execution": "Use the existing query_sql and compose_table primitives. A left composition retains the complete transaction base and makes unmatched entity links explicit; native measures preserve grain, domain, population and null policy. Do not request another model to calculate these identities."
+  }
 }

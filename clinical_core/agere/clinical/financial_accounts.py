@@ -42,6 +42,8 @@ def cash_source_issues(question,answer,calls):
     if not root:return []
     by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')and not c['result'].get('error')}
     if root not in by:return []
+    if not explicit and not any(re.search(r'(?:^|[^a-z])cash(?:[^a-z]|$)',str(c),re.I)
+            and re.search(r'cents|amount|dollar|usd',str(c),re.I)for c in by[root]['result'].get('columns')or[]):return []
     from .backstop_agent import native_result_dependencies
     needed=native_result_dependencies(calls,[root]);sources={};schema={};physical=set()
     for name in needed:
@@ -54,6 +56,10 @@ def cash_source_issues(question,answer,calls):
         for definition in contracts.get('definitions')or[]:sources[definition['name']]=definition['query']
         if call.get('name')=='query_sql':
             sources[name]=out.get('declared_executed_query')or out.get('executed_query')or(call.get('input')or{}).get('sql')
+        elif call.get('name')=='compose_table':
+            from .result_assembly import source_query
+            query=source_query({key:c['result']for key,c in by.items()},name)
+            if query:sources[name]=query
     issue='Cash was requested, but no returned monetary value is bound to a received payer-cash source. Adjudication paid_cents and paid_date describe adjudication, not cash receipts. Use the registered financial account transaction map: record/current_record stream payer_cash_allocations, payload allocated_cents, with its receipt/event clocks and account currency; preserve the requested population. A cash label or unrelated cash query is not a binding.'
     if not sources.get(root):return [issue]
     from sqlglot import exp
@@ -156,6 +162,7 @@ def cash_input_contract():
         'currency_account_source':{k:m[k]for k in('snapshot_stream','account_field','currency_field')},
         'scope':'Preserve the population resolved by the existing decision context and original question, including its registered living-patient default when applicable. This cash source map does not broaden or narrow that population.',
         'coverage':'Counted payer-claim adjudication and received provider-account cash can cover different claims and organizations. Their difference does not establish a receivable, settlement gap or savings.',
+        'reconciliation_contract':m['reconciliation_contract'],
         'limits':LIMITS}
 
 

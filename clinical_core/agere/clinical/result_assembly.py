@@ -156,6 +156,48 @@ def _rows(result):
     return columns,output
 
 
+def source_query(results,view):
+    """Expose value ancestry of an intact native scalar left composition.
+
+    This is a lineage graph for source-role checks, never an alternate executor
+    or proof of a calculation's scope. Collections keep their existing separate
+    retention contracts. Unknown/changed producers cannot supply this graph.
+    """
+    result=results.get(view)or{};a=result.get('assembly')or{}
+    base=a.get('base_result_view');joins=a.get('joins',[])
+    if (a.get('schema')!=VERSION or base not in results or
+        a.get('base_result_digest')!=digest(results[base]) or
+        any(j.get('mode')!='one'or j.get('domain')is not None or j.get('items_from')is not None or
+            j.get('result_view')not in results or j.get('source_result_digest')!=digest(results[j['result_view']])for j in joins)):
+        return None
+    def ident(s):return '"'+s.replace('"','""')+'"'
+    def literal(s):return "'"+s.replace("'","''")+"'"
+    base_columns,_=_rows(results[base]);columns,_=_rows(result)
+    renames=a.get('column_renames')or{};out=[];sql=' FROM '+ident(base)+' AS b'
+    try:
+        expected=compose(results,base=base,keys=a['keys'],
+            base_columns=[c for c in base_columns if renames.get(c,c)in columns],
+            joins=[{'result':j['result_view'],'as':j['as'],'on':j['on'],'mode':'one',
+                    'columns':j['selected_columns']}for j in joins],rename_columns=renames)
+        if digest([expected['columns'],expected['rows']])!=digest([columns,result['rows']]):return None
+    except (ValueError,KeyError,TypeError):return None
+    # A projection may omit base fields; a new field must have a real producer.
+    for column in base_columns:
+        target=renames.get(column,column)
+        if target in columns:out.append('b.'+ident(column)+' AS '+ident(target))
+    for i,j in enumerate(joins):
+        alias='j'+str(i);on=j.get('on')or{};selected=j.get('selected_columns')or[]
+        if not on or not selected:return None
+        pairs=[('b.'+ident(left),alias+'.'+ident(right))for left,right in on.items()]
+        sql+=' LEFT JOIN '+ident(j['result_view'])+' AS '+alias+' ON '+' AND '.join(
+            left+'='+right+' AND typeof('+left+')=typeof('+right+')'for left,right in pairs)
+        obj='json_object('+','.join(literal(c)+','+alias+'.'+ident(c)for c in selected)+')'
+        out.append('CASE WHEN '+pairs[0][1]+' IS NULL THEN NULL ELSE '+obj+' END AS '+ident(renames.get(j['as'],j['as'])))
+    if set(columns)!={renames.get(c,c)for c in base_columns if renames.get(c,c)in columns}|{renames.get(j['as'],j['as'])for j in joins}:
+        return None
+    return 'SELECT '+','.join(out)+sql
+
+
 def compose(results,*,base,keys,joins=None,base_columns=None,rename_columns=None):
     if base not in results:raise ValueError('base must name an executed result_view')
     if not isinstance(keys,list)or not keys or len(keys)!=len(set(keys))or not all(isinstance(k,str)for k in keys):
@@ -187,8 +229,12 @@ def compose(results,*,base,keys,joins=None,base_columns=None,rename_columns=None
         if view not in results:raise ValueError('Join must name an executed result_view')
         if not isinstance(alias,str)or not alias or alias in columns:raise ValueError('Join alias must be a new nonempty field')
         if mode not in ('one','collect'):raise ValueError('Use one for proven unique rows, collect for every matching source row')
-        if not isinstance(on,dict)or not on or not set(on)<=set(keys)or not all(isinstance(v,str)for v in on.values()):
-            raise ValueError('on maps received base key columns to received join columns')
+        # Row identity and a foreign relation are different contracts. Several
+        # source transactions may refer to one invoice/account; a missing
+        # foreign key must remain an unmatched row, not erase the transaction.
+        # Base uniqueness still uses keys, and one still requires a unique RHS.
+        if not isinstance(on,dict)or not on or not set(on)<=set(columns)or not all(isinstance(v,str)for v in on.values()):
+            raise ValueError('on maps received base columns to received join columns')
         right_columns,right=_rows(results[view]);left_names=list(on);right_names=[on[k]for k in left_names]
         source_rows=len(right);domain=join.get('domain')
         if domain is not None:
