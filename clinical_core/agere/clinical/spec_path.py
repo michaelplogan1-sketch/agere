@@ -1,9 +1,9 @@
 """The spec path: the main path after reuse (docs/agere/QUESTION_SPEC.md). The cascade tier `spec_path` calls propose().
 
-  1. spec_fill.fill: the grammar, System One slot filling and one Haiku spec call, in parallel; the first valid spec, with the choice rules
-     for disagreeing readings.
+  1. spec_fill.fill: grammar and System One slot filling by default. The frontier spec writer is available through explicit
+     AGERE_SPEC_FILLERS configuration for comparative qualification; it is not a second automatic frontier planner.
   2. spec_verify.verify: System One checks the spec part by part against the question (the grammar's own spec is deterministic and not re-judged).
-     A failed part is repaired once by the Haiku filler; a part that still fails leaves the question unresolved for this path.
+     A failed part declines to the investigator; an explicitly enabled frontier spec writer may repair it once.
   3. The spec is executed once inside the tier and passed through answer_checks (decision context and the other mandatory checks; a spec-verified
      answer needs no result-summary cross-check), then returned as an ordinary typed contract, which shared_planner executes, caches and
      presents with answer['read_back'].
@@ -147,6 +147,10 @@ def propose(c):
         verification = filled.get('candidate', {}).get('verification') or verify_spec(c, c.question, c.catalog, filled['plan'], ledger=ledger)
         c.spend(verification['calls'], verification['cost_usd'])
         if verification['failed']:
+            if 'haiku'not in fillers:
+                c.reject('spec_path',['The native spec did not pass its question/source checks. '
+                    'Continue the original question through the investigator; frontier spec repair requires explicit qualification.'])
+                return None
             review = spec_verify.feedback(verification)
             try:
                 again = spec_fill.repair(c.stack, c.catalog, c.question, filled['plan'], review, population=c.population, ledger=ledger)

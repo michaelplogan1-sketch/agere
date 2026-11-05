@@ -66,7 +66,11 @@ def env_float(name, default):
 
 def enabled_fillers():
     raw = os.environ.get('AGERE_SPEC_FILLERS', '').strip()
-    names = tuple(x.strip() for x in raw.split(',') if x.strip()) if raw else FILLERS
+    # Repeated ordinary runs bought a second frontier planner without a valid
+    # plan. Keep grammar and typed System One choices on the automatic path;
+    # the investigator already owns unresolved frontier reasoning. The spec
+    # writer remains available for explicit comparative qualification.
+    names = tuple(x.strip() for x in raw.split(',') if x.strip()) if raw else ('grammar','s1_slots')
     return tuple(n for n in FILLERS if n in names)
 
 

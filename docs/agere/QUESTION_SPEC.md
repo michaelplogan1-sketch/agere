@@ -1,9 +1,17 @@
 # Question spec (v1, 2026-10-23)
 
-Every question becomes a typed **question spec** before anything runs. The spec is the existing typed request contract
+On this path a question becomes a typed **question spec** before execution. The spec is the existing typed request contract
 (`request_plan`: `source`, `select`, `where`, `group_by`, `order_by`, `limit`, `unresolved`, optional `analyses`), with three
 additions. One compiler turns a spec into SQL; the decision context (`decision_context.py`) is built into that compiler.
-LLMs write specs, never SQL, on the main path.
+The spec compiler executes admitted plans. A declined question retains its original scope and can continue through the
+frontier investigator's native tools and source checks.
+
+Current policy (2026-11-05): automatic spec filling uses grammar and System One slots. Frontier spec writing and its
+repair remain available through explicit `AGERE_SPEC_FILLERS` configuration for comparative qualification. An ordinary
+pilot spent 26.016 seconds on two frontier spec attempts that produced no valid plan before the investigator answered.
+Failed native spec verification therefore declines to that investigator instead of automatically buying another
+frontier spec writer. The earlier design and measurements below remain historical evidence; this policy does not
+establish general latency or accuracy superiority.
 
 ## Why
 
