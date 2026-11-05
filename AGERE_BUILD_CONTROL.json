@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T07:33:47.101150+00:00",
+  "updated_at": "2026-11-05T08:12:32.351591+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -528,9 +528,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "First-answer performance remains unqualified. The isolated source repair leaves2uncertain fields; original saved answer retains59/60source support and undecided coverage. Current broader release compatibility and independent G5/customer dependencies remain; no clinical or whole-product readiness claim.",
+      "remaining_acceptance": "First-answer performance remains unqualified. Current reuse is cheaper/faster but has four unresolved source packets/five below-threshold fields and undecided global coverage; automatic quarantine remains in force. Current e0460b29 archive/install is unassessed. Independent G5/model/clinical and customer prerequisites remain.",
       "engineering_current_status": "Scoped context representation and source-comparison checks pass; candidate app preserves saved57patients/114fields/47actions and policy invalidation. Full ordinary performance unqualified.",
-      "next_action": "G3: source-context delivery e0460b29 is sealed and candidate app8890 PID46662/session26561 is ready; all request jobs terminal. Actual typed dispatch preserves116unaffected keys. Complete repair input35.2307% smaller; matched scoped checks improved3/8 to6/8 supported and10 to2 unresolved fields, but generation plus scoped review was24.43% cheaper and64.47% slower. No whole-question performance promotion. Next inspect the original19-field compiler failure and existing47-action learned candidate offline: determine whether already-observed native scalar work can be made available before composition through existing native-prefix qualification, preserving cost-regression/quarantine and source guards. Prove exact eligibility and request-boundary benefit before another generation or full question. All52314attempts retained; b533f616 package is recovery point. Alltenareas, undecided coverage, G5 and customer dependencies remain.",
+      "next_action": "G3: all request jobs terminal; source unfrozen, app8890 PID46662/session26561 ready on e0460b29. Current ordinary reuse reexecuted47native actions, retained57patients/114fields and exact native values, and changed only2prose fields for one patient. Server telemetry450.5423s/$1.193460616API-equivalent/157attempts versus997.8402s/$10.315960484/369; warm changed-release observation, not first-use or quality qualification. Current source review56/60supported, fourunresolved packets/fivebelow-threshold fields and globalcoverageundecided; no confirmed fieldfault. Existing controller automatically quarantined candidate68e05e6 after current review; do not override or reselect it. All52471attempts retained. Next inspect the four retained unresolved packet inputs and the single-patient source-to-numeric repair trace offline. Compare exact received evidence/native contracts and current versus prior packet dependencies, then determine whether any missing input/binding or unnecessary serial repair work is actually demonstrated. Use existing typed assertion/state/compilation paths for a narrowly evidenced repair; do not lower thresholds, repeat unchanged model votes, or rerun the full question merely to obtain a passing judgment. Current read-only applicability covers8/9engineering predicates across alltenareas; current archive/install unassessed, b533f616 remains recovery. First-answer performance, G5 and customer dependencies remain. Before any further large execution, check available disk space; preserve source, saved answers and all attempts. Latest assessment: artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json.",
       "latest_current_release_decision": "artifacts/agere-current-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -609,11 +609,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "scoped_engineering_delivery",
+    "kind": "completed_candidate_measurement_not_promoted",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Exact repeated source contexts are shared in localized repair input without deleting source information; actual typed dispatch preserves unaffected patient request identities.",
-    "measured_failure_reduction": "Full repair message559549->362416bytes with exact restoration; retained source comparison3/8->6/8supported,10->2unresolved fields; no whole-question speedup.",
+    "user_behavior_delta": "Ordinary question automatically reexecuted47validated actions and completed current review; saved57patient/114field result reopens. Current uncertainty triggers existing quarantine.",
+    "measured_failure_reduction": "Observed server telemetry54.85%lower and API-equivalent cost88.43%lower; current source support56/60 versus59/60 means no quality-qualified promotion.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -781,18 +781,18 @@
       "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-source-comparison/receipt.json",
       "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-comparison.json",
       "artifacts/agere-repaired-ordinary-2026-11-05/context-app/check.json",
-      "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-delivery-receipt.json"
+      "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-delivery-receipt.json",
+      "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json"
     ],
-    "remaining_gap": "First-answer performance remains unqualified. The isolated source repair leaves2uncertain fields; original saved answer retains59/60source support and undecided coverage. Current broader release compatibility and independent G5/customer dependencies remain; no clinical or whole-product readiness claim.",
-    "next_action": "G3: source-context delivery e0460b29 is sealed and candidate app8890 PID46662/session26561 is ready; all request jobs terminal. Actual typed dispatch preserves116unaffected keys. Complete repair input35.2307% smaller; matched scoped checks improved3/8 to6/8 supported and10 to2 unresolved fields, but generation plus scoped review was24.43% cheaper and64.47% slower. No whole-question performance promotion. Next inspect the original19-field compiler failure and existing47-action learned candidate offline: determine whether already-observed native scalar work can be made available before composition through existing native-prefix qualification, preserving cost-regression/quarantine and source guards. Prove exact eligibility and request-boundary benefit before another generation or full question. All52314attempts retained; b533f616 package is recovery point. Alltenareas, undecided coverage, G5 and customer dependencies remain.",
+    "remaining_gap": "First-answer performance remains unqualified. Current reuse is cheaper/faster but has four unresolved source packets/five below-threshold fields and undecided global coverage; automatic quarantine remains in force. Current e0460b29 archive/install is unassessed. Independent G5/model/clinical and customer prerequisites remain.",
+    "next_action": "G3: all request jobs terminal; source unfrozen, app8890 PID46662/session26561 ready on e0460b29. Current ordinary reuse reexecuted47native actions, retained57patients/114fields and exact native values, and changed only2prose fields for one patient. Server telemetry450.5423s/$1.193460616API-equivalent/157attempts versus997.8402s/$10.315960484/369; warm changed-release observation, not first-use or quality qualification. Current source review56/60supported, fourunresolved packets/fivebelow-threshold fields and globalcoverageundecided; no confirmed fieldfault. Existing controller automatically quarantined candidate68e05e6 after current review; do not override or reselect it. All52471attempts retained. Next inspect the four retained unresolved packet inputs and the single-patient source-to-numeric repair trace offline. Compare exact received evidence/native contracts and current versus prior packet dependencies, then determine whether any missing input/binding or unnecessary serial repair work is actually demonstrated. Use existing typed assertion/state/compilation paths for a narrowly evidenced repair; do not lower thresholds, repeat unchanged model votes, or rerun the full question merely to obtain a passing judgment. Current read-only applicability covers8/9engineering predicates across alltenareas; current archive/install unassessed, b533f616 remains recovery. First-answer performance, G5 and customer dependencies remain. Before any further large execution, check available disk space; preserve source, saved answers and all attempts. Latest assessment: artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Source/product frozen for one current ordinary confirmation.",
+    "coordination": "All jobs terminal; source unfrozen. Existing current app only.",
     "remaining_blockers": [
-      "First-answer performance remains unqualified; latest ordinary server time997.941s/$10.315960484 API-equivalent is worse. Joint source support and global coverage remain undecided.",
-      "The current candidate source fix has offline workflow and HTTP compatibility evidence; the prior b533f616 package remains recovery evidence, not a new archive of69359649.",
-      "Independent clinical/model/outcome qualification and customer prerequisites remain."
+      "First-answer performance remains unqualified. Current reuse is cheaper/faster but has four unresolved source packets/five below-threshold fields and undecided global coverage; automatic quarantine remains in force. Current e0460b29 archive/install is unassessed. Independent G5/model/clinical and customer prerequisites remain.",
+      "Storage has approximately600MB free after saving the current result; preserve all records and check capacity before another large run."
     ],
-    "latest_progress": "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-delivery-receipt.json",
+    "latest_progress": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -822,8 +822,8 @@
       "integration_commit": "e1c4ab28b8a130dbd433f1cbaaaccae6fc60a5d8"
     },
     "finite_completion": {
-      "receipt": "artifacts/agere-current-release-2026-11-05/acceptance/assessment.json",
-      "engineering_passed": 9,
+      "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/current-applicability/assessment.json",
+      "engineering_passed": 8,
       "engineering_total": 9,
       "scope_areas": [
         1,
@@ -838,27 +838,32 @@
         10
       ],
       "full_mvp_acceptance": false,
-      "applicability": "Last packaged nine scoped engineering predicates; current source candidate is separately qualified by artifacts/agere-repaired-ordinary-2026-11-05/patient-scope-delivery-receipt.json. Not whole-MVP acceptance."
+      "applicability": "Read-only scoped current compatibility; current archive/install unassessed. Prior b533f616 package remains verified recovery. Not a product completion score."
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T07:33:47.101150+00:00",
-    "workflow_change": "Exact repeated source contexts are shared in localized repair input without deleting source information; actual typed dispatch preserves unaffected patient request identities.",
+    "at": "2026-11-05T08:12:32.351591+00:00",
+    "workflow_change": "Automatic current reuse and partial-result reopening exercised; no product-code change or new clinical acceptance.",
     "unsealed_work": {
-      "status": "first_answer_performance_unqualified",
+      "status": "first_answer_performance_and_current_review_unqualified",
       "product_commit": "e0460b2922fcc3b8da76f4a5414c526344077377",
-      "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/assessment.json",
-      "candidate_followup_receipt": "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-delivery-receipt.json",
+      "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
+      "candidate_followup_receipt": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
       "runtime_activation": false,
-      "activation_subject": "whole_question_performance_or_clinical_acceptance",
+      "activation_subject": "clinical_or_whole_question_performance_acceptance",
       "product_code_in_candidate_app": true,
-      "answer_selected": false
+      "answer_selected": false,
+      "reuse_candidate_quarantined": true
     },
     "bottling_assessment": {
-      "native_actions_reexecuted": 32,
-      "current_candidate_status": "no_new_candidate_from_unresolved_source_answer",
+      "native_actions_reexecuted": 47,
+      "additional_native_actions": 3,
+      "current_candidate_status": "automatically_quarantined_after_current_review",
       "final_answer_reuse": false,
-      "total_savings_qualified": false
+      "reviewable_draft_seeded_current_review": true,
+      "total_savings_qualified": false,
+      "api_equivalent_reduction_observed_pct": 88.43093071313088,
+      "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json"
     },
     "owner_review": {
       "at": "2026-10-29T11:48:18.601324+00:00",
@@ -936,7 +941,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Duplicate source text in repair prompts and unrelated patient verification identity churn.",
+    "measured_failure_removed": "No new product defect fixed in this measurement. Native execution, all-attempt accounting and quarantine behavior verified.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -1060,7 +1065,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-05T07:33:47.101150+00:00"
+    "updated_at": "2026-11-05T08:12:32.351591+00:00"
   },
   "decisions": [
     {
@@ -4206,17 +4211,26 @@
       "reason": "Source review supported6/8 vs3/8 and fewer unresolved fields at lower measured API-equivalent cost, but generation/review elapsed time increased. Current code restores all contexts exactly and passes227 regressions.",
       "scope_impact": "All ten acceptance areas retained; no threshold/model/clinical rule changed; candidate app only, prior package retained.",
       "evidence": "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-delivery-receipt.json"
+    },
+    {
+      "at": "2026-11-05T08:12:32.351591+00:00",
+      "gate": "G3",
+      "decision": "Stop further paid repetitions of the current proposal; inspect existing unresolved inputs and serial binding repair before another change.",
+      "basis": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
+      "reason": "Native qualification and automatic replay passed, but the full current review leaves fivebelow-threshold fields and quarantines the candidate. Lower API cost alone does not justify selecting it or calling the MVP complete.",
+      "scope_impact": "No acceptance area removed; alltenareas, first-use performance, current packaging, G5/customer dependencies retained. No architecture rewrite, newmodel or threshold relaxation."
     }
   ],
   "unsealed_work": {
-    "status": "first_answer_performance_unqualified",
+    "status": "first_answer_performance_and_current_review_unqualified",
     "product_commit": "e0460b2922fcc3b8da76f4a5414c526344077377",
-    "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/assessment.json",
-    "candidate_followup_receipt": "artifacts/agere-repaired-ordinary-2026-11-05/repair-context-delivery-receipt.json",
+    "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
+    "candidate_followup_receipt": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
     "runtime_activation": false,
-    "activation_subject": "whole_question_performance_or_clinical_acceptance",
+    "activation_subject": "clinical_or_whole_question_performance_acceptance",
     "product_code_in_candidate_app": true,
-    "answer_selected": false
+    "answer_selected": false,
+    "reuse_candidate_quarantined": true
   },
   "current_visual_request": {
     "status": "completed",
@@ -4250,7 +4264,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: source-context delivery e0460b29 is sealed and candidate app8890 PID46662/session26561 is ready; all request jobs terminal. Actual typed dispatch preserves116unaffected keys. Complete repair input35.2307% smaller; matched scoped checks improved3/8 to6/8 supported and10 to2 unresolved fields, but generation plus scoped review was24.43% cheaper and64.47% slower. No whole-question performance promotion. Next inspect the original19-field compiler failure and existing47-action learned candidate offline: determine whether already-observed native scalar work can be made available before composition through existing native-prefix qualification, preserving cost-regression/quarantine and source guards. Prove exact eligibility and request-boundary benefit before another generation or full question. All52314attempts retained; b533f616 package is recovery point. Alltenareas, undecided coverage, G5 and customer dependencies remain.",
+  "next_action": "G3: all request jobs terminal; source unfrozen, app8890 PID46662/session26561 ready on e0460b29. Current ordinary reuse reexecuted47native actions, retained57patients/114fields and exact native values, and changed only2prose fields for one patient. Server telemetry450.5423s/$1.193460616API-equivalent/157attempts versus997.8402s/$10.315960484/369; warm changed-release observation, not first-use or quality qualification. Current source review56/60supported, fourunresolved packets/fivebelow-threshold fields and globalcoverageundecided; no confirmed fieldfault. Existing controller automatically quarantined candidate68e05e6 after current review; do not override or reselect it. All52471attempts retained. Next inspect the four retained unresolved packet inputs and the single-patient source-to-numeric repair trace offline. Compare exact received evidence/native contracts and current versus prior packet dependencies, then determine whether any missing input/binding or unnecessary serial repair work is actually demonstrated. Use existing typed assertion/state/compilation paths for a narrowly evidenced repair; do not lower thresholds, repeat unchanged model votes, or rerun the full question merely to obtain a passing judgment. Current read-only applicability covers8/9engineering predicates across alltenareas; current archive/install unassessed, b533f616 remains recovery. First-answer performance, G5 and customer dependencies remain. Before any further large execution, check available disk space; preserve source, saved answers and all attempts. Latest assessment: artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4259,7 +4273,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-repaired-ordinary-2026-11-05/patient-scope-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -4342,10 +4356,10 @@
   "owned_server_pid": 46662,
   "owned_server_session": 26561,
   "last_run_observation": {
-    "at": "2026-11-05T06:29:50.689614+00:00",
-    "status": "saved_result_recovered_client_delivery_interrupted",
-    "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/ordinary/run-receipt.json",
-    "assessment": "artifacts/agere-repaired-ordinary-2026-11-05/assessment.json",
+    "at": "2026-11-05T08:12:32.351591+00:00",
+    "status": "returned_partial_current_candidate_quarantined",
+    "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/run-receipt.json",
+    "assessment": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
     "source_frozen": false
   }
 }
