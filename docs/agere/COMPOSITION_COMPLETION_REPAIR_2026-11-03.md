@@ -1,5 +1,15 @@
 # Composition repair and retained-evidence comparison
 
+## November 5: headline repair preserves the complete patient draft
+
+The existing compiler now retains located headline/facts failures alongside patient-field failures. The existing repair state first permits only exact-draft, exact-path literal bindings for those global fields; patient text remains immutable. Its normal patient-field repair then resumes. Native columns, source/quantity checks and complete review are preserved. This does not authorize rewriting claims or accepting a numerically equal value from an unrelated domain.
+
+The real retained workflow proves that a 461-byte mechanical test patch can clear the headline error without changing any of 57 patients or 114 fields; all four patient targets survive exactly. A subsequent **model-generated** patch used 774 output tokens and took 12.882 provider seconds (16.940 seconds including preparation/accounting), costing $0.614516 API-equivalent. It clears headline compilation while preserving all patient prose. The large retained input still dominates cost; no cost-efficiency qualification is inferred. Tests pass 221 cases, with one opt-in live case skipped.
+
+The candidate remains unaccepted. Four patient fields need bindings, and the headline literal `one` was bound by the model to a patient-specific `missing_word` cell. Value equality alone does not establish that global threshold role; the existing domain/source review must assess it. No owner-authored bindings or prose were used in the live patch, no source vote ran, and the runtime answer was not replaced. All 51,268 attempts remain accounted for.
+
+Next: continue the existing native executor and localized repair from the retained candidate, then perform complete domain/source/question review, preserving explicit unknowns. Do not regenerate the full patient answer or treat the mechanical patch as semantic qualification. Candidate `27223f1d` is staged; the running app and last sealed receipt remain unchanged. Evidence: `artifacts/agere-mixed-scope-binding-2026-11-05/candidate-assessment.json`, its workflow proof, live headline receipt and regression logs.
+
 ## November 5: structured recovery completes membership; five quantity fields remain
 
 The existing tool loop now retains the typed unfinished-composition review after invalid JSON or an unexecuted invocation. Complete rejected output remains inert recovery material even if a later response is incomplete. A draft-bound schema derives all entity keys from the complete executed table; an additional native guard blocks omissions, duplicate/foreign keys, unequal fields and attempts to overwrite native columns. This does not certify the meaning of the prose. The full compiler and source review remain required.
