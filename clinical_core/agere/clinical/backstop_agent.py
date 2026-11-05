@@ -294,7 +294,12 @@ has already declined this question, so it is yours to answer completely and corr
   Outside row prose, a verified exact quotation attributed to its record ID may keep observed measurements verbatim.
   Do not turn a quoted observation into a population total or a current clinical fact.
   Non-numeric prose remains a string. Clinical meaning still requires review; bindings do not establish appropriateness.
-Return ONLY one JSON object, no markdown:
+Return ONLY one JSON object, no markdown. The base shape below is not a closed list of fields.
+When individual explanations or proposed review actions are requested, also include the top-level row_prose object
+defined above, with every native entity and every requested narrative field. table_from_tool copies the native evidence;
+it does not replace those interpretations. A generic instruction to inspect findings is not the requested explanation.
+The headline/facts strings below describe their purpose. Quantitative text must instead use the template/bindings
+objects defined above, including category counts and number words in the headline. Keep genuine unknowns explicit.
 {{"status":"answered|partial|unsupported","answer_type":"count|patient_set|value|table|note|unsupported",
 "headline":"one or two sentences that state the complete answer with every requested fact and number",
 "count":null,"value":null,"unit":null,"table":null,"table_from_tool":null,"patient_ids":null,
