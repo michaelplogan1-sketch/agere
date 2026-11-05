@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T02:27:01.105112+00:00",
+  "updated_at": "2026-11-05T02:46:54.457635+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -490,15 +490,19 @@
         {
           "path": "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json",
           "sha256": "1928418ed01ca5cddd13ea6b0a81f2d0ec1e10e79798848bcdfc198fe7c2c518"
+        },
+        {
+          "path": "artifacts/agere-assembly-timing-2026-11-05/delivery-receipt.json",
+          "sha256": "9fbb05eb9b0a53e0ce95ceb64c5c866d25add229454ba9c6b2e0b4802e78954f"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Timing-only assembly hashes alter the global verification input despite unchanged clinical evidence; measured cache/request behavior and a guarded correction remain. Current-policy first-answer/source-role/model qualification and independent G5/customer dependencies remain; savedanswer is intentionally invalidated for new work.",
+      "remaining_acceptance": "Current-policy first-answer/source-role qualification and performance remain incomplete. The saved59/60answer remains intentionally invalidated for new work. This proof establishes evidence/request identity, not a live cost reduction, new source acceptance or selection of the52/60candidate. IndependentG5 and customer prerequisites remain.",
       "engineering_current_status": "Current scoped local release9/9 and package/inspection verified; current-policy first-answer quality/performance remains incomplete.",
-      "next_action": "G3: current package7e1f3612 is sealed; all jobs terminal/source unfrozen. App8890PID38036/session22307 ready.262checks and actual checkpoint/archive/isolated install/HTTP passed; scoped engineering9/9/alltenareas retained, not fullMVP. Saved57patients/114fields and59/60source support remain inspectable with intentional policy invalidation; no restamp. Follow-up current compiler comparison passed;43nativeactions reexecuted in49.427s/0providers, preserving exact table/prose/computedproofs and all51440attempts. A concrete remaining performance cause is isolated: all57patient packets are exact, but global summary text changes only at four compose_table native_bindings.result_digest values; each comes solely from assembly.base_result_digest propagating timing-bearing input hashes (indices10,16,21,23). Evidence: artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json and packet-summary-differences.json. Next repair this timing-only propagation in existing native source-packet/evidence-projection logic using validated execution dependencies; retain full raw receipts and never suppress business-cell, query, population, domain, join or source changes. Prove old/current replay yields identical semantic summary and verification identity, with adverse changed-data/join tests, before any live request. Do not rebuild the unchanged package, repeat native replay/provider votes or start a full-question campaign merely for bookkeeping. Keep policy invalidation until current derivation/review is actually qualified; do not promote the52/60fastproposal or learnedfinalanswer. First-answer/source-role qualification and independentG5/customer prerequisites remain.",
+      "next_action": "G3: assembly timing projection is sealed on 310fac70. All jobs terminal/source unfrozen; owned app8890PID38036/session22307 still serves known-good7e1f3612. Retained43-action comparisons now produce identical58logical evidence packets and all57patients/114fields. Complete324document dependencies produce62scheduled checks with identical old/fresh request identities;147focused regressions pass,0providerdispatches and all51440attempts exact. Scope correction: direct support_packets proofs use the original question without review_final registered definitions/request context; their cache probes found0historical hits and cannot establish production cache savings or current review acceptance. Next trace the authentic saved59/60proposal through existing review_final with its exact registered definitions, original context, complete source documents and fresh retained native results, with providers prohibited/cache-only. Compare emitted request identities to retained review/ledger receipts before live work; preserve every actual probability/unknown and do not inject acceptance. Resolve only demonstrated current-review input drift; if exact current judgments are absent, run only the required current review after evidence. Do not repeat the43-action native job, full-question generation or package for bookkeeping. Keep policy invalidation until derivation/review is qualified; do not promote52/60or learned final answer. Alltenareas and independentG5/customer dependencies remain.",
       "latest_current_release_decision": "artifacts/agere-current-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -577,11 +581,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_local_package_and_historical_inspection",
+    "kind": "timing_stable_native_verification",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Existing local package uses native independent filesystem clones for all file sizes; executable archive and isolated install preserve complete source/result evidence and intentional policy-invalidation boundaries.",
-    "measured_failure_reduction": "Current complete package and isolated installation now finish under low disk space; native copy/independence checks and exact historical answer inspection pass. Current answer qualification is not inferred.",
+    "user_behavior_delta": "Verification evidence remains identical when only SQL execution time changes through nested native table compositions. Dependency links are validated and rebound; raw receipts and semantic-change invalidation remain intact.",
+    "measured_failure_reduction": "Four timing-only composed-result hashes no longer change the global verification text or provider request identity; all business/source/query/join mutations still invalidate in regressions.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -680,16 +684,22 @@
       "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/receipt.json",
       "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/packet-differences.json",
       "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/packet-summary-differences.json",
-      "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json"
+      "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json",
+      "artifacts/agere-assembly-timing-2026-11-05/workflow-receipt.json",
+      "artifacts/agere-assembly-timing-2026-11-05/dispatch-receipt.json",
+      "artifacts/agere-assembly-timing-2026-11-05/complete-dispatch-receipt.json",
+      "artifacts/agere-assembly-timing-2026-11-05/regressions.log",
+      "artifacts/agere-assembly-timing-2026-11-05/final-cache-regressions.log",
+      "artifacts/agere-assembly-timing-2026-11-05/delivery-receipt.json"
     ],
-    "remaining_gap": "Timing-only assembly hashes alter the global verification input despite unchanged clinical evidence; measured cache/request behavior and a guarded correction remain. Current-policy first-answer/source-role/model qualification and independent G5/customer dependencies remain; savedanswer is intentionally invalidated for new work.",
-    "next_action": "G3: current package7e1f3612 is sealed; all jobs terminal/source unfrozen. App8890PID38036/session22307 ready.262checks and actual checkpoint/archive/isolated install/HTTP passed; scoped engineering9/9/alltenareas retained, not fullMVP. Saved57patients/114fields and59/60source support remain inspectable with intentional policy invalidation; no restamp. Follow-up current compiler comparison passed;43nativeactions reexecuted in49.427s/0providers, preserving exact table/prose/computedproofs and all51440attempts. A concrete remaining performance cause is isolated: all57patient packets are exact, but global summary text changes only at four compose_table native_bindings.result_digest values; each comes solely from assembly.base_result_digest propagating timing-bearing input hashes (indices10,16,21,23). Evidence: artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json and packet-summary-differences.json. Next repair this timing-only propagation in existing native source-packet/evidence-projection logic using validated execution dependencies; retain full raw receipts and never suppress business-cell, query, population, domain, join or source changes. Prove old/current replay yields identical semantic summary and verification identity, with adverse changed-data/join tests, before any live request. Do not rebuild the unchanged package, repeat native replay/provider votes or start a full-question campaign merely for bookkeeping. Keep policy invalidation until current derivation/review is actually qualified; do not promote the52/60fastproposal or learnedfinalanswer. First-answer/source-role qualification and independentG5/customer prerequisites remain.",
+    "remaining_gap": "Current-policy first-answer/source-role qualification and performance remain incomplete. The saved59/60answer remains intentionally invalidated for new work. This proof establishes evidence/request identity, not a live cost reduction, new source acceptance or selection of the52/60candidate. IndependentG5 and customer prerequisites remain.",
+    "next_action": "G3: assembly timing projection is sealed on 310fac70. All jobs terminal/source unfrozen; owned app8890PID38036/session22307 still serves known-good7e1f3612. Retained43-action comparisons now produce identical58logical evidence packets and all57patients/114fields. Complete324document dependencies produce62scheduled checks with identical old/fresh request identities;147focused regressions pass,0providerdispatches and all51440attempts exact. Scope correction: direct support_packets proofs use the original question without review_final registered definitions/request context; their cache probes found0historical hits and cannot establish production cache savings or current review acceptance. Next trace the authentic saved59/60proposal through existing review_final with its exact registered definitions, original context, complete source documents and fresh retained native results, with providers prohibited/cache-only. Compare emitted request identities to retained review/ledger receipts before live work; preserve every actual probability/unknown and do not inject acceptance. Resolve only demonstrated current-review input drift; if exact current judgments are absent, run only the required current review after evidence. Do not repeat the43-action native job, full-question generation or package for bookkeeping. Keep policy invalidation until derivation/review is qualified; do not promote52/60or learned final answer. Alltenareas and independentG5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All jobs terminal/source unfrozen; candidateapp ready.",
+    "coordination": "All proof jobs terminal; source unfrozen; app remains7e1f3612.",
     "remaining_blockers": [
-      "Timing-only assembly hashes alter the global verification input despite unchanged clinical evidence; measured cache/request behavior and a guarded correction remain. Current-policy first-answer/source-role/model qualification and independent G5/customer dependencies remain; savedanswer is intentionally invalidated for new work."
+      "Current-policy first-answer/source-role qualification and performance remain incomplete. The saved59/60answer remains intentionally invalidated for new work. This proof establishes evidence/request identity, not a live cost reduction, new source acceptance or selection of the52/60candidate. IndependentG5 and customer prerequisites remain."
     ],
-    "latest_progress": "Package sealed; original43nativeactions and full57/114answer verified offline. Remaining summary identity drift isolated to four timing-bearing assembly hashes.",
+    "latest_progress": "Verification evidence remains identical when only SQL execution time changes through nested native table compositions. Dependency links are validated and rebound; raw receipts and semantic-change invalidation remain intact.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -738,8 +748,8 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T02:27:01.105112+00:00",
-    "workflow_change": "Existing local package uses native independent filesystem clones for all file sizes; executable archive and isolated install preserve complete source/result evidence and intentional policy-invalidation boundaries.",
+    "at": "2026-11-05T02:46:54.457635+00:00",
+    "workflow_change": "Verification evidence remains identical when only SQL execution time changes through nested native table compositions. Dependency links are validated and rebound; raw receipts and semantic-change invalidation remain intact.",
     "unsealed_work": {
       "status": "native_recovery_and_compiler_passed_source_model_qualification_incomplete",
       "product_commit": "2ec665f4c8f76091a9d3413145c53cdea668feb1",
@@ -3988,6 +3998,14 @@
         "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/packet-summary-differences.json",
         "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json"
       ]
+    },
+    {
+      "at": "2026-11-05T02:46:54.457635+00:00",
+      "decision": "Seal timing-only input stability after exact dependency validation and full-source scheduling proof. All147regressions pass; no provider requests. Direct packet probes omitted review_final registered definitions/context, so zero cache hits are not evidence that production reuse fails. Next inspect the exact existing caller, using retained native work and complete sources, before spending or asserting current qualification. No new scope or answer promotion.",
+      "evidence": [
+        "artifacts/agere-assembly-timing-2026-11-05/delivery-receipt.json",
+        "artifacts/agere-assembly-timing-2026-11-05/complete-dispatch-receipt.json"
+      ]
     }
   ],
   "unsealed_work": {
@@ -4023,7 +4041,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: current package7e1f3612 is sealed; all jobs terminal/source unfrozen. App8890PID38036/session22307 ready.262checks and actual checkpoint/archive/isolated install/HTTP passed; scoped engineering9/9/alltenareas retained, not fullMVP. Saved57patients/114fields and59/60source support remain inspectable with intentional policy invalidation; no restamp. Follow-up current compiler comparison passed;43nativeactions reexecuted in49.427s/0providers, preserving exact table/prose/computedproofs and all51440attempts. A concrete remaining performance cause is isolated: all57patient packets are exact, but global summary text changes only at four compose_table native_bindings.result_digest values; each comes solely from assembly.base_result_digest propagating timing-bearing input hashes (indices10,16,21,23). Evidence: artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json and packet-summary-differences.json. Next repair this timing-only propagation in existing native source-packet/evidence-projection logic using validated execution dependencies; retain full raw receipts and never suppress business-cell, query, population, domain, join or source changes. Prove old/current replay yields identical semantic summary and verification identity, with adverse changed-data/join tests, before any live request. Do not rebuild the unchanged package, repeat native replay/provider votes or start a full-question campaign merely for bookkeeping. Keep policy invalidation until current derivation/review is actually qualified; do not promote the52/60fastproposal or learnedfinalanswer. First-answer/source-role qualification and independentG5/customer prerequisites remain.",
+  "next_action": "G3: assembly timing projection is sealed on 310fac70. All jobs terminal/source unfrozen; owned app8890PID38036/session22307 still serves known-good7e1f3612. Retained43-action comparisons now produce identical58logical evidence packets and all57patients/114fields. Complete324document dependencies produce62scheduled checks with identical old/fresh request identities;147focused regressions pass,0providerdispatches and all51440attempts exact. Scope correction: direct support_packets proofs use the original question without review_final registered definitions/request context; their cache probes found0historical hits and cannot establish production cache savings or current review acceptance. Next trace the authentic saved59/60proposal through existing review_final with its exact registered definitions, original context, complete source documents and fresh retained native results, with providers prohibited/cache-only. Compare emitted request identities to retained review/ledger receipts before live work; preserve every actual probability/unknown and do not inject acceptance. Resolve only demonstrated current-review input drift; if exact current judgments are absent, run only the required current review after evidence. Do not repeat the43-action native job, full-question generation or package for bookkeeping. Keep policy invalidation until derivation/review is qualified; do not promote52/60or learned final answer. Alltenareas and independentG5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4032,7 +4050,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-current-release-2026-11-05/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-assembly-timing-2026-11-05/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -4115,9 +4133,9 @@
   "owned_server_pid": 38036,
   "owned_server_session": 22307,
   "last_run_observation": {
-    "at": "2026-11-05T02:27:01.105112+00:00",
-    "status": "passed_current_native_and_compiler_revalidation",
-    "receipt": "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/receipt.json",
+    "at": "2026-11-05T02:46:54.457635+00:00",
+    "status": "sealed_timing_stable_native_verification",
+    "receipt": "artifacts/agere-assembly-timing-2026-11-05/delivery-receipt.json",
     "source_frozen": false
   }
 }

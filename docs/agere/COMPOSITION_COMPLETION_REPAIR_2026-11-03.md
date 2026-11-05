@@ -769,3 +769,12 @@ Archived and current HTTP inspection preserve the complete 57-patient/114-field 
 Receipt: `artifacts/agere-current-release-2026-11-05/delivery-receipt.json`. The canonical next action remains in `AGERE_BUILD_CONTROL.json`; do not rebuild the unchanged package.
 
 Offline follow-through on November5: the actual saved59/60proposal compiles exactly under current code. Its43nativeoperations reexecute in49.427seconds with0providers, preserving all57patients/114fields and every computed proof. All57patient source packets remain exact. The global packet differs only in four native compose-table result hashes; their sole changed fields are `assembly.base_result_digest`, which propagate timing-bearing input hashes. This identifies a verification-input identity problem to correct, not measured cost savings or permission to accept old review verdicts. Raw differences: `artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json`.
+
+
+## November 5 — stable verification through native composition
+
+Product `310fac70` removes SQL timing drift from composed-result verification identities. Every assembly dependency must match an earlier unique native result and its raw digest. Only the reserved SQL timing metric is excluded; the links are rebound to canonical input digests. Source records, business cells, queries, population, domain and join semantics remain identity-bearing. Raw receipts are unchanged.
+
+The retained 43-action executions now generate identical text for all 58 logical packets, preserving 57 patients and 114 narrative fields. Restoring all 324 referenced documents through the current source reader yields 62 scheduled checks with identical request identities across both executions. 147 focused regressions pass, including malformed provenance, nested joins, changed semantics and failed/pending request protection; 20 cache checks were rerun after eliminating a redundant hash calculation. No provider calls occurred and all 51,440 attempts are exact.
+
+These packet probes do not reconstruct the full review caller: registered definitions and request context also affect production requests. They found no historical cache hits and do not demonstrate live savings or new answer qualification. The next canonical action traces that exact caller before any paid review. The existing app and package remain on `7e1f3612`; saved-answer policy invalidation and the unpromoted faster candidate remain intact. Receipt: `artifacts/agere-assembly-timing-2026-11-05/delivery-receipt.json`.
