@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-04T23:53:41.515759+00:00",
+  "updated_at": "2026-11-05T00:18:34.859962+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -565,11 +565,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "lossless_reading_projection_sealed",
+    "kind": "row_basis_compiler_candidate_generation_rejected",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Complete native readings send exact repeated strings once through an explicit dictionary. Native source tuples and every row remain unchanged. The ordinary app regenerated all requested patient narratives and preserved undecided review states.",
-    "measured_failure_reduction": "Exact repeated input reduced47.237%; ordinary question now preserves57patient/114field output and explicit unresolved review. Recorded API-equivalent cost lower than earlier failed run; first-answer latency not accepted.",
+    "user_behavior_delta": "Existing row prose supports local references to explicitly declared same-entity native bases; compiler and localized repair expand to full scalar addresses and preserve all source/value guards.",
+    "measured_failure_reduction": "Exact bound representation reduced13.6117percent in retained workflow; model generation probes did not qualify a successful user answer or latency reduction.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -616,10 +616,19 @@
       "artifacts/agere-protocol-preservation-2026-11-04/source-refresh-delivery-receipt.json",
       "artifacts/agere-protocol-preservation-2026-11-04/source-review-payload/delivery-receipt.json",
       "artifacts/agere-prior-review-guidance-2026-11-04/delivery-receipt.json",
-      "artifacts/agere-first-composition-text-2026-11-04/delivery-receipt.json"
+      "artifacts/agere-first-composition-text-2026-11-04/delivery-receipt.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/measurement.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/workflow-proof.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/regressions.log",
+      "artifacts/agere-row-basis-composition-2026-11-05/candidate-assessment.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/generation-probe/receipt.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/runner-correction.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/generation-probe-v2/receipt.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/generation-probe-v3/receipt.json",
+      "artifacts/agere-row-basis-composition-2026-11-05/final-contract-regressions.log"
     ],
-    "remaining_gap": "First-answer generation remains too slow at 763.425 seconds: one Sonnet request took268.568 seconds. One combined source packet and overall coverage are undecided; no located field fault justifies repeated identical votes. Current stable packaging and independent G5 model/clinical and customer deployment prerequisites remain.",
-    "next_action": "G3: lossless first-composition reading projection is sealed on2a370739/55304ed3; app8890 PID34112/session30794 serves current contextANS-77d9d1a8d95d73b85e6e5f9c. All jobs terminal/source unfrozen. Ordinary run regenerated57patients/114fields in763.425s/$4.946419546API-equivalent/154attempts; all51263attempts retained.59/60source packets supported; remaining packet has29/29typed fields supported with no located fault, but joint support/coverage stay undecided. Matched input463202->244399bytes (47.237%);116tests/current9engineeringpredicates acrossalltenareas pass. Whole-run11.36%time/37.53%cost reduction versus earlierfailedrun is observational with multiple changes/warm-cache differences. First answer remains too slow. Next use retained generation-profile.json and exact row_prose to test whether repeated scalar-binding addresses can be expressed once through existing typed source/entity context and expanded back to identical bound cells. Establish actual removable output overhead before changing code or making another full live request. Do not repeat unchanged source votes or passing bottling campaigns; no new disease handler/model/training. Package once the performance candidate is stable. Alltenareas and independent G5/customer dependencies remain.",
+    "remaining_gap": "Current first-answer performance and release packaging remain open. Existing59of60source support, joint uncertainty and global coverage uncertainty are unchanged. Alltenacceptanceareas and independentG5/customer dependencies remain.",
+    "next_action": "G3: all jobs terminal/source unfrozen. Row-basis compiler candidate676e9f77 preserves exact57patients/114fields/274scalar addresses and parent source packets;160tests+21prompt regressions pass. Serialized row_prose13.6117percent smaller; no live speed/format qualification. Medium-effort probev2 omitted all row_prose; matchedv3 final-contract clarification produced57rows/114fields inside an unknown note invocation, then a second answer dropped them. Both rejected;2attempts/$1.396982API-equivalent retained, all51265attempts exact. Inspect artifacts/agere-row-basis-composition-2026-11-05/candidate-assessment.json. Next reproduce these retained failures through existing semantic_analyst tool_loop and evaluate the existing structured-output/state contract for required composition fields. Preserve the expensive complete proposal as inert recovery material; never accept an unknown invocation or the later incomplete answer. Bind any completion contract to actual native entity/field requirements, no disease handler or hardcodedpopulation. No third prompt-only probe, global effort reduction, repeated source votes or training. Qualify the changed completion boundary before one relevant live confirmation/current packaging. Savedapp8890PID34112 remains on2a370739 withANS-77d9d1a8d95d73b85e6e5f9c; no new draft promoted. Alltenareas/G5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
     "coordination": "Current app verified; all jobs terminal/source unfrozen.",
     "remaining_blockers": [
@@ -868,9 +877,8 @@
       "estimate_scope": "Local synthetic engineering only; provisional, no guaranteed deadline; independent clinical/model/customer dependencies explicit."
     },
     "running_observation": {
-      "status": "superseded_all_jobs_terminal",
-      "interrupted_run": "artifacts/agere-completion-routing-2026-11-03/composition-boundary-continuation/run-receipt.json",
-      "latest_probe": "artifacts/agere-completion-routing-2026-11-03/localized-prose-live-retry/run-receipt.json"
+      "status": "all_jobs_terminal",
+      "latest_probe": "artifacts/agere-row-basis-composition-2026-11-05/generation-probe-v3/receipt.json"
     },
     "prefix_preflight": {
       "native_actions": 28,
@@ -3861,9 +3869,26 @@
       "decision": "Retain the measured input/cost improvement, but do not treat smaller inputs or another complete row count as satisfactory first-answer performance. Target the observed long generation step using retained output evidence before any new paid whole-question run.",
       "basis": "artifacts/agere-first-composition-text-2026-11-04/generation-profile.json",
       "scope_impact": "Existing typed composition/performance obligation only. All ten acceptance areas, review uncertainty and independent qualification boundaries retained."
+    },
+    {
+      "at": "2026-11-05T00:10:21.997604+00:00",
+      "decision": "Keep the row-local address change within existing typed composition after exact round-trip/native workflow evidence. Its13.6percent serialized reduction is limited; test explicit medium effort only for the already-computed composition phase to investigate reported long reasoning. Do not globally change effort or claim latency savings.",
+      "basis": "artifacts/agere-row-basis-composition-2026-11-05/measurement.json",
+      "scope_impact": "Full57patient scope retained. No source reviews, clinical labels, models, training or acceptance areas added/removed. Candidate stays unaccepted until relevant workflow review."
+    },
+    {
+      "at": "2026-11-05T00:18:34.859962+00:00",
+      "decision": "Do not promote medium effort or claim speed improvement. Preserve the tested compiler candidate. Stop prompt-only probes; address the observed missing/mixed completion contract through existing structured output and state handling before another live composition. No more unchanged source-review votes or bottling campaigns.",
+      "basis": "artifacts/agere-row-basis-composition-2026-11-05/candidate-assessment.json",
+      "scope_impact": "Existing G3 completion/performance only. Alltenareas retained; no labels/models/training/provider-role defaults changed. Runtime answer and prior recovery point preserved."
     }
   ],
-  "unsealed_work": null,
+  "unsealed_work": {
+    "status": "compiler_and_prompt_candidate_requires_completion_boundary_qualification",
+    "product_commit": "676e9f774cc326d5370a40cb0fe70ca517780053",
+    "receipt": "artifacts/agere-row-basis-composition-2026-11-05/candidate-assessment.json",
+    "runtime_activation": false
+  },
   "current_visual_request": {
     "status": "completed",
     "path": "/Users/mikel/.codex/visualizations/2026/10/29/01a187c0-23ba-7d02-9368-5ff567327554/wollstonecraft-question-flow.html",
@@ -3888,7 +3913,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: lossless first-composition reading projection is sealed on2a370739/55304ed3; app8890 PID34112/session30794 serves current contextANS-77d9d1a8d95d73b85e6e5f9c. All jobs terminal/source unfrozen. Ordinary run regenerated57patients/114fields in763.425s/$4.946419546API-equivalent/154attempts; all51263attempts retained.59/60source packets supported; remaining packet has29/29typed fields supported with no located fault, but joint support/coverage stay undecided. Matched input463202->244399bytes (47.237%);116tests/current9engineeringpredicates acrossalltenareas pass. Whole-run11.36%time/37.53%cost reduction versus earlierfailedrun is observational with multiple changes/warm-cache differences. First answer remains too slow. Next use retained generation-profile.json and exact row_prose to test whether repeated scalar-binding addresses can be expressed once through existing typed source/entity context and expanded back to identical bound cells. Establish actual removable output overhead before changing code or making another full live request. Do not repeat unchanged source votes or passing bottling campaigns; no new disease handler/model/training. Package once the performance candidate is stable. Alltenareas and independent G5/customer dependencies remain.",
+  "next_action": "G3: all jobs terminal/source unfrozen. Row-basis compiler candidate676e9f77 preserves exact57patients/114fields/274scalar addresses and parent source packets;160tests+21prompt regressions pass. Serialized row_prose13.6117percent smaller; no live speed/format qualification. Medium-effort probev2 omitted all row_prose; matchedv3 final-contract clarification produced57rows/114fields inside an unknown note invocation, then a second answer dropped them. Both rejected;2attempts/$1.396982API-equivalent retained, all51265attempts exact. Inspect artifacts/agere-row-basis-composition-2026-11-05/candidate-assessment.json. Next reproduce these retained failures through existing semantic_analyst tool_loop and evaluate the existing structured-output/state contract for required composition fields. Preserve the expensive complete proposal as inert recovery material; never accept an unknown invocation or the later incomplete answer. Bind any completion contract to actual native entity/field requirements, no disease handler or hardcodedpopulation. No third prompt-only probe, global effort reduction, repeated source votes or training. Qualify the changed completion boundary before one relevant live confirmation/current packaging. Savedapp8890PID34112 remains on2a370739 withANS-77d9d1a8d95d73b85e6e5f9c; no new draft promoted. Alltenareas/G5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -3980,8 +4005,9 @@
   "owned_server_pid": 34112,
   "owned_server_session": 30794,
   "last_run_observation": {
-    "at": "2026-11-04T21:31:19.566056+00:00",
-    "receipt": "artifacts/agere-protocol-preservation-2026-11-04/run-observations.jsonl",
-    "status": "running"
+    "at": "2026-11-05T00:18:34.859962+00:00",
+    "status": "native_compiler_passed_generation_candidate_unqualified",
+    "receipt": "artifacts/agere-row-basis-composition-2026-11-05/candidate-assessment.json",
+    "source_frozen": false
   }
 }

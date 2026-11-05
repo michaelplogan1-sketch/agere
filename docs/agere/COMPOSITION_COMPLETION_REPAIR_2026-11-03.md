@@ -1,5 +1,19 @@
 # Composition repair and retained-evidence comparison
 
+## November 5: compact binding candidate and failed generation probes
+
+The candidate compiler accepts a scalar reference such as `{"basis":0,"column":"age"}` within an entity's existing row-prose entry. It expands that explicit local index to the original executed view and row before the existing source, entity, completeness and scalar checks. Full addresses remain supported. Localized binding repairs preserve both forms; persisted proofs still contain full addresses.
+
+The retained 57-patient, 114-field workflow contains 274 such addresses. An exact round trip reduces serialized row prose from 62,035 to 53,591 bytes (**13.612%**). Compilation preserves the complete table, scalar proofs and all 58 constructed parent support packets exactly; later source-review partitioning is separate. No provider was called for this proof. All 160 targeted tests pass. These bytes are not a measured token, cost or latency reduction.
+
+Two isolated full-population composition probes tested explicit medium effort with all 43 retained native operations and no saved final prose. The first omitted every row-prose field and failed numerical compilation. A matched second request changed only the final answer-contract wording: it produced 57 rows and 114 fields inside an unknown `note` invocation, then returned another answer that omitted them. The response is rejected as malformed; neither object was accepted or executed. The retained first object used plain prose, so live adoption of the compact scalar references is also unqualified. A preparation error before these calls omitted a required documentation-identity argument; that zero-provider attempt and its correction are preserved.
+
+The two actual attempts took 19.626 and 114.304 seconds including preparation/accounting and cost **$1.396982 combined API-equivalent**. They are failed probes, not a speed improvement. All 51,265 attempts remain accounted for. The saved application answer and global effort policy are unchanged. The compiler and prompt changes remain identified as candidates on `676e9f77`; the running app retains product `2a370739` and its existing partial result.
+
+Next work stays within the same completion obligation: reproduce the retained omissions/mixed response through the existing tool loop, then evaluate its existing structured-output and recovery-state boundary. Do not run a third prompt-only probe or accept an inner JSON object from an unknown invocation. First-answer performance, current packaging and independent qualification/customer dependencies remain open; all ten acceptance areas are retained.
+
+Evidence: `artifacts/agere-row-basis-composition-2026-11-05/candidate-assessment.json`, `measurement.json`, `workflow-proof.json`, regression logs and the preserved generation-probe receipts in that directory. The last sealed delivery remains `artifacts/agere-first-composition-text-2026-11-04/delivery-receipt.json`.
+
 ## November 4: question response delivery reduced
 
 The ordinary question page now requests a compact representation after the full result is journaled. All 57 patient rows, 114 narrative fields, partial/unknown status, costs and work links remain exact. All 26 original operation nodes and their scope remain present; bulky parameters and investigation history reference the unchanged saved native context. Existing API clients retain their full representation.
