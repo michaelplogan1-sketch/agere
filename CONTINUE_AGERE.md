@@ -1,8 +1,8 @@
-# Current Agere checkpoint — 2026-11-05T05:19:02.119667+00:00
+# Current Agere checkpoint — 2026-11-05T05:38:37.010800+00:00
 
-G3: current binding-role917f1f23 package is launching; source/product frozen. Monitor only artifacts/agere-binding-release-2026-11-05/receipt.json, never duplicate. Eight of nine scoped engineering requirements remain applicable across alltenareas; current archive/install pending. Stop only owned8890PID39826 for checkpoint, primary8885 untouched. On terminal check archived/current HTTP preserves57patients/228fields,59/60source support, partial/undecided coverage and planning invalidation; retain all51897attempts. Then seal actual current package applicability and push verified private branch. No provider campaign. First-answer performance and independentG5/customer dependencies remain.
+G3: current b533f616 package/isolated restore/current app is sealed; all jobs terminal/source unfrozen. Alltenareas retain9/9scoped engineering evidence; all51897attempts preserved. Current saved57patient/228field answer remains partial,59/60source-supported and globally undecided; prior planning invalidation retained. Next address measured first-answer composition overhead using the authentic ordinary response in artifacts/agere-current-first-answer-2026-11-05/first-answer-output-profile.json: exact repeated whole-field references reconstruct228fields/57patients at23.22%fewer serialized bytes, with no live savings yet. Assess this representation inside existing row_prose compilation: preserve same-entity bases, numeric proofs, all field names and expanded review input; reject missing/cyclic/ambiguous references. Prove equivalence and actual wrapper dispatch before any focused provider measurement or activation. No full source-vote campaign, unchanged package rebuild or new model/training scope. First-answer cost/latency, undecided coverage and independentG5/customer dependencies remain.
 
-Latest sealed receipt: artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json
+Latest sealed receipt: artifacts/agere-binding-release-2026-11-05/delivery-receipt.json
 
 Canonical authority: AGERE_BUILD_CONTROL.json.
 

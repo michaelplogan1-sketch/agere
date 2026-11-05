@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T05:19:02.119667+00:00",
+  "updated_at": "2026-11-05T05:38:37.010800+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -136,6 +136,10 @@
         {
           "path": "artifacts/agere-final-package-2026-11-04/delivery-receipt.json",
           "sha256": "601c4128a10e2e94d87ef7f7392dca0e1a6edc44027b56117d6b90521f12429d"
+        },
+        {
+          "path": "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json",
+          "sha256": "3ab4116c8cdfdf0ae222ddbfbc5979d7aca944b568c26fceb23e15425a24c84c"
         }
       ],
       "acceptance_kind": "same_platform_declared_local_operations_with_explicit_external_and_qualification_dependencies"
@@ -506,6 +510,10 @@
         {
           "path": "artifacts/agere-current-first-answer-2026-11-05/fresh-transition-delivery-receipt.json",
           "sha256": "ca8ceb97aad54ad6bb0ce9b9a714c750ebe64fc4f6de1823b8006b424a2f676d"
+        },
+        {
+          "path": "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json",
+          "sha256": "3ab4116c8cdfdf0ae222ddbfbc5979d7aca944b568c26fceb23e15425a24c84c"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
@@ -596,8 +604,8 @@
     "kind": "scoped_engineering_delivery",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Compiler binding requests use an explicit smaller caller-owned role, retaining native definitions, loaded documentation, tools, original question and all downstream review. Source/interpretation requests restore the full analyst role; service-boundary continuation keeps the exact selected role.",
-    "measured_failure_reduction": "Authentic one-field repair: 3 to 2 actorcalls; 21.683s to 12.548s summed actor time; $0.8976001 to $0.5961154 API-equivalent. Text/membership unchanged; no full-workflow claim.",
+    "user_behavior_delta": "Current code can be restored through the bundled interpreter and inspected through both installed and owned HTTP. All57patients/228fields, native table, partial status, source-review uncertainty and prior planning invalidation remain exact.",
+    "measured_failure_reduction": "Current archive/app applicability missing before this check; now exact archive/install/HTTP checks pass. No first-answer performance improvement is attributed to packaging.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -739,16 +747,17 @@
       "artifacts/agere-current-first-answer-2026-11-05/source-binding-delivery-receipt.json",
       "artifacts/agere-current-first-answer-2026-11-05/pending-binding-continuation/assessment.json",
       "artifacts/agere-current-first-answer-2026-11-05/repair-request-profile.json",
-      "artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json"
+      "artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json",
+      "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json"
     ],
-    "remaining_gap": "Current candidate-app/release applicability and first-answer performance; independentG5/customer dependencies.",
-    "next_action": "G3: current binding-role917f1f23 package is launching; source/product frozen. Monitor only artifacts/agere-binding-release-2026-11-05/receipt.json, never duplicate. Eight of nine scoped engineering requirements remain applicable across alltenareas; current archive/install pending. Stop only owned8890PID39826 for checkpoint, primary8885 untouched. On terminal check archived/current HTTP preserves57patients/228fields,59/60source support, partial/undecided coverage and planning invalidation; retain all51897attempts. Then seal actual current package applicability and push verified private branch. No provider campaign. First-answer performance and independentG5/customer dependencies remain.",
+    "remaining_gap": "First-answer cost/latency remains unqualified; overall coverage is undecided. Independent model/clinical/outcome qualification and customer deployment prerequisites remain. Nine scoped engineering predicates are not whole-MVP acceptance.",
+    "next_action": "G3: current b533f616 package/isolated restore/current app is sealed; all jobs terminal/source unfrozen. Alltenareas retain9/9scoped engineering evidence; all51897attempts preserved. Current saved57patient/228field answer remains partial,59/60source-supported and globally undecided; prior planning invalidation retained. Next address measured first-answer composition overhead using the authentic ordinary response in artifacts/agere-current-first-answer-2026-11-05/first-answer-output-profile.json: exact repeated whole-field references reconstruct228fields/57patients at23.22%fewer serialized bytes, with no live savings yet. Assess this representation inside existing row_prose compilation: preserve same-entity bases, numeric proofs, all field names and expanded review input; reject missing/cyclic/ambiguous references. Prove equivalence and actual wrapper dispatch before any focused provider measurement or activation. No full source-vote campaign, unchanged package rebuild or new model/training scope. First-answer cost/latency, undecided coverage and independentG5/customer dependencies remain.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Product/source frozen for targeted current-wrapper continuation.",
+    "coordination": "All owned jobs terminal; current candidate app ready; source unfrozen.",
     "remaining_blockers": [
-      "First-answer latency/cost remains unqualified: the last ordinary result is875.501s/$6.47235291 with59/60source support and undecided global coverage. Fixed-Haiku role samples failed compilation and do not measure the corrected ordinary route. Full outer-request capture/live benefit, independent G5/clinical/model and customer prerequisites remain; all ten acceptance areas retained."
+      "First-answer cost/latency remains unqualified; overall coverage is undecided. Independent model/clinical/outcome qualification and customer deployment prerequisites remain. Nine scoped engineering predicates are not whole-MVP acceptance."
     ],
-    "latest_progress": "artifacts/agere-current-first-answer-2026-11-05/pending-binding-continuation/assessment.json",
+    "latest_progress": "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -797,8 +806,8 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T05:14:16.395938+00:00",
-    "workflow_change": "Compiler binding requests use an explicit smaller caller-owned role, retaining native definitions, loaded documentation, tools, original question and all downstream review. Source/interpretation requests restore the full analyst role; service-boundary continuation keeps the exact selected role.",
+    "at": "2026-11-05T05:38:37.010800+00:00",
+    "workflow_change": "Current code can be restored through the bundled interpreter and inspected through both installed and owned HTTP. All57patients/228fields, native table, partial status, source-review uncertainty and prior planning invalidation remain exact.",
     "unsealed_work": {
       "status": "native_recovery_and_compiler_passed_source_model_qualification_incomplete",
       "product_commit": "2ec665f4c8f76091a9d3413145c53cdea668feb1",
@@ -902,7 +911,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Authentic one-field repair: 3 to 2 actorcalls; 21.683s to 12.548s summed actor time; $0.8976001 to $0.5961154 API-equivalent. Text/membership unchanged; no full-workflow claim.",
+    "measured_failure_removed": "Current release applicability gap closed; clinical and performance gaps remain.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -1012,7 +1021,7 @@
     },
     "running_observation": {
       "status": "all_jobs_terminal",
-      "latest_confirmation": "artifacts/agere-mixed-scope-binding-2026-11-05/live-headline/receipt.json"
+      "receipt": "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json"
     },
     "prefix_preflight": {
       "native_actions": 28,
@@ -4136,6 +4145,16 @@
         "artifacts/agere-current-first-answer-2026-11-05/repair-request-profile.json"
       ],
       "scope_impact": "Fixed G3 performance requirement only; all ten areas retained."
+    },
+    {
+      "at": "2026-11-05T05:38:37.010800+00:00",
+      "decision": "Seal current package and continue the existing G3 performance obligation.",
+      "reason": "Current restore and saved-context inspection pass with alltenareas and uncertainty intact. Offline repeated-output profile identifies a scoped representation experiment, not a model qualification or live speedup.",
+      "scope_impact": "No new capability, model, clinical rule or acceptance area; existing whole-question composition overhead only.",
+      "evidence": [
+        "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json",
+        "artifacts/agere-current-first-answer-2026-11-05/first-answer-output-profile.json"
+      ]
     }
   ],
   "unsealed_work": {
@@ -4166,31 +4185,32 @@
     "checked": "Four widths, route interaction, no JS errors or clipping."
   },
   "full_stack_candidate_checkpoint": {
-    "at": "2026-10-30T12:35:29.209891+00:00",
-    "status": "local_engineering_accepted_qualification_open",
-    "receipt": "artifacts/agere-current-mvp-2026-10-30/delivery-receipt.json",
-    "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/release",
+    "at": "2026-11-05T05:38:37.010800+00:00",
+    "status": "scoped_current_local_release_verified",
+    "receipt": "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json",
+    "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-integration-recovery-20261104/workspace/artifacts/agere-binding-release-2026-11-05/release",
     "engineering_passed": 9,
     "full_queue_acceptance": false,
     "previous_checkpoint": {
-      "at": "2026-10-29T05:45:10.577661+00:00",
-      "status": "returned_partial_engineering_assets_delivered",
-      "frozen_cold_commit": "48930f7",
-      "active_session": null,
-      "receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
-      "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-full-stack-2026-10-29",
-      "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
+      "at": "2026-10-30T12:35:29.209891+00:00",
+      "status": "local_engineering_accepted_qualification_open",
+      "receipt": "artifacts/agere-current-mvp-2026-10-30/delivery-receipt.json",
+      "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-current-mvp-2026-10-30/operations-v1/release",
+      "engineering_passed": 9,
+      "full_queue_acceptance": false,
+      "previous_checkpoint": {
+        "at": "2026-10-29T05:45:10.577661+00:00",
+        "status": "returned_partial_engineering_assets_delivered",
+        "frozen_cold_commit": "48930f7",
+        "active_session": null,
+        "receipt": "artifacts/agere-full-stack-2026-10-29/delivery-receipt.json",
+        "durable_archive": "/Users/mikel/clinical-insights-local/artifacts/agere-full-stack-2026-10-29",
+        "source_audit_correction": "106/106 coherent quote/date/record links;51 false errors superseded. No coherence gain claimed."
+      }
     }
   },
-  "active_jobs": [
-    {
-      "kind": "current_binding_release_package",
-      "status": "launching",
-      "receipt": "artifacts/agere-binding-release-2026-11-05/receipt.json",
-      "source_frozen": true
-    }
-  ],
-  "next_action": "G3: current binding-role917f1f23 package is launching; source/product frozen. Monitor only artifacts/agere-binding-release-2026-11-05/receipt.json, never duplicate. Eight of nine scoped engineering requirements remain applicable across alltenareas; current archive/install pending. Stop only owned8890PID39826 for checkpoint, primary8885 untouched. On terminal check archived/current HTTP preserves57patients/228fields,59/60source support, partial/undecided coverage and planning invalidation; retain all51897attempts. Then seal actual current package applicability and push verified private branch. No provider campaign. First-answer performance and independentG5/customer dependencies remain.",
+  "active_jobs": [],
+  "next_action": "G3: current b533f616 package/isolated restore/current app is sealed; all jobs terminal/source unfrozen. Alltenareas retain9/9scoped engineering evidence; all51897attempts preserved. Current saved57patient/228field answer remains partial,59/60source-supported and globally undecided; prior planning invalidation retained. Next address measured first-answer composition overhead using the authentic ordinary response in artifacts/agere-current-first-answer-2026-11-05/first-answer-output-profile.json: exact repeated whole-field references reconstruct228fields/57patients at23.22%fewer serialized bytes, with no live savings yet. Assess this representation inside existing row_prose compilation: preserve same-entity bases, numeric proofs, all field names and expanded review input; reject missing/cyclic/ambiguous references. Prove equivalence and actual wrapper dispatch before any focused provider measurement or activation. No full source-vote campaign, unchanged package rebuild or new model/training scope. First-answer cost/latency, undecided coverage and independentG5/customer dependencies remain.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4199,7 +4219,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-binding-release-2026-11-05/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -4279,8 +4299,8 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 39826,
-  "owned_server_session": 31981,
+  "owned_server_pid": 43816,
+  "owned_server_session": 51542,
   "last_run_observation": {
     "at": "2026-11-05T05:00:25.173508+00:00",
     "status": "source_supported_partial_coverage",

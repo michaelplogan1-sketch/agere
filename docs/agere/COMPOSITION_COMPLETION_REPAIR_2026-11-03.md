@@ -840,3 +840,12 @@ Product `917f1f23` uses a dedicated prompt only for compiler-located numeric bin
 The complete wrapper's first repair request is byte-identical except its initial role text: 210,000 to 189,237 serialized bytes, a 9.9% reduction. The same authentic pending field then completed in two Claude calls versus the saved baseline's three: 21.683 to 12.548 summed actor seconds (42.1% lower), and $0.8976001 to $0.5961154 API-equivalent (33.6% lower). All 57 patients, 114 fields, the repaired sentence and other prose remained exact. The measurement stopped before repeating source review. Cache usage and outputs differ; this single repair observation does not establish whole-question savings or clinical equivalence.
 
 All 51,897 attempts and prior artifacts remain. Current compatibility evidence covers exactly four changed runtime modules across all ten acceptance areas; current packaging is pending. The 7e1f3612 recovery package remains available, and full first-answer performance, global coverage, independent model/clinical qualification and customer prerequisites remain unresolved. Evidence: `artifacts/agere-current-first-answer-2026-11-05/binding-role-delivery-receipt.json` and `binding-role-measurement/comparison.json` in the same artifact root.
+
+
+### November 5: current binding release restored and inspected
+
+The current `b533f616` release passed checkpoint/archive/isolated installation in 901.600 seconds. Both archived and current HTTP paths reopen the saved 57 patients, 228 narrative fields and 40 native actions exactly. The result remains partial with 59/60 source packets supported, global coverage undecided and planning-policy invalidation preserved. It was not promoted to authorize new work. All 51,897 attempts and source data remain unchanged; this release check made no provider calls.
+
+Current applicability retains 9/9 scoped engineering requirements across all ten areas. The earlier recovery package remains available. First-answer performance, independent qualification and customer prerequisites remain open. The saved largest composition response has 99 occurrences of nine exactly repeated whole-field values; an offline representation profile reconstructs every original field and entity basis using 23.22% fewer bytes. It is not implemented or a measured live saving. The canonical next action evaluates that narrow representation within existing compilation and full verification.
+
+Receipt: `artifacts/agere-binding-release-2026-11-05/delivery-receipt.json`.
