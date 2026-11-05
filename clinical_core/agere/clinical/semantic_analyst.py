@@ -896,7 +896,19 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         candidate=apply_prose_repair(patch_proposal,state_candidate,calls=result['tool_calls'],feedback=state_feedback,
                                                      binding_rejections=binding_rejections)
                     except ValueError as exc:
-                        from .execution_state import BindingPreservationError
+                        from .execution_state import BindingPreservationError,UnchangedProseRepair
+                        if (isinstance(exc,UnchangedProseRepair) and focused_repair
+                                and not focused_repair.get('compiler_feedback')
+                                and state_feedback.get('repair_kind')!='deterministic_compiler'):
+                            # An exact no-op source patch means the same thing
+                            # as rows:[]: no justified edit. Preserve the current
+                            # unresolved review; do not demand a new paraphrase
+                            # or mistake unchanged prose for source acceptance.
+                            result.setdefault('unchanged_prose_repairs',[]).append({
+                                'draft_digest':digest(state_candidate),'proposal_digest':digest(patch_proposal),
+                                'reason':'exact_existing_fields_without_new_basis','source_accepted':False})
+                            result['review_stopped']='no_supported_prose_change'
+                            return result
                         if isinstance(exc,BindingPreservationError):
                             binding_query_required=True
                             binding_query_reason='The previous patch changed a quantity instead of binding it.'

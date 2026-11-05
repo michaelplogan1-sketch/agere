@@ -33,6 +33,10 @@ class BindingReferenceError(ValueError):
         super().__init__(json.dumps(self.detail))
 
 
+class UnchangedProseRepair(ValueError):
+    """A validated patch repeats existing fields and adds no native basis."""
+
+
 def operational_feedback_result(result):
     """Recognize only complete producer declarations, never row content/names."""
     dependencies = result.get('incomplete_dependencies') if isinstance(result, dict) else None
@@ -272,7 +276,8 @@ def apply_prose_repair(proposal,candidate,*,calls=(),feedback=None,binding_rejec
         changes[ident]={k:v for k,v in accepted.items()if existing[ident]['fields'][k]!=v}
         additions[ident]=extra if accepted else []
     if rejected and not any(changes.values()):raise rejected[0]
-    if not any(changes.values())and not any(additions.values()):raise ValueError('Prose repair contains no changed fields; inspect the unresolved dependency')
+    if not any(changes.values())and not any(additions.values()):
+        raise UnchangedProseRepair('Prose repair contains no changed fields; inspect the unresolved dependency')
     merged=copy.deepcopy(candidate)
     # Restore the existing numeric templates, not their rendered numeric text.
     # Sources and all complete rows stay in the native candidate, not the patch.

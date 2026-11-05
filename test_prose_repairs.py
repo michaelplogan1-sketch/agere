@@ -8,6 +8,58 @@ from clinical_core.contracts import digest
 
 
 class ProseRepairs(unittest.TestCase):
+    def test_unchanged_source_patch_stops_without_a_rewrite_or_acceptance(self):
+        packet,support=self.source_review()
+        feedback={'status':'repair','repair_kind':'unresolved_verification','feedback':'Uncertain source meaning',
+                  'prose_repair':E.source_prose_repair(self.base,support,[packet],{}),'support':support}
+        original=copy.deepcopy(self.base);sent=[];reviewed=[]
+        def review(candidate,calls):reviewed.append(copy.deepcopy(candidate));return copy.deepcopy(feedback)
+        def send(body):
+            sent.append(body);self.assertEqual(len(sent),1,'An unchanged source patch must not require another rewrite')
+            return {'content':[{'type':'text','text':json.dumps(self.patch(
+                review=original['row_prose']['rows'][0]['fields']['review']))}]},0.,False
+        out=S.tool_loop('Explain both entities','',[],lambda a:self.fail('No new native work'),send=send,
+            model=M.HAIKU,max_tools=None,initial_calls=self.calls,initial_answer=self.base,review=review,compact_execution_state=True)
+        self.assertEqual(len(reviewed),1);self.assertEqual(out['review_stopped'],'no_supported_prose_change')
+        self.assertEqual(out['answer']['status'],'partial');self.assertEqual(out['answer']['verification'],'unverified')
+        for key in ('table','row_prose','sources','missing'):self.assertEqual(out['answer'][key],original[key])
+        self.assertEqual(out['tool_calls'],self.calls);self.assertEqual(B.returned_answer_review(out),feedback)
+        self.assertFalse(out['unchanged_prose_repairs'][0]['source_accepted']);self.assertNotIn('prose_repairs',out)
+        self.assertEqual(self.base,original)
+
+    def test_unchanged_compiler_patch_still_requires_binding_repair(self):
+        feedback=self.located_failure();original=copy.deepcopy(self.base);sent=[];reviewed=[]
+        def review(candidate,calls):
+            reviewed.append(candidate)
+            if len(reviewed)==1:return feedback
+            self.compile(candidate);return {'status':'confirmed'}
+        def send(body):
+            sent.append(body)
+            value=(original['row_prose']['rows'][0]['fields']['review']if len(sent)==1 else
+                   {'bind_literals':[{'literal':'two','binding':{'result_view':'agere_result_1','where':[],'column':'events'}}]})
+            self.assertLessEqual(len(sent),2)
+            return {'content':[{'type':'text','text':json.dumps(self.patch(review=value))}]},0.,False
+        out=S.tool_loop('Explain both entities','',[],lambda a:self.fail('No new native work'),send=send,
+            model=M.HAIKU,max_tools=None,initial_calls=self.calls,initial_answer=self.base,review=review,compact_execution_state=True)
+        self.assertEqual(len(sent),2);self.assertEqual(len(reviewed),2)
+        self.assertNotEqual(out.get('review_stopped'),'no_supported_prose_change')
+        self.assertEqual(out['prose_repairs'][0]['changed_fields'],1)
+        self.assertEqual(out['answer']['table'][0]['review'],'Review 2 events on 2030-01-01; preserve the uncertainty.')
+
+    def test_noop_detection_still_validates_the_draft_entity_field_and_basis(self):
+        original=copy.deepcopy(self.base);proposal=self.patch(review=self.base['row_prose']['rows'][0]['fields']['review'])
+        with self.assertRaises(E.UnchangedProseRepair):E.apply_prose_repair(proposal,self.base,calls=self.calls)
+        for kind in ('digest','entity','field','basis'):
+            bad=copy.deepcopy(proposal);edit=bad['repair_draft']['rows'][0]
+            if kind=='digest':bad['repair_draft']['draft_digest']='stale'
+            if kind=='entity':edit['key']['patient_id']='absent'
+            if kind=='field':edit['fields']={'absent':'unchanged'}
+            if kind=='basis':edit['basis_additions']=[{'result_view':'agere_result_1','row':1}]
+            with self.subTest(kind=kind),self.assertRaises(ValueError)as caught:
+                E.apply_prose_repair(bad,self.base,calls=self.calls)
+            self.assertNotIsInstance(caught.exception,E.UnchangedProseRepair)
+        self.assertEqual(self.base,original)
+
     def test_binding_role_restores_full_analyst_at_source_review(self):
         feedback=self.located_failure();seen=[];sent=[];original=copy.deepcopy(self.base)
         class SourceBoundary(BaseException):pass
