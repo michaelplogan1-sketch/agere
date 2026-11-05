@@ -4,8 +4,8 @@ The definitions an answer silently depends on are decided once, here, as data, a
 the local compiler, the governed and generated metrics, the engines, the cohort and specialist families, the atomic questions and the
 Claude / System One planners (told in their prompts, checked in their SQL).
 
-  patients        LIVING patients: no row in the semantic `death` table. The deceased are included only when the question asks
-                  ("including deceased", "who died", "deceased", "death", "mortality", "all patients ever", ...).
+  patients        LIVING patients by default. An explicitly dated event-selected cohort retains every received subject;
+                  present survival cannot remove a historical referral, discharge or encounter. Explicit living scope still applies.
   labs            the LATEST result (measurement_latest: one row per patient and concept). "ever / any / at any time / history of /
                   highest / lowest / trend" means any result (measurement).
   conditions      ONE definition of condition evidence everywhere: an EHR diagnosis (condition rows with is_diagnosis = 1, plus
@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/3'  # 2 (2026-10-24): diabetes / CKD by lab rule, duplicate charts once, on-medication = 12-month fill
+VERSION = 'decision-context/4'  # 4: preserve subjects in explicitly dated event-selected cohorts
 # 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
 # stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
@@ -151,13 +151,35 @@ def counts_events(question):
     return bool(EVENT_COUNT.search(q)) and not PATIENT_COUNT.search(q)
 
 
+def event_selected_cohort(question):
+    """A dated event in a For/Among membership clause selects its subjects.
+
+    This is not a new default for an unqualified count/list of current patients.
+    Read only the membership clause: a request to show current responsibility
+    later in the sentence must not erase its historical source population.
+    """
+    q = question or ''
+    if not re.match(r'^\s*(?:for|among)\b', q, re.I):return False
+    selection = re.split(r'[,;.?!]|\b(?:show|compare|distinguish|describe|report|identify)\b', q, maxsplit=1, flags=re.I)[0]
+    received_subjects = PATIENT_WORDS.search(selection) or re.search(r'\b(?:received|recorded)\b', selection, re.I)
+    current_people = re.search(r'\bcurrent\s+(?:patients?|members?|people|population|cohort)\b', selection, re.I)
+    return (bool(received_subjects) and bool(re.search(r'\b(?:19|20)\d{2}\b', selection))
+            and bool(re.search(r'\b(?:' + EVENT_NOUN + r'|referrals?|requests?|observations?|discharged|admitted)\b', selection, re.I))
+            and not bool(LIVING_ASK.search(selection) or current_people))
+
+
 def population(question):
-    """-> {'living_only': bool, 'reason': str}. Counts and lists of patients are living patients unless the question asks for the
-    deceased; counts of events include every patient who had them (Mike 2026-10-25)."""
+    """Default patient counts are living-only; event-selected cohorts keep their subjects.
+
+    Explicit living scope takes precedence over the historical-event exception.
+    """
     q = question or ''
     if ALL_RECEIVED_ROWS.search(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'all_received_rows': True,
                 'reason': 'explicit all-received-row scope includes every received patient ID in those rows'}
+    if event_selected_cohort(q) and not LIVING_ASK.search(q):
+        return {'living_only': False, 'event_selected_cohort': True,
+                'reason': 'dated event-selected cohort retains every subject; present survival does not remove historical records'}
     if counts_events(q) and not LIVING_ASK.search(q):
         return {'living_only': False, 'reason': 'a count of events, not of patients: the events of every patient count (Mike 2026-10-25)'}
     if asks_deceased(q):
@@ -246,6 +268,9 @@ def prompt_block():
         'appointments, no-shows, discharges) include every patient who had them: no living filter on events. '
         'An explicit all-received-row scope also includes all patient IDs within those rows, including distinct-patient '
         'counts inside grouped event summaries. Do not add living_patient or death exclusions there unless the question asks for living patients.\n'
+        'A For/Among cohort selected by a dated recorded event (such as patients receiving a referral in a named year) also retains '
+        'every subject of that historical event. Current survival/enrollment does not establish eligibility at the event. '
+        'Keep subsequent deaths, ended relationships and unknown dates visible; apply living-only scope only when requested.\n'
         '2. Labs: the LATEST result per patient and concept (measurement_latest). Use measurement (every result) only when the question says ever, '
         'any, at any time, history of, at least once, highest, lowest or asks for a trend.\n'
         '3. A condition is documented by ONE evidence rule: an EHR diagnosis (condition with is_diagnosis = 1, plus problem-list rows whose flag is '
@@ -568,12 +593,34 @@ def event_source_findings(question, sqls):
     return list(dict.fromkeys(out))
 
 
+def _living_restriction(sql):
+    """Known population exclusions, not a ban on reading death as evidence."""
+    masked, _ = _mask(sql)
+    if re.search(r'\b(?:FROM|JOIN)\s+living_patient\b', masked, re.I):return True
+    # A projected death flag does not narrow the cohort. Only a negative
+    # membership predicate in a filter is an exclusion here.
+    try:
+        from sqlglot import exp, parse_one
+        tree = parse_one(sql, read='sqlite')
+        if any(t.name.casefold() == 'living_patient' for t in tree.find_all(exp.Table)):return True
+        for predicate in tree.find_all(exp.Not):
+            if not isinstance(predicate.this, (exp.In, exp.Exists)):continue
+            if not any(t.name.casefold() == 'death' for t in predicate.this.find_all(exp.Table)):continue
+            parent = predicate.parent
+            while parent is not None and not isinstance(parent, (exp.Select, exp.Case)):
+                if isinstance(parent, (exp.Where, exp.Having)):return True
+                parent = parent.parent
+    except Exception:  # native SQL validity is checked by its executor
+        pass
+    return False
+
+
 def verify(question, answer, state=None, db=None, sqls=()):
     """The answer check. -> {'ok': bool, 'reasons': [...], 'deceased': [ids]}. Fails when the scope recorded a query it could not
     restrict, when a patient list of a living-only answer holds a deceased patient, or when an event is read from an EHR-only table."""
     state = state or _SCOPE.get() or Scope(question)
     reasons = [*state.problems, *event_source_findings(question, sqls)]
-    if state.population.get('all_received_rows'):
+    if state.population.get('all_received_rows') or state.population.get('event_selected_cohort'):
         # Native bindings describe the returned fields. Earlier exploratory
         # queries remain in the audit but must not poison a repaired answer.
         bound = []
@@ -590,9 +637,8 @@ def verify(question, answer, state=None, db=None, sqls=()):
                 for child in value: bound_prose(child)
         if isinstance(answer, dict): bound_prose(answer.get('computed_prose') or [])
         for sql in bound or sqls or []:
-            masked, _ = _mask(sql)
-            if re.search(r'\b(?:FROM|JOIN)\s+living_patient\b', masked, re.I):
-                reasons.append('an explicit all-received-row question is narrowed by living_patient; distinct patients must '
+            if _living_restriction(sql):
+                reasons.append('an all-received-row or dated event-selected cohort is narrowed by a living-patient exclusion; '
                                'include every patient ID in the requested received rows unless living patients were requested')
                 break
     dead = []

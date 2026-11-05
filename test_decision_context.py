@@ -79,6 +79,38 @@ class Fixture(unittest.TestCase):
 
 
 class Definitions(Fixture):
+    def test_dated_event_selected_cohorts_keep_historical_subjects(self):
+        questions = [
+            'For patients receiving a recorded cardiology referral in 2029, show the received PCP assignment, referral destination, document authors and evidence of attendance separately.',
+            'For patients with recorded COPD evidence and a 2029 respiratory encounter, distinguish reported use and dispensing.',
+            'Among patients discharged after their first recorded inpatient stay in 2028, describe follow-up.',
+            'For received 2029 home-health requests, distinguish request, scheduling and completion.',
+            'For clinical observations recorded as occurring in 2029, show their source clocks.',
+            'For patients with a discharge in 2029, show current care-team responsibility separately.']
+        for q in questions:
+            with self.subTest(question=q):
+                self.assertTrue(DC.population(q)['event_selected_cohort'])
+                self.assertFalse(DC.population(q)['living_only'])
+                # This fixture includes a deceased event subject, D.
+                self.assertEqual(self.run_sql(q, 'SELECT count(DISTINCT patient_id) FROM utilization_event')['value'], 3)
+                with DC.scope(q):
+                    for sql in [
+                        'SELECT * FROM living_patient',
+                        'SELECT * FROM "living_patient"',
+                        'SELECT DISTINCT patient_id FROM utilization_event WHERE patient_id NOT IN (SELECT patient_id FROM death)',
+                        'SELECT DISTINCT e.patient_id FROM utilization_event e WHERE NOT EXISTS (SELECT 1 FROM death d WHERE d.patient_id=e.patient_id)']:
+                        self.assertFalse(DC.verify(q, {}, sqls=[sql])['ok'], sql)
+                    good = 'SELECT patient_id, CASE WHEN patient_id NOT IN (SELECT patient_id FROM death) THEN 1 ELSE 0 END AS living_at_snapshot FROM utilization_event'
+                    self.assertTrue(DC.verify(q, {}, sqls=[good])['ok'])
+
+    def test_current_and_explicit_living_populations_preserve_the_owner_default(self):
+        for q in [
+            'For living patients receiving a cardiology referral in 2029, show the destination.',
+            'For current patients with a discharge in 2029, show care gaps.',
+            'How many patients have diabetes?',
+            'For patients with diabetes, show their referrals in 2029.']:
+            with self.subTest(question=q):self.assertTrue(DC.population(q)['living_only'])
+
     def test_explicit_all_received_rows_preserve_patient_counts_within_events(self):
         q='Across all received appointment rows, show appointment counts and distinct patients.'
         self.assertFalse(DC.population(q)['living_only'])

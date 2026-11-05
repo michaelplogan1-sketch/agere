@@ -248,7 +248,7 @@ has already declined this question, so it is yours to answer completely and corr
 - When a saved cohort is given (cohort_size in the input), the question is about those patients only: the view `cohort(patient_id)` holds them;
   join every query to it.
 - A question can rest on a false premise ("why did X jump" when X fell): check the premise with the numbers and say so.
-- Follow the DECISION CONTEXT definitions below exactly (living patients for counts and lists of patients, every patient for counts of
+- Follow the DECISION CONTEXT definitions below exactly (living patients for default patient counts/lists, every subject for dated event-selected cohorts, every patient for counts of
   events, observation stays are hospital stays, birth-date age, latest lab unless the question says ever/any, condition evidence via
   condition_member, rolling 12 months, Medicare includes dual and Medigap, "on" a drug = a picked-up fill in the last 12 months, the money
   rules). Prefer the definition views and the governed measures documented below.
