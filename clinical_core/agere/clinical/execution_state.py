@@ -378,6 +378,87 @@ def bind_prose_literals(value,operation,native,*,key=None,resolved_bases=None,ba
     return {'template':''.join(template),'bindings':bindings}
 
 
+def composition_output_schema(candidate,feedback,calls):
+    """Constrain a located unfinished composition, without selecting its meaning.
+
+    Membership comes from the complete executed table. A draft-bound producer
+    review supplies the entity key names and locates the omission. This is not
+    a question-keyword router, clinical verdict or permission to invent prose.
+    """
+    from .result_assembly import _rows,incomplete_reason
+    if (not isinstance(candidate,dict)or not isinstance(feedback,dict)
+            or feedback.get('repair_kind')!='incomplete_composition'
+            or feedback.get('composition_draft_digest')!=digest(candidate)):return None
+    try:
+        targets=feedback['composition']['targets']
+        if not isinstance(targets,list)or not targets:return None
+        keys=sorted(set(targets[0])-{'row','reason'})
+        if not keys:return None
+        native={c['result']['result_view']:c['result']for c in calls if isinstance(c.get('result'),dict)
+            and c['result'].get('result_view')and not c['result'].get('error')}
+        root=candidate['table_from_tool'];result=native[root]
+        if incomplete_reason(result):return None
+        columns,rows=_rows(result)
+        if not rows or not set(keys)<=set(columns):return None
+        entities=[{k:r[k]for k in keys}for r in rows]
+        if any(type(v)not in(str,int,float,bool)for key in entities for v in key.values()):return None
+        json.dumps(entities,allow_nan=False)
+        if len({digest(key)for key in entities})!=len(rows):return None
+        for target in targets:
+            if (set(target)-{'row','reason'}!=set(keys)or type(target['row'])is not int
+                    or not 0<=target['row']<len(rows)
+                    or digest({k:target[k]for k in keys})!=digest(entities[target['row']])):return None
+        field_names=[]
+        spec=candidate.get('row_prose')
+        if spec is not None:
+            if (not isinstance(spec['keys'],list)or len(spec['keys'])!=len(keys)
+                    or set(spec['keys'])!=set(keys)or not spec['rows']):return None
+            keys=list(spec['keys'])
+            field_names=list(spec['rows'][0]['fields'])
+            if not field_names or any(set(e['fields'])!=set(field_names)for e in spec['rows']):return None
+        def obj(properties,required=None):
+            return {'type':'object','properties':properties,'required':list(properties)if required is None else required,
+                    'additionalProperties':False}
+        prose={'anyOf':[{'type':'string'},obj({'template':{'type':'string'},
+            'bindings':{'type':'object','additionalProperties':{'type':'object'}}})]}
+        fields=({'type':'object','properties':{k:prose for k in field_names},'required':field_names,
+                 'additionalProperties':prose}if field_names else
+                {'type':'object','minProperties':1,'additionalProperties':prose})
+        row=obj({'key':{'type':'object','enum':entities},
+            'basis':{'type':'array','minItems':1,'items':obj({'result_view':{'type':'string','enum':list(native)},
+                                                         'row':{'type':'integer','minimum':0}})},'fields':fields})
+        return {'type':'object','properties':{
+            'status':{'enum':['answered','partial','unsupported']},'answer_type':{'enum':['table']},
+            'headline':prose,'table_from_tool':{'type':'string','enum':list(native)},
+            'row_prose':obj({'keys':{'type':'array','enum':[keys]},
+                'rows':{'type':'array','items':row,'minItems':len(rows),'maxItems':len(rows)}})},
+            'required':['status','answer_type','headline','table_from_tool','row_prose'],'additionalProperties':True}
+    except (KeyError,TypeError,ValueError,IndexError):return None
+
+
+def composition_contract_error(proposal,schema):
+    """Enforce native membership even if a transport ignores its output schema.
+
+    The ordinary compiler and full review still check scalar values, meaning,
+    fields, provenance and source support after this structural boundary.
+    """
+    if schema is None:return None
+    reason='Complete the retained row interpretation: return row_prose once for every native entity, with its exact keys and all requested text fields.'
+    try:
+        spec=proposal['row_prose'];contract=schema['properties']['row_prose']['properties']
+        entries=spec['rows'];row=contract['rows']['items']['properties'];keys=contract['keys']['enum'][0]
+        if spec['keys']!=keys or not isinstance(entries,list)or len(entries)!=contract['rows']['minItems']:return reason
+        expected={digest(k)for k in row['key']['enum']};seen=set();required=set(row['fields'].get('required',[]))
+        for entry in entries:
+            if not isinstance(entry['key'],dict)or set(entry['key'])!=set(keys):return reason
+            ident=digest(entry['key'])
+            if ident not in expected or ident in seen:return reason
+            seen.add(ident);fields=entry['fields']
+            if not isinstance(fields,dict)or not fields or not required<=set(fields):return reason
+        return None if seen==expected else reason
+    except (KeyError,TypeError,ValueError):return reason
+
+
 def binding_repair_schema(focus):
     """Constrain binding output to small edits, not replacement sentences.
 

@@ -1388,9 +1388,11 @@ def execution_review_graph(calls,answer=None):
     return graph
 
 
-def incomplete_composition(assessment, composition, *, feedback='', progress_state=None):
+def incomplete_composition(assessment, composition, answer, *, feedback='', progress_state=None):
     """Located unfinished work requests a repair; it never accepts source truth."""
+    from ...contracts import digest
     return {**assessment, 'status':'repair', 'repair_kind':'incomplete_composition',
+        'composition':composition,'composition_draft_digest':digest(answer),
         'progress_state':{**(progress_state or {}), 'unfinished_interpretation':composition['targets']},
         'support':{'label':'not_run','decided_by':None,'packets':[],
                    'all_dependencies_checked':False,'reason':'Finish the located row interpretation before source review.'},
@@ -1525,7 +1527,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                 composition=gate.check_composition(question,coverage_answer(answer),ledger=ledger,as_of_date=as_of)
                 assessment.update(composition=composition,calls=composition['calls'],cost_usd=composition['cost_usd'])
                 if composition.get('targets'):
-                    return incomplete_composition(assessment,composition,feedback=prose_problem,progress_state=progress_state)
+                    return incomplete_composition(assessment,composition,answer,feedback=prose_problem,progress_state=progress_state)
             except Exception as exc:
                 if getattr(exc,'kind',None)=='rate_limit':raise
                 # Preserve the concrete compiler feedback during an outage.
@@ -1604,7 +1606,7 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
             assessment.update(composition=composition,calls=assessment['calls']+composition['calls'],
                               cost_usd=assessment['cost_usd']+composition['cost_usd'])
             if composition.get('targets'):
-                return incomplete_composition(assessment,composition)
+                return incomplete_composition(assessment,composition,answer)
         # All tool results and the cited documents' context, rather than numeric-token overlap or the quote alone.
         bound = (answer.get('table_binding') or {}).get('result_view')
         evidence = []

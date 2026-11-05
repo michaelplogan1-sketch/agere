@@ -630,10 +630,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                     state['pending_protocol_response'] = pending_protocol_response
                     actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
                 focused_repair=state.get('focused_prose_repair')
+                if repair_protocol_feedback:
+                    state['repair_protocol_feedback']=repair_protocol_feedback
+                    actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
                 if focused_repair:
-                    if repair_protocol_feedback:
-                        state['repair_protocol_feedback']=repair_protocol_feedback
-                        actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
                     actor_system=[*(actor_system if isinstance(actor_system,list)else[{'type':'text','text':actor_system}]),
                         {'type':'text','text':'Current operation: repair the retained draft. Use literal registered tools if needed, then return ONLY {"repair_draft":{"draft_digest":"the exact focused_prose_repair digest","rows":[changed entity fields]}}. A replacement final answer is invalid in this operation. If the evidence justifies no changes, return the same repair_draft contract with rows:[]; the existing answer remains partial and unresolved.'}]
             body = {'model': model, 'max_tokens': max_tokens, 'system': actor_system, 'messages': actor_messages, 'tools': tools,
@@ -647,6 +647,13 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                      'or compute the named definition count from native evidence, carrying the entity keys and source record/date. '
                      'Do not SELECT invented constants. After its result returns, bind the value in the unchanged original sentence.'}]
             if pending_output is not None:body['tool_choice']=pending_output['tool_choice']
+            completion_schema=None
+            if compact_execution_state and not focused_repair:
+                from .execution_state import composition_output_schema
+                completion_schema=composition_output_schema(state_candidate,state_feedback,result['tool_calls'])
+                if completion_schema is not None and pending_output is None:
+                    body['output_config']={**(body.get('output_config')or{}),
+                        'format':{'type':'json_schema','schema':completion_schema}}
             if focused_repair and pending_output is None:
                 from .execution_state import binding_repair_schema
                 schema=binding_repair_schema(focused_repair)
@@ -770,6 +777,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             # and lets a replacement silently discard row prose.
                             repair_protocol_feedback='Your repair was not valid JSON and was not applied. The complete draft and located targets are unchanged. Use registered tools if needed, then return only the required repair_draft object with its current digest.'
                             format_feedback=repair_protocol_feedback
+                        elif state_candidate is not None and isinstance(state_feedback,dict):
+                            repair_protocol_feedback='Your response was not valid JSON. The retained draft and its complete review requirements are unchanged. Return the required answer object using the existing native evidence.'
+                            format_feedback=repair_protocol_feedback
                         else:
                             state_feedback='Your reply was not valid JSON. Return only the required JSON object.'
                             format_feedback='Your reply was not a valid JSON answer object. Reply with ONLY the JSON answer object in the required contract, no other text.'
@@ -784,6 +794,8 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                             raise ValueError('Investigation made no progress: repeated unexecuted tool request, not a final answer')
                     if focused_repair:
                         repair_protocol_feedback='Unexecuted tool envelope: no action or prose edit was applied. The complete draft and located targets are unchanged. Use registered tools with literal arguments, then return only repair_draft with the current digest.'
+                    elif state_candidate is not None and isinstance(state_feedback,dict):
+                        repair_protocol_feedback='Unexecuted tool envelope: no action or answer was accepted. The retained draft and its complete review requirements are unchanged. Use a registered literal tool envelope or return the required complete answer object.'
                     else:
                         state_feedback='Unexecuted tool envelope. Use the registered tools with literal arguments before returning a final answer.'
                     rejected_protocol.add(signature)
@@ -797,7 +809,21 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                      'Do not wrap tool requests in an answer object or mix them with other actions. '
                                      'Execute the missing work before returning the final answer.'})
                     continue
+                if completion_schema is not None:
+                    from .execution_state import composition_contract_error
+                    completion_error=composition_contract_error(candidate,completion_schema)
+                    if completion_error:
+                        retain_protocol_response(blocks)
+                        signature=digest(['incomplete_composition_contract',candidate,digest(state_candidate)])
+                        result.setdefault('protocol_repairs',[]).append({'reason':'Incomplete native composition contract',
+                            'candidate_digest':digest(candidate),'retained_draft_digest':digest(state_candidate)})
+                        if signature in rejected_protocol and not escalate('Repeated incomplete native composition'):
+                            result['review_stopped']='no_progress';return result
+                        rejected_protocol.add(signature);repairs+=1;force_text=False
+                        repair_protocol_feedback=completion_error
+                        continue
                 pending_protocol_response = None
+                if not focused_repair:repair_protocol_feedback=None
                 if focused_repair and (not isinstance(candidate,dict) or set(candidate)!={'repair_draft'}):
                     signature=digest(['focused_repair_replacement',candidate,digest(state_candidate)])
                     result.setdefault('protocol_repairs',[]).append({'reason':'Replacement answer rejected at focused repair boundary',
@@ -940,6 +966,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 result['answer'] = candidate
                 return result
             pending_protocol_response = None
+            if not focused_repair:repair_protocol_feedback=None
             messages.append({'role': 'assistant', 'content': blocks})
             answers = []
             latest_calls=[]
