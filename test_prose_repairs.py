@@ -8,6 +8,57 @@ from clinical_core.contracts import digest
 
 
 class ProseRepairs(unittest.TestCase):
+    def test_binding_role_restores_full_analyst_at_source_review(self):
+        feedback=self.located_failure();seen=[];sent=[];original=copy.deepcopy(self.base)
+        class SourceBoundary(BaseException):pass
+        def review(candidate,calls):
+            seen.append(copy.deepcopy(candidate))
+            if len(seen)==1:return feedback
+            self.compile(candidate)
+            packet,support=self.source_review()
+            # Bind this new source assessment to the complete compiled draft.
+            with patch.object(self,'base',candidate):packet,support=self.source_review()
+            target=E.source_prose_repair(candidate,support,[packet],{})
+            self.assertTrue(target)
+            return {'status':'repair','repair_kind':'unresolved_verification','feedback':'Inspect the dated source.',
+                    'prose_repair':target}
+        def send(body):
+            sent.append(copy.deepcopy(body));state=json.loads(body['messages'][0]['content'])
+            self.assertEqual(state['original_request'],'Explain both entities')
+            self.assertEqual(state['focused_prose_repair']['native_answer_rows'],2)
+            if len(sent)==1:
+                self.assertIn('BINDING ROLE',str(body['system']));self.assertNotIn('FULL ANALYST',str(body['system']))
+                return {'content':[{'type':'text','text':json.dumps(self.patch(review={'bind_literals':[
+                    {'literal':'two','binding':{'result_view':'agere_result_1','where':[],'column':'events'}}]}))}]},0.,False
+            self.assertIn('FULL ANALYST',str(body['system']));self.assertNotIn('BINDING ROLE',str(body['system']))
+            self.assertEqual(state['focused_prose_repair']['intent'],'source_meaning_review')
+            self.assertNotIn('output_config',body)
+            raise SourceBoundary()
+        with self.assertRaises(SourceBoundary):
+            S.tool_loop('Explain both entities','FULL ANALYST',[],lambda use:self.fail('Unexpected native action'),
+                send=send,model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+                review=review,compact_execution_state=True,binding_system='BINDING ROLE')
+        self.assertEqual(len(sent),2);self.assertEqual(self.base,original)
+
+    def test_binding_output_continuation_keeps_its_exact_system_and_draft(self):
+        feedback=self.located_failure();seen=[];sent=[]
+        proposal=json.dumps(self.patch(review={'bind_literals':[
+            {'literal':'two','binding':{'result_view':'agere_result_1','where':[],'column':'events'}}]}))
+        def review(candidate,calls):
+            seen.append(copy.deepcopy(candidate))
+            if len(seen)==1:return feedback
+            self.compile(candidate);return {'status':'confirmed'}
+        def send(body):
+            sent.append(copy.deepcopy(body));cut=len(proposal)//2
+            return {'content':[{'type':'text','text':proposal[:cut]if len(sent)==1 else proposal[cut:]}],
+                    'stop_reason':'max_tokens'if len(sent)==1 else'end_turn'},0.,False
+        out=S.tool_loop('Explain both entities','FULL ANALYST',[],lambda use:self.fail('Unexpected native action'),
+            send=send,model=M.SONNET,max_tools=None,initial_calls=self.calls,initial_answer=self.base,
+            review=review,compact_execution_state=True,binding_system='BINDING ROLE',continuation_guard=lambda:{'source':'same'})
+        self.assertEqual(len(sent),2);self.assertEqual(sent[0]['system'],sent[1]['system'])
+        self.assertEqual(len(out['answer']['table']),2);self.assertEqual(out['completed_output_continuations'],1)
+        self.assertTrue(all(r['role']=='binding_repair'for r in out['actor_prompt_receipts']))
+
     def test_subscription_failure_retains_exact_unfinished_compiler_draft_separately(self):
         from clinical_core.agere.gateway import ProviderUnavailable
         feedback=self.located_failure();original=copy.deepcopy(self.base)

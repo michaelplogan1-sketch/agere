@@ -503,7 +503,7 @@ def actor_result(value):
 
 def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=None, max_tokens=8192, deadline=None,
               format_retries=0, review=None, continuation_guard=None, initial_calls=None, initial_answer=None,
-              escalation_model=None, compact_execution_state=False):
+              escalation_model=None, compact_execution_state=False, binding_system=None):
     """Bounded tool-use loop: every executed call (failed ones included) counts toward max_tools; all returned usage is
     recorded, including cache writes/reads; there are no automatic paid retries.
 
@@ -628,7 +628,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                                               documentation_identity=documentation_identity,documentation_in_system=bool(loaded_docs),
                                               feedback_native=review_reference(state_feedback,execute))
             else:actor_messages=messages
-            focused_repair=None
+            focused_repair=None;binding_role=False
             if compact_execution_state:
                 state=json.loads(actor_messages[0]['content'])
                 if pending_protocol_response is not None:
@@ -638,6 +638,18 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 if repair_protocol_feedback:
                     state['repair_protocol_feedback']=repair_protocol_feedback
                     actor_messages=[{**actor_messages[0],'content':json.dumps(state,default=str)},*actor_messages[1:]]
+                if focused_repair and pending_output is None and binding_system is not None:
+                    from .execution_state import binding_repair_schema
+                    if binding_repair_schema(focused_repair) is not None:
+                        # The caller supplies this narrower role explicitly.
+                        # All native state, tools, loaded schema and downstream
+                        # reviews remain identical; source interpretation keeps
+                        # the full analyst system on the next transition.
+                        actor_system=list(binding_system)if isinstance(binding_system,list)else[{'type':'text','text':binding_system}]
+                        if loaded_docs:
+                            actor_system.append({'type':'text','text':'LOADED FIRST-PARTY DOCUMENTATION:\n'+json.dumps(loaded_docs,default=str,allow_nan=False),
+                                                 'cache_control':{'type':'ephemeral'}})
+                        binding_role=True
                 if focused_repair:
                     patch_fields='fields:[{path:[exact located keys],bind_literals:[native scalar edits]}]'if focused_repair.get('scope')=='answer'else'rows:[changed entity fields]'
                     actor_system=[*(actor_system if isinstance(actor_system,list)else[{'type':'text','text':actor_system}]),
@@ -652,7 +664,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                      'The required next action is query_sql, not another prose patch. Select the actual source value '
                      'or compute the named definition count from native evidence, carrying the entity keys and source record/date. '
                      'Do not SELECT invented constants. After its result returns, bind the value in the unchanged original sentence.'}]
-            if pending_output is not None:body['tool_choice']=pending_output['tool_choice']
+            if pending_output is not None:
+                body['tool_choice']=pending_output['tool_choice']
+                body['system']=pending_output['system']
+                binding_role=pending_output['binding_role']
             completion_schema=None
             if compact_execution_state and not focused_repair:
                 from .execution_state import composition_output_schema
@@ -677,7 +692,9 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 result['estimated_cost_usd'] = None
                 raise
             result.setdefault('actor_prompt_receipts',[]).append({'turn':turns,'execution_state':compact_execution_state,
-                'message_bytes':len(json.dumps(actor_messages,default=str).encode()),'native_tool_calls_retained':len(result['tool_calls'])})
+                'message_bytes':len(json.dumps(actor_messages,default=str).encode()),'native_tool_calls_retained':len(result['tool_calls']),
+                'role':'binding_repair'if binding_role else'analyst',
+                'system_bytes':len(json.dumps(body['system'],default=str).encode())})
             usage = response.get('usage', {})
             if cache_hit:
                 result['cache_hits'] = result.get('cache_hits', 0) + 1
@@ -702,7 +719,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                         raise ValueError('Provider response was truncated and repeated without output progress; partial output retained')
                     accumulated=(pending_output['text'] if pending_output else '')+text
                     pending_output={'text':accumulated,'last_chunk':text,'guard_identity':guard_identity,
-                        'tool_choice':body['tool_choice'],
+                        'tool_choice':body['tool_choice'],'system':body['system'],'binding_role':binding_role,
                         'messages':actor_messages+[{'role':'assistant','content':blocks},{'role':'user','content':
                             'The service stopped this response at its output boundary. Continue exactly from its final character. '
                             'Return only the remaining suffix, without repeating prior text or adding Markdown. '
