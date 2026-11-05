@@ -68,6 +68,17 @@ class OrdinaryReference(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'Protected or unrelated source'):
                 path.read_text()
 
+    def test_other_arm_results_and_evaluator_code_are_blocked_but_own_trace_is_readable(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory(prefix='agere-ordinary-comparison-',dir=ROOT/'artifacts')as folder:
+            run=Path(folder);mine=run/'stack';other=run/'frontier_tools';mine.mkdir();other.mkdir()
+            own=mine/'components.jsonl';own.write_text('authored trace')
+            foreign=other/'result.json.gz';foreign.write_text('authored other-arm output')
+            with source_boundary(mine/'scratch'):
+                self.assertEqual(own.read_text(),'authored trace')
+                for path in [foreign,S.SCORING,Path(S.__file__)]:
+                    with self.assertRaisesRegex(RuntimeError,'Protected or unrelated source'):path.read_text()
+
     def test_reported_availability_does_not_invent_a_warehouse_receipt_clock(self):
         records=[{'stream':'labs','event_date':'2029-12-31','available_date':'2030-01-01'},
                  {'stream':'labs','event_date':'2029-01-01','available_date':None},

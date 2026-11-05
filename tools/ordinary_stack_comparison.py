@@ -50,6 +50,7 @@ def attempts():
 def source_boundary(scratch):
     """Same forbidden source families as the ordinary app, including prior answers."""
     scratch = Path(scratch).resolve()
+    own_run=scratch.parent if scratch.name=='scratch'else scratch
     import builtins
     import io
     from unittest.mock import patch
@@ -63,6 +64,8 @@ def source_boundary(scratch):
         parts = {p.lower() for p in path.parts}
         if (parts & {'bench', 'benchmarks', 'dev3', 'heldout', 'held-out', 'held_out', 'protected-corpora'}
             or any(p.startswith('agere-ordinary-scoring')for p in parts)
+            or path.name in{'ordinary_question_scoring.json','ordinary_stack_scoring.py'}
+            or any(p.startswith('agere-ordinary-comparison')for p in parts)and not path.is_relative_to(own_run)
             or '/tools/calibration/data/' in str(path)
             or str(path).startswith(('/Users/mikel/Documents/', '/Users/mikel/synthetic-patient-ecosystem/'))
             or path.name.lower() in {'healthcare_questions.json', 'vbc_questions.json', 'questions.json'}
@@ -175,6 +178,7 @@ def main():
             if reference and file_sha(ROOT/reference['path'])!=reference['sha256']:
                 raise ValueError('Independent reference changed after protocol freeze')
         if args.execute and args.case=='Q03':raise ValueError('Keep the existing Q03 ordinary pilot; no repeat paid campaign.')
+        os.environ['AGERE_FROZEN_LEARNING']=file_sha(args.protocol)
     from clinical_core.agere.clinical import semantic_layer
     with sqlite3.connect((RUNTIME / 'semantic.sqlite3').as_uri() + '?mode=ro', uri=True) as db:
         assert dict(db.execute('SELECT key,value FROM meta'))['postprocessing_identity'] == semantic_layer.policy_identity()
@@ -232,6 +236,8 @@ def main():
         costs = [usage_cost(a['model'], (json.loads(a['response']) if a['response'] else {}).get('usage')) for a in new]
         record.update(seconds=time.perf_counter() - started, source_frozen=False,
                       source_unchanged=source_identity(RUNTIME) == record['source'], code_unchanged=fingerprint(code_identity()) == record['code'],
+                      runner_unchanged=file_sha(__file__)==record['runner_sha256'],
+                      protocol_unchanged=file_sha(args.protocol)==record['protocol_sha256']if args.protocol else None,
                       prior_attempt_rows_exact=all(after.get(key) == value for key, value in before.items()),
                       new_provider_attempts=len(new), known_api_equivalent_usd=sum(c['estimated_usd'] for c in costs if c is not None),
                       unpriced_attempts=sum(c is None for c in costs), finished_at=datetime.now(timezone.utc).isoformat())

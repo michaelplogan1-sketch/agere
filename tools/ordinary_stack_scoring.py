@@ -13,8 +13,10 @@ import json
 import math
 from pathlib import Path
 import sqlite3
+import sys
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 RUNTIME=ROOT/'artifacts/agere-full-stack-rerun-2026-10-30/focused/runtime/stack'
 CURRICULUM=ROOT/'config/agere/ordinary_question_curriculum.json'
 SCORING=ROOT/'config/agere/ordinary_question_scoring.json'
