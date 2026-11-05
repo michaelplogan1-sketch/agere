@@ -974,25 +974,33 @@ class ProseRepairs(unittest.TestCase):
         p,support=self.source_review()
         feedback={'status':'repair','repair_kind':'unresolved_verification','feedback':'Review the exact source meaning.',
             'prose_repair':E.source_prose_repair(self.base,support,[p],{})}
-        candidate=E.apply_prose_repair(self.patch(review='Review 42 events before confirming responsibility.'),
+        candidate=E.apply_prose_repair(self.patch(review='Review 2 events before confirming responsibility.'),
             self.base,calls=self.calls,feedback=feedback)
         assessment=B.review_final(SimpleNamespace(),'Explain each entity',candidate,self.calls,
             SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
         self.assertEqual(assessment['repair_kind'],'deterministic_compiler')
         return feedback,candidate,assessment
 
-    def test_source_edit_remains_editable_after_compiler_failure_without_expanding_scope(self):
+    def test_source_edit_transitions_to_binding_only_without_expanding_scope(self):
         feedback,candidate,assessment=self.source_compiler_fixture()
         continued=E.continue_source_prose_repair(self.base,feedback,candidate,assessment)
         self.assertTrue(continued['prose_repair']['pending_compiler'])
         self.assertEqual(continued['prose_repair']['source_contexts'],feedback['prose_repair']['source_contexts'])
         proposal={'repair_draft':{'draft_digest':digest(candidate),'rows':[{'key':{'patient_id':'A'},
             'fields':{'review':'Confirm responsibility from the dated source; the current clinician is unknown.'}}]}}
+        with self.assertRaises(E.BindingPreservationError):
+            E.apply_prose_repair(proposal,candidate,calls=self.calls,feedback=continued)
+        proposal['repair_draft']['rows'][0]['fields']['review']={'bind_literals':[
+            {'literal':'2','binding':{'result_view':'agere_result_1','where':[],'column':'events'}}]}
         repaired=E.apply_prose_repair(proposal,candidate,calls=self.calls,feedback=continued)
         self.compile(repaired)
         self.assertEqual(repaired['table'][1],self.base['table'][1])
         self.assertEqual(repaired['table'][0]['events'],2)
-        self.assertIn('not a sentence-preserving',E.focused_prose_state(candidate,continued,self.calls)['instruction'])
+        self.assertEqual(repaired['table'][0]['review'],'Review 2 events before confirming responsibility.')
+        focus=E.focused_prose_state(candidate,continued,self.calls)
+        self.assertIsNotNone(E.binding_repair_schema(focus))
+        self.assertTrue(focus['coverage_still_required'])
+        self.assertIn('Preserve each original sentence',focus['instruction'])
 
     def test_compiler_repair_does_not_reopen_other_source_fields_that_already_compile(self):
         feedback,_,_=self.source_compiler_fixture()
@@ -1001,7 +1009,7 @@ class ProseRepairs(unittest.TestCase):
                      value_digest=digest(self.base['row_prose']['rows'][0]['fields']['explanation']),
                      reviewed_value_digest=digest(self.base['table'][0]['explanation']))
         feedback['prose_repair']['targets'].append(extra)
-        candidate=E.apply_prose_repair(self.patch(review='Review 42 events.',explanation='The dated observation needs confirmation.'),
+        candidate=E.apply_prose_repair(self.patch(review='Review 2 events.',explanation='The dated observation needs confirmation.'),
             self.base,calls=self.calls,feedback=feedback)
         assessment=B.review_final(SimpleNamespace(),'Explain each entity',candidate,self.calls,
             SimpleNamespace(read={'note_A':{'text':'Dated observation'}}),ledger=None,as_of='2030-05-27')
@@ -1010,7 +1018,8 @@ class ProseRepairs(unittest.TestCase):
         proposed={'repair_draft':{'draft_digest':digest(candidate),'rows':[{'key':{'patient_id':'A'},
             'fields':{'explanation':'Three new unbound observations.'}}]}}
         with self.assertRaises(ValueError):E.apply_prose_repair(proposed,candidate,calls=self.calls,feedback=continued)
-        proposed['repair_draft']['rows'][0]['fields']={'review':'Confirm the dated observation.'}
+        proposed['repair_draft']['rows'][0]['fields']={'review':{'bind_literals':[
+            {'literal':'2','binding':{'result_view':'agere_result_1','where':[],'column':'events'}}]}}
         repaired=E.apply_prose_repair(proposed,candidate,calls=self.calls,feedback=continued);self.compile(repaired)
         self.assertEqual(repaired['row_prose']['rows'][0]['fields']['explanation'],candidate['row_prose']['rows'][0]['fields']['explanation'])
         self.assertNotEqual(repaired['row_prose']['rows'][0]['fields']['explanation'],self.base['row_prose']['rows'][0]['fields']['explanation'])
@@ -1058,7 +1067,8 @@ class ProseRepairs(unittest.TestCase):
                 seen.append(copy.deepcopy(a));return assessed
             def send(body):
                 sent.append(body)
-                text='Confirm current responsibility from the dated note.'if finish and len(sent)>1 else'Review 42 events.'
+                text=({'bind_literals':[{'literal':'2','binding':{'result_view':'agere_result_1',
+                    'where':[],'column':'events'}}]}if finish and len(sent)>1 else'Review 2 events.')
                 proposal={'repair_draft':{'draft_digest':digest(seen[-1]),'rows':[
                     {'key':{'patient_id':'A'},'fields':{'review':text}}]}}
                 return {'content':[{'type':'text','text':json.dumps(proposal)}]},0,False
@@ -1070,7 +1080,7 @@ class ProseRepairs(unittest.TestCase):
                 if finish:
                     self.assertNotIn('unaccepted_draft',out)
                     self.assertNotIn('unfinished_draft',out)
-                    self.assertEqual(out['answer']['table'][0]['review'],'Confirm current responsibility from the dated note.')
+                    self.assertEqual(out['answer']['table'][0]['review'],'Review 2 events.')
                 else:
                     self.assertEqual(out['answer']['table'],self.base['table'])
                     self.assertEqual(out['answer']['verification'],'unverified')

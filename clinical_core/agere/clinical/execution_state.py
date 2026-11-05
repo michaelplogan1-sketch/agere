@@ -783,12 +783,12 @@ def prose_repair_targets(candidate,feedback):
 
 
 def continue_source_prose_repair(previous,feedback,candidate,assessment):
-    """Keep an authorized source edit editable while its new syntax is fixed.
+    """Carry source provenance into a compiler-owned binding repair.
 
-    A pure binding repair still preserves every sentence. This continuation is
-    limited to compiler-failed fields within the earlier source-review scope.
-    Other proposed edits stay intact; the full reviewer remains required after
-    compilation. Relevant source contexts and native table/bases stay unchanged.
+    Source interpretation has produced a new draft. Its failed bindings now
+    need sentence-preserving edits, not renewed permission to rewrite meaning.
+    Keep the compiler's exact targets and the earlier source context; complete
+    source and coverage review still follow successful compilation.
     """
     import copy
     if assessment.get('repair_kind')!='deterministic_compiler':return assessment
@@ -814,10 +814,9 @@ def continue_source_prose_repair(previous,feedback,candidate,assessment):
         fields=set().union(*(set(r['fields'])for r in old['rows']))
         def native_rows(a):return[{k:v for k,v in r.items()if k not in fields}for r in a['table']]
         if native_rows(previous)!=native_rows(candidate):return assessment
-        failed_scope={(digest(t['key']),t['field'])for t in failed}
-        targets=[{**t,'value_digest':digest(updated[digest(t['key'])]['fields'][t['field']])}
-                 for t in allowed if(digest(t['key']),t['field'])in failed_scope]
-        continued={**copy.deepcopy(receipt),'draft_digest':digest(candidate),'targets':targets,'pending_compiler':True,
+        targets=copy.deepcopy(failed)
+        continued={**copy.deepcopy(receipt),**copy.deepcopy(assessment['prose_repair']),
+            'intent':'source_binding_repair','targets':targets,'pending_compiler':True,
             'source_review_origin_digest':receipt.get('source_review_origin_digest',receipt['draft_digest']),
             'compiler_feedback':assessment.get('feedback')}
         patients={t['key'].get('patient_id')for t in targets}
@@ -902,6 +901,12 @@ def focused_prose_state(candidate,feedback,calls):
             'to select its complete exact value with the entity keys and source record/date; do not truncate quotes. '
             'All original results and their scope remain available in executed_results. Nothing here establishes source support.'}
     receipt=feedback['prose_repair']
+    if receipt.get('intent')=='source_binding_repair':
+        state.update(source_review_origin_digest=receipt['source_review_origin_digest'],
+            source_contexts=receipt.get('source_contexts',[]),
+            native_source_contexts=receipt.get('native_source_contexts',[]),
+            coverage_still_required=True)
+        state['instruction']+=' The source correction is retained, but this step only repairs its compiler-located bindings. Source contexts are reading material, not executed scalar cells; full source and coverage review remains required.'
     if receipt.get('intent')=='source_meaning_review':
         state.update(intent='source_meaning_review',source_contexts=receipt['source_contexts'],
             source_contexts_digest=receipt['source_contexts_digest'],coverage_still_required=True,
