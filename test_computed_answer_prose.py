@@ -209,7 +209,7 @@ class ComputedProse(unittest.TestCase):
         self.assertEqual(draft['table'][0]['explanation'],'2 observed events; current responsibility is unknown.')
 
     def test_invalid_row_prose_is_still_a_compiler_failure_not_an_accepted_omission(self):
-        for value in (None,{}, {'keys':[],'rows':[]}):
+        for value in ({}, {'keys':[],'rows':[]}):
             draft={'status':'partial','answer_type':'table','table_from_tool':'agere_result_0',
                    'headline':'Source findings retained.','row_prose':value}
             with self.subTest(value=value),patch.object(G,'ready',side_effect=AssertionError('No model review of malformed prose')):

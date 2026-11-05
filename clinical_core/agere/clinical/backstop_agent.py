@@ -1099,7 +1099,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     if 'headline' in answer:updates['headline']=checked('headline',answer['headline'],['headline'])
     if isinstance(answer.get('facts'),dict):
         updates['facts']={key:checked('facts.'+key,value,['facts',key]) for key,value in answer['facts'].items()}
-    if 'row_prose' in answer:
+    if answer.get('row_prose') is not None:
         # Rebuild from actual native rows on every review; model-provided proof
         # metadata and a previously rendered table never establish evidence.
         from .result_assembly import _rows
@@ -1528,13 +1528,13 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
         targeted=({'schema':'native-prose-repair-targets/1','draft_digest':digest(answer),'targets':prose_targets,
                    **({'answer_targets':answer_prose_targets}if answer_prose_targets else{})}
                   if (prose_targets or answer_prose_targets) and static_feedback==[prose_problem] and not feedback else None)
-        # With no row-prose proposal, native placeholder text can reveal an
-        # independent omission. Once row_prose exists, its atomic compiler has
+        # An omitted or null row_prose supplies no proposal; native placeholder
+        # text can reveal an independent omission. A non-null proposal's compiler has
         # not applied ANY proposed fields on failure: this table is still the
         # native base, not the narrative being repaired. Preserve the exact
         # compiler targets; composition/source checks run after compilation.
         if (prose_problem and static_feedback==[prose_problem] and not feedback
-                and 'row_prose' not in answer
+                and answer.get('row_prose') is None
                 and answer.get('table') and gate.ready(stack, 'AGERE_S1_CHECK')):
             try:
                 from .evidence_projection import coverage_answer

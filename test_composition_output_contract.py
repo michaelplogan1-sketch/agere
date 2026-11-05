@@ -1,5 +1,6 @@
 """Native completion requirements survive protocol errors and constrain output."""
 import copy,json,unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 from clinical_core.agere.clinical import backstop_agent as B,execution_state as E,semantic_analyst as S
 from clinical_core.agere import subscription_transport as T
@@ -38,6 +39,50 @@ class CompositionOutputContract(unittest.TestCase):
         self.assertIn('row_prose',schema['required']);self.assertEqual(self.calls,before)
         self.assertIsNone(E.composition_contract_error(self.completed(),schema))
         B.bind_computed_prose(self.completed(),self.calls)
+
+    def test_null_prose_reaches_existing_unfinished_composition_path(self):
+        from clinical_core.agere.clinical import system_one_gate as G
+        for present in (False,True):
+            draft=copy.deepcopy(self.draft);draft['headline']='At least one clinic needs interpretation.'
+            if present:draft['row_prose']=None
+            with self.subTest(explicit_null=present),patch.object(G,'ready',return_value=True),patch.object(
+                    G,'check_composition',return_value=copy.deepcopy(self.composition))as check:
+                feedback=B.review_final(SimpleNamespace(), 'Explain each clinic and propose review steps.',
+                    draft,self.calls,SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+            self.assertEqual(check.call_count,1)
+            self.assertEqual(feedback['repair_kind'],'incomplete_composition')
+            self.assertIn('unbound literals',feedback['feedback'])
+            self.assertIsNotNone(E.composition_output_schema(draft,feedback,self.calls))
+            self.assertEqual(len(draft['table']),2)
+
+    def test_malformed_nonnull_prose_still_requires_compiler_repair(self):
+        from clinical_core.agere.clinical import system_one_gate as G
+        for spec in ({},[],False,0,''):
+            draft=copy.deepcopy(self.draft);draft['row_prose']=spec
+            with self.subTest(spec=spec),patch.object(G,'check_composition',side_effect=AssertionError(
+                    'A malformed proposal must not be mistaken for absent interpretation')):
+                feedback=B.review_final(SimpleNamespace(), 'Explain each clinic.',draft,self.calls,
+                    SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+            self.assertEqual(feedback['repair_kind'],'deterministic_compiler')
+
+    def test_existing_prose_is_not_reclassified_from_uncompiled_native_rows(self):
+        from clinical_core.agere.clinical import system_one_gate as G
+        draft=self.completed();draft['headline']='There are two clinics.'
+        with patch.object(G,'check_composition',side_effect=AssertionError('Existing interpretation stays located')):
+            feedback=B.review_final(SimpleNamespace(), 'Explain each clinic.',draft,self.calls,
+                SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+        self.assertEqual(feedback['repair_kind'],'deterministic_compiler')
+        self.assertTrue(feedback['prose_repair']['answer_targets'])
+
+    def test_null_prose_does_not_establish_completion_when_review_is_unavailable(self):
+        from clinical_core.agere.clinical import system_one_gate as G
+        draft=copy.deepcopy(self.draft);draft['row_prose']=None
+        with patch.object(G,'ready',return_value=False):
+            feedback=B.review_final(SimpleNamespace(), 'Explain each clinic.',draft,self.calls,
+                SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+        self.assertEqual(feedback['status'],'unavailable')
+        self.assertEqual(draft['status'],'partial')
+        self.assertEqual(draft['missing'],self.draft['missing'])
 
     def test_stale_unbound_or_incomplete_review_cannot_constrain_an_answer(self):
         for mutation in ('stale','kind','target_index','target_entity','target_key','duplicate_native','incomplete_native'):
