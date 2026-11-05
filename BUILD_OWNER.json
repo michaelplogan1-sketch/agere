@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: review corrections and planning-role policy are committed through 4855fbbb. Automatic typed spec planning now keeps grammar/SystemOne slots; extra frontier spec drafting/repair is explicit qualification only. Native success and original-question fallback are covered by81planning checks;296affected checks pass. Next connect field-level native profile fidelity through the existing source-support path with exact entity/source/date/value binding and explicit age-at-snapshot semantics. The retained fixture proves all57output ages equal native profile age_at_snapshot and independent DOB arithmetic; no existing source judgment was changed. Keep reported age, snapshot age and requested historical age distinct; global question/date meaning and clinical/narrative review remain required. Use artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json rather than rereading/repeating the full clinical run. After that complete independent oracles/scoring and frozen execution for the fixed25cases (21ordinary plus4connected checks). Preserve the Q03 pilot as an ordinary-run observation:stack172.081s/$0.133888204 vsdirectSonnet29.847s/$0.2490666;500stack numeric cells exact, duration definitions differ for4orgs; no post-fix timing claim. Use corrected evaluation mode and per-arm scratch; do not pool the normal-learning pilot into formal frozen results. No duplicateQ03/HFrEF campaign, new training, bottling expansion or packaging. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
+  "active_work": "G3: native profile field provenance is connected on 34d21cff. Retained scalar projection checks57ages and57sex cells with0providers, all57ages equal source age_at_snapshot and independent DOB arithmetic;306affected checks pass. No saved clinical judgment or source changed. Next complete independent numeric/source references and explicit scoring for the fixed25cases (21ordinary plus4connected checks), resolving measure ambiguity before execution. Freeze source/code/scoring and use existing evaluation mode with per-arm scratch for the declared comparison; retain all failed/partial results. Q03 paid pilot stays separate ordinary-run evidence, not a repeated campaign or formal frozen result. No HFrEF rerun, new training, bottling expansion or packaging. DecisionRAG is a researched navigation candidate only, behind current delivery; modest extra latency for lower cost is acceptable when useful accuracy/critical-evidence coverage is preserved, not an assumed acceptance of the prior5.765xslowdown. Alltenareas/G5/customer dependencies remain; automation stays PAUSED.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
   "owned_server_pid": null,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: review corrections and planning-role policy are committed through 4855fbbb. Automatic typed spec planning now keeps grammar/SystemOne slots; extra frontier spec drafting/repair is explicit qualification only. Native success and original-question fallback are covered by81planning checks;296affected checks pass. Next connect field-level native profile fidelity through the existing source-support path with exact entity/source/date/value binding and explicit age-at-snapshot semantics. The retained fixture proves all57output ages equal native profile age_at_snapshot and independent DOB arithmetic; no existing source judgment was changed. Keep reported age, snapshot age and requested historical age distinct; global question/date meaning and clinical/narrative review remain required. Use artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json rather than rereading/repeating the full clinical run. After that complete independent oracles/scoring and frozen execution for the fixed25cases (21ordinary plus4connected checks). Preserve the Q03 pilot as an ordinary-run observation:stack172.081s/$0.133888204 vsdirectSonnet29.847s/$0.2490666;500stack numeric cells exact, duration definitions differ for4orgs; no post-fix timing claim. Use corrected evaluation mode and per-arm scratch; do not pool the normal-learning pilot into formal frozen results. No duplicateQ03/HFrEF campaign, new training, bottling expansion or packaging. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
+  "resume_priority": "G3: native profile field provenance is connected on 34d21cff. Retained scalar projection checks57ages and57sex cells with0providers, all57ages equal source age_at_snapshot and independent DOB arithmetic;306affected checks pass. No saved clinical judgment or source changed. Next complete independent numeric/source references and explicit scoring for the fixed25cases (21ordinary plus4connected checks), resolving measure ambiguity before execution. Freeze source/code/scoring and use existing evaluation mode with per-arm scratch for the declared comparison; retain all failed/partial results. Q03 paid pilot stays separate ordinary-run evidence, not a repeated campaign or formal frozen result. No HFrEF rerun, new training, bottling expansion or packaging. DecisionRAG is a researched navigation candidate only, behind current delivery; modest extra latency for lower cost is acceptable when useful accuracy/critical-evidence coverage is preserved, not an assumed acceptance of the prior5.765xslowdown. Alltenareas/G5/customer dependencies remain; automation stays PAUSED.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "PAUSED",
@@ -30,8 +30,8 @@
   "last_observed_server_session": 2376,
   "server_status": "No owned provider/training/build job active. Previous candidate app exited; primary runtime untouched. Product changes committed as candidates; no default activation.",
   "unsealed_work": {
-    "status": "review_and_planning_policy_candidates_verified_offline_pilot_preserved",
-    "product_commit": "4855fbbba7aa28a15c1e1fd16045b67c738571db",
+    "status": "native_profile_fields_connected_verified_offline",
+    "product_commit": "34d21cff2a7497eeae1811c4ff10d24530f99b2c",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
@@ -39,7 +39,7 @@
     "runtime_activation": false,
     "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 296,
+    "affected_tests_passed": 306,
     "provider_calls_this_increment": 22,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -65,7 +65,10 @@
     "latest_paired_comparison": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
     "all_attempt_rows_retained": 52538,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
-    "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json"
+    "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
+    "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
+    "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
+    "latest_increment_provider_attempts": 0
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
@@ -130,7 +133,7 @@
     "process_receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-current-mvp-2026-10-30/server-v17-receipt.json"
   },
   "current_spending_constraint": "Uncapped with accounting; Claude subscription only, no external Anthropic API key. Synthetic received-source execution only.",
-  "current_turn_spending_policy": "Accuracy first, then cost, then speed; no unilateral caps. Claude subscription transport only; stop on subscription limit. Meter Jev/Perplexity. No protected evaluations or keys.",
+  "current_turn_spending_policy": "Accuracy and evidence coverage first; modest speed tradeoff for lower total cost acceptable per Mike on November5. No unilateral caps. Claude subscription only; account for every attempt and stop on actual subscription limit.",
   "pending_continuation": {
     "status": "completed",
     "to": "01a15af4-c150-76f2-9df2-a44c1428b70d",
