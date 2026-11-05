@@ -62,6 +62,7 @@ def source_boundary(scratch):
         path = Path(value).resolve()
         parts = {p.lower() for p in path.parts}
         if (parts & {'bench', 'benchmarks', 'dev3', 'heldout', 'held-out', 'held_out', 'protected-corpora'}
+            or any(p.startswith('agere-ordinary-scoring')for p in parts)
             or '/tools/calibration/data/' in str(path)
             or str(path).startswith(('/Users/mikel/Documents/', '/Users/mikel/synthetic-patient-ecosystem/'))
             or path.name.lower() in {'healthcare_questions.json', 'vbc_questions.json', 'questions.json'}
