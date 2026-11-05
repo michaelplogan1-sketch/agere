@@ -92,7 +92,7 @@ def build_prompt(body):
     system = _text(system) if not isinstance(system, str) else system
     schema=output_schema(body)
     if schema is not None:
-        system+='\nThe final text answer must be ONLY a JSON value satisfying this JSON Schema, without Markdown or commentary: '+json.dumps(schema)
+        system+='\nThe final value must satisfy this JSON Schema: '+json.dumps(schema)
     tools = allowed_tools(body.get('tools'),body.get('tool_choice'))
     if tools:
         listing = json.dumps([{'name': t.get('name'), 'description': t.get('description'), 'input_schema': t.get('input_schema')} for t in tools], indent=1)
@@ -398,6 +398,8 @@ def respond(body, *, timeout=None):
         wrapped_decision=bool(schema is not None and allowed_tools(body.get('tools'),body.get('tool_choice')))
         if wrapped_decision:
             system+='\nFor the native StructuredOutput response, put the final value or permitted tool envelope under its decision property. This transport wrapper does not authorize any extra tool or mixed action.'
+        if schema_kw:
+            system+='\nNative output transport: submit the required value once through the provided StructuredOutput tool. Do not print the complete value in assistant text first or repeat it afterwards. The tool is the serialization channel for this response; all declared tool permissions and evidence requirements still apply.'
         out = run_cli(model, system, user, timeout=timeout,
                       max_tokens=body.get('max_tokens'), effort=output_config.get('effort'),**schema_kw)
     except Exception as exc:

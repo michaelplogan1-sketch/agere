@@ -28,6 +28,8 @@ class Translation(unittest.TestCase):
         self.assertEqual(response['usage']['output_tokens'],7)
         self.assertEqual(response['stop_reason'],'end_turn')
         self.assertIn('JSON Schema',call.call_args.args[1])
+        self.assertIn('submit the required value once through the provided StructuredOutput tool',call.call_args.args[1])
+        self.assertNotIn('final text answer must be ONLY',call.call_args.args[1])
         body['tool_choice']={'type':'auto'}
         with patch.object(T,'run_cli',return_value={'result':'{"tool_use":{"name":"sql","input":{}}}'})as call:response=T.respond(body)
         self.assertEqual(call.call_args.kwargs['json_schema'],T.decision_output_schema(body))

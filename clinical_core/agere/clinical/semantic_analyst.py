@@ -560,6 +560,10 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
         nonlocal pending_protocol_response
         import copy
         from ...contracts import digest
+        earlier=[]
+        if pending_protocol_response is not None:
+            earlier=copy.deepcopy(pending_protocol_response.get('earlier_rejected_responses',[]))
+            earlier.append({k:copy.deepcopy(v)for k,v in pending_protocol_response.items()if k!='earlier_rejected_responses'})
         pending_protocol_response = {'turn': turns, 'content': copy.deepcopy(blocks),
             'content_digest': digest(blocks), 'tool_actions_executed': False,
             'accepted_answer': False,
@@ -567,6 +571,7 @@ def tool_loop(user, system, tools, execute, *, send, model, max_tools, extra=Non
                 'No action or answer from it was accepted. Resolve the protocol ambiguity using registered literal tools '
                 'or the required answer/repair contract. Preserve useful draft work; all existing review checks still apply.'}
         result.setdefault('protocol_repair_responses', []).append(copy.deepcopy(pending_protocol_response))
+        if earlier:pending_protocol_response['earlier_rejected_responses']=earlier
     if initial_answer is not None and review is not None:
         import copy
         candidate=copy.deepcopy(initial_answer)

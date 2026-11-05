@@ -65,14 +65,16 @@ class CompositionOutputContract(unittest.TestCase):
 
     def test_omitted_duplicate_foreign_and_incomplete_fields_fail_before_review(self):
         base=self.completed();schema=E.composition_output_schema(base,self.feedback(base),self.calls)
-        for mutation in ('missing_spec','missing_row','duplicate_row','foreign_key','empty_fields','missing_field'):
+        for mutation in ('missing_spec','missing_row','duplicate_row','foreign_key','empty_fields','missing_field','native_field','unequal_fields'):
             candidate=copy.deepcopy(base)
             if mutation=='missing_spec':candidate.pop('row_prose')
             elif mutation=='missing_row':candidate['row_prose']['rows'].pop()
             elif mutation=='duplicate_row':candidate['row_prose']['rows'][1]=copy.deepcopy(candidate['row_prose']['rows'][0])
             elif mutation=='foreign_key':candidate['row_prose']['rows'][0]['key']['clinic_id']='C'
             elif mutation=='empty_fields':candidate['row_prose']['rows'][0]['fields']={}
-            else:candidate['row_prose']['rows'][0]['fields'].pop('next_review')
+            elif mutation=='missing_field':candidate['row_prose']['rows'][0]['fields'].pop('next_review')
+            elif mutation=='native_field':candidate['row_prose']['rows'][0]['fields']['events']='Model text must not replace a native value.'
+            else:candidate['row_prose']['rows'][0]['fields']['extra_review']='An asymmetric field.'
             with self.subTest(mutation=mutation):self.assertIsNotNone(E.composition_contract_error(candidate,schema))
         self.assertIsNone(E.composition_contract_error({'status':'unsupported'},None))
 
@@ -94,6 +96,10 @@ class CompositionOutputContract(unittest.TestCase):
                     self.assertIn('pending_protocol_response',state);self.assertIn('repair_protocol_feedback',state)
                     self.assertFalse(state['pending_protocol_response']['accepted_answer'])
                     self.assertFalse(state['pending_protocol_response']['tool_actions_executed'])
+                    if len(sent)==3:
+                        earlier=state['pending_protocol_response']['earlier_rejected_responses']
+                        self.assertEqual(earlier[0]['content'][0]['text'],bad)
+                        self.assertFalse(earlier[0]['accepted_answer']);self.assertFalse(earlier[0]['tool_actions_executed'])
                 return {'content':[{'type':'text','text':next(responses)}]},0.,True
             with self.subTest(bad=bad[:30]):
                 out=S.tool_loop('Explain each clinic and propose review steps.','system',[],

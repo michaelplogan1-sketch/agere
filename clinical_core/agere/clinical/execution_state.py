@@ -424,6 +424,8 @@ def composition_output_schema(candidate,feedback,calls):
         fields=({'type':'object','properties':{k:prose for k in field_names},'required':field_names,
                  'additionalProperties':prose}if field_names else
                 {'type':'object','minProperties':1,'additionalProperties':prose})
+        if set(field_names)&set(columns):return None
+        fields['propertyNames']={'not':{'enum':columns}}
         row=obj({'key':{'type':'object','enum':entities},
             'basis':{'type':'array','minItems':1,'items':obj({'result_view':{'type':'string','enum':list(native)},
                                                          'row':{'type':'integer','minimum':0}})},'fields':fields})
@@ -449,12 +451,16 @@ def composition_contract_error(proposal,schema):
         entries=spec['rows'];row=contract['rows']['items']['properties'];keys=contract['keys']['enum'][0]
         if spec['keys']!=keys or not isinstance(entries,list)or len(entries)!=contract['rows']['minItems']:return reason
         expected={digest(k)for k in row['key']['enum']};seen=set();required=set(row['fields'].get('required',[]))
+        native_columns=set(row['fields']['propertyNames']['not']['enum']);field_names=None
         for entry in entries:
             if not isinstance(entry['key'],dict)or set(entry['key'])!=set(keys):return reason
             ident=digest(entry['key'])
             if ident not in expected or ident in seen:return reason
             seen.add(ident);fields=entry['fields']
             if not isinstance(fields,dict)or not fields or not required<=set(fields):return reason
+            if set(fields)&native_columns:return 'Use new named row-prose fields; the executed native columns must remain unchanged.'
+            if field_names is None:field_names=set(fields)
+            elif set(fields)!=field_names:return 'Return the same named interpretation fields for every native entity; keep unavailable evidence explicit.'
         return None if seen==expected else reason
     except (KeyError,TypeError,ValueError):return reason
 
