@@ -140,6 +140,7 @@ def main():
     parser.add_argument('--arm', choices=['stack', 'frontier_tools'], required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--protocol',type=Path)
     args = parser.parse_args()
     os.chdir(ROOT)
     os.environ.update(json.loads((ROOT / 'artifacts/agere-reservation-performance-2026-11-01/ordinary-confirmation/environment.json').read_text()))
@@ -158,6 +159,22 @@ def main():
     if receipt_path.exists(): raise ValueError('Run already has a receipt; preserve it instead of repeating the arm.')
     from clinical_core.agere.local_release import code_identity
     from clinical_core.agere.deliverables.answer_context import source_identity
+    from tools.ordinary_stack_scoring import fingerprint,file_sha,SCORING
+    protocol=None
+    if args.execute and not args.protocol:raise ValueError('Freeze independent scoring before provider execution; --protocol is required.')
+    if args.protocol:
+        protocol=json.loads(args.protocol.read_text())
+        if(protocol.get('schema')!='ordinary-study-protocol/1'or protocol['curriculum_sha256']!=file_sha(CURRICULUM)
+            or protocol['scoring_sha256']!=file_sha(SCORING)or protocol['product_code_digest']!=fingerprint(code_identity())
+            or protocol['runner_sha256']!=file_sha(__file__)
+            or protocol['evaluator_sha256']!=file_sha(Path(__file__).with_name('ordinary_stack_scoring.py'))
+            or protocol['source']!=source_identity(RUNTIME)):
+            raise ValueError('Study source/code/scoring changed after protocol freeze')
+        for entry in protocol['cases'].values():
+            reference=entry.get('native_reference')
+            if reference and file_sha(ROOT/reference['path'])!=reference['sha256']:
+                raise ValueError('Independent reference changed after protocol freeze')
+        if args.execute and args.case=='Q03':raise ValueError('Keep the existing Q03 ordinary pilot; no repeat paid campaign.')
     from clinical_core.agere.clinical import semantic_layer
     with sqlite3.connect((RUNTIME / 'semantic.sqlite3').as_uri() + '?mode=ro', uri=True) as db:
         assert dict(db.execute('SELECT key,value FROM meta'))['postprocessing_identity'] == semantic_layer.policy_identity()
@@ -166,7 +183,8 @@ def main():
     record = {'schema': 'ordinary-comparison-arm/1', 'case': args.case, 'arm': args.arm,
               'pid': os.getpid(), 'started_at': datetime.now(timezone.utc).isoformat(),
               'status': 'running', 'execute': args.execute, 'source_frozen': args.execute,
-              'question': case['question'], 'source': source_identity(RUNTIME), 'code': code_identity(),
+              'question': case['question'], 'source': source_identity(RUNTIME), 'code': fingerprint(code_identity()),
+              'protocol_sha256':file_sha(args.protocol)if args.protocol else None,
               'runner_sha256': hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'curriculum_sha256': hashlib.sha256(CURRICULUM.read_bytes()).hexdigest(),
               'custom_spend_or_output_ceiling': None, 'all_attempt_accounting': True,
@@ -213,7 +231,7 @@ def main():
         from clinical_core.agere.economics import usage_cost
         costs = [usage_cost(a['model'], (json.loads(a['response']) if a['response'] else {}).get('usage')) for a in new]
         record.update(seconds=time.perf_counter() - started, source_frozen=False,
-                      source_unchanged=source_identity(RUNTIME) == record['source'], code_unchanged=code_identity() == record['code'],
+                      source_unchanged=source_identity(RUNTIME) == record['source'], code_unchanged=fingerprint(code_identity()) == record['code'],
                       prior_attempt_rows_exact=all(after.get(key) == value for key, value in before.items()),
                       new_provider_attempts=len(new), known_api_equivalent_usd=sum(c['estimated_usd'] for c in costs if c is not None),
                       unpriced_attempts=sum(c is None for c in costs), finished_at=datetime.now(timezone.utc).isoformat())
