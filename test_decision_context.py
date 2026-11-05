@@ -86,6 +86,11 @@ class Definitions(Fixture):
             'Among patients discharged after their first recorded inpatient stay in 2028, describe follow-up.',
             'For received 2029 home-health requests, distinguish request, scheduling and completion.',
             'For clinical observations recorded as occurring in 2029, show their source clocks.',
+            'For patients with a 2029 medication-allergy history update and medication-interview account, show the source relations.',
+            'Among members whose intake assessment occurred in 2028, show current responsibility separately.',
+            'Among members with a 2028 intake assessment, show current responsibility separately.',
+            'For patients with a recorded device reading in 2029, describe the received context.',
+            'For received 2029 correspondence, show its source clocks.',
             'For patients with a discharge in 2029, show current care-team responsibility separately.']
         for q in questions:
             with self.subTest(question=q):
@@ -107,6 +112,9 @@ class Definitions(Fixture):
         for q in [
             'For living patients receiving a cardiology referral in 2029, show the destination.',
             'For current patients with a discharge in 2029, show care gaps.',
+            'Among living members whose intake assessment occurred in 2028, show source accounts.',
+            'For current patients with a 2029 history update, show source accounts.',
+            'For the 2029 report on patients with diabetes, show current care gaps.',
             'How many patients have diabetes?',
             'For patients with diabetes, show their referrals in 2029.']:
             with self.subTest(question=q):self.assertTrue(DC.population(q)['living_only'])

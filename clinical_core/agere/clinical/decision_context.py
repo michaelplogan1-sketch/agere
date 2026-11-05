@@ -29,7 +29,7 @@ import re
 import threading
 from pathlib import Path
 
-VERSION = 'decision-context/4'  # 4: preserve subjects in explicitly dated event-selected cohorts
+VERSION = 'decision-context/5'  # 5: dated membership is not limited to an event-noun catalog
 # 3 (2026-10-25, Mike): event counts include everyone (the living rule is for counts / lists of patients); observation stays are hospital
 # stays and admissions; pharmacy spend = net of reversals over all pharmacy claim transactions; medical spend = paid on counted claims
 DECIDED_BY = 'Mike (clinical owner), 2026-10-23 / 2026-10-25'
@@ -161,10 +161,20 @@ def event_selected_cohort(question):
     q = question or ''
     if not re.match(r'^\s*(?:for|among)\b', q, re.I):return False
     selection = re.split(r'[,;.?!]|\b(?:show|compare|distinguish|describe|report|identify)\b', q, maxsplit=1, flags=re.I)[0]
-    received_subjects = PATIENT_WORDS.search(selection) or re.search(r'\b(?:received|recorded)\b', selection, re.I)
+    received_subjects = PATIENT_WORDS.search(selection) or re.search(r'\b(?:members?|received|recorded)\b', selection, re.I)
     current_people = re.search(r'\bcurrent\s+(?:patients?|members?|people|population|cohort)\b', selection, re.I)
+    # The date belongs to membership when it follows the subject's selecting
+    # predicate. New source families (history updates, interviews, assessments)
+    # must not silently revert to present survival because their noun is absent
+    # from the event-count vocabulary. A report year before membership alone
+    # does not select historical subjects.
+    dated_membership = re.search(
+        r'\b(?:patients?|members?|people|persons?|individuals?|adults?|children)\s+'
+        r'(?:with|who|whose|having|receiving|discharged|admitted|aged|born)\b.*\b(?:19|20)\d{2}\b', selection, re.I)
+    received_membership = re.match(r'^\s*(?:for|among)\s+(?:the\s+)?(?:received|recorded)\b', selection, re.I)
+    event_membership = re.search(r'\b(?:' + EVENT_NOUN + r'|referrals?|requests?|observations?|discharged|admitted)\b', selection, re.I)
     return (bool(received_subjects) and bool(re.search(r'\b(?:19|20)\d{2}\b', selection))
-            and bool(re.search(r'\b(?:' + EVENT_NOUN + r'|referrals?|requests?|observations?|discharged|admitted)\b', selection, re.I))
+            and bool(dated_membership or received_membership or event_membership)
             and not bool(LIVING_ASK.search(selection) or current_people))
 
 
