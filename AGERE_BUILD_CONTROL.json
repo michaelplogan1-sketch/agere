@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T17:27:05.810173+00:00",
+  "updated_at": "2026-11-05T17:50:33.071025+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -544,9 +544,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "G3 remains active. Ordinary latency is not competitive in this pilot;26s came from unproductive paid spec planning and further time from the demonstrated compiler repair. Latest local guard correction has no new paid timing result. Five clinical fields/overall coverage remain uncertain; native age meaning/fidelity routing still needs qualification. Fixed curriculum needs independent oracles, narrative adjudication where required, workflow checks and frozen execution. Model/clinical qualification and customer deployment remain separate dependencies.",
-      "engineering_current_status": "Review corrections locally evidenced and ordinary paired pilot reconciled; current fixes candidate-only, G3 active.",
-      "next_action": "G3: review fixes are committed through 24414a9b. Q03 pilot reconciled:stack533admissions/506received/27absent discharge dates, all100organization-status rows/500numeric cells exact; directSonnet count rows also exact but date-derived LOS differs from received stay LOS for4organizations. Stack172.081s/$0.133888204 versus directSonnet29.847s/$0.2490666 analysis/API-equivalent:46.244%lower cost but5.765x slower. Paid spec drafting spent26.016s on2unsuccessful Claude plans; next constrain unqualified paid spec drafting while preserving native/SLM planning and the complete-question frontier fallback, with workflow evidence before default changes. Then qualify native-field meaning (including age) and complete independent scoring of the fixed25case curriculum (21ordinary questions plus4connected checks). The new zero-duration correction reduces6compiler failures to1real group-cardinality binding offline; one authentic count-binding patch compiles with all100rows and numeric meaning retained. No paid benefit is inferred after that correction. Use the corrected frozen-evaluation runner/per-arm scratch; the first pilot inherited normal learning and is excluded from formal frozen-study pooling. No duplicate Q03 run, HFrEF campaign, training, bottling expansion or package rebuild. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
+      "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
+      "engineering_current_status": "Guard and planning-role corrections locally evidenced; paired pilot preserved; native-profile field wiring and full curriculum acceptance remain.",
+      "next_action": "G3: review corrections and planning-role policy are committed through 4855fbbb. Automatic typed spec planning now keeps grammar/SystemOne slots; extra frontier spec drafting/repair is explicit qualification only. Native success and original-question fallback are covered by81planning checks;296affected checks pass. Next connect field-level native profile fidelity through the existing source-support path with exact entity/source/date/value binding and explicit age-at-snapshot semantics. The retained fixture proves all57output ages equal native profile age_at_snapshot and independent DOB arithmetic; no existing source judgment was changed. Keep reported age, snapshot age and requested historical age distinct; global question/date meaning and clinical/narrative review remain required. Use artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json rather than rereading/repeating the full clinical run. After that complete independent oracles/scoring and frozen execution for the fixed25cases (21ordinary plus4connected checks). Preserve the Q03 pilot as an ordinary-run observation:stack172.081s/$0.133888204 vsdirectSonnet29.847s/$0.2490666;500stack numeric cells exact, duration definitions differ for4orgs; no post-fix timing claim. Use corrected evaluation mode and per-arm scratch; do not pool the normal-learning pilot into formal frozen results. No duplicateQ03/HFrEF campaign, new training, bottling expansion or packaging. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -628,7 +628,7 @@
     "kind": "human_pause_pending_independent_review",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Original aggregate draft now compiles after its first genuine count bindings instead of rejecting requested/defined parameters. Completed fault-free source checks with uncertain machine readings stop rewrites and retain their exact obligations. Q03 pilot exposed documented zero-duration labels; corrected offline6failed fields ->1genuine cardinality binding, then0, retaining100rows and all quantities. A direct same-tools Sonnet baseline and fixed25case input set now exist.",
+    "user_behavior_delta": "Original aggregate draft now compiles after its first genuine count bindings instead of rejecting requested/defined parameters. Completed fault-free source checks with uncertain machine readings stop rewrites and retain their exact obligations. Q03 pilot exposed documented zero-duration labels; corrected offline6failed fields ->1genuine cardinality binding, then0, retaining100rows and all quantities. A direct same-tools Sonnet baseline and fixed25case input set now exist. Automatic spec planning retains native grammar/SystemOne; duplicate frontier spec drafting and repair require explicit evaluation configuration. Original-question investigator fallback remains intact.",
     "measured_failure_reduction": "Original retained first-repair aggregate4falsefailedfields->0; newQ03initial6->1realbinding->0afterauthenticpatch. Count/LOS reconciliation500numericcells/100rows. Livepilot cost46.244%lower but5.765xslower than directSonnet; no post-correction speed claim.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
@@ -829,10 +829,12 @@
       "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-Q03/frontier_tools/receipt.json",
       "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-Q03/stack/receipt.json",
       "artifacts/agere-spec-routing-2026-11-05/review-correction/dry-run-frozen-evaluation/receipt.json",
-      "artifacts/agere-spec-routing-2026-11-05/review-correction/isolation-check.json"
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/isolation-check.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json"
     ],
-    "remaining_gap": "G3 remains active. Ordinary latency is not competitive in this pilot;26s came from unproductive paid spec planning and further time from the demonstrated compiler repair. Latest local guard correction has no new paid timing result. Five clinical fields/overall coverage remain uncertain; native age meaning/fidelity routing still needs qualification. Fixed curriculum needs independent oracles, narrative adjudication where required, workflow checks and frozen execution. Model/clinical qualification and customer deployment remain separate dependencies.",
-    "next_action": "G3: review fixes are committed through 24414a9b. Q03 pilot reconciled:stack533admissions/506received/27absent discharge dates, all100organization-status rows/500numeric cells exact; directSonnet count rows also exact but date-derived LOS differs from received stay LOS for4organizations. Stack172.081s/$0.133888204 versus directSonnet29.847s/$0.2490666 analysis/API-equivalent:46.244%lower cost but5.765x slower. Paid spec drafting spent26.016s on2unsuccessful Claude plans; next constrain unqualified paid spec drafting while preserving native/SLM planning and the complete-question frontier fallback, with workflow evidence before default changes. Then qualify native-field meaning (including age) and complete independent scoring of the fixed25case curriculum (21ordinary questions plus4connected checks). The new zero-duration correction reduces6compiler failures to1real group-cardinality binding offline; one authentic count-binding patch compiles with all100rows and numeric meaning retained. No paid benefit is inferred after that correction. Use the corrected frozen-evaluation runner/per-arm scratch; the first pilot inherited normal learning and is excluded from formal frozen-study pooling. No duplicate Q03 run, HFrEF campaign, training, bottling expansion or package rebuild. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
+    "remaining_gap": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
+    "next_action": "G3: review corrections and planning-role policy are committed through 4855fbbb. Automatic typed spec planning now keeps grammar/SystemOne slots; extra frontier spec drafting/repair is explicit qualification only. Native success and original-question fallback are covered by81planning checks;296affected checks pass. Next connect field-level native profile fidelity through the existing source-support path with exact entity/source/date/value binding and explicit age-at-snapshot semantics. The retained fixture proves all57output ages equal native profile age_at_snapshot and independent DOB arithmetic; no existing source judgment was changed. Keep reported age, snapshot age and requested historical age distinct; global question/date meaning and clinical/narrative review remain required. Use artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json rather than rereading/repeating the full clinical run. After that complete independent oracles/scoring and frozen execution for the fixed25cases (21ordinary plus4connected checks). Preserve the Q03 pilot as an ordinary-run observation:stack172.081s/$0.133888204 vsdirectSonnet29.847s/$0.2490666;500stack numeric cells exact, duration definitions differ for4orgs; no post-fix timing claim. Use corrected evaluation mode and per-arm scratch; do not pool the normal-learning pilot into formal frozen results. No duplicateQ03/HFrEF campaign, new training, bottling expansion or packaging. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Mike explicitly resumed active-chat build; scheduler remains paused per automatic-update preference. No provider/training/verification job active; source unfrozen.",
     "remaining_blockers": [
@@ -894,11 +896,11 @@
       "no_unproven_novelty_or_superiority_claim": true
     },
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T17:27:05.810173+00:00",
+    "at": "2026-11-05T17:50:33.071025+00:00",
     "workflow_change": "Original aggregate draft now compiles after its first genuine count bindings instead of rejecting requested/defined parameters. Completed fault-free source checks with uncertain machine readings stop rewrites and retain their exact obligations. Q03 pilot exposed documented zero-duration labels; corrected offline6failed fields ->1genuine cardinality binding, then0, retaining100rows and all quantities. A direct same-tools Sonnet baseline and fixed25case input set now exist.",
     "unsealed_work": {
-      "status": "review_corrections_and_paired_pilot_reconciled_unsealed",
-      "product_commit": "24414a9beb1f34309fdf6ef3c5486819a3a83ab2",
+      "status": "review_and_planning_policy_candidates_verified_offline_pilot_preserved",
+      "product_commit": "4855fbbba7aa28a15c1e1fd16045b67c738571db",
       "product_fix_commit": "b3f0a8d7",
       "receipt": "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
@@ -906,7 +908,7 @@
       "runtime_activation": false,
       "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 215,
+      "affected_tests_passed": 296,
       "provider_calls_this_increment": 22,
       "ordinary_check_owner_reconciled": true,
       "previous_ordinary_run": {
@@ -930,7 +932,9 @@
       "new_provider_attempts": 22,
       "known_api_equivalent_usd": 0.382954804,
       "latest_paired_comparison": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
-      "all_attempt_rows_retained": 52538
+      "all_attempt_rows_retained": 52538,
+      "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
+      "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json"
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -1149,7 +1153,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-05T17:27:05.810173+00:00",
+    "updated_at": "2026-11-05T17:50:33.071025+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -1204,7 +1208,7 @@
       "candidate_not_default": true,
       "no_provider_calls_for_offline_proofs": true,
       "ordinary_handoff_result": "Reconciled negative performance:446.110s/$0.625080514;92rows/505discharges/106readmissions exact. Not a speed/cost improvement.",
-      "product_commit": "24414a9beb1f34309fdf6ef3c5486819a3a83ab2",
+      "product_commit": "4855fbbba7aa28a15c1e1fd16045b67c738571db",
       "latest_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
       "paired_pilot": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
       "formal_evaluation_dry_run": "artifacts/agere-spec-routing-2026-11-05/review-correction/dry-run-frozen-evaluation/receipt.json",
@@ -1213,7 +1217,16 @@
       "all_attempt_rows": 52538,
       "legacy_pending_rows_preserved": 40,
       "new_pending_attempts": 0,
-      "pending_row_note": "Forty pre-existing pending ledger rows remain unchanged. They are not evidence of live owned jobs; no attempt in this paired pilot remains pending."
+      "pending_row_note": "Forty pre-existing pending ledger rows remain unchanged. They are not evidence of live owned jobs; no attempt in this paired pilot remains pending.",
+      "affected_checks": 296,
+      "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
+      "native_profile_probe": {
+        "path": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
+        "patients": 57,
+        "ages_equal_profile_and_independent_DOB_math": 57,
+        "provider_calls": 0,
+        "runtime_source_judgments_changed": false
+      }
     }
   },
   "decisions": [
@@ -4453,11 +4466,21 @@
         "artifacts/agere-spec-routing-2026-11-05/review-correction/isolation-check.json"
       ],
       "scope_impact": "Alltenacceptanceareas unchanged; research/model expansion remains deferred; qualified roles require workflow evidence."
+    },
+    {
+      "at": "2026-11-05T17:50:33.071025+00:00",
+      "gate": "G3",
+      "decision": "Constrain duplicate frontier spec drafting/repair to explicit qualification after the observed26.016s/two-failed-plan stage. Preserve native grammar, SystemOne and the complete-question investigator fallback. Existing optional frontier-writer tests now select that role explicitly; default-policy tests cover success, decline and failed-native verification.",
+      "evidence": [
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/checks.json"
+      ],
+      "scope_impact": "No acceptance area removed, no primary runtime activation, no paid rerun or new latency claim."
     }
   ],
   "unsealed_work": {
-    "status": "review_corrections_and_paired_pilot_reconciled_unsealed",
-    "product_commit": "24414a9beb1f34309fdf6ef3c5486819a3a83ab2",
+    "status": "review_and_planning_policy_candidates_verified_offline_pilot_preserved",
+    "product_commit": "4855fbbba7aa28a15c1e1fd16045b67c738571db",
     "product_fix_commit": "b3f0a8d7",
     "receipt": "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
@@ -4465,7 +4488,7 @@
     "runtime_activation": false,
     "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 215,
+    "affected_tests_passed": 296,
     "provider_calls_this_increment": 22,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -4489,7 +4512,9 @@
     "new_provider_attempts": 22,
     "known_api_equivalent_usd": 0.382954804,
     "latest_paired_comparison": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
-    "all_attempt_rows_retained": 52538
+    "all_attempt_rows_retained": 52538,
+    "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
+    "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json"
   },
   "current_visual_request": {
     "status": "completed",
@@ -4523,7 +4548,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: review fixes are committed through 24414a9b. Q03 pilot reconciled:stack533admissions/506received/27absent discharge dates, all100organization-status rows/500numeric cells exact; directSonnet count rows also exact but date-derived LOS differs from received stay LOS for4organizations. Stack172.081s/$0.133888204 versus directSonnet29.847s/$0.2490666 analysis/API-equivalent:46.244%lower cost but5.765x slower. Paid spec drafting spent26.016s on2unsuccessful Claude plans; next constrain unqualified paid spec drafting while preserving native/SLM planning and the complete-question frontier fallback, with workflow evidence before default changes. Then qualify native-field meaning (including age) and complete independent scoring of the fixed25case curriculum (21ordinary questions plus4connected checks). The new zero-duration correction reduces6compiler failures to1real group-cardinality binding offline; one authentic count-binding patch compiles with all100rows and numeric meaning retained. No paid benefit is inferred after that correction. Use the corrected frozen-evaluation runner/per-arm scratch; the first pilot inherited normal learning and is excluded from formal frozen-study pooling. No duplicate Q03 run, HFrEF campaign, training, bottling expansion or package rebuild. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
+  "next_action": "G3: review corrections and planning-role policy are committed through 4855fbbb. Automatic typed spec planning now keeps grammar/SystemOne slots; extra frontier spec drafting/repair is explicit qualification only. Native success and original-question fallback are covered by81planning checks;296affected checks pass. Next connect field-level native profile fidelity through the existing source-support path with exact entity/source/date/value binding and explicit age-at-snapshot semantics. The retained fixture proves all57output ages equal native profile age_at_snapshot and independent DOB arithmetic; no existing source judgment was changed. Keep reported age, snapshot age and requested historical age distinct; global question/date meaning and clinical/narrative review remain required. Use artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json rather than rereading/repeating the full clinical run. After that complete independent oracles/scoring and frozen execution for the fixed25cases (21ordinary plus4connected checks). Preserve the Q03 pilot as an ordinary-run observation:stack172.081s/$0.133888204 vsdirectSonnet29.847s/$0.2490666;500stack numeric cells exact, duration definitions differ for4orgs; no post-fix timing claim. Use corrected evaluation mode and per-arm scratch; do not pool the normal-learning pilot into formal frozen results. No duplicateQ03/HFrEF campaign, new training, bottling expansion or packaging. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
