@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: native profile field provenance is connected on 34d21cff. Retained scalar projection checks57ages and57sex cells with0providers, all57ages equal source age_at_snapshot and independent DOB arithmetic;306affected checks pass. No saved clinical judgment or source changed. Next complete independent numeric/source references and explicit scoring for the fixed25cases (21ordinary plus4connected checks), resolving measure ambiguity before execution. Freeze source/code/scoring and use existing evaluation mode with per-arm scratch for the declared comparison; retain all failed/partial results. Q03 paid pilot stays separate ordinary-run evidence, not a repeated campaign or formal frozen result. No HFrEF rerun, new training, bottling expansion or packaging. DecisionRAG is a researched navigation candidate only, behind current delivery; modest extra latency for lower cost is acceptable when useful accuracy/critical-evidence coverage is preserved, not an assumed acceptance of the prior5.765xslowdown. Alltenareas/G5/customer dependencies remain; automation stays PAUSED.",
+  "active_work": "G3: native profile provenance is connected on34d21cff and independently checked for57ages/57sex cells with0providers;306affected product checks pass. Fixed-study independent arithmetic preparation ond759615a now coversQ01/Q02/Q03/Q15 (19/19/92/1646reference rows); source totals reconcile separately in SQLite and five adverse/boundary checks pass. Both study arms are denied these evaluator files. Next finish independent source/numeric references and explicit semantic/connected-workflow scoring for the remaining fixed cases, then freeze source/code/scoring before the declared comparison. Keep the existing25inputs and alltenareas; do not mistake four prepared references for full scoring. Q03 supports explicitly declared recordedLOS or date-difference measures; silent definition changes fail. Its paid pilot stays separate ordinary-run evidence, not a new campaign. No HFrEF rerun, training, bottling expansion or packaging. DecisionRAG remains a researched source-navigation candidate after current delivery, with accuracy/critical-evidence coverage first and modest speed loss acceptable for worthwhile lower total cost. Automatic continuation remains PAUSED.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
   "owned_server_pid": null,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: native profile field provenance is connected on 34d21cff. Retained scalar projection checks57ages and57sex cells with0providers, all57ages equal source age_at_snapshot and independent DOB arithmetic;306affected checks pass. No saved clinical judgment or source changed. Next complete independent numeric/source references and explicit scoring for the fixed25cases (21ordinary plus4connected checks), resolving measure ambiguity before execution. Freeze source/code/scoring and use existing evaluation mode with per-arm scratch for the declared comparison; retain all failed/partial results. Q03 paid pilot stays separate ordinary-run evidence, not a repeated campaign or formal frozen result. No HFrEF rerun, new training, bottling expansion or packaging. DecisionRAG is a researched navigation candidate only, behind current delivery; modest extra latency for lower cost is acceptable when useful accuracy/critical-evidence coverage is preserved, not an assumed acceptance of the prior5.765xslowdown. Alltenareas/G5/customer dependencies remain; automation stays PAUSED.",
+  "resume_priority": "G3: native profile provenance is connected on34d21cff and independently checked for57ages/57sex cells with0providers;306affected product checks pass. Fixed-study independent arithmetic preparation ond759615a now coversQ01/Q02/Q03/Q15 (19/19/92/1646reference rows); source totals reconcile separately in SQLite and five adverse/boundary checks pass. Both study arms are denied these evaluator files. Next finish independent source/numeric references and explicit semantic/connected-workflow scoring for the remaining fixed cases, then freeze source/code/scoring before the declared comparison. Keep the existing25inputs and alltenareas; do not mistake four prepared references for full scoring. Q03 supports explicitly declared recordedLOS or date-difference measures; silent definition changes fail. Its paid pilot stays separate ordinary-run evidence, not a new campaign. No HFrEF rerun, training, bottling expansion or packaging. DecisionRAG remains a researched source-navigation candidate after current delivery, with accuracy/critical-evidence coverage first and modest speed loss acceptable for worthwhile lower total cost. Automatic continuation remains PAUSED.",
   "build_status": "ACTIVE",
   "paused_at": "2026-11-05T13:04:20.746654+00:00",
   "heartbeat_status": "PAUSED",
@@ -68,7 +68,17 @@
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 0
+    "latest_increment_provider_attempts": 0,
+    "study_preparation_commit": "d759615af4f0cbdb8be0db6a02f7ff7b8872a1a4",
+    "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/preparation-proof.json",
+    "independent_arithmetic_reference_cases": [
+      "Q01",
+      "Q02",
+      "Q03",
+      "Q15"
+    ],
+    "study_checks_passed": 5,
+    "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json"
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
   "latest_continuity_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
