@@ -8,7 +8,7 @@ from clinical_core.agere.clinical import backstop_agent as B, proposers as P
 
 
 class EntryModelReuse(unittest.TestCase):
-    def entry_result(self, reviews=None):
+    def entry_result(self, reviews=None, hint=None):
         from contextlib import ExitStack
         from clinical_core.agere import model_policy as M
         from clinical_core.agere.clinical import harness_improvement as H
@@ -34,8 +34,19 @@ class EntryModelReuse(unittest.TestCase):
             propose=stack.enter_context(patch.object(H,'attempt_propose',return_value={'id':'native-prefix'}))
             stack.enter_context(patch.object(H,'recovery_checkpoint',return_value=None))
             result=B.answer(SimpleNamespace(), 'A source question',send=lambda body:self.fail('No provider call'),
-                            as_of='2030-05-27',model=M.HAIKU)
+                            as_of='2030-05-27',model=M.HAIKU,hint=hint)
         return result,replay,propose
+
+    def test_failed_planning_handoff_is_context_not_an_answer_or_native_execution(self):
+        hint={'prior_plan_attempts':[{'proposal':{'source':{'table':'stay'}},
+            'validation_error':'Missing scope','authority':'unverified_proposal','executed':False}]}
+        _,replay,_=self.entry_result(hint=hint)
+        payload=replay.call_args.args[2]
+        self.assertEqual(payload['question'],'A source question')
+        self.assertEqual(payload['second_look']['prior_plan_attempts'],hint['prior_plan_attempts'])
+        self.assertIn('has not executed',payload['second_look']['instruction'])
+        self.assertIn('registered tools',payload['second_look']['instruction'])
+        self.assertNotIn('earlier_answer',payload['second_look'])
 
     def test_escalated_actor_keeps_native_learning_on_the_entry_model_key(self):
         from clinical_core.agere import model_policy as M

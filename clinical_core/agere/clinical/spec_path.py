@@ -120,6 +120,20 @@ def propose(c):
                                 verify=(lambda cand: verify_spec(c, c.question, c.catalog, cand['plan'], ledger=ledger)) if live else None)
     except spec_fill.SpecNotFilled as exc:
         if exc.receipt: spend_receipt(c, exc.receipt)
+        # Carry this request's failed reasoning into the existing investigator.
+        # It is not an executed proposal, compiled contract or reuse candidate.
+        attempts = []
+        for filler in (exc.receipt or {}).get('fillers', {}).values():
+            for item in (filler.get('notes') or {}).get('rejected_proposals', []):
+                if (item.get('authority') == 'unverified_proposal' and item.get('executed') is False
+                        and item.get('question_fingerprint') == request_plan.fingerprint(c.question)
+                        and item.get('proposal_fingerprint') == request_plan.fingerprint(item.get('proposal'))
+                        and isinstance(item.get('validation_error'), str)):
+                    attempts.append(item)
+        if attempts:
+            import copy
+            c.second_look_hint = {**getattr(c, 'second_look_hint', {}),
+                                  'prior_plan_attempts': copy.deepcopy(attempts)}
         if exc.held:
             plan, contract = exc.held
             interpretation = interpretation_for(c.question, c.catalog, {'plan': plan, 'contract': contract, 'winner': 'haiku', 'agreement': 'single',

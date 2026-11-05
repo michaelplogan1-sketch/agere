@@ -108,6 +108,29 @@ UNKNOWN = FQ
 
 
 class TierBehaviour(Fixture):
+    def test_failed_spec_transfers_only_same_question_unverified_attempts(self):
+        import copy
+        plan=spec_count_hf(Q);plan['where']['quote']='not in the question'
+        self.models(json.dumps(plan),json.dumps(plan))
+        c=self.cascade(Q);c.second_look_hint={'check_failures':'Earlier distinct check remains.'}
+        with patch.dict(os.environ,{'AGERE_SPEC_FILLERS':'haiku'}),DC.scope(Q,AS_OF):
+            with self.assertRaises(QuestionNotUnderstood):SP.propose(c)
+        attempts=c.second_look_hint['prior_plan_attempts']
+        self.assertEqual(len(attempts),2);self.assertEqual(c.calls,2)
+        self.assertEqual(attempts[0]['proposal'],plan)
+        self.assertFalse(c.candidates);self.assertIsNone(c.held_decline)
+        self.assertEqual(c.second_look_hint['check_failures'],'Earlier distinct check remains.')
+        for changed in ('question','proposal','authority','executed'):
+            item=copy.deepcopy(attempts[0])
+            if changed=='question':item['question_fingerprint']=R.fingerprint('different question')
+            elif changed=='proposal':item['proposal']['limit']={'value':1,'quote':'one'}
+            elif changed=='authority':item['authority']='checked'
+            else:item['executed']=True
+            exc=F.SpecNotFilled('retained failure');exc.receipt={'fillers':{'haiku':{'notes':{'rejected_proposals':[item]}}}}
+            fresh=self.cascade(Q)
+            with self.subTest(changed=changed),patch.object(SP,'fill_in_order',side_effect=exc),self.assertRaises(QuestionNotUnderstood):SP.propose(fresh)
+            self.assertFalse(getattr(fresh,'second_look_hint',None))
+
     def spec(self, q=UNKNOWN):
         return json.dumps(spec_count_hf(q, source='Patients', measure='how many'))
 

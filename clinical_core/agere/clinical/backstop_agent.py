@@ -2956,7 +2956,7 @@ def answer(stack, question, *, ledger=None, send=None, model=None, as_of=None, p
     learned_shape=shape_hint(stack,question)
     if learned_shape is not None:payload['reviewed_component_shape_hint']=learned_shape
     if cohort is not None: payload['cohort_size'] = len(cohort)
-    if hint: payload['second_look'] = {**hint, 'instruction': 'An earlier engine answered this; System One judged that its result does not fully answer the question as asked. Investigate independently and answer the question exactly as asked.'}
+    if hint: payload['second_look'] = {**hint, 'instruction': 'Prior proposals, answers and machine feedback are unverified context. A rejected plan has not executed and does not establish any fact or satisfy a requirement. Reuse useful reasoning only after checking it against the original question and current source definitions. Execute through the registered tools and complete every unresolved requirement; do not repeat an earlier validation failure or treat it as accepted evidence.'}
     user = json.dumps(payload, default=str)
     from .requirement_ledger import PATIENT_ID
     patients = [m.group() for m in PATIENT_ID.finditer(question or '')] or ([prior['patient_id']] if prior.get('patient_id') else [])
