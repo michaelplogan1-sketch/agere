@@ -1,3 +1,13 @@
+# Current Agere checkpoint — 2026-11-05T07:33:47.101150+00:00
+
+G3: source-context delivery e0460b29 is sealed and candidate app8890 PID46662/session26561 is ready; all request jobs terminal. Actual typed dispatch preserves116unaffected keys. Complete repair input35.2307% smaller; matched scoped checks improved3/8 to6/8 supported and10 to2 unresolved fields, but generation plus scoped review was24.43% cheaper and64.47% slower. No whole-question performance promotion. Next inspect the original19-field compiler failure and existing47-action learned candidate offline: determine whether already-observed native scalar work can be made available before composition through existing native-prefix qualification, preserving cost-regression/quarantine and source guards. Prove exact eligibility and request-boundary benefit before another generation or full question. All52314attempts retained; b533f616 package is recovery point. Alltenareas, undecided coverage, G5 and customer dependencies remain.
+
+Latest sealed receipt: artifacts/agere-repaired-ordinary-2026-11-05/repair-context-delivery-receipt.json
+
+Canonical authority: AGERE_BUILD_CONTROL.json.
+
+## Superseded checkpoint
+
 # Current Agere checkpoint — 2026-11-05T06:44:49.740227+00:00
 
 G3: scoped patient-dependency fix69359649 is committed and loaded in candidate app8890 PID45419/session39708. Actual retained one-patient repair previously changed56unrelated verification packets; candidate changes0, with324source documents/allanswers/native records retained and215tests passing. Current app preserves57patients/114fields/47native actions and planning invalidation. Next verify the actual candidate typed-dispatch request identities for the retained before/after repair offline, using current registered definitions/context and complete source dependencies; no new provider calls or native reexecution. Then target the remaining Claude composition/binding overhead using retained requests before any paid measurement. Do not repeat the unchanged full question or package campaign. Last ordinary run regressed:997.941s server/$10.315960484 API-equivalent,59/60source support and undecided coverage. Client interruption recovered without inference; future diagnostic client now uses existing browser projection. All52266attempts retained; b533f616 package remains recovery point. Alltenareas/G5/customer dependencies remain.
