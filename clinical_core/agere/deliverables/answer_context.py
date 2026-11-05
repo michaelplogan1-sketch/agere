@@ -172,11 +172,13 @@ def capture(path, question, result, *, original_question=None):
     return {'id': key, 'patients': len(rows), 'url': '/action-center?context=' + key, **scope_options(data)}
 
 
-def load(path, key, *, current=False, follow_up=False, source_review=False):
+def load(path, key, *, current=False, follow_up=False, source_review=False, local_review=False):
     """follow_up=True: the caller only narrows, lists or groups the exact saved membership (no new work is created). A system
     quarantine ('quarantine: QC-...' written by learning.quarantine when an answer tripped a quality control) records that the
     plan must not be reused or learned from; it is not a user correction of the cohort the user saw, so it does not invalidate the
-    saved membership for a follow-up. A user correction still does."""
+    saved membership for a follow-up. A user correction still does. local_review
+    is used only by existing source-bound review items: their input receipts are
+    rechecked independently while the parent answer remains visibly stale."""
     if not isinstance(key, str) or not re.fullmatch(r'ANS-[0-9a-f]{24}', key):
         raise ValueError('A saved answer context is required')
     f = root(path) / key / 'answer.json'
@@ -250,7 +252,7 @@ def load(path, key, *, current=False, follow_up=False, source_review=False):
                    'feedback_is_clinical_truth': False}
     if current and invalidated:
         raise ValueError('This saved answer is invalidated under the current planning definitions. It remains available for inspection; ask again before creating new work.')
-    if current and stale:
+    if current and stale and not (source_review and local_review):
         raise ValueError('The data changed. Ask the question again before creating or changing work.')
     if current and unavailable:
         raise ValueError('Source-reading status is unavailable. Inspect the saved evidence; restore source verification before changing work.')
@@ -290,10 +292,22 @@ def work(path, context):
 
 def inspect(path, key):
     context = load(path, key)
-    items = [{**item, 'source_review_required': context.get('source_review_required', False),
-              'source_disposition_status': context['source_disposition']['status']} for item in work(path, context)]
+    items = [];fields={}
+    for item in work(path, context):
+        checks = review_dependency_status(path, item)
+        for check in checks:
+            for field in check.get('fields')or[]:
+                state=fields.setdefault(item['patient_id'],{}).setdefault(field,{'source_current':True,'dependency_ids':[]})
+                state['source_current']=state['source_current']and check.get('finding_source_current',False)
+                state['dependency_ids'].append(check['id'])
+        items.append({**item, 'review_dependency_status': checks,
+            'parent_answer_stale': context['stale'],
+            'source_review_required': (context.get('source_review_required', False) or context['invalidated']
+                                      or any(not d['source_current'] for d in checks)),
+            'source_disposition_status': context['source_disposition']['status']})
     from .workflow import read
-    return {'context': context, 'workflow': read(path, key), 'items': items, 'counts': dict(Counter(i['state'] for i in items)),
+    return {'context': context, 'workflow': read(path, key), 'items': items, 'finding_freshness':fields,
+            'counts': dict(Counter(i['state'] for i in items)),
             'programs': PROGRAMS, 'states': STATES, 'external_dispatch_performed': False}
 
 
@@ -355,8 +369,102 @@ def reference_scope(context, scope='result'):
             'answer': {**context['answer'], 'actionable_cohort': False}}
 
 
+REVIEW_DEPENDENCIES = 'answer-review-source-dependencies/1'
+
+
+def review_source_receipt(path, selection):
+    """Exact received-source versions for one declared patient/family/date scope.
+
+    Empty sets and unknown clocks are retained. A digest establishes freshness
+    of this input set, never source completeness, care absence or resolution.
+    """
+    from datetime import date
+    if set(selection) != {'patient_id','streams','start','end','as_of'}:
+        raise ValueError('Exact patient, source families and date scope required')
+    streams = selection['streams']
+    if (not isinstance(selection['patient_id'],str) or not selection['patient_id']
+            or not isinstance(streams,list) or not streams or len(set(streams))!=len(streams)
+            or any(not isinstance(s,str)or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*',s)for s in streams)):
+        raise ValueError('Distinct explicit source families and patient required')
+    start,end,cutoff=(date.fromisoformat(selection[k]) for k in ('start','end','as_of'))
+    if not start<=end<=cutoff:raise ValueError('Source dates must end by the saved cutoff')
+    query=('SELECT record_id,stream,event_date,available_date,payload FROM record WHERE patient_id=? AND stream IN ('
+           +','.join('?'for _ in streams)+') ORDER BY record_id')
+    with sqlite3.connect((Path(path)/'semantic.sqlite3').resolve().as_uri()+'?mode=ro',uri=True)as db:
+        rows=db.execute(query,[selection['patient_id'],*streams]).fetchall()
+    def day(value):
+        try:return date.fromisoformat(value)if isinstance(value,str)and re.fullmatch(r'\d{4}-\d{2}-\d{2}',value)else None
+        except ValueError:return None
+    rows=[r for r in rows if (day(r[2])is None or start<=day(r[2])<=end)
+          and(day(r[3])is None or day(r[3])<=cutoff)]
+    manifest=[{'record_id':rid,'stream':stream,'event_date':event,'reported_available_date':available,
+               'record_digest':fingerprint(json.loads(payload))}for rid,stream,event,available,payload in rows]
+    return {'schema':REVIEW_DEPENDENCIES,'selection':selection,'records':manifest,'digest':fingerprint(manifest),
+            'unknown_event_dates':sum(day(r['event_date'])is None for r in manifest),
+            'unknown_reported_availability_dates':sum(day(r['reported_available_date'])is None for r in manifest),
+            'scope':'Freshness of declared received inputs only; absence, clinical truth and care completion remain unestablished.'}
+
+
+def prepare_review_dependency(path, context, request):
+    required={'patient_id','key','question','streams','start','end'}
+    if not isinstance(request,dict)or set(request)not in(required,required|{'fields'}):
+        raise ValueError('Explicit review dependency, patient, question and source scope required')
+    if request['patient_id']not in context['patient_ids']:
+        raise ValueError('Review dependency is outside the saved population')
+    if not isinstance(request['key'],str)or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*',request['key']):
+        raise ValueError('Named review dependency required')
+    if not isinstance(request['question'],str)or not request['question'].strip():
+        raise ValueError('Unresolved source question required')
+    fields=request.get('fields',[])
+    if not isinstance(fields,list)or any(not isinstance(f,str)or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*(?:\.[A-Za-z][A-Za-z0-9_]*)*',f)for f in fields)or len(set(fields))!=len(fields):
+        raise ValueError('Distinct received output-field paths required')
+    rows=next((r['evidence_rows']for r in context['patient_rows']if r['patient_id']==request['patient_id']),[])
+    if fields and not rows:raise ValueError('Named finding fields require received answer rows')
+    for field in fields:
+        for row in rows:
+            value=row
+            for key in field.split('.'):
+                if not isinstance(value,dict)or key not in value:raise ValueError('Review dependency names an absent output field')
+                value=value[key]
+    selection={k:request[k]for k in ('patient_id','streams','start','end')}
+    if not isinstance(selection['streams'],list)or any(not isinstance(s,str)for s in selection['streams']):
+        raise ValueError('Explicit source-family list required')
+    selection['streams']=sorted(selection['streams'])
+    selection['as_of']=context['source']['as_of']
+    source=review_source_receipt(path,selection)
+    binding={'context_id':context['id'],'patient_id':request['patient_id'],'key':request['key'],
+             'question':request['question'],'selection':selection,'fields':sorted(fields)}
+    return {'schema':REVIEW_DEPENDENCIES,'id':'RD-'+fingerprint(binding)[:24],**binding,'source_receipt':source,
+            'finding_source_digest':source['digest']if fields else None,
+            'clinical_execution_authorized':False}
+
+
+def review_dependency_status(path, item):
+    dependencies=(item.get('evidence_review')or{}).get('dependencies')or[]
+    out=[]
+    for dep in dependencies:
+        try:
+            if not isinstance(dep,dict):raise ValueError('Stored review dependency is invalid')
+            binding={k:dep[k]for k in ('context_id','patient_id','key','question','selection','fields')}
+            if (dep['schema']!=REVIEW_DEPENDENCIES or dep['patient_id']!=item['patient_id']
+                    or dep['context_id']!=item['context_id']or dep['id']!='RD-'+fingerprint(binding)[:24]
+                    or dep['source_receipt']['digest']!=fingerprint(dep['source_receipt']['records'])):
+                raise ValueError('Review dependency binding changed')
+            current=review_source_receipt(path,dep['selection'])
+            same=current==dep['source_receipt']
+            out.append({'id':dep['id'],'key':dep['key'],'question':dep['question'],'fields':dep['fields'],'source_current':same,
+                        'finding_source_current':current['digest']==dep.get('finding_source_digest')if dep['fields']else None,
+                        'status':'received_inputs_current'if same else'source_reassessment_required',
+                        'expected_digest':dep['source_receipt']['digest'],'current_digest':current['digest']})
+        except (ValueError,KeyError,TypeError,OSError,sqlite3.Error)as exc:
+            out.append({'id':dep.get('id')if isinstance(dep,dict)else None,'fields':dep.get('fields',[])if isinstance(dep,dict)else[], 'source_current':False,
+                        'status':'source_dependency_unavailable','reason':str(exc)})
+    return out
+
+
 def create_work(path, request):
-    if set(request) != {'context_id', 'program', 'patient_ids', 'owner', 'note'}:
+    keys={'context_id', 'program', 'patient_ids', 'owner', 'note'}
+    if set(request) not in (keys, keys|{'review_dependencies'}):
         raise ValueError('Exact answer, program, selected patients, owner and note are required')
     program = request['program']
     if program not in PROGRAMS:
@@ -373,6 +481,18 @@ def create_work(path, request):
         raise ValueError('Select distinct patients from this answer')
     if not set(ids) <= set(c['patient_ids']):
         raise ValueError('Selected patients are outside the saved answer')
+    dependencies={pid:[]for pid in ids}
+    declared=request.get('review_dependencies',c['answer'].get('review_dependencies')if program=='evidence_review'else None)
+    if declared is not None:
+        if program!='evidence_review'or not isinstance(declared,list):
+            raise ValueError('Source dependencies belong to internal evidence review only')
+        seen=set()
+        for raw in declared:
+            dep=prepare_review_dependency(path,c,raw)
+            if dep['patient_id']not in dependencies and 'review_dependencies'not in request:continue
+            if dep['patient_id']not in dependencies or dep['id']in seen:
+                raise ValueError('Duplicate dependency or patient outside selected work')
+            seen.add(dep['id']);dependencies[dep['patient_id']].append(dep)
     # Membership in a model/table response must still resolve to the current roster.
     db = sqlite3.connect(f'file:{Path(path) / "semantic.sqlite3"}?mode=ro', uri=True)
     try:
@@ -407,12 +527,17 @@ def create_work(path, request):
                         'suspended_source_readings': c['source_disposition']['suspended_assertions'],
                         'source_disposition': c['source_disposition']['status'],
                     }
+                    if declared is not None:
+                        assessment['evidence_review']['dependencies']=dependencies[pid]
                 aid = fingerprint(assessment)
                 db.execute('INSERT OR IGNORE INTO work_assessments VALUES (?,?,?,?)', (aid, pid, lane, json.dumps(assessment)))
                 existing = db.execute('SELECT payload FROM work_items WHERE id=?', (key,)).fetchone()
                 if existing and json.loads(existing[0])['owner'] != owner:
                     raise ValueError('Review work already has a different owner. Open the existing item to change ownership explicitly; no selected work was changed.')
                 if existing:
+                    if (program=='evidence_review'and declared is not None
+                            and (json.loads(existing[0]).get('evidence_review')or{}).get('dependencies')!=dependencies[pid]):
+                        raise ValueError('Saved review dependency selection changed; preserve prior work and reassess explicitly')
                     continue  # Idempotent creation never resets progress or changes the assigned owner.
                 item = {'id': key, 'patient_id': pid, 'context_id': c['id'], 'program': program, 'lane': lane,
                         'decision_id': decision_id, 'assessment_id': aid, 'revision': 1, 'state': 'needs_review',
@@ -434,7 +559,7 @@ def create_work(path, request):
 def update_work(path, request):
     if set(request) != {'context_id', 'item_id', 'revision', 'state', 'owner', 'note'}:
         raise ValueError('Exact work item, revision, state, owner and note are required')
-    c = load(path, request['context_id'], current=True, source_review=True)
+    c = load(path, request['context_id'])
     if request['state'] not in STATES:
         raise ValueError('Only internal review states are supported; no enrollment or care execution')
     owner, note = str(request['owner']).strip(), str(request['note']).strip()
@@ -450,6 +575,11 @@ def update_work(path, request):
             if row[0] != request['revision']:
                 raise ValueError('Work changed in another window. Reload before saving.')
             item = json.loads(row[1])
+            local=(item['program']=='evidence_review'and bool((item.get('evidence_review')or{}).get('dependencies')))
+            c=load(path,c['id'],current=True,source_review=True,local_review=local)
+            checks=review_dependency_status(path,item)
+            if request['state']=='review_complete'and any(not d['source_current']for d in checks):
+                raise ValueError('A dependent source changed; reassess it before completing review')
             if item['program'] != 'evidence_review' and c['source_review_required']:
                 raise ValueError('This answer relies on a suspended source reading. Open source-evidence review before changing program work.')
             if request['state'] not in TRANSITIONS[item['state']]:
@@ -457,12 +587,64 @@ def update_work(path, request):
             item.update(state=request['state'], owner=owner, note=note, revision=row[0] + 1, updated_at=now())
             db.execute('UPDATE work_items SET revision=?,payload=? WHERE id=?', (item['revision'], json.dumps(item), item['id']))
             db.execute('INSERT INTO work_events VALUES (?,?,?)', (item['id'], item['revision'], json.dumps({'action': 'review_updated', 'item': item})))
-            fresh = load(path, c['id'], current=True, source_review=item['program'] == 'evidence_review')
+            fresh = load(path, c['id'], current=True, source_review=item['program'] == 'evidence_review',local_review=local)
+            if review_dependency_status(path,item)!=checks:
+                raise ValueError('Review source dependencies changed while updating work')
             if source_disposition_identity(fresh) != source_disposition_identity(c):
                 raise ValueError('Source-reading status changed while updating work. Reload before saving.')
     finally:
         db.close()
     return inspect(path, c['id'])
+
+
+def refresh_review_sources(path, request):
+    """Rebind selected review inputs; keep the prior answer and all versions.
+
+    This records an explicit internal source refresh, never a new interpretation
+    or completed clinical review. Changed work returns to in_review.
+    """
+    if set(request)!={'context_id','item_id','revision','dependency_ids','owner','note'}:
+        raise ValueError('Exact work revision, selected source requests, owner and note required')
+    selected=request['dependency_ids']
+    if (type(request['revision'])is not int or not isinstance(selected,list)or not selected
+            or any(not isinstance(x,str)for x in selected)or len(set(selected))!=len(selected)):
+        raise ValueError('Distinct source request IDs and an exact work revision required')
+    owner,note=str(request['owner']).strip(),str(request['note']).strip()
+    if not owner or len(owner)>120 or len(note)>2000:raise ValueError('Valid review owner and note required')
+    c=load(path,request['context_id']);db=_db(path,c)
+    try:
+        with db:
+            db.execute('BEGIN IMMEDIATE')
+            row=db.execute('SELECT revision,payload FROM work_items WHERE id=?',(request['item_id'],)).fetchone()
+            if not row or row[0]!=request['revision']:raise ValueError('Work changed or is absent; reload before refreshing sources')
+            item=json.loads(row[1]);dependencies=(item.get('evidence_review')or{}).get('dependencies')or[]
+            if item['program']!='evidence_review'or not dependencies or item['state']=='cancelled':
+                raise ValueError('Select active source-bound evidence review work')
+            if item['owner']!=owner:raise ValueError('Review owner changed; update ownership explicitly before refreshing sources')
+            checks={d['id']:d for d in review_dependency_status(path,item)}
+            if not set(selected)<=set(checks)or any(checks[d]['status']=='source_dependency_unavailable'for d in selected):
+                raise ValueError('Selected source request is absent or its binding is unavailable')
+            load(path,c['id'],current=True,source_review=True,local_review=True)
+            new=[{**dep,'source_receipt':review_source_receipt(path,dep['selection'])}if dep['id']in selected else dep for dep in dependencies]
+            if new!=dependencies:
+                prior=item['assessment_id']
+                assessment=json.loads(db.execute('SELECT payload FROM work_assessments WHERE id=?',(prior,)).fetchone()[0])
+                assessment={**assessment,'evidence_review':{**assessment['evidence_review'],'dependencies':new},
+                    'source_refresh':{'source':source_identity(path),'owner':owner,'note':note,
+                                      'original_answer_unchanged':True,'clinical_findings_recomputed':False}}
+                aid=fingerprint(assessment)
+                db.execute('INSERT OR IGNORE INTO work_assessments VALUES (?,?,?,?)',(aid,item['patient_id'],item['lane'],json.dumps(assessment)))
+                item={**item,'assessment_id':aid,'evidence_review':assessment['evidence_review'],
+                      'state':'in_review','note':note,'revision':row[0]+1,'updated_at':now()}
+                db.execute('UPDATE work_items SET revision=?,payload=? WHERE id=?',(item['revision'],json.dumps(item),item['id']))
+                db.execute('INSERT INTO work_events VALUES (?,?,?)',(item['id'],item['revision'],json.dumps({
+                    'action':'source_inputs_refreshed','dependency_ids':selected,'prior_assessment_id':prior,'item':item,
+                    'clinical_findings_recomputed':False})))
+                current={d['id']:d for d in review_dependency_status(path,item)}
+                if any(not current[d]['source_current']for d in selected):raise ValueError('Selected sources changed while refreshing')
+                load(path,c['id'],current=True,source_review=True,local_review=True)
+    finally:db.close()
+    return inspect(path,c['id'])
 
 
 def followup(path, key, question, *, scope='result'):

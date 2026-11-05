@@ -299,7 +299,7 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/ask':
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
-                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-deliverable', '/api/stack/action-report', '/api/stack/action-mockup', '/api/stack/action-simulate'):
+                elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-work/refresh', '/api/stack/action-deliverable', '/api/stack/action-report', '/api/stack/action-mockup', '/api/stack/action-simulate'):
                     from .deliverables import answer_context
                     if path.endswith('/action-mockup'):
                         from .deliverables.mock_views import create
@@ -314,9 +314,11 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                         result=answer_context.create_work(connected_stack.path,body)
                     elif path.endswith('/update'):
                         result=answer_context.update_work(connected_stack.path,body)
+                    elif path.endswith('/refresh'):
+                        result=answer_context.refresh_review_sources(connected_stack.path,body)
                     else:
                         result=answer_context.compose_frontier(connected_stack.path,body,allow_live=connected_stack.allow_live)
-                    if path.endswith(('/action-work/create','/action-work/update')):
+                    if path.endswith(('/action-work/create','/action-work/update','/action-work/refresh')):
                         from .deliverables.action_center import inspection_view
                         result=inspection_view(result)
                 elif path=='/api/stack/action-workflow/retry':

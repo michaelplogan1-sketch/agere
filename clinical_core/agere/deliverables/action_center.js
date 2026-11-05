@@ -61,8 +61,9 @@ function canCreate(program = intent || $('program').value) {
     ? ['answered','partial','low_confidence'].includes(answer.status)
     : answer.status === 'answered' && !answer.missing?.length;
 }
-function canChangeWork(program) {
-  return !data.context.stale && !data.context.invalidated && data.context.source_disposition?.status !== 'unavailable'
+function canChangeWork(program, item=null) {
+  const localReview = program === 'evidence_review' && item?.review_dependency_status?.length;
+  return (!data.context.stale || localReview) && !data.context.invalidated && data.context.source_disposition?.status !== 'unavailable'
     && (!data.context.source_review_required || program === 'evidence_review');
 }
 function generationLabel(d) {
@@ -223,7 +224,8 @@ function renderOverview() {
   host.querySelectorAll('[data-monitor-check]').forEach(b=>b.onclick=()=>run(async()=>{const index=Number(b.dataset.monitorCheck),work=steps[index]?.mode==='work';await api('/api/stack/action-monitor',{context_id:c.id,index});await refresh();notify(work?'Simulated work progress checked.':'Monitor checked against the current warehouse.');}));
 }
 function taskCard(item) {
-  return '<button class="task-card" data-task="'+esc(item.id)+'" aria-label="Open review for '+esc(item.patient_id)+'"><span class="task-top"><strong>'+esc(item.patient_id)+'</strong>'+icon('arrow')+'</span><span class="task-program">'+esc(programNames[item.program] || item.program)+'</span><p>'+esc(item.simulation ? 'Demo: '+pretty(item.simulation.status)+' · '+(item.simulation.next_step?pretty(item.simulation.next_step):item.simulation.follow_up||'Journey complete') : item.note || 'No notes yet. Open this review to add the next step.')+'</p><span class="task-owner"><span class="owner-avatar">'+esc(initials(item.owner))+'</span>'+esc(item.owner)+'</span></button>';
+  const changed = item.review_dependency_status?.some(d => !d.source_current);
+  return '<button class="task-card" data-task="'+esc(item.id)+'" aria-label="Open review for '+esc(item.patient_id)+'"><span class="task-top"><strong>'+esc(item.patient_id)+'</strong>'+icon('arrow')+'</span><span class="task-program">'+esc(programNames[item.program] || item.program)+'</span>'+(changed?'<span class="badge warning">Source changed · reassessment needed</span>':'')+'<p>'+esc(item.simulation ? 'Demo: '+pretty(item.simulation.status)+' · '+(item.simulation.next_step?pretty(item.simulation.next_step):item.simulation.follow_up||'Journey complete') : item.note || 'No notes yet. Open this review to add the next step.')+'</p><span class="task-owner"><span class="owner-avatar">'+esc(initials(item.owner))+'</span>'+esc(item.owner)+'</span></button>';
 }
 function showWork() {
   if (!data) return;
@@ -259,7 +261,7 @@ function render() {
   $('nav-work').textContent = num(data.items.filter(i=>i.state!=='cancelled').length);
   const warnings = [];
   if (c.invalidated) warnings.push('This answer uses an older or invalidated planning definition. Its history is preserved; refresh the answer before new work or demo actions.');
-  if (c.stale) warnings.push('Source data has changed. This saved answer is still visible; ask again before changing work.');
+  if (c.stale) warnings.push('Source data has changed. The saved answer remains visible. Source-bound evidence reviews show which inputs need reassessment; refresh the answer before other work.');
   if (c.source_review_required) warnings.push('This saved answer relies on a suspended source reading. Its original findings remain inspectable; open source-evidence review or ask again before preparing program work. The answer has not been recalculated.');
   if (c.source_disposition?.status === 'unavailable') warnings.push('Source-reading status is unavailable. Restore source verification before changing work. The saved evidence remains inspectable.');
   if (c.answer.status !== 'answered' || c.answer.missing?.length) warnings.push('This answer has unresolved evidence. You can prepare source-evidence review; clinical program work requires a complete answer.');
@@ -324,7 +326,24 @@ function editWork(id) {
   if (!item) return;
   $('detail-kicker').textContent = 'REVIEW WORK / '+(programNames[item.program] || item.program).toUpperCase();
   $('detail-title').textContent = item.patient_id;
-  $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Staff review status</label><select id="task-state" '+(!canChangeWork(item.program)?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Updates the staff review status. Simulated agent outcomes remain in the journey history. No outreach, enrollment, or care delivery occurs.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+(!canChangeWork(item.program)?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
+  $('detail-content').innerHTML = '<form id="edit-work-form"><p class="muted">Keep the next step, owner, and progress together.</p><label for="task-state">Staff review status</label><select id="task-state" '+(!canChangeWork(item.program, item)?'disabled':'')+'>'+data.states.map(s=>'<option value="'+esc(s)+'" '+(s===item.state?'selected':'')+'>'+esc(states[s]||pretty(s))+'</option>').join('')+'</select><label for="task-owner">Who’s taking the lead?</label><input id="task-owner" required maxlength="120" value="'+esc(item.owner)+'"><label for="task-note">What’s the next step?</label><textarea id="task-note" maxlength="2000">'+esc(item.note)+'</textarea><details class="requirements-box"><summary>Review requirements</summary><ul>'+item.requirements.map(r=>'<li>'+esc(r)+'</li>').join('')+'</ul></details><button type="button" class="text-button" data-inspect="'+esc(item.patient_id)+'">Open patient evidence '+icon('arrow')+'</button><p class="cost-note">Updates the staff review status. Simulated agent outcomes remain in the journey history. No outreach, enrollment, or care delivery occurs.</p><p id="work-error" class="form-error" role="alert"></p><div class="sheet-actions"><button type="button" class="button" data-close="detail-dialog">Cancel</button><button id="save-work" class="button primary" '+(!canChangeWork(item.program, item)?'disabled':'')+'>Save progress '+icon('check')+'</button></div></form>';
+  const dependencies = item.review_dependency_status || [];
+  if (dependencies.length) {
+    const section = document.createElement('section'); section.className = 'requirements-box';
+    section.innerHTML = '<h3>Source review requests</h3><ul>'+dependencies.map(d => '<li><strong>'+esc(d.question || 'Review source dependency')+'</strong><p>'+esc(d.source_current ? 'Received review inputs are current. The review remains open.' : 'Source inputs changed or are unavailable. Reassess this request before completing review.')+'</p>'+(d.finding_source_current === false?'<p>The saved finding predates these source inputs. It remains available for inspection and needs recalculation.</p>':'')+'</li>').join('')+'</ul>';
+    $('detail-content').append(section);
+    if (dependencies.some(d => !d.source_current)) {
+      $('task-state').querySelector('[value="review_complete"]').disabled = true;
+      const button = document.createElement('button'); button.type = 'button'; button.className = 'btn';
+      button.textContent = 'Refresh source inputs'; button.disabled = item.state === 'cancelled' || !canChangeWork(item.program, item);
+      button.onclick = () => run(async () => {
+        await api('/api/stack/action-work/refresh',{context_id:key,item_id:item.id,revision:item.revision,
+          dependency_ids:dependencies.filter(d => !d.source_current).map(d => d.id),owner:item.owner,note:$('task-note').value});
+        await refresh(); editWork(item.id); notify('Source inputs refreshed. The answer and clinical findings have not been recalculated.');
+      });
+      section.append(button);
+    }
+  }
   const sim = item.simulation;
   const demo = document.createElement('section');
   demo.className = 'requirements-box';
@@ -350,7 +369,7 @@ function editWork(id) {
         closeDialog('detail-dialog');
         notify('Progress saved. Your work board is up to date.');
       } catch (error) { $('work-error').textContent = error.message; }
-      finally { if ($('save-work')) $('save-work').disabled = !canChangeWork(item.program); }
+      finally { if ($('save-work')) $('save-work').disabled = !canChangeWork(item.program, item); }
     });
   };
   if (!$('detail-dialog').open) openDialog('detail-dialog');

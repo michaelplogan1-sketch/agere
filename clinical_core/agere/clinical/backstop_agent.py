@@ -249,6 +249,9 @@ has already declined this question, so it is yours to answer completely and corr
 - A received structured value uses a received_field source reference (record_id, patient_id, date, field, value), not an invented
   quotation of JSON. Native verification binds the exact field, subject, source date and record version; its clinical meaning still
   needs interpretation. If a source chain is requested, retain the dated record chain in the final patient rows, rather than only flags.
+  Named unresolved source questions may be declared as review_dependencies: patient_id, key, question, streams (source-family list),
+  start and end (ISO dates). These bind internal source-review work to the saved population and received input versions. They do not
+  establish clinical eligibility, complete a review or send a request.
 - When a saved cohort is given (cohort_size in the input), the question is about those patients only: the view `cohort(patient_id)` holds them;
   join every query to it.
 - A question can rest on a false premise ("why did X jump" when X fell): check the premise with the numbers and say so.

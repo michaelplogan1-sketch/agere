@@ -41,7 +41,7 @@ LOCAL_POSTS = frozenset('/api/stack/' + name for name in (
     'decision/population-execute', 'decision/population-accountability',
     'decision/population-prediction-options', 'decision/population-prediction',
     'decision/population-discovery-options', 'decision/population-discovery',
-    'decision/economics', 'action-work/create', 'action-work/update'))
+    'decision/economics', 'action-work/create', 'action-work/update', 'action-work/refresh'))
 LOCAL_GETS = frozenset('/api/stack/' + name for name in (
     'context', 'case-synthesis', 'decision/source', 'decision/population-config', 'outcome-contracts',
     'source-atlas', 'source-records', 'capabilities', 'capabilities/catalog',
