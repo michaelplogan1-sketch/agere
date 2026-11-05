@@ -2216,7 +2216,9 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         relevant=[row for ident,row in rows.items()if local_dependencies is None or any(
             o.get('result_view')in local_dependencies for o in origins.get(pid,{}).get(ident,{}).values())]
         if relevant:global_patient_evidence.append({'patient_id':pid,'native_observations':relevant})
-    if global_patient_evidence:packets[0]['global_patient_evidence']=global_patient_evidence
+    if global_patient_evidence:
+        from .evidence_projection import native_observation_view
+        packets[0]['global_patient_evidence']=native_observation_view(global_patient_evidence)
     for pid in sorted(final_patients):
         # A repair may query every entity while binding only one entity's
         # prose. Keep that query out of unrelated patient packets. The native

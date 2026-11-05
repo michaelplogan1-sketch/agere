@@ -223,4 +223,51 @@ class SourceDependencies(unittest.TestCase):
                 B.check_support_packets(changed,supported,as_of=packet['date'],ledger=None)
 
 
+class NativeObservationTransport(unittest.TestCase):
+    def groups(self):
+        groups=[]
+        for i in range(64):
+            small={'patient_id':str(i),'record_id':'source-'+str(i),'text':'exact source statement','value':None,
+                   **{'native_column_'+str(k):str(i)+'_'+str(k)for k in range(20)}}
+            large={**small,'relation':'unresolved','date':None,'literal':{'encoding':'not a transport reference'}}
+            groups.append({'patient_id':str(i),'native_observations':[small,large]})
+        return groups
+
+    def test_overlapping_rows_restore_every_field_order_and_observation(self):
+        groups=self.groups();small=groups[0]['native_observations'][0]
+        view=E.native_observation_view(groups)
+        self.assertIsInstance(view,dict)
+        self.assertEqual(len(view['patients'][0]['basis_rows']),1)
+        restored=E.restore_native_observations(view)
+        self.assertEqual(restored,groups)
+        self.assertEqual(list(restored[0]['native_observations'][0]),list(small))
+        self.assertEqual(len(restored[0]['native_observations']),2)
+        self.assertNotIn('relation',restored[0]['native_observations'][0])
+
+    def test_different_patients_sources_and_value_types_stay_separate(self):
+        text='literal source context '*100
+        groups=[{'patient_id':pid,'native_observations':[
+            {'patient_id':pid,'record_id':'one','text':text,'value':True},
+            {'patient_id':pid,'record_id':'one','text':text,'value':1},
+            {'patient_id':pid,'record_id':'two','text':text,'value':True}]}for pid in ['A','B']]
+        view=E.native_observation_view(groups)
+        self.assertEqual(E.restore_native_observations(view),groups)
+        if isinstance(view,dict):self.assertTrue(all(len(p['basis_rows'])==3 for p in view['patients']))
+        with self.assertRaisesRegex(ValueError,'own patient'):
+            E.native_observation_view([{'patient_id':'A','native_observations':[{'patient_id':'B'}]}])
+
+    def test_modified_shapes_or_cross_patient_bases_are_rejected(self):
+        view=E.native_observation_view(self.groups())
+        for mode in ['patient','negative','duplicate_column','missing_column','value','order']:
+            bad=copy.deepcopy(view)
+            if mode=='patient':bad['patients'][0]['basis_rows'][0]['patient_id']='B'
+            elif mode=='negative':bad['patients'][0]['observation_sequence'][0][0]=-1
+            elif mode=='duplicate_column':bad['column_shapes'][0].append(bad['column_shapes'][0][0])
+            elif mode=='missing_column':bad['column_shapes'][0].append('absent_source_field')
+            elif mode=='value':bad['patients'][0]['basis_rows'][0]['text']='Changed source value'
+            else:bad['patients'][0]['observation_sequence'].reverse()
+            with self.subTest(mode=mode),self.assertRaises((ValueError,KeyError)):
+                E.restore_native_observations(bad)
+
+
 if __name__=='__main__':unittest.main()

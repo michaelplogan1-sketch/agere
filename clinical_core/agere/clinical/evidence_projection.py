@@ -224,6 +224,64 @@ def coverage_answer(answer):
     return out
 
 
+def native_observation_view(groups):
+    """Share exact overlapping native rows without dropping an observation.
+
+    SQL exploration often projects the same received row several times before
+    adding its final relation fields. Keep each observation's own column shape
+    and order, with one complete basis row for identical values. This conveys
+    no source equivalence or clinical acceptance. All original native receipts
+    remain outside this transport view.
+    """
+    shapes=[];shape_ids={};patients=[]
+    for group in groups:
+        if set(group)!={'patient_id','native_observations'}:
+            raise ValueError('Exact patient-bound native observation group required')
+        pid=group['patient_id'];rows=group['native_observations']
+        if any(not isinstance(row,dict)or row.get('patient_id')!=pid for row in rows):
+            raise ValueError('Native observation must retain its own patient')
+        fields=[{k:digest(v)for k,v in row.items()}for row in rows]
+        candidates=sorted(range(len(rows)),key=lambda i:(-len(rows[i]),i))
+        bases=[];references=[]
+        for i,row in enumerate(rows):
+            source=next(j for j in candidates if fields[i].keys()<=fields[j].keys()
+                        and all(fields[j][k]==v for k,v in fields[i].items()))
+            if source not in bases:bases.append(source)
+            shape=tuple(row)
+            if shape not in shape_ids:shape_ids[shape]=len(shapes);shapes.append(list(shape))
+            references.append([bases.index(source),shape_ids[shape]])
+        patients.append({'patient_id':pid,'basis_rows':[rows[i]for i in bases],
+                         'observation_sequence':references})
+    view={'encoding':'native-observation-projections/1','column_shapes':shapes,'patients':patients,
+          'original_fingerprint':digest(groups),
+          'meaning':'For each observation_sequence [basis,shape], select exactly those column names from that patient basis row, in shape order. Every original observation and value is retained; shared values do not establish common source, independent corroboration or clinical truth.'}
+    if restore_native_observations(view)!=groups:
+        raise ValueError('Native observation projections did not restore every input')
+    from ..deliverables.receipts import compact_json
+    size=lambda value:len(json.dumps(compact_json(value),ensure_ascii=False,separators=(',',':')).encode())
+    return view if size(view)<size(groups)else groups
+
+
+def restore_native_observations(view):
+    if isinstance(view,list):return copy.deepcopy(view)
+    if not isinstance(view,dict)or view.get('encoding')!='native-observation-projections/1':
+        raise ValueError('Unknown native observation encoding')
+    shapes=view['column_shapes'];groups=[]
+    for group in view['patients']:
+        rows=[]
+        for basis,shape in group['observation_sequence']:
+            if type(basis)is not int or type(shape)is not int or basis<0 or shape<0:
+                raise ValueError('Exact native row projection indices required')
+            original=group['basis_rows'][basis];columns=shapes[shape]
+            if len(set(columns))!=len(columns)or original.get('patient_id')!=group['patient_id']:
+                raise ValueError('Native projection patient or shape changed')
+            rows.append({key:copy.deepcopy(original[key])for key in columns})
+        groups.append({'patient_id':group['patient_id'],'native_observations':rows})
+    if digest(groups)!=view.get('original_fingerprint'):
+        raise ValueError('Native observation values or order changed')
+    return groups
+
+
 def partition_support_packet(packet, *, max_bytes=230000):
     """Partition claimed outputs, retaining every source input in every part.
 
