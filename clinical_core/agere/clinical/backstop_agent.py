@@ -2253,6 +2253,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                 'bindings':timing_bindings,'legacy_text':legacy_text}
     mark_native_numeric_fidelity(result,answer,calls,document_reviews)
     mark_native_profile_fidelity(result,answer,calls,document_reviews)
+    mark_native_profile_fields(result,answer,calls)
     return result
 
 
@@ -2541,6 +2542,109 @@ def mark_native_profile_fidelity(packets,answer,calls,document_reviews):
         packet['native_profile_fidelity']={**common,'packet_id':packet['id'],
             'patient_id':packet['source_dependency_patient_id'],'claim_manifest_digest':digest(packet['claim_manifest']),
             'packet_sha256':hashlib.sha256(packet['text'].encode()).hexdigest()}
+
+
+PROFILE_FIELD_SOURCES={name:name for name in ('patient_name','birth_date','age_reported','age_at_snapshot',
+    'sex_reported','preferred_language','interpreter_needed')}
+PROFILE_FIELD_SOURCES['age']='age_at_snapshot'
+
+
+def mark_native_profile_fields(packets,answer,calls):
+    """Bind profile scalars in mixed tables to their actual native producer.
+
+    Age means calculated at the profile snapshot, never reported/historical
+    age. Clinical text and care roles get no exemption. Request meaning and
+    complete-source obligations remain with their existing reviewers.
+    """
+    from datetime import date
+    from ...contracts import digest
+    from .result_assembly import incomplete_reason
+    from ..deliverables.receipts import uncompact_json
+    for packet in packets:packet.pop('native_profile_fields',None)
+    root=answer.get('table_from_tool');dependencies=native_result_dependencies(calls,[root])if root else None
+    if not dependencies:return
+    native={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')in dependencies}
+    if root not in native or incomplete_reason(native[root]['result']):return
+    columns,rows=output_table(native[root]['result'])
+    if 'patient_id'not in columns:return
+    final={}
+    for values in rows:
+        row=dict(zip(columns,values));pid=row.get('patient_id')
+        if not isinstance(pid,str)or not pid or pid in final:return
+        final[pid]=row
+    profiles={};origins={};source=None
+    for view,call in native.items():
+        result=call['result']
+        if call.get('name')!='read_patient_profiles':continue
+        if result.get('kind')!='received_patient_profiles'or result.get('error')or incomplete_reason(result):return
+        identity=result.get('source')or{}
+        if not identity.get('source_digest')or not identity.get('as_of')or source is not None and source!=identity:return
+        source=identity;cols,values=output_table(result);ids=[]
+        for values_row in values:
+            row=dict(zip(cols,values_row));pid=row.get('patient_id');ids.append(pid)
+            if not isinstance(pid,str)or not pid or pid in profiles and profiles[pid]!=row:return
+            profiles[pid]=row;origins[pid]={'result_view':view,'row':len(ids)-1,'receipt_digest':digest(result)}
+        if len(set(ids))!=len(ids)or set(ids)!=set(result.get('input_patient_ids')or[]):return
+    if not source:return
+    for call in native.values():
+        if call.get('name')=='query_sql':
+            contract=call['result'].get('source_contracts')or{}
+            if contract.get('source_digest')!=source['source_digest']or contract.get('as_of')!=source['as_of']:return
+    for packet in packets:
+        pid=packet.get('source_dependency_patient_id');profile=profiles.get(pid);row=final.get(pid)
+        if not profile or not row or packet.get('patient_dependency_bound')is not True or packet.get('date')!=source['as_of']:continue
+        if profile.get('profile_status')!='received_profile'or not profile.get('profile_source_fingerprint'):continue
+        try:
+            cutoff=date.fromisoformat(source['as_of'])
+            day=profile.get('profile_source_date')
+            if day and date.fromisoformat(day)>cutoff:continue
+        except (ValueError,TypeError):continue
+        state=uncompact_json(json.loads(packet['text']));qualified={}
+        for claim in packet.get('claim_manifest')or[]:
+            field=claim.get('field');source_field=PROFILE_FIELD_SOURCES.get(field)
+            if source_field is None or claim.get('path')!=['answer_rows',0,field]:continue
+            value=_claim_value(state,claim['path'])
+            if field not in row or source_field not in profile or digest(value)!=digest(row[field])or digest(value)!=digest(profile[source_field]):continue
+            qualified[claim['id']]={**claim,'source_field':source_field,'value_digest':digest(value)}
+        if qualified:
+            proof={'schema':'native-profile-fields/1','patient_id':pid,'as_of':source['as_of'],
+                'source':source,'producer':origins[pid],'profile':profile,'claims':qualified,
+                'scope':'Exact received profile scalars; age is DOB arithmetic at this snapshot. No clinical truth, historical age or request-coverage acceptance.'}
+            packet['native_profile_fields']={**proof,'binding_digest':digest(proof)}
+
+
+def native_profile_field_proof(packet,claim,state):
+    """Check the exact scalar and clock; unrelated prose edits do not break it."""
+    from datetime import date
+    from ...contracts import digest
+    proof=packet.get('native_profile_fields')or{};entry=(proof.get('claims')or{}).get(claim['id'])
+    pid=packet.get('source_dependency_patient_id');profile=proof.get('profile')or{};source=proof.get('source')or{}
+    field=claim.get('field');origin=PROFILE_FIELD_SOURCES.get(field)
+    if (proof.get('schema')!='native-profile-fields/1'or not entry or packet.get('patient_dependency_bound')is not True
+        or proof.get('binding_digest')!=digest({k:v for k,v in proof.items()if k!='binding_digest'})
+        or proof.get('patient_id')!=pid or profile.get('patient_id')!=pid or state.get('patient_id')!=pid
+        or proof.get('as_of')!=packet.get('date')or source.get('as_of')!=packet.get('date')or not source.get('source_digest')
+        or not profile.get('profile_source_fingerprint')or profile.get('profile_status')!='received_profile'
+        or not(proof.get('producer')or{}).get('receipt_digest')or not(proof.get('producer')or{}).get('result_view')
+        or type((proof.get('producer')or{}).get('row'))is not int or proof['producer']['row']<0
+        or any(entry.get(k)!=claim.get(k)for k in ('id','field','path'))or origin is None or entry.get('source_field')!=origin
+        or claim.get('path')!=['answer_rows',0,field]):return None
+    try:
+        if state['answer_rows'][0].get('patient_id')!=pid:return None
+        value=_claim_value(state,claim['path']);cutoff=date.fromisoformat(packet['date'])
+        if digest(value)!=entry.get('value_digest')or origin not in profile or digest(value)!=digest(profile[origin]):return None
+        day=profile.get('profile_source_date')
+        if day and date.fromisoformat(day)>cutoff:return None
+        if origin=='age_at_snapshot':
+            try:
+                born=date.fromisoformat(profile.get('birth_date'))
+                age=cutoff.year-born.year-((cutoff.month,cutoff.day)<(born.month,born.day))if born<=cutoff else None
+            except (ValueError,TypeError):age=None
+            if digest(value)!=digest(age):return None
+        return {'schema':proof['schema'],'patient_id':pid,'as_of':packet['date'],'source':source,
+            'producer':proof['producer'],'source_field':origin,'profile_fingerprint':profile['profile_source_fingerprint'],
+            'claim':entry,'profile_source_date':day,'authority':'native_received_profile','clinical_qualification':False}
+    except (ValueError,TypeError,KeyError,IndexError):return None
 
 
 def native_numeric_fidelity_valid(packet,summary):
@@ -2871,7 +2975,12 @@ def joint_dependency_wait(packets,results):
                 p,threshold=judgment.get('probability'),judgment.get('threshold')
                 if (reading.get('claim_id')!=claim['id']or any(reading.get(k)!=claim[k]for k in ('field','path'))
                     or reading.get('value_digest')!=digest(_claim_value(state,claim['path']))
-                    or observed.get('state')!='supported'or judgment.get('label')!='supported'or not judgment.get('decided_by')
+                    or observed.get('state')!='supported'):return []
+                if observed.get('native_provenance'):
+                    proof=native_profile_field_proof(packet,claim,state)
+                    if not proof or proof!=observed['native_provenance']:return []
+                    continue
+                if (judgment.get('label')!='supported'or not judgment.get('decided_by')
                     or type(p)not in(int,float)or type(threshold)not in(int,float)
                     or not math.isfinite(p)or not math.isfinite(threshold)or not 0<threshold<=p<=1):return []
         return [r['id']for r in pending]
@@ -2952,9 +3061,16 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
         'missing_evidence':'The field asserts a fact that is not established by its sources; an explicit supported unknown is not this error.',
         'unknown':'The source does not settle whether this field is supported.'}
     from ...contracts import digest
-    feedback=[];steps=[];supported=[];claims=packet['claim_manifest']
-    for start in range(0,len(claims),64):
-        chunk=claims[start:start+64]
+    feedback=[];steps=[];supported=[];claims=packet['claim_manifest'];semantic_claims=[]
+    for claim in claims:
+        proof=native_profile_field_proof(packet,claim,state)
+        if proof:
+            supported.append({'claim_id':claim['id'],'field':claim['field'],'path':claim['path'],
+                'value_digest':digest(_claim_value(state,claim['path'])),
+                'verification_observation':{'state':'supported','native_provenance':proof}})
+        else:semantic_claims.append(claim)
+    for start in range(0,len(semantic_claims),64):
+        chunk=semantic_claims[start:start+64]
         named={c['id']:{'type':'choice','instructions':{'claim':c,
             'task':'Check ONLY this value at its named field/path against its source kind, definition, requested entity/domain and time. Validate executed structured facts/arithmetic against their inputs and scope; missing note corroboration does not refute a pharmacy-policy flag or a count of machine findings. Such a count does not assert clinical validity. A dated relationship object does not assert current assignment; its specialty must still fit the field meaning. Raw documents support interpretation; final/model rows cannot prove their own clinical meaning. Name this field\'s concrete fault. Quote presence does not establish entity/reason binding. Preserve supported unknowns.'},'criteria':options} for c in chunk}
         size=len(source_text.encode())+len(json.dumps(named,ensure_ascii=False).encode())+2048
@@ -2989,10 +3105,14 @@ def localize_support_failure(packet,judge,*,as_of,ledger,order=None):
                 'verification_observation':observation,
                 **({'source_assertion_id':source_assertion['id']}if isinstance(source_assertion.get('id'),str)else {}),
                 'source_record_ids':sorted(source_ids(value) or cited_ids or source_ids(state.get('evidence',[]))),'result_view':packet.get('result_view')})
+    positions={claim['id']:i for i,claim in enumerate(claims)}
+    supported.sort(key=lambda reading:positions[reading['claim_id']])
+    native_count=sum('native_provenance'in reading['verification_observation']for reading in supported)
     return {'feedback':feedback,'steps':steps,'field_review':{
-        'schema':'localized-field-review/1','authority':'machine_review',
+        'schema':'localized-field-review/1','authority':'native_provenance_and_machine_review'if native_count else'machine_review',
         'packet_digest':digest(packet['text']),'manifest_digest':digest(claims),
         'expected_count':len(claims),'supported_count':len(supported),
+        'native_supported_count':native_count,
         'unresolved_count':sum(not f.get('decided_by')for f in feedback),
         'fault_count':sum(bool(f.get('decided_by'))for f in feedback),
         'all_fields_supported':bool(claims)and len(supported)==len(claims),
@@ -3031,6 +3151,11 @@ def complete_claim_composition(packet,review):
             if any(reading.get(k)!=claim[k]for k in ('field','path'))or reading.get('claim_id')!=claim['id']:return None
             if reading.get('value_digest')!=digest(_claim_value(state,claim['path'])):return None
             observed=reading.get('verification_observation')or{};judgment=observed.get('model_judgment')or{}
+            if observed.get('state')!='supported':return None
+            if observed.get('native_provenance'):
+                proof=native_profile_field_proof(packet,claim,state)
+                if not proof or proof!=observed['native_provenance']:return None
+                continue
             p,threshold=judgment.get('probability'),judgment.get('threshold')
             if (observed.get('state')!='supported'or judgment.get('label')!='supported'or not judgment.get('decided_by')or
                 type(p)not in(int,float)or type(threshold)not in(int,float)or
