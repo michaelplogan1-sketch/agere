@@ -145,4 +145,75 @@ class CompleteNativeCoverageGraph(unittest.TestCase):
         self.assertNotIn('inventory bytes',json.dumps(graph));self.assertEqual(calls,before)
 
 
+class PatientProseDependencies(unittest.TestCase):
+    def setUp(self):
+        self.calls=[{'name':'query_sql','input':{'sql':'SELECT patient_id, value FROM received'},
+            'result':{'result_view':'base','columns':['patient_id','value'],
+                      'rows':[{'patient_id':'A','value':4},{'patient_id':'B','value':7}]}},
+            {'name':'query_sql','input':{'sql':'SELECT patient_id, value AS window_months FROM base'},
+             'result':{'result_view':'repair','columns':['patient_id','window_months'],
+                       'rows':[{'patient_id':'A','window_months':4},{'patient_id':'B','window_months':7}]}}]
+        self.answer={'table':[{'patient_id':'A','value':4},{'patient_id':'B','value':7}],
+                     'table_from_tool':'base','headline':'Received observations','computed_prose':[]}
+
+    def packets(self,answer,calls=None):
+        return {p['id']:p['text']for p in B.support_packets('Inspect each person',answer,
+            self.calls if calls is None else calls,[],'2030-05-27')}
+
+    def claim(self,patient='A',view='repair'):
+        return {'field':'review','template':'{n} months','rendered':'4 months','entity_key':{'patient_id':patient},
+                'sources':{'n':{'binding':{'result_view':view,'row':0,'column':'window_months'},'value':4}},
+                'basis':[{'result_view':view,'row':0}]}
+
+    def test_repair_query_returning_all_people_changes_only_the_bound_patient_packet(self):
+        before=self.packets(self.answer)
+        self.answer['computed_prose']=[self.claim()]
+        self.answer['table'][0]['review']='4 months'
+        after=self.packets(self.answer)
+        self.assertEqual(before['patient_B'],after['patient_B'])
+        self.assertNotEqual(before['patient_A'],after['patient_A'])
+        self.assertNotEqual(before['summary'],after['summary'])
+        a=uncompact_json(json.loads(after['patient_A']))
+        b=uncompact_json(json.loads(after['patient_B']))
+        self.assertTrue(any(r.get('window_months')==4 for r in a['evidence']))
+        self.assertFalse(any('window_months'in r for r in b['evidence']))
+
+    def test_actual_patient_binding_changes_remain_identity_bearing(self):
+        self.answer['computed_prose']=[self.claim()]
+        before=self.packets(self.answer)
+        self.calls[1]['result']['rows'][0]['window_months']=5
+        after=self.packets(self.answer)
+        self.assertNotEqual(before['patient_A'],after['patient_A'])
+        self.assertEqual(before['patient_B'],after['patient_B'])
+
+    def test_final_table_dependencies_are_still_required_for_every_patient(self):
+        self.answer['table_from_tool']='repair'
+        a=uncompact_json(json.loads(self.packets(self.answer)['patient_B']))
+        self.assertTrue(any(r.get('window_months')==7 for r in a['evidence']))
+        self.assertEqual({c['result_view']for c in a['native_calculation_contracts']},{'base','repair'})
+
+    def test_unknown_local_root_keeps_conservative_evidence(self):
+        self.answer['computed_prose']=[self.claim(patient='B',view='missing')]
+        b=uncompact_json(json.loads(self.packets(self.answer)['patient_B']))
+        self.assertTrue(any(r.get('window_months')==7 for r in b['evidence']))
+
+    def test_shared_scalar_is_retained_only_where_the_patient_claim_uses_it(self):
+        self.calls[1]['result'].update(columns=['window_months'],rows=[{'window_months':4}])
+        self.calls[1]['input']['sql']='SELECT count(*) AS window_months FROM base'
+        before=self.packets(self.answer)
+        self.answer['computed_prose']=[self.claim()]
+        after=self.packets(self.answer)
+        self.assertEqual(before['patient_B'],after['patient_B'])
+        a=uncompact_json(json.loads(after['patient_A']))
+        self.assertIn({'window_months':4},a['shared_evidence'])
+
+    def test_global_only_prose_keeps_its_evidence_in_global_review(self):
+        before=self.packets(self.answer)
+        claim=self.claim();claim.pop('entity_key');self.answer['computed_prose']=[claim]
+        after=self.packets(self.answer)
+        self.assertEqual(before['patient_A'],after['patient_A'])
+        self.assertEqual(before['patient_B'],after['patient_B'])
+        self.assertNotEqual(before['summary'],after['summary'])
+
+
 if __name__=='__main__':unittest.main()

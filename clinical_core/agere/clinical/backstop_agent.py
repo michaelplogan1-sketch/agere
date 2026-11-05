@@ -1880,12 +1880,14 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             for item in (c['result'].get('incomplete_dependencies')or[]))}
     claim_roots=[(answer.get('table_binding')or{}).get('result_view') or answer.get('table_from_tool')]
     def prose_roots(value):
+        roots=[]
         if isinstance(value,dict):
-            if isinstance(value.get('result_view'),str):claim_roots.append(value['result_view'])
-            for item in value.values():prose_roots(item)
+            if isinstance(value.get('result_view'),str):roots.append(value['result_view'])
+            for item in value.values():roots.extend(prose_roots(item))
         elif isinstance(value,list):
-            for item in value:prose_roots(item)
-    prose_roots(answer.get('computed_prose',[]))
+            for item in value:roots.extend(prose_roots(item))
+        return roots
+    claim_roots.extend(prose_roots(answer.get('computed_prose',[])))
     claim_dependencies=native_result_dependencies(calls,list(dict.fromkeys(claim_roots)))
     local_dependencies=claim_dependencies
     known_dependencies=set(claim_roots)
@@ -2008,8 +2010,6 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             **{k:p[k] for k in ('entity_key','basis','authority') if k in p},
             'sources':{k:{kk:v[kk] for kk in ('binding','value','measure','source_row') if kk in v} for k,v in p['sources'].items()}}
             for p in answer.get('computed_prose',[]) if not (p.get('entity_key')or{}).get('patient_id')]}]
-    local_shared=[row for ident,row in shared.items() if local_dependencies is None or
-                  None in shared_views[ident] or bool(shared_views[ident]&local_dependencies)]
     final_patients={r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')and any(k!='patient_id'for k in r)}
     # An observed diagnostic row is context, not an additional final claim.
     # Global bindings/citations are checked in summary; explicit patient sets
@@ -2022,6 +2022,17 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         if relevant:global_patient_evidence.append({'patient_id':pid,'native_observations':relevant})
     if global_patient_evidence:packets[0]['global_patient_evidence']=global_patient_evidence
     for pid in sorted(final_patients):
+        # A repair may query every entity while binding only one entity's
+        # prose. Keep that query out of unrelated patient packets. The native
+        # final table and this patient's explicit bindings still retain their
+        # full dependency closure; unknown roots remain conservative.
+        patient_roots=[final_view]
+        for proof in answer.get('computed_prose',[]):
+            if (proof.get('entity_key')or{}).get('patient_id')==pid:
+                patient_roots.extend(prose_roots(proof))
+        patient_dependencies=native_result_dependencies(calls,list(dict.fromkeys(patient_roots)))
+        local_shared=[row for ident,row in shared.items() if patient_dependencies is None or
+                      None in shared_views[ident] or bool(shared_views[ident]&patient_dependencies)]
         patient_evidence={};bindings=[]
         for ident,row in by.get(pid,{}).items():
             observed=list(origins.get(pid,{}).get(ident,{}).values())
@@ -2029,8 +2040,8 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             # calculation is not a dependency of this patient's final claims.
             # Documents, source reviews and unknown lineage remain available;
             # every original calculation still survives in the global receipt.
-            required=[o for o in observed if local_dependencies is None or o.get('tool')!='query_sql'
-                      or not o.get('result_view')or o['result_view']in local_dependencies]
+            required=[o for o in observed if patient_dependencies is None or o.get('tool')!='query_sql'
+                      or not o.get('result_view')or o['result_view']in patient_dependencies]
             if observed and not required:continue
             patient_evidence[ident]=row
             if required:bindings.append({'row_digest':ident,'origins':required})
