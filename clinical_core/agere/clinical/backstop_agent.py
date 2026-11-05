@@ -1835,8 +1835,10 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
     """
     from ...contracts import digest
     from ..deliverables.receipts import compact_json,readable_json
+    from .evidence_projection import native_timing_projection
     from .execution_state import OPERATIONAL_FEEDBACK_AUTHORITIES,operational_feedback_result,review_limitation_view
-    by={};shared={};shared_views={};native=[];legacy_native=[];timing_bindings=[];origins={};shared_origins={}
+    by={};shared={};shared_views={};native=[];legacy_native=[];origins={};shared_origins={}
+    timing=native_timing_projection(calls);timing_bindings=timing['bindings']
     operational_views={c['result']['result_view'] for c in calls
         if isinstance(c.get('result'),dict) and c['result'].get('result_view') and operational_feedback_result(c['result'])}
     tainted_views={c['result']['result_view'] for c in calls
@@ -1879,17 +1881,8 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
         observed=c.get('result')or{}
         view=observed.get('result_view')if isinstance(observed,dict)else None
         origin={'kind':'executed_native_result','result_view':view,'tool':c.get('name'),'input_digest':digest(c.get('input'))}
-        native.append({'tool_index':i,'tool':c.get('name'),'result_view':view,'input_digest':digest(c.get('input')),'result_digest':digest(observed)})
-        legacy_native.append(dict(native[-1]))
-        elapsed=observed.get('elapsed_s')if isinstance(observed,dict)else None
-        # Only the SQL executor's reserved top-level metric is operational.
-        # Business columns/rows (including elapsed_s) and other tools stay exact.
-        if(c.get('name')=='query_sql'and isinstance(observed,dict)and isinstance(observed.get('rows'),list)
-           and isinstance(observed.get('columns'),list)and isinstance(observed.get('executed_query'),str)
-           and view and type(elapsed)in(int,float)and math.isfinite(elapsed)and elapsed>=0):
-            native[-1]['result_digest']=digest({k:v for k,v in observed.items()if k!='elapsed_s'})
-            timing_bindings.append({'index':i,'legacy_digest':legacy_native[-1]['result_digest'],
-                'current_digest':native[-1]['result_digest'],'excluded_fields':['elapsed_s']})
+        native.append({'tool_index':i,'tool':c.get('name'),'result_view':view,'input_digest':digest(c.get('input')),'result_digest':timing['current'][i]})
+        legacy_native.append({**native[-1],'result_digest':timing['legacy'][i]})
         if view in excluded_operational:
             native[-1]['operational_inputs']={'authority':'unverified_review_feedback',
                 'rows':len(observed.get('rows')or[]),'excluded_from_clinical_evidence':True}
@@ -2065,7 +2058,7 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             'representation':'readable_native_json' if readable else 'lossless_compact_fallback'})
         if packet['id']=='summary'and timing_bindings:
             legacy={**packet,'native_bindings':legacy_native};legacy_text,_=encode(legacy)
-            result[-1]['native_timing_compatibility']={'schema':'native-query-timing-cache/1',
+            result[-1]['native_timing_compatibility']={'schema':timing['schema'],
                 'current_fingerprint':digest(packet),'legacy_fingerprint':digest(legacy),
                 'bindings':timing_bindings,'legacy_text':legacy_text}
     mark_native_numeric_fidelity(result,answer,calls,document_reviews)

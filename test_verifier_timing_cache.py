@@ -6,7 +6,7 @@ from unittest.mock import patch
 from clinical_core.contracts import digest
 from clinical_core.providers import EvidenceTask
 from clinical_core.agere.gateway import BudgetLedger,PersistentGateway
-from clinical_core.agere.clinical import backstop_agent as B,system_one as S,evidence_projection as E
+from clinical_core.agere.clinical import backstop_agent as B,system_one as S,evidence_projection as E,result_assembly as R
 from clinical_core.agere.deliverables.receipts import uncompact_json,readable_json
 
 AS_OF='2030-01-31'
@@ -19,6 +19,24 @@ def packets(elapsed=1.,*,amount=12,business_time=5,as_of=AS_OF,question='Receive
         'executed_query':'SELECT received_amount','columns':list(rows[0]),'rows':rows,'elapsed_s':elapsed}}]
     answer={'headline':'Received amount','table':copy.deepcopy(rows),'table_from_tool':'native_1'}
     return B.support_packets(question,answer,calls,[],as_of),calls
+
+
+def composed_calls(elapsed=1.,*,amount=12,business_time=5,domain='received'):
+    calls=[];results={}
+    for name,rows in [('base',[{'patient_id':'p1','amount':amount,'elapsed_s':business_time}]),
+                      ('source',[{'patient_id':'p1','source_record_id':'r1','domain':domain}])]:
+        result={'result_view':name,'executed_query':'SELECT '+name,'columns':list(rows[0]),'rows':rows,'elapsed_s':elapsed}
+        results[name]=result;calls.append({'name':'query_sql','input':{'sql':'SELECT '+name},'result':result})
+    for name,base,joins in [('joined','base',[{'result':'source','as':'sources','on':{'patient_id':'patient_id'},
+                             'mode':'collect','domain':{'column':'domain','values':['received']}}]),('nested','joined',[])]:
+        spec={'base':base,'keys':['patient_id'],'joins':joins};result=R.compose(results,**spec);result['result_view']=name
+        results[name]=result;calls.append({'name':'compose_table','input':spec,'result':result})
+    return calls
+
+
+def composed_packets(calls):
+    answer={'headline':'Received amount','table':copy.deepcopy(calls[-1]['result']['rows']),'table_from_tool':'nested'}
+    return B.support_packets('Received amount',answer,calls,[],AS_OF)
 
 
 class NativeIdentity(unittest.TestCase):
@@ -51,6 +69,69 @@ class NativeIdentity(unittest.TestCase):
             else:state['id']='patient_other'
             bad['legacy_text']=json.dumps(readable_json(state));bad['legacy_fingerprint']=digest(state)
             with self.subTest(change=change):self.assertIsNone(E.native_timing_legacy_evidence(ev,bad))
+
+    def test_nested_join_timing_is_stable_and_raw_receipts_are_preserved(self):
+        calls=composed_calls();before=copy.deepcopy(calls);a=composed_packets(calls);fresh=composed_calls(9.);b=composed_packets(fresh)
+        self.assertEqual([p['text']for p in a],[p['text']for p in b]);self.assertEqual(calls,before)
+        for i in (2,3):self.assertNotEqual(digest(calls[i]['result']),digest(fresh[i]['result']))
+        proof=a[0]['native_timing_compatibility'];self.assertEqual(proof['schema'],'native-query-timing-cache/2')
+        old=uncompact_json(json.loads(proof['legacy_text']))
+        # The compatible prior payload normalized direct SQL only, keeping raw assembly links.
+        for i,call in enumerate(calls):
+            result=call['result']
+            expected=digest({k:v for k,v in result.items()if k!='elapsed_s'})if call['name']=='query_sql'else digest(result)
+            self.assertEqual(old['native_bindings'][i]['result_digest'],expected)
+        self.assertEqual(E.native_timing_legacy_evidence([{'id':'summary','date':AS_OF,'text':a[0]['text']}],proof)[0]['text'],proof['legacy_text'])
+
+    def test_composition_changes_to_business_data_and_provenance_still_invalidate(self):
+        baseline=composed_packets(composed_calls())[0]['text']
+        for kwargs in ({'amount':13},{'business_time':6},{'domain':'other'}):
+            with self.subTest(kwargs=kwargs):self.assertNotEqual(baseline,composed_packets(composed_calls(**kwargs))[0]['text'])
+        for change in ('query','input','source','join_keys','join_mode','domain','rename','population','metadata'):
+            calls=composed_calls();assembly=calls[2]['result']['assembly']
+            if change=='query':calls[0]['result']['executed_query']='SELECT changed_definition'
+            elif change=='input':calls[2]['input']['base']='different_population'
+            elif change=='source':calls[1]['result']['rows'][0]['source_record_id']='r2'
+            elif change=='join_keys':assembly['joins'][0]['on']={'patient_id':'other_key'}
+            elif change=='join_mode':assembly['joins'][0]['mode']='one'
+            elif change=='domain':assembly['joins'][0]['domain']['values']=['other']
+            elif change=='rename':assembly['column_renames']={'amount':'different_meaning'}
+            elif change=='population':assembly['base_rows']=2
+            else:assembly['new_metadata']='preserved'
+            with self.subTest(change=change):self.assertNotEqual(baseline,composed_packets(calls)[0]['text'])
+
+    def test_missing_ambiguous_forward_and_mismatched_dependencies_are_not_rebound(self):
+        for change in ('missing','duplicate','future','base_digest','join_digest','join_view','schema'):
+            calls=composed_calls();assembly=calls[2]['result']['assembly']
+            if change=='missing':assembly['base_result_view']='absent'
+            elif change=='duplicate':calls.append(copy.deepcopy(calls[0]))
+            elif change=='future':calls[0],calls[2]=calls[2],calls[0]
+            elif change=='base_digest':assembly['base_result_digest']='0'*64
+            elif change=='join_digest':assembly['joins'][0]['source_result_digest']='0'*64
+            elif change=='join_view':assembly['joins'][0]['result_view']='absent'
+            else:assembly['schema']='other-contract'
+            index=0 if change=='future'else 2
+            with self.subTest(change=change):
+                self.assertEqual(E.native_timing_projection(calls)['current'][index],digest(calls[index]['result']))
+
+    def test_transitive_legacy_proof_rejects_changed_links_and_packet_content(self):
+        p=composed_packets(composed_calls())[0];ev=[{'id':p['id'],'date':p['date'],'text':p['text']}]
+        for change in ('path','index','view','raw','current','order','duplicate','sql_exclusion','tool','business'):
+            proof=copy.deepcopy(p['native_timing_compatibility']);pair=proof['bindings'][2];edge=pair['assembly_inputs'][0]
+            if change=='path':edge['path']=['rows',0,'amount']
+            elif change=='index':edge['index']=2
+            elif change=='view':edge['result_view']='source'
+            elif change=='raw':edge['raw_digest']='0'*64
+            elif change=='current':edge['current_digest']='0'*64
+            elif change=='order':proof['bindings'].reverse()
+            elif change=='duplicate':proof['bindings'].append(copy.deepcopy(pair))
+            elif change=='sql_exclusion':proof['bindings'][0]['excluded_fields']=['columns']
+            else:
+                legacy=uncompact_json(json.loads(proof['legacy_text']))
+                if change=='tool':legacy['native_bindings'][2]['tool']='different_tool'
+                else:legacy['all_final_rows'][0]['amount']=99
+                proof['legacy_text']=json.dumps(readable_json(legacy));proof['legacy_fingerprint']=digest(legacy)
+            with self.subTest(change=change):self.assertIsNone(E.native_timing_legacy_evidence(ev,proof))
 
 
 class CachedNativeRequests(unittest.TestCase):
@@ -88,6 +169,29 @@ class CachedNativeRequests(unittest.TestCase):
         self.assertTrue(second['cache_hit']);self.assertEqual(second['cost_usd'],0.)
         self.assertEqual(first['cache_compatibility']['canonical_request_hash'],second['cache_compatibility']['canonical_request_hash'])
         self.assertEqual(self.rows(),before);self.assertEqual(self.ledger.db.execute('SELECT COUNT(*) FROM request_equivalences').fetchone()[0],1)
+
+    def test_nested_composition_reuses_prior_exact_judgment_without_new_attempts(self):
+        original=composed_packets(composed_calls())[0];key=self.seed(original);before=self.rows()
+        first=self.choose(original);fresh=composed_packets(composed_calls(9.))[0];second=self.choose(fresh)
+        self.assertEqual(first['request_hash'],key);self.assertEqual(second['request_hash'],key)
+        self.assertEqual(first['probabilities'],second['probabilities']);self.assertEqual(second['cost_usd'],0.)
+        self.assertEqual(first['cache_compatibility']['canonical_request_hash'],second['cache_compatibility']['canonical_request_hash'])
+        for kwargs in ({'amount':99},{'business_time':8},{'domain':'other'}):
+            with self.subTest(kwargs=kwargs):self.assertEqual(self.choose(composed_packets(composed_calls(**kwargs))[0])['status'],'prepared')
+        self.assertEqual(self.rows(),before)
+
+    def test_nested_composition_cannot_bypass_failed_or_pending_requests(self):
+        for canonical in (False,True):
+            for status in ('failed','pending'):
+                p=composed_packets(composed_calls(amount=100+10*canonical+(status=='pending')))[0]
+                self.seed(p)
+                key=self.seed(p,canonical=canonical,status='failed')
+                if status=='pending':
+                    with self.ledger.db:self.ledger.db.execute("UPDATE calls SET status='pending' WHERE id=?",(key,))
+                before=self.rows()
+                with self.subTest(canonical=canonical,status=status),self.assertRaisesRegex(ValueError,'pending/failed'):
+                    self.choose(p,live=True)
+                self.assertEqual(self.rows(),before)
 
     def test_named_field_checks_keep_their_actual_provider_and_threshold(self):
         p=packets()[0][0];named={'amount':{'type':'choice','instructions':'Check the amount.','criteria':OPTIONS}};key=self.seed(p,named=named);before=self.rows()

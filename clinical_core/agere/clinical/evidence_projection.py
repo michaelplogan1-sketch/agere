@@ -7,20 +7,78 @@ sampled, accepted, or summarized by this representation.
 """
 import copy
 import json
+import math
+from collections import Counter
 from ...contracts import digest
 
 VERSION='coverage-dependencies/2'
 
 
+def native_timing_projection(calls):
+    """Normalize executor timing through verified, preceding assembly inputs.
+
+    Keep every raw receipt. Only SQL's reserved elapsed_s is removed; assembly
+    links are rebound to that input's normalized digest, never dropped. All
+    other source, query, join, row and domain content stays in the hash.
+    """
+    views=Counter(c['result'].get('result_view') for c in calls
+                  if isinstance(c.get('result'),dict) and isinstance(c['result'].get('result_view'),str))
+    raw=[];prior=[];current=[];proofs=[];seen={}
+    for i,call in enumerate(calls):
+        observed=call.get('result')or{};raw.append(digest(observed));prior.append(raw[-1]);current.append(raw[-1])
+        if not isinstance(observed,dict):continue
+        view=observed.get('result_view');tool=call.get('name');elapsed=observed.get('elapsed_s')
+        typed=(isinstance(view,str)and bool(view)and views[view]==1
+               and isinstance(observed.get('rows'),list)and isinstance(observed.get('columns'),list))
+        if(typed and tool=='query_sql'and isinstance(observed.get('executed_query'),str)
+           and type(elapsed)in(int,float)and math.isfinite(elapsed)and elapsed>=0):
+            current[i]=prior[i]=digest({k:v for k,v in observed.items()if k!='elapsed_s'})
+            proofs.append({'index':i,'raw_digest':raw[i],'current_digest':current[i],'excluded_fields':['elapsed_s']})
+        elif typed and tool=='compose_table':
+            assembly=observed.get('assembly')
+            if(isinstance(assembly,dict)and assembly.get('schema')=='result-assembly/1'
+               and isinstance(assembly.get('joins'),list)):
+                links=[(['assembly','base_result_digest'],assembly.get('base_result_view'),assembly.get('base_result_digest'))]
+                valid=True
+                for j,join in enumerate(assembly['joins']):
+                    if not isinstance(join,dict):valid=False;break
+                    links.append((['assembly','joins',j,'source_result_digest'],join.get('result_view'),join.get('source_result_digest')))
+                rebindings=[]
+                for path,source,expected in links:
+                    index=seen.get(source)if isinstance(source,str)else None
+                    if index is None or views[source]!=1 or expected!=raw[index]:valid=False;break
+                    rebindings.append({'path':path,'index':index,'result_view':source,
+                                       'raw_digest':raw[index],'current_digest':current[index]})
+                if valid:
+                    projected={**observed,'assembly':{**assembly,'joins':[dict(j)for j in assembly['joins']]}}
+                    for edge in rebindings:
+                        parent=projected
+                        for key in edge['path'][:-1]:parent=parent[key]
+                        parent[edge['path'][-1]]=edge['current_digest']
+                    current[i]=digest(projected)
+                    if current[i]!=raw[i]:proofs.append({'index':i,'raw_digest':raw[i],
+                        'current_digest':current[i],'assembly_inputs':rebindings})
+        if isinstance(view,str)and view and views[view]==1:seen[view]=i
+    assembled=any('assembly_inputs'in p for p in proofs)
+    # v2's legacy view is the preceding SQL-only normalization. v1 retains its
+    # original raw-SQL lookup so existing direct-query cache bindings still work.
+    legacy=prior if assembled else raw
+    bindings=[{**p,'legacy_digest':legacy[p['index']]}for p in proofs]
+    if not assembled:bindings=[{k:v for k,v in p.items()if k!='raw_digest'}for p in bindings]
+    return {'current':current,'legacy':legacy,'bindings':bindings,
+            'schema':'native-query-timing-cache/2'if assembled else'native-query-timing-cache/1'}
+
+
 def native_timing_legacy_evidence(evidence,compatibility):
     """Validate the producer's exact old view before any cache-only lookup.
 
-    Only the root native SQL receipt digests may differ. Actual source text,
+    Only proven native receipt digest projections may differ. Actual source text,
     rows, assertions, dates, scope, contracts and claims remain byte-for-byte
     values after lossless decoding. No semantic or approximate match is used.
     """
     from ..deliverables.receipts import uncompact_json
-    if not isinstance(compatibility,dict)or compatibility.get('schema')!='native-query-timing-cache/1':return None
+    if not isinstance(compatibility,dict)or compatibility.get('schema')not in ('native-query-timing-cache/1','native-query-timing-cache/2'):return None
+    assembled=compatibility['schema']=='native-query-timing-cache/2'
     if len(evidence)!=1:return None
     def decode(text):
         value=json.loads(text)
@@ -34,13 +92,30 @@ def native_timing_legacy_evidence(evidence,compatibility):
         if not isinstance(a,list)or not isinstance(b,list)or len(a)!=len(b):return None
         pairs=compatibility['bindings']
         if not isinstance(pairs,list)or not pairs:return None
-        seen=set();restored=copy.deepcopy(legacy)
+        seen={};restored=copy.deepcopy(legacy)
+        views=Counter(v.get('result_view')for v in a if isinstance(v,dict)and isinstance(v.get('result_view'),str))
         for pair in pairs:
             i=pair['index']
-            if(type(i)is not int or not 0<=i<len(a)or i in seen or pair['excluded_fields']!=['elapsed_s']
-               or a[i].get('tool')!='query_sql'or b[i].get('tool')!='query_sql'
+            if(type(i)is not int or not 0<=i<len(a)or i in seen
                or a[i].get('result_digest')!=pair['current_digest']or b[i].get('result_digest')!=pair['legacy_digest']):return None
-            seen.add(i);restored['native_bindings'][i]['result_digest']=pair['current_digest']
+            if assembled:
+                if seen and i<=max(seen):return None
+                if not isinstance(pair.get('raw_digest'),str)or len(pair['raw_digest'])!=64:return None
+            if 'assembly_inputs'in pair:
+                if(not assembled or a[i].get('tool')!='compose_table'or b[i].get('tool')!='compose_table'
+                   or pair['raw_digest']!=pair['legacy_digest']or 'excluded_fields'in pair):return None
+                inputs=pair['assembly_inputs']
+                if not isinstance(inputs,list)or not inputs:return None
+                for j,edge in enumerate(inputs):
+                    path=(['assembly','base_result_digest']if j==0 else ['assembly','joins',j-1,'source_result_digest'])
+                    index=edge['index'];view=edge['result_view']
+                    if(type(index)is not int or not 0<=index<i or edge['path']!=path
+                       or not isinstance(view,str)or views[view]!=1 or a[index].get('result_view')!=view
+                       or edge['current_digest']!=a[index].get('result_digest')
+                       or edge['raw_digest']!=(seen[index]['raw_digest']if index in seen else b[index].get('result_digest'))):return None
+            elif(pair.get('excluded_fields')!=['elapsed_s']or a[i].get('tool')!='query_sql'or b[i].get('tool')!='query_sql'
+                 or assembled and pair['legacy_digest']!=pair['current_digest']):return None
+            seen[i]=pair;restored['native_bindings'][i]['result_digest']=pair['current_digest']
         if restored!=current:return None
         return [{**source,'text':compatibility['legacy_text']}]
     except (ValueError,KeyError,TypeError,IndexError,AttributeError):return None
