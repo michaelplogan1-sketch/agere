@@ -13,8 +13,9 @@ stops/barriers). system_one.decide reads it (Jev first, Perplexity when Jev is u
 Every non-unknown label cites the evidence ids System One chose (or the top passage). There is no default population
 cap. An explicit deployment limit (AGERE_ATOMIC_MAX_PATIENTS) remains partial and is reported in the result.
 
-Planner order (no Claude needed): deterministic patterns, then the local Qwen typed interpreter (AGERE_LOCAL_TYPED), then
-hosted Claude only with stack.allow_live (ProviderUnavailable / no credits -> continue without it).
+Automatic proposals use the deterministic typed patterns. Optional model planning is available for explicit qualification;
+it is not evidence that a generated label plan can construct a compound population or reconcile a source chain.
+Direct planning can use local Qwen (AGERE_LOCAL_TYPED), then hosted Claude with stack.allow_live.
 Graph form: cohort -> 'atomic_questions' (registered in analysis_graph), so the cascade's literal and answer checks run.
 """
 import json
@@ -165,6 +166,27 @@ def output_contract_issue(question):
     return None
 
 
+def population_contract_issue(question):
+    """This primitive selects an existing population or one condition concept.
+
+    An event-constrained population needs a native selection before per-patient
+    classification. A date window on retrieved passages does not construct it.
+    Keep these requests on the existing analytic/composition path, rather than
+    reading a larger population and asking a model to compensate for missing SQL.
+    """
+    if not re.search(r'^\s*(?:for|among|which|how many|what share|what percentage|list)\b', question, re.I):
+        return None
+    if not re.search(r'\b(?:patients?|members?|people|individuals?|beneficiaries)\b', question, re.I):
+        return None
+    # The first clause defines membership. Later requests can mention source
+    # encounters without using them as eligibility, so do not scan those clauses.
+    selection = re.split(r'[,;.?!]|\b(?:show|compare|distinguish|describe|report)\b', question, maxsplit=1, flags=re.I)[0]
+    event = r'(?:encounters?|admissions?|discharg(?:e[sd]?|ing)|referrals?|appointments?|requests?|fills?|claims?|payments?|enroll(?:ed|ment))'
+    if re.search(r'\b' + event + r'\b', selection, re.I):
+        return 'Atomic population selection has no event-eligibility operation; first resolve the requested cohort with native tools.'
+    return None
+
+
 def atom_text(question, named):
     """The question restated about ONE patient: lead-in removed, patient ids -> 'the patient'."""
     text = LEAD.sub('', question).strip()
@@ -284,13 +306,14 @@ def hosted_core(stack, question, population, ledger=None):
         if owned: ledger.close()
 
 
-def plan(stack, question, population=None, *, maximum_patients=None, ledger=None, hosted=True):
+def plan(stack, question, population=None, *, maximum_patients=None, ledger=None, hosted=True, local=True):
     """-> {'subject_question','options','sub_questions','scope':{'patients','cohort','sources','window'},'aggregation','returns',
     'unit','select_labels','maximum_patients','planner','planner_receipt'} or None."""
-    from .evidence_proposers import window
-    if output_contract_issue(question):return None
+    from .evidence_proposers import window, population_ids
+    if output_contract_issue(question) or population_contract_issue(question):return None
+    if population_ids(population) == []:return None  # empty membership must never expand to the warehouse
     core, planner, receipt = deterministic(stack, question, population), 'deterministic', None
-    if core is None:
+    if core is None and local:
         try: core, planner = local_core(stack, question, population), 'qwen_typed_interpreter'
         except Exception:  # noqa: BLE001 - local model absent/busy: next planner
             core = None
@@ -747,10 +770,12 @@ def tier(stack, question, population=None, *, maximum_patients=None, decide=None
     the exact new calls and cost and stack.run_graph replays the same decisions free."""
     if not getattr(stack, 'allow_live', False) and os.environ.get('AGERE_ATOMIC_OFFLINE') != 'on': return None
     started = time.perf_counter()
-    # In the cascade, planning stays free (patterns, local Qwen): Claude planning is the hosted interpreter tier's job, so this
-    # tier never spends a Claude call ahead of it (AGERE_ATOMIC_HOSTED_PLANNER=on restores the hosted planner).
+    # A generated atom is not a qualified population plan. Automatic proposals
+    # use patterns; model atom planning is explicit qualification only. Models
+    # still interpret evidence inside the supported primitive and shared tools.
     p = plan(stack, question, population, maximum_patients=maximum_patients, ledger=ledger,
-             hosted=os.environ.get('AGERE_ATOMIC_HOSTED_PLANNER', 'off') == 'on')
+             hosted=os.environ.get('AGERE_ATOMIC_HOSTED_PLANNER', 'off') == 'on',
+             local=os.environ.get('AGERE_ATOMIC_MODEL_PLANNER', 'off') == 'on')
     if p is None: return None
     as_of = stack.retriever.meta['snapshot']['as_of']
     graph = graph_of(question, p)

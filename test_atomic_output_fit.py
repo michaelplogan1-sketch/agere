@@ -1,5 +1,6 @@
 """A closed-choice operator must not execute missing arithmetic or grouping."""
 import unittest
+import os
 from unittest.mock import patch
 from clinical_core.agere.clinical import atomic_questions as Q,proposers as P,system_one_gate as G
 from clinical_core.agere.clinical.question_input import QuestionNotUnderstood
@@ -9,6 +10,43 @@ import test_atomic_questions as atomic_fixture
 FINANCIAL='For patients outside the registered HFrEF cohort, show the number of patients and received claim adjudication rows, total net payer-paid claim dollars by service year, and payer cash transactions and dollars separately by payment year. Keep the two financial lifecycles distinct. Create a saved financial review.'
 
 class AtomicFit(unittest.TestCase):
+ def test_compound_event_population_declines_before_models_or_chart_reads(self):
+  questions=[
+   'For patients with recorded COPD evidence and a 2029 respiratory encounter, distinguish medication intention, medication reported taken, pharmacy dispensing and explicit reported non-use. Show dated source-linked findings and the evidence needed to resolve disagreements without treating an order as a fill.',
+   'Which patients discharged in 2029 are intolerant to statins?',
+   'How many patients with a 2028 appointment report transportation barriers?',
+   'Among members enrolled in 2029, which have documented cost barriers?']
+  for question in questions:
+   st=atomic_fixture.Stack(['P-1'])
+   with self.subTest(question=question),patch.object(Q,'local_core')as local,patch.object(Q,'hosted_core')as hosted,patch.object(Q,'execute')as execute:
+    self.assertIsNotNone(Q.population_contract_issue(question))
+    self.assertIsNone(Q.tier(st,question))
+    self.assertIsNone(Q.plan(st,question))
+   self.assertEqual(st.retriever.searches,0)
+   local.assert_not_called();hosted.assert_not_called();execute.assert_not_called()
+ def test_unqualified_model_atom_planning_is_not_an_automatic_preflight(self):
+  st=atomic_fixture.Stack(['P-1'])
+  with patch.dict(os.environ,{'AGERE_ATOMIC_MODEL_PLANNER':'off','AGERE_ATOMIC_HOSTED_PLANNER':'off'}),patch.object(Q,'local_core')as local,patch.object(Q,'hosted_core')as hosted,patch.object(Q,'execute')as execute:
+   self.assertIsNone(Q.tier(st,'Tally the falls among heart failure folks'))
+  local.assert_not_called();hosted.assert_not_called();execute.assert_not_called()
+  self.assertEqual(st.retriever.searches,0)
+ def test_model_planning_remains_available_for_explicit_qualification(self):
+  st=atomic_fixture.Stack(['P-1'])
+  with patch.dict(os.environ,{'AGERE_ATOMIC_MODEL_PLANNER':'on','AGERE_ATOMIC_HOSTED_PLANNER':'off'}),patch.object(Q,'local_core',return_value=None)as local:
+   self.assertIsNone(Q.tier(st,'Tally the falls among heart failure folks'))
+  local.assert_called_once()
+ def test_empty_population_never_expands_to_all_patients(self):
+  st=atomic_fixture.Stack(['P-1'])
+  with patch.object(Q,'local_core')as local,patch.object(Q,'hosted_core')as hosted,patch.object(Q,'execute')as execute:
+   self.assertIsNone(Q.tier(st,atomic_fixture.GDMT_Q,{'patient_ids':[]}))
+  local.assert_not_called();hosted.assert_not_called();execute.assert_not_called()
+  self.assertEqual(st.retriever.searches,0)
+ def test_single_condition_labels_and_dated_status_still_fit_the_population_primitive(self):
+  for question in [atomic_fixture.GDMT_Q,atomic_fixture.BB_Q,
+   'Which patients have documented cost barriers?',
+   'For HFrEF patients, show medication status and dated encounter sources.',
+   'How has statin use by the patients changed over time?']:
+   with self.subTest(question=question):self.assertIsNone(Q.population_contract_issue(question))
  def test_actual_financial_request_never_reaches_planning_retrieval_or_decision(self):
   c=cascade_fixture.cascade(FINANCIAL)
   with patch.object(Q,'local_core')as local,patch.object(Q,'hosted_core')as hosted,patch.object(Q,'execute')as execute,patch.object(G,'check_plan',return_value={'label':'covers_all','p':.86,'reject':False,'calls':1,'cost_usd':.001})as judge:
