@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T03:10:39.406323+00:00",
+  "updated_at": "2026-11-05T03:50:34.645030+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -498,15 +498,19 @@
         {
           "path": "artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json",
           "sha256": "bd6cea27ae43b524d875d8e1075bc811738ddd4aebed1c66df98ab6787873acb"
+        },
+        {
+          "path": "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
+          "sha256": "e6afd7431a6a52f5988c51ccb86241dc7c998343d6eff1ca7ad06cf483ad55a3"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "G3 current first-answer performance and complete source/coverage qualification remain open. The retained answer has 59/60 supported packets; one combined patient dependency and global coverage are undecided, with no located field fault. Independent G5 model/clinical and customer deployment evidence remain separate. The faster 52/60 candidate and learned final answer stay unselected.",
-      "engineering_current_status": "Current scoped local release9/9 and package/inspection verified; current-policy first-answer quality/performance remains incomplete.",
-      "next_action": "G3: coverage timing projection and current retained-draft review are sealed on c5fff291. All provider jobs terminal and source unfrozen; owned app8890 remains7e1f3612. Current review took48.814s with128cached lookups,4new validated Jev/Perplexity calls, $0.01524061 known API estimate,0Claude and0native reexecutions. All57patients/114fields and51440prior attempts are exact;51444total. 59/60source packets supported; the remaining patient has29/29supported field checks and2supported source children but an undecided joint dependency. Global coverage is also undecided. This is not a located field defect, so do not rewrite the answer or repeat identical votes. Next inspect the retained original first-generation trace and existing current-context capture path: distinguish reusable completed derivation from first-answer generation work, and identify the measured remaining first-answer bottleneck before another provider run. Use existing state/composition and supported-unknown handling; no fresh whole-cohort acquisition, package rebuild, automatic old-answer restamp, lowering thresholds or promotion of52/60. Alltenareas and independentG5/customer dependencies remain.",
+      "remaining_acceptance": "G3 first-answer speed/cost remains unqualified: the latest ordinary run regressed. One joint source packet and global coverage remain undecided, without a located field fault. Live benefit of null routing and the long final-generation bottleneck remain unmeasured. Independent G5/model/clinical and customer deployment prerequisites are separate; no faster candidate is promoted.",
+      "engineering_current_status": "Null routing accepted on retained actual workflow; ordinary first-answer performance remains regressed and unqualified.",
+      "next_action": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
       "latest_current_release_decision": "artifacts/agere-current-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -585,11 +589,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "coverage_identity_and_current_review",
+    "kind": "null_prose_completion_routing",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Coverage review now uses the same validated timing-stable native provenance as source verification. The actual current review reuses128judgments and dispatches only4missing global checks, preserving every patient field and unresolved interpretation.",
-    "measured_failure_reduction": "Four timing-only coverage graph dependencies are stable; the real review reuses128historical judgments. Global summary advances from uncached/unassessed to supported; one joint patient dependency and coverage remain undecided.",
+    "user_behavior_delta": "Null row prose now means unfinished interpretation and immediately reaches the existing complete-population composition request. Non-null malformed proposals still enter compiler repair; source and numeric checks remain required.",
+    "measured_failure_reduction": "Two actual null proposals change from compiler-only repair to the existing full57-patient completion request; no correctness or speed gain inferred.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -704,16 +708,29 @@
       "artifacts/agere-current-review-input-2026-11-05/current-review/review.json",
       "artifacts/agere-current-review-input-2026-11-05/current-review/cost-telemetry.json",
       "artifacts/agere-current-review-input-2026-11-05/current-review/new-attempts.json",
-      "artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json"
+      "artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json",
+      "artifacts/agere-current-review-input-2026-11-05/native-prefix-current/receipt.json",
+      "artifacts/agere-current-review-input-2026-11-05/storage-recovery/storage-recovery.json",
+      "artifacts/agere-current-first-answer-2026-11-05/assessment.json",
+      "artifacts/agere-current-first-answer-2026-11-05/assessment-correction.json",
+      "artifacts/agere-current-first-answer-2026-11-05/ordinary-first-answer/run-receipt.json",
+      "artifacts/agere-current-first-answer-2026-11-05/initial-routing-observation.json",
+      "artifacts/agere-current-first-answer-2026-11-05/initial-compiler-diagnosis-v2.json",
+      "artifacts/agere-current-first-answer-2026-11-05/initial-compiler-diagnostic-correction.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-proof/receipt.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-dispatch-proof/receipt.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-regressions.log",
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-regressions-before-contract-update.log",
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json"
     ],
-    "remaining_gap": "G3 current first-answer performance and complete source/coverage qualification remain open. The retained answer has 59/60 supported packets; one combined patient dependency and global coverage are undecided, with no located field fault. Independent G5 model/clinical and customer deployment evidence remain separate. The faster 52/60 candidate and learned final answer stay unselected.",
-    "next_action": "G3: coverage timing projection and current retained-draft review are sealed on c5fff291. All provider jobs terminal and source unfrozen; owned app8890 remains7e1f3612. Current review took48.814s with128cached lookups,4new validated Jev/Perplexity calls, $0.01524061 known API estimate,0Claude and0native reexecutions. All57patients/114fields and51440prior attempts are exact;51444total. 59/60source packets supported; the remaining patient has29/29supported field checks and2supported source children but an undecided joint dependency. Global coverage is also undecided. This is not a located field defect, so do not rewrite the answer or repeat identical votes. Next inspect the retained original first-generation trace and existing current-context capture path: distinguish reusable completed derivation from first-answer generation work, and identify the measured remaining first-answer bottleneck before another provider run. Use existing state/composition and supported-unknown handling; no fresh whole-cohort acquisition, package rebuild, automatic old-answer restamp, lowering thresholds or promotion of52/60. Alltenareas and independentG5/customer dependencies remain.",
+    "remaining_gap": "G3 first-answer speed/cost remains unqualified: the latest ordinary run regressed. One joint source packet and global coverage remain undecided, without a located field fault. Live benefit of null routing and the long final-generation bottleneck remain unmeasured. Independent G5/model/clinical and customer deployment prerequisites are separate; no faster candidate is promoted.",
+    "next_action": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All provider work terminal; source unfrozen. App remains7e1f3612; current candidate not promoted.",
+    "coordination": "All request jobs terminal. Product source unfrozen. Null fix not yet loaded by candidate app; no candidate answer promotion.",
     "remaining_blockers": [
-      "G3 current first-answer performance and complete source/coverage qualification remain open. The retained answer has 59/60 supported packets; one combined patient dependency and global coverage are undecided, with no located field fault. Independent G5 model/clinical and customer deployment evidence remain separate. The faster 52/60 candidate and learned final answer stay unselected."
+      "G3 first-answer speed/cost remains unqualified: the latest ordinary run regressed. One joint source packet and global coverage remain undecided, without a located field fault. Live benefit of null routing and the long final-generation bottleneck remain unmeasured. Independent G5/model/clinical and customer deployment prerequisites are separate; no faster candidate is promoted."
     ],
-    "latest_progress": "Coverage review now uses the same validated timing-stable native provenance as source verification. The actual current review reuses128judgments and dispatches only4missing global checks, preserving every patient field and unresolved interpretation.",
+    "latest_progress": "Null row prose now means unfinished interpretation and immediately reaches the existing complete-population composition request. Non-null malformed proposals still enter compiler repair; source and numeric checks remain required.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -762,8 +779,8 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T03:10:39.406323+00:00",
-    "workflow_change": "Coverage review now uses the same validated timing-stable native provenance as source verification. The actual current review reuses128judgments and dispatches only4missing global checks, preserving every patient field and unresolved interpretation.",
+    "at": "2026-11-05T03:50:34.645030+00:00",
+    "workflow_change": "Null row prose now means unfinished interpretation and immediately reaches the existing complete-population composition request. Non-null malformed proposals still enter compiler repair; source and numeric checks remain required.",
     "unsealed_work": {
       "status": "native_recovery_and_compiler_passed_source_model_qualification_incomplete",
       "product_commit": "2ec665f4c8f76091a9d3413145c53cdea668feb1",
@@ -855,7 +872,7 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Recovery previously discarded the entire retained draft because one query referenced a not-yet-created view. The exact failed step now remains in sequence and must reproduce without evidence; changed outcome/source withholds the draft.",
+    "measured_failure_removed": "Null-as-malformed classification on two actual actor replies.",
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -4028,6 +4045,24 @@
         "artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json",
         "artifacts/agere-current-review-input-2026-11-05/current-review/review.json"
       ]
+    },
+    {
+      "at": "2026-11-05T03:39:34.839218+00:00",
+      "decision": "Actual ordinary changed release is slower and more expensive with the same59/60machine support. Do not rerun the full cohort or infer progress from isolated cache checks. Trace locates null row_prose admission delaying the existing unfinished-composition path for two replies. Correct only that state classification and prove it offline; substantial long-generation latency remains separate. Extra narrative columns are a schema choice, not omitted requested work.",
+      "evidence": [
+        "artifacts/agere-current-first-answer-2026-11-05/ordinary-first-answer/run-receipt.json",
+        "artifacts/agere-current-first-answer-2026-11-05/initial-routing-observation.json",
+        "artifacts/agere-current-first-answer-2026-11-05/assessment-correction.json"
+      ]
+    },
+    {
+      "at": "2026-11-05T03:50:34.645030+00:00",
+      "decision": "Seal the demonstrated two-reply control-flow repair but do not infer a faster product. The ordinary current run became slower and costlier despite review-cache improvements. Measure only the changed completion boundary under the existing role before another cohort run; no optional models or scope expansion.",
+      "evidence": [
+        "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
+        "artifacts/agere-current-first-answer-2026-11-05/assessment.json"
+      ],
+      "scope_impact": "All ten acceptance areas retained; source/coverage thresholds and independent qualification unchanged."
     }
   ],
   "unsealed_work": {
@@ -4063,7 +4098,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: coverage timing projection and current retained-draft review are sealed on c5fff291. All provider jobs terminal and source unfrozen; owned app8890 remains7e1f3612. Current review took48.814s with128cached lookups,4new validated Jev/Perplexity calls, $0.01524061 known API estimate,0Claude and0native reexecutions. All57patients/114fields and51440prior attempts are exact;51444total. 59/60source packets supported; the remaining patient has29/29supported field checks and2supported source children but an undecided joint dependency. Global coverage is also undecided. This is not a located field defect, so do not rewrite the answer or repeat identical votes. Next inspect the retained original first-generation trace and existing current-context capture path: distinguish reusable completed derivation from first-answer generation work, and identify the measured remaining first-answer bottleneck before another provider run. Use existing state/composition and supported-unknown handling; no fresh whole-cohort acquisition, package rebuild, automatic old-answer restamp, lowering thresholds or promotion of52/60. Alltenareas and independentG5/customer dependencies remain.",
+  "next_action": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4072,7 +4107,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -4152,12 +4187,12 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 38036,
-  "owned_server_session": 22307,
+  "owned_server_pid": 39826,
+  "owned_server_session": 31981,
   "last_run_observation": {
-    "at": "2026-11-05T03:10:39.406323+00:00",
-    "status": "sealed_coverage_identity_and_current_review",
-    "receipt": "artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json",
+    "at": "2026-11-05T03:39:34.839218+00:00",
+    "status": "returned_ordinary_clinical_performance_regressed",
+    "receipt": "artifacts/agere-current-first-answer-2026-11-05/ordinary-first-answer/run-receipt.json",
     "source_frozen": false
   }
 }
