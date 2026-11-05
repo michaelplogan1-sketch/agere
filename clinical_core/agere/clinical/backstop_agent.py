@@ -308,9 +308,12 @@ has already declined this question, so it is yours to answer completely and corr
   Do not label all medication rows as one therapy group, all encounters as admissions, all balances as paid amounts, or
   all received people as the applicable denominator. Keep the native predicate and its unit in each claim's meaning.
   Use SQL ROUND for display precision. Put a percent sign or dollar sign in the template when those are the source units.
-  Fixed numeric definitions used in a quantitative sentence can be returned as explicitly named SQL columns too.
-  This includes category labels: in "0 eligible patients", the category label is a literal quantity too.
-  For an aggregate definition label, return its explicitly named definition and bind the placeholder.
+  Aggregate method descriptions may retain the requested N-day/week/month/year window, requested calendar years,
+  exact field predicates from executed SQL, a percentage formula over executed column names (numerator / denominator x 100),
+  and a missing-duration convention explicitly present in loaded first-party documentation. These describe parameters,
+  not observed results. Do not query a constant solely to restate these descriptions. All observed counts and rates still
+  need scalar bindings: "0 eligible patients" is an observed count. Other definition constants need an explicitly named
+  source definition and binding. Entity-level observations and doses still require that entity's actual source evidence.
   Patient/entity prose must select measurements or complete exact observations from actual evidence; copying a draft
   number into SELECT (even with a literal patient ID) does not establish a source. Compute definition counts from their
   registered rows. Spelling a numeral as a word does not resolve the binding error.
@@ -966,6 +969,90 @@ def table_value_counts(rows):
     return {'rows':len(rows),'columns':out,'meaning':'Exact row counts by original column/value and arithmetic over numeric, non-null rows. Decimal strings preserve arithmetic precision. Sums are raw column sums, not inferred distinct patients, events, current use, clinical appropriateness or outcomes; interpret using the source column grain and units.'}
 
 
+def prose_parameter_context(question,calls):
+    """Native/request parameters may describe an analysis, never an entity value.
+
+    Keep the role and origin, not a set of numerals to whitelist. A number in a
+    question does not establish a count, and an executed predicate does not
+    establish that an individual has that value.
+    """
+    import sqlglot
+    from sqlglot import exp
+    from .execution_state import loaded_documentation
+    from .result_assembly import incomplete_reason
+    durations={}
+    for m in re.finditer(r'\b(\d+)\s*[- ]\s*(day|week|month|year)s?\b',question or '',re.I):
+        durations[(m[1],m[2].lower())]={'kind':'request_duration','span':[m.start(),m.end()],
+                                      'text':m.group(),'question_sha256':hashlib.sha256((question or '').encode()).hexdigest()}
+    predicates={};columns=set();docs=[]
+    for call in calls:
+        result=call.get('result')
+        if (call.get('name')!='query_sql' or not isinstance(result,dict) or result.get('error')
+                or result.get('native_sql_contract')!=NATIVE_SQL_CONTRACT or incomplete_reason(result)):
+            continue
+        columns.update(c for c in result.get('columns',[]) if isinstance(c,str))
+        sql=result.get('declared_executed_query')or result.get('executed_query')
+        if not isinstance(sql,str):continue
+        try:tree=sqlglot.parse_one(sql,read='sqlite')
+        except (sqlglot.errors.SqlglotError,ValueError,TypeError):continue
+        for node in tree.find_all(exp.EQ,exp.GT,exp.GTE,exp.LT,exp.LTE):
+            col,value=node.this,node.expression
+            if not isinstance(col,exp.Column) or not isinstance(value,exp.Literal) or value.is_string:continue
+            op={exp.EQ:'=',exp.GT:'>',exp.GTE:'>=',exp.LT:'<',exp.LTE:'<='}[type(node)]
+            names={col.sql(dialect='sqlite').replace('"','').lower()}
+            select=node.find_ancestor(exp.Select)
+            source=select.args.get('from_') if select is not None else None
+            if not col.table and source is not None and isinstance(source.this,exp.Table) and not select.args.get('joins'):
+                names.add(source.this.name.lower()+'.'+col.name.lower())
+            for name in names:
+                predicates[(name,op,value.this)]={'kind':'executed_predicate','result_view':result.get('result_view'),
+                    'query_sha256':hashlib.sha256(sql.encode()).hexdigest(),'predicate':node.sql(dialect='sqlite')}
+        loaded=result.get('loaded_documentation')or{}
+        if loaded.get('identity'):
+            verified=loaded_documentation([call],loaded['identity'])
+            if verified:docs.extend({**s,'identity':loaded['identity']}for s in verified['sections'])
+    return {'durations':durations,'predicates':predicates,'columns':columns,'docs':docs}
+
+
+def mask_prose_parameters(text,context,proofs):
+    """Mask only syntactically described parameters for the quantity scanner.
+
+    Original prose is unchanged and still receives source/meaning review. This
+    function is never used to exempt patient/entity prose from scalar binding.
+    """
+    def duration(m):
+        proof=context['durations'].get((m['number'],m['unit'].lower().rstrip('s')))
+        if proof is None:return m.group()
+        proofs.append({**proof,'literal':m.group()})
+        start,end=m.span('number');return m.group()[:start-m.start()]+m.group()[end-m.start():]
+    text=re.sub(r'\b(?P<number>\d+)-(?P<unit>days?|weeks?|months?|years?)\b',duration,text,flags=re.I)
+    text=re.sub(r'\b(?:within|over|during|past|last)\s+(?P<number>\d+)\s+(?P<unit>days?|weeks?|months?|years?)\b',duration,text,flags=re.I)
+    def predicate(m):
+        proof=context['predicates'].get((m['field'].lower(),m['op'],m['number']))
+        if proof is None:return m.group()
+        proofs.append({**proof,'literal':m.group()})
+        return m.group()[:m.start('number')-m.start()]
+    text=re.sub(r'(?<![\w.])(?P<field>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)\s*(?P<op>>=|<=|=|>|<)\s*(?P<number>\d+(?:\.\d+)?)(?![\w.])',predicate,text)
+    def percent(m):
+        if {m['numerator'],m['denominator']}<=context['columns']:
+            proofs.append({'kind':'percentage_formula','literal':m.group(),
+                           'meaning':'A ratio expressed as a percentage; not an observed rate.'})
+            return m.group()[:m.start('scale')-m.start()]
+        return m.group()
+    text=re.sub(r'\b(?P<numerator>[A-Za-z_]\w*)\s*/\s*(?P<denominator>[A-Za-z_]\w*)\s*(?:x|×|\*)\s*(?P<scale>100(?:\.0)?)(?![\w.])',percent,text)
+    # A documented missing-value convention is not an observed zero. Match a
+    # negative convention and its unit, never an ordinary "zero events" claim.
+    def missing_zero(m):
+        unit=m['unit']
+        for section in context['docs']:
+            if re.search(r'\b(?:never|not)\s+(?:treat|count)[^.;\n]*\bas\s+0\s+'+re.escape(unit)+r'\b',section['documentation_text'],re.I):
+                proofs.append({'kind':'documented_missing_value_convention','literal':m.group(),
+                    'identity':section['identity'],'section_id':section['section_id'],'sha256':section['sha256']})
+                return m.group()[:m.start('zero')-m.start()]+m.group()[m.end('zero')-m.start():]
+        return m.group()
+    return re.sub(r'\bnot\s+(?:counted|treated)\s+as\s+(?P<zero>0)\s+(?P<unit>[A-Za-z]+)\b',missing_zero,text,flags=re.I)
+
+
 def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     """Compile quantitative table prose from actual native scalar cells.
 
@@ -975,11 +1062,13 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
     """
     import string
     import math
-    formatter=string.Formatter();proofs=[];row_mode=False;row_quotes=[];field_quotes=[]
+    formatter=string.Formatter();proofs=[];row_mode=False;row_quotes=[];field_quotes=[];parameter_proofs=[]
+    parameters=prose_parameter_context(question,calls)
     native={c['result']['result_view']:c['result'] for c in calls if isinstance(c.get('result'),dict) and not c['result'].get('error') and c['result'].get('result_view')}
     old={p.get('field'):p for p in answer.get('computed_prose',[]) if isinstance(p,dict)}
     request_years=set(re.findall(r'\b(?:19|20|21)\d{2}\b',question or ''))
     def numeric(text):
+        if not row_mode:text=mask_prose_parameters(text,parameters,parameter_proofs)
         # Explicit multiline ordered-list markers are layout, not measures.
         # Require a complete consecutive sequence beginning at one; inline
         # parenthesized quantities, doses and numbers inside items still bind.
@@ -1003,7 +1092,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         # Bare values and year-sized counts/amounts still require bindings.
         year=r'(?:19|20|21)\d{2}'
         years=rf'{year}(?:\s+(?:and|or|to|through|versus|vs\.?)\s+{year})*'
-        temporal_end=r'(?=$|\s*[,.;:()\[\]]|\s+(?:and|or|than|because|when|where|while|with|without|compared|that|for|in|is|are|was|were|has|had)\b)'
+        temporal_end=r'(?=$|\s*[,.;:()\[\]]|\s+(?:and|or|than|because|when|where|while|with|without|compared|that|for|in|is|are|was|were|has|had|have)\b)'
         dated=(rf'\b(?:in|during|since|before|after|between|from|for|calendar\s+years?|fiscal\s+years?|years?)\s+'
                +years+temporal_end)
         def temporal(match):
@@ -1011,12 +1100,15 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             return re.sub(year,'',value)if set(re.findall(year,value))<=request_years else value
         if request_years and not row_mode:
             text=re.sub(dated,temporal,text,flags=re.I)
+            months=r'January|February|March|April|May|June|July|August|September|October|November|December'
+            text=re.sub(rf'\b(?:{months})\s+{year}\b',temporal,text,flags=re.I)
             text=re.sub(rf'\b{years}(?=\s+(?:total|thresholds?|baseline|comparison)\b{temporal_end})',
                         temporal,text,flags=re.I)
         text=re.sub(r'\b[A-Za-z][A-Za-z0-9]*(?:[.-][A-Za-z0-9]+)*\b',
                     lambda m:'' if any(c.isdigit() for c in m.group()) else m.group(),text)
         return list(dict.fromkeys(m.group() for m in re.finditer(r'(?<!\w)[+-]?\d+(?:,\d{3})*(?:\.\d+)?(?!\w)|\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|hundred|thousand|million|billion)\b',text,re.I)))
     def compile_value(field,value,basis=None):
+        parameter_proofs.clear()
         if isinstance(value,str) and field in old:
             prior=old[field]
             # A mutated field must supply a new explicit template, not silently
@@ -1028,6 +1120,9 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         if not isinstance(value,dict) or 'template' not in value:
             if (row_mode or answer.get('table_binding')) and ((isinstance(value,str) and numeric(value)) or type(value) in (int,float)):
                 raise ProseIssue('unbound_literal',field,'Quantitative '+field+' needs a template with bindings to actual executed scalar cells; unbound literals: '+json.dumps(numeric(value) if isinstance(value,str) else [value]))
+            if parameter_proofs:
+                proofs.append({'field':field,'template':value,'bindings':{},'rendered':value,'sources':{},
+                               'parameters':list(parameter_proofs)})
             return value
         if set(value)!={'template','bindings'} or not isinstance(value['template'],str) or not isinstance(value['bindings'],dict):
             raise ProseIssue('invalid_template',field,'Invalid computed prose template at '+field)
@@ -1085,7 +1180,8 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
             sources[name]={'binding':binding,'value':cell,'source_row':dict(zip(columns,rows[binding['row']])),
                            'input':call.get('input'),'tool':call.get('name'),**({'measure':measured} if measured is not None else {})}
         rendered=template.format_map(resolved)
-        proofs.append({'field':field,'template':template,'bindings':bindings,'rendered':rendered,'sources':sources})
+        proofs.append({'field':field,'template':template,'bindings':bindings,'rendered':rendered,'sources':sources,
+                       **({'parameters':list(parameter_proofs)}if parameter_proofs else{})})
         return rendered
     def quoted_observations(value,path=()):
         # These are values from an executed, same-entity basis row, never
@@ -1739,6 +1835,19 @@ def review_final(stack, question, answer, calls, tools, *, ledger, as_of, contex
                     reason='Every bound parent field and required source child has a deciding support check, '
                         'but their combined dependency remains undecided. No located field fault justifies rewriting '
                         'the retained answer; retain every unresolved support or coverage obligation until new evidence or review.')
+            elif unlocated_verification_wait(coverage,support):
+                assessment.update(retry_disposition='retain_partial_until_new_evidence',
+                    review_stop_reason='unresolved_verification',
+                    reason='All source dependencies were checked and no field fault was identified. '
+                        'Uncertain checks remain attached to the retained answer; rewriting it cannot settle them.')
+                feedback=['Machine verification remains uncertain. The retained outputs and exact unresolved field checks '
+                    'are available for review; no identified defect calls for another answer rewrite.']
+                assessment['completion']={
+                    'work':'complete'if coverage.get('label')=='answers_fully'and coverage.get('decided_by')else'undetermined',
+                    'verification':'uncertain','next_action':'review_unresolved_checks',
+                    'unverified_fields':[{k:f[k]for k in ('packet_id','field','path','reason')if k in f}
+                        for f in support.get('claim_feedback')or[]],
+                    'scope':'Work coverage and machine source verification are separate. No clinical acceptance is inferred.'}
         if assessment['status']=='repair'and not numeric_unknown and not assessment.get('retry_disposition'):
             from .execution_state import source_prose_repair
             targeted=source_prose_repair(answer,support,packets,coverage)
@@ -1811,6 +1920,28 @@ def verification_repair_state(coverage,support):
         from ...contracts import digest
         state['unresolved_field_checks']={'count':len(fields),'fingerprint':digest([fields[k]for k in sorted(fields)])}
     return state
+
+
+def unlocated_verification_wait(coverage,support):
+    """Stop rewriting after complete checks identify uncertainty but no fault.
+
+    This never accepts an answer or discharges a source/coverage obligation.
+    Missing source context, unfinished checks and located faults still require
+    their existing repair paths. The caller retains every unknown judgment.
+    """
+    if (verification_repair_state(coverage,support)is None
+        or support.get('packet_manifest_complete')is not True
+        or support.get('all_dependencies_checked')is not True
+        or support.get('unchecked_packet_ids')or support.get('blocked_family_ids')or support.get('global_stop')):return False
+    pending=[p for p in support.get('packets')or[]if p.get('label')!='supported'or not p.get('decided_by')]
+    if not pending:return False
+    for packet in pending:
+        review=packet.get('field_review')or{}
+        counts=[review.get(k)for k in ('expected_count','supported_count','unresolved_count','fault_count')]
+        if any(type(n)is not int or n<0 for n in counts):return False
+        expected,supported,unresolved,faults=counts
+        if expected==0 or supported+unresolved!=expected or faults:return False
+    return True
 
 
 

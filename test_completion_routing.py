@@ -229,6 +229,46 @@ class CompletionRouting(unittest.TestCase):
         self.assertEqual(out['support']['label'],'unknown')
         self.assertNotEqual(out['status'],'confirmed')
 
+    def test_complete_checks_with_uncertain_fields_stop_without_rewriting_or_accepting(self):
+        feedback={'packet_id':'patient_A','claim_id':'claim_0','field':'observation',
+            'path':['answer_rows',0,'observation'],'label':'unknown','decided_by':None,
+            'reason':'The model favored supported below its acceptance threshold.'}
+        support={**self.support,'all_dependencies_checked':True,'packet_manifest_complete':True,
+            'unchecked_packet_ids':[],'claim_feedback':[feedback],
+            'packets':[{'id':'patient_A','label':'unknown','decided_by':None,'claim_feedback':[feedback],
+                'field_review':{'expected_count':2,'supported_count':1,'unresolved_count':1,'fault_count':0}}]}
+        for coverage,decided,work in (('answers_fully','fixture','complete'),('answers_partially',None,'undetermined')):
+            assessment=self.review(coverage,decided=decided,support=support)[0]
+            self.assertEqual(assessment['retry_disposition'],'retain_partial_until_new_evidence')
+            self.assertEqual(assessment['completion']['work'],work)
+            self.assertEqual(assessment['completion']['verification'],'uncertain')
+            self.assertEqual(assessment['completion']['unverified_fields'][0]['field'],'observation')
+            self.assertEqual(assessment['support']['claim_feedback'],[feedback])
+            forbidden=lambda *a,**k:self.fail('Unknown checks must not purchase another rewrite')
+            result=S.tool_loop('Explain each patient.',[],[],forbidden,send=forbidden,
+                model=M.HAIKU,escalation_model=M.SONNET,max_tools=None,
+                initial_calls=self.calls,initial_answer=self.answer,
+                review=lambda *a:copy.deepcopy(assessment))
+            self.assertEqual(result['review_stopped'],'unresolved_verification')
+            self.assertEqual(result['answer']['status'],'partial')
+            for field in ('headline','table_from_tool','missing'):
+                self.assertEqual(result['answer'][field],self.answer[field])
+            self.assertEqual(result['tool_calls'],self.calls)
+            self.assertFalse(result.get('model_escalations'))
+        for mutation in ('unchecked','source_gap','fault','missing_count','bad_count','blocked','coverage_incomplete'):
+            changed=copy.deepcopy(support);label='answers_fully'
+            if mutation=='unchecked':changed['all_dependencies_checked']=False
+            elif mutation=='source_gap':changed['packets'][0].pop('field_review')
+            elif mutation=='fault':
+                changed['claim_feedback'][0].update(label='wrong_entity',decided_by='fixture')
+                changed['packets'][0]['field_review']['fault_count']=1
+            elif mutation=='missing_count':changed['packets'][0]['field_review'].pop('unresolved_count')
+            elif mutation=='bad_count':changed['packets'][0]['field_review']['expected_count']=3
+            elif mutation=='blocked':changed['blocked_family_ids']=['patient_A']
+            else:label='answers_partially'
+            with self.subTest(mutation=mutation):
+                self.assertFalse(B.unlocated_verification_wait({'label':label,'decided_by':'fixture'},changed))
+
     def test_complete_coverage_cannot_bypass_a_located_source_fault(self):
         bad={'label':'contradicted','decided_by':'fixture','steps':[],
              'failed_packet_ids':['patient_A'],'packets':[{'id':'patient_A','label':'contradicted','decided_by':'fixture'}]}

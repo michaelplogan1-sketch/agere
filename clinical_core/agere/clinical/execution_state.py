@@ -117,6 +117,7 @@ def draft_state(candidate):
     draft=state['last_draft'];draft.pop('computed_prose',None)
     for proof in candidate.get('computed_prose')or[]:
         if not isinstance(proof,dict)or not all(k in proof for k in ('field','template','bindings','rendered')):continue
+        if not proof['bindings']:continue  # parameter-only prose remains ordinary text
         field=proof['field'];target=draft;key=field
         if field.startswith('facts.'):
             target=draft.get('facts');key=field[len('facts.'):]
