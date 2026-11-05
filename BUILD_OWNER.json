@@ -5,7 +5,7 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: current package7e1f3612 is sealed; all request/package jobs terminal and source unfrozen. Ownedapp8890PID38036/session22307 is ready on that candidate.262focused checks, actual142076368644-byte checkpoint, archive, isolated install/check and archived/currentHTTP inspection passed with0newproviderattempts and all51440attempts exact. Scoped engineering applicability9/9covers alltenareas; this is not fullMVP/clinical acceptance. Both apps preserve57patients/114fields,59/60source support, joint/globalunknowns and intentional planning-policy invalidation of the older savedanswer. No answer was restamped or newly qualified; retain both failed harness assertions and their corrections. Do not rebuild this unchanged package. Next perform an OFFLINE current-compiler/native-provenance comparison of the authentic saved59/60proposal and its43-action history, using existing execution/recovery paths, to determine whether a current-policy continuation can preserve its exact rows/prose/source premises. Keep policy invalidation until current derivation is actually verified; do not bypass it, edit owner prose/bindings, repeat unchanged source votes, promote52/60candidate, select learnedfinalanswer or launch another full-question campaign. Then address only the evidenced current-policy/source-role or first-answer performance gap. First-answer/model qualification and independentG5/customer dependencies remain explicit.",
+  "active_work": "G3: current package7e1f3612 is sealed; all jobs terminal/source unfrozen. App8890PID38036/session22307 ready.262checks and actual checkpoint/archive/isolated install/HTTP passed; scoped engineering9/9/alltenareas retained, not fullMVP. Saved57patients/114fields and59/60source support remain inspectable with intentional policy invalidation; no restamp. Follow-up current compiler comparison passed;43nativeactions reexecuted in49.427s/0providers, preserving exact table/prose/computedproofs and all51440attempts. A concrete remaining performance cause is isolated: all57patient packets are exact, but global summary text changes only at four compose_table native_bindings.result_digest values; each comes solely from assembly.base_result_digest propagating timing-bearing input hashes (indices10,16,21,23). Evidence: artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json and packet-summary-differences.json. Next repair this timing-only propagation in existing native source-packet/evidence-projection logic using validated execution dependencies; retain full raw receipts and never suppress business-cell, query, population, domain, join or source changes. Prove old/current replay yields identical semantic summary and verification identity, with adverse changed-data/join tests, before any live request. Do not rebuild the unchanged package, repeat native replay/provider votes or start a full-question campaign merely for bookkeeping. Keep policy invalidation until current derivation/review is actually qualified; do not promote the52/60fastproposal or learnedfinalanswer. First-answer/source-role qualification and independentG5/customer prerequisites remain.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
   "latest_receipt": "artifacts/agere-current-release-2026-11-05/delivery-receipt.json",
   "owned_server_pid": 38036,
@@ -15,7 +15,7 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: current package7e1f3612 is sealed; all request/package jobs terminal and source unfrozen. Ownedapp8890PID38036/session22307 is ready on that candidate.262focused checks, actual142076368644-byte checkpoint, archive, isolated install/check and archived/currentHTTP inspection passed with0newproviderattempts and all51440attempts exact. Scoped engineering applicability9/9covers alltenareas; this is not fullMVP/clinical acceptance. Both apps preserve57patients/114fields,59/60source support, joint/globalunknowns and intentional planning-policy invalidation of the older savedanswer. No answer was restamped or newly qualified; retain both failed harness assertions and their corrections. Do not rebuild this unchanged package. Next perform an OFFLINE current-compiler/native-provenance comparison of the authentic saved59/60proposal and its43-action history, using existing execution/recovery paths, to determine whether a current-policy continuation can preserve its exact rows/prose/source premises. Keep policy invalidation until current derivation is actually verified; do not bypass it, edit owner prose/bindings, repeat unchanged source votes, promote52/60candidate, select learnedfinalanswer or launch another full-question campaign. Then address only the evidenced current-policy/source-role or first-answer performance gap. First-answer/model qualification and independentG5/customer dependencies remain explicit.",
+  "resume_priority": "G3: current package7e1f3612 is sealed; all jobs terminal/source unfrozen. App8890PID38036/session22307 ready.262checks and actual checkpoint/archive/isolated install/HTTP passed; scoped engineering9/9/alltenareas retained, not fullMVP. Saved57patients/114fields and59/60source support remain inspectable with intentional policy invalidation; no restamp. Follow-up current compiler comparison passed;43nativeactions reexecuted in49.427s/0providers, preserving exact table/prose/computedproofs and all51440attempts. A concrete remaining performance cause is isolated: all57patient packets are exact, but global summary text changes only at four compose_table native_bindings.result_digest values; each comes solely from assembly.base_result_digest propagating timing-bearing input hashes (indices10,16,21,23). Evidence: artifacts/agere-current-release-2026-11-05/retained-native-revalidation/native-digest-changes.json and packet-summary-differences.json. Next repair this timing-only propagation in existing native source-packet/evidence-projection logic using validated execution dependencies; retain full raw receipts and never suppress business-cell, query, population, domain, join or source changes. Prove old/current replay yields identical semantic summary and verification identity, with adverse changed-data/join tests, before any live request. Do not rebuild the unchanged package, repeat native replay/provider votes or start a full-question campaign merely for bookkeeping. Keep policy invalidation until current derivation/review is actually qualified; do not promote the52/60fastproposal or learnedfinalanswer. First-answer/source-role qualification and independentG5/customer prerequisites remain.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
@@ -39,7 +39,7 @@
     "answer_selected": false
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-11-05T02:17:56.534175+00:00",
+  "latest_continuity_checkpoint": "2026-11-05T02:27:01.105112+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "active_turns_and_quiet_thread_heartbeat",
   "mvp_server": {
@@ -463,7 +463,7 @@
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-05T02:17:56.534175+00:00",
+  "updated_at": "2026-11-05T02:27:01.105112+00:00",
   "last_commit": "7e1f3612393bd46a8467a7363402a4c83cf70340",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
@@ -509,9 +509,9 @@
     "image_tool": "built-in image_gen"
   },
   "last_run_observation": {
-    "at": "2026-11-05T02:17:56.534175+00:00",
-    "status": "sealed_current_local_package_and_historical_answer_inspection",
-    "receipt": "artifacts/agere-current-release-2026-11-05/delivery-receipt.json",
+    "at": "2026-11-05T02:27:01.105112+00:00",
+    "status": "passed_current_native_and_compiler_revalidation",
+    "receipt": "artifacts/agere-current-release-2026-11-05/retained-native-revalidation/receipt.json",
     "source_frozen": false
   }
 }
