@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T11:41:31.100280+00:00",
+  "updated_at": "2026-11-05T12:21:03.531332+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -534,15 +534,19 @@
         {
           "path": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
           "sha256": "7f5bc6b929e9a0798a483c1a8efb849777af2bfe5f3d98e508bfbdbe945b0472"
+        },
+        {
+          "path": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
+          "sha256": "025f716adf79be394c336205b6cf5b60c78ac1be4c51ede52907ca52f5128288"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "Current local packaging and scoped capability applicability are complete. G3 ordinary first-question performance and broader automatic composition remain unqualified. The retained clinical answer has four unresolved source packets and undecided coverage; no confirmed clinical fault or missing received source was established. G5 independent model/clinical evidence and customer prerequisites remain separate. The historical summary-input reconstruction is a retained diagnostic limitation, not a blocker for unrelated product delivery.",
-      "engineering_current_status": "Current same-platform installation and saved-result preservation pass; ordinary first-question performance and broader automatic composition remain the next obligation.",
-      "next_action": "G3 full-stack completion: current c0ea6324 package/install and owned app preserve the saved 57-patient/114-field answer and all 52,471 attempts; all ten areas retain scoped engineering evidence. Inspect owned jobs first. Next close the ordinary-question routing/performance obligation outside the repeatedly exercised HFrEF workflow: trace one admissions/readmissions-by-hospital composition through the existing shared planner, native/typed routes, source bindings, saved result and follow-up. Establish the received-source numerical baseline and expected contract before a single ordinary measurement; no evaluator-injected plan or answer. Attribute actual component roles, unresolved requirements, elapsed time and all-attempt cost, and repair only an observed failure. Do not repeat the full passing package or large clinical campaign unless changed code invalidates relevant evidence. Bottling and recursive learning remain optional, measured optimizations; do not add models simply to populate the stack. Preserve all ten acceptance areas, quarantined candidate status, first-answer qualification, G5 and customer dependencies. Current package is the recovery point; no main merge or publication.",
+      "remaining_acceptance": "G3 ordinary initial planning latency/general composition remain unqualified. The new question used20attempts/220.559s before the focused fix; the12.759s continuation is not a new first-question benchmark. The old policy context correctly refuses direct resume. Current saved result is machine-checked but retains partial status/source limitations. Earlier clinical answer remains56/60supported with undecided coverage. IndependentG5 and customer prerequisites remain explicit; alltenareas retained.",
+      "engineering_current_status": "Current aggregate localized repair/current review/HTTP preservation proven. Ordinary initial routing/performance remains unqualified.",
+      "next_action": "G3 whole-stack delivery: aggregate repair81f8bbf5 is sealed; app8890PID61768/session99647 exposes currentANS-a8581d6090ba70320e34eb30 with92organizations/505discharges/106readmissions,1located repair and full current machine review. All52495attempts retained; no jobs/freeze. Next isolate the ordinary routing failure using the two retained spec_path proposals and request_plan validator:56.146s was spent before declining and restarting in the backstop. Determine whether the existing interpretation contract can express the requested calculations plus definition/source caveats; fix only a reproduced shared composition/binding defect, with offline proof and a named simple baseline before any paid run. Preserve strict predicate/wording bindings; no disease handler, broad bypass, new model/catalog or repeated full clinical/package campaign. Bottling optional. First-question performance, G5 and customer dependencies remain. c0ea6324 package is the recovery point.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -621,11 +625,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "current_whole_stack_local_release",
+    "kind": "aggregate_localized_repair_and_current_review",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "The current build now has a verified same-platform installation and recovery artifact, including the latest source-binding and no-op repair changes.",
-    "measured_failure_reduction": "The current portable-operation evidence gap is closed: 8/9 to 9/9 scoped engineering predicates, preserving all ten acceptance areas. This is an installation/evidence result, not a new clinical or first-answer performance result.",
+    "user_behavior_delta": "Aggregate/table answers can repair a compiler-located headline or fact without rewriting the complete native table or other text. Compiler-rejected answered drafts remain unverified resumable copies; raw proposals and historical results remain intact.",
+    "measured_failure_reduction": "One exact compiler failure repaired with one actor call;94native rows/all other facts retained. Current source/coverage review confirmed and saved HTTP result passes.247regressions.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -805,16 +809,18 @@
       "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment-before-package.json",
       "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
       "artifacts/agere-whole-stack-release-2026-11-05/package-v2/installed-http.json",
-      "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
+      "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json",
+      "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
+      "artifacts/agere-hospital-question-2026-11-05/workflow-assessment.json"
     ],
-    "remaining_gap": "Current local packaging and scoped capability applicability are complete. G3 ordinary first-question performance and broader automatic composition remain unqualified. The retained clinical answer has four unresolved source packets and undecided coverage; no confirmed clinical fault or missing received source was established. G5 independent model/clinical evidence and customer prerequisites remain separate. The historical summary-input reconstruction is a retained diagnostic limitation, not a blocker for unrelated product delivery.",
-    "next_action": "G3 full-stack completion: current c0ea6324 package/install and owned app preserve the saved 57-patient/114-field answer and all 52,471 attempts; all ten areas retain scoped engineering evidence. Inspect owned jobs first. Next close the ordinary-question routing/performance obligation outside the repeatedly exercised HFrEF workflow: trace one admissions/readmissions-by-hospital composition through the existing shared planner, native/typed routes, source bindings, saved result and follow-up. Establish the received-source numerical baseline and expected contract before a single ordinary measurement; no evaluator-injected plan or answer. Attribute actual component roles, unresolved requirements, elapsed time and all-attempt cost, and repair only an observed failure. Do not repeat the full passing package or large clinical campaign unless changed code invalidates relevant evidence. Bottling and recursive learning remain optional, measured optimizations; do not add models simply to populate the stack. Preserve all ten acceptance areas, quarantined candidate status, first-answer qualification, G5 and customer dependencies. Current package is the recovery point; no main merge or publication.",
+    "remaining_gap": "G3 ordinary initial planning latency/general composition remain unqualified. The new question used20attempts/220.559s before the focused fix; the12.759s continuation is not a new first-question benchmark. The old policy context correctly refuses direct resume. Current saved result is machine-checked but retains partial status/source limitations. Earlier clinical answer remains56/60supported with undecided coverage. IndependentG5 and customer prerequisites remain explicit; alltenareas retained.",
+    "next_action": "G3 whole-stack delivery: aggregate repair81f8bbf5 is sealed; app8890PID61768/session99647 exposes currentANS-a8581d6090ba70320e34eb30 with92organizations/505discharges/106readmissions,1located repair and full current machine review. All52495attempts retained; no jobs/freeze. Next isolate the ordinary routing failure using the two retained spec_path proposals and request_plan validator:56.146s was spent before declining and restarting in the backstop. Determine whether the existing interpretation contract can express the requested calculations plus definition/source caveats; fix only a reproduced shared composition/binding defect, with offline proof and a named simple baseline before any paid run. Preserve strict predicate/wording bindings; no disease handler, broad bypass, new model/catalog or repeated full clinical/package campaign. Bottling optional. First-question performance, G5 and customer dependencies remain. c0ea6324 package is the recovery point.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "Package and isolated HTTP verification terminal; source unfrozen; only owned candidate app remains running.",
+    "coordination": "All verification jobs terminal; source unfrozen; current owned candidate61768/session99647 ready, primary8885 untouched.",
     "remaining_blockers": [
-      "Current local packaging and scoped capability applicability are complete. G3 ordinary first-question performance and broader automatic composition remain unqualified. The retained clinical answer has four unresolved source packets and undecided coverage; no confirmed clinical fault or missing received source was established. G5 independent model/clinical evidence and customer prerequisites remain separate. The historical summary-input reconstruction is a retained diagnostic limitation, not a blocker for unrelated product delivery."
+      "G3 ordinary initial planning latency/general composition remain unqualified. The new question used20attempts/220.559s before the focused fix; the12.759s continuation is not a new first-question benchmark. The old policy context correctly refuses direct resume. Current saved result is machine-checked but retains partial status/source limitations. Earlier clinical answer remains56/60supported with undecided coverage. IndependentG5 and customer prerequisites remain explicit; alltenareas retained."
     ],
-    "latest_progress": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
+    "latest_progress": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -868,17 +874,17 @@
       "product_changes_this_turn": false
     },
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T11:41:31.100280+00:00",
-    "workflow_change": "The current application can be archived, installed, checked and reopened with exact saved native values, prose, unresolved review and policy invalidation.",
+    "at": "2026-11-05T12:21:03.531332+00:00",
+    "workflow_change": "Aggregate/table answers can repair a compiler-located headline or fact without rewriting the complete native table or other text. Compiler-rejected answered drafts remain unverified resumable copies; raw proposals and historical results remain intact.",
     "unsealed_work": {
-      "status": "no_unsealed_product_edits_next_G3_work_pending",
-      "product_commit": "c0ea6324d7be1e064a971bd826c970796c934dc0",
-      "receipt": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
-      "runtime_activation": false,
-      "activation_subject": "clinical_or_whole_question_performance_acceptance",
+      "status": "no_unsealed_product_edits_next_G3_routing_work_pending",
+      "product_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
+      "receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
       "product_code_in_candidate_app": true,
-      "answer_selected": false,
-      "reuse_candidate_quarantined": true
+      "source_frozen": false,
+      "runtime_activation": false,
+      "activation_subject": "clinical_or_first_question_performance_acceptance",
+      "answer_selected": false
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -966,7 +972,14 @@
       "evidence_after": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-product-activation-v1/candidate-receipt.json",
       "delivery_receipt": "artifacts/agere-g5-source-clock-2026-10-30/typed-feedback-current-release/delivery-receipt.json"
     },
-    "measured_failure_removed": "Current package compatibility was missing and now passes actual archive/install/check plus both installed/current HTTP inspection.",
+    "measured_failure_removed": {
+      "retained_compiler_failures_before": 1,
+      "after": 0,
+      "live_changed_answer_fields": 1,
+      "live_other_native_rows_changed": 0,
+      "full_answer_regenerated": false,
+      "saved_current_result_http": 200
+    },
     "ordinary_confirmation": {
       "receipt": "artifacts/agere-ordinary-warm-confirmation-2026-11-02/delivery-receipt.json",
       "context_id": "ANS-072b2e40b263f01efdeec306",
@@ -1090,7 +1103,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-05T11:41:31.100280+00:00",
+    "updated_at": "2026-11-05T12:21:03.531332+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -4289,17 +4302,25 @@
       "basis": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
       "reason": "One current archive/install/check and two saved-context HTTP inspections pass without source edits or provider calls. Repeating successful packages or the same large clinical run would not resolve the remaining ordinary-question obligation.",
       "scope_impact": "All ten areas retained. Local engineering scope only; clinical/model qualification, first-answer performance and customer prerequisites remain explicit."
+    },
+    {
+      "at": "2026-11-05T12:21:03.531332+00:00",
+      "gate": "G3",
+      "decision": "Close aggregate focused repair/recovery and move to initial interpretation routing, not additional bottling.",
+      "basis": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
+      "reason": "Ordinary non-HFrEF question exposed row-prose-only repair wiring and answered-draft checkpoint loss.247regressions, exact retained proof, one live current-pipeline continuation and current HTTP saved-result inspection now pass. Old policy HTTP resume correctly refused before dispatch; diagnostic continuation revalidated every native action without changing owner prose or bindings.",
+      "scope_impact": "Same finite ten-area scope. Current machine review and offline/current-pipeline repair evidence; no new first-question, independent clinical/model or production claim."
     }
   ],
   "unsealed_work": {
-    "status": "no_unsealed_product_edits_next_G3_work_pending",
-    "product_commit": "c0ea6324d7be1e064a971bd826c970796c934dc0",
-    "receipt": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
-    "runtime_activation": false,
-    "activation_subject": "clinical_or_whole_question_performance_acceptance",
+    "status": "no_unsealed_product_edits_next_G3_routing_work_pending",
+    "product_commit": "81f8bbf5192b10a98cd28f4e1877cfda474bfa51",
+    "receipt": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
     "product_code_in_candidate_app": true,
-    "answer_selected": false,
-    "reuse_candidate_quarantined": true
+    "source_frozen": false,
+    "runtime_activation": false,
+    "activation_subject": "clinical_or_first_question_performance_acceptance",
+    "answer_selected": false
   },
   "current_visual_request": {
     "status": "completed",
@@ -4333,7 +4354,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3 full-stack completion: current c0ea6324 package/install and owned app preserve the saved 57-patient/114-field answer and all 52,471 attempts; all ten areas retain scoped engineering evidence. Inspect owned jobs first. Next close the ordinary-question routing/performance obligation outside the repeatedly exercised HFrEF workflow: trace one admissions/readmissions-by-hospital composition through the existing shared planner, native/typed routes, source bindings, saved result and follow-up. Establish the received-source numerical baseline and expected contract before a single ordinary measurement; no evaluator-injected plan or answer. Attribute actual component roles, unresolved requirements, elapsed time and all-attempt cost, and repair only an observed failure. Do not repeat the full passing package or large clinical campaign unless changed code invalidates relevant evidence. Bottling and recursive learning remain optional, measured optimizations; do not add models simply to populate the stack. Preserve all ten acceptance areas, quarantined candidate status, first-answer qualification, G5 and customer dependencies. Current package is the recovery point; no main merge or publication.",
+  "next_action": "G3 whole-stack delivery: aggregate repair81f8bbf5 is sealed; app8890PID61768/session99647 exposes currentANS-a8581d6090ba70320e34eb30 with92organizations/505discharges/106readmissions,1located repair and full current machine review. All52495attempts retained; no jobs/freeze. Next isolate the ordinary routing failure using the two retained spec_path proposals and request_plan validator:56.146s was spent before declining and restarting in the backstop. Determine whether the existing interpretation contract can express the requested calculations plus definition/source caveats; fix only a reproduced shared composition/binding defect, with offline proof and a named simple baseline before any paid run. Preserve strict predicate/wording bindings; no disease handler, broad bypass, new model/catalog or repeated full clinical/package campaign. Bottling optional. First-question performance, G5 and customer dependencies remain. c0ea6324 package is the recovery point.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4342,7 +4363,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-whole-stack-release-2026-11-05/delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -4422,13 +4443,11 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 56899,
-  "owned_server_session": 41297,
+  "owned_server_pid": 61768,
+  "owned_server_session": 99647,
   "last_run_observation": {
-    "at": "2026-11-05T08:12:32.351591+00:00",
-    "status": "returned_partial_current_candidate_quarantined",
-    "receipt": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/run-receipt.json",
-    "assessment": "artifacts/agere-repaired-ordinary-2026-11-05/automatic-native47-reuse/assessment.json",
-    "source_frozen": false
+    "receipt": "artifacts/agere-hospital-question-2026-11-05/current-continuation/receipt.json",
+    "status": "terminal",
+    "at": "2026-11-05T12:21:03.531332+00:00"
   }
 }
