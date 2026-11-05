@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T21:18:03.390245+00:00",
+  "updated_at": "2026-11-05T21:35:51.679857+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -545,8 +545,8 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
-      "engineering_current_status": "Guard and planning-role corrections locally evidenced; paired pilot preserved; native-profile field wiring and full curriculum acceptance remain.",
-      "next_action": "G3: run one next fixed Q06matched clinical pair onfd16a55c via artifacts/agere-ordinary-comparison-2026-11-05/run_Q06_pair.py and protocol-population-routing-candidate.json. Source/product/scoring frozen for that owned job; no duplicate or source edits. Current general routing rejects patient/cohort comparisons from ranked-example tiers before I/O, preserves large saved cohorts and empty membership. Q05cancelled misroute and frontier partial remain failures; do not repeat them or assume their pending request cost is zero. On terminal inspect COPD medication-intention/reported-use/dispensing/non-use source/entity/date bindings, complete resolved cohort and all-attempt cost; independent clinical qualification remains separate. All25cases/tenareas retained; automatic continuation PAUSED.",
+      "engineering_current_status": "G3 remains active. Q06 frontier returned incomplete dated-source work; stack was stopped after587.861s in an incapable atomic cohort route.13new attempts/$1.636990938known API-equivalent usage,0newpending;41previous pending rows retained. The wrapper arm order deviated from protocol and is disclosed. Current50227f46 rejects that path before I/O and checks all21fixed question routes offline in0.030s; this is not a new end-to-end or clinical success. Earlier Q01/Q02/Q04/Q05failures remain. Continue the fixed curriculum and connectedQ22-Q24 behavior; current release predicates/package once after demonstrated capabilities, separate qualification/deployment dependencies.",
+      "next_action": "G3: run the next fixed Q07 matched pair once on50227f46 using protocol-atomic-scope-candidate.json. Its dated PCP/referral-destination/document-author/attendance workflow must keep relationships distinct and preserve source-linked unknowns. Existing ranked-example and atomic preflights decline all21fixed multi-output questions before model planning/chart reads; deterministic atomic labels and System One evidence tools remain available. Preserve Q05/Q06 failures and all attempts; no paid repeat, new audit campaign, broad training/bottling or packaging. Freeze source/product/scoring only while the owned job runs. All25cases/tenareas and separate clinical/model/customer dependencies retained; automatic continuation PAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -625,11 +625,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "population_routing_fixed_Q06_launching",
+    "kind": "atomic_scope_fixed_next_clinician_roles",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Cohort comparisons no longer launch ranked-example source preflights; the authentic Q05request now declines that role before any I/O. Saved population sizes above20 and explicit empty membership remain exact via existing cohort patient_ids. Available names/discharge dates/retained findings can be composed natively without another model.",
-    "measured_failure_reduction": "Authentic Q05misroute stopped before restarting the question. Current replay takes0source reads/0providers instead of entering an incapable example role;33routing/dependency/language checks pass,1optional integration skipped. Q05native composition fixes the deterministic31-name/table omission with0provider calls. The original cancelled run and1unpriced pending request remain visible; no full latency/cost or clinical success claim.",
+    "user_behavior_delta": "Automatic atomic proposals no longer let an unqualified model invent a population classifier for multi-step requests. Event-constrained and explicit empty cohorts decline before chart retrieval. Valid deterministic primitives and shared source readers remain available.",
+    "measured_failure_reduction": "Q06model-planning misroute retained at587.861s/6requests/$0.000237738; current guard declines all21fixed analysis requests in0.030s with0chart reads/0providers.119affected checks pass;3optional checks skipped. The prior example-tier fix declined in4milliseconds duringQ06; no whole-answer latency or clinical correctness success inferred.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -884,16 +884,35 @@
       "artifacts/agere-ordinary-comparison-2026-11-05/Q05/stack/receipt.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
-      "artifacts/agere-cash-ledger-closure-2026-11-05/population-routing-checks-2.log"
+      "artifacts/agere-cash-ledger-closure-2026-11-05/population-routing-checks-2.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/comparison.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/all-attempt-reconciliation.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-checks.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/routing-regressions.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/owned-stop-reason.json"
     ],
-    "remaining_gap": "G3active: current route bypasses a proved incapable example preflight; no fresh automaticQ05success claimed. Q05frontier189attempts/215.789s/$1.03684133 returned partial and omitted available names/table. Stack misroute was cancelled after450.999s/152recovered attempts/$0.125798748known partial usage,1pending/unpriced request; no answer or complete total. Native retained-data composition restores34names/discharge groups and98unadjudicated machine statements with0providers. Earlier Q01/Q02/Q04failures remain. Continue fixed unfamiliar questions and connectedQ22-Q24checks, then current release predicates/package once; clinical/model/customer dependencies remain explicit.",
-    "next_action": "G3: run one next fixed Q06matched clinical pair onfd16a55c via artifacts/agere-ordinary-comparison-2026-11-05/run_Q06_pair.py and protocol-population-routing-candidate.json. Source/product/scoring frozen for that owned job; no duplicate or source edits. Current general routing rejects patient/cohort comparisons from ranked-example tiers before I/O, preserves large saved cohorts and empty membership. Q05cancelled misroute and frontier partial remain failures; do not repeat them or assume their pending request cost is zero. On terminal inspect COPD medication-intention/reported-use/dispensing/non-use source/entity/date bindings, complete resolved cohort and all-attempt cost; independent clinical qualification remains separate. All25cases/tenareas retained; automatic continuation PAUSED.",
+    "remaining_gap": "G3 remains active. Q06 frontier returned incomplete dated-source work; stack was stopped after587.861s in an incapable atomic cohort route.13new attempts/$1.636990938known API-equivalent usage,0newpending;41previous pending rows retained. The wrapper arm order deviated from protocol and is disclosed. Current50227f46 rejects that path before I/O and checks all21fixed question routes offline in0.030s; this is not a new end-to-end or clinical success. Earlier Q01/Q02/Q04/Q05failures remain. Continue the fixed curriculum and connectedQ22-Q24 behavior; current release predicates/package once after demonstrated capabilities, separate qualification/deployment dependencies.",
+    "next_action": "G3: run the next fixed Q07 matched pair once on50227f46 using protocol-atomic-scope-candidate.json. Its dated PCP/referral-destination/document-author/attendance workflow must keep relationships distinct and preserve source-linked unknowns. Existing ranked-example and atomic preflights decline all21fixed multi-output questions before model planning/chart reads; deterministic atomic labels and System One evidence tools remain available. Preserve Q05/Q06 failures and all attempts; no paid repeat, new audit campaign, broad training/bottling or packaging. Freeze source/product/scoring only while the owned job runs. All25cases/tenareas and separate clinical/model/customer dependencies retained; automatic continuation PAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Q05 owned job terminal after cancellation; no orphan provider job assumed from pending ledger rows. One Q06pair launching, source/product/scoring frozen. Automatic continuation PAUSED.",
     "remaining_blockers": [
       "G3: corrected ordinary event-date behavior still needs confirmation, remaining fixed cases/connected Q22-Q24 workflows and broader ordinary performance remain. The original Q01pair is failed, not accepted; Q25core proof is not an installed industry connector. Clinical/model qualification and customer prerequisites stay separate."
     ],
-    "latest_progress": "artifacts/agere-hospital-question-2026-11-05/delivery-receipt.json",
+    "latest_progress": {
+      "at": "2026-11-05T21:35:51.679857+00:00",
+      "product_commit": "50227f46",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/comparison.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/all-attempt-reconciliation.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-checks.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/routing-regressions.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/owned-stop-reason.json"
+      ],
+      "native_progress": true,
+      "clinical_qualification": false
+    },
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -949,20 +968,20 @@
       "no_unproven_novelty_or_superiority_claim": true
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-05T21:18:03.390245+00:00",
+    "at": "2026-11-05T21:35:51.679857+00:00",
     "workflow_change": "Generic role-fit routing uses existing patient-list recognition and cohort framing. Removed the old >20membership widening and switched cohort identity to the existing exact patient_ids parameter. Native saved-result composition supplies all34received names and dated discharge groups plus98unadjudicated statements, retaining unresolved reviews.",
     "unsealed_work": {
-      "status": "temporal_source_candidate_verified_offline_original_pair_failed",
-      "product_commit": "3bc19f354c0ae04f60fc604d6a4480f9b58b9c2e",
+      "status": "atomic_scope_fixed_Q06_retained_Q07_prepared",
+      "product_commit": "50227f46",
       "product_fix_commit": "b3f0a8d7",
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-replay-proof.json",
+      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-      "source_frozen": true,
+      "source_frozen": false,
       "runtime_activation": false,
       "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 179,
-      "provider_calls_this_increment": 27,
+      "affected_tests_passed": 119,
+      "provider_calls_this_increment": 364,
       "ordinary_check_owner_reconciled": true,
       "previous_ordinary_run": {
         "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -982,15 +1001,15 @@
         "new_provider_attempts": 21,
         "offline_proof_provider_calls": 0
       },
-      "new_provider_attempts": 27,
-      "known_api_equivalent_usd": 2.2387479,
-      "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/comparison.json",
-      "all_attempt_rows_retained": 52565,
+      "new_provider_attempts": 364,
+      "known_api_equivalent_usd": 1.636990938,
+      "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/comparison.json",
+      "all_attempt_rows_retained": 52989,
       "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
       "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
       "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
       "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-      "latest_increment_provider_attempts": 27,
+      "latest_increment_provider_attempts": 13,
       "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
       "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
       "independent_arithmetic_reference_cases": [
@@ -1008,11 +1027,11 @@
       ],
       "study_checks_passed": 16,
       "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-v2.json",
-      "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/pair-receipt.json",
-      "ordinary_pair_session": 84919,
-      "ordinary_pair_status": "returned_for_independent_scoring",
-      "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/comparison.json",
+      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-atomic-scope-candidate.json",
+      "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/pair-receipt.json",
+      "ordinary_pair_session": null,
+      "ordinary_pair_status": "prepared_Q07",
+      "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q02/comparison.json",
       "temporal_guard_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-replay-proof.json",
       "temporal_guard_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-checks.json",
       "optional_benchmark_unavailable": true,
@@ -1024,7 +1043,61 @@
       },
       "targeted_confirmation_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/receipt.json",
       "targeted_confirmation_session": 30036,
-      "targeted_confirmation_status": "running"
+      "targeted_confirmation_status": "returned_scored_failed_prose_fidelity",
+      "legacy_pending_rows_preserved": 40,
+      "new_pending_attempts": 0,
+      "targeted_confirmation_score": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/engineering-score.json",
+      "targeted_confirmation_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/independent-score-proof.json",
+      "targeted_confirmation_accounting": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/all-attempt-reconciliation.json",
+      "targeted_confirmation_provider_attempts": 16,
+      "targeted_confirmation_api_equivalent_usd": 0.090627478,
+      "targeted_confirmation_analysis_seconds": 271.98724554199725,
+      "targeted_confirmation_total_seconds": 282.8161196250003,
+      "event_date_failures_before": 4,
+      "event_date_failures_after": 0,
+      "targeted_confirmation_exact_table_cells": 324,
+      "targeted_confirmation_exact_groups": 36,
+      "remaining_prose_failures": 1,
+      "original_pair_provider_attempts": 27,
+      "original_pair_api_equivalent_usd": 2.2387479,
+      "q25_engineering_score": "artifacts/agere-ordinary-comparison-2026-11-05/Q25/engineering-score.json",
+      "cost_semantics": "API-equivalent aggregate usage, not inferred cash subscription expense. Caller attempts counted; inaccessible internalCLI API attempt counts remain unknown. Original pair and targeted repair confirmation are separate, not pooled.",
+      "regression_limit": "179distinct affected checks pass; one unchanged optional benchmark test cannot import absent bench.adapters. No protected benchmark material read or installed.",
+      "global_prose_fix_commit": "5fa7b1cd",
+      "baseline_transport_commit": "09b5eab5",
+      "global_prose_probe": "artifacts/agere-global-prose-review-2026-11-05/probe-receipt.json",
+      "global_prose_proof": "artifacts/agere-global-prose-review-2026-11-05/workflow-proof.json",
+      "baseline_transport_diagnosis": "artifacts/agere-global-prose-review-2026-11-05/transport-diagnosis.json",
+      "cash_source_fix_commit": "b5d41bf5",
+      "cash_source_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q02/cash-source-replay-proof.json",
+      "latest_frozen_studied_product": "43cf4f7e",
+      "latest_frozen_pair_provider_attempts": 29,
+      "latest_frozen_pair_api_equivalent_usd": 0.8045726,
+      "global_field_probe_provider_attempts": 2,
+      "global_field_probe_api_equivalent_usd": 0.003653552,
+      "full_Q02_acceptance": false,
+      "default_activation": false,
+      "cash_closure_proof": "artifacts/agere-cash-ledger-closure-2026-11-05/workflow-proof.json",
+      "cash_closure_current_lineage": "artifacts/agere-cash-ledger-closure-2026-11-05/current-lineage-replay.json",
+      "clock_role_proof": "artifacts/agere-cash-ledger-closure-2026-11-05/clock-role-proof.json",
+      "clock_role_commit": "3f895bc5",
+      "full_Q04_acceptance": false,
+      "known_partial_api_equivalent_usd": 1.44628118,
+      "unpriced_attempts": 0,
+      "pending_rows_total": 41,
+      "population_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
+      "native_clinical_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
+      "last_stopped_job": {
+        "case": "Q06",
+        "pid": 88752,
+        "session": 19683,
+        "disposition": "SIGINT then SIGTERM for incapable compound scope; terminal;6attempts recovered, no new pending",
+        "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json"
+      },
+      "optional_integration_tests_skipped": 1,
+      "atomic_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
+      "automatic_atomic_planning": "Deterministic patterns; optional local/hosted atom generation requires explicit qualification. System One evidence interpretation remains enabled.",
+      "optional_checks_skipped": 3
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -1078,16 +1151,7 @@
       "status": "terminal",
       "receipt": "artifacts/agere-retained-draft-recovery-2026-11-04/final-current-proof/receipt.json"
     },
-    "provider_dependency": {
-      "provider": "claude_subscription",
-      "reason": "actual_session_limit",
-      "reported_reset_local": "2026-11-04T11:40:00-06:00",
-      "failed_attempt_rowid": 50080,
-      "all_provider_work_stopped": false,
-      "external_anthropic_api_key_permitted": false,
-      "status": "normal_subscription_dispatch_resumed_after_reported_reset",
-      "resumed_attempt_rowid": 50081
-    },
+    "provider_dependency": null,
     "active_jobs": [],
     "previous_finite_completion": {
       "kind": "finite_local_poststudy_completion",
@@ -1243,7 +1307,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-05T21:18:03.390245+00:00",
+    "updated_at": "2026-11-05T21:35:51.679857+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -4713,19 +4777,29 @@
         "artifacts/agere-cash-ledger-closure-2026-11-05/population-routing-checks-2.log"
       ],
       "scope_impact": "No quota, population/document cap, extra model/training, disease handler, default activation or narrowed acceptance. All25cases/tenareas retained; shared source-cache effects are disclosed in comparisons."
+    },
+    {
+      "at": "2026-11-05T21:32:44.179894+00:00",
+      "gate": "G3",
+      "decision": "Reassessment after Q05 and Q06 returned no ordinary clinical answer: speculative preflights can enumerate charts before proving executable scope/output. Keep automatic atomic proposals to existing deterministic typed primitives; optional local/hosted atom invention requires explicit qualification. Add early compound-event-scope and empty-population guards. Keep native calculations and System One document/relation interpretation enabled. Check the remaining fixed curriculum offline before one next-case execution; no paid Q05/Q06 repeat, architecture rewrite, extra audit campaign or acceptance-scope reduction.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/owned-stop-reason.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q05/comparison.json"
+      ]
     }
   ],
   "unsealed_work": {
-    "status": "Q05_misroute_cancelled_native_work_retained_Q06_launching",
-    "product_commit": "fd16a55c",
+    "status": "atomic_scope_fixed_Q06_retained_Q07_prepared",
+    "product_commit": "50227f46",
     "product_fix_commit": "b3f0a8d7",
-    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
+    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
-    "source_frozen": true,
+    "source_frozen": false,
     "runtime_activation": false,
     "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 33,
+    "affected_tests_passed": 119,
     "provider_calls_this_increment": 364,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -4747,14 +4821,14 @@
       "offline_proof_provider_calls": 0
     },
     "new_provider_attempts": 364,
-    "known_api_equivalent_usd": null,
-    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/comparison.json",
-    "all_attempt_rows_retained": 52976,
+    "known_api_equivalent_usd": 1.636990938,
+    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/comparison.json",
+    "all_attempt_rows_retained": 52989,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 341,
+    "latest_increment_provider_attempts": 13,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -4772,10 +4846,10 @@
     ],
     "study_checks_passed": 16,
     "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-population-routing-candidate.json",
+    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-atomic-scope-candidate.json",
     "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/pair-receipt.json",
-    "ordinary_pair_session": 84919,
-    "ordinary_pair_status": "launching",
+    "ordinary_pair_session": null,
+    "ordinary_pair_status": "prepared_Q07",
     "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q02/comparison.json",
     "temporal_guard_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-replay-proof.json",
     "temporal_guard_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-checks.json",
@@ -4790,7 +4864,7 @@
     "targeted_confirmation_session": 30036,
     "targeted_confirmation_status": "returned_scored_failed_prose_fidelity",
     "legacy_pending_rows_preserved": 40,
-    "new_pending_attempts": 1,
+    "new_pending_attempts": 0,
     "targeted_confirmation_score": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/engineering-score.json",
     "targeted_confirmation_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/independent-score-proof.json",
     "targeted_confirmation_accounting": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/all-attempt-reconciliation.json",
@@ -4828,18 +4902,21 @@
     "clock_role_commit": "3f895bc5",
     "full_Q04_acceptance": false,
     "known_partial_api_equivalent_usd": 1.44628118,
-    "unpriced_attempts": 1,
+    "unpriced_attempts": 0,
     "pending_rows_total": 41,
     "population_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
     "native_clinical_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
     "last_stopped_job": {
-      "case": "Q05",
-      "pid": 87618,
-      "session": 70159,
-      "disposition": "SIGINT then SIGTERM after confirmed incapable role; pending usage retained",
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/stack/receipt.json"
+      "case": "Q06",
+      "pid": 88752,
+      "session": 19683,
+      "disposition": "SIGINT then SIGTERM for incapable compound scope; terminal;6attempts recovered, no new pending",
+      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json"
     },
-    "optional_integration_tests_skipped": 1
+    "optional_integration_tests_skipped": 1,
+    "atomic_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
+    "automatic_atomic_planning": "Deterministic patterns; optional local/hosted atom generation requires explicit qualification. System One evidence interpretation remains enabled.",
+    "optional_checks_skipped": 3
   },
   "current_visual_request": {
     "status": "completed",
@@ -4872,15 +4949,8 @@
       }
     }
   },
-  "active_jobs": [
-    {
-      "kind": "ordinary_matched_pair",
-      "case": "Q06",
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/pair-receipt.json",
-      "source_frozen": true
-    }
-  ],
-  "next_action": "G3: run one next fixed Q06matched clinical pair onfd16a55c via artifacts/agere-ordinary-comparison-2026-11-05/run_Q06_pair.py and protocol-population-routing-candidate.json. Source/product/scoring frozen for that owned job; no duplicate or source edits. Current general routing rejects patient/cohort comparisons from ranked-example tiers before I/O, preserves large saved cohorts and empty membership. Q05cancelled misroute and frontier partial remain failures; do not repeat them or assume their pending request cost is zero. On terminal inspect COPD medication-intention/reported-use/dispensing/non-use source/entity/date bindings, complete resolved cohort and all-attempt cost; independent clinical qualification remains separate. All25cases/tenareas retained; automatic continuation PAUSED.",
+  "active_jobs": [],
+  "next_action": "G3: run the next fixed Q07 matched pair once on50227f46 using protocol-atomic-scope-candidate.json. Its dated PCP/referral-destination/document-author/attendance workflow must keep relationships distinct and preserve source-linked unknowns. Existing ranked-example and atomic preflights decline all21fixed multi-output questions before model planning/chart reads; deterministic atomic labels and System One evidence tools remain available. Preserve Q05/Q06 failures and all attempts; no paid repeat, new audit campaign, broad training/bottling or packaging. Freeze source/product/scoring only while the owned job runs. All25cases/tenareas and separate clinical/model/customer dependencies retained; automatic continuation PAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4996,11 +5066,12 @@
       "Q01": "failed_both",
       "Q02": "failed_both",
       "Q04": "failed_both",
-      "Q05": "frontier_failed_partial_stack_cancelled_misroute"
+      "Q05": "frontier_failed_partial_stack_cancelled_misroute",
+      "Q06": "frontier_failed_partial_stack_cancelled_incapable_scope_order_deviation"
     },
     "separate_pilot": "Q03, not pooled/repeated",
     "authored_generic_core": "Q25, scoped8engineering checks passed",
-    "next_case": "Q06",
+    "next_case": "Q07",
     "clinical_qualification": false,
     "completion_percent": null
   }
