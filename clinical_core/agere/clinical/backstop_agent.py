@@ -2192,10 +2192,19 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
                     isinstance(document.get('text'),str)and quote in document['text']):
                 cited_sources.append({'citation':citation,'executed_source_document':document})
                 break
-    global_contracts=contracts_for({n['result_view']for n in native if n['result_view']})
+    global_fields={'headline':answer['headline']}if 'headline'in answer else{}
+    global_fields.update({'facts.'+str(k):v for k,v in (answer.get('facts')or{}).items()})
+    bound_fields={p.get('field')for p in answer.get('computed_prose',[])
+                  if p.get('field')in global_fields and p.get('rendered')==global_fields[p['field']]
+                  and p.get('bindings')}
+    closed_global=bool(global_fields)and set(global_fields)<=bound_fields and claim_dependencies is not None
+    global_shared={ident:row for ident,row in shared.items()if not closed_global or
+                   None in shared_views[ident]or bool(shared_views[ident]&claim_dependencies)}
+    global_contracts=contracts_for(claim_dependencies if closed_global else
+                                  {n['result_view']for n in native if n['result_view']})
     packets=[{'id':'summary','scope':'Global/headline/fact claims and all final rows. Clinical source collections refer to required patient packets; these references alone cannot establish clinical aggregates or causal claims. Return unknown for an aggregate requiring clinical interpretation not present in actual computed scalars.',
-        **common,'shared_evidence':list(shared.values()),'native_bindings':native,
-        'shared_evidence_provenance':[{'row_digest':ident,'origins':list(sources.values())}for ident,sources in shared_origins.items()],
+        **common,'shared_evidence':list(global_shared.values()),'native_bindings':native,
+        'shared_evidence_provenance':[{'row_digest':ident,'origins':list(sources.values())}for ident,sources in shared_origins.items()if ident in global_shared],
         'native_calculation_contracts':global_contracts['executions'],
         'executed_source_definitions':global_contracts['source_definitions'],
         'source_precedence':'Final answer claims bind to final_result_view and their computed_claims sources. Earlier intermediate results are retained as observations, not alternative final claims. Reconcile differing counts using each executed selection/domain contract; neither a shared number nor a digest establishes its meaning.',
@@ -2206,6 +2215,11 @@ def support_packets(question,answer,calls,document_reviews,as_of,*,source_docume
             **{k:p[k] for k in ('entity_key','basis','authority') if k in p},
             'sources':{k:{kk:v[kk] for kk in ('binding','value','measure','source_row') if kk in v} for k,v in p['sources'].items()}}
             for p in answer.get('computed_prose',[]) if not (p.get('entity_key')or{}).get('patient_id')]}]
+    if closed_global:
+        packets[0]['native_dependency_scope']={
+            'required_result_views':sorted(claim_dependencies),
+            'earlier_exploration_retained_in_native_receipts':True,
+            'meaning':'Every final row and exact computed global binding retains its full native dependency closure. Earlier outputs outside that closure remain in native_bindings and original receipts. Unbound observations and documentary source contexts remain supplied; no missing dependency is inferred supported.'}
     final_patients={r['patient_id']for r in table if isinstance(r,dict)and r.get('patient_id')and any(k!='patient_id'for k in r)}
     # An observed diagnostic row is context, not an additional final claim.
     # Global bindings/citations are checked in summary; explicit patient sets

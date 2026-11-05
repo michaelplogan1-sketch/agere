@@ -224,6 +224,30 @@ class SourceDependencies(unittest.TestCase):
 
 
 class NativeObservationTransport(unittest.TestCase):
+    def test_bound_global_uses_complete_native_closure_and_unbound_prose_keeps_history(self):
+        calls=[{'name':'query_sql','input':{'sql':'SELECT name FROM sqlite_master'},
+                'result':{'result_view':'agere_result_1','columns':['name'],'rows':[{'name':'unrelated_schema'}]}},
+               {'name':'query_sql','input':{'sql':'SELECT patient_id,record_id FROM record'},
+                'result':{'result_view':'agere_result_2','columns':['patient_id','record_id'],
+                          'rows':[{'patient_id':'A','record_id':'one'}]}},
+               {'name':'query_sql','input':{'sql':'SELECT COUNT(*) AS n FROM agere_result_2'},
+                'result':{'result_view':'agere_result_3','columns':['n'],'rows':[{'n':1}]}}]
+        binding={'result_view':'agere_result_3','row':0,'column':'n'}
+        answer={'headline':'There is 1 received record.','facts':{},'table':[{'n':1}],
+                'table_binding':{'result_view':'agere_result_3'},'computed_prose':[
+                    {'field':'headline','template':'There is {n} received record.','rendered':'There is 1 received record.',
+                     'bindings':{'n':binding},'sources':{'n':{'binding':binding,'value':1,'source_row':{'n':1}}}}]}
+        def state(a):return uncompact_json(json.loads(B.support_packets('Count received records.',a,calls,[],'2030-01-02')[0]['text']))
+        closed=state(answer)
+        self.assertEqual(closed['shared_evidence'],[{'n':1}])
+        self.assertEqual(closed['native_dependency_scope']['required_result_views'],['agere_result_2','agere_result_3'])
+        self.assertEqual(len(closed['native_bindings']),3)
+        self.assertEqual(closed['global_patient_evidence'][0]['native_observations'],[{'patient_id':'A','record_id':'one'}])
+        answer['headline']='An unbound interpretation.'
+        open_state=state(answer)
+        self.assertIn({'name':'unrelated_schema'},open_state['shared_evidence'])
+        self.assertNotIn('native_dependency_scope',open_state)
+
     def groups(self):
         groups=[]
         for i in range(64):
