@@ -84,6 +84,43 @@ class CompositionOutputContract(unittest.TestCase):
         self.assertEqual(draft['status'],'partial')
         self.assertEqual(draft['missing'],self.draft['missing'])
 
+    def test_fresh_null_reply_uses_existing_escalation_and_keeps_full_review(self):
+        from clinical_core.agere.clinical import system_one_gate as G
+        from clinical_core.agere import model_policy as M
+        for escalation in (M.SONNET,None):
+            initial=copy.deepcopy(self.draft)
+            initial.update(row_prose=None,headline='At least one clinic needs interpretation.')
+            sent=[];responses=iter([initial,self.completed()])
+            def review(candidate,native):
+                if candidate.get('row_prose') is None:
+                    return B.review_final(SimpleNamespace(),'Explain each clinic and propose review steps.',
+                        candidate,native,SimpleNamespace(read={}),ledger=None,as_of='2030-05-27')
+                B.bind_computed_prose(candidate,native)
+                return {'status':'repair','feedback':'Source support remains unresolved.',
+                    'retry_disposition':'retain_partial_until_new_evidence',
+                    'review_stop_reason':'unresolved_source_support'}
+            def send(body):
+                sent.append(copy.deepcopy(body))
+                if len(sent)==2:
+                    schema=body['output_config']['format']['schema']
+                    self.assertEqual(schema['properties']['row_prose']['properties']['rows']['minItems'],2)
+                    state=json.loads(body['messages'][0]['content'])
+                    self.assertEqual(state['current_review_feedback']['repair_kind'],'incomplete_composition')
+                    self.assertIn('unbound literals',state['current_review_feedback']['feedback'])
+                return {'content':[{'type':'text','text':json.dumps(next(responses))}]},0.,True
+            with self.subTest(escalation=escalation),patch.object(G,'ready',return_value=True),patch.object(
+                    G,'check_composition',return_value=copy.deepcopy(self.composition)):
+                out=S.tool_loop('Explain each clinic and propose review steps.','system',[],
+                    lambda use:self.fail('Retain native evidence without reexecuting tools'),send=send,
+                    model=M.HAIKU,escalation_model=escalation,max_tools=None,initial_calls=self.calls,
+                    review=review,compact_execution_state=True,format_retries=1)
+            self.assertEqual([b['model']for b in sent],[M.HAIKU,escalation or M.HAIKU])
+            self.assertEqual(out['review_stopped'],'unresolved_source_support')
+            self.assertEqual(out['answer']['status'],'partial')
+            self.assertEqual(len(out['answer']['table']),2)
+            self.assertEqual(out['tool_calls'],self.calls)
+            self.assertEqual(len(out.get('model_escalations',[])),int(escalation is not None))
+
     def test_stale_unbound_or_incomplete_review_cannot_constrain_an_answer(self):
         for mutation in ('stale','kind','target_index','target_entity','target_key','duplicate_native','incomplete_native'):
             draft=copy.deepcopy(self.draft);feedback=self.feedback();calls=copy.deepcopy(self.calls)
