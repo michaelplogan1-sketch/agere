@@ -91,6 +91,16 @@ class CashBinding(unittest.TestCase):
  def test_calendar_grain_cannot_use_undated_claim_cash_rollup(self):
   c=call('SELECT SUM(net_payer_cash_cents)/100.0 AS dollars FROM claim GROUP BY substr(service_from,1,4)',reads=['claim'])
   for q in ['Show payer cash by year.','Show monthly payer cash.','Show payer cash in 2024.']:self.assertTrue(self.check([c],q))
+ def test_executed_payer_cash_role_does_not_depend_on_question_word_order(self):
+  c=call('SELECT SUM(net_payer_cash_cents)/100.0 AS received_cash_dollars FROM claim',reads=['claim'],columns=['received_cash_dollars'],row={'received_cash_dollars':100})
+  for q in ['Compare allowed, adjudicated paid and separately received cash by payer for 2029 services.',
+            'For 2029 services, compare financial lifecycle amounts.']:
+   self.assertTrue(self.check([c],q))
+  self.assertEqual(self.check([c],'Compare overall financial lifecycle amounts.'),[])
+ def test_unused_payer_rollup_does_not_redefine_a_separate_cash_role(self):
+  a=call('SELECT SUM(net_payer_cash_cents) AS payer_cash_cents FROM claim',reads=['claim'],columns=['payer_cash_cents'],row={'payer_cash_cents':100})
+  b=call('SELECT 50 AS patient_cash_dollars','agere_result_2',columns=['patient_cash_dollars'],row={'patient_cash_dollars':50})
+  self.assertEqual(self.check([a,b],'Show patient cash for 2029.'),[])
  def test_cash_transaction_count_is_not_a_monetary_value(self):
   a=call("SELECT COUNT(*) AS cash_transactions FROM record WHERE stream='payer_cash_allocations'",reads=['record'],columns=['cash_transactions'],row={'cash_transactions':2})
   self.assertEqual(self.check([a]),[])

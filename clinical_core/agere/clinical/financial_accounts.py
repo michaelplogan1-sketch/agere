@@ -37,7 +37,7 @@ def cash_source_issues(question,answer,calls):
     clocks, currency and reconciliation still need their ordinary checks. Labels,
     a paid_date, an unused cash query or a cash-only join cannot supply the value.
     """
-    if not payer_cash_requested(question):return []
+    explicit=payer_cash_requested(question)
     root=answer.get('table_from_tool')
     if not root:return []
     by={c['result']['result_view']:c for c in calls if isinstance(c.get('result'),dict)and c['result'].get('result_view')and not c['result'].get('error')}
@@ -123,6 +123,12 @@ def cash_source_issues(question,answer,calls):
             if explicit_cash_columns and name not in explicit_cash_columns and not cash_rows:continue
             graph=lineage(name,sources[root],schema=schema,sources={k:v for k,v in sources.items()if k!=root},dialect='sqlite',trim_selects=False)
             leaves=[n for n in graph.walk()if not n.downstream and isinstance(n.expression,exp.Table)]
+            # The executed source can establish this role even when the user's
+            # wording differs from the legacy explicit-payer-cash phrases.
+            # Do not redefine patient cash or an unused diagnostic as payer cash.
+            payer_rollup=any(n.expression.name.casefold()=='claim'and
+                n.name.rsplit('.',1)[-1].casefold()=='net_payer_cash_cents'for n in leaves)
+            if not explicit and not(cash_label(name)and payer_rollup):continue
             count_alias=any(isinstance(n.expression.this if isinstance(n.expression,exp.Alias)else n.expression,exp.Count)for n in graph.walk())
             numeric_cash_alias=cash_label(name)and not count_alias and any(type(row.get(name))in(int,float)for row in by[root]['result'].get('rows')or[]if isinstance(row,dict))
             money=bool(monetary.search(name)or numeric_cash_alias or any(monetary.search(n.name.rsplit('.',1)[-1])for n in leaves)or any(
