@@ -778,3 +778,14 @@ Product `310fac70` removes SQL timing drift from composed-result verification id
 The retained 43-action executions now generate identical text for all 58 logical packets, preserving 57 patients and 114 narrative fields. Restoring all 324 referenced documents through the current source reader yields 62 scheduled checks with identical request identities across both executions. 147 focused regressions pass, including malformed provenance, nested joins, changed semantics and failed/pending request protection; 20 cache checks were rerun after eliminating a redundant hash calculation. No provider calls occurred and all 51,440 attempts are exact.
 
 These packet probes do not reconstruct the full review caller: registered definitions and request context also affect production requests. They found no historical cache hits and do not demonstrate live savings or new answer qualification. The next canonical action traces that exact caller before any paid review. The existing app and package remain on `7e1f3612`; saved-answer policy invalidation and the unpromoted faster candidate remain intact. Receipt: `artifacts/agere-assembly-timing-2026-11-05/delivery-receipt.json`.
+
+
+## November 5 — current review with stable coverage provenance
+
+Product `c5fff291` applies validated native timing projection to coverage evidence as well as source packets. The two retained executions now produce identical coverage graphs; the four timing-only assembly differences disappear while raw evidence remains exact. All 157 focused checks pass.
+
+The actual current final-review path completed in 48.814 seconds, reusing 128 provider lookups and making four new validated calls (two Jev, two Perplexity), with $0.01524061 known incremental API estimate. It made no Claude calls or native reexecutions. All 57 patients, 114 narrative fields and 51,440 prior ledger rows remain exact; the ledger now holds 51,444 attempts. Earlier failed diagnostic harness attempts and corrections are preserved and made no provider calls.
+
+59 of 60 source packets are supported. The remaining patient has 29/29 supported named fields and two supported source children, but combined dependency verification remains undecided. Global coverage is undecided too. No located field fault warrants rewriting the patient answer, and repeating identical votes is not progress. This is retained-draft review evidence, not first-answer latency or a matched cost-savings claim. The saved answer is unchanged and remains invalidated for new work; the faster candidate is not promoted.
+
+The next work returns to the retained first-generation trace and existing current-context derivation path. All ten acceptance areas and separate G5/customer dependencies remain. App and package stay on `7e1f3612`. Receipt: `artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json`.
