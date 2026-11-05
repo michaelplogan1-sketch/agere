@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T21:35:51.679857+00:00",
+  "updated_at": "2026-11-05T21:59:01.649200+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -545,8 +545,8 @@
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
-      "engineering_current_status": "G3 remains active. Q06 frontier returned incomplete dated-source work; stack was stopped after587.861s in an incapable atomic cohort route.13new attempts/$1.636990938known API-equivalent usage,0newpending;41previous pending rows retained. The wrapper arm order deviated from protocol and is disclosed. Current50227f46 rejects that path before I/O and checks all21fixed question routes offline in0.030s; this is not a new end-to-end or clinical success. Earlier Q01/Q02/Q04/Q05failures remain. Continue the fixed curriculum and connectedQ22-Q24 behavior; current release predicates/package once after demonstrated capabilities, separate qualification/deployment dependencies.",
-      "next_action": "G3: run the next fixed Q07 matched pair once on50227f46 using protocol-atomic-scope-candidate.json. Its dated PCP/referral-destination/document-author/attendance workflow must keep relationships distinct and preserve source-linked unknowns. Existing ranked-example and atomic preflights decline all21fixed multi-output questions before model planning/chart reads; deterministic atomic labels and System One evidence tools remain available. Preserve Q05/Q06 failures and all attempts; no paid repeat, new audit campaign, broad training/bottling or packaging. Freeze source/product/scoring only while the owned job runs. All25cases/tenareas and separate clinical/model/customer dependencies retained; automatic continuation PAUSED.",
+      "engineering_current_status": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
+      "next_action": "G3: advance to the next fixed Q08 home-health lifecycle question once on819a2094/protocol-event-cohort-candidate.json, then exercise its saved-context Q22 source-dependency/invalidation workflow. Use the same native source/assertion/state/composition path, preserving requests, authorizations, bookings, actual completion and patient preferences separately. Current event-selected scope retains every historical subject; unqualified atomic planning and ranked-example preflights decline before chart reads. No paid Q05/Q06/Q07 repeat or repackaging. Inspect owned receipts first; source/product/scoring frozen only during the owned job. All25cases/tenareas and independent clinical/model/customer dependencies retained; automatic continuation PAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -625,11 +625,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "atomic_scope_fixed_next_clinician_roles",
+    "kind": "historical_event_cohort_scope_repaired",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Automatic atomic proposals no longer let an unqualified model invent a population classifier for multi-step requests. Event-constrained and explicit empty cohorts decline before chart retrieval. Valid deterministic primitives and shared source readers remain available.",
-    "measured_failure_reduction": "Q06model-planning misroute retained at587.861s/6requests/$0.000237738; current guard declines all21fixed analysis requests in0.030s with0chart reads/0providers.119affected checks pass;3optional checks skipped. The prior example-tier fix declined in4milliseconds duringQ06; no whole-answer latency or clinical correctness success inferred.",
+    "user_behavior_delta": "Dated event-selected cohorts preserve historical subjects even when they later died. Explicit living/current-patient scopes retain their owner-defined behavior. Final source bindings reject known unrequested living-only exclusions. Existing native composition can expand the roster while retaining every prior review intact and leaving added subjects explicitly pending.",
+    "measured_failure_reduction": "Original Q07had71/75referrals and61/65subjects. Native targeted repair restores4missing records/subjects in0.681s/0providers while retaining61prior reviews,54machine findings and120role objects exactly.72current focused checks pass. Optional broad integration check was interrupted before completion when it began an unrelated derived-cache rebuild; existing semantic/input source untouched. No new ordinary/clinical success inferred.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -890,25 +890,33 @@
       "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-checks.log",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q06/routing-regressions.log",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/owned-stop-reason.json"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/owned-stop-reason.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q07/comparison.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q07/all-attempt-reconciliation.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q07/native-historical-repair-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q07/final-focused-checks.log",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q07/stack/independent-score-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q07/frontier_tools/independent-score-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q07/unnecessary-integration-test-stop.json"
     ],
-    "remaining_gap": "G3 remains active. Q06 frontier returned incomplete dated-source work; stack was stopped after587.861s in an incapable atomic cohort route.13new attempts/$1.636990938known API-equivalent usage,0newpending;41previous pending rows retained. The wrapper arm order deviated from protocol and is disclosed. Current50227f46 rejects that path before I/O and checks all21fixed question routes offline in0.030s; this is not a new end-to-end or clinical success. Earlier Q01/Q02/Q04/Q05failures remain. Continue the fixed curriculum and connectedQ22-Q24 behavior; current release predicates/package once after demonstrated capabilities, separate qualification/deployment dependencies.",
-    "next_action": "G3: run the next fixed Q07 matched pair once on50227f46 using protocol-atomic-scope-candidate.json. Its dated PCP/referral-destination/document-author/attendance workflow must keep relationships distinct and preserve source-linked unknowns. Existing ranked-example and atomic preflights decline all21fixed multi-output questions before model planning/chart reads; deterministic atomic labels and System One evidence tools remain available. Preserve Q05/Q06 failures and all attempts; no paid repeat, new audit campaign, broad training/bottling or packaging. Freeze source/product/scoring only while the owned job runs. All25cases/tenareas and separate clinical/model/customer dependencies retained; automatic continuation PAUSED.",
+    "remaining_gap": "G3 active. Original Q07stack returned partial after484.489s/$1.421052772/350attempts; frontier partial110.895s/$0.990694/8attempts. They perform different narrative work and neither is complete, so no savings/superiority claim. Stack wrongfully excluded4historical referral records/subjects; shared decision-context/4 now preserves the event-selected cohort and rejects known living-only exclusions. Separate native repair restores75records/65patients in0.681s/0providers, preserving all61prior reviews,54machine findings and120dated correspondence objects; four added subjects remain pending. This does not restamp the original failed run.72focused current scope/patient/backstop checks pass. Earlier fixed failures and clinical/model/customer dependencies remain explicit. Continue fixed questions/connected checks; package once after demonstrated behaviors.",
+    "next_action": "G3: advance to the next fixed Q08 home-health lifecycle question once on819a2094/protocol-event-cohort-candidate.json, then exercise its saved-context Q22 source-dependency/invalidation workflow. Use the same native source/assertion/state/composition path, preserving requests, authorizations, bookings, actual completion and patient preferences separately. Current event-selected scope retains every historical subject; unqualified atomic planning and ranked-example preflights decline before chart reads. No paid Q05/Q06/Q07 repeat or repackaging. Inspect owned receipts first; source/product/scoring frozen only during the owned job. All25cases/tenareas and independent clinical/model/customer dependencies retained; automatic continuation PAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
     "coordination": "Q05 owned job terminal after cancellation; no orphan provider job assumed from pending ledger rows. One Q06pair launching, source/product/scoring frozen. Automatic continuation PAUSED.",
     "remaining_blockers": [
       "G3: corrected ordinary event-date behavior still needs confirmation, remaining fixed cases/connected Q22-Q24 workflows and broader ordinary performance remain. The original Q01pair is failed, not accepted; Q25core proof is not an installed industry connector. Clinical/model qualification and customer prerequisites stay separate."
     ],
     "latest_progress": {
-      "at": "2026-11-05T21:35:51.679857+00:00",
-      "product_commit": "50227f46",
+      "at": "2026-11-05T21:59:01.649200+00:00",
+      "product_commit": "819a2094",
       "evidence": [
-        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/comparison.json",
-        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/all-attempt-reconciliation.json",
-        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
-        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-checks.log",
-        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/routing-regressions.log",
-        "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/owned-stop-reason.json"
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/comparison.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/all-attempt-reconciliation.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/native-historical-repair-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/final-focused-checks.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/stack/independent-score-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/frontier_tools/independent-score-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/unnecessary-integration-test-stop.json"
       ],
       "native_progress": true,
       "clinical_qualification": false
@@ -968,19 +976,19 @@
       "no_unproven_novelty_or_superiority_claim": true
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-05T21:35:51.679857+00:00",
+    "at": "2026-11-05T21:59:01.649200+00:00",
     "workflow_change": "Generic role-fit routing uses existing patient-list recognition and cohort framing. Removed the old >20membership widening and switched cohort identity to the existing exact patient_ids parameter. Native saved-result composition supplies all34received names and dated discharge groups plus98unadjudicated statements, retaining unresolved reviews.",
     "unsealed_work": {
-      "status": "atomic_scope_fixed_Q06_retained_Q07_prepared",
-      "product_commit": "50227f46",
+      "status": "Q07_scored_historical_membership_repaired_Q08_prepared",
+      "product_commit": "819a2094",
       "product_fix_commit": "b3f0a8d7",
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
+      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/native-historical-repair-proof.json",
       "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
       "source_frozen": false,
       "runtime_activation": false,
       "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 119,
+      "affected_tests_passed": 72,
       "provider_calls_this_increment": 364,
       "ordinary_check_owner_reconciled": true,
       "previous_ordinary_run": {
@@ -1002,14 +1010,14 @@
         "offline_proof_provider_calls": 0
       },
       "new_provider_attempts": 364,
-      "known_api_equivalent_usd": 1.636990938,
-      "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/comparison.json",
-      "all_attempt_rows_retained": 52989,
+      "known_api_equivalent_usd": 2.411746772,
+      "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/comparison.json",
+      "all_attempt_rows_retained": 53347,
       "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
       "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
       "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
       "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-      "latest_increment_provider_attempts": 13,
+      "latest_increment_provider_attempts": 358,
       "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
       "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
       "independent_arithmetic_reference_cases": [
@@ -1027,10 +1035,10 @@
       ],
       "study_checks_passed": 16,
       "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-atomic-scope-candidate.json",
-      "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/pair-receipt.json",
+      "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-event-cohort-candidate.json",
+      "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/pair-receipt.json",
       "ordinary_pair_session": null,
-      "ordinary_pair_status": "prepared_Q07",
+      "ordinary_pair_status": "returned_and_scored",
       "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q02/comparison.json",
       "temporal_guard_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-replay-proof.json",
       "temporal_guard_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-checks.json",
@@ -1097,7 +1105,11 @@
       "optional_integration_tests_skipped": 1,
       "atomic_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
       "automatic_atomic_planning": "Deterministic patterns; optional local/hosted atom generation requires explicit qualification. System One evidence interpretation remains enabled.",
-      "optional_checks_skipped": 3
+      "optional_checks_skipped": 0,
+      "historical_scope_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/native-historical-repair-proof.json",
+      "historical_scope_definition": "decision-context/4",
+      "native_historical_repair_provider_calls": 0,
+      "previous_Q07_ordinary_failure_retained": true
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -1307,7 +1319,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-05T21:35:51.679857+00:00",
+    "updated_at": "2026-11-05T21:59:01.649200+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -4787,19 +4799,33 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q06/stack/receipt.json",
         "artifacts/agere-ordinary-comparison-2026-11-05/Q05/comparison.json"
       ]
+    },
+    {
+      "at": "2026-11-05T21:59:01.649200+00:00",
+      "gate": "G3",
+      "decision": "Q07exposed a shared historical-membership defect, not a new feature requirement. Correct decision-context once, increment its version, verify rejection of stale exclusions and preserve old clinical work through native composition. All75referrals/65subjects restored locally; do not rebuyQ07or relabel4unread subjects as absent evidence. Advance toQ08and its connectedQ22workflow under the finite charter. An unnecessary optional temporal test was interrupted and its only temporary derivative removed; original primary semantic timestamp and all source inputs retained. Keep subsequent validation focused on affected behavior.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/comparison.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/all-attempt-reconciliation.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/native-historical-repair-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/final-focused-checks.log",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/stack/independent-score-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/frontier_tools/independent-score-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q07/unnecessary-integration-test-stop.json"
+      ]
     }
   ],
   "unsealed_work": {
-    "status": "atomic_scope_fixed_Q06_retained_Q07_prepared",
-    "product_commit": "50227f46",
+    "status": "Q07_scored_historical_membership_repaired_Q08_prepared",
+    "product_commit": "819a2094",
     "product_fix_commit": "b3f0a8d7",
-    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
+    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/native-historical-repair-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": false,
     "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 119,
+    "affected_tests_passed": 72,
     "provider_calls_this_increment": 364,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
@@ -4821,14 +4847,14 @@
       "offline_proof_provider_calls": 0
     },
     "new_provider_attempts": 364,
-    "known_api_equivalent_usd": 1.636990938,
-    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/comparison.json",
-    "all_attempt_rows_retained": 52989,
+    "known_api_equivalent_usd": 2.411746772,
+    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/comparison.json",
+    "all_attempt_rows_retained": 53347,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 13,
+    "latest_increment_provider_attempts": 358,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -4846,10 +4872,10 @@
     ],
     "study_checks_passed": 16,
     "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-atomic-scope-candidate.json",
-    "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/pair-receipt.json",
+    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-event-cohort-candidate.json",
+    "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/pair-receipt.json",
     "ordinary_pair_session": null,
-    "ordinary_pair_status": "prepared_Q07",
+    "ordinary_pair_status": "returned_and_scored",
     "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q02/comparison.json",
     "temporal_guard_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-replay-proof.json",
     "temporal_guard_checks": "artifacts/agere-ordinary-comparison-2026-11-05/Q01/temporal-guard-checks.json",
@@ -4916,7 +4942,11 @@
     "optional_integration_tests_skipped": 1,
     "atomic_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/atomic-routing-proof.json",
     "automatic_atomic_planning": "Deterministic patterns; optional local/hosted atom generation requires explicit qualification. System One evidence interpretation remains enabled.",
-    "optional_checks_skipped": 3
+    "optional_checks_skipped": 0,
+    "historical_scope_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/native-historical-repair-proof.json",
+    "historical_scope_definition": "decision-context/4",
+    "native_historical_repair_provider_calls": 0,
+    "previous_Q07_ordinary_failure_retained": true
   },
   "current_visual_request": {
     "status": "completed",
@@ -4950,7 +4980,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: run the next fixed Q07 matched pair once on50227f46 using protocol-atomic-scope-candidate.json. Its dated PCP/referral-destination/document-author/attendance workflow must keep relationships distinct and preserve source-linked unknowns. Existing ranked-example and atomic preflights decline all21fixed multi-output questions before model planning/chart reads; deterministic atomic labels and System One evidence tools remain available. Preserve Q05/Q06 failures and all attempts; no paid repeat, new audit campaign, broad training/bottling or packaging. Freeze source/product/scoring only while the owned job runs. All25cases/tenareas and separate clinical/model/customer dependencies retained; automatic continuation PAUSED.",
+  "next_action": "G3: advance to the next fixed Q08 home-health lifecycle question once on819a2094/protocol-event-cohort-candidate.json, then exercise its saved-context Q22 source-dependency/invalidation workflow. Use the same native source/assertion/state/composition path, preserving requests, authorizations, bookings, actual completion and patient preferences separately. Current event-selected scope retains every historical subject; unqualified atomic planning and ranked-example preflights decline before chart reads. No paid Q05/Q06/Q07 repeat or repackaging. Inspect owned receipts first; source/product/scoring frozen only during the owned job. All25cases/tenareas and independent clinical/model/customer dependencies retained; automatic continuation PAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -5042,19 +5072,15 @@
   "owned_server_pid": null,
   "owned_server_session": null,
   "last_run_observation": {
-    "at": "2026-11-05T20:54:40.192764+00:00",
-    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q04/pair-receipt.json",
-    "status": "independently_scored_both_failed",
-    "product_commit": "43cf4f7e",
-    "stack_analysis_seconds": 169.79732658388093,
-    "stack_api_equivalent_usd": 0.082776302,
-    "frontier_analysis_seconds": 30.49444937496446,
-    "frontier_api_equivalent_usd": 0.2008648,
-    "provider_attempts": 23,
-    "stack_exact_table_cells": 30,
-    "frontier_exact_table_cells": 32,
-    "source_records_in_stack_partition": 647406,
-    "source_streams": 178,
+    "at": "2026-11-05T21:59:01.649200+00:00",
+    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q07/pair-receipt.json",
+    "status": "terminal_both_partial_failed",
+    "product_commit": "50227f46",
+    "stack_analysis_seconds": 484.48894979199395,
+    "stack_api_equivalent_usd": 1.421052772,
+    "frontier_analysis_seconds": 110.89504699991085,
+    "frontier_api_equivalent_usd": 0.990694,
+    "provider_attempts": 358,
     "clinical_qualification": false,
     "formal_curriculum_acceptance": false
   },
@@ -5067,11 +5093,12 @@
       "Q02": "failed_both",
       "Q04": "failed_both",
       "Q05": "frontier_failed_partial_stack_cancelled_misroute",
-      "Q06": "frontier_failed_partial_stack_cancelled_incapable_scope_order_deviation"
+      "Q06": "frontier_failed_partial_stack_cancelled_incapable_scope_order_deviation",
+      "Q07": "both_partial_failed_preserved_native_scope_repair_separate"
     },
     "separate_pilot": "Q03, not pooled/repeated",
     "authored_generic_core": "Q25, scoped8engineering checks passed",
-    "next_case": "Q07",
+    "next_case": "Q08",
     "clinical_qualification": false,
     "completion_percent": null
   }
