@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T20:54:40.192764+00:00",
+  "updated_at": "2026-11-05T21:18:03.390245+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -546,7 +546,7 @@
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
       "remaining_acceptance": "G3 active: native profile field-level verification still needs runtime wiring and adverse proof; five saved clinical field checks and overall coverage remain uncertain. Current ordinary latency after the latest guard/planning corrections is unmeasured. Fixed25case acceptance needs independent numeric/source scoring, narrative adjudication where required and connected workflow evidence. Model/clinical qualification and customer deployment remain separate.",
       "engineering_current_status": "Guard and planning-role corrections locally evidenced; paired pilot preserved; native-profile field wiring and full curriculum acceptance remain.",
-      "next_action": "G3: execute one next fixed Q05 matched pair on3f895bc5 through artifacts/agere-ordinary-comparison-2026-11-05/run_Q05_pair.py, protocol-clock-role-candidate.json. Source/product/scoring frozen for the owned pair; no duplicates or source edits. Q05 exercises AF/inpatient-cohort medication fills versus dated documentary use/non-use, not another HFrEF/Q01/Q02/Q04campaign. On terminal inspect automatic cohort/source acquisition, patient/name/date/negation/reason bindings, actual provider roles, partials and all-attempt economics. Separate unavailable independent clinical labels from engineering defects; do not use model votes as clinical truth. The full cash ledger path is proved natively, and explicit source-clock metadata is current, but old ordinary failures are preserved. All25fixedcases/tenareas and clinical/model/customer prerequisites remain; automation PAUSED.",
+      "next_action": "G3: run one next fixed Q06matched clinical pair onfd16a55c via artifacts/agere-ordinary-comparison-2026-11-05/run_Q06_pair.py and protocol-population-routing-candidate.json. Source/product/scoring frozen for that owned job; no duplicate or source edits. Current general routing rejects patient/cohort comparisons from ranked-example tiers before I/O, preserves large saved cohorts and empty membership. Q05cancelled misroute and frontier partial remain failures; do not repeat them or assume their pending request cost is zero. On terminal inspect COPD medication-intention/reported-use/dispensing/non-use source/entity/date bindings, complete resolved cohort and all-attempt cost; independent clinical qualification remains separate. All25cases/tenareas retained; automatic continuation PAUSED.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -625,11 +625,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "cash_closure_and_clock_roles_delivered_Q05_launching",
+    "kind": "population_routing_fixed_Q06_launching",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Current generic native Tools/SQL/composition retains all23853cash allocations, including3044unlinked ones, under registered subject/account/currency bindings. Native source contracts now explicitly distinguish event/source-recorded/reported-availability clocks from unestablished physical ingestion. No default activation or ordinary-answer restamping.",
-    "measured_failure_reduction": "Original native closure failed on foreign relation joining and composed monetary source ancestry. Both are removed:23853complete records/3USD partitions retain all source IDs in17.512s/0providers; current stricter ancestry replay uses0native reruns.127affected composition/source checks and a separate102clock affected checks pass. Current Q04 ordinary result retains correct availability arithmetic but assumes physical receipt; typed role metadata now makes that distinction explicit.",
+    "user_behavior_delta": "Cohort comparisons no longer launch ranked-example source preflights; the authentic Q05request now declines that role before any I/O. Saved population sizes above20 and explicit empty membership remain exact via existing cohort patient_ids. Available names/discharge dates/retained findings can be composed natively without another model.",
+    "measured_failure_reduction": "Authentic Q05misroute stopped before restarting the question. Current replay takes0source reads/0providers instead of entering an incapable example role;33routing/dependency/language checks pass,1optional integration skipped. Q05native composition fixes the deterministic31-name/table omission with0provider calls. The original cancelled run and1unpriced pending request remain visible; no full latency/cost or clinical success claim.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -877,12 +877,19 @@
       "artifacts/agere-ordinary-comparison-2026-11-05/Q04/stack/engineering-score.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q04/stack/independent-score-proof.json",
       "artifacts/agere-ordinary-comparison-2026-11-05/Q04/frontier_tools/engineering-score.json",
-      "artifacts/agere-ordinary-comparison-2026-11-05/Q04/frontier_tools/independent-score-proof.json"
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q04/frontier_tools/independent-score-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q05/comparison.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q05/frontier_tools/engineering-score.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q05/stack/engineering-score.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q05/stack/receipt.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
+      "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
+      "artifacts/agere-cash-ledger-closure-2026-11-05/population-routing-checks-2.log"
     ],
-    "remaining_gap": "G3active: native full-cash closure and generic transaction foreign-link/value ancestry are verified, but original automaticQ02failure is not restamped. Q04both arms failed requested physical-receipt meaning; stack30table cells/647406records/178streams reconcile, frontier32measurement cells reconcile but headline totals conflict. Current source-clock definitions distinguish reported availability from physical ingestion, with a0provider native metadata proof; no corrected ordinaryQ04answer claimed. Remaining fixed questions and connectedQ22-Q24workflows need evidence, then current whole-product predicates and one package/restore. Clinical taxonomy/model qualification, clinical narrative uncertainties and customer deployment remain separate; no broad superiority/readiness claim.",
-    "next_action": "G3: execute one next fixed Q05 matched pair on3f895bc5 through artifacts/agere-ordinary-comparison-2026-11-05/run_Q05_pair.py, protocol-clock-role-candidate.json. Source/product/scoring frozen for the owned pair; no duplicates or source edits. Q05 exercises AF/inpatient-cohort medication fills versus dated documentary use/non-use, not another HFrEF/Q01/Q02/Q04campaign. On terminal inspect automatic cohort/source acquisition, patient/name/date/negation/reason bindings, actual provider roles, partials and all-attempt economics. Separate unavailable independent clinical labels from engineering defects; do not use model votes as clinical truth. The full cash ledger path is proved natively, and explicit source-clock metadata is current, but old ordinary failures are preserved. All25fixedcases/tenareas and clinical/model/customer prerequisites remain; automation PAUSED.",
+    "remaining_gap": "G3active: current route bypasses a proved incapable example preflight; no fresh automaticQ05success claimed. Q05frontier189attempts/215.789s/$1.03684133 returned partial and omitted available names/table. Stack misroute was cancelled after450.999s/152recovered attempts/$0.125798748known partial usage,1pending/unpriced request; no answer or complete total. Native retained-data composition restores34names/discharge groups and98unadjudicated machine statements with0providers. Earlier Q01/Q02/Q04failures remain. Continue fixed unfamiliar questions and connectedQ22-Q24checks, then current release predicates/package once; clinical/model/customer dependencies remain explicit.",
+    "next_action": "G3: run one next fixed Q06matched clinical pair onfd16a55c via artifacts/agere-ordinary-comparison-2026-11-05/run_Q06_pair.py and protocol-population-routing-candidate.json. Source/product/scoring frozen for that owned job; no duplicate or source edits. Current general routing rejects patient/cohort comparisons from ranked-example tiers before I/O, preserves large saved cohorts and empty membership. Q05cancelled misroute and frontier partial remain failures; do not repeat them or assume their pending request cost is zero. On terminal inspect COPD medication-intention/reported-use/dispensing/non-use source/entity/date bindings, complete resolved cohort and all-attempt cost; independent clinical qualification remains separate. All25cases/tenareas retained; automatic continuation PAUSED.",
     "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
-    "coordination": "Q05 pair prepared; source/product/scoring frozen for one owned job. Automatic continuation PAUSED.",
+    "coordination": "Q05 owned job terminal after cancellation; no orphan provider job assumed from pending ledger rows. One Q06pair launching, source/product/scoring frozen. Automatic continuation PAUSED.",
     "remaining_blockers": [
       "G3: corrected ordinary event-date behavior still needs confirmation, remaining fixed cases/connected Q22-Q24 workflows and broader ordinary performance remain. The original Q01pair is failed, not accepted; Q25core proof is not an installed industry connector. Clinical/model qualification and customer prerequisites stay separate."
     ],
@@ -942,8 +949,8 @@
       "no_unproven_novelty_or_superiority_claim": true
     },
     "comparison_status": "All25cases/11native references retained. Q01/Q02/Q04original matched pairs remain failed; Q03pilot separate. Native ledger capability proof and Q25core proof are not ordinary automatic acceptance or independent clinical qualification.",
-    "at": "2026-11-05T20:54:40.192764+00:00",
-    "workflow_change": "Transaction foreign keys no longer have to be base row identity keys; unique event grain, nullable unmatched links and ambiguous-right rejection remain. Exact composed values and producer digests qualify monetary ancestry. Full-ledger and source-clock semantics are shared first-party model documentation and live source metadata.",
+    "at": "2026-11-05T21:18:03.390245+00:00",
+    "workflow_change": "Generic role-fit routing uses existing patient-list recognition and cohort framing. Removed the old >20membership widening and switched cohort identity to the existing exact patient_ids parameter. Native saved-result composition supplies all34received names and dated discharge groups plus98unadjudicated statements, retaining unresolved reviews.",
     "unsealed_work": {
       "status": "temporal_source_candidate_verified_offline_original_pair_failed",
       "product_commit": "3bc19f354c0ae04f60fc604d6a4480f9b58b9c2e",
@@ -1236,7 +1243,7 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-05T20:54:40.192764+00:00",
+    "updated_at": "2026-11-05T21:18:03.390245+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
@@ -4691,20 +4698,35 @@
         "artifacts/agere-ordinary-comparison-2026-11-05/Q04/frontier_tools/independent-score-proof.json"
       ],
       "scope_impact": "No new service/tool catalog, model/training, disease handler, acceptance expansion/removal or default activation. Alltenareas retained; human request to avoid audit/repair repetition governs delivery."
+    },
+    {
+      "at": "2026-11-05T21:18:03.390245+00:00",
+      "gate": "G3",
+      "decision": "Stop a confirmed incapable population-to-ranked-example route rather than wait for another long wrong-role answer. SIGINT did not complete; terminate only owned child87618, preserve152recovered attempts and1pending/unpriced request. Correct the general role boundary without another paidQ05run, retain exact large/empty populations via existing typed cohort membership, and compose the available34patient names/date groups/98machine statements natively. Proceed to Q06.",
+      "evidence": [
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q05/comparison.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q05/frontier_tools/engineering-score.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q05/stack/engineering-score.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q05/stack/receipt.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
+        "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
+        "artifacts/agere-cash-ledger-closure-2026-11-05/population-routing-checks-2.log"
+      ],
+      "scope_impact": "No quota, population/document cap, extra model/training, disease handler, default activation or narrowed acceptance. All25cases/tenareas retained; shared source-cache effects are disclosed in comparisons."
     }
   ],
   "unsealed_work": {
-    "status": "cash_closure_clock_contracts_verified_Q05_launching",
-    "product_commit": "3f895bc5",
+    "status": "Q05_misroute_cancelled_native_work_retained_Q06_launching",
+    "product_commit": "fd16a55c",
     "product_fix_commit": "b3f0a8d7",
-    "receipt": "artifacts/agere-cash-ledger-closure-2026-11-05/clock-role-proof.json",
+    "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
     "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": true,
     "runtime_activation": false,
     "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 127,
-    "provider_calls_this_increment": 23,
+    "affected_tests_passed": 33,
+    "provider_calls_this_increment": 364,
     "ordinary_check_owner_reconciled": true,
     "previous_ordinary_run": {
       "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
@@ -4724,15 +4746,15 @@
       "new_provider_attempts": 21,
       "offline_proof_provider_calls": 0
     },
-    "new_provider_attempts": 23,
-    "known_api_equivalent_usd": 0.283641102,
-    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q04/comparison.json",
-    "all_attempt_rows_retained": 52635,
+    "new_provider_attempts": 364,
+    "known_api_equivalent_usd": null,
+    "latest_paired_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/comparison.json",
+    "all_attempt_rows_retained": 52976,
     "planning_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/planning-policy-proof.json",
     "native_profile_fixture": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-fixture.json",
     "native_profile_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-proof.json",
     "native_profile_checks": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-checks.json",
-    "latest_increment_provider_attempts": 23,
+    "latest_increment_provider_attempts": 341,
     "study_preparation_commit": "6caf3e1d4e7ae5c74406fbbbfcf39cc63fd325c0",
     "study_preparation_proof": "artifacts/agere-ordinary-scoring-2026-11-05/v2/preparation-proof.json",
     "independent_arithmetic_reference_cases": [
@@ -4750,8 +4772,8 @@
     ],
     "study_checks_passed": 16,
     "native_profile_lineage_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/native-profile-lineage-proof.json",
-    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-clock-role-candidate.json",
-    "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/pair-receipt.json",
+    "study_protocol": "artifacts/agere-ordinary-scoring-2026-11-05/protocol-population-routing-candidate.json",
+    "ordinary_pair_receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/pair-receipt.json",
     "ordinary_pair_session": 84919,
     "ordinary_pair_status": "launching",
     "ordinary_pair_comparison": "artifacts/agere-ordinary-comparison-2026-11-05/Q02/comparison.json",
@@ -4768,7 +4790,7 @@
     "targeted_confirmation_session": 30036,
     "targeted_confirmation_status": "returned_scored_failed_prose_fidelity",
     "legacy_pending_rows_preserved": 40,
-    "new_pending_attempts": 0,
+    "new_pending_attempts": 1,
     "targeted_confirmation_score": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/engineering-score.json",
     "targeted_confirmation_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/independent-score-proof.json",
     "targeted_confirmation_accounting": "artifacts/agere-ordinary-comparison-2026-11-05/Q01-temporal-confirmation/stack/all-attempt-reconciliation.json",
@@ -4804,7 +4826,20 @@
     "cash_closure_current_lineage": "artifacts/agere-cash-ledger-closure-2026-11-05/current-lineage-replay.json",
     "clock_role_proof": "artifacts/agere-cash-ledger-closure-2026-11-05/clock-role-proof.json",
     "clock_role_commit": "3f895bc5",
-    "full_Q04_acceptance": false
+    "full_Q04_acceptance": false,
+    "known_partial_api_equivalent_usd": 1.44628118,
+    "unpriced_attempts": 1,
+    "pending_rows_total": 41,
+    "population_routing_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/routing-replay-proof.json",
+    "native_clinical_composition_proof": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/native-composition-proof.json",
+    "last_stopped_job": {
+      "case": "Q05",
+      "pid": 87618,
+      "session": 70159,
+      "disposition": "SIGINT then SIGTERM after confirmed incapable role; pending usage retained",
+      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/stack/receipt.json"
+    },
+    "optional_integration_tests_skipped": 1
   },
   "current_visual_request": {
     "status": "completed",
@@ -4840,12 +4875,12 @@
   "active_jobs": [
     {
       "kind": "ordinary_matched_pair",
-      "case": "Q05",
-      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q05/pair-receipt.json",
+      "case": "Q06",
+      "receipt": "artifacts/agere-ordinary-comparison-2026-11-05/Q06/pair-receipt.json",
       "source_frozen": true
     }
   ],
-  "next_action": "G3: execute one next fixed Q05 matched pair on3f895bc5 through artifacts/agere-ordinary-comparison-2026-11-05/run_Q05_pair.py, protocol-clock-role-candidate.json. Source/product/scoring frozen for the owned pair; no duplicates or source edits. Q05 exercises AF/inpatient-cohort medication fills versus dated documentary use/non-use, not another HFrEF/Q01/Q02/Q04campaign. On terminal inspect automatic cohort/source acquisition, patient/name/date/negation/reason bindings, actual provider roles, partials and all-attempt economics. Separate unavailable independent clinical labels from engineering defects; do not use model votes as clinical truth. The full cash ledger path is proved natively, and explicit source-clock metadata is current, but old ordinary failures are preserved. All25fixedcases/tenareas and clinical/model/customer prerequisites remain; automation PAUSED.",
+  "next_action": "G3: run one next fixed Q06matched clinical pair onfd16a55c via artifacts/agere-ordinary-comparison-2026-11-05/run_Q06_pair.py and protocol-population-routing-candidate.json. Source/product/scoring frozen for that owned job; no duplicate or source edits. Current general routing rejects patient/cohort comparisons from ranked-example tiers before I/O, preserves large saved cohorts and empty membership. Q05cancelled misroute and frontier partial remain failures; do not repeat them or assume their pending request cost is zero. On terminal inspect COPD medication-intention/reported-use/dispensing/non-use source/entity/date bindings, complete resolved cohort and all-attempt cost; independent clinical qualification remains separate. All25cases/tenareas retained; automatic continuation PAUSED.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4952,5 +4987,21 @@
     "source_streams": 178,
     "clinical_qualification": false,
     "formal_curriculum_acceptance": false
+  },
+  "ordinary_curriculum_progress": {
+    "total_fixed_cases": 25,
+    "standalone_question_cases": 21,
+    "connected_cases": 4,
+    "original_frozen_pairs_scored": {
+      "Q01": "failed_both",
+      "Q02": "failed_both",
+      "Q04": "failed_both",
+      "Q05": "frontier_failed_partial_stack_cancelled_misroute"
+    },
+    "separate_pilot": "Q03, not pooled/repeated",
+    "authored_generic_core": "Q25, scoped8engineering checks passed",
+    "next_case": "Q06",
+    "clinical_qualification": false,
+    "completion_percent": null
   }
 }
