@@ -84,6 +84,54 @@ class Quotes(unittest.TestCase):
         self.assertEqual(dropped, 2)
 
 
+class NativeFieldCitations(unittest.TestCase):
+    def setUp(self):
+        import json, sqlite3
+        self.json=json
+        self.db=sqlite3.connect(':memory:');self.addCleanup(self.db.close)
+        self.db.execute('CREATE TABLE record(record_id TEXT,patient_id TEXT,stream TEXT,event_date TEXT,available_date TEXT,payload TEXT)')
+        self.record={'record_id':'r1','patient_id':'p','authorization':'not established by this order',
+                     'performed':False,'unknown':None,'derived':12,
+                     '_warehouse_fields':['authorization','performed','unknown']}
+        self.db.execute('INSERT INTO record VALUES (?,?,?,?,?,?)',('r1','p','requests','2029-07-20','2029-07-21',json.dumps(self.record)))
+        self.tools=SimpleNamespace(semantic=SimpleNamespace(db=self.db),scope={'p'},as_of='2030-05-27',read={})
+        self.source={'kind':'received_field','record_id':'r1','patient_id':'p','date':'2029-07-20',
+                     'field':'authorization','value':self.record['authorization']}
+
+    def verify(self,source):return B.verified_sources({'sources':[source]},self.tools)
+
+    def test_literal_field_reference_does_not_invent_a_quotation(self):
+        kept,dropped=self.verify(self.source)
+        self.assertEqual(dropped,0);self.assertEqual(kept[0]['value'],self.record['authorization'])
+        self.assertEqual(kept[0]['source'],'requests');self.assertNotIn('quote',kept[0])
+        self.assertIn('source_record_digest',kept[0])
+        self.assertEqual(self.verify(kept[0]),(kept,0))
+
+    def test_entity_date_field_type_and_value_are_bound_to_that_record(self):
+        for edit in [{'patient_id':'q'},{'record_id':'r2'},{'date':'2029-07-21'},
+                     {'field':'authorization','value':'approved'},
+                     {'field':'performed','value':0},{'field':'derived','value':12},
+                     {'field':'_warehouse_fields','value':['authorization','performed','unknown']},
+                     {'patient_id':['p']}]:
+            with self.subTest(edit=edit):self.assertEqual(self.verify({**self.source,**edit}),([],1))
+        self.tools.scope=set()
+        self.assertEqual(self.verify(self.source),([],1))
+
+    def test_null_and_unknown_clocks_remain_unknown(self):
+        self.db.execute('UPDATE record SET event_date=NULL,available_date=NULL')
+        kept,dropped=self.verify({**self.source,'date':None,'field':'unknown','value':None})
+        self.assertEqual(dropped,0);self.assertIsNone(kept[0]['value']);self.assertIsNone(kept[0]['date'])
+        self.assertFalse(kept[0]['reported_availability_known'])
+
+    def test_future_source_or_changed_record_version_is_not_reused(self):
+        old=self.verify(self.source)[0][0]
+        self.record['performed']=True
+        self.db.execute('UPDATE record SET payload=?',(self.json.dumps(self.record),))
+        self.assertEqual(self.verify(old),([],1))
+        self.db.execute("UPDATE record SET available_date='2031-01-01'")
+        self.assertEqual(self.verify(self.source),([],1))
+
+
 class Polarity(unittest.TestCase):
     def test_a_repair_never_flips_negation(self):
         tools = FakeTools({'N1': 'Patient does take insulin daily.'})

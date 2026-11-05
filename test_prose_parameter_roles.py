@@ -47,7 +47,8 @@ class ProseParameterRoles(unittest.TestCase):
                 proofs = answer['computed_prose'][0]['parameters']
                 self.assertEqual({p['kind'] for p in proofs}, {kind})
                 self.assertTrue(all(p['literal'] in text for p in proofs))
-        for text in ('Invoices in 2029 have unknown durations.', 'December 2029 invoices.'):
+        for text in ('Invoices in 2029 have unknown durations.', 'December 2029 invoices.',
+                     'Invoice requests dated 2029 for the selected accounts.'):
             self.assertEqual(self.compile(text)['headline'], text)
 
     def test_same_numerals_as_counts_doses_or_other_parameters_still_fail(self):
@@ -59,7 +60,7 @@ class ProseParameterRoles(unittest.TestCase):
                      'paid > 1 (received flag).', 'Rate = payments / invoices x 1000.',
                      'Rate = payments / invented x 100.', 'not counted as 0 dollars.',
                      'Missing durations are counted as 0 days.', 'There were 2029 invoices.',
-                     'December 2028 invoices.'):
+                     'December 2028 invoices.', 'Invoice requests dated 2028.'):
             with self.subTest(text=text), self.assertRaises(B.ComputedProseError):
                 self.compile(text)
 

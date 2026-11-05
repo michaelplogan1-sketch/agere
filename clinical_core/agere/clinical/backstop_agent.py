@@ -90,6 +90,7 @@ TOOLS = [
         'rename_columns':{'type':'object','additionalProperties':{'type':'string'},'description':'Explicitly rename received non-key output columns without changing values. Preserves native retention lineage; output names must be distinct.'},
         'joins':{'type':'array','items':{'type':'object','properties':{'result':{'type':'string'},'as':{'type':'string'},'on':{'type':'object','additionalProperties':{'type':'string'}},'columns':{'type':'array','items':{'type':'string'}},'items_from':{'type':'string'},'retain_in_final':{'type':'boolean'},'domain':{'type':'object','properties':{'column':{'type':'string'},'values':{'type':'array','items':{},'minItems':1}},'required':['column','values'],'additionalProperties':False},'mode':{'enum':['one','collect']}},'required':['result','as','on','mode'],'additionalProperties':False}}},'required':['base','keys'],'additionalProperties':False}},
     {'name': 'query_sql', 'description': "For financial transaction reconciliation, read the shared Received cash ledger reconciliation documentation. Start from the received ledger, retain unmatched entity links, and reconcile every source record once per currency. A claim rollup cannot establish unlinked-cash absence. "
+     "For a received structured field, cite kind=received_field with record_id, patient_id, date, field and its exact JSON value. It is a field reference, not a documentary quotation. "
      "Read-only SQLite SELECT/WITH over the semantic layer documented in the system prompt (definition views "
      "included). :as_of is bound to the question's as-of date. Each tabular tool result names its result_view: query those views to join "
      "earlier results and compute comparisons/deltas without repeating source scans. Keep dated source references intact: select date, record_id and quote from the same row, using ROW_NUMBER with explicit tie handling or retaining all tied rows; independent MAX(date)/MAX(record_id) cannot select a latest source. NULL dates remain unknown. Every executed SQL result is stored completely; the actor receives a reading preview. Incomplete input dependencies remain explicit and cannot support accepted calculations. drug_group_member(medicine_text, registered_group) selects registered medication groups, not an observed-key list; unclassifiable names return NULL. For normalized drug_key values use replace(drug_key,'_',' ').",
@@ -245,6 +246,9 @@ has already declined this question, so it is yours to answer completely and corr
   asked about), then judge_documents with ONE atomic question and its options over the documents in scope (System One reads each whole
   document), or read_document (to the end of a long report) for a value or a date; answer from what the documents say and quote the
   exact sentence. The same drug, test or topic in another visit or another document type does not answer the question.
+- A received structured value uses a received_field source reference (record_id, patient_id, date, field, value), not an invented
+  quotation of JSON. Native verification binds the exact field, subject, source date and record version; its clinical meaning still
+  needs interpretation. If a source chain is requested, retain the dated record chain in the final patient rows, rather than only flags.
 - When a saved cohort is given (cohort_size in the input), the question is about those patients only: the view `cohort(patient_id)` holds them;
   join every query to it.
 - A question can rest on a false premise ("why did X jump" when X fell): check the premise with the numbers and say so.
@@ -818,6 +822,43 @@ def materialize_table(answer, calls):
     answer['table_binding'] = {'result_view': name, 'rows': len(rows), 'columns': columns, 'query': call.get('sql'), 'copied_from_executed_result': True}
 
 
+def verified_received_field(source, tools):
+    """Bind a literal received field without pretending it is narrative text."""
+    from ...contracts import digest
+    from datetime import date
+    import sqlite3
+    if not {'record_id','patient_id','date','field','value'} <= set(source):return None
+    if any(not isinstance(source[k],str)or not source[k]for k in ('record_id','patient_id')):return None
+    field=source['field']
+    if not isinstance(field,str)or not re.fullmatch(r'[A-Za-z][A-Za-z0-9_]*',field):return None
+    scope=getattr(tools,'scope',None)
+    if scope is not None and source['patient_id']not in scope:return None
+    try:
+        row=tools.semantic.db.execute('SELECT patient_id,stream,event_date,available_date,payload FROM record WHERE record_id=?',
+                                      (source['record_id'],)).fetchone()
+        if row is None or row[0]!=source['patient_id']or row[2]!=source['date']:return None
+        record=json.loads(row[4])
+        received=record.get('_warehouse_fields')
+        if (record.get('patient_id')!=row[0]or record.get('record_id')!=source['record_id']
+                or not isinstance(received,list)or field not in received or field not in record):return None
+        if digest(record[field])!=digest(source['value']):return None
+        version=digest(record)
+        if source.get('source_record_digest',version)!=version:return None
+        cutoff=date.fromisoformat(str(tools.as_of)[:10])
+        def clock(value):
+            try:return date.fromisoformat(value)if isinstance(value,str)else None
+            except ValueError:return None
+        event,available=clock(row[2]),clock(row[3])
+        if any(d is not None and d>cutoff for d in (event,available)):return None
+    except (AttributeError,sqlite3.Error,ValueError,TypeError):return None
+    return {'kind':'received_field','record_id':source['record_id'],'patient_id':row[0],
+            'source':row[1],'date':row[2],'field':field,'value':record[field],
+            'source_record_digest':version,'reported_available_date':row[3],
+            'reported_availability_known':available is not None,
+            'available_date_role':'source-reported availability; physical warehouse receipt is not established',
+            'meaning':'Literal received field value; no documentary quotation, care completion or clinical verification inferred.'}
+
+
 def verified_sources(answer, tools):
     """Keep only cited passages that really are in the CITED record: its document text, or a returned row of that same record (never another
     record's output: audit 2026-10-25). A near-verbatim quote is healed to the document's own words; a fabricated one is dropped and noted.
@@ -825,6 +866,11 @@ def verified_sources(answer, tools):
     fold = lambda s: re.sub(r'\s+', ' ', re.sub(r'[\\"]', '', str(s or '').replace('\\n', ' '))).strip().lower()
     kept, dropped = [], 0
     for s in answer.get('sources') or []:
+        if isinstance(s,dict)and s.get('kind')=='received_field':
+            native=verified_received_field(s,tools)
+            if native is not None:kept.append(native)
+            else:dropped+=1
+            continue
         if not isinstance(s, dict) or not s.get('record_id') or not s.get('quote'): dropped += 1; continue
         doc = tools.read.get(s['record_id'])
         if doc is None:
@@ -1109,7 +1155,7 @@ def bind_computed_prose(answer,calls,*,verified_quotes=(),question=None):
         year=r'(?:19|20|21)\d{2}'
         years=rf'{year}(?:\s+(?:and|or|to|through|versus|vs\.?)\s+{year})*'
         temporal_end=r'(?=$|\s*[,.;:()\[\]]|\s+(?:and|or|than|because|when|where|while|with|without|compared|that|for|in|is|are|was|were|has|had|have)\b)'
-        dated=(rf'\b(?:in|during|since|before|after|between|from|for|calendar\s+years?|fiscal\s+years?|years?)\s+'
+        dated=(rf'\b(?:in|during|since|before|after|between|from|for|dated|calendar\s+years?|fiscal\s+years?|years?)\s+'
                +years+temporal_end)
         def temporal(match):
             value=match.group()
