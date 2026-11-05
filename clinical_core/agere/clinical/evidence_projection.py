@@ -23,7 +23,7 @@ def native_timing_projection(calls):
     """
     views=Counter(c['result'].get('result_view') for c in calls
                   if isinstance(c.get('result'),dict) and isinstance(c['result'].get('result_view'),str))
-    raw=[];prior=[];current=[];proofs=[];seen={}
+    raw=[];prior=[];current=[];proofs=[];seen={};assemblies={}
     for i,call in enumerate(calls):
         observed=call.get('result')or{};raw.append(digest(observed));prior.append(raw[-1]);current.append(raw[-1])
         if not isinstance(observed,dict):continue
@@ -56,8 +56,10 @@ def native_timing_projection(calls):
                         for key in edge['path'][:-1]:parent=parent[key]
                         parent[edge['path'][-1]]=edge['current_digest']
                     current[i]=digest(projected)
-                    if current[i]!=raw[i]:proofs.append({'index':i,'raw_digest':raw[i],
-                        'current_digest':current[i],'assembly_inputs':rebindings})
+                    if current[i]!=raw[i]:
+                        assemblies[i]=projected['assembly']
+                        proofs.append({'index':i,'raw_digest':raw[i],
+                            'current_digest':current[i],'assembly_inputs':rebindings})
         if isinstance(view,str)and view and views[view]==1:seen[view]=i
     assembled=any('assembly_inputs'in p for p in proofs)
     # v2's legacy view is the preceding SQL-only normalization. v1 retains its
@@ -65,7 +67,7 @@ def native_timing_projection(calls):
     legacy=prior if assembled else raw
     bindings=[{**p,'legacy_digest':legacy[p['index']]}for p in proofs]
     if not assembled:bindings=[{k:v for k,v in p.items()if k!='raw_digest'}for p in bindings]
-    return {'current':current,'legacy':legacy,'bindings':bindings,
+    return {'current':current,'legacy':legacy,'bindings':bindings,'assemblies':assemblies,
             'schema':'native-query-timing-cache/2'if assembled else'native-query-timing-cache/1'}
 
 

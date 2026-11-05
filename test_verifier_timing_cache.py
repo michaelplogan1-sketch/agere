@@ -83,6 +83,20 @@ class NativeIdentity(unittest.TestCase):
             self.assertEqual(old['native_bindings'][i]['result_digest'],expected)
         self.assertEqual(E.native_timing_legacy_evidence([{'id':'summary','date':AS_OF,'text':a[0]['text']}],proof)[0]['text'],proof['legacy_text'])
 
+    def test_actual_coverage_graph_shares_validated_timing_identity(self):
+        calls=composed_calls();before=copy.deepcopy(calls);answer={'table_from_tool':'nested'}
+        baseline=B.execution_review_graph(calls,answer)
+        self.assertEqual(baseline,B.execution_review_graph(composed_calls(9.),answer));self.assertEqual(calls,before)
+        self.assertEqual(baseline['native_digest_projection']['schema'],'native-query-timing-cache/2')
+        for kwargs in ({'amount':99},{'business_time':8},{'domain':'other'}):
+            with self.subTest(kwargs=kwargs):self.assertNotEqual(baseline,B.execution_review_graph(composed_calls(**kwargs),answer))
+        for change in ('query','join','unvalidated_digest'):
+            altered=composed_calls();assembly=altered[2]['result']['assembly']
+            if change=='query':altered[0]['result']['executed_query']='SELECT different_meaning'
+            elif change=='join':assembly['joins'][0]['domain']['values']=['other']
+            else:assembly['base_result_digest']='0'*64
+            with self.subTest(change=change):self.assertNotEqual(baseline,B.execution_review_graph(altered,answer))
+
     def test_composition_changes_to_business_data_and_provenance_still_invalidate(self):
         baseline=composed_packets(composed_calls())[0]['text']
         for kwargs in ({'amount':13},{'business_time':6},{'domain':'other'}):

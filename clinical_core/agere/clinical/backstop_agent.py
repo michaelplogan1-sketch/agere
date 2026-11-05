@@ -1323,6 +1323,8 @@ def execution_review_graph(calls,answer=None):
     The complete attempt journal remains native. This is a verifier reading
     view, not a new executable plan or source/clinical acceptance receipt.
     """
+    from .evidence_projection import native_timing_projection
+    timing=native_timing_projection(calls)
     roots=[]
     if answer:
         root=(answer.get('table_binding')or{}).get('result_view')or answer.get('table_from_tool')
@@ -1381,6 +1383,10 @@ def execution_review_graph(calls,answer=None):
         if inherited:params['source_definition_keys']=list(inherited)
         output={k:result[k]for k in ('result_view','columns','table_rows','truncated','assembly',
             'coverage','candidate_observation_review','source_scope','method')if k in result}
+        if i in timing['assemblies']:
+            output['assembly']=timing['assemblies'][i]
+            graph['native_digest_projection']={'schema':timing['schema'],
+                'meaning':'Assembly input digests exclude only reserved SQL execution timing through exact validated native dependencies. Raw execution receipts remain unchanged.'}
         if operation=='review_documents'and isinstance(output.get('coverage'),list):
             from ...contracts import digest
             output['native_coverage_manifest_digest']=digest(output['coverage'])
