@@ -33,6 +33,15 @@ rows or silently invent a default. You may set table_from_tool to a complete nat
 answer; include a table directly when adding interpretation. Plain prose and numeric values are allowed. No computed-prose
 template format or model verification votes are required. Finish the requested analysis using the evidence available.'''
 
+# Use the installed native JSON serialization channel for a competent baseline.
+# This constrains the envelope, not evidence, answer content or output length.
+# In particular facts/rows remain free-form and no product reviewer is added.
+FRONTIER_OUTPUT_CONFIG = {'format': {'type': 'json_schema', 'schema': {
+    'type': 'object',
+    'properties': {'status': {'enum': ['answered', 'partial', 'unsupported']},
+                   'answer_type': {'type': 'string'}, 'headline': {'type': 'string'}},
+    'required': ['status', 'answer_type', 'headline'], 'additionalProperties': True}}}
+
 
 def save(path, value):
     temp = path.with_suffix('.writing')
@@ -109,7 +118,9 @@ def frontier(stack, question, *, execute):
             metadata = {'model': M.SONNET, 'tool_names': [t['name'] for t in B.TOOLS],
                         'documentation_sha256': hashlib.sha256(docs.encode()).hexdigest(),
                         'as_of': as_of, 'mandatory_answer_review': False, 'computed_prose_compiler': False,
-                        'learnt_answer_replay': False, 'original_population': tools.cohort}
+                        'learnt_answer_replay': False, 'original_population': tools.cohort,
+                        'output_contract': 'native_subscription_json_decision_envelope',
+                        'output_limits': None}
             if not execute: return {'baseline_configuration': metadata, 'provider_calls': 0}
             system = [{'type': 'text', 'text': FRONTIER_RULES + '\n' + decision_context.prompt_block()},
                       {'type': 'text', 'text': docs, 'cache_control': {'type': 'ephemeral'}}]
@@ -121,6 +132,7 @@ def frontier(stack, question, *, execute):
                     run = S.tool_loop(json.dumps({'question': question, 'as_of': as_of,
                                                   'patient_scope': sorted(tools.scope) if tools.scope is not None else None}),
                                       system, B.TOOLS, tools, send=B.as_tool_calls(_send(stack, ledger, receipts)),
+                                      extra={'output_config': FRONTIER_OUTPUT_CONFIG},
                                       model=M.SONNET, max_tools=None, review=None, format_retries=1,
                                       continuation_guard=tools.continuation_identity)
                 answer = run.get('answer')
