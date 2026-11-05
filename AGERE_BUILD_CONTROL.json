@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T12:45:50.567972+00:00",
+  "updated_at": "2026-11-05T17:27:05.810173+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -544,9 +544,9 @@
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "G3 ordinary initial planning latency/general composition remain unqualified. The new question used20attempts/220.559s before the focused fix; the12.759s continuation is not a new first-question benchmark. The old policy context correctly refuses direct resume. Current saved result is machine-checked but retains partial status/source limitations. Earlier clinical answer remains56/60supported with undecided coverage. IndependentG5 and customer prerequisites remain explicit; alltenareas retained.",
-      "engineering_current_status": "Last sealed aggregate repair retained; same-request handoff candidate offline proven, ordinary check pending. Independent review prompt prepared, not a completed audit.",
-      "next_action": "G3 whole-stack delivery: candidate 4d1f3a9d preserves both rejected same-question planner proposals and validation errors for the existing backstop; offline exact proof and81affected tests pass. Two broader-suite failures reproduce on unchanged baseline. Candidate is committed but not in app8890; current app remains81f8bbf5/PID61768/session99647 and last sealed aggregate delivery is unchanged. Next prepare one ordinary same-question request on the guarded candidate, preserving full source/scope/all attempts and comparing the independent505discharge/106readmission/92organization baseline. Measure actual routing, handoff, answer completion, total latency/cost and current saved-result behavior; no injected plan, repeated full clinical/package campaign or automatic retry. Mike requested an independent Claude full-stack review prompt; it is prepared at docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md but has not been sent or answered. Reconcile any returned review before further implementation. Bottling remains optional; alltenareas/G5/customer dependencies retained.",
+      "remaining_acceptance": "G3 remains active. Ordinary latency is not competitive in this pilot;26s came from unproductive paid spec planning and further time from the demonstrated compiler repair. Latest local guard correction has no new paid timing result. Five clinical fields/overall coverage remain uncertain; native age meaning/fidelity routing still needs qualification. Fixed curriculum needs independent oracles, narrative adjudication where required, workflow checks and frozen execution. Model/clinical qualification and customer deployment remain separate dependencies.",
+      "engineering_current_status": "Review corrections locally evidenced and ordinary paired pilot reconciled; current fixes candidate-only, G3 active.",
+      "next_action": "G3: review fixes are committed through 24414a9b. Q03 pilot reconciled:stack533admissions/506received/27absent discharge dates, all100organization-status rows/500numeric cells exact; directSonnet count rows also exact but date-derived LOS differs from received stay LOS for4organizations. Stack172.081s/$0.133888204 versus directSonnet29.847s/$0.2490666 analysis/API-equivalent:46.244%lower cost but5.765x slower. Paid spec drafting spent26.016s on2unsuccessful Claude plans; next constrain unqualified paid spec drafting while preserving native/SLM planning and the complete-question frontier fallback, with workflow evidence before default changes. Then qualify native-field meaning (including age) and complete independent scoring of the fixed25case curriculum (21ordinary questions plus4connected checks). The new zero-duration correction reduces6compiler failures to1real group-cardinality binding offline; one authentic count-binding patch compiles with all100rows and numeric meaning retained. No paid benefit is inferred after that correction. Use the corrected frozen-evaluation runner/per-arm scratch; the first pilot inherited normal learning and is excluded from formal frozen-study pooling. No duplicate Q03 run, HFrEF campaign, training, bottling expansion or package rebuild. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
       "latest_current_release_decision": "artifacts/agere-whole-stack-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -625,11 +625,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "same_question_planner_handoff_candidate",
+    "kind": "human_pause_pending_independent_review",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Offline producer-to-consumer proof only:0to2retained failed proposals; ordinary complete workflow pending.",
-    "measured_failure_reduction": "Lost same-question planning proposals0to2 transferred in exact retained proof; validation failures remain strict.81affected tests pass;2broader failures baseline-reproduced.",
+    "user_behavior_delta": "Original aggregate draft now compiles after its first genuine count bindings instead of rejecting requested/defined parameters. Completed fault-free source checks with uncertain machine readings stop rewrites and retain their exact obligations. Q03 pilot exposed documented zero-duration labels; corrected offline6failed fields ->1genuine cardinality binding, then0, retaining100rows and all quantities. A direct same-tools Sonnet baseline and fixed25case input set now exist.",
+    "measured_failure_reduction": "Original retained first-repair aggregate4falsefailedfields->0; newQ03initial6->1realbinding->0afterauthenticpatch. Count/LOS reconciliation500numericcells/100rows. Livepilot cost46.244%lower but5.765xslower than directSonnet; no post-correction speed claim.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -815,12 +815,26 @@
       "artifacts/agere-spec-routing-2026-11-05/handoff-proof.json",
       "artifacts/agere-spec-routing-2026-11-05/diagnosis.json",
       "artifacts/agere-spec-routing-2026-11-05/test-disposition.json",
-      "artifacts/agere-spec-routing-2026-11-05/review-prompt-validation.json"
+      "artifacts/agere-spec-routing-2026-11-05/review-prompt-validation.json",
+      "artifacts/agere-spec-routing-2026-11-05/ordinary-current/run-receipt.json",
+      "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/proof.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/checks.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-independent-reference.json",
+      "config/agere/ordinary_question_curriculum.json",
+      "tools/ordinary_stack_comparison.py",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-Q03/frontier_tools/receipt.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-Q03/stack/receipt.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/dry-run-frozen-evaluation/receipt.json",
+      "artifacts/agere-spec-routing-2026-11-05/review-correction/isolation-check.json"
     ],
-    "remaining_gap": "G3 ordinary initial planning latency/general composition remain unqualified. The new question used20attempts/220.559s before the focused fix; the12.759s continuation is not a new first-question benchmark. The old policy context correctly refuses direct resume. Current saved result is machine-checked but retains partial status/source limitations. Earlier clinical answer remains56/60supported with undecided coverage. IndependentG5 and customer prerequisites remain explicit; alltenareas retained.",
-    "next_action": "G3 whole-stack delivery: candidate 4d1f3a9d preserves both rejected same-question planner proposals and validation errors for the existing backstop; offline exact proof and81affected tests pass. Two broader-suite failures reproduce on unchanged baseline. Candidate is committed but not in app8890; current app remains81f8bbf5/PID61768/session99647 and last sealed aggregate delivery is unchanged. Next prepare one ordinary same-question request on the guarded candidate, preserving full source/scope/all attempts and comparing the independent505discharge/106readmission/92organization baseline. Measure actual routing, handoff, answer completion, total latency/cost and current saved-result behavior; no injected plan, repeated full clinical/package campaign or automatic retry. Mike requested an independent Claude full-stack review prompt; it is prepared at docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md but has not been sent or answered. Reconcile any returned review before further implementation. Bottling remains optional; alltenareas/G5/customer dependencies retained.",
-    "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "No owned provider or verification job active. Candidate not loaded in app. Human-requested independent review prompt delivered without dispatching Claude.",
+    "remaining_gap": "G3 remains active. Ordinary latency is not competitive in this pilot;26s came from unproductive paid spec planning and further time from the demonstrated compiler repair. Latest local guard correction has no new paid timing result. Five clinical fields/overall coverage remain uncertain; native age meaning/fidelity routing still needs qualification. Fixed curriculum needs independent oracles, narrative adjudication where required, workflow checks and frozen execution. Model/clinical qualification and customer deployment remain separate dependencies.",
+    "next_action": "G3: review fixes are committed through 24414a9b. Q03 pilot reconciled:stack533admissions/506received/27absent discharge dates, all100organization-status rows/500numeric cells exact; directSonnet count rows also exact but date-derived LOS differs from received stay LOS for4organizations. Stack172.081s/$0.133888204 versus directSonnet29.847s/$0.2490666 analysis/API-equivalent:46.244%lower cost but5.765x slower. Paid spec drafting spent26.016s on2unsuccessful Claude plans; next constrain unqualified paid spec drafting while preserving native/SLM planning and the complete-question frontier fallback, with workflow evidence before default changes. Then qualify native-field meaning (including age) and complete independent scoring of the fixed25case curriculum (21ordinary questions plus4connected checks). The new zero-duration correction reduces6compiler failures to1real group-cardinality binding offline; one authentic count-binding patch compiles with all100rows and numeric meaning retained. No paid benefit is inferred after that correction. Use the corrected frozen-evaluation runner/per-arm scratch; the first pilot inherited normal learning and is excluded from formal frozen-study pooling. No duplicate Q03 run, HFrEF campaign, training, bottling expansion or package rebuild. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
+    "latest_review": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
+    "coordination": "Mike explicitly resumed active-chat build; scheduler remains paused per automatic-update preference. No provider/training/verification job active; source unfrozen.",
     "remaining_blockers": [
       "G3 ordinary initial planning latency/general composition remain unqualified. The new question used20attempts/220.559s before the focused fix; the12.759s continuation is not a new first-question benchmark. The old policy context correctly refuses direct resume. Current saved result is machine-checked but retains partial status/source limitations. Earlier clinical answer remains56/60supported with undecided coverage. IndependentG5 and customer prerequisites remain explicit; alltenareas retained."
     ],
@@ -873,28 +887,50 @@
       "applicability": "Current same-platform archive/install and saved-context inspection, plus explicitly scoped compatibility of existing full-ten-area capabilities. This adds current portable-operation evidence; it does not establish new first-question, clinical, model or customer-deployment performance."
     },
     "latest_human_steering": {
-      "at": "2026-11-05T12:45:50.567972+00:00",
-      "instruction": "Mike requested a full independent Claude review of the implementation and remaining plan, including project background, purpose and saved research, and specifically asked for a review prompt. No new provider run was launched while preparing it.",
-      "prompt": "docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md",
-      "review_dispatched": false,
-      "review_received": false,
-      "build_pause_requested": false
+      "at": "2026-11-05T14:48:08.592513+00:00",
+      "instruction": "Mike explicitly resumed the build and reaffirmed sellable, accurate and economical insight/deliverable product, combining justified methods and a core conceptually portable to other industries.",
+      "build_pause_requested": false,
+      "automatic_updates": "remain_off",
+      "no_unproven_novelty_or_superiority_claim": true
     },
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T12:45:50.567972+00:00",
-    "workflow_change": "Rejected typed proposals and their validation errors survive the same-request handoff as unverified context. No live candidate gain measured.",
+    "at": "2026-11-05T17:27:05.810173+00:00",
+    "workflow_change": "Original aggregate draft now compiles after its first genuine count bindings instead of rejecting requested/defined parameters. Completed fault-free source checks with uncertain machine readings stop rewrites and retain their exact obligations. Q03 pilot exposed documented zero-duration labels; corrected offline6failed fields ->1genuine cardinality binding, then0, retaining100rows and all quantities. A direct same-tools Sonnet baseline and fixed25case input set now exist.",
     "unsealed_work": {
-      "status": "committed_candidate_offline_verified_ordinary_check_pending",
-      "product_commit": "4d1f3a9d0e4c2dd9df102e8dd13bfa97f9d8c6b7",
-      "receipt": "artifacts/agere-spec-routing-2026-11-05/handoff-proof.json",
-      "product_code_in_candidate_app": false,
+      "status": "review_corrections_and_paired_pilot_reconciled_unsealed",
+      "product_commit": "24414a9beb1f34309fdf6ef3c5486819a3a83ab2",
+      "product_fix_commit": "b3f0a8d7",
+      "receipt": "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
+      "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
       "source_frozen": false,
       "runtime_activation": false,
-      "activation_subject": "planner_handoff_candidate",
+      "product_code_in_candidate_app": false,
       "answer_selected": false,
-      "affected_tests_passed": 81,
-      "baseline_reproduced_test_failures": 2,
-      "provider_calls_this_increment": 0
+      "affected_tests_passed": 215,
+      "provider_calls_this_increment": 22,
+      "ordinary_check_owner_reconciled": true,
+      "previous_ordinary_run": {
+        "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
+        "product_commit": "4d1f3a9d0e4c2dd9df102e8dd13bfa97f9d8c6b7",
+        "receipt": "artifacts/agere-spec-routing-2026-11-05/handoff-proof.json",
+        "product_code_in_candidate_app": true,
+        "source_frozen": false,
+        "runtime_activation": false,
+        "activation_subject": "planner_handoff_candidate",
+        "answer_selected": false,
+        "affected_tests_passed": 81,
+        "baseline_reproduced_test_failures": 2,
+        "provider_calls_this_increment": 21,
+        "ordinary_run_receipt": "artifacts/agere-spec-routing-2026-11-05/ordinary-current/run-receipt.json",
+        "ordinary_run_context": "ANS-10bd19cb8f693ac805e4eb79",
+        "ordinary_check_owner_reconciled": true,
+        "new_provider_attempts": 21,
+        "offline_proof_provider_calls": 0
+      },
+      "new_provider_attempts": 22,
+      "known_api_equivalent_usd": 0.382954804,
+      "latest_paired_comparison": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
+      "all_attempt_rows_retained": 52538
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 47,
@@ -937,12 +973,12 @@
       "81996ed"
     ],
     "continuation_scheduler": {
-      "status": "ACTIVE",
+      "status": "PAUSED",
       "id": "finish-agere-overnight-mvp-candidate",
-      "observed_at": "2026-11-03T10:18:56.706541+00:00",
+      "observed_at": "2026-11-05T14:48:08.592513+00:00",
       "interval_minutes": 30,
       "notification_policy": "failed_runs_only",
-      "reason": "Mike reaffirmed continued work on November3. Existing continuation reactivated through the automation tool; configuration read-back confirms ACTIVE. Routine notifications remain muted."
+      "reason": "Active-chat build resumed; automatic updates remain off."
     },
     "owned_recovery_run": {
       "status": "terminal",
@@ -1113,11 +1149,71 @@
     },
     "retained_draft_reuse_diagnosis": "artifacts/agere-clinical-prefix-2026-11-03/retained-draft-reuse-diagnosis.json",
     "ordinary_clinical_outcome": "artifacts/agere-clinical-native-prefix-2026-11-04/ordinary-outcome-audit.json",
-    "updated_at": "2026-11-05T12:45:50.567972+00:00",
+    "updated_at": "2026-11-05T17:27:05.810173+00:00",
     "storage_observation": {
       "free_bytes": 1213812736,
       "at": "2026-11-05T11:41:31.100280+00:00",
       "no_records_removed": true
+    },
+    "prior_planned_next_action": "G3 whole-stack delivery: candidate 4d1f3a9d preserves both rejected same-question planner proposals and validation errors for the existing backstop; offline exact proof and81affected tests pass. Two broader-suite failures reproduce on unchanged baseline. Candidate is committed but not in app8890; current app remains81f8bbf5/PID61768/session99647 and last sealed aggregate delivery is unchanged. Next prepare one ordinary same-question request on the guarded candidate, preserving full source/scope/all attempts and comparing the independent505discharge/106readmission/92organization baseline. Measure actual routing, handoff, answer completion, total latency/cost and current saved-result behavior; no injected plan, repeated full clinical/package campaign or automatic retry. Mike requested an independent Claude full-stack review prompt; it is prepared at docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md but has not been sent or answered. Reconcile any returned review before further implementation. Bottling remains optional; alltenareas/G5/customer dependencies retained.",
+    "independent_review": {
+      "received_at": "2026-11-05T14:36:45.159427+00:00",
+      "path": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
+      "sha256": "cca20c9befacdc6106b8941e293a0581e7bce996887c81d6e32fc71292fb54a5",
+      "source": "User-pasted independent Claude review; preserved verbatim",
+      "review_mode": "read_only_reconciliation_no_product_edits_or_provider_calls",
+      "verified_findings": [
+        "All92organization rows match prior independent native baseline:505discharges,106readmissions.",
+        "First draft API-equivalent cost0.02921143USD; full run0.625080514USD;95.3268percent of known spend follows first draft, dominated by binding repairs.",
+        "Computed-prose compiler rejects request/definition numerals; existing narrow temporal exemptions are insufficient for retained output.",
+        "Five named clinical fields remain below threshold, including age;0confirmed faults does not establish correctness.",
+        "Latest ordinary run446.110s versus220.559s prior; cost0.62508versus0.33288USD. Current returned answered versus prior partial; this is no isolated causal performance comparison or improvement.",
+        "Current answer projection already exists:35,683wirebytes/447,849uncompressed bytes on new ordinary run; historical oversized response is not an unimplemented projection feature."
+      ],
+      "qualified_recommendations": [
+        "Replace overbroad literal rejection with semantic provenance for request parameters and governed definitions; keep measured patient/count/dose values bound to their proper source and domain. No blanket whitelist of all numerals in the question.",
+        "Separate requested work completed, source support and machine-review uncertainty. Never relabel an unsupported conclusion as verified merely because a retry stops; native provenance proves the computation only when source/entity/date/derivation are correct.",
+        "Use progress-based termination and explicit unresolved outcomes instead of a new arbitrary one-repair cap that stamps failed work answered.",
+        "Compare the existing selective stack with a competent tool-using frontier baseline on the same inputs and scoring; preserve real native/no-frontier wins.",
+        "Freeze a finite unfamiliar question set across alltenareas before new live campaigns, with native references where appropriate and explicit limits for narrative/clinical ground truth.",
+        "Measure route contribution before pruning; retain exact/native routes. No broad model training, bottling expansion, repeated HFrEF campaigns or per-increment packaging."
+      ],
+      "not_reproduced_in_this_review": [
+        "Exact commit/artifact counts and every historical rerun",
+        "All claimed component activation states",
+        "Global absence of every possible earlier baseline",
+        "Clinical correctness or the completeness of all retained narratives",
+        "8to15day estimate"
+      ],
+      "implementation_status": "recommendations_reconciled_only_build_remains_paused",
+      "all_ten_areas_retained": true,
+      "full_mvp_acceptance": false
+    },
+    "review_corrections": {
+      "at": "2026-11-05T17:04:46.998484+00:00",
+      "fix_commit": "b3f0a8d7",
+      "curriculum_commit": "91fa872e",
+      "evidence": [
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/proof.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/checks.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-independent-reference.json",
+        "config/agere/ordinary_question_curriculum.json",
+        "tools/ordinary_stack_comparison.py"
+      ],
+      "candidate_not_default": true,
+      "no_provider_calls_for_offline_proofs": true,
+      "ordinary_handoff_result": "Reconciled negative performance:446.110s/$0.625080514;92rows/505discharges/106readmissions exact. Not a speed/cost improvement.",
+      "product_commit": "24414a9beb1f34309fdf6ef3c5486819a3a83ab2",
+      "latest_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
+      "paired_pilot": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
+      "formal_evaluation_dry_run": "artifacts/agere-spec-routing-2026-11-05/review-correction/dry-run-frozen-evaluation/receipt.json",
+      "provider_attempts": 22,
+      "api_equivalent_usd": 0.382954804,
+      "all_attempt_rows": 52538,
+      "legacy_pending_rows_preserved": 40,
+      "new_pending_attempts": 0,
+      "pending_row_note": "Forty pre-existing pending ledger rows remain unchanged. They are not evidence of live owned jobs; no attempt in this paired pilot remains pending."
     }
   },
   "decisions": [
@@ -4328,20 +4424,72 @@
       "basis": "artifacts/agere-spec-routing-2026-11-05/handoff-proof.json",
       "reason": "Observed56second failed planning route discarded two proposals and their errors. The candidate restores shared-context handoff without automatically executing or accepting them. Human requested a review prompt to challenge overall approach and timeline. Research21project-authored reports are available under originalroot/research and are not all copied to integration.",
       "scope_impact": "No new capability area, default model, training, paid run or clinical claim. Alltenacceptance areas retained. Prompt is read-only; it authorizes no additional agent/job."
+    },
+    {
+      "at": "2026-11-05T13:04:20.746654+00:00",
+      "gate": "G3",
+      "decision": "Pause automatic continuation and product work at explicit human request pending Claude review.",
+      "basis": "Mike: stop the automatic updates we need to wait on claudes review",
+      "scope_impact": "No scope change or acceptance claim. Retain completed unsealed run and all attempts; no subsequent provider work."
+    },
+    {
+      "at": "2026-11-05T14:36:45.159427+00:00",
+      "gate": "G3",
+      "decision": "Accept the independent review's critical-path/process correction; qualify unsafe blanket numerical exemptions and unsupported success relabeling.",
+      "basis": "docs/agere/reviews/2026-11-05-claude-full-stack-review.md",
+      "reason": "Read-only comparison confirms92exact organization rows and95.3268percent spend after first draft; prior handoff work did not establish latency/cost improvement. Five clinical fields remain uncertain, not proven correct. Current response projection already exists.",
+      "scope_impact": "No implementation or activation. Fixed ten-area scope retained; paused until explicit resumption. Proposed next work targets dominant failure before another live run."
+    },
+    {
+      "at": "2026-11-05T17:27:05.810173+00:00",
+      "gate": "G3",
+      "decision": "Use measured whole-path comparison to prioritize remaining work; preserve cheaper-but-slower result and protocol deviation rather than infer success from tests. Correct only the demonstrated zero-duration role failure offline; do not repeat the paid pilot. Inspect and constrain unqualified paid spec planning next, retaining native/SLM routes and original-question fallback.",
+      "evidence": [
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-Q03/frontier_tools/receipt.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-Q03/stack/receipt.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/dry-run-frozen-evaluation/receipt.json",
+        "artifacts/agere-spec-routing-2026-11-05/review-correction/isolation-check.json"
+      ],
+      "scope_impact": "Alltenacceptanceareas unchanged; research/model expansion remains deferred; qualified roles require workflow evidence."
     }
   ],
   "unsealed_work": {
-    "status": "committed_candidate_offline_verified_ordinary_check_pending",
-    "product_commit": "4d1f3a9d0e4c2dd9df102e8dd13bfa97f9d8c6b7",
-    "receipt": "artifacts/agere-spec-routing-2026-11-05/handoff-proof.json",
-    "product_code_in_candidate_app": false,
+    "status": "review_corrections_and_paired_pilot_reconciled_unsealed",
+    "product_commit": "24414a9beb1f34309fdf6ef3c5486819a3a83ab2",
+    "product_fix_commit": "b3f0a8d7",
+    "receipt": "artifacts/agere-spec-routing-2026-11-05/review-correction/Q03-compiler-proof.json",
+    "verification_policy_proof": "artifacts/agere-spec-routing-2026-11-05/review-correction/verification-proof.json",
     "source_frozen": false,
     "runtime_activation": false,
-    "activation_subject": "planner_handoff_candidate",
+    "product_code_in_candidate_app": false,
     "answer_selected": false,
-    "affected_tests_passed": 81,
-    "baseline_reproduced_test_failures": 2,
-    "provider_calls_this_increment": 0
+    "affected_tests_passed": 215,
+    "provider_calls_this_increment": 22,
+    "ordinary_check_owner_reconciled": true,
+    "previous_ordinary_run": {
+      "status": "ordinary_check_returned_unsealed_paused_for_claude_review",
+      "product_commit": "4d1f3a9d0e4c2dd9df102e8dd13bfa97f9d8c6b7",
+      "receipt": "artifacts/agere-spec-routing-2026-11-05/handoff-proof.json",
+      "product_code_in_candidate_app": true,
+      "source_frozen": false,
+      "runtime_activation": false,
+      "activation_subject": "planner_handoff_candidate",
+      "answer_selected": false,
+      "affected_tests_passed": 81,
+      "baseline_reproduced_test_failures": 2,
+      "provider_calls_this_increment": 21,
+      "ordinary_run_receipt": "artifacts/agere-spec-routing-2026-11-05/ordinary-current/run-receipt.json",
+      "ordinary_run_context": "ANS-10bd19cb8f693ac805e4eb79",
+      "ordinary_check_owner_reconciled": true,
+      "new_provider_attempts": 21,
+      "offline_proof_provider_calls": 0
+    },
+    "new_provider_attempts": 22,
+    "known_api_equivalent_usd": 0.382954804,
+    "latest_paired_comparison": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-comparison.json",
+    "all_attempt_rows_retained": 52538
   },
   "current_visual_request": {
     "status": "completed",
@@ -4375,7 +4523,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3 whole-stack delivery: candidate 4d1f3a9d preserves both rejected same-question planner proposals and validation errors for the existing backstop; offline exact proof and81affected tests pass. Two broader-suite failures reproduce on unchanged baseline. Candidate is committed but not in app8890; current app remains81f8bbf5/PID61768/session99647 and last sealed aggregate delivery is unchanged. Next prepare one ordinary same-question request on the guarded candidate, preserving full source/scope/all attempts and comparing the independent505discharge/106readmission/92organization baseline. Measure actual routing, handoff, answer completion, total latency/cost and current saved-result behavior; no injected plan, repeated full clinical/package campaign or automatic retry. Mike requested an independent Claude full-stack review prompt; it is prepared at docs/agere/CLAUDE_FULL_STACK_REVIEW_PROMPT_2026-11-05.md but has not been sent or answered. Reconcile any returned review before further implementation. Bottling remains optional; alltenareas/G5/customer dependencies retained.",
+  "next_action": "G3: review fixes are committed through 24414a9b. Q03 pilot reconciled:stack533admissions/506received/27absent discharge dates, all100organization-status rows/500numeric cells exact; directSonnet count rows also exact but date-derived LOS differs from received stay LOS for4organizations. Stack172.081s/$0.133888204 versus directSonnet29.847s/$0.2490666 analysis/API-equivalent:46.244%lower cost but5.765x slower. Paid spec drafting spent26.016s on2unsuccessful Claude plans; next constrain unqualified paid spec drafting while preserving native/SLM planning and the complete-question frontier fallback, with workflow evidence before default changes. Then qualify native-field meaning (including age) and complete independent scoring of the fixed25case curriculum (21ordinary questions plus4connected checks). The new zero-duration correction reduces6compiler failures to1real group-cardinality binding offline; one authentic count-binding patch compiles with all100rows and numeric meaning retained. No paid benefit is inferred after that correction. Use the corrected frozen-evaluation runner/per-arm scratch; the first pilot inherited normal learning and is excluded from formal frozen-study pooling. No duplicate Q03 run, HFrEF campaign, training, bottling expansion or package rebuild. Alltenareas/G5/customer dependencies remain; automatic updates stay off.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4464,11 +4612,20 @@
     "scale": "Meaningful parameter/source/edge-case variation; no indiscriminate repeated paraphrase campaign while verifier defects remain.",
     "standing_boundaries_preserved": true
   },
-  "owned_server_pid": 61768,
-  "owned_server_session": 99647,
+  "owned_server_pid": null,
+  "owned_server_session": null,
   "last_run_observation": {
-    "receipt": "artifacts/agere-hospital-question-2026-11-05/current-continuation/receipt.json",
-    "status": "terminal",
-    "at": "2026-11-05T12:21:03.531332+00:00"
+    "at": "2026-11-05T17:27:05.810173+00:00",
+    "receipt": "artifacts/agere-spec-routing-2026-11-05/review-correction/pilot-Q03/stack/receipt.json",
+    "status": "reconciled_pilot",
+    "product_commit": "91fa872e",
+    "analysis_seconds": 172.08102716691792,
+    "total_seconds": 185.6222243749071,
+    "new_provider_attempts": 19,
+    "api_equivalent_usd": 0.133888204,
+    "answer_status": "answered",
+    "all_100_organization_status_rows_reconciled": true,
+    "clinical_qualification": false,
+    "formal_frozen_curriculum_acceptance": false
   }
 }
