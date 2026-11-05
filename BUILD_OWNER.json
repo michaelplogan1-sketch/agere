@@ -5,9 +5,9 @@
   "heartbeat_id": "finish-agere-overnight-mvp-candidate",
   "ownership_verified": "Mike explicitly requested this fresh chat take over and autonomously complete the review-based MVP update on2026-10-29. Sending chat has stopped product edits.",
   "scope": "/Users/mikel/clinical-insights-local build; Mike directly identified http://127.0.0.1:8885/ask as the product surface. Existing separate design checkout and hosted preview remain reference-only/read-only; separate research and generator remain read-only.",
-  "active_work": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
+  "active_work": "G3: cb7dbd3d null routing is verified through the actual fresh-response loop with production escalation enabled; after the first authentic unfinished Haiku reply, the next model is Sonnet with all 57 entities required. All 37 native receipts and numeric/source obligations remain. Original195 regressions and11 completion-contract tests including fresh escalation pass. The two fixed-Haiku boundary experiments were not the ordinary route:460.046s/$0.4411205 and485.140s/$0.3461817; both contain compiler failures and remain unpromoted. The first harness seeded initial_answer and omitted escalation_model; its scope correction is preserved. No effort change is adopted. Next capture the exact ordinary next request from the standard backstop.answer wrapper offline, including its full decision-context, optional clinical-presentation, documentation and escalation settings, using the authentic first Haiku reply and retained native receipts. Require the immediate Sonnet/full57 transition with zero providers/native reexecution before considering one targeted completion continuation and full source review; do not rerun the whole question or repeat native qualification just for bookkeeping. Do not waive numeric checks for calendar/pronoun-looking literals without scoped evidence; output factoring is only an offline34.8% byte-reduction profile, not runtime performance. All jobs terminal/source unfrozen; app8890PID39826/session31981 remains9e131e6d and current context is intentionally invalidated for new work by later planning changes. All51648attempts, source and immutable answers are retained. Latest ordinary run remains875.501s/$6.47235291,57patients/228fields,59/60source packets with undecided joint/global review. All ten areas and independent G5/customer dependencies remain; first-answer performance and full MVP acceptance are not established.",
   "latest_delivery": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
-  "latest_receipt": "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
+  "latest_receipt": "artifacts/agere-current-first-answer-2026-11-05/fresh-transition-delivery-receipt.json",
   "owned_server_pid": 39826,
   "owned_server_session": 31981,
   "full_queue_acceptance": false,
@@ -15,14 +15,14 @@
   "spending_authorization": "Explicit user instruction 2026-10-10; no assistant-selected monetary ceiling",
   "preceding_delivery": "docs/agere/MEASUREMENT_EVIDENCE_INTEGRATION_2026-10-20.md",
   "latest_daily_report": "AGERE_DAILY_STACK_UPDATE_2026-10-11.md",
-  "resume_priority": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
+  "resume_priority": "G3: cb7dbd3d null routing is verified through the actual fresh-response loop with production escalation enabled; after the first authentic unfinished Haiku reply, the next model is Sonnet with all 57 entities required. All 37 native receipts and numeric/source obligations remain. Original195 regressions and11 completion-contract tests including fresh escalation pass. The two fixed-Haiku boundary experiments were not the ordinary route:460.046s/$0.4411205 and485.140s/$0.3461817; both contain compiler failures and remain unpromoted. The first harness seeded initial_answer and omitted escalation_model; its scope correction is preserved. No effort change is adopted. Next capture the exact ordinary next request from the standard backstop.answer wrapper offline, including its full decision-context, optional clinical-presentation, documentation and escalation settings, using the authentic first Haiku reply and retained native receipts. Require the immediate Sonnet/full57 transition with zero providers/native reexecution before considering one targeted completion continuation and full source review; do not rerun the whole question or repeat native qualification just for bookkeeping. Do not waive numeric checks for calendar/pronoun-looking literals without scoped evidence; output factoring is only an offline34.8% byte-reduction profile, not runtime performance. All jobs terminal/source unfrozen; app8890PID39826/session31981 remains9e131e6d and current context is intentionally invalidated for new work by later planning changes. All51648attempts, source and immutable answers are retained. Latest ordinary run remains875.501s/$6.47235291,57patients/228fields,59/60source packets with undecided joint/global review. All ten areas and independent G5/customer dependencies remain; first-answer performance and full MVP acceptance are not established.",
   "build_status": "ACTIVE",
   "paused_at": "2026-10-31T13:33:33.973687+00:00",
   "heartbeat_status": "ACTIVE",
   "resumed_at": "2026-10-31T14:25:16.312943+00:00",
   "heartbeat_interval_minutes": 30,
   "latest_overnight_report": "AGERE_OVERNIGHT_READINESS_2026-10-11.md",
-  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/fresh-transition-delivery-receipt.json",
   "protected_manifest": "artifacts/agere-reconciliation-contract-v2/protected-for-continuation.json",
   "latest_morning_report": "docs/agere/CURRENT_LOCAL_MVP_DELIVERY_2026-10-30.md",
   "latest_architecture_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
@@ -36,10 +36,22 @@
     "runtime_activation": false,
     "activation_subject": "retained_fast_composition_answer_or_learned_final_answer",
     "product_code_in_candidate_app": true,
-    "answer_selected": false
+    "answer_selected": false,
+    "fixed_role_specimens": [
+      {
+        "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/receipt.json",
+        "status": "compiler_unresolved_unqualified",
+        "answer_selected": false
+      },
+      {
+        "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/receipt.json",
+        "status": "compiler_unresolved_unqualified",
+        "answer_selected": false
+      }
+    ]
   },
   "build_control": "AGERE_BUILD_CONTROL.json",
-  "latest_continuity_checkpoint": "2026-11-05T03:50:34.645030+00:00",
+  "latest_continuity_checkpoint": "2026-11-05T04:20:49.540935+00:00",
   "latest_continuity_receipt": "artifacts/agere-build-continuity-v1/verification.json",
   "continuation_mode": "active_turns_and_quiet_thread_heartbeat",
   "mvp_server": {
@@ -453,18 +465,18 @@
     "current_context": "ANS-2f03655d72628a2d8bac12cd",
     "saved_context_policy_current": false
   },
-  "previous_sealed_receipt": "artifacts/agere-current-review-input-2026-11-05/delivery-receipt.json",
+  "previous_sealed_receipt": "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
   "review_followthrough_authorization": "Mike: okay i am stepping away, please take your time on this, it is critical we get this MVP correct, you know our north star, work with claude to figure out it. I wont be here to approve anything so do not ask me for anything just do it",
   "last_product_commit": "cb7dbd3d5a6be981b01b394a198263aaf01bcad5",
-  "current_delivery_scope": "Null row prose now means unfinished interpretation and immediately reaches the existing complete-population composition request. Non-null malformed proposals still enter compiler repair; source and numeric checks remain required.",
+  "current_delivery_scope": "The corrected null-prose review now reaches the existing Sonnet escalation immediately after the first fresh Haiku reply, with full population membership and source/numeric obligations retained.",
   "current_financial_delivery": {
     "context_id": "ANS-8d56378ee795fc4226dc4828",
     "deliverable_id": "DLV-83D2EF62FF1A",
     "status": "answered",
     "receipt": "/private/tmp/agere-codex-integration-20261026/artifacts/agere-clinical-role-diagnosis-2026-11-02/financial-targeted-live/receipt.json"
   },
-  "updated_at": "2026-11-05T03:50:34.645030+00:00",
-  "last_commit": "cb7dbd3d5a6be981b01b394a198263aaf01bcad5",
+  "updated_at": "2026-11-05T04:20:49.540935+00:00",
+  "last_commit": "87639da4d94d540fa46218f4d8813898cfda5a5b",
   "latest_owner_audit": "artifacts/agere-harder-bottling-2026-11-03/failure-receipt.json",
   "latest_bottling_check": {
     "at": "2026-11-03T20:36:08.825946+00:00",
@@ -509,9 +521,10 @@
     "image_tool": "built-in image_gen"
   },
   "last_run_observation": {
-    "at": "2026-11-05T03:39:34.839218+00:00",
-    "status": "returned_ordinary_clinical_performance_regressed",
-    "receipt": "artifacts/agere-current-first-answer-2026-11-05/ordinary-first-answer/run-receipt.json",
+    "at": "2026-11-05T04:17:14.838222+00:00",
+    "status": "unqualified_both_candidates_compiler_unresolved",
+    "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/receipt.json",
+    "assessment": "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/assessment.json",
     "source_frozen": false
   }
 }

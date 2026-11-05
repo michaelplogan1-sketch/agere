@@ -1,6 +1,6 @@
 {
   "schema": "agere-build-control/1",
-  "updated_at": "2026-11-05T03:50:34.645030+00:00",
+  "updated_at": "2026-11-05T04:20:49.540935+00:00",
   "decision_basis": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
   "authority": "Latest explicit user direction governs. BUILD_OWNER.json owns pause/ownership; this file owns current sequencing and checkpoint. Gates below are delivery objectives, not yet executable product acceptance.",
   "required_references": [
@@ -502,15 +502,19 @@
         {
           "path": "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
           "sha256": "e6afd7431a6a52f5988c51ccb86241dc7c998343d6eff1ca7ad06cf483ad55a3"
+        },
+        {
+          "path": "artifacts/agere-current-first-answer-2026-11-05/fresh-transition-delivery-receipt.json",
+          "sha256": "ca8ceb97aad54ad6bb0ce9b9a714c750ebe64fc4f6de1823b8006b424a2f676d"
         }
       ],
       "accepted_at": "2026-10-30T12:35:29.209891+00:00",
       "acceptance_scope": "Current local engineering connected-workflow acceptance; no independent clinical/model or production qualification.",
       "reopened_at": "2026-10-31T14:25:16.312943+00:00",
       "reopen_reason": "Ordinary original-question result partial:35stale plans and8deterministic repair reviews. Preserve earlier scoped engineering receipts; complete this connected behavior.",
-      "remaining_acceptance": "G3 first-answer speed/cost remains unqualified: the latest ordinary run regressed. One joint source packet and global coverage remain undecided, without a located field fault. Live benefit of null routing and the long final-generation bottleneck remain unmeasured. Independent G5/model/clinical and customer deployment prerequisites are separate; no faster candidate is promoted.",
-      "engineering_current_status": "Null routing accepted on retained actual workflow; ordinary first-answer performance remains regressed and unqualified.",
-      "next_action": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
+      "remaining_acceptance": "First-answer latency/cost remains unqualified: the last ordinary result is875.501s/$6.47235291 with59/60source support and undecided global coverage. Fixed-Haiku role samples failed compilation and do not measure the corrected ordinary route. Full outer-request capture/live benefit, independent G5/clinical/model and customer prerequisites remain; all ten acceptance areas retained.",
+      "engineering_current_status": "Fresh null-prose escalation verified offline; full ordinary first-answer performance remains unqualified.",
+      "next_action": "G3: cb7dbd3d null routing is verified through the actual fresh-response loop with production escalation enabled; after the first authentic unfinished Haiku reply, the next model is Sonnet with all 57 entities required. All 37 native receipts and numeric/source obligations remain. Original195 regressions and11 completion-contract tests including fresh escalation pass. The two fixed-Haiku boundary experiments were not the ordinary route:460.046s/$0.4411205 and485.140s/$0.3461817; both contain compiler failures and remain unpromoted. The first harness seeded initial_answer and omitted escalation_model; its scope correction is preserved. No effort change is adopted. Next capture the exact ordinary next request from the standard backstop.answer wrapper offline, including its full decision-context, optional clinical-presentation, documentation and escalation settings, using the authentic first Haiku reply and retained native receipts. Require the immediate Sonnet/full57 transition with zero providers/native reexecution before considering one targeted completion continuation and full source review; do not rerun the whole question or repeat native qualification just for bookkeeping. Do not waive numeric checks for calendar/pronoun-looking literals without scoped evidence; output factoring is only an offline34.8% byte-reduction profile, not runtime performance. All jobs terminal/source unfrozen; app8890PID39826/session31981 remains9e131e6d and current context is intentionally invalidated for new work by later planning changes. All51648attempts, source and immutable answers are retained. Latest ordinary run remains875.501s/$6.47235291,57patients/228fields,59/60source packets with undecided joint/global review. All ten areas and independent G5/customer dependencies remain; first-answer performance and full MVP acceptance are not established.",
       "latest_current_release_decision": "artifacts/agere-current-release-2026-11-05/acceptance/assessment.json"
     },
     {
@@ -589,11 +593,11 @@
     }
   ],
   "checkpoint": {
-    "kind": "null_prose_completion_routing",
+    "kind": "fresh_null_prose_escalation",
     "gate_id": "G3",
     "last_delivered_gate": "G3",
-    "user_behavior_delta": "Null row prose now means unfinished interpretation and immediately reaches the existing complete-population composition request. Non-null malformed proposals still enter compiler repair; source and numeric checks remain required.",
-    "measured_failure_reduction": "Two actual null proposals change from compiler-only repair to the existing full57-patient completion request; no correctness or speed gain inferred.",
+    "user_behavior_delta": "The corrected null-prose review now reaches the existing Sonnet escalation immediately after the first fresh Haiku reply, with full population membership and source/numeric obligations retained.",
+    "measured_failure_reduction": "Actual first null reply reaches existing escalation immediately; the two later pre-Sonnet Haiku repair replies are no longer required in this retained fresh-response trace. Live elapsed-time benefit unmeasured.",
     "evidence": [
       "artifacts/agere-current-release-finish-2026-11-04/composition-check/source-repair-delivery-receipt.json",
       "artifacts/agere-current-release-finish-2026-11-04/current-source-repair-acceptance/receipt.json",
@@ -721,16 +725,25 @@
       "artifacts/agere-current-first-answer-2026-11-05/null-prose-dispatch-proof/receipt.json",
       "artifacts/agere-current-first-answer-2026-11-05/null-prose-regressions.log",
       "artifacts/agere-current-first-answer-2026-11-05/null-prose-regressions-before-contract-update.log",
-      "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json"
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/assessment.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/assessment.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/assessment.json",
+      "artifacts/agere-current-first-answer-2026-11-05/output-repetition-profile.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-fresh-transition-proof/receipt.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-prose-fresh-transition-regressions.log",
+      "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/receipt.json",
+      "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/receipt.json",
+      "artifacts/agere-current-first-answer-2026-11-05/fresh-transition-delivery-receipt.json"
     ],
-    "remaining_gap": "G3 first-answer speed/cost remains unqualified: the latest ordinary run regressed. One joint source packet and global coverage remain undecided, without a located field fault. Live benefit of null routing and the long final-generation bottleneck remain unmeasured. Independent G5/model/clinical and customer deployment prerequisites are separate; no faster candidate is promoted.",
-    "next_action": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
+    "remaining_gap": "First-answer latency/cost remains unqualified: the last ordinary result is875.501s/$6.47235291 with59/60source support and undecided global coverage. Fixed-Haiku role samples failed compilation and do not measure the corrected ordinary route. Full outer-request capture/live benefit, independent G5/clinical/model and customer prerequisites remain; all ten acceptance areas retained.",
+    "next_action": "G3: cb7dbd3d null routing is verified through the actual fresh-response loop with production escalation enabled; after the first authentic unfinished Haiku reply, the next model is Sonnet with all 57 entities required. All 37 native receipts and numeric/source obligations remain. Original195 regressions and11 completion-contract tests including fresh escalation pass. The two fixed-Haiku boundary experiments were not the ordinary route:460.046s/$0.4411205 and485.140s/$0.3461817; both contain compiler failures and remain unpromoted. The first harness seeded initial_answer and omitted escalation_model; its scope correction is preserved. No effort change is adopted. Next capture the exact ordinary next request from the standard backstop.answer wrapper offline, including its full decision-context, optional clinical-presentation, documentation and escalation settings, using the authentic first Haiku reply and retained native receipts. Require the immediate Sonnet/full57 transition with zero providers/native reexecution before considering one targeted completion continuation and full source review; do not rerun the whole question or repeat native qualification just for bookkeeping. Do not waive numeric checks for calendar/pronoun-looking literals without scoped evidence; output factoring is only an offline34.8% byte-reduction profile, not runtime performance. All jobs terminal/source unfrozen; app8890PID39826/session31981 remains9e131e6d and current context is intentionally invalidated for new work by later planning changes. All51648attempts, source and immutable answers are retained. Latest ordinary run remains875.501s/$6.47235291,57patients/228fields,59/60source packets with undecided joint/global review. All ten areas and independent G5/customer dependencies remain; first-answer performance and full MVP acceptance are not established.",
     "latest_review": "docs/agere/PRECOMMERCIAL_STACK_AUDIT_2026-11-02.md",
-    "coordination": "All request jobs terminal. Product source unfrozen. Null fix not yet loaded by candidate app; no candidate answer promotion.",
+    "coordination": "All provider and proof jobs terminal; source unfrozen. Candidate app remains on9e131e6d; no failed candidate or effort setting activated.",
     "remaining_blockers": [
-      "G3 first-answer speed/cost remains unqualified: the latest ordinary run regressed. One joint source packet and global coverage remain undecided, without a located field fault. Live benefit of null routing and the long final-generation bottleneck remain unmeasured. Independent G5/model/clinical and customer deployment prerequisites are separate; no faster candidate is promoted."
+      "First-answer latency/cost remains unqualified: the last ordinary result is875.501s/$6.47235291 with59/60source support and undecided global coverage. Fixed-Haiku role samples failed compilation and do not measure the corrected ordinary route. Full outer-request capture/live benefit, independent G5/clinical/model and customer prerequisites remain; all ten acceptance areas retained."
     ],
-    "latest_progress": "Null row prose now means unfinished interpretation and immediately reaches the existing complete-population composition request. Non-null malformed proposals still enter compiler repair; source and numeric checks remain required.",
+    "latest_progress": "The corrected null-prose review now reaches the existing Sonnet escalation immediately after the first fresh Haiku reply, with full population membership and source/numeric obligations retained.",
     "results_report": "docs/agere/COMPOSITION_COMPLETION_REPAIR_2026-11-03.md",
     "native_shape_followup": {
       "base_commit": "0ee2d0d386e006d6b9792a377e8308cd0b708179",
@@ -779,8 +792,8 @@
     },
     "latest_human_steering": "Deliverables/PDF only when asked. Native computation and targeted small-model checks should earn their roles; frontiermodels used for suitable tasks. No superiority claim without evidence.",
     "comparison_status": "No matched whole-clinical performance comparison; target is profile explanation and row compiler integration.",
-    "at": "2026-11-05T03:50:34.645030+00:00",
-    "workflow_change": "Null row prose now means unfinished interpretation and immediately reaches the existing complete-population composition request. Non-null malformed proposals still enter compiler repair; source and numeric checks remain required.",
+    "at": "2026-11-05T04:20:49.540935+00:00",
+    "workflow_change": "The corrected null-prose review now reaches the existing Sonnet escalation immediately after the first fresh Haiku reply, with full population membership and source/numeric obligations retained.",
     "unsealed_work": {
       "status": "native_recovery_and_compiler_passed_source_model_qualification_incomplete",
       "product_commit": "2ec665f4c8f76091a9d3413145c53cdea668feb1",
@@ -788,7 +801,19 @@
       "runtime_activation": false,
       "activation_subject": "retained_fast_composition_answer_or_learned_final_answer",
       "product_code_in_candidate_app": true,
-      "answer_selected": false
+      "answer_selected": false,
+      "fixed_role_specimens": [
+        {
+          "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/receipt.json",
+          "status": "compiler_unresolved_unqualified",
+          "answer_selected": false
+        },
+        {
+          "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/receipt.json",
+          "status": "compiler_unresolved_unqualified",
+          "answer_selected": false
+        }
+      ]
     },
     "bottling_assessment": {
       "native_actions_reexecuted": 32,
@@ -4063,6 +4088,32 @@
         "artifacts/agere-current-first-answer-2026-11-05/assessment.json"
       ],
       "scope_impact": "All ten acceptance areas retained; source/coverage thresholds and independent qualification unchanged."
+    },
+    {
+      "at": "2026-11-05T04:02:56.989575+00:00",
+      "decision": "The isolated Haiku completion is slower than the prior Sonnet composition and contains unbound expressions. CLI reports79237thinkingtokens (70%of output). Measure the same boundary input with only effort changed before routing or broader runs; separate this experimental harness from the full ordinary request. No model/default promotion and no threshold change.",
+      "evidence": [
+        "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/receipt.json",
+        "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/assessment.json"
+      ],
+      "scope_impact": "No scope expansion; all ten acceptance areas retained."
+    },
+    {
+      "at": "2026-11-05T04:17:14.838222+00:00",
+      "decision": "The retained-draft dispatcher omitted escalation_model and seeded initial_answer. The ordinary fresh-response branch already escalates any located incomplete_composition failure. These Haiku fixed-role samples do not measure the post-fix ordinary next model; preserve them as failed/unqualified role specimens. Verify the authentic fresh-response transition with escalation enabled and zero providers before further work.",
+      "evidence": [
+        "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/assessment.json"
+      ],
+      "scope_impact": "Correct experiment interpretation; no routing default or acceptance scope changed."
+    },
+    {
+      "at": "2026-11-05T04:20:49.540935+00:00",
+      "decision": "Retain negative fixed-role measurements and correct their test scope. Current production already escalates a fresh incomplete-composition reply; verify that existing path instead of adding a routing rule or promoting medium effort. Preserve all source checks and full scope. Next full-wrapper capture prevents a repeated harness/model mismatch.",
+      "evidence": [
+        "artifacts/agere-current-first-answer-2026-11-05/fresh-transition-delivery-receipt.json",
+        "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/assessment.json"
+      ],
+      "scope_impact": "No new model, threshold or product scope. Output factoring and calendar handling remain unqualified observations."
     }
   ],
   "unsealed_work": {
@@ -4072,7 +4123,19 @@
     "runtime_activation": false,
     "activation_subject": "retained_fast_composition_answer_or_learned_final_answer",
     "product_code_in_candidate_app": true,
-    "answer_selected": false
+    "answer_selected": false,
+    "fixed_role_specimens": [
+      {
+        "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-live/receipt.json",
+        "status": "compiler_unresolved_unqualified",
+        "answer_selected": false
+      },
+      {
+        "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/receipt.json",
+        "status": "compiler_unresolved_unqualified",
+        "answer_selected": false
+      }
+    ]
   },
   "current_visual_request": {
     "status": "completed",
@@ -4098,7 +4161,7 @@
     }
   },
   "active_jobs": [],
-  "next_action": "G3: null-prose state routing is sealed on cb7dbd3d: actual first two replies now reach the existing completion contract immediately; all 57 entities remain required. 195 regressions and the real cached-review/dispatch proof passed with 0 new providers or native reexecution. The ordinary pre-fix run remains 875.501 seconds / $6.47235291 API-equivalent, 202 new attempts, 57 patients / 228 narrative fields and 59/60 source packets; it was 14.68% slower and 30.85% more expensive than the prior run. No overall savings claimed. Next measure only the captured first corrected completion request through the existing Haiku subscription role, preserve its full response, and evaluate compilation/completeness before any source review or escalation. Use the exact captured full-evidence request, no owner prose, new model, custom output ceiling, whole-question rerun or repeated native qualification. Do not activate a generated candidate without source-quality evidence. All jobs terminal and source unfrozen; app 8890 PID 39826/session 31981 still runs 9e131e6d. All 51,646 attempts and the saved partial answer remain intact; current planning changes intentionally invalidate the old context for new work. Long-generation performance, undecided joint/global review and independent G5/customer dependencies remain. All ten acceptance areas retained.",
+  "next_action": "G3: cb7dbd3d null routing is verified through the actual fresh-response loop with production escalation enabled; after the first authentic unfinished Haiku reply, the next model is Sonnet with all 57 entities required. All 37 native receipts and numeric/source obligations remain. Original195 regressions and11 completion-contract tests including fresh escalation pass. The two fixed-Haiku boundary experiments were not the ordinary route:460.046s/$0.4411205 and485.140s/$0.3461817; both contain compiler failures and remain unpromoted. The first harness seeded initial_answer and omitted escalation_model; its scope correction is preserved. No effort change is adopted. Next capture the exact ordinary next request from the standard backstop.answer wrapper offline, including its full decision-context, optional clinical-presentation, documentation and escalation settings, using the authentic first Haiku reply and retained native receipts. Require the immediate Sonnet/full57 transition with zero providers/native reexecution before considering one targeted completion continuation and full source review; do not rerun the whole question or repeat native qualification just for bookkeeping. Do not waive numeric checks for calendar/pronoun-looking literals without scoped evidence; output factoring is only an offline34.8% byte-reduction profile, not runtime performance. All jobs terminal/source unfrozen; app8890PID39826/session31981 remains9e131e6d and current context is intentionally invalidated for new work by later planning changes. All51648attempts, source and immutable answers are retained. Latest ordinary run remains875.501s/$6.47235291,57patients/228fields,59/60source packets with undecided joint/global review. All ten areas and independent G5/customer dependencies remain; first-answer performance and full MVP acceptance are not established.",
   "deferred_work": [
     {
       "work": "OWASP/HHS assessment",
@@ -4107,7 +4170,7 @@
       "resume": "Only when relevant to a later customer-deployment phase or user instruction."
     }
   ],
-  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/null-prose-delivery-receipt.json",
+  "latest_checkpoint": "artifacts/agere-current-first-answer-2026-11-05/fresh-transition-delivery-receipt.json",
   "research_highlight": {
     "at": "2026-11-03T20:00:49.428959+00:00",
     "importance": "User-requested important finding for a case study and visual",
@@ -4190,9 +4253,10 @@
   "owned_server_pid": 39826,
   "owned_server_session": 31981,
   "last_run_observation": {
-    "at": "2026-11-05T03:39:34.839218+00:00",
-    "status": "returned_ordinary_clinical_performance_regressed",
-    "receipt": "artifacts/agere-current-first-answer-2026-11-05/ordinary-first-answer/run-receipt.json",
+    "at": "2026-11-05T04:17:14.838222+00:00",
+    "status": "unqualified_both_candidates_compiler_unresolved",
+    "receipt": "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/receipt.json",
+    "assessment": "artifacts/agere-current-first-answer-2026-11-05/null-completion-medium/assessment.json",
     "source_frozen": false
   }
 }
