@@ -263,7 +263,12 @@ def prompt_block():
         "own period or asks 'ever'. A drug that was only ordered or listed ('prescribed') is a received mention, not current use.\n"
         "8. Money: pharmacy spend = net payer spend over ALL pharmacy claim transactions, reversals and recoupments netted "
         "(pharmacy_claim_event: SUM(payer_paid_delta_cents) by event_date). Medical spend and cost per claim = the payer paid amount on COUNTED "
-        "medical claims (payer_claim with counts_in_metrics = 1: final, non-duplicate) by service date.")
+        "medical claims (payer_claim with counts_in_metrics = 1: final, non-duplicate) by service date.\n"
+        "9. Eligibility, coverage, payer or attribution at each event date requires the same subject's validity interval at that date. "
+        "member_month describes coverage on ANY day of a month and its monthly selected attributes; joining its month to a truncated "
+        "event date does not establish eligibility on that day. Use enrollment_span.coverage_start <= event date AND "
+        "(coverage_end IS NULL OR coverage_end >= event date), retain unknown and overlapping assignments, and state any "
+        "assignment convention. Monthly exposure remains a separate valid denominator; do not silently substitute it for event-date membership.")
 
 
 # --- the scope an answer runs in -------------------------------------------------------------------------------------------------

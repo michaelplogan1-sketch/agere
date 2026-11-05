@@ -10,6 +10,109 @@ FIELDS=frozenset({'data_segment','dataset_partition','sampling_stratum','evaluat
 SOURCE_CUE=re.compile(r'\b(?:segments?|strata|stratum|partitions?|sampling|samples?|evaluation\s+split|claims\s+only|claims\s+plus\s+ehr|deep\s+chart|duplicate\s+chart)\b',re.I)
 IGNORE_SOURCE=re.compile(r'\b(?:regardless|irrespective)\s+of\s+(?:the\s+)?(?:data\s+|source\s+)?(?:segment|partition|stratum)\b',re.I)
 
+# An explicit event-time requirement, not a disease or question handler. The
+# captured clause is retained as its original request provenance. Unrecognized
+# wording stays with ordinary semantic review; absence here proves nothing.
+POINT_EVENT=re.compile(r'\b(?:at|as\s+of|at\s+the\s+time\s+of|on\s+the\s+date\s+of)\s+(?:each|every)\s+(?:recorded\s+)?(?:event|admission|discharge|visit|encounter|appointment|transaction|payment|invoice|delivery|service)\b',re.I)
+TEMPORAL_ATTRIBUTE=re.compile(r'\b(?:eligib\w*|coverage|enroll\w*|membership|payer|attribut\w*)\b',re.I)
+MONTH_DIMENSIONS=frozenset({'payer_id','product','line_of_business','plan_id','attribution_practice_id','attribution_npi'})
+
+
+def point_event_grain_problem(question,sql):
+    """Reject a monthly attribute used as event-date membership without proof.
+
+    This checks the known member_month source contract, not arbitrary SQL
+    equivalence. Exact enrollment interval joins and ordinary monthly exposure
+    remain available. Exploratory reads are checked only when they become a
+    final answer dependency, as for the other source guards.
+    """
+    wording=question or''
+    # Keep the requirement attached to its attribute clause. A temperature
+    # measured at each visit does not change an unrelated monthly payer report.
+    requested=next((m for m in POINT_EVENT.finditer(wording)
+        if TEMPORAL_ATTRIBUTE.search(re.split(r'[.;:!?\n]',wording[:m.start()])[-1])),None)
+    if not requested or not isinstance(sql,str)or 'member_month'not in sql.lower():return None
+    import sqlglot
+    from sqlglot import exp
+    from sqlglot.optimizer.scope import Scope,traverse_scope
+    try:tree=sqlglot.parse_one(sql,read='sqlite')
+    except (sqlglot.errors.ParseError,sqlglot.errors.TokenError):return None
+    if tree is None:return None
+    scopes=list(traverse_scope(tree));by_select={id(s.expression):s for s in scopes}
+    def origin(scope,column,seen=frozenset()):
+        if scope is None:return set()
+        key=(id(scope),column.table.lower(),column.name.lower())
+        if key in seen:return set()
+        seen=seen|{key};sources={a.lower():s for a,(_,s)in scope.selected_sources.items()}
+        candidates=[sources[column.table.lower()]]if column.table.lower()in sources else list(sources.values())if not column.table else[]
+        if not candidates and scope.parent:return origin(scope.parent,column,seen)
+        found=set()
+        for source in candidates:
+            if isinstance(source,exp.Table):found.add((source.name.lower(),column.name.lower()));continue
+            if not isinstance(source,Scope):continue
+            projections=list(source.expression.selects);names=source.outer_columns or[n.alias_or_name for n in projections]
+            indices=[i for i,n in enumerate(names)if n.lower()==column.name.lower()]
+            for i in indices:
+                for c in projections[i].find_all(exp.Column):found.update(origin(source,c,seen))
+            if not indices and any(isinstance(p,exp.Star)or isinstance(p,exp.Column)and p.is_star for p in projections):
+                found.update(origin(source,exp.column(column.name),seen))
+        return found
+    def bare(node):
+        while isinstance(node,exp.Paren):node=node.this
+        return node
+    def atoms(node):
+        node=bare(node)
+        if isinstance(node,(exp.Where,exp.And)):
+            result=atoms(node.this)
+            if isinstance(node,exp.And):result+=atoms(node.expression)
+            return result
+        return [node]if node is not None else[]
+    def same(a,b):return a is not None and b is not None and a.sql(dialect='sqlite').lower()==b.sql(dialect='sqlite').lower()
+    for scope in scopes:
+        select=scope.expression
+        if not isinstance(select,exp.Select):continue
+        monthly={a.lower()for a,(_,s)in scope.selected_sources.items()if isinstance(s,exp.Table)and s.name.lower()=='member_month'}
+        joins=select.args.get('joins')or[]
+        mandatory=atoms(select.args.get('where'))+[a for j in joins for a in atoms(j.args.get('on'))]
+        for equality in select.find_all(exp.EQ):
+            if equality.find_ancestor(exp.Select)is not select:continue
+            for period,value in[(equality.this,equality.expression),(equality.expression,equality.this)]:
+                if not isinstance(period,exp.Column)or('member_month','month')not in origin(scope,period):continue
+                trunc=bare(value);event=None
+                if isinstance(trunc,exp.Substring)and isinstance(trunc.args.get('start'),exp.Literal)and trunc.args['start'].this=='1'and isinstance(trunc.args.get('length'),exp.Literal)and trunc.args['length'].this=='7':
+                    columns=list(trunc.this.find_all(exp.Column));event=columns[0]if len(columns)==1 else None
+                elif isinstance(trunc,exp.TimeToStr)and isinstance(trunc.args.get('format'),exp.Literal)and trunc.args['format'].this=='%Y-%m':
+                    columns=list(trunc.this.find_all(exp.Column));event=columns[0]if len(columns)==1 else None
+                if event is None or('member_month','month')in origin(scope,event):continue
+                used=set()
+                for expression in select.selects:
+                    for column in expression.find_all(exp.Column):
+                        used.update(field for relation,field in origin(scope,column)if relation=='member_month'and field in MONTH_DIMENSIONS)
+                if not used:continue  # standalone exposure/count probes do not establish an attribute claim
+                # A monthly label can be corroborated by the SAME subject's
+                # exact interval, with every used attribute equated to it. An
+                # unrelated span query, OR branch or decoy date cannot waive it.
+                proven=False
+                for alias,(_,source)in scope.selected_sources.items():
+                    if not isinstance(source,exp.Table)or source.name.lower()!='enrollment_span':continue
+                    interval_join=next((j for j in joins if isinstance(j.this,exp.Table)and j.this.alias_or_name.lower()==alias.lower()),None)
+                    if(interval_join is not None and interval_join.side.upper()in('LEFT','RIGHT','FULL')
+                        or any(j.side.upper()in('RIGHT','FULL')for j in joins)):continue
+                    start=exp.column('coverage_start',table=alias);end=exp.column('coverage_end',table=alias)
+                    lower=any(isinstance(a,exp.LTE)and same(a.this,start)and same(a.expression,event)or isinstance(a,exp.GTE)and same(a.this,event)and same(a.expression,start)for a in mandatory)
+                    def upper(a):
+                        a=bare(a)
+                        def end_after(n):return isinstance(n,exp.GTE)and same(n.this,end)and same(n.expression,event)or isinstance(n,exp.LTE)and same(n.this,event)and same(n.expression,end)
+                        def open_end(n):return isinstance(n,exp.Is)and same(n.this,end)and isinstance(n.expression,exp.Null)
+                        return isinstance(a,exp.Or)and((end_after(bare(a.this))and open_end(bare(a.expression)))or(open_end(bare(a.this))and end_after(bare(a.expression))))
+                    upper_bound=any(upper(a)for a in mandatory)
+                    identity=any(isinstance(a,exp.EQ)and((same(a.this,exp.column('patient_id',table=alias))and same(a.expression,exp.column('patient_id',table=event.table)))or(same(a.expression,exp.column('patient_id',table=alias))and same(a.this,exp.column('patient_id',table=event.table))))for a in mandatory)
+                    matched=all(any(isinstance(a,exp.EQ)and any((same(a.this,exp.column(field,table=m))and same(a.expression,exp.column(field,table=alias)))or(same(a.expression,exp.column(field,table=m))and same(a.this,exp.column(field,table=alias)))for m in monthly)for a in mandatory)for field in used)
+                    if lower and upper_bound and identity and matched:proven=True;break
+                if not proven:
+                    return("The original requirement '"+requested.group()+"' binds attributes at each event date. member_month means coverage on ANY day of the calendar month and its selected monthly attributes; a month-truncated join cannot establish that date's eligibility or attribution. Use same-subject enrollment_span validity (coverage_start <= event date AND (coverage_end IS NULL OR coverage_end >= event date)), retain unknown/overlapping assignments and the full event cohort, or leave this requirement unresolved. Monthly exposure remains a different valid measure.")
+    return None
+
 
 def provider_claim_problem(question, sql):
     """Keep an explicit provider-claim reading out of the merged claim feed.
@@ -91,6 +194,8 @@ def provider_claim_problem(question, sql):
 
 
 def problem(question,sql):
+    temporal_gap=point_event_grain_problem(question,sql)
+    if temporal_gap:return temporal_gap
     claim_gap = provider_claim_problem(question, sql)
     if claim_gap: return claim_gap
     reversal_gap = pharmacy_reversal_problem(question, sql)
