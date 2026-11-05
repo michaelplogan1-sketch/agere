@@ -2707,6 +2707,32 @@ def source_fault_family(packet,result,by_id):
     return parent
 
 
+def global_narrative_claims(packet):
+    """Locate every named global headline/fact without sampling table cells.
+
+    Multiple independent statements need their own decisions against the same
+    complete context. A favorable packet label must not hide an unsettled field.
+    The joint source/question check remains a separate obligation.
+    """
+    if packet.get('id')!='summary':return []
+    from ..deliverables.receipts import uncompact_json
+    try:state=json.loads(packet['text'])
+    except ValueError:
+        if packet.get('claim_manifest'):raise
+        return []  # legacy joint-only packets have no named-field contract
+    if 'encoding'in state:state=uncompact_json(state)
+    answer=state.get('answer')or{}
+    expected=[]
+    if 'headline'in answer:expected.append({'id':'headline','field':'headline','path':['answer','headline']})
+    for i,key in enumerate(answer.get('facts')or{}):
+        expected.append({'id':'fact_'+str(i),'field':'facts.'+str(key),'path':['answer','facts',key]})
+    if not expected:return []
+    actual=[c for c in packet.get('claim_manifest',[])if c.get('path',[])[:1]==['answer']]
+    if actual!=expected or state.get('claim_manifest')!=packet.get('claim_manifest'):
+        raise ValueError('Global narrative claim manifest is missing or changed')
+    return expected if len(expected)>1 else []
+
+
 def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,source_observation_path=None,long_context_decider=None,long_context_field_decider=None):
     """Repair a local source family while continuing proven independent families.
 
@@ -2792,6 +2818,26 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
         if oversized:
             from .system_one_deciders import order_for
             long_order=order_for('agere_investigation_support_dependency_long_context')
+        diagnostic=long_context_field_decider if oversized else field_decider
+        global_fields=global_narrative_claims(packet)
+        global_review=None
+        if global_fields:
+            if diagnostic is None:
+                return {**identity,'label':'unknown','decided_by':None,
+                    'status':'global_narrative_review_unavailable',
+                    'reason':'The named global statements have no field reviewer. A joint packet vote cannot substitute for those unperformed checks.'},steps
+            localized=localize_support_failure({**packet,'claim_manifest':global_fields},diagnostic,
+                as_of=as_of,ledger=worker_ledger,**({'order':long_order}if oversized else{}))
+            steps.extend(localized['steps'])
+            global_review={**localized['field_review'],'scope':'all_named_global_headline_and_fact_fields',
+                'joint_dependency_review_still_required':True}
+            if localized['feedback']:
+                faults=[f for f in localized['feedback']if f.get('decided_by')and f['label']!='unknown']
+                return {**identity,'label':('not_established'if all(f['label']=='missing_evidence'for f in faults)else'contradicted')if faults else'unknown',
+                    'decided_by':'typed_claim_checks'if faults else None,
+                    'status':'global_narrative_fields_unsettled',
+                    'reason':'Named global statements require located repair or retain unresolved verification; no favorable joint vote overrides them.',
+                    'claim_feedback':localized['feedback'],'field_review':global_review},steps
         result=selected('Does this COMPLETE dependency packet support each answer claim as actually stated in its scope? Resolve the lossless layout. Check entity/domain, source kind, time, negation, role and quantity meaning. A structured fill-policy observation is checked against the pharmacy evidence/definition; missing note corroboration alone does not contradict it. A count of machine-extracted observations is arithmetic and does not establish their clinical validity. A dated role object does not imply current responsibility, but a primary-care object cannot establish a cardiology role. Interpretations require supporting source meaning; matching a proposed output value is insufficient. Preserve supported unknowns and the distinction between source observations and clinical acceptance.',
             SUPPORT_OPTIONS,[{k:packet[k]for k in ('id','date','text')}],as_of=as_of,
             task_key='agere_investigation_support_dependency_long_context' if oversized else 'agere_investigation_support_dependency',
@@ -2799,6 +2845,7 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             long_context=packet['bytes']>32768,**({'order':long_order} if oversized else {}),
             **({'cache_evidence':packet['native_timing_compatibility']}if packet.get('native_timing_compatibility')else{}))
         checked={**identity,**{k:result.get(k)for k in ('label','decided_by','probabilities')}}
+        if global_review:checked['global_narrative_review']=global_review
         if oversized:
             route={'requested_providers':list(long_order),'mode':'documented_long_context',
                 'declared_context':{'jev':'262k tokens per request and per question','perplexity':'under 256K tokens for state and each question'},
@@ -2811,7 +2858,6 @@ def check_support_packets(packets,decider,*,as_of,ledger,field_decider=None,sour
             for step in result.get('steps',[]):step['context_route']=route
         if result.get('label')!='supported':checked['reason']='Source support '+str(result.get('label'))+' for this exact dependency; no successful check is inferred.'
         responded=bool(result.get('decided_by') or result.get('probabilities') or any(s.get('status')in ('answered','partial') for s in result.get('steps',[])))
-        diagnostic=long_context_field_decider if oversized else field_decider
         if result.get('label')!='supported' or not result.get('decided_by'):
             # Large complete contexts use the declared long-context field
             # adapter. Named choices share one unchanged evidence state;

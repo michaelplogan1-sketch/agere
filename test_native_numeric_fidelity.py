@@ -299,6 +299,11 @@ class NumericFidelity(unittest.TestCase):
                     state['answer']['facts'] = {'unit':value}
                 packet['text'] = json.dumps(state)
                 packet['bytes'] = len(packet['text'].encode())
+                if not location:
+                    # Adding a global fact without updating its claim manifest
+                    # now fails before any stale native attestation can be used.
+                    with self.assertRaisesRegex(ValueError,'manifest'):self.check(packets)
+                    continue
                 _, seen = self.check(packets)
                 self.assertIn(packet['id'] if location else 'patient_A', seen)
 

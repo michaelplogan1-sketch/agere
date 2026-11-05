@@ -201,7 +201,7 @@ class LocalReview(unittest.TestCase):
             as_of='2030-05-27',ledger=None,field_decider=judge)
         self.assertIsNone(out['decided_by']);judge.assert_not_called()
 
-    def test_unresolved_provider_reading_reaches_the_actor_but_an_outage_does_not_request_retries(self):
+    def test_unresolved_provider_reading_is_retained_without_rewriting_and_outage_does_not_retry(self):
         answer,calls=self.fixture()
         calls[-1]['result']['columns']=list(calls[-1]['result']['rows'][0])
         answer.update(status='answered',answer_type='table',table_from_tool='final')
@@ -216,8 +216,11 @@ class LocalReview(unittest.TestCase):
             with self.subTest(responded=responded),patch.object(G,'ready',return_value=True),patch.object(G,'s1',return_value=model),patch.object(G,'check',return_value={'label':'answers_fully','calls':0,'cost_usd':0}):
                 out=B.review_final(SimpleNamespace(),'Review the exact recorded care relationships.',copy.deepcopy(answer),calls,tools,ledger=None,as_of='2030-05-27')
                 if responded:
-                    self.assertEqual(out['status'],'repair');self.assertIn('Source support remains unresolved',out['feedback'])
-                    self.assertIn('current_assignment',out['feedback']);self.assertIn('population/domain/grain/unit',out['feedback'])
+                    self.assertEqual(out['status'],'repair')
+                    self.assertEqual(out['retry_disposition'],'retain_partial_until_new_evidence')
+                    self.assertEqual(out['completion']['verification'],'uncertain')
+                    self.assertTrue(any(f['field']=='current_assignment'for f in out['completion']['unverified_fields']))
+                    self.assertIn('no identified defect',out['feedback'])
                 else:
                     self.assertEqual(out['status'],'unavailable');self.assertIsNone(out['feedback'])
 
