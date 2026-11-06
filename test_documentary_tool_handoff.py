@@ -28,6 +28,7 @@ class DocumentaryHandoff(unittest.TestCase):
         for pid in ('p04','p05','p06','p07','p07'):
             records.append((pid,'notes',{'text':'Patient reports difficulty paying medical bills.',
                 'event_date':'2029-02-02','available_date':'2029-02-03'}))
+        records=[(pid,stream,{**fields,'synthetic':True,'identity_status':'matched'})for pid,stream,fields in records]
         self.path=build(records,{pid:{'age_reported':50,'sex_reported':'F'} for pid in self.ids})
         self.addCleanup(lambda:shutil.rmtree(self.path))
         self.meta=json.loads((self.path/'run.json').read_text())
