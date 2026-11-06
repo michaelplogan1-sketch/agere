@@ -787,9 +787,9 @@ def define_cohort(semantic, ids):
     db.set_authorizer(None)
     db.execute('PRAGMA query_only=OFF')
     try:
-        old = [r[0] for r in db.execute("SELECT name FROM sqlite_temp_master WHERE type='view'")]
-        for name in old:
-            if re.fullmatch(r'agere_result_\d+', name): db.execute(f'DROP VIEW "{name}"')
+        old = list(db.execute("SELECT name,type FROM sqlite_temp_master WHERE type IN ('view','table')"))
+        for name,kind in old:
+            if re.fullmatch(r'agere_result_\d+', name): db.execute(f'DROP {kind.upper()} "{name}"')
         if hasattr(semantic, '_local'): semantic._local.native_results = {}
         db.execute('DROP VIEW IF EXISTS temp.cohort')
         body = 'SELECT patient_id FROM main.patient' if ids is None else "SELECT value AS patient_id FROM json_each(" + "'" + json.dumps(ids).replace("'", "''") + "')"
@@ -816,13 +816,26 @@ def output_table(out):
 
 
 def define_result(semantic, name, columns, rows, *, receipt=None):
-    """Connection-local immutable result view. Source data stays read-only; SQL does all subsequent arithmetic and composition."""
+    """Immutable request-local rows, materialized once for indexed native joins.
+
+    Keep the exact portable JSON representation as provenance; executing joins
+    must not repeatedly parse that array through a virtual-table view.
+    """
     db = semantic.db
     from .sql_query import native_result_source
     source = native_result_source(columns, rows)
     db.set_authorizer(None); db.execute('PRAGMA query_only=OFF')
+    created=False
     try:
-        db.execute(f'CREATE TEMP VIEW "{name}" AS {source}')
+        db.execute(f'CREATE TEMP TABLE "{name}" AS {source}')
+        created=True
+        for index,column in enumerate(columns):
+            if column=='id' or column.endswith('_id'):
+                quoted=column.replace('"','""')
+                db.execute(f'CREATE INDEX "{name}_key_{index}" ON "{name}" ("{quoted}")')
+    except Exception:
+        if created:db.execute(f'DROP TABLE IF EXISTS temp."{name}"')
+        raise
     finally:
         db.execute('PRAGMA query_only=ON'); db.set_authorizer(semantic._authorize)
     semantic.register_native_result(name, receipt if receipt is not None else {'rows': rows})
