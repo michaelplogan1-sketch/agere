@@ -646,8 +646,10 @@ def compose_shape(body):
             raise ValueError('A conversation and exact saved answer identity are required')
         keys -= {'answer_context_id'}
     if 'answer_scope' in keys:
-        if body['answer_scope'] not in ('result', 'input') or 'answer_context_id' not in body:
-            raise ValueError('Answer scope must select result or input from an exact saved answer')
+        scope=body['answer_scope']
+        if ('answer_context_id'not in body or not isinstance(scope,str)or
+            scope not in ('result','input','auto')and not re.fullmatch(r'population:POP-[0-9a-f]{24}',scope)):
+            raise ValueError('Answer scope must select an available population from an exact saved answer')
         keys -= {'answer_scope'}
     if keys == {'question'}: return body['question'], 'auto', conv
     if keys == {'question', 'planning'} and body['planning'] in ('auto', 'frontier'):
@@ -1003,6 +1005,10 @@ def _handle_compose(stack, body, hosted_factory=None):
         else:
             prior = None if body.get('scope') == 'warehouse' else prior_context(stack.path, conv)
             explicit_context = body.get('answer_context_id')
+            if explicit_context and body.get('answer_scope')=='auto'and not(refers or is_followup(question)or answer_context.saved_followup_edit(question)):
+                # A complete independent question remains independent. A bare
+                # saved-set edit keeps the context and must resolve its scope.
+                explicit_context=None;prior=None
             if explicit_context:
                 # The UI may reopen a saved answer or select an earlier turn.
                 # Resolve the server-owned immutable membership, never client IDs.
@@ -1045,6 +1051,7 @@ def _handle_compose(stack, body, hosted_factory=None):
                         raise QuestionNotUnderstood('No saved cohort is available for this edit. Ask a complete question first.')
                     parent = answer_context.load(stack.path, saved['id'], current=True, follow_up=True)
                     selected_scope = body.get('answer_scope', 'result')
+                    if selected_scope=='auto':selected_scope='result'
                     parent = answer_context.reference_scope(parent, selected_scope)
                     # Legacy finite transforms remain useful for literal list/count and
                     # grouping. They operate on immutable membership, never text rewrites.

@@ -75,12 +75,18 @@ function syncScope(t){
  const input=$('#question-scope').querySelector('[value="input"]');
  input.disabled=!activeContext||!!t?.archiveBlocked||c?.input_patients==null;
  input.textContent=c?.input_patients!=null?'Original input · '+fmt(c.input_patients)+' patients':'Original input unavailable';
- $('#question-scope').value=option.disabled?'warehouse':'saved';
+ const auto=$('#question-scope').querySelector('[value="auto"]');auto.disabled=!activeContext||!!t?.archiveBlocked;
+ $('#question-scope').querySelectorAll('[data-population-scope]').forEach(o=>o.remove());
+ for(const population of c?.population_scopes||[]){const o=new Option(population.label+' · '+fmt(population.patients)+' patients','population:'+population.id);o.dataset.populationScope=population.id;o.disabled=!!t?.archiveBlocked;$('#question-scope').append(o)}
+ $('#population-scopes').hidden=!activeContext||!!t?.archiveBlocked||!c?.population_scope_discovery_available;
+ $('#question-scope').value=option.disabled?(auto.disabled?'warehouse':'auto'):'saved';
  if(retained?.value==='input'&&!input.disabled)$('#question-scope').value='input';
+ if(retained?.value&&[...$('#question-scope').options].some(o=>o.value===retained.value&&!o.disabled))$('#question-scope').value=retained.value;
  updateScopeNote();
 }
 function updateScopeNote(){
- $('#scope-note').textContent=$('#question-scope').value==='input'?'Uses the original question’s saved input patients. These are not necessarily patients selected by its answer, and this choice does not authorize work.':$('#question-scope').value==='saved'?'This follow-up keeps the exact saved patient set. Choose “Entire warehouse” to start a broader question.':'Use your own words. Add a date range, comparison, or filter.';
+ const scope=$('#question-scope').value;
+ $('#scope-note').textContent=scope==='input'?'Uses the original question’s saved input patients. These are not necessarily patients selected by its answer, and this choice does not authorize work.':scope==='saved'?'This follow-up keeps the exact saved patient set. Choose “Entire warehouse” to start a broader question.':scope==='auto'?'Ask about this analysis. For a patient follow-up, choose the population behind the count you mean.':scope.startsWith('population:')?'Follows this source-defined population, keeping its original period and filters.':'Use your own words. Add a date range, comparison, or filter.';
 }
 async function openSavedContext(id){
  const epoch=++conversationEpoch;
@@ -88,7 +94,7 @@ async function openSavedContext(id){
  try{
   const d=await fetchJSON('/api/stack/action-context?context='+encodeURIComponent(id));if(epoch!==conversationEpoch)return;
   const c=d.context;state.cid=null;store.set('agere-conversation',null);
-  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
+  const t={question:c.original_question||c.question,resolved:c.question,archive:true,archiveBlocked:c.stale||c.invalidated,data:{workflow:d.workflow?.steps||[],answer:c.answer,graph:c.graph,results:c.results,planner_receipt:c.planner_receipt,planning_economics:c.planning_economics,action_context:{id:c.id,patients:c.patient_ids.length,input_patients:c.input_patients,result_scope_available:c.result_scope_available,population_scopes:c.population_scopes,population_scope_discovery_available:c.population_scope_discovery_available},new_paid_api_calls:c.planner_receipt?.new_paid_api_calls}};
   t.archiveNotice=c.invalidated?'This saved answer was invalidated. Its history is available, but it cannot be used for new work or scoped follow-ups.':c.stale?'The warehouse has changed since this answer. Start a new analysis to use current data.':null;
   state.turns=[t];renderTurn(0);
  }catch(e){if(epoch!==conversationEpoch)return;$('#answer').innerHTML='<h2 class="headline">This analysis couldn’t open.</h2><p>'+esc(e.message)+'</p><button class="btn" data-page="saved">Back to saved analyses</button>'}
@@ -135,6 +141,19 @@ function setupExplorer(){
  $('#q').addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();$('#askf').requestSubmit()}});
  $('#saved-search').addEventListener('input',renderSaved);$('#source-search').addEventListener('input',()=>loadSources());
  $('#question-scope').addEventListener('change',updateScopeNote);
+ $('#population-scopes').addEventListener('click',async()=>{
+  if(!activeContext||state.busy)return;
+  const button=$('#population-scopes'),parent=activeContext.id,epoch=conversationEpoch,t=state.turns[state.active];
+  state.busy=true;button.disabled=true;button.textContent='Tracing populations…';$('#askb').disabled=true;$('#q').readOnly=true;
+  try{
+   const response=await fetch('/api/stack/action-populations',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({context_id:parent})});
+   const prepared=await response.json();if(!response.ok||prepared.error)throw Error(prepared.error||'The populations could not be opened.');
+   if(epoch!==conversationEpoch||activeContext?.id!==parent)return;
+   t.data.action_context=prepared.action_context;syncScope(t);
+   $('#scope-note').textContent=prepared.population_scopes.length?'Choose the population behind your count, then ask to list, group or compare those patients.':'No exact patient population could be established for these results.';
+  }catch(error){if(epoch===conversationEpoch)$('#scope-note').textContent=error.message}
+  finally{state.busy=false;button.disabled=false;button.textContent='Explore patient populations';$('#askb').disabled=false;$('#q').readOnly=false}
+ });
  $('#help-button').onclick=()=>openAppDialog('help-dialog');$('#usage-button').onclick=()=>openAppDialog('usage-dialog');$('#footer-usage').onclick=()=>openAppDialog('usage-dialog');
  document.querySelectorAll('.app-dialog').forEach(d=>d.addEventListener('close',()=>lastDialogFocus?.focus()));
  const params=new URLSearchParams(location.search);

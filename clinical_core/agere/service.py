@@ -300,6 +300,9 @@ def serve(run,port,annotations=None,evidence_queries=None,stack=None,allow_live_
                 elif path=='/api/stack/ask':
                     if set(body)!={'question','live'} or type(body['live']) is not bool:raise ValueError('Explicit question/live route required')
                     result=connected_stack.ask(body['question'],live=body['live'])
+                elif path=='/api/stack/action-populations':
+                    from .deliverables import answer_context
+                    result=answer_context.prepare_population_scopes(connected_stack.path,body)
                 elif path in ('/api/stack/action-work/create', '/api/stack/action-work/update', '/api/stack/action-work/refresh', '/api/stack/action-deliverable', '/api/stack/action-report', '/api/stack/action-mockup', '/api/stack/action-simulate'):
                     from .deliverables import answer_context
                     if path.endswith('/action-mockup'):

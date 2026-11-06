@@ -103,6 +103,7 @@ def inspection_view(record):
         receipt['request_contract'] = {**contract, 'graph': graph}
     return {**record, 'context': {**context,
         'graph': graph, 'results': None, 'planner_receipt': receipt,'answer':answer,
+        'native_population_scopes':None,
         'investigation': {
             'model': investigation.get('model'),
             'draft_resume_available': bool(investigation.get('recovery_checkpoint')) and not context.get('workflow'),

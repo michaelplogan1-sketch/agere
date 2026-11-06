@@ -82,7 +82,7 @@ def investigation_evidence(investigation):
             'document_reviews':[{k:v for k,v in r.items() if k not in metadata} for r in source.get('document_reviews') or []]}
 
 
-def capture(path, question, result, *, original_question=None):
+def capture(path, question, result, *, original_question=None, _population_scopes=None):
     """Persist a server-produced result; no client-provided IDs enter this boundary."""
     answer = result.get('answer') or {}
     if not answer or answer.get('status') not in ('answered', 'partial', 'low_confidence'):
@@ -130,6 +130,14 @@ def capture(path, question, result, *, original_question=None):
             'patient_rows': rows, 'patient_ids': [r['patient_id'] for r in rows],
             'input_patient_ids': input_ids,
             'synthetic': True, 'clinical_eligibility_established': False}
+    if _population_scopes is not None:
+        from ..clinical import membership
+        if (_population_scopes.get('schema')!=membership.NATIVE_POPULATIONS
+            or _population_scopes.get('source')!=source
+            or _population_scopes.get('membership_policy')!=membership.native_population_identity()
+            or _population_scopes.get('native_calls_digest')!=fingerprint((result.get('investigation')or{}).get('tool_calls')or[])):
+            raise ValueError('Population scopes must come from current server-owned native calculations')
+        data['native_population_scopes']=_population_scopes
     from .patient_evidence import capture_profiles
     data['patient_profiles']=capture_profiles(path,data['patient_ids'],answer,graph=data.get('graph'))
     from ..clinical import answer_dependencies
@@ -150,6 +158,7 @@ def capture(path, question, result, *, original_question=None):
                                'answer_policy_identity': (result.get('planner_receipt') or {}).get('policy_identity'),
                                'cohort_transform': data.get('cohort_transform'),
                                'investigation_evidence': investigation_evidence(data.get('investigation')),
+                               **({'native_population_scopes':data['native_population_scopes']}if 'native_population_scopes'in data else{}),
                                **({'unfinished_draft_digest': recovery['draft_digest']} if recovery else {}),
                                'observation_dependencies': data['dependencies']['observation']})[:24]
     d = root(path) / key
@@ -194,6 +203,10 @@ def load(path, key, *, current=False, follow_up=False, source_review=False, loca
         from .patient_evidence import capture_profiles
         stale = stale or data['patient_profiles']!=capture_profiles(path,data['patient_ids'],data['answer'],graph=data.get('graph'))
     invalidated = ((data.get('planner_receipt') or {}).get('version') == 'patient-therapy-review/1')
+    population_policy=(data.get('cohort_transform')or{}).get('population_policy')
+    if population_policy is not None or str((data.get('cohort_transform')or{}).get('scope','')).startswith('population:'):
+        from ..clinical import membership
+        invalidated=invalidated or population_policy!=membership.native_population_identity()
     from ..clinical.cohort_families import scope_rejection
     receipt = data.get('planner_receipt') or {}
     if receipt.get('route') in ('cohort_family', 'cohort_family_bottled') and scope_rejection(data['question']):
@@ -428,15 +441,105 @@ def scope_options(context):
                or (answer.get('answer_type') in ('count', 'table') and bool(answer.get('count') or answer.get('table'))))
     shared = (answer.get('answer_type') == 'composite' and answer.get('membership_role') == 'shared_selection'
               and answer.get('shared_selection_established') is True)
+    populations=_current_population_scopes(context)
     return {'result_scope_available': bool(context['patient_ids']) or shared or not summary,
-            'input_patients': None if context.get('input_patient_ids') is None else len(context['input_patient_ids'])}
+            'input_patients': None if context.get('input_patient_ids') is None else len(context['input_patient_ids']),
+            'population_scopes':[{'id':s['id'],'label':s['label'],'patients':s['patient_count'],
+                'source_rows':s['counted_source_rows'],'clinical_eligibility_established':False}for s in populations],
+            'population_scope_discovery_available':bool((context.get('investigation')or{}).get('tool_calls'))}
+
+
+def _current_population_scopes(context):
+    from ..clinical import membership
+    snapshot=context.get('native_population_scopes')or{}
+    if (snapshot.get('schema')!=membership.NATIVE_POPULATIONS or snapshot.get('source')!=context.get('source')
+        or snapshot.get('membership_policy')!=membership.native_population_identity()):return []
+    from ...contracts import digest
+    scopes=[]
+    for scope in snapshot.get('scopes',[]):
+        ids=scope.get('patient_ids');proof=scope.get('proof')or{}
+        if (not isinstance(ids,list)or any(not isinstance(p,str)or not p for p in ids)
+            or len(set(ids))!=len(ids)or scope.get('patient_count')!=len(ids)
+            or proof.get('source')!=context['source']or proof.get('patient_ids_digest')!=digest(ids)
+            or proof.get('membership_policy')!=snapshot['membership_policy']
+            or scope.get('id')!='POP-'+digest(proof)[:24]):continue
+        scopes.append(scope)
+    return scopes
+
+
+def prepare_population_scopes(path, request):
+    """Discover exact native patient populations on demand, without providers."""
+    if set(request)!={'context_id'}:raise ValueError('Exact saved answer identity required')
+    context=load(path,request['context_id'],current=True)
+    calls=(context.get('investigation')or{}).get('tool_calls')or[]
+    if not calls:raise ValueError('This answer has no retained native calculations to inspect')
+    from ..clinical import membership,backstop_agent as B,semantic_analyst as S,sql_query,semantic_layer
+    cached=context.get('native_population_scopes')or{}
+    if (cached.get('schema')==membership.NATIVE_POPULATIONS and cached.get('source')==context['source']
+        and cached.get('membership_policy')==membership.native_population_identity()):
+        options=scope_options(context)
+        return {'status':'prepared','action_context':{'id':context['id'],'patients':len(context['patient_ids']),
+            'url':'/action-center?context='+context['id'],**options},'population_scopes':options['population_scopes'],
+            'unavailable':cached.get('unavailable',[]),'new_paid_api_calls':0,'original_analytical_engine_replays':0,
+            'native_sql_checks':0,'cache_hit':True,'clinical_eligibility_established':False}
+    import sqlglot
+    from sqlglot import exp
+    source=context['source'];by={};names=set();all_columns=False
+    for call in calls:
+        result=call.get('result')or{};view=result.get('result_view')
+        if view:
+            if view in by:raise ValueError('Ambiguous native result identity')
+            by[view]=result
+        query=result.get('declared_executed_query')or result.get('executed_query')
+        if call.get('name')!='query_sql'or not isinstance(query,str)or not re.search(r'\bcount\s*\(\s*distinct\b',query,re.I):continue
+        try:tree=sqlglot.parse_one(query,read='sqlite')
+        except sqlglot.errors.SqlglotError:continue
+        names.update(c.name for c in tree.find_all(exp.Column))
+        all_columns=all_columns or any(not isinstance(s.parent,exp.Count)for s in tree.find_all(exp.Star))
+    root_view=(context['answer'].get('table_binding')or{}).get('result_view')or context['answer'].get('table_from_tool')
+    roots=list(dict.fromkeys([*([root_view]if root_view else[]),*B.computed_prose_views(context['answer'].get('computed_prose',[]))]))
+    wh=S.SemanticWarehouse(Path(path)/'semantic.sqlite3');registered=set();checks=0
+    try:
+        wh.define(source['as_of'])
+        if wh.meta.get('postprocessing_identity')not in (None,semantic_layer.policy_identity()):raise ValueError('Native population source policy differs from the connected snapshot')
+        known={r[0]for r in wh.db.execute('SELECT patient_id FROM patient')}
+        def execute(query,parameters):
+            nonlocal checks
+            tree,tables=sql_query.native_query_bindings(query,by)
+            if tree is None:raise ValueError('Population selection could not resolve its native tables')
+            for table in tables:
+                view=next(name for name in by if name.casefold()==table.name.casefold())
+                if view in registered:continue
+                result=by[view];columns,rows=B.output_table(result)
+                from ..clinical.result_assembly import incomplete_reason
+                if result.get('error')or incomplete_reason(result):raise ValueError('Population selection depends on incomplete native input')
+                selected=columns if all_columns else [c for c in columns if c in names or c=='patient_id']
+                if not selected:raise ValueError('Native population input has no resolved columns')
+                values=[[r[columns.index(c)]for c in selected]for r in rows]
+                B.define_result(wh,view,selected,values,receipt=result);registered.add(view)
+            checks+=1
+            cursor=wh.db.execute(query,parameters);return [c[0]for c in cursor.description],[list(r)for r in cursor]
+        snapshot=membership.native_populations(calls,roots,execute,known,source)
+        if source_identity(path)!=source:raise ValueError('Warehouse changed while preparing the native populations')
+    finally:wh.close()
+    snapshot['native_calls_digest']=fingerprint(calls)
+    result={'answer':context['answer'],'graph':context.get('graph'),'results':context.get('results'),
+        'planner_receipt':context.get('planner_receipt'),'planning_economics':context.get('planning_economics'),
+        'investigation':context.get('investigation'),'workflow':context.get('workflow')or[],
+        'execution_snapshot':source,'cohort_transform':context.get('cohort_transform')}
+    if context.get('input_patient_ids')is not None and result['cohort_transform']is None:
+        result['cohort_transform']={'input_patient_ids':context['input_patient_ids'],'scope':'input_provenance','operations':[]}
+    saved=capture(path,context['question'],result,original_question=context.get('original_question'),_population_scopes=snapshot)
+    return {'status':'prepared','action_context':saved,'population_scopes':saved['population_scopes'],
+        'unavailable':snapshot['unavailable'],'new_paid_api_calls':0,'original_analytical_engine_replays':0,
+        'native_sql_checks':checks,'cache_hit':False,'clinical_eligibility_established':False}
 
 
 def require_patient_reference(context):
     """An empty summary membership is not an observed empty patient cohort."""
     if not scope_options(context)['result_scope_available']:
         from ..clinical.question_input import QuestionNotUnderstood
-        raise QuestionNotUnderstood('The previous answer is an analytical summary, not a selected patient cohort. Ask which population you want to follow.')
+        raise QuestionNotUnderstood('This analysis has no single patient cohort. Choose the population you want to follow from its saved counts; no whole-warehouse or empty cohort was substituted.')
 
 
 def reference_scope(context, scope='result'):
@@ -448,6 +551,13 @@ def reference_scope(context, scope='result'):
     if scope == 'result':
         require_patient_reference(context)
         return context
+    if isinstance(scope,str)and scope.startswith('population:'):
+        selected=next((s for s in _current_population_scopes(context)if scope=='population:'+s['id']),None)
+        if selected is None:raise ValueError('Choose an available source-current population from this exact saved answer')
+        ids=selected['patient_ids']
+        return {**context,'patient_ids':ids,'patient_rows':[{'patient_id':pid,'evidence_rows':[]}for pid in ids],
+            'selected_population':{k:v for k,v in selected.items()if k!='patient_ids'},
+            'answer':{**context['answer'],'actionable_cohort':False}}
     if scope != 'input' or context.get('input_patient_ids') is None:
         raise ValueError('This answer has no explicit saved input population. Choose an available result or the entire warehouse.')
     ids = context['input_patient_ids']
@@ -734,12 +844,8 @@ def refresh_review_sources(path, request):
     return inspect(path,c['id'])
 
 
-def followup(path, key, question, *, scope='result'):
-    """Deterministic transformations of any saved patient set, never a new search.
-
-    Unsupported edits return None. The caller must not rewrite an anaphoric
-    request into an unbound whole-warehouse question.
-    """
+def saved_followup_edit(question):
+    """Recognize existing finite saved-set edits without selecting a population."""
     text = ' '.join(question.lower().strip(' ?.!').split())
     text = re.sub(r'^(?:can|could) i (?:get|have|see)\s+', 'show me ', text)
     from ..clinical.conversation import group_edit, group_dimension
@@ -751,6 +857,14 @@ def followup(path, key, question, *, scope='result'):
     exclusion = re.fullmatch(r'(?:exclude|excluding|remove)(?: the)? (?:patients|ones|those|them)(?: who have| who| that have)? (?:died|are deceased|deceased)', text)
     if not (listing or grouping or exclusion):
         return None
+    return text,listing,grouping,exclusion
+
+
+def followup(path, key, question, *, scope='result'):
+    """Transform the exact saved scope; an ambiguous summary never broadens it."""
+    parsed=saved_followup_edit(question)
+    if parsed is None:return None
+    text,listing,grouping,exclusion=parsed
     c = reference_scope(load(path, key, current=True, follow_up=True), scope)
     ids = set(c['patient_ids'])
     rows = c['patient_rows']
@@ -779,6 +893,12 @@ def followup(path, key, question, *, scope='result'):
                              'definition': f'Observed patient.{field}; no inference of ongoing care or alternate attribution.'})
         if listing:
             operations.append({'operation': 'count_saved_cohort' if text.startswith('count') else 'list_saved_cohort'})
+            if c.get('selected_population')and not text.startswith('count'):
+                from .patient_evidence import capture_profiles
+                profiles=(capture_profiles(path,sorted(ids))or{}).get('patients')or{}
+                table=[{'patient_id':pid,'patient_name':profiles.get(pid,{}).get('display_name'),
+                    'profile_source_date':profiles.get(pid,{}).get('profile_source_date'),
+                    'profile_status':profiles.get(pid,{}).get('identity_status')or'profile_unavailable'}for pid in sorted(ids)]
     finally:
         db.close()
     parent = c['answer']
@@ -799,11 +919,14 @@ def followup(path, key, question, *, scope='result'):
     if scope == 'input':
         answer['limitations'].append('Explicit follow-up on the original question input, not patients selected by its output. No patient-work authority is inherited.')
     return {'question': question, 'answer': answer, 'route': 'saved_cohort',
-            'cohort_patient_rows': [r for r in rows if r['patient_id'] in ids],
+            'cohort_patient_rows': ([{'patient_id':pid,'evidence_rows':[r for r in table if r.get('patient_id')==pid]}for pid in sorted(ids)]
+                if c.get('selected_population')and listing and not count_only else [r for r in rows if r['patient_id'] in ids]),
             'planner_receipt': {'route': 'saved_cohort', 'new_paid_api_calls': 0,
                                 'origin_request_contract': (c.get('planner_receipt') or {}).get('origin_request_contract')
                                     or (c.get('planner_receipt') or {}).get('request_contract')},
-            'cohort_transform': {'parent_context_id': key, 'input_patient_ids': sorted(c['patient_ids']), 'scope': scope, 'operations': operations},
+            'cohort_transform': {'parent_context_id': key, 'input_patient_ids': sorted(c['patient_ids']), 'scope': scope, 'operations': operations,
+                **({'population_policy':c['selected_population']['proof']['membership_policy']}if c.get('selected_population')else
+                   {'population_policy':c['cohort_transform']['population_policy']}if (c.get('cohort_transform')or{}).get('population_policy')else{})},
             'new_paid_api_calls': 0, 'planning_economics': {'known_api_estimate_usd': 0, 'new_api_estimate_usd': 0}}
 
 
